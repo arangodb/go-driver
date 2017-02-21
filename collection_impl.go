@@ -90,8 +90,8 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	if err := resp.CheckStatus(200); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	//
-	return nil
+	//TODO split response body into meta & document data
+	return DocumentMeta{}, nil
 }
 
 // CreateDocument creates a single document in the collection.
@@ -101,7 +101,10 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 // A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
 // To return the NEW document, prepare a context with `WithReturnNew`.
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
-func (c *collection) CreateDocument(ctx context.Context, document interface{}) (DocumentMeta, error) {}
+func (c *collection) CreateDocument(ctx context.Context, document interface{}) (DocumentMeta, error) {
+	// TODO implement this
+	return DocumentMeta{}, nil
+}
 
 // UpdateDocument updates a single document with given key in the collection.
 // The document meta data is returned.
@@ -110,6 +113,8 @@ func (c *collection) CreateDocument(ctx context.Context, document interface{}) (
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) UpdateDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error) {
+	// TODO implement this
+	return DocumentMeta{}, nil
 }
 
 // ReplaceDocument replaces a single document with given key in the collection with the document given in the document argument.
@@ -119,6 +124,8 @@ func (c *collection) UpdateDocument(ctx context.Context, key string, update map[
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) ReplaceDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error) {
+	// TODO implement this
+	return DocumentMeta{}, nil
 }
 
 // RemoveDocument removes a single document with given key from the collection.
@@ -126,4 +133,7 @@ func (c *collection) ReplaceDocument(ctx context.Context, key string, update map
 // To return the OLD document, prepare a context with `WithReturnOld`.
 // To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
-func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMeta, error) {}
+func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMeta, error) {
+	// TODO implement this
+	return DocumentMeta{}, nil
+}
