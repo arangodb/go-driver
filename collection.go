@@ -29,6 +29,10 @@ type Collection interface {
 	// Name returns the name of the collection.
 	Name() string
 
+	// Remove removes the entire collection.
+	// If the collection does not exist, a NotFoundError is returned.
+	Remove() error
+
 	// ReadDocument reads a single document with given key from the collection.
 	// The document data is stored into result, the document meta data is returned.
 	// If no document exists with given key, a NotFoundError is returned.

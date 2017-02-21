@@ -50,7 +50,13 @@ func WithReturnOld(parent context.Context, result interface{}) context.Context {
 }
 
 // WithWaitForSync is used to configure a context to make modification
-// functions wait until the data has been synced to disk.
-func WithWaitForSync(parent context.Context) context.Context {
-	return context.WithValue(parent, keyWaitForSync, true)
+// functions wait until the data has been synced to disk (or not).
+// You can pass a single (optional) boolean. If that is set to false, you explicitly do not wait for
+// data to be synced to disk.
+func WithWaitForSync(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) == 1 {
+		v = value[0]
+	}
+	return context.WithValue(parent, keyWaitForSync, v)
 }
