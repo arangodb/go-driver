@@ -46,6 +46,11 @@ func IsInvalidRequest(err error) bool {
 	return IsArangoErrorWithCode(err, 400)
 }
 
+// IsUnauthorized returns true if the given error is an ArangoError with code 401, indicating an unauthorized request.
+func IsUnauthorized(err error) bool {
+	return IsArangoErrorWithCode(err, 401)
+}
+
 // IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
 func IsNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, 404)

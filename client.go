@@ -49,4 +49,6 @@ type ClientConfig struct {
 	// Endpoints holds 1 or more URL's used to connect to the database.
 	// In case of a connection to an ArangoDB cluster, you must provide the URL's of all coordinators.
 	Endpoints []string
+	// Authentication implements authentication on the server.
+	Authentication Authentication
 }
