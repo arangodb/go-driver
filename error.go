@@ -41,12 +41,17 @@ func IsArangoErrorWithCode(err error, code int) bool {
 	return ok && ae.Code == code
 }
 
-// IsInvalidRequest return true if the given error is an ArangoError with code 400, indicating an invalid request.
+// IsInvalidRequest returns true if the given error is an ArangoError with code 400, indicating an invalid request.
 func IsInvalidRequest(err error) bool {
 	return IsArangoErrorWithCode(err, 400)
 }
 
-// IsNotFound return true if the given error is an ArangoError with code 404, indicating a object not found.
+// IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
 func IsNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, 404)
+}
+
+// IsConflict returns true if the given error is an ArangoError with code 409, indicating a conflict.
+func IsConflict(err error) bool {
+	return IsArangoErrorWithCode(err, 409)
 }
