@@ -35,7 +35,9 @@ type Collection interface {
 	ReadDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, error)
 
 	// UpdateDocument updates a single document with given key in the collection.
-	// The document data is stored into result, the document meta data is returned.
+	// If `resultOld` is set to non-nil, the OLD document data is stored in there.
+	// If `resultNew` is set to non-nil, the NEW document data is stored in there.
+	// The document meta data is returned.
 	// If no document exists with given key, a NotFoundError is returned.
 	UpdateDocument(ctx context.Context, key string, update map[string]interface{}, resultOld, resultNew interface{}) (DocumentMeta, error)
 }
