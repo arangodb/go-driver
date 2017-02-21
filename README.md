@@ -1,3 +1,8 @@
+# ArangoDB GO Driver.
+
+NOTE: THIS IS WORK IN PROGRESS.
+API and implementation WILL change.
+
 # Sample requests 
 
 ## Connecting to ArangoDB
