@@ -26,6 +26,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"sync"
+	"sync/atomic"
 )
 
 // Authentication implements a kind of authentication.
@@ -93,7 +95,7 @@ func (a *jwtAuthentication) Prepare(ctx context.Context, conn Connection) error 
 	// Prepare request
 	r, err := conn.NewRequest("POST", "/_open/auth")
 	if err != nil {
-		return err
+		return WithStack(err)
 	}
 	r.SetBody(jwtOpenRequest{
 		UserName: a.userName,
@@ -103,16 +105,16 @@ func (a *jwtAuthentication) Prepare(ctx context.Context, conn Connection) error 
 	// Perform request
 	resp, err := conn.Do(ctx, r)
 	if err != nil {
-		return err
+		return WithStack(err)
 	}
 	if err := resp.CheckStatus(200); err != nil {
-		return err
+		return WithStack(err)
 	}
 
 	// Parse response
 	var data jwtOpenResponse
 	if err := resp.ParseBody(&data); err != nil {
-		return err
+		return WithStack(err)
 	}
 
 	// Store token
@@ -125,5 +127,76 @@ func (a *jwtAuthentication) Prepare(ctx context.Context, conn Connection) error 
 // Configure is called for every request made on a connection.
 func (a *jwtAuthentication) Configure(req Request) error {
 	req.SetHeader("Authorization", "bearer "+a.token)
+	return nil
+}
+
+// newAuthenticatedConnection creates a Connection that applies the given connection on the given underlying connection.
+func newAuthenticatedConnection(conn Connection, auth Authentication) (Connection, error) {
+	if conn == nil {
+		return nil, WithStack(InvalidArgumentError{Message: "conn is nil"})
+	}
+	if auth == nil {
+		return nil, WithStack(InvalidArgumentError{Message: "auth is nil"})
+	}
+	return &authenticatedConnection{
+		conn: conn,
+		auth: auth,
+	}, nil
+}
+
+// authenticatedConnection implements authentication behavior for connections.
+type authenticatedConnection struct {
+	conn         Connection // Un-authenticated connection
+	auth         Authentication
+	prepareMutex sync.Mutex
+	prepared     int32
+}
+
+// NewRequest creates a new request with given method and path.
+func (c *authenticatedConnection) NewRequest(method, path string) (Request, error) {
+	r, err := c.conn.NewRequest(method, path)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	return r, nil
+}
+
+// Do performs a given request, returning its response.
+func (c *authenticatedConnection) Do(ctx context.Context, req Request) (Response, error) {
+	if atomic.LoadInt32(&c.prepared) == 0 {
+		// Probably we're not yet prepared
+		if err := c.prepare(ctx); err != nil {
+			// Authentication failed
+			return nil, WithStack(err)
+		}
+	}
+	// Configure the request for authentication.
+	if err := c.auth.Configure(req); err != nil {
+		// Failed to configure request for authentication
+		return nil, WithStack(err)
+	}
+	// Do the authenticated request
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	return resp, nil
+}
+
+// prepare calls Authentication.Prepare if needed.
+func (c *authenticatedConnection) prepare(ctx context.Context) error {
+	c.prepareMutex.Lock()
+	defer c.prepareMutex.Unlock()
+	if c.prepared == 0 {
+		// We need to prepare first
+		if err := c.auth.Prepare(ctx, c.conn); err != nil {
+			// Authentication failed
+			return WithStack(err)
+		}
+		// We're now prepared
+		atomic.StoreInt32(&c.prepared, 1)
+	} else {
+		// We're already prepared, do nothing
+	}
 	return nil
 }

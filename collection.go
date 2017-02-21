@@ -70,3 +70,56 @@ type Collection interface {
 	// If no document exists with given key, a NotFoundError is returned.
 	RemoveDocument(ctx context.Context, key string) (DocumentMeta, error)
 }
+
+type collection struct {
+	name string
+}
+
+// Name returns the name of the collection.
+func (c *collection) Name() string {
+	return c.name
+}
+
+// Remove removes the entire collection.
+// If the collection does not exist, a NotFoundError is returned.
+func (c *collection) Remove() error {}
+
+// ReadDocument reads a single document with given key from the collection.
+// The document data is stored into result, the document meta data is returned.
+// If no document exists with given key, a NotFoundError is returned.
+func (c *collection) ReadDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, error) {
+}
+
+// CreateDocument creates a single document in the collection.
+// The document data is loaded from the given document, the document meta data is returned.
+// If the document data already contains a `_key` field, this will be used as key of the new document,
+// otherwise a unique key is created.
+// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
+// To return the NEW document, prepare a context with `WithReturnNew`.
+// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
+func (c *collection) CreateDocument(ctx context.Context, document interface{}) (DocumentMeta, error) {}
+
+// UpdateDocument updates a single document with given key in the collection.
+// The document meta data is returned.
+// To return the NEW document, prepare a context with `WithReturnNew`.
+// To return the OLD document, prepare a context with `WithReturnOld`.
+// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
+// If no document exists with given key, a NotFoundError is returned.
+func (c *collection) UpdateDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error) {
+}
+
+// ReplaceDocument replaces a single document with given key in the collection with the document given in the document argument.
+// The document meta data is returned.
+// To return the NEW document, prepare a context with `WithReturnNew`.
+// To return the OLD document, prepare a context with `WithReturnOld`.
+// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
+// If no document exists with given key, a NotFoundError is returned.
+func (c *collection) ReplaceDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error) {
+}
+
+// RemoveDocument removes a single document with given key from the collection.
+// The document meta data is returned.
+// To return the OLD document, prepare a context with `WithReturnOld`.
+// To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
+// If no document exists with given key, a NotFoundError is returned.
+func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMeta, error) {}

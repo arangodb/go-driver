@@ -1,0 +1,130 @@
+//
+// DISCLAIMER
+//
+// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
+// Author Ewout Prangsma
+//
+
+package http
+
+import (
+	"context"
+	"crypto/tls"
+	"fmt"
+	"net/http"
+	"net/url"
+
+	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/cluster"
+)
+
+// ConnectionConfig provides all configuration options for a HTTP connection.
+type ConnectionConfig struct {
+	// Endpoints holds 1 or more URL's used to connect to the database.
+	// In case of a connection to an ArangoDB cluster, you must provide the URL's of all coordinators.
+	Endpoints []string
+	// TLSConfig holds settings used to configure a TLS (HTTPS) connection.
+	// This is only used for endpoints using the HTTPS scheme.
+	TLSConfig *tls.Config
+	// Cluster configuration settings
+	cluster.ConnectionConfig
+}
+
+// NewConnection creates a new HTTP connection based on the given configuration settings.
+func NewConnection(config ConnectionConfig) (driver.Connection, error) {
+	switch len(config.Endpoints) {
+	case 0:
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "You must provide at least 1 endpoint"})
+	case 1:
+		// Single server
+		c, err := newHTTPConnection(config.Endpoints[0], config)
+		if err != nil {
+			return nil, driver.WithStack(err)
+		}
+		return c, nil
+	}
+	// Cluster connection
+	servers := make([]driver.Connection, len(config.Endpoints))
+	for i, ep := range config.Endpoints {
+		c, err := newHTTPConnection(ep, config)
+		if err != nil {
+			return nil, driver.WithStack(err)
+		}
+		servers[i] = c
+	}
+	c, err := cluster.NewConnection(config.ConnectionConfig, servers...)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	return c, nil
+}
+
+// newHTTPConnection creates a new HTTP connection for a single endpoint and the remainder of the given configuration settings.
+func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connection, error) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	c := &httpConnection{
+		endpoint: *u,
+		client:   &http.Client{},
+	}
+	return c, nil
+}
+
+// httpConnection implements an HTTP + JSON connection to an arangodb server.
+type httpConnection struct {
+	endpoint url.URL
+	client   *http.Client
+}
+
+// NewRequest creates a new request with given method and path.
+func (c *httpConnection) NewRequest(method, path string) (driver.Request, error) {
+	switch method {
+	case "GET", "POST", "DELETE", "HEAD", "PATCH", "PUT", "OPTIONS":
+	// Ok
+	default:
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
+	}
+	r := &httpRequest{
+		method: method,
+		path:   path,
+	}
+	return r, nil
+}
+
+// Do performs a given request, returning its response.
+func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
+	httpReq, ok := req.(*httpRequest)
+	if !ok {
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest"})
+	}
+	r, err := httpReq.createHTTPRequest(c.endpoint)
+	if ctx != nil {
+		r = r.WithContext(ctx)
+	}
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	resp, err := c.client.Do(r)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+
+	return &httpResponse{resp}, nil
+}

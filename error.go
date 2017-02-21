@@ -37,7 +37,7 @@ func (ae ArangoError) Error() string {
 
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
 func IsArangoErrorWithCode(err error, code int) bool {
-	ae, ok := err.(ArangoError)
+	ae, ok := Cause(err).(ArangoError)
 	return ok && ae.Code == code
 }
 
@@ -60,3 +60,29 @@ func IsNotFound(err error) bool {
 func IsConflict(err error) bool {
 	return IsArangoErrorWithCode(err, 409)
 }
+
+// InvalidArgumentError is returned when a go function argument is invalid.
+type InvalidArgumentError struct {
+	Message string
+}
+
+// Error implements the error interface for InvalidArgumentError.
+func (e InvalidArgumentError) Error() string {
+	return e.Message
+}
+
+// IsInvalidArgument returns true if the given error in an InvalidArgumentError.
+func IsInvalidArgument(err error) bool {
+	_, ok := Cause(err).(InvalidArgumentError)
+	return ok
+}
+
+var (
+	// WithStack is called on every return of an error to add stacktrace information to the error.
+	// When setting this function, also set the Cause function.
+	// The interface of this function is compatible with functions in github.com/pkg/errors.
+	WithStack = func(err error) error { return err }
+	// Cause is used to get the root cause of the given error.
+	// The interface of this function is compatible with functions in github.com/pkg/errors.
+	Cause = func(err error) error { return err }
+)

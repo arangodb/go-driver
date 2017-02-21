@@ -39,11 +39,13 @@ type Connection interface {
 // Request represents the input to a request on the server.
 type Request interface {
 	// SetQuery sets a single query argument of the request.
+	// Any existing query argument with the same key is overwritten.
 	SetQuery(key, value string) Request
 	// SetBody sets the content of the request.
 	// The protocol of the connection determines what kinds of marshalling is taking place.
-	SetBody(body interface{}) Request
+	SetBody(body interface{}) (Request, error)
 	// SetHeader sets a single header arguments of the request.
+	// Any existing header argument with the same key is overwritten.
 	SetHeader(key, value string) Request
 }
 

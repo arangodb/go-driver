@@ -119,3 +119,38 @@ const (
 	KeyGeneratorTraditional   = KeyGeneratorType("traditional")
 	KeyGeneratorAutoIncrement = KeyGeneratorType("autoincrement")
 )
+
+// newDatabase creates a new Database implementation.
+func newDatabase(name string, conn Connection) (Database, error) {
+	if name == "" {
+		return nil, WithStack(InvalidArgumentError{Message: "name is empty"})
+	}
+	if conn == nil {
+		return nil, WithStack(InvalidArgumentError{Message: "conn is nil"})
+	}
+	return &database{
+		name: name,
+		conn: conn,
+	}, nil
+}
+
+// database implements the Database interface.
+type database struct {
+	name string
+	conn Connection
+}
+
+// Collection opens a connection to an existing collection within the database.
+// If no collection with given name exists, an NotFoundError is returned.
+func (d *database) Collection(ctx context.Context, name string) (Collection, error) {}
+
+// CollectionExists returns true if a collection with given name exists within the database.
+func (d *database) CollectionExists(ctx context.Context, name string) (bool, error) {}
+
+// Collections returns a list of all collections in the database.
+func (d *database) Collections(ctx context.Context) ([]Collection, error) {}
+
+// CreateCollection creates a new collection with given name and options, and opens a connection to it.
+// If a collection with given name already exists within the database, a DuplicateError is returned.
+func (d *database) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
+}
