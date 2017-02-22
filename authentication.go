@@ -113,7 +113,7 @@ func (a *jwtAuthentication) Prepare(ctx context.Context, conn Connection) error 
 
 	// Parse response
 	var data jwtOpenResponse
-	if err := resp.ParseBody(&data); err != nil {
+	if err := resp.ParseBody("", &data); err != nil {
 		return WithStack(err)
 	}
 

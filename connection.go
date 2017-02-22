@@ -22,10 +22,7 @@
 
 package driver
 
-import (
-	"context"
-	"io"
-)
+import "context"
 
 // Connection is a connenction to a database server using a specific protocol.
 type Connection interface {
@@ -57,9 +54,7 @@ type Response interface {
 	// If so, nil is returned.
 	// If not, an attempt is made to parse an error response in the body and an error is returned.
 	CheckStatus(validStatusCodes ...int) error
-	// Body returns a reader for accessing the content of the response.
-	// Clients have to close this body.
-	Body() io.ReadCloser
 	// ParseBody performs protocol specific unmarshalling of the response data into the given result.
-	ParseBody(result interface{}) error
+	// If the given field is non-empty, the contents of that field will be parsed into the given result.
+	ParseBody(field string, result interface{}) error
 }

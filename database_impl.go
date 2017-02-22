@@ -110,7 +110,7 @@ func (d *database) Collections(ctx context.Context) ([]Collection, error) {
 		return nil, WithStack(err)
 	}
 	var data getCollectionResponse
-	if err := resp.ParseBody(&data); err != nil {
+	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
 	result := make([]Collection, 0, len(data.Result))

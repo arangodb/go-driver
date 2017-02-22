@@ -50,6 +50,27 @@ type client struct {
 	conn Connection
 }
 
+// Version returns version information from the connected database server.
+func (c *client) Version(ctx context.Context) (VersionInfo, error) {
+	req, err := c.conn.NewRequest("GET", "_api/version")
+	if err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+	var data VersionInfo
+	if err := resp.ParseBody("", &data); err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+	return data, nil
+}
+
 // Database opens a connection to an existing database.
 // If no database with given name exists, an NotFoundError is returned.
 func (c *client) Database(ctx context.Context, name string) (Database, error) {
@@ -126,7 +147,7 @@ func (c *client) listDatabases(ctx context.Context, path string) ([]Database, er
 		return nil, WithStack(err)
 	}
 	var data getDatabaseResponse
-	if err := resp.ParseBody(&data); err != nil {
+	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
 	result := make([]Database, 0, len(data.Result))

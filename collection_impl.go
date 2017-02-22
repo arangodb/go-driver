@@ -134,6 +134,32 @@ func (c *collection) ReplaceDocument(ctx context.Context, key string, update map
 // To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMeta, error) {
-	// TODO implement this
-	return DocumentMeta{}, nil
+	req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath("document"), key))
+	if err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(cs.okStatus(200, 202)); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if cs.Silent {
+		// Empty response, we're done
+		return DocumentMeta{}, nil
+	}
+	// Parse metadata
+	var meta DocumentMeta
+	if err := resp.ParseBody("", &meta); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	// Parse returnOld (if needed)
+	if cs.ReturnOld != nil {
+		if err := resp.ParseBody("old", cs.ReturnOld); err != nil {
+			return meta, WithStack(err)
+		}
+	}
+	return meta, nil
 }

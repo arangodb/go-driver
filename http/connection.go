@@ -126,5 +126,5 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		return nil, driver.WithStack(err)
 	}
 
-	return &httpResponse{resp}, nil
+	return &httpResponse{resp: resp}, nil
 }

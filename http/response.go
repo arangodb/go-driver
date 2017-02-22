@@ -25,8 +25,9 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"reflect"
+	"strings"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -34,6 +35,7 @@ import (
 // httpResponse implements driver.Response for standard golang http responses.
 type httpResponse struct {
 	resp *http.Response
+	body map[string]*json.RawMessage
 }
 
 // StatusCode returns an HTTP compatible status code of the response.
@@ -53,7 +55,7 @@ func (r *httpResponse) CheckStatus(validStatusCodes ...int) error {
 	}
 	// Invalid status code, try to parse arango error response.
 	var aerr driver.ArangoError
-	if err := r.ParseBody(&aerr); err == nil {
+	if err := r.ParseBody("", &aerr); err == nil {
 		// Found correct arango error.
 		return aerr
 	}
@@ -66,18 +68,68 @@ func (r *httpResponse) CheckStatus(validStatusCodes ...int) error {
 	}
 }
 
-// Body returns a reader for accessing the content of the response.
-// Clients have to close this body.
-func (r *httpResponse) Body() io.ReadCloser {
-	return r.resp.Body
+// ParseBody performs protocol specific unmarshalling of the response data into the given result.
+// If the given field is non-empty, the contents of that field will be parsed into the given result.
+func (r *httpResponse) ParseBody(field string, result interface{}) error {
+	if r.body == nil {
+		body := r.resp.Body
+		bodyMap := make(map[string]*json.RawMessage)
+		defer body.Close()
+		if err := json.NewDecoder(body).Decode(&bodyMap); err != nil {
+			return driver.WithStack(err)
+		}
+		r.body = bodyMap
+	}
+	if field != "" {
+		// Unmarshal only a specific field
+		raw, ok := r.body[field]
+		if !ok || raw == nil {
+			// Field not found, silently ignored
+			return nil
+		}
+		// Unmarshal field
+		if err := json.Unmarshal(*raw, result); err != nil {
+			return driver.WithStack(err)
+		}
+		return nil
+	}
+	// Unmarshal entire body
+	rv := reflect.ValueOf(result)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(result)}
+	}
+	objValue := rv.Elem()
+	if err := decodeFields(objValue, r.body); err != nil {
+		return driver.WithStack(err)
+	}
+	return nil
 }
 
-// ParseBody performs protocol specific unmarshalling of the response data into the given result.
-func (r *httpResponse) ParseBody(result interface{}) error {
-	body := r.resp.Body
-	defer body.Close()
-	if err := json.NewDecoder(body).Decode(result); err != nil {
-		return driver.WithStack(err)
+func decodeFields(objValue reflect.Value, body map[string]*json.RawMessage) error {
+	objValueType := objValue.Type()
+	for i := 0; i != objValue.NumField(); i++ {
+		f := objValueType.Field(i)
+		if f.Anonymous {
+			// Recurse into fields of anonymous field
+			if err := decodeFields(objValue.Field(i), body); err != nil {
+				return driver.WithStack(err)
+			}
+		} else {
+			// Decode individual field
+			jsonName := strings.Split(f.Tag.Get("json"), ",")[0]
+			if jsonName == "" {
+				jsonName = f.Name
+			} else if jsonName == "-" {
+				continue
+			}
+			raw, ok := body[jsonName]
+			if ok && raw != nil {
+				field := objValue.Field(i)
+				if err := json.Unmarshal(*raw, field.Addr().Interface()); err != nil {
+					return driver.WithStack(err)
+				}
+			}
+		}
 	}
 	return nil
 }

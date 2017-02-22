@@ -26,6 +26,10 @@ import "context"
 
 // Client provides access to a single arangodb database server, or an entire cluster of arangodb servers.
 type Client interface {
+	// Version returns version information from the connected database server.
+	// Use WithDetails to configure a context that will include additional details in the return VersionInfo.
+	Version(ctx context.Context) (VersionInfo, error)
+
 	// Database opens a connection to an existing database.
 	// If no database with given name exists, an NotFoundError is returned.
 	Database(ctx context.Context, name string) (Database, error)
@@ -51,6 +55,19 @@ type ClientConfig struct {
 	Connection Connection
 	// Authentication implements authentication on the server.
 	Authentication Authentication
+}
+
+// VersionInfo describes the version of a database server.
+type VersionInfo struct {
+	// This will always contain "arango"
+	Server string `json:"server,omitempty"`
+	//  The server version string. The string has the format "major.minor.sub".
+	// Major and minor will be numeric, and sub may contain a number or a textual version.
+	Version string `json:"version,omitempty"`
+	// Type of license of the server
+	License string `json:"license,omitempty"`
+	// Optional additional details. This is returned only if the context is configured using WithDetails.
+	Details map[string]interface{} `json:"details,omitempty"`
 }
 
 // CreateDatabaseOptions contains options that customize the creating of a database.
