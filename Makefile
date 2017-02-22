@@ -11,10 +11,17 @@ REPONAME := $(PROJECT)
 REPODIR := $(ORGDIR)/$(REPONAME)
 REPOPATH := $(ORGPATH)/$(REPONAME)
 
+SOURCES := $(shell find . -name '*.go')
+
+.PHONY: all build clean run-tests
+
 all: build
 
-build: $(GOBUILDDIR)
-    GOPATH=$(GOBUILDDIR) go build github.com/arangodb/go-driver
+build: $(GOBUILDDIR) $(SOURCES)
+	GOPATH=$(GOBUILDDIR) go build -v github.com/arangodb/go-driver github.com/arangodb/go-driver/http
+
+clean:
+	rm -Rf $(GOBUILDDIR)
 
 $(GOBUILDDIR):
 	@mkdir -p $(ORGDIR)
