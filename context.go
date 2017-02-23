@@ -28,12 +28,14 @@ import (
 )
 
 const (
-	keyRevision    = "arangodb-revision"
-	keyReturnNew   = "arangodb-returnNew"
-	keyReturnOld   = "arangodb-returnOld"
-	keySilent      = "arangodb-silent"
-	keyWaitForSync = "arangodb-waitForSync"
-	keyDetails     = "arangodb-details"
+	keyRevision     = "arangodb-revision"
+	keyReturnNew    = "arangodb-returnNew"
+	keyReturnOld    = "arangodb-returnOld"
+	keySilent       = "arangodb-silent"
+	keyWaitForSync  = "arangodb-waitForSync"
+	keyDetails      = "arangodb-details"
+	keyKeepNull     = "arangodb-keepNull"
+	keyMergeObjects = "arangodb-mergeObjects"
 )
 
 // WithRevision is used to configure a context to make document
@@ -62,6 +64,19 @@ func WithDetails(parent context.Context, value ...bool) context.Context {
 		v = value[0]
 	}
 	return context.WithValue(parent, keyDetails, v)
+}
+
+// WithKeepNull is used to configure a context to make update functions keep null fields (value==true)
+// or remove fields with null values (value==false).
+func WithKeepNull(parent context.Context, value bool) context.Context {
+	return context.WithValue(parent, keyKeepNull, value)
+}
+
+// WithMergeObjects is used to configure a context to make update functions merge objects present in both
+// the existing document and the patch document (value==true) or overwrite objects in the existing document
+// with objects found in the patch document (value==false)
+func WithMergeObjects(parent context.Context, value bool) context.Context {
+	return context.WithValue(parent, keyMergeObjects, value)
 }
 
 // WithSilent is used to configure a context to make functions return an empty result (silent==true),
@@ -106,6 +121,18 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 	if v := ctx.Value(keyDetails); v != nil {
 		if details, ok := v.(bool); ok {
 			req.SetQuery("details", strconv.FormatBool(details))
+		}
+	}
+	// KeepNull
+	if v := ctx.Value(keyKeepNull); v != nil {
+		if keepNull, ok := v.(bool); ok {
+			req.SetQuery("keepNull", strconv.FormatBool(keepNull))
+		}
+	}
+	// MergeObjects
+	if v := ctx.Value(keyMergeObjects); v != nil {
+		if mergeObjects, ok := v.(bool); ok {
+			req.SetQuery("mergeObjects", strconv.FormatBool(mergeObjects))
 		}
 	}
 	// Silent

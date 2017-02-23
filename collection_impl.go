@@ -90,8 +90,16 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	if err := resp.CheckStatus(200); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	//TODO split response body into meta & document data
-	return DocumentMeta{}, nil
+	// Parse metadata
+	var meta DocumentMeta
+	if err := resp.ParseBody("", &meta); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	// Parse result
+	if err := resp.ParseBody("", result); err != nil {
+		return meta, WithStack(err)
+	}
+	return meta, nil
 }
 
 // CreateDocument creates a single document in the collection.
@@ -102,8 +110,37 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 // To return the NEW document, prepare a context with `WithReturnNew`.
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 func (c *collection) CreateDocument(ctx context.Context, document interface{}) (DocumentMeta, error) {
-	// TODO implement this
-	return DocumentMeta{}, nil
+	req, err := c.conn.NewRequest("POST", c.relPath("document"))
+	if err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if _, err := req.SetBody(document); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if cs.Silent {
+		// Empty response, we're done
+		return DocumentMeta{}, nil
+	}
+	// Parse metadata
+	var meta DocumentMeta
+	if err := resp.ParseBody("", &meta); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	// Parse returnNew (if needed)
+	if cs.ReturnNew != nil {
+		if err := resp.ParseBody("new", cs.ReturnNew); err != nil {
+			return meta, WithStack(err)
+		}
+	}
+	return meta, nil
 }
 
 // UpdateDocument updates a single document with given key in the collection.
@@ -113,8 +150,43 @@ func (c *collection) CreateDocument(ctx context.Context, document interface{}) (
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) UpdateDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error) {
-	// TODO implement this
-	return DocumentMeta{}, nil
+	req, err := c.conn.NewRequest("PATCH", path.Join(c.relPath("document"), key))
+	if err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if _, err := req.SetBody(update); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if cs.Silent {
+		// Empty response, we're done
+		return DocumentMeta{}, nil
+	}
+	// Parse metadata
+	var meta DocumentMeta
+	if err := resp.ParseBody("", &meta); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	// Parse returnOld (if needed)
+	if cs.ReturnOld != nil {
+		if err := resp.ParseBody("old", cs.ReturnOld); err != nil {
+			return meta, WithStack(err)
+		}
+	}
+	// Parse returnNew (if needed)
+	if cs.ReturnNew != nil {
+		if err := resp.ParseBody("new", cs.ReturnNew); err != nil {
+			return meta, WithStack(err)
+		}
+	}
+	return meta, nil
 }
 
 // ReplaceDocument replaces a single document with given key in the collection with the document given in the document argument.
