@@ -79,6 +79,9 @@ func (c *collection) Remove(ctx context.Context) error {
 // The document data is stored into result, the document meta data is returned.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) ReadDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
 	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("document"), key))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -96,8 +99,10 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 		return DocumentMeta{}, WithStack(err)
 	}
 	// Parse result
-	if err := resp.ParseBody("", result); err != nil {
-		return meta, WithStack(err)
+	if result != nil {
+		if err := resp.ParseBody("", result); err != nil {
+			return meta, WithStack(err)
+		}
 	}
 	return meta, nil
 }
@@ -110,6 +115,9 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 // To return the NEW document, prepare a context with `WithReturnNew`.
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 func (c *collection) CreateDocument(ctx context.Context, document interface{}) (DocumentMeta, error) {
+	if document == nil {
+		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "document nil"})
+	}
 	req, err := c.conn.NewRequest("POST", c.relPath("document"))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -150,6 +158,12 @@ func (c *collection) CreateDocument(ctx context.Context, document interface{}) (
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) UpdateDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if update == nil {
+		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "update nil"})
+	}
 	req, err := c.conn.NewRequest("PATCH", path.Join(c.relPath("document"), key))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -196,6 +210,12 @@ func (c *collection) UpdateDocument(ctx context.Context, key string, update map[
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) ReplaceDocument(ctx context.Context, key string, document interface{}) (DocumentMeta, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
+	if document == nil {
+		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "document nil"})
+	}
 	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("document"), key))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -241,6 +261,9 @@ func (c *collection) ReplaceDocument(ctx context.Context, key string, document i
 // To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMeta, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, WithStack(err)
+	}
 	req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath("document"), key))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)

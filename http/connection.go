@@ -33,6 +33,10 @@ import (
 	"github.com/arangodb/go-driver/cluster"
 )
 
+const (
+	keyRawResponse = "arangodb-rawResponse"
+)
+
 // ConnectionConfig provides all configuration options for a HTTP connection.
 type ConnectionConfig struct {
 	// Endpoints holds 1 or more URL's used to connect to the database.
@@ -125,6 +129,14 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
+	var rawResponse *[]byte
+	if ctx != nil {
+		if v := ctx.Value(keyRawResponse); v != nil {
+			if buf, ok := v.(*[]byte); ok {
+				rawResponse = buf
+			}
+		}
+	}
 
-	return &httpResponse{resp: resp}, nil
+	return &httpResponse{resp: resp, rawResponse: rawResponse}, nil
 }

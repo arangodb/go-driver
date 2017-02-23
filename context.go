@@ -36,6 +36,7 @@ const (
 	keyDetails      = "arangodb-details"
 	keyKeepNull     = "arangodb-keepNull"
 	keyMergeObjects = "arangodb-mergeObjects"
+	keyRawResponse  = "arangodb-rawResponse"
 )
 
 // WithRevision is used to configure a context to make document
@@ -100,6 +101,12 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 		v = value[0]
 	}
 	return context.WithValue(parent, keyWaitForSync, v)
+}
+
+// WithRawResponse is used to configure a context that will make all functions store the raw response into a
+// buffer.
+func WithRawResponse(parent context.Context, value *[]byte) context.Context {
+	return context.WithValue(parent, keyRawResponse, value)
 }
 
 type contextSettings struct {

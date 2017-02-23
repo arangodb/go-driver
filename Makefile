@@ -34,15 +34,15 @@ run-tests: build run-tests-single-no-auth
 run-tests-single-no-auth:
 	@echo "Single server, no authentication"
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
-	@docker run -d --name $(DBCONTAINER) -p 8629:8529 \
+	@docker run -d --name $(DBCONTAINER) \
 		-e ARANGO_NO_AUTH=1 \
-		arangodb:3.1
+		arangodb:3.1.11
 	@docker run \
 		--rm \
-		--link $(DBCONTAINER):db \
+		--net=container:$(DBCONTAINER) \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
-		-e TEST_ENDPOINTS=http://db:8529 \
+		-e TEST_ENDPOINTS=http://localhost:8529 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -v $(REPOPATH)/test

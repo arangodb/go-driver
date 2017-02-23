@@ -25,6 +25,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -34,8 +35,9 @@ import (
 
 // httpResponse implements driver.Response for standard golang http responses.
 type httpResponse struct {
-	resp *http.Response
-	body map[string]*json.RawMessage
+	resp        *http.Response
+	rawResponse *[]byte
+	body        map[string]*json.RawMessage
 }
 
 // StatusCode returns an HTTP compatible status code of the response.
@@ -73,9 +75,16 @@ func (r *httpResponse) CheckStatus(validStatusCodes ...int) error {
 func (r *httpResponse) ParseBody(field string, result interface{}) error {
 	if r.body == nil {
 		body := r.resp.Body
-		bodyMap := make(map[string]*json.RawMessage)
 		defer body.Close()
-		if err := json.NewDecoder(body).Decode(&bodyMap); err != nil {
+		content, err := ioutil.ReadAll(body)
+		if err != nil {
+			return driver.WithStack(err)
+		}
+		if r.rawResponse != nil {
+			*r.rawResponse = content
+		}
+		bodyMap := make(map[string]*json.RawMessage)
+		if err := json.Unmarshal(content, &bodyMap); err != nil {
 			return driver.WithStack(err)
 		}
 		r.body = bodyMap
@@ -99,19 +108,29 @@ func (r *httpResponse) ParseBody(field string, result interface{}) error {
 		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(result)}
 	}
 	objValue := rv.Elem()
-	if err := decodeFields(objValue, r.body); err != nil {
-		return driver.WithStack(err)
+	switch objValue.Kind() {
+	case reflect.Struct:
+		if err := decodeObjectFields(objValue, r.body); err != nil {
+			return driver.WithStack(err)
+		}
+	case reflect.Map:
+		if err := decodeMapFields(objValue, r.body); err != nil {
+			return driver.WithStack(err)
+		}
+	default:
+		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(result)}
 	}
 	return nil
 }
 
-func decodeFields(objValue reflect.Value, body map[string]*json.RawMessage) error {
+// decodeObjectFields decodes fields from the given body into a objValue of kind struct.
+func decodeObjectFields(objValue reflect.Value, body map[string]*json.RawMessage) error {
 	objValueType := objValue.Type()
 	for i := 0; i != objValue.NumField(); i++ {
 		f := objValueType.Field(i)
 		if f.Anonymous {
 			// Recurse into fields of anonymous field
-			if err := decodeFields(objValue.Field(i), body); err != nil {
+			if err := decodeObjectFields(objValue.Field(i), body); err != nil {
 				return driver.WithStack(err)
 			}
 		} else {
@@ -131,5 +150,26 @@ func decodeFields(objValue reflect.Value, body map[string]*json.RawMessage) erro
 			}
 		}
 	}
+	return nil
+}
+
+// decodeMapFields decodes fields from the given body into a mapValue of kind map.
+func decodeMapFields(val reflect.Value, body map[string]*json.RawMessage) error {
+	mapVal := val
+	if mapVal.IsNil() {
+		valType := val.Type()
+		mapType := reflect.MapOf(valType.Key(), valType.Elem())
+		mapVal = reflect.MakeMap(mapType)
+	}
+	for jsonName, raw := range body {
+		var value interface{}
+		if raw != nil {
+			if err := json.Unmarshal(*raw, &value); err != nil {
+				return driver.WithStack(err)
+			}
+		}
+		mapVal.SetMapIndex(reflect.ValueOf(jsonName), reflect.ValueOf(value))
+	}
+	val.Set(mapVal)
 	return nil
 }

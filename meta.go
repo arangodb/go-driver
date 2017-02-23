@@ -28,3 +28,11 @@ type DocumentMeta struct {
 	ID  string `json:"_id,omitempty"`
 	Rev string `json:"_rev,omitempty"`
 }
+
+// validateKey returns an error if the given key is empty otherwise invalid.
+func validateKey(key string) error {
+	if key == "" {
+		return WithStack(InvalidArgumentError{Message: "key is empty"})
+	}
+	return nil
+}
