@@ -181,6 +181,32 @@ func TestUpdateDocumentKeepNullFalse(t *testing.T) {
 	}
 }
 
+// TestUpdateDocumentSilent creates a document, updates it with Silent() and then checks the meta is indeed empty.
+func TestUpdateDocumentSilent(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	doc := UserDoc{
+		"Angela",
+		91,
+	}
+	meta, err := col.CreateDocument(ctx, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+	// Update document
+	update := map[string]interface{}{
+		"age": "61",
+	}
+	ctx = driver.WithSilent(ctx)
+	if meta, err := col.UpdateDocument(ctx, meta.Key, update); err != nil {
+		t.Fatalf("Failed to update document '%s': %s", meta.Key, describe(err))
+	} else if meta.Key != "" {
+		t.Errorf("Expected empty meta, got %v", meta)
+	}
+}
+
 // TestUpdateDocumentKeyEmpty updates a document it with an empty key.
 func TestUpdateDocumentKeyEmpty(t *testing.T) {
 	c := createClientFromEnv(t, true)

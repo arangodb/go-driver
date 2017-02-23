@@ -9,3 +9,7 @@ type Account struct {
 	ID   string   `json:"id"`
 	User *UserDoc `json:"user"`
 }
+
+type Book struct {
+	Title string
+}
