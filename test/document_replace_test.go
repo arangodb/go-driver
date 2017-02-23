@@ -119,7 +119,7 @@ func TestReplaceDocumentSilent(t *testing.T) {
 	}
 	ctx = driver.WithSilent(ctx)
 	if meta, err := col.ReplaceDocument(ctx, meta.Key, replacement); err != nil {
-		t.Fatalf("Failed to update document '%s': %s", meta.Key, describe(err))
+		t.Fatalf("Failed to replace document '%s': %s", meta.Key, describe(err))
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
