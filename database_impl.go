@@ -52,6 +52,11 @@ func (d *database) relPath() string {
 	return path.Join("_db", d.name)
 }
 
+// Name returns the name of the database.
+func (d *database) Name() string {
+	return d.name
+}
+
 // Collection opens a connection to an existing collection within the database.
 // If no collection with given name exists, an NotFoundError is returned.
 func (d *database) Collection(ctx context.Context, name string) (Collection, error) {

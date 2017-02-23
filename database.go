@@ -26,6 +26,9 @@ import "context"
 
 // Database provides access to all collections & graphs in a single database.
 type Database interface {
+	// Name returns the name of the database.
+	Name() string
+
 	// Collection opens a connection to an existing collection within the database.
 	// If no collection with given name exists, an NotFoundError is returned.
 	Collection(ctx context.Context, name string) (Collection, error)
