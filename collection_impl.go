@@ -29,7 +29,7 @@ import (
 	"reflect"
 )
 
-// newDatabase creates a new Database implementation.
+// newCollection creates a new Collection implementation.
 func newCollection(name string, db *database) (Collection, error) {
 	if name == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "name is empty"})
