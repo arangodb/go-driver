@@ -163,7 +163,7 @@ func (c *collection) CreateDocument(ctx context.Context, document interface{}) (
 // a slice with the same number of entries as the `documents` slice.
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If the create request itself fails or one of the arguments is invalid, an error is returned.
-func (c *collection) CreateDocuments(ctx context.Context, documents interface{}) ([]DocumentMeta, []error, error) {
+func (c *collection) CreateDocuments(ctx context.Context, documents interface{}) (DocumentMetaSlice, ErrorSlice, error) {
 	documentsVal := reflect.ValueOf(documents)
 	switch documentsVal.Kind() {
 	case reflect.Array, reflect.Slice:
@@ -192,28 +192,9 @@ func (c *collection) CreateDocuments(ctx context.Context, documents interface{})
 		return nil, nil, nil
 	}
 	// Parse response array
-	resps, err := resp.ParseArrayBody()
+	metas, errs, err := parseResponseArray(resp, documentCount, cs)
 	if err != nil {
 		return nil, nil, WithStack(err)
-	}
-	metas := make([]DocumentMeta, documentCount)
-	errs := make([]error, documentCount)
-	returnNewVal := reflect.ValueOf(cs.ReturnNew)
-	for i := 0; i < documentCount; i++ {
-		resp := resps[i]
-		var meta DocumentMeta
-		if err := resp.ParseBody("", &meta); err != nil {
-			errs[i] = err
-		} else {
-			metas[i] = meta
-			// Parse returnNew (if needed)
-			if cs.ReturnNew != nil {
-				returnNewEntryVal := returnNewVal.Index(i).Addr()
-				if err := resp.ParseBody("new", returnNewEntryVal.Interface()); err != nil {
-					errs[i] = err
-				}
-			}
-		}
 	}
 	return metas, errs, nil
 }
@@ -268,6 +249,60 @@ func (c *collection) UpdateDocument(ctx context.Context, key string, update inte
 		}
 	}
 	return meta, nil
+}
+
+// UpdateDocuments updates multiple document with given keys in the collection.
+// The updates are loaded from the given updates slice, the documents meta data are returned.
+// To return the NEW documents, prepare a context with `WithReturnNew` with a slice of documents.
+// To return the OLD documents, prepare a context with `WithReturnOld` with a slice of documents.
+// To wait until documents has been synced to disk, prepare a context with `WithWaitForSync`.
+// If no document exists with a given key, a NotFoundError is returned at its errors index.
+func (c *collection) UpdateDocuments(ctx context.Context, keys []string, updates interface{}) (DocumentMetaSlice, ErrorSlice, error) {
+	updatesVal := reflect.ValueOf(updates)
+	switch updatesVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("updates data must be of kind Array, got %s", updatesVal.Kind())})
+	}
+	updateCount := updatesVal.Len()
+	if len(keys) != updateCount {
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %s", updateCount, len(keys))})
+	}
+	for _, key := range keys {
+		if err := validateKey(key); err != nil {
+			return nil, nil, WithStack(err)
+		}
+	}
+	req, err := c.conn.NewRequest("PATCH", c.relPath("document"))
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	mergeArray, err := createMergeArray(keys, cs.Revisions)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if _, err := req.SetBodyArray(updates, mergeArray); err != nil {
+		return nil, nil, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if status := resp.StatusCode(); status != cs.okStatus(201, 202) {
+		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	}
+	if cs.Silent {
+		// Empty response, we're done
+		return nil, nil, nil
+	}
+	// Parse response array
+	metas, errs, err := parseResponseArray(resp, updateCount, cs)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	return metas, errs, nil
 }
 
 // ReplaceDocument replaces a single document with given key in the collection with the document given in the document argument.
@@ -359,4 +394,81 @@ func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMe
 		}
 	}
 	return meta, nil
+}
+
+// createMergeArray returns an array of metadata maps with `_key` and/or `_rev` elements.
+func createMergeArray(keys, revs []string) ([]map[string]interface{}, error) {
+	if keys == nil && revs == nil {
+		return nil, nil
+	}
+	if revs == nil {
+		mergeArray := make([]map[string]interface{}, len(keys))
+		for i, k := range keys {
+			mergeArray[i] = map[string]interface{}{
+				"_key": k,
+			}
+		}
+		return mergeArray, nil
+	}
+	if keys == nil {
+		mergeArray := make([]map[string]interface{}, len(revs))
+		for i, r := range revs {
+			mergeArray[i] = map[string]interface{}{
+				"_rev": r,
+			}
+		}
+		return mergeArray, nil
+	}
+	if len(keys) != len(revs) {
+		return nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("#keys must be equal to #revs, got %d, %d", len(keys), len(revs))})
+	}
+	mergeArray := make([]map[string]interface{}, len(keys))
+	for i, k := range keys {
+		mergeArray[i] = map[string]interface{}{
+			"_key": k,
+			"_rev": revs[i],
+		}
+	}
+	return mergeArray, nil
+
+}
+
+// parseResponseArray parses an array response in the given response
+func parseResponseArray(resp Response, count int, cs contextSettings) (DocumentMetaSlice, ErrorSlice, error) {
+	resps, err := resp.ParseArrayBody()
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	metas := make(DocumentMetaSlice, count)
+	errs := make(ErrorSlice, count)
+	returnOldVal := reflect.ValueOf(cs.ReturnOld)
+	returnNewVal := reflect.ValueOf(cs.ReturnNew)
+	for i := 0; i < count; i++ {
+		resp := resps[i]
+		var meta DocumentMeta
+		if err := resp.CheckStatus(200, 201, 202); err != nil {
+			errs[i] = err
+		} else {
+			if err := resp.ParseBody("", &meta); err != nil {
+				errs[i] = err
+			} else {
+				metas[i] = meta
+				// Parse returnOld (if needed)
+				if cs.ReturnOld != nil {
+					returnOldEntryVal := returnOldVal.Index(i).Addr()
+					if err := resp.ParseBody("old", returnOldEntryVal.Interface()); err != nil {
+						errs[i] = err
+					}
+				}
+				// Parse returnNew (if needed)
+				if cs.ReturnNew != nil {
+					returnNewEntryVal := returnNewVal.Index(i).Addr()
+					if err := resp.ParseBody("new", returnNewEntryVal.Interface()); err != nil {
+						errs[i] = err
+					}
+				}
+			}
+		}
+	}
+	return metas, errs, nil
 }

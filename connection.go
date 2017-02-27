@@ -41,6 +41,11 @@ type Request interface {
 	// SetBody sets the content of the request.
 	// The protocol of the connection determines what kinds of marshalling is taking place.
 	SetBody(body interface{}) (Request, error)
+	// SetBodyArray sets the content of the request as an array.
+	// If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
+	// The merge is NOT recursive.
+	// The protocol of the connection determines what kinds of marshalling is taking place.
+	SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (Request, error)
 	// SetHeader sets a single header arguments of the request.
 	// Any existing header argument with the same key is overwritten.
 	SetHeader(key, value string) Request

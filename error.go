@@ -101,3 +101,17 @@ var (
 	// The interface of this function is compatible with functions in github.com/pkg/errors.
 	Cause = func(err error) error { return err }
 )
+
+// ErrorSlice is a slice of errors
+type ErrorSlice []error
+
+// FirstNonNil returns the first error in the slice that is not nil.
+// If all errors in the slice are nil, nil is returned.
+func (l ErrorSlice) FirstNonNil() error {
+	for _, e := range l {
+		if e != nil {
+			return e
+		}
+	}
+	return nil
+}

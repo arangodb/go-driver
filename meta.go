@@ -36,3 +36,33 @@ func validateKey(key string) error {
 	}
 	return nil
 }
+
+// DocumentMetaSlice is a slice of DocumentMeta elements
+type DocumentMetaSlice []DocumentMeta
+
+// Keys returns the keys of all elements.
+func (l DocumentMetaSlice) Keys() []string {
+	keys := make([]string, len(l))
+	for i, m := range l {
+		keys[i] = m.Key
+	}
+	return keys
+}
+
+// Revs returns the revisions of all elements.
+func (l DocumentMetaSlice) Revs() []string {
+	revs := make([]string, len(l))
+	for i, m := range l {
+		revs[i] = m.Rev
+	}
+	return revs
+}
+
+// IDs returns the ID's of all elements.
+func (l DocumentMetaSlice) IDs() []string {
+	ids := make([]string, len(l))
+	for i, m := range l {
+		ids[i] = m.ID
+	}
+	return ids
+}

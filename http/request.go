@@ -25,9 +25,11 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 
 	driver "github.com/arangodb/go-driver"
@@ -61,6 +63,45 @@ func (r *httpRequest) SetBody(body interface{}) (driver.Request, error) {
 		r.body = data
 	}
 	return r, nil
+}
+
+// SetBodyArray sets the content of the request as an array.
+// If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (r *httpRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (driver.Request, error) {
+	bodyArrayVal := reflect.ValueOf(bodyArray)
+	switch bodyArrayVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	}
+	if mergeArray == nil {
+		// Simple case; just marshal bodyArray directly.
+		if data, err := json.Marshal(bodyArray); err != nil {
+			return r, driver.WithStack(err)
+		} else {
+			r.body = data
+		}
+		return r, nil
+	}
+	// Complex case, mergeArray is not nil
+	elementCount := bodyArrayVal.Len()
+	mergeObjects := make([]mergeObject, elementCount)
+	for i := 0; i < elementCount; i++ {
+		mergeObjects[i] = mergeObject{
+			Object: bodyArrayVal.Index(i).Interface(),
+			Merge:  mergeArray[i],
+		}
+	}
+	// Now marshal merged array
+	if data, err := json.Marshal(mergeObjects); err != nil {
+		return r, driver.WithStack(err)
+	} else {
+		r.body = data
+	}
+	return r, nil
+
 }
 
 // SetHeader sets a single header arguments of the request.

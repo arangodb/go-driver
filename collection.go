@@ -57,7 +57,7 @@ type Collection interface {
 	// a slice with the same number of entries as the `documents` slice.
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If the create request itself fails or one of the arguments is invalid, an error is returned.
-	CreateDocuments(ctx context.Context, documents interface{}) ([]DocumentMeta, []error, error)
+	CreateDocuments(ctx context.Context, documents interface{}) (DocumentMetaSlice, ErrorSlice, error)
 
 	// UpdateDocument updates a single document with given key in the collection.
 	// The document meta data is returned.
@@ -66,6 +66,14 @@ type Collection interface {
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If no document exists with given key, a NotFoundError is returned.
 	UpdateDocument(ctx context.Context, key string, update interface{}) (DocumentMeta, error)
+
+	// UpdateDocuments updates multiple document with given keys in the collection.
+	// The updates are loaded from the given updates slice, the documents meta data are returned.
+	// To return the NEW documents, prepare a context with `WithReturnNew` with a slice of documents.
+	// To return the OLD documents, prepare a context with `WithReturnOld` with a slice of documents.
+	// To wait until documents has been synced to disk, prepare a context with `WithWaitForSync`.
+	// If no document exists with a given key, a NotFoundError is returned at its errors index.
+	UpdateDocuments(ctx context.Context, keys []string, updates interface{}) (DocumentMetaSlice, ErrorSlice, error)
 
 	// ReplaceDocument replaces a single document with given key in the collection with the document given in the document argument.
 	// The document meta data is returned.
