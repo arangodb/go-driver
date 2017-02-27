@@ -23,6 +23,7 @@
 package test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -49,6 +50,52 @@ func TestCreateDocument(t *testing.T) {
 	}
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+}
+
+// TestCreateDocumentReturnNew creates a document and checks the document returned in in ReturnNew.
+func TestCreateDocumentReturnNew(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	doc := UserDoc{
+		"JanNew",
+		1,
+	}
+	var newDoc UserDoc
+	meta, err := col.CreateDocument(driver.WithReturnNew(ctx, &newDoc), doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+	// NewDoc must equal doc
+	if !reflect.DeepEqual(doc, newDoc) {
+		t.Errorf("Got wrong ReturnNew document. Expected %+v, got %+v", doc, newDoc)
+	}
+	// Document must exists now
+	var readDoc UserDoc
+	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+		t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+	}
+	if !reflect.DeepEqual(doc, readDoc) {
+		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+}
+
+// TestCreateDocumentSilent creates a document with WithSilent.
+func TestCreateDocumentSilent(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	doc := UserDoc{
+		"Sjjjj",
+		1,
+	}
+	if meta, err := col.CreateDocument(driver.WithSilent(ctx), doc); err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	} else if meta.Key != "" {
+		t.Errorf("Expected empty meta, got %v", meta)
 	}
 }
 

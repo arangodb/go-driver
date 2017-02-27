@@ -29,6 +29,7 @@ import (
 
 const (
 	keyRevision     = "arangodb-revision"
+	keyRevisions    = "arangodb-revisions"
 	keyReturnNew    = "arangodb-returnNew"
 	keyReturnOld    = "arangodb-returnOld"
 	keySilent       = "arangodb-silent"
@@ -43,6 +44,12 @@ const (
 // functions specify an explicit revision of the document using an `If-Match` condition.
 func WithRevision(parent context.Context, revision string) context.Context {
 	return context.WithValue(parent, keyRevision, revision)
+}
+
+// WithRevisions is used to configure a context to make multi-document
+// functions specify explicit revisions of the documents.
+func WithRevisions(parent context.Context, revisions []string) context.Context {
+	return context.WithValue(parent, keyRevisions, revisions)
 }
 
 // WithReturnNew is used to configure a context to make create, update & replace document
@@ -115,6 +122,7 @@ type contextSettings struct {
 	ReturnOld   interface{}
 	ReturnNew   interface{}
 	Revision    string
+	Revisions   []string
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -171,6 +179,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if rev, ok := v.(string); ok {
 			req.SetHeader("If-Match", rev)
 			result.Revision = rev
+		}
+	}
+	// Revisions
+	if v := ctx.Value(keyRevisions); v != nil {
+		if revs, ok := v.([]string); ok {
+			req.SetQuery("ignoreRevs", "false")
+			result.Revisions = revs
 		}
 	}
 	return result

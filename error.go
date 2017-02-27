@@ -35,10 +35,34 @@ func (ae ArangoError) Error() string {
 	return ae.ErrorMessage
 }
 
+// newArangoError creates a new ArangoError with given values.
+func newArangoError(code, errorNum int, errorMessage string) error {
+	return ArangoError{
+		HasError:     true,
+		Code:         code,
+		ErrorNum:     errorNum,
+		ErrorMessage: errorMessage,
+	}
+}
+
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
 func IsArangoErrorWithCode(err error, code int) bool {
 	ae, ok := Cause(err).(ArangoError)
 	return ok && ae.Code == code
+}
+
+// IsArangoErrorWithErrorNum returns true when the given error is an ArangoError and its ErrorNum field is equal to one of the given numbers.
+func IsArangoErrorWithErrorNum(err error, errorNum ...int) bool {
+	ae, ok := Cause(err).(ArangoError)
+	if !ok {
+		return false
+	}
+	for _, x := range errorNum {
+		if ae.ErrorNum == x {
+			return true
+		}
+	}
+	return false
 }
 
 // IsInvalidRequest returns true if the given error is an ArangoError with code 400, indicating an invalid request.
@@ -53,7 +77,7 @@ func IsUnauthorized(err error) bool {
 
 // IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
 func IsNotFound(err error) bool {
-	return IsArangoErrorWithCode(err, 404)
+	return IsArangoErrorWithCode(err, 404) || IsArangoErrorWithErrorNum(err, 1202, 1203)
 }
 
 // IsConflict returns true if the given error is an ArangoError with code 409, indicating a conflict.
@@ -63,7 +87,7 @@ func IsConflict(err error) bool {
 
 // IsPreconditionFailed returns true if the given error is an ArangoError with code 412, indicating a failed precondition.
 func IsPreconditionFailed(err error) bool {
-	return IsArangoErrorWithCode(err, 412)
+	return IsArangoErrorWithCode(err, 412) || IsArangoErrorWithErrorNum(err, 1200, 1210)
 }
 
 // InvalidArgumentError is returned when a go function argument is invalid.
@@ -91,3 +115,17 @@ var (
 	// The interface of this function is compatible with functions in github.com/pkg/errors.
 	Cause = func(err error) error { return err }
 )
+
+// ErrorSlice is a slice of errors
+type ErrorSlice []error
+
+// FirstNonNil returns the first error in the slice that is not nil.
+// If all errors in the slice are nil, nil is returned.
+func (l ErrorSlice) FirstNonNil() error {
+	for _, e := range l {
+		if e != nil {
+			return e
+		}
+	}
+	return nil
+}
