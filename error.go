@@ -51,6 +51,20 @@ func IsArangoErrorWithCode(err error, code int) bool {
 	return ok && ae.Code == code
 }
 
+// IsArangoErrorWithErrorNum returns true when the given error is an ArangoError and its ErrorNum field is equal to one of the given numbers.
+func IsArangoErrorWithErrorNum(err error, errorNum ...int) bool {
+	ae, ok := Cause(err).(ArangoError)
+	if !ok {
+		return false
+	}
+	for _, x := range errorNum {
+		if ae.ErrorNum == x {
+			return true
+		}
+	}
+	return false
+}
+
 // IsInvalidRequest returns true if the given error is an ArangoError with code 400, indicating an invalid request.
 func IsInvalidRequest(err error) bool {
 	return IsArangoErrorWithCode(err, 400)
@@ -63,7 +77,7 @@ func IsUnauthorized(err error) bool {
 
 // IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
 func IsNotFound(err error) bool {
-	return IsArangoErrorWithCode(err, 404)
+	return IsArangoErrorWithCode(err, 404) || IsArangoErrorWithErrorNum(err, 1202, 1203)
 }
 
 // IsConflict returns true if the given error is an ArangoError with code 409, indicating a conflict.
@@ -73,7 +87,7 @@ func IsConflict(err error) bool {
 
 // IsPreconditionFailed returns true if the given error is an ArangoError with code 412, indicating a failed precondition.
 func IsPreconditionFailed(err error) bool {
-	return IsArangoErrorWithCode(err, 412)
+	return IsArangoErrorWithCode(err, 412) || IsArangoErrorWithErrorNum(err, 1200, 1210)
 }
 
 // InvalidArgumentError is returned when a go function argument is invalid.
