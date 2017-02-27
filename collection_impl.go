@@ -224,7 +224,7 @@ func (c *collection) CreateDocuments(ctx context.Context, documents interface{})
 // To return the OLD document, prepare a context with `WithReturnOld`.
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
-func (c *collection) UpdateDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error) {
+func (c *collection) UpdateDocument(ctx context.Context, key string, update interface{}) (DocumentMeta, error) {
 	if err := validateKey(key); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}

@@ -65,7 +65,7 @@ type Collection interface {
 	// To return the OLD document, prepare a context with `WithReturnOld`.
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If no document exists with given key, a NotFoundError is returned.
-	UpdateDocument(ctx context.Context, key string, update map[string]interface{}) (DocumentMeta, error)
+	UpdateDocument(ctx context.Context, key string, update interface{}) (DocumentMeta, error)
 
 	// ReplaceDocument replaces a single document with given key in the collection with the document given in the document argument.
 	// The document meta data is returned.
