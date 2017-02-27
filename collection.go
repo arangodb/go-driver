@@ -73,6 +73,7 @@ type Collection interface {
 	// To return the OLD documents, prepare a context with `WithReturnOld` with a slice of documents.
 	// To wait until documents has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
+	// If keys is nil, each element in the updates slice must contain a `_key` field.
 	UpdateDocuments(ctx context.Context, keys []string, updates interface{}) (DocumentMetaSlice, ErrorSlice, error)
 
 	// ReplaceDocument replaces a single document with given key in the collection with the document given in the document argument.
@@ -82,6 +83,15 @@ type Collection interface {
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If no document exists with given key, a NotFoundError is returned.
 	ReplaceDocument(ctx context.Context, key string, document interface{}) (DocumentMeta, error)
+
+	// ReplaceDocuments replaces multiple documents with given keys in the collection with the documents given in the documents argument.
+	// The replacements are loaded from the given documents slice, the documents meta data are returned.
+	// To return the NEW documents, prepare a context with `WithReturnNew` with a slice of documents.
+	// To return the OLD documents, prepare a context with `WithReturnOld` with a slice of documents.
+	// To wait until documents has been synced to disk, prepare a context with `WithWaitForSync`.
+	// If no document exists with a given key, a NotFoundError is returned at its errors index.
+	// If keys is nil, each element in the documents slice must contain a `_key` field.
+	ReplaceDocuments(ctx context.Context, keys []string, documents interface{}) (DocumentMetaSlice, ErrorSlice, error)
 
 	// RemoveDocument removes a single document with given key from the collection.
 	// The document meta data is returned.

@@ -266,12 +266,14 @@ func (c *collection) UpdateDocuments(ctx context.Context, keys []string, updates
 		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("updates data must be of kind Array, got %s", updatesVal.Kind())})
 	}
 	updateCount := updatesVal.Len()
-	if len(keys) != updateCount {
-		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %s", updateCount, len(keys))})
-	}
-	for _, key := range keys {
-		if err := validateKey(key); err != nil {
-			return nil, nil, WithStack(err)
+	if keys != nil {
+		if len(keys) != updateCount {
+			return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %s", updateCount, len(keys))})
+		}
+		for _, key := range keys {
+			if err := validateKey(key); err != nil {
+				return nil, nil, WithStack(err)
+			}
 		}
 	}
 	req, err := c.conn.NewRequest("PATCH", c.relPath("document"))
@@ -355,6 +357,62 @@ func (c *collection) ReplaceDocument(ctx context.Context, key string, document i
 		}
 	}
 	return meta, nil
+}
+
+// ReplaceDocuments replaces multiple documents with given keys in the collection with the documents given in the documents argument.
+// The replacements are loaded from the given documents slice, the documents meta data are returned.
+// To return the NEW documents, prepare a context with `WithReturnNew` with a slice of documents.
+// To return the OLD documents, prepare a context with `WithReturnOld` with a slice of documents.
+// To wait until documents has been synced to disk, prepare a context with `WithWaitForSync`.
+// If no document exists with a given key, a NotFoundError is returned at its errors index.
+func (c *collection) ReplaceDocuments(ctx context.Context, keys []string, documents interface{}) (DocumentMetaSlice, ErrorSlice, error) {
+	documentsVal := reflect.ValueOf(documents)
+	switch documentsVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("documents data must be of kind Array, got %s", documentsVal.Kind())})
+	}
+	documentCount := documentsVal.Len()
+	if keys != nil {
+		if len(keys) != documentCount {
+			return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %s", documentCount, len(keys))})
+		}
+		for _, key := range keys {
+			if err := validateKey(key); err != nil {
+				return nil, nil, WithStack(err)
+			}
+		}
+	}
+	req, err := c.conn.NewRequest("PUT", c.relPath("document"))
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	mergeArray, err := createMergeArray(keys, cs.Revisions)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if _, err := req.SetBodyArray(documents, mergeArray); err != nil {
+		return nil, nil, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if status := resp.StatusCode(); status != cs.okStatus(201, 202) {
+		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	}
+	if cs.Silent {
+		// Empty response, we're done
+		return nil, nil, nil
+	}
+	// Parse response array
+	metas, errs, err := parseResponseArray(resp, documentCount, cs)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	return metas, errs, nil
 }
 
 // RemoveDocument removes a single document with given key from the collection.
