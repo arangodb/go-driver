@@ -22,6 +22,8 @@
 
 package driver
 
+import "context"
+
 type queryRequest struct {
 	// indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is turned off by default, and "count" is only returned when requested.
@@ -50,4 +52,9 @@ type queryRequest struct {
 		// Limits the maximum number of plans that are created by the AQL query optimizer.
 		MaxPlans int `json:"maxPlans,omitempty"`
 	} `json:"options,omitempty"`
+}
+
+// applyContextSettings fills fields in the queryRequest from the given context.
+func (q *queryRequest) applyContextSettings(ctx context.Context) {
+
 }

@@ -172,7 +172,7 @@ func (d *database) Query(ctx context.Context, query string, bindVars map[string]
 		Query:    query,
 		BindVars: bindVars,
 	}
-	// TODO fill other fields from context
+	input.applyContextSettings(ctx)
 	if _, err := req.SetBody(input); err != nil {
 		return nil, WithStack(err)
 	}
