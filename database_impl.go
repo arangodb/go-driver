@@ -161,3 +161,35 @@ func (d *database) CreateCollection(ctx context.Context, name string, options *C
 	}
 	return col, nil
 }
+
+// Query performs an AQL query, returning a cursor used to iterate over the returned documents.
+func (d *database) Query(ctx context.Context, query string, bindVars map[string]interface{}) (Cursor, error) {
+	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/cursor"))
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	input := queryRequest{
+		Query:    query,
+		BindVars: bindVars,
+	}
+	// TODO fill other fields from context
+	if _, err := req.SetBody(input); err != nil {
+		return nil, WithStack(err)
+	}
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	if err := resp.CheckStatus(201); err != nil {
+		return nil, WithStack(err)
+	}
+	var data cursorData
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, WithStack(err)
+	}
+	col, err := newCursor(data, d)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	return col, nil
+}

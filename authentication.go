@@ -183,6 +183,14 @@ func (c *authenticatedConnection) Do(ctx context.Context, req Request) (Response
 	return resp, nil
 }
 
+// Unmarshal unmarshals the given raw object into the given result interface.
+func (c *authenticatedConnection) Unmarshal(data RawObject, result interface{}) error {
+	if err := c.conn.Unmarshal(data, result); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // prepare calls Authentication.Prepare if needed.
 func (c *authenticatedConnection) prepare(ctx context.Context) error {
 	c.prepareMutex.Lock()

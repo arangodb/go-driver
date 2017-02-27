@@ -42,6 +42,9 @@ type Database interface {
 	// CreateCollection creates a new collection with given name and options, and opens a connection to it.
 	// If a collection with given name already exists within the database, a DuplicateError is returned.
 	CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error)
+
+	// Query performs an AQL query, returning a cursor used to iterate over the returned documents.
+	Query(ctx context.Context, query string, bindVars map[string]interface{}) (Cursor, error)
 }
 
 // CreateCollectionOptions contains options that customize the creating of a collection.

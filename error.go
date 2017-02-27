@@ -100,9 +100,23 @@ func (e InvalidArgumentError) Error() string {
 	return e.Message
 }
 
-// IsInvalidArgument returns true if the given error in an InvalidArgumentError.
+// IsInvalidArgument returns true if the given error is an InvalidArgumentError.
 func IsInvalidArgument(err error) bool {
 	_, ok := Cause(err).(InvalidArgumentError)
+	return ok
+}
+
+// NoMoreDocumentsError is returned by Cursor's, when an attempt is made to read documents when there are no more.
+type NoMoreDocumentsError struct{}
+
+// Error implements the error interface for NoMoreDocumentsError.
+func (e NoMoreDocumentsError) Error() string {
+	return "no more documents"
+}
+
+// IsNoMoreDocuments returns true if the given error is an NoMoreDocumentsError.
+func IsNoMoreDocuments(err error) bool {
+	_, ok := Cause(err).(NoMoreDocumentsError)
 	return ok
 }
 
