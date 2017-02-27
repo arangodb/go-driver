@@ -61,6 +61,11 @@ func IsConflict(err error) bool {
 	return IsArangoErrorWithCode(err, 409)
 }
 
+// IsPreconditionFailed returns true if the given error is an ArangoError with code 412, indicating a failed precondition.
+func IsPreconditionFailed(err error) bool {
+	return IsArangoErrorWithCode(err, 412)
+}
+
 // InvalidArgumentError is returned when a go function argument is invalid.
 type InvalidArgumentError struct {
 	Message string

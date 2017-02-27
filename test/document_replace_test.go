@@ -147,6 +147,50 @@ func TestReplaceDocumentSilent(t *testing.T) {
 	}
 }
 
+// TestReplaceDocumentRevision creates a document, replaces it with a specific (correct) revision.
+// Then it attempts a replacement with an incorrect revision which must fail.
+func TestReplaceDocumentRevision(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	doc := UserDoc{
+		"Revision",
+		33,
+	}
+	meta, err := col.CreateDocument(ctx, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+
+	// Replace document with correct revision
+	replacement := Book{
+		Title: "Jungle book",
+	}
+	initialRevCtx := driver.WithRevision(ctx, meta.Rev)
+	var replacedRevCtx context.Context
+	if meta2, err := col.ReplaceDocument(initialRevCtx, meta.Key, replacement); err != nil {
+		t.Fatalf("Failed to replace document '%s': %s", meta.Key, describe(err))
+	} else {
+		replacedRevCtx = driver.WithRevision(ctx, meta2.Rev)
+		if meta2.Rev == meta.Rev {
+			t.Errorf("Expected revision to change, got initial revision '%s', replaced revision '%s'", meta.Rev, meta2.Rev)
+		}
+	}
+
+	// Replace document with incorrect revision
+	replacement.Title = "Wrong deal"
+	if _, err := col.ReplaceDocument(initialRevCtx, meta.Key, replacement); !driver.IsPreconditionFailed(err) {
+		t.Errorf("Expected PreconditionFailedError, got %s", describe(err))
+	}
+
+	// Replace document once more with correct revision
+	replacement.Title = "Good deal"
+	if _, err := col.ReplaceDocument(replacedRevCtx, meta.Key, replacement); err != nil {
+		t.Errorf("Expected success, got %s", describe(err))
+	}
+}
+
 // TestReplaceDocumentKeyEmpty replaces a document it with an empty key.
 func TestReplaceDocumentKeyEmpty(t *testing.T) {
 	c := createClientFromEnv(t, true)

@@ -229,6 +229,50 @@ func TestUpdateDocumentSilent(t *testing.T) {
 	}
 }
 
+// TestUpdateDocumentRevision creates a document, updates it with a specific (correct) revision.
+// Then it attempts an update with an incorrect revision which must fail.
+func TestUpdateDocumentRevision(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	doc := UserDoc{
+		"Revision",
+		33,
+	}
+	meta, err := col.CreateDocument(ctx, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+
+	// Update document with correct revision
+	update := map[string]interface{}{
+		"age": 34,
+	}
+	initialRevCtx := driver.WithRevision(ctx, meta.Rev)
+	var updatedRevCtx context.Context
+	if meta2, err := col.UpdateDocument(initialRevCtx, meta.Key, update); err != nil {
+		t.Fatalf("Failed to update document '%s': %s", meta.Key, describe(err))
+	} else {
+		updatedRevCtx = driver.WithRevision(ctx, meta2.Rev)
+		if meta2.Rev == meta.Rev {
+			t.Errorf("Expected revision to change, got initial revision '%s', updated revision '%s'", meta.Rev, meta2.Rev)
+		}
+	}
+
+	// Update document with incorrect revision
+	update["age"] = 35
+	if _, err := col.UpdateDocument(initialRevCtx, meta.Key, update); !driver.IsPreconditionFailed(err) {
+		t.Errorf("Expected PreconditionFailedError, got %s", describe(err))
+	}
+
+	// Update document  once more with correct revision
+	update["age"] = 36
+	if _, err := col.UpdateDocument(updatedRevCtx, meta.Key, update); err != nil {
+		t.Errorf("Expected success, got %s", describe(err))
+	}
+}
+
 // TestUpdateDocumentKeyEmpty updates a document it with an empty key.
 func TestUpdateDocumentKeyEmpty(t *testing.T) {
 	c := createClientFromEnv(t, true)

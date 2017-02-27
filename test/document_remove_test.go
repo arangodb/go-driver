@@ -111,6 +111,49 @@ func TestRemoveDocumentSilent(t *testing.T) {
 	}
 }
 
+// TestRemoveDocumentRevision creates a document, removes it with an incorrect revision.
+func TestRemoveDocumentRevision(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	doc := UserDoc{
+		"DryLake",
+		91,
+	}
+	meta, err := col.CreateDocument(ctx, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+
+	// Replace the document to get another revision
+	replacement := Book{
+		Title: "Jungle book",
+	}
+	meta2, err := col.ReplaceDocument(ctx, meta.Key, replacement)
+	if err != nil {
+		t.Fatalf("Failed to replace document '%s': %s", meta.Key, describe(err))
+	}
+
+	// Try to remove document with initial revision (must fail)
+	initialRevCtx := driver.WithRevision(ctx, meta.Rev)
+	if _, err := col.RemoveDocument(initialRevCtx, meta.Key); !driver.IsPreconditionFailed(err) {
+		t.Fatalf("Expected PreconditionFailedError, got %s", describe(err))
+	}
+
+	// Try to remove document with correct revision (must succeed)
+	replacedRevCtx := driver.WithRevision(ctx, meta2.Rev)
+	if _, err := col.RemoveDocument(replacedRevCtx, meta.Key); err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+
+	// Should not longer exist
+	var readDoc Account
+	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
+		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
+	}
+}
+
 // TestRemoveDocumentKeyEmpty removes a document it with an empty key.
 func TestRemoveDocumentKeyEmpty(t *testing.T) {
 	c := createClientFromEnv(t, true)
