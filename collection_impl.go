@@ -454,6 +454,49 @@ func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMe
 	return meta, nil
 }
 
+// RemoveDocuments removes multiple documents with given keys from the collection.
+// The document meta data are returned.
+// To return the OLD documents, prepare a context with `WithReturnOld` with a slice of documents.
+// To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
+// If no document exists with a given key, a NotFoundError is returned at its errors index.
+func (c *collection) RemoveDocuments(ctx context.Context, keys []string) (DocumentMetaSlice, ErrorSlice, error) {
+	for _, key := range keys {
+		if err := validateKey(key); err != nil {
+			return nil, nil, WithStack(err)
+		}
+	}
+	keyCount := len(keys)
+	req, err := c.conn.NewRequest("DELETE", c.relPath("document"))
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	metaArray, err := createMergeArray(keys, cs.Revisions)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if _, err := req.SetBodyArray(metaArray, nil); err != nil {
+		return nil, nil, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if status := resp.StatusCode(); status != cs.okStatus(200, 202) {
+		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	}
+	if cs.Silent {
+		// Empty response, we're done
+		return nil, nil, nil
+	}
+	// Parse response array
+	metas, errs, err := parseResponseArray(resp, keyCount, cs)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	return metas, errs, nil
+}
+
 // createMergeArray returns an array of metadata maps with `_key` and/or `_rev` elements.
 func createMergeArray(keys, revs []string) ([]map[string]interface{}, error) {
 	if keys == nil && revs == nil {

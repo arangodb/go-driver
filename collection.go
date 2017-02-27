@@ -99,6 +99,13 @@ type Collection interface {
 	// To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If no document exists with given key, a NotFoundError is returned.
 	RemoveDocument(ctx context.Context, key string) (DocumentMeta, error)
+
+	// RemoveDocuments removes multiple documents with given keys from the collection.
+	// The document meta data are returned.
+	// To return the OLD documents, prepare a context with `WithReturnOld` with a slice of documents.
+	// To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
+	// If no document exists with a given key, a NotFoundError is returned at its errors index.
+	RemoveDocuments(ctx context.Context, keys []string) (DocumentMetaSlice, ErrorSlice, error)
 }
 
 // CollectionInfo contains information about a collection
