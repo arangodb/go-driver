@@ -35,6 +35,16 @@ func (ae ArangoError) Error() string {
 	return ae.ErrorMessage
 }
 
+// newArangoError creates a new ArangoError with given values.
+func newArangoError(code, errorNum int, errorMessage string) error {
+	return ArangoError{
+		HasError:     true,
+		Code:         code,
+		ErrorNum:     errorNum,
+		ErrorMessage: errorMessage,
+	}
+}
+
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
 func IsArangoErrorWithCode(err error, code int) bool {
 	ae, ok := Cause(err).(ArangoError)

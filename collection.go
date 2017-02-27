@@ -47,6 +47,18 @@ type Collection interface {
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	CreateDocument(ctx context.Context, document interface{}) (DocumentMeta, error)
 
+	// CreateDocuments creates multiple documents in the collection.
+	// The document data is loaded from the given documents slice, the documents meta data is returned.
+	// If a documents element already contains a `_key` field, this will be used as key of the new document,
+	// otherwise a unique key is created.
+	// If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
+	// a ConflictError is returned in its inded in the errors slice.
+	// To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
+	// a slice with the same number of entries as the `documents` slice.
+	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
+	// If the create request itself fails or one of the arguments is invalid, an error is returned.
+	CreateDocuments(ctx context.Context, documents interface{}) ([]DocumentMeta, []error, error)
+
 	// UpdateDocument updates a single document with given key in the collection.
 	// The document meta data is returned.
 	// To return the NEW document, prepare a context with `WithReturnNew`.

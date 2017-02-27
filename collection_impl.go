@@ -24,7 +24,9 @@ package driver
 
 import (
 	"context"
+	"fmt"
 	"path"
+	"reflect"
 )
 
 // newDatabase creates a new Database implementation.
@@ -149,6 +151,71 @@ func (c *collection) CreateDocument(ctx context.Context, document interface{}) (
 		}
 	}
 	return meta, nil
+}
+
+// CreateDocuments creates multiple documents in the collection.
+// The document data is loaded from the given documents slice, the documents meta data is returned.
+// If a documents element already contains a `_key` field, this will be used as key of the new document,
+// otherwise a unique key is created.
+// If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
+// a ConflictError is returned in its inded in the errors slice.
+// To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
+// a slice with the same number of entries as the `documents` slice.
+// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
+// If the create request itself fails or one of the arguments is invalid, an error is returned.
+func (c *collection) CreateDocuments(ctx context.Context, documents interface{}) ([]DocumentMeta, []error, error) {
+	documentsVal := reflect.ValueOf(documents)
+	switch documentsVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("documents data must be of kind Array, got %s", documentsVal.Kind())})
+	}
+	documentCount := documentsVal.Len()
+	req, err := c.conn.NewRequest("POST", c.relPath("document"))
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if _, err := req.SetBody(documents); err != nil {
+		return nil, nil, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if status := resp.StatusCode(); status != cs.okStatus(201, 202) {
+		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	}
+	if cs.Silent {
+		// Empty response, we're done
+		return nil, nil, nil
+	}
+	// Parse response array
+	resps, err := resp.ParseArrayBody()
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	metas := make([]DocumentMeta, documentCount)
+	errs := make([]error, documentCount)
+	returnNewVal := reflect.ValueOf(cs.ReturnNew)
+	for i := 0; i < documentCount; i++ {
+		resp := resps[i]
+		var meta DocumentMeta
+		if err := resp.ParseBody("", &meta); err != nil {
+			errs[i] = err
+		} else {
+			metas[i] = meta
+			// Parse returnNew (if needed)
+			if cs.ReturnNew != nil {
+				returnNewEntryVal := returnNewVal.Index(i).Addr()
+				if err := resp.ParseBody("new", returnNewEntryVal.Interface()); err != nil {
+					errs[i] = err
+				}
+			}
+		}
+	}
+	return metas, errs, nil
 }
 
 // UpdateDocument updates a single document with given key in the collection.

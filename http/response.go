@@ -37,7 +37,8 @@ import (
 type httpResponse struct {
 	resp        *http.Response
 	rawResponse *[]byte
-	body        map[string]*json.RawMessage
+	bodyObject  map[string]*json.RawMessage
+	bodyArray   []map[string]*json.RawMessage
 }
 
 // StatusCode returns an HTTP compatible status code of the response.
@@ -73,7 +74,7 @@ func (r *httpResponse) CheckStatus(validStatusCodes ...int) error {
 // ParseBody performs protocol specific unmarshalling of the response data into the given result.
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
 func (r *httpResponse) ParseBody(field string, result interface{}) error {
-	if r.body == nil {
+	if r.bodyObject == nil {
 		body := r.resp.Body
 		defer body.Close()
 		content, err := ioutil.ReadAll(body)
@@ -87,11 +88,44 @@ func (r *httpResponse) ParseBody(field string, result interface{}) error {
 		if err := json.Unmarshal(content, &bodyMap); err != nil {
 			return driver.WithStack(err)
 		}
-		r.body = bodyMap
+		r.bodyObject = bodyMap
 	}
+	if err := parseBody(r.bodyObject, field, result); err != nil {
+		return driver.WithStack(err)
+	}
+	return nil
+}
+
+// ParseArrayBody performs protocol specific unmarshalling of the response array data into individual response objects.
+// This can only be used for requests that return an array of objects.
+func (r *httpResponse) ParseArrayBody() ([]driver.Response, error) {
+	if r.bodyArray == nil {
+		body := r.resp.Body
+		defer body.Close()
+		content, err := ioutil.ReadAll(body)
+		if err != nil {
+			return nil, driver.WithStack(err)
+		}
+		if r.rawResponse != nil {
+			*r.rawResponse = content
+		}
+		var bodyArray []map[string]*json.RawMessage
+		if err := json.Unmarshal(content, &bodyArray); err != nil {
+			return nil, driver.WithStack(err)
+		}
+		r.bodyArray = bodyArray
+	}
+	resps := make([]driver.Response, len(r.bodyArray))
+	for i, x := range r.bodyArray {
+		resps[i] = &httpResponseElement{bodyObject: x}
+	}
+	return resps, nil
+}
+
+func parseBody(bodyObject map[string]*json.RawMessage, field string, result interface{}) error {
 	if field != "" {
 		// Unmarshal only a specific field
-		raw, ok := r.body[field]
+		raw, ok := bodyObject[field]
 		if !ok || raw == nil {
 			// Field not found, silently ignored
 			return nil
@@ -110,11 +144,11 @@ func (r *httpResponse) ParseBody(field string, result interface{}) error {
 	objValue := rv.Elem()
 	switch objValue.Kind() {
 	case reflect.Struct:
-		if err := decodeObjectFields(objValue, r.body); err != nil {
+		if err := decodeObjectFields(objValue, bodyObject); err != nil {
 			return driver.WithStack(err)
 		}
 	case reflect.Map:
-		if err := decodeMapFields(objValue, r.body); err != nil {
+		if err := decodeMapFields(objValue, bodyObject); err != nil {
 			return driver.WithStack(err)
 		}
 	default:

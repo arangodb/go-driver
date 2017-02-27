@@ -56,5 +56,9 @@ type Response interface {
 	CheckStatus(validStatusCodes ...int) error
 	// ParseBody performs protocol specific unmarshalling of the response data into the given result.
 	// If the given field is non-empty, the contents of that field will be parsed into the given result.
+	// This can only be used for requests that return a single object.
 	ParseBody(field string, result interface{}) error
+	// ParseArrayBody performs protocol specific unmarshalling of the response array data into individual response objects.
+	// This can only be used for requests that return an array of objects.
+	ParseArrayBody() ([]Response, error)
 }
