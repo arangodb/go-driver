@@ -67,6 +67,13 @@ func (c *cursor) HasMore() bool {
 	return c.cursorData.HasMore
 }
 
+// Count returns the total number of result documents available.
+// A valid return value is only available when the cursor has been created with a context that was
+// prepare with `WithQueryCount`.
+func (c *cursor) Count() int64 {
+	return c.cursorData.Count
+}
+
 // Close deletes the cursor and frees the resources associated with it.
 func (c *cursor) Close() error {
 	if c := atomic.LoadInt32(&c.closed); c != 0 {

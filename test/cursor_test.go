@@ -39,6 +39,11 @@ type queryTest struct {
 	DocumentType      reflect.Type
 }
 
+type queryTestContext struct {
+	Context     context.Context
+	ExpectCount bool
+}
+
 // TestCreateCursor creates several cursors.
 func TestCreateCursor(t *testing.T) {
 	ctx := context.Background()
@@ -125,20 +130,23 @@ func TestCreateCursor(t *testing.T) {
 	}
 
 	// Setup context alternatives
-	contexts := []context.Context{
-		nil,
-		context.Background(),
-		driver.WithQueryCount(nil, true),
-		driver.WithQueryCount(nil, false),
-		driver.WithQueryBatchSize(nil, 1),
-		driver.WithQueryCache(nil, true),
-		driver.WithQueryCache(nil, false),
-		driver.WithQueryMemoryLimit(nil, 10000),
-		driver.WithQueryTTL(nil, time.Minute),
+	contexts := []queryTestContext{
+		queryTestContext{nil, false},
+		queryTestContext{context.Background(), false},
+		queryTestContext{driver.WithQueryCount(nil, true), true},
+		queryTestContext{driver.WithQueryCount(nil, false), false},
+		queryTestContext{driver.WithQueryBatchSize(nil, 1), false},
+		queryTestContext{driver.WithQueryCache(nil, true), false},
+		queryTestContext{driver.WithQueryCache(nil, false), false},
+		queryTestContext{driver.WithQueryMemoryLimit(nil, 10000), false},
+		queryTestContext{driver.WithQueryTTL(nil, time.Minute), false},
+		queryTestContext{driver.WithQueryBatchSize(driver.WithQueryCount(nil, true), 1), true},
+		queryTestContext{driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2), true), true), true},
 	}
 
 	// Run tests for every context alternative
-	for _, ctx := range contexts {
+	for _, qctx := range contexts {
+		ctx := qctx.Context
 		for i, test := range tests {
 			cursor, err := db.Query(ctx, test.Query, test.BindVars)
 			if err == nil {
@@ -148,6 +156,16 @@ func TestCreateCursor(t *testing.T) {
 				if err != nil {
 					t.Errorf("Expected success in query %d (%s), got '%s'", i, test.Query, describe(err))
 					continue
+				}
+				count := cursor.Count()
+				if qctx.ExpectCount {
+					if count != int64(len(test.ExpectedDocuments)) {
+						t.Errorf("Expected count of %d, got %d in query %d (%s)", len(test.ExpectedDocuments), count, i, test.Query)
+					}
+				} else {
+					if count != 0 {
+						t.Errorf("Expected count of 0, got %d in query %d (%s)", count, i, test.Query)
+					}
 				}
 				var result []interface{}
 				for {

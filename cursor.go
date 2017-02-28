@@ -38,4 +38,9 @@ type Cursor interface {
 	// The document data is stored into result, the document meta data is returned.
 	// If the cursor has no more documents, a NoMoreDocuments error is returned.
 	ReadDocument(ctx context.Context, result interface{}) (DocumentMeta, error)
+
+	// Count returns the total number of result documents available.
+	// A valid return value is only available when the cursor has been created with a context that was
+	// prepare with `WithQueryCount`.
+	Count() int64
 }
