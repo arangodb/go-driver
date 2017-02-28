@@ -117,6 +117,14 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 	}
 }
 
+// Unmarshal unmarshals the given raw object into the given result interface.
+func (c *clusterConnection) Unmarshal(data driver.RawObject, result interface{}) error {
+	if err := c.servers[0].Unmarshal(data, result); err != nil {
+		return driver.WithStack(err)
+	}
+	return nil
+}
+
 // getCurrentServer returns the currently used server.
 func (c *clusterConnection) getCurrentServer() driver.Connection {
 	c.mutex.RLock()

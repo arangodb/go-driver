@@ -22,7 +22,11 @@
 
 package driver
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+	"errors"
+)
 
 // Connection is a connenction to a database server using a specific protocol.
 type Connection interface {
@@ -31,6 +35,9 @@ type Connection interface {
 
 	// Do performs a given request, returning its response.
 	Do(ctx context.Context, req Request) (Response, error)
+
+	// Unmarshal unmarshals the given raw object into the given result interface.
+	Unmarshal(data RawObject, result interface{}) error
 }
 
 // Request represents the input to a request on the server.
@@ -67,3 +74,25 @@ type Response interface {
 	// This can only be used for requests that return an array of objects.
 	ParseArrayBody() ([]Response, error)
 }
+
+// RawObject is a raw encoded object.
+// Connection implementations must be able to unmarshal *RawObject into Go objects.
+type RawObject []byte
+
+// MarshalJSON returns *r as the JSON encoding of r.
+func (r *RawObject) MarshalJSON() ([]byte, error) {
+	return *r, nil
+}
+
+// UnmarshalJSON sets *r to a copy of data.
+func (r *RawObject) UnmarshalJSON(data []byte) error {
+	if r == nil {
+		return errors.New("RawObject: UnmarshalJSON on nil pointer")
+	}
+	*r = append((*r)[0:0], data...)
+	return nil
+}
+
+// Ensure RawObject implements json.Marshaler & json.Unmarshaler
+var _ json.Marshaler = (*RawObject)(nil)
+var _ json.Unmarshaler = (*RawObject)(nil)

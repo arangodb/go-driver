@@ -25,6 +25,7 @@ package http
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -139,4 +140,12 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 	}
 
 	return &httpResponse{resp: resp, rawResponse: rawResponse}, nil
+}
+
+// Unmarshal unmarshals the given raw object into the given result interface.
+func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) error {
+	if err := json.Unmarshal(data, result); err != nil {
+		return driver.WithStack(err)
+	}
+	return nil
 }
