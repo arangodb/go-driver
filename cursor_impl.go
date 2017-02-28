@@ -76,22 +76,28 @@ func (c *cursor) Count() int64 {
 
 // Close deletes the cursor and frees the resources associated with it.
 func (c *cursor) Close() error {
+	if c == nil {
+		// Avoid panics in the case that someone defer's a close before checking that the cursor is not nil.
+		return nil
+	}
 	if c := atomic.LoadInt32(&c.closed); c != 0 {
 		return nil
 	}
 	c.closeMutex.Lock()
 	defer c.closeMutex.Unlock()
 	if c.closed == 0 {
-		req, err := c.conn.NewRequest("DELETE", c.relPath())
-		if err != nil {
-			return WithStack(err)
-		}
-		resp, err := c.conn.Do(nil, req)
-		if err != nil {
-			return WithStack(err)
-		}
-		if err := resp.CheckStatus(202); err != nil {
-			return WithStack(err)
+		if c.cursorData.ID != "" {
+			req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath(), c.cursorData.ID))
+			if err != nil {
+				return WithStack(err)
+			}
+			resp, err := c.conn.Do(nil, req)
+			if err != nil {
+				return WithStack(err)
+			}
+			if err := resp.CheckStatus(202); err != nil {
+				return WithStack(err)
+			}
 		}
 		atomic.StoreInt32(&c.closed, 1)
 	}

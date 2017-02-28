@@ -28,6 +28,7 @@ import (
 )
 
 // Cursor is returned from a query, used to iterate over a list of documents.
+// Note that a Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
 type Cursor interface {
 	io.Closer
 

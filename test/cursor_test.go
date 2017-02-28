@@ -152,6 +152,7 @@ func TestCreateCursor(t *testing.T) {
 		for i, test := range tests {
 			cursor, err := db.Query(ctx, test.Query, test.BindVars)
 			if err == nil {
+				// Close upon exit of the function
 				defer cursor.Close()
 			}
 			if test.ExpectSuccess {
@@ -187,6 +188,10 @@ func TestCreateCursor(t *testing.T) {
 							t.Errorf("Unexpected document in query %d (%s) at index %d: got %+v, expected %+v", i, test.Query, resultIdx, resultDoc, test.ExpectedDocuments[resultIdx])
 						}
 					}
+				}
+				// Close anyway (this tests calling Close more than once)
+				if err := cursor.Close(); err != nil {
+					t.Errorf("Expected success in Close of cursor from query %d (%s), got '%s'", i, test.Query, describe(err))
 				}
 			} else {
 				if err == nil {

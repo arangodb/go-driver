@@ -44,6 +44,7 @@ type Database interface {
 	CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error)
 
 	// Query performs an AQL query, returning a cursor used to iterate over the returned documents.
+	// Note that the returned Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
 	Query(ctx context.Context, query string, bindVars map[string]interface{}) (Cursor, error)
 }
 
