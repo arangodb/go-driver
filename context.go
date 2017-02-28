@@ -43,25 +43,25 @@ const (
 // WithRevision is used to configure a context to make document
 // functions specify an explicit revision of the document using an `If-Match` condition.
 func WithRevision(parent context.Context, revision string) context.Context {
-	return context.WithValue(parentOrBackground(parent), keyRevision, revision)
+	return context.WithValue(contextOrBackground(parent), keyRevision, revision)
 }
 
 // WithRevisions is used to configure a context to make multi-document
 // functions specify explicit revisions of the documents.
 func WithRevisions(parent context.Context, revisions []string) context.Context {
-	return context.WithValue(parentOrBackground(parent), keyRevisions, revisions)
+	return context.WithValue(contextOrBackground(parent), keyRevisions, revisions)
 }
 
 // WithReturnNew is used to configure a context to make create, update & replace document
 // functions return the new document into the given result.
 func WithReturnNew(parent context.Context, result interface{}) context.Context {
-	return context.WithValue(parentOrBackground(parent), keyReturnNew, result)
+	return context.WithValue(contextOrBackground(parent), keyReturnNew, result)
 }
 
 // WithReturnOld is used to configure a context to make update & replace document
 // functions return the old document into the given result.
 func WithReturnOld(parent context.Context, result interface{}) context.Context {
-	return context.WithValue(parentOrBackground(parent), keyReturnOld, result)
+	return context.WithValue(contextOrBackground(parent), keyReturnOld, result)
 }
 
 // WithDetails is used to configure a context to make Client.Version return additional details.
@@ -71,20 +71,20 @@ func WithDetails(parent context.Context, value ...bool) context.Context {
 	if len(value) == 1 {
 		v = value[0]
 	}
-	return context.WithValue(parentOrBackground(parent), keyDetails, v)
+	return context.WithValue(contextOrBackground(parent), keyDetails, v)
 }
 
 // WithKeepNull is used to configure a context to make update functions keep null fields (value==true)
 // or remove fields with null values (value==false).
 func WithKeepNull(parent context.Context, value bool) context.Context {
-	return context.WithValue(parentOrBackground(parent), keyKeepNull, value)
+	return context.WithValue(contextOrBackground(parent), keyKeepNull, value)
 }
 
 // WithMergeObjects is used to configure a context to make update functions merge objects present in both
 // the existing document and the patch document (value==true) or overwrite objects in the existing document
 // with objects found in the patch document (value==false)
 func WithMergeObjects(parent context.Context, value bool) context.Context {
-	return context.WithValue(parentOrBackground(parent), keyMergeObjects, value)
+	return context.WithValue(contextOrBackground(parent), keyMergeObjects, value)
 }
 
 // WithSilent is used to configure a context to make functions return an empty result (silent==true),
@@ -95,7 +95,7 @@ func WithSilent(parent context.Context, value ...bool) context.Context {
 	if len(value) == 1 {
 		v = value[0]
 	}
-	return context.WithValue(parentOrBackground(parent), keySilent, v)
+	return context.WithValue(contextOrBackground(parent), keySilent, v)
 }
 
 // WithWaitForSync is used to configure a context to make modification
@@ -107,13 +107,13 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 	if len(value) == 1 {
 		v = value[0]
 	}
-	return context.WithValue(parentOrBackground(parent), keyWaitForSync, v)
+	return context.WithValue(contextOrBackground(parent), keyWaitForSync, v)
 }
 
 // WithRawResponse is used to configure a context that will make all functions store the raw response into a
 // buffer.
 func WithRawResponse(parent context.Context, value *[]byte) context.Context {
-	return context.WithValue(parentOrBackground(parent), keyRawResponse, value)
+	return context.WithValue(contextOrBackground(parent), keyRawResponse, value)
 }
 
 type contextSettings struct {
@@ -201,11 +201,11 @@ func (cs contextSettings) okStatus(statusWithWaitForSync, statusWithoutWaitForSy
 	}
 }
 
-// parentOrBackground returns parent if it is not nil.
+// contextOrBackground returns the given context if it is not nil.
 // Returns context.Background() otherwise.
-func parentOrBackground(parent context.Context) context.Context {
-	if parent != nil {
-		return parent
+func contextOrBackground(ctx context.Context) context.Context {
+	if ctx != nil {
+		return ctx
 	}
 	return context.Background()
 }
