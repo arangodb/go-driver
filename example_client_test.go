@@ -20,10 +20,9 @@
 // Author Ewout Prangsma
 //
 
-package main
+package driver_test
 
 import (
-	"flag"
 	"fmt"
 	"log"
 
@@ -31,25 +30,19 @@ import (
 	"github.com/arangodb/go-driver/http"
 )
 
-var (
-	endpoint string
-)
-
-func init() {
-	flag.StringVar(&endpoint, "endpoint", "http://localhost:8529", "URL used to connect to the database")
-}
-
-func main() {
-	flag.Parse()
+func ExampleNewClient() {
+	// Create an HTTP connection to the database
 	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: []string{endpoint},
+		Endpoints: []string{"http://localhost:8529"},
 	})
 	if err != nil {
 		log.Fatalf("Failed to create HTTP connection: %v", err)
 	}
+	// Create a client
 	c, err := driver.NewClient(driver.ClientConfig{
 		Connection: conn,
 	})
+	// Ask the version of the server
 	versionInfo, err := c.Version(nil)
 	if err != nil {
 		log.Fatalf("Failed to get version info: %v", err)

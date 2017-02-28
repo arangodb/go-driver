@@ -20,34 +20,27 @@
 // Author Ewout Prangsma
 //
 
-package main
+package driver_test
 
 import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
 
-var (
-	endpoint string
-)
-
-func init() {
-	flag.StringVar(&endpoint, "endpoint", "http://localhost:8529", "URL used to connect to the database")
+type User struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
 }
 
-type Book struct {
-	Title   string `json:"title"`
-	NoPages int    `json:"no_pages"`
-}
-
-func main() {
+func Example_createDocuments() {
 	flag.Parse()
 	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: []string{endpoint},
+		Endpoints: []string{"http://localhost:8529"},
 	})
 	if err != nil {
 		log.Fatalf("Failed to create HTTP connection: %v", err)
@@ -57,26 +50,38 @@ func main() {
 	})
 
 	// Create database
-	db, err := c.CreateDatabase(nil, "examples_books", nil)
+	db, err := c.CreateDatabase(nil, "examples_users", nil)
 	if err != nil {
 		log.Fatalf("Failed to create database: %v", err)
 	}
 
 	// Create collection
-	col, err := db.CreateCollection(nil, "books", nil)
+	col, err := db.CreateCollection(nil, "users", nil)
 	if err != nil {
 		log.Fatalf("Failed to create collection: %v", err)
 	}
 
-	// Create document
-	book := Book{
-		Title:   "ArangoDB Cookbook",
-		NoPages: 257,
+	// Create documents
+	users := []User{
+		User{
+			Name: "John",
+			Age:  65,
+		},
+		User{
+			Name: "Tina",
+			Age:  25,
+		},
+		User{
+			Name: "George",
+			Age:  31,
+		},
 	}
-	meta, err := col.CreateDocument(nil, book)
+	metas, errs, err := col.CreateDocuments(nil, users)
 	if err != nil {
-		log.Fatalf("Failed to create document: %v", err)
+		log.Fatalf("Failed to create documents: %v", err)
+	} else if err := errs.FirstNonNil(); err != nil {
+		log.Fatalf("Failed to create documents: first error: %v", err)
 	}
 
-	fmt.Printf("Created document with key '%s' in collection '%s' in database '%s'\n", meta.Key, col.Name(), db.Name())
+	fmt.Printf("Created documents with keys '%s' in collection '%s' in database '%s'\n", strings.Join(metas.Keys(), ","), col.Name(), db.Name())
 }

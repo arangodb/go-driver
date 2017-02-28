@@ -29,7 +29,7 @@ $(GOBUILDDIR):
 
 DBCONTAINER := $(PROJECT)-test-db
 
-run-tests: build run-tests-single-no-auth
+run-tests: build run-tests-single-no-auth 
 
 run-tests-single-no-auth:
 	@echo "Single server, no authentication"
@@ -45,6 +45,5 @@ run-tests-single-no-auth:
 		-e TEST_ENDPOINTS=http://localhost:8529 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test -v $(REPOPATH)/test
+		go test -v $(REPOPATH) $(REPOPATH)/test
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
-

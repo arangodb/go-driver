@@ -20,35 +20,24 @@
 // Author Ewout Prangsma
 //
 
-package main
+package driver_test
 
 import (
-	"flag"
 	"fmt"
 	"log"
-	"strings"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
-
-var (
-	endpoint string
-)
-
-func init() {
-	flag.StringVar(&endpoint, "endpoint", "http://localhost:8529", "URL used to connect to the database")
-}
 
 type Book struct {
 	Title   string `json:"title"`
 	NoPages int    `json:"no_pages"`
 }
 
-func main() {
-	flag.Parse()
+func Example_createDocument() {
 	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: []string{endpoint},
+		Endpoints: []string{"http://localhost:8529"},
 	})
 	if err != nil {
 		log.Fatalf("Failed to create HTTP connection: %v", err)
@@ -69,27 +58,25 @@ func main() {
 		log.Fatalf("Failed to create collection: %v", err)
 	}
 
-	// Create documents
-	books := []Book{
-		Book{
-			Title:   "ArangoDB Getting Started Guide",
-			NoPages: 12,
-		},
-		Book{
-			Title:   "ArangoDB Cookbook",
-			NoPages: 257,
-		},
-		Book{
-			Title:   "ArangoDB HTTP Manual",
-			NoPages: 310,
-		},
+	// Create document
+	book := Book{
+		Title:   "ArangoDB Cookbook",
+		NoPages: 257,
 	}
-	metas, errs, err := col.CreateDocuments(nil, books)
+	meta, err := col.CreateDocument(nil, book)
 	if err != nil {
-		log.Fatalf("Failed to create documents: %v", err)
-	} else if err := errs.FirstNonNil(); err != nil {
-		log.Fatalf("Failed to create documents: first error: %v", err)
+		log.Fatalf("Failed to create document: %v", err)
 	}
+	fmt.Printf("Created document in collection '%s' in database '%s'\n", col.Name(), db.Name())
 
-	fmt.Printf("Created documents with keys '%s' in collection '%s' in database '%s'\n", strings.Join(metas.Keys(), ","), col.Name(), db.Name())
+	// Read the document back
+	var result Book
+	if _, err := col.ReadDocument(nil, meta.Key, &result); err != nil {
+		log.Fatalf("Failed to read document: %v", err)
+	}
+	fmt.Printf("Read book '%+v'\n", result)
+
+	// Output:
+	// Created document in collection 'books' in database 'examples_books'
+	// Read book '{Title:ArangoDB Cookbook NoPages:257}'
 }
