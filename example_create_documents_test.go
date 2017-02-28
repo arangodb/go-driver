@@ -20,6 +20,7 @@
 // Author Ewout Prangsma
 //
 
+// This example demonstrates how to create multiple documents at once.
 package driver_test
 
 import (

@@ -20,6 +20,7 @@
 // Author Ewout Prangsma
 //
 
+// This example demonstrates how to create a single document.
 package driver_test
 
 import (
