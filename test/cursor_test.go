@@ -26,6 +26,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -91,38 +92,87 @@ func TestCreateCursor(t *testing.T) {
 			ExpectedDocuments: collectionData["books"],
 			DocumentType:      reflect.TypeOf(Book{}),
 		},
+		queryTest{
+			Query:             "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars:          map[string]interface{}{"title": "Book 02"},
+			ExpectSuccess:     true,
+			ExpectedDocuments: []interface{}{collectionData["books"][1]},
+			DocumentType:      reflect.TypeOf(Book{}),
+		},
+		queryTest{
+			Query:         "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars:      map[string]interface{}{"somethingelse": "Book 02"},
+			ExpectSuccess: false, // Unknown `@title`
+		},
+		queryTest{
+			Query:             "FOR u IN users FILTER u.age>100 SORT u.name RETURN u",
+			ExpectSuccess:     true,
+			ExpectedDocuments: []interface{}{},
+			DocumentType:      reflect.TypeOf(UserDoc{}),
+		},
+		queryTest{
+			Query:             "FOR u IN users FILTER u.age<@maxAge SORT u.name RETURN u",
+			BindVars:          map[string]interface{}{"maxAge": 20},
+			ExpectSuccess:     true,
+			ExpectedDocuments: []interface{}{collectionData["users"][2], collectionData["users"][0]},
+			DocumentType:      reflect.TypeOf(UserDoc{}),
+		},
+		queryTest{
+			Query:         "FOR u IN users FILTER u.age<@maxAge SORT u.name RETURN u",
+			BindVars:      map[string]interface{}{"maxage": 20},
+			ExpectSuccess: false, // `@maxage` versus `@maxAge`
+		},
 	}
 
-	for i, test := range tests {
-		cursor, err := db.Query(ctx, test.Query, test.BindVars)
-		if test.ExpectSuccess {
-			if err != nil {
-				t.Errorf("Expected success in query %d (%s), got '%s'", i, test.Query, describe(err))
-				continue
+	// Setup context alternatives
+	contexts := []context.Context{
+		nil,
+		context.Background(),
+		driver.WithQueryCount(nil, true),
+		driver.WithQueryCount(nil, false),
+		driver.WithQueryBatchSize(nil, 1),
+		driver.WithQueryCache(nil, true),
+		driver.WithQueryCache(nil, false),
+		driver.WithQueryMemoryLimit(nil, 10000),
+		driver.WithQueryTTL(nil, time.Minute),
+	}
+
+	// Run tests for every context alternative
+	for _, ctx := range contexts {
+		for i, test := range tests {
+			cursor, err := db.Query(ctx, test.Query, test.BindVars)
+			if err == nil {
+				defer cursor.Close()
 			}
-			var result []interface{}
-			for {
-				doc := reflect.New(test.DocumentType)
-				if _, err := cursor.ReadDocument(ctx, doc.Interface()); driver.IsNoMoreDocuments(err) {
-					break
-				} else if err != nil {
-					t.Errorf("Failed to result document %d: %s", len(result), describe(err))
+			if test.ExpectSuccess {
+				if err != nil {
+					t.Errorf("Expected success in query %d (%s), got '%s'", i, test.Query, describe(err))
+					continue
 				}
-				result = append(result, doc.Elem().Interface())
-			}
-			if len(result) != len(test.ExpectedDocuments) {
-				t.Errorf("Expected %d documents, got %d in query %d (%s)", len(test.ExpectedDocuments), len(result), i, test.Query)
-			} else {
-				for resultIdx, resultDoc := range result {
-					if !reflect.DeepEqual(resultDoc, test.ExpectedDocuments[resultIdx]) {
-						t.Errorf("Unexpected document in query %d (%s) at index %d: got %+v, expected %+v", i, test.Query, resultIdx, resultDoc, test.ExpectedDocuments[resultIdx])
+				var result []interface{}
+				for {
+					doc := reflect.New(test.DocumentType)
+					if _, err := cursor.ReadDocument(ctx, doc.Interface()); driver.IsNoMoreDocuments(err) {
+						break
+					} else if err != nil {
+						t.Errorf("Failed to result document %d: %s", len(result), describe(err))
+					}
+					result = append(result, doc.Elem().Interface())
+				}
+				if len(result) != len(test.ExpectedDocuments) {
+					t.Errorf("Expected %d documents, got %d in query %d (%s)", len(test.ExpectedDocuments), len(result), i, test.Query)
+				} else {
+					for resultIdx, resultDoc := range result {
+						if !reflect.DeepEqual(resultDoc, test.ExpectedDocuments[resultIdx]) {
+							t.Errorf("Unexpected document in query %d (%s) at index %d: got %+v, expected %+v", i, test.Query, resultIdx, resultDoc, test.ExpectedDocuments[resultIdx])
+						}
 					}
 				}
-			}
-		} else {
-			if err == nil {
-				t.Errorf("Expected error in query %d (%s), got '%s'", i, test.Query, describe(err))
-				continue
+			} else {
+				if err == nil {
+					t.Errorf("Expected error in query %d (%s), got '%s'", i, test.Query, describe(err))
+					continue
+				}
 			}
 		}
 	}
