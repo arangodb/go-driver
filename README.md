@@ -1,5 +1,7 @@
 # ArangoDB GO Driver.
 
+[![GoDoc](https://godoc.org/github.com/arangodb/g-driver?status.svg)](http://godoc.org/github.com/arangodb/go-driver)
+
 NOTE: THIS IS WORK IN PROGRESS.
 API and implementation WILL change.
 
