@@ -36,8 +36,13 @@ const (
 )
 
 // WithQueryCount is used to configure a context that will set the Count of a query request,
-func WithQueryCount(parent context.Context, value bool) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyQueryCount, value)
+// If value is not given it defaults to true.
+func WithQueryCount(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) > 0 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyQueryCount, v)
 }
 
 // WithQueryBatchSize is used to configure a context that will set the BatchSize of a query request,
@@ -46,8 +51,13 @@ func WithQueryBatchSize(parent context.Context, value int) context.Context {
 }
 
 // WithQueryCache is used to configure a context that will set the Cache of a query request,
-func WithQueryCache(parent context.Context, value bool) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyQueryCache, value)
+// If value is not given it defaults to true.
+func WithQueryCache(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) > 0 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyQueryCache, v)
 }
 
 // WithQueryMemoryLimit is used to configure a context that will set the MemoryList of a query request,

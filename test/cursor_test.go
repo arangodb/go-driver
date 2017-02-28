@@ -133,15 +133,17 @@ func TestCreateCursor(t *testing.T) {
 	contexts := []queryTestContext{
 		queryTestContext{nil, false},
 		queryTestContext{context.Background(), false},
+		queryTestContext{driver.WithQueryCount(nil), true},
 		queryTestContext{driver.WithQueryCount(nil, true), true},
 		queryTestContext{driver.WithQueryCount(nil, false), false},
 		queryTestContext{driver.WithQueryBatchSize(nil, 1), false},
+		queryTestContext{driver.WithQueryCache(nil), false},
 		queryTestContext{driver.WithQueryCache(nil, true), false},
 		queryTestContext{driver.WithQueryCache(nil, false), false},
 		queryTestContext{driver.WithQueryMemoryLimit(nil, 10000), false},
 		queryTestContext{driver.WithQueryTTL(nil, time.Minute), false},
-		queryTestContext{driver.WithQueryBatchSize(driver.WithQueryCount(nil, true), 1), true},
-		queryTestContext{driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2), true), true), true},
+		queryTestContext{driver.WithQueryBatchSize(driver.WithQueryCount(nil), 1), true},
+		queryTestContext{driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2))), true},
 	}
 
 	// Run tests for every context alternative
