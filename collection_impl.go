@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"net/url"
 	"path"
 )
 
@@ -50,7 +51,8 @@ type collection struct {
 
 // relPath creates the relative path to this collection (`_db/<db-name>/_api/<api-name>/<col-name>`)
 func (c *collection) relPath(apiName string) string {
-	return path.Join(c.db.relPath(), "_api", apiName, c.name)
+	escapedName := url.QueryEscape(c.name)
+	return path.Join(c.db.relPath(), "_api", apiName, escapedName)
 }
 
 // Name returns the name of the collection.
