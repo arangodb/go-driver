@@ -31,8 +31,8 @@ import (
 // User opens a connection to an existing user.
 // If no user with given name exists, an NotFoundError is returned.
 func (c *client) User(ctx context.Context, name string) (User, error) {
-	encodedName := url.QueryEscape(name)
-	req, err := c.conn.NewRequest("GET", path.Join("_api/user", encodedName))
+	escapedName := url.QueryEscape(name)
+	req, err := c.conn.NewRequest("GET", path.Join("_api/user", escapedName))
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -56,8 +56,8 @@ func (c *client) User(ctx context.Context, name string) (User, error) {
 
 // UserExists returns true if a database with given name exists.
 func (c *client) UserExists(ctx context.Context, name string) (bool, error) {
-	encodedName := url.QueryEscape(name)
-	req, err := c.conn.NewRequest("GET", path.Join("_api/user", encodedName))
+	escapedName := url.QueryEscape(name)
+	req, err := c.conn.NewRequest("GET", path.Join("_api/user", escapedName))
 	if err != nil {
 		return false, WithStack(err)
 	}

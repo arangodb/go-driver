@@ -56,8 +56,8 @@ type userData struct {
 
 // relPath creates the relative path to this index (`_api/user/<name>`)
 func (u *user) relPath() string {
-	encodedName := url.QueryEscape(u.data.Name)
-	return path.Join("_api", "user", encodedName)
+	escapedName := url.QueryEscape(u.data.Name)
+	return path.Join("_api", "user", escapedName)
 }
 
 // Name returns the name of the user.
