@@ -162,8 +162,8 @@ func (u *user) AccessibleDatabases(ctx context.Context) ([]Database, error) {
 	return list, nil
 }
 
-// GrantAccess grants this user access to the given database.
-func (u *user) GrantAccess(ctx context.Context, db Database) error {
+// GrantReadWriteAccess grants this user read/write access to the given database.
+func (u *user) GrantReadWriteAccess(ctx context.Context, db Database) error {
 	if err := u.grant(ctx, db, "rw"); err != nil {
 		return WithStack(err)
 	}

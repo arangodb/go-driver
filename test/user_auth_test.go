@@ -77,7 +77,7 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	}
 
 	// Grant user1 access to _system db, then it should be able to access user2
-	if err := u1.GrantAccess(nil, systemDb); err != nil {
+	if err := u1.GrantReadWriteAccess(nil, systemDb); err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
 
@@ -98,7 +98,7 @@ func TestGrantUser(t *testing.T) {
 	u := ensureUser(nil, c, "grant_user1", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_test", nil, t)
 
-	if err := u.GrantAccess(nil, db); err != nil {
+	if err := u.GrantReadWriteAccess(nil, db); err != nil {
 		t.Fatalf("GrantAccess failed: %s", describe(err))
 	}
 

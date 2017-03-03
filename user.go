@@ -53,8 +53,8 @@ type User interface {
 	// AccessibleDatabases returns a list of all databases that can be accessed by this user.
 	AccessibleDatabases(ctx context.Context) ([]Database, error)
 
-	// GrantAccess grants this user access to the given database.
-	GrantAccess(ctx context.Context, db Database) error
+	// GrantReadWriteAccess grants this user read/write access to the given database.
+	GrantReadWriteAccess(ctx context.Context, db Database) error
 
 	// RevokeAccess revokes this user access to the given database.
 	RevokeAccess(ctx context.Context, db Database) error
