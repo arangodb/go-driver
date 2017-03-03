@@ -24,13 +24,15 @@ package driver
 
 import (
 	"context"
+	"net/url"
 	"path"
 )
 
 // Database opens a connection to an existing database.
 // If no database with given name exists, an NotFoundError is returned.
 func (c *client) Database(ctx context.Context, name string) (Database, error) {
-	req, err := c.conn.NewRequest("GET", path.Join("_db", name, "_api/database/current"))
+	escapedName := url.QueryEscape(name)
+	req, err := c.conn.NewRequest("GET", path.Join("_db", escapedName, "_api/database/current"))
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -50,7 +52,8 @@ func (c *client) Database(ctx context.Context, name string) (Database, error) {
 
 // DatabaseExists returns true if a database with given name exists.
 func (c *client) DatabaseExists(ctx context.Context, name string) (bool, error) {
-	req, err := c.conn.NewRequest("GET", path.Join("_db", name, "_api/database/current"))
+	escapedName := url.QueryEscape(name)
+	req, err := c.conn.NewRequest("GET", path.Join("_db", escapedName, "_api/database/current"))
 	if err != nil {
 		return false, WithStack(err)
 	}

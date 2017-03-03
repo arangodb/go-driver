@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"net/url"
 	"path"
 )
 
@@ -49,7 +50,8 @@ type database struct {
 
 // relPath creates the relative path to this database (`_db/<name>`)
 func (d *database) relPath() string {
-	return path.Join("_db", d.name)
+	escapedName := url.QueryEscape(d.name)
+	return path.Join("_db", escapedName)
 }
 
 // Name returns the name of the database.
@@ -60,7 +62,8 @@ func (d *database) Name() string {
 // Collection opens a connection to an existing collection within the database.
 // If no collection with given name exists, an NotFoundError is returned.
 func (d *database) Collection(ctx context.Context, name string) (Collection, error) {
-	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/collection", name))
+	escapedName := url.QueryEscape(name)
+	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/collection", escapedName))
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -80,7 +83,8 @@ func (d *database) Collection(ctx context.Context, name string) (Collection, err
 
 // CollectionExists returns true if a collection with given name exists within the database.
 func (d *database) CollectionExists(ctx context.Context, name string) (bool, error) {
-	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/collection", name))
+	escapedName := url.QueryEscape(name)
+	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/collection", escapedName))
 	if err != nil {
 		return false, WithStack(err)
 	}
