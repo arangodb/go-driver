@@ -36,11 +36,11 @@ type CollectionIndexes interface {
 	// Indexes returns a list of all indexes in the collection.
 	Indexes(ctx context.Context) ([]Index, error)
 
-	// CreateFullTextIndex creates a fulltext index in the collection, if it does not already exist.
+	// EnsureFullTextIndex creates a fulltext index in the collection, if it does not already exist.
 	// Fields is a slice of attribute names. Currently, the slice is limited to exactly one attribute.
-	CreateFullTextIndex(ctx context.Context, fields []string, options *CreateFullTextIndexOptions) (Index, error)
+	EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, error)
 
-	// CreateGeoIndex creates a hash index in the collection, if it does not already exist.
+	// EnsureGeoIndex creates a hash index in the collection, if it does not already exist.
 	// Fields is a slice with one or two attribute paths. If it is a slice with one attribute path location,
 	// then a geo-spatial index on all documents is created using location as path to the coordinates.
 	// The value of the attribute must be a slice with at least two double values. The slice must contain the latitude (first value)
@@ -48,53 +48,53 @@ type CollectionIndexes interface {
 	// If it is a slice with two attribute paths latitude and longitude, then a geo-spatial index on all documents is created
 	// using latitude and longitude as paths the latitude and the longitude. The value of the attribute latitude and of the
 	// attribute longitude must a double. All documents, which do not have the attribute paths or which values are not suitable, are ignored.
-	CreateGeoIndex(ctx context.Context, fields []string, options *CreateGeoIndexOptions) (Index, error)
+	EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, error)
 
-	// CreateHashIndex creates a hash index in the collection, if it does not already exist.
+	// EnsureHashIndex creates a hash index in the collection, if it does not already exist.
 	// Fields is a slice of attribute paths.
-	CreateHashIndex(ctx context.Context, fields []string, options *CreateHashIndexOptions) (Index, error)
+	EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, error)
 
-	// CreatePersistentIndex creates a persistent index in the collection, if it does not already exist.
+	// EnsurePersistentIndex creates a persistent index in the collection, if it does not already exist.
 	// Fields is a slice of attribute paths.
-	CreatePersistentIndex(ctx context.Context, fields []string, options *CreatePersistentIndexOptions) (Index, error)
+	EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, error)
 
-	// CreateSkipListIndex creates a skiplist index in the collection, if it does not already exist.
+	// EnsureSkipListIndex creates a skiplist index in the collection, if it does not already exist.
 	// Fields is a slice of attribute paths.
-	CreateSkipListIndex(ctx context.Context, fields []string, options *CreateSkipListIndexOptions) (Index, error)
+	EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, error)
 }
 
-// CreateFullTextIndexOptions contains specific options for creating a full text index.
-type CreateFullTextIndexOptions struct {
+// EnsureFullTextIndexOptions contains specific options for creating a full text index.
+type EnsureFullTextIndexOptions struct {
 	// MinLength is the minimum character length of words to index. Will default to a server-defined
 	// value if unspecified (0). It is thus recommended to set this value explicitly when creating the index.
 	MinLength int
 }
 
-// CreateGeoIndexOptions contains specific options for creating a geo index.
-type CreateGeoIndexOptions struct {
+// EnsureGeoIndexOptions contains specific options for creating a geo index.
+type EnsureGeoIndexOptions struct {
 	// If a geo-spatial index on a location is constructed and GeoJSON is true, then the order within the array
 	// is longitude followed by latitude. This corresponds to the format described in http://geojson.org/geojson-spec.html#positions
 	GeoJSON bool
 }
 
-// CreateHashIndexOptions contains specific options for creating a hash index.
-type CreateHashIndexOptions struct {
+// EnsureHashIndexOptions contains specific options for creating a hash index.
+type EnsureHashIndexOptions struct {
 	// If true, then create a unique index.
 	Unique bool
 	// If true, then create a sparse index.
 	Sparse bool
 }
 
-// CreatePersistentIndexOptions contains specific options for creating a persistent index.
-type CreatePersistentIndexOptions struct {
+// EnsurePersistentIndexOptions contains specific options for creating a persistent index.
+type EnsurePersistentIndexOptions struct {
 	// If true, then create a unique index.
 	Unique bool
 	// If true, then create a sparse index.
 	Sparse bool
 }
 
-// CreateSkipListIndexOptions contains specific options for creating a skip-list index.
-type CreateSkipListIndexOptions struct {
+// EnsureSkipListIndexOptions contains specific options for creating a skip-list index.
+type EnsureSkipListIndexOptions struct {
 	// If true, then create a unique index.
 	Unique bool
 	// If true, then create a sparse index.

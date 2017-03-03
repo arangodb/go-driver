@@ -34,10 +34,10 @@ func TestIndexes(t *testing.T) {
 	col := ensureCollection(nil, db, "indexes_test", nil, t)
 
 	// Create some indexes
-	if _, err := col.CreateFullTextIndex(nil, []string{"name"}, nil); err != nil {
+	if _, err := col.EnsureFullTextIndex(nil, []string{"name"}, nil); err != nil {
 		t.Fatalf("Failed to create new index: %s", describe(err))
 	}
-	if _, err := col.CreateHashIndex(nil, []string{"age", "gender"}, nil); err != nil {
+	if _, err := col.EnsureHashIndex(nil, []string{"age", "gender"}, nil); err != nil {
 		t.Fatalf("Failed to create new index: %s", describe(err))
 	}
 

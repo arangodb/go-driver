@@ -29,21 +29,21 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-// TestCreateFullTextIndex creates a collection with a full text index.
-func TestCreateFullTextIndex(t *testing.T) {
+// TestEnsureFullTextIndex creates a collection with a full text index.
+func TestEnsureFullTextIndex(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
-	testOptions := []*driver.CreateFullTextIndexOptions{
+	testOptions := []*driver.EnsureFullTextIndexOptions{
 		nil,
-		&driver.CreateFullTextIndexOptions{MinLength: 2},
-		&driver.CreateFullTextIndexOptions{MinLength: 20},
+		&driver.EnsureFullTextIndexOptions{MinLength: 2},
+		&driver.EnsureFullTextIndexOptions{MinLength: 20},
 	}
 
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("fulltext_index_test_%d", i), nil, t)
 
-		idx, err := col.CreateFullTextIndex(nil, []string{"name"}, options)
+		idx, err := col.EnsureFullTextIndex(nil, []string{"name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
 		}
@@ -69,21 +69,21 @@ func TestCreateFullTextIndex(t *testing.T) {
 	}
 }
 
-// TestCreateGeoIndex creates a collection with a geo index.
-func TestCreateGeoIndex(t *testing.T) {
+// TestEnsureGeoIndex creates a collection with a geo index.
+func TestEnsureGeoIndex(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
-	testOptions := []*driver.CreateGeoIndexOptions{
+	testOptions := []*driver.EnsureGeoIndexOptions{
 		nil,
-		&driver.CreateGeoIndexOptions{GeoJSON: true},
-		&driver.CreateGeoIndexOptions{GeoJSON: false},
+		&driver.EnsureGeoIndexOptions{GeoJSON: true},
+		&driver.EnsureGeoIndexOptions{GeoJSON: false},
 	}
 
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("geo_index_test_%d", i), nil, t)
 
-		idx, err := col.CreateGeoIndex(nil, []string{"name"}, options)
+		idx, err := col.EnsureGeoIndex(nil, []string{"name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
 		}
@@ -109,23 +109,23 @@ func TestCreateGeoIndex(t *testing.T) {
 	}
 }
 
-// TestCreateHashIndex creates a collection with a hash index.
-func TestCreateHashIndex(t *testing.T) {
+// TestEnsureHashIndex creates a collection with a hash index.
+func TestEnsureHashIndex(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
-	testOptions := []*driver.CreateHashIndexOptions{
+	testOptions := []*driver.EnsureHashIndexOptions{
 		nil,
-		&driver.CreateHashIndexOptions{Unique: true, Sparse: false},
-		&driver.CreateHashIndexOptions{Unique: true, Sparse: true},
-		&driver.CreateHashIndexOptions{Unique: false, Sparse: false},
-		&driver.CreateHashIndexOptions{Unique: false, Sparse: true},
+		&driver.EnsureHashIndexOptions{Unique: true, Sparse: false},
+		&driver.EnsureHashIndexOptions{Unique: true, Sparse: true},
+		&driver.EnsureHashIndexOptions{Unique: false, Sparse: false},
+		&driver.EnsureHashIndexOptions{Unique: false, Sparse: true},
 	}
 
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("hash_index_test_%d", i), nil, t)
 
-		idx, err := col.CreateHashIndex(nil, []string{"name"}, options)
+		idx, err := col.EnsureHashIndex(nil, []string{"name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
 		}
@@ -151,23 +151,23 @@ func TestCreateHashIndex(t *testing.T) {
 	}
 }
 
-// TestCreatePersistentIndex creates a collection with a persistent index.
-func TestCreatePersistentIndex(t *testing.T) {
+// TestEnsurePersistentIndex creates a collection with a persistent index.
+func TestEnsurePersistentIndex(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
-	testOptions := []*driver.CreatePersistentIndexOptions{
+	testOptions := []*driver.EnsurePersistentIndexOptions{
 		nil,
-		&driver.CreatePersistentIndexOptions{Unique: true, Sparse: false},
-		&driver.CreatePersistentIndexOptions{Unique: true, Sparse: true},
-		&driver.CreatePersistentIndexOptions{Unique: false, Sparse: false},
-		&driver.CreatePersistentIndexOptions{Unique: false, Sparse: true},
+		&driver.EnsurePersistentIndexOptions{Unique: true, Sparse: false},
+		&driver.EnsurePersistentIndexOptions{Unique: true, Sparse: true},
+		&driver.EnsurePersistentIndexOptions{Unique: false, Sparse: false},
+		&driver.EnsurePersistentIndexOptions{Unique: false, Sparse: true},
 	}
 
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("persistent_index_test_%d", i), nil, t)
 
-		idx, err := col.CreatePersistentIndex(nil, []string{"age", "name"}, options)
+		idx, err := col.EnsurePersistentIndex(nil, []string{"age", "name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
 		}
@@ -193,23 +193,23 @@ func TestCreatePersistentIndex(t *testing.T) {
 	}
 }
 
-// TestCreateSkipListIndex creates a collection with a skiplist index.
-func TestCreateSkipListIndex(t *testing.T) {
+// TestEnsureSkipListIndex creates a collection with a skiplist index.
+func TestEnsureSkipListIndex(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
-	testOptions := []*driver.CreateSkipListIndexOptions{
+	testOptions := []*driver.EnsureSkipListIndexOptions{
 		nil,
-		&driver.CreateSkipListIndexOptions{Unique: true, Sparse: false},
-		&driver.CreateSkipListIndexOptions{Unique: true, Sparse: true},
-		&driver.CreateSkipListIndexOptions{Unique: false, Sparse: false},
-		&driver.CreateSkipListIndexOptions{Unique: false, Sparse: true},
+		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: false},
+		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: true},
+		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: false},
+		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: true},
 	}
 
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("skiplist_index_test_%d", i), nil, t)
 
-		idx, err := col.CreateSkipListIndex(nil, []string{"name", "title"}, options)
+		idx, err := col.EnsureSkipListIndex(nil, []string{"name", "title"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
 		}
