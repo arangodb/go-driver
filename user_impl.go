@@ -24,7 +24,6 @@ package driver
 
 import (
 	"context"
-	"net/url"
 	"path"
 )
 
@@ -56,7 +55,7 @@ type userData struct {
 
 // relPath creates the relative path to this index (`_api/user/<name>`)
 func (u *user) relPath() string {
-	escapedName := url.QueryEscape(u.data.Name)
+	escapedName := pathEscape(u.data.Name)
 	return path.Join("_api", "user", escapedName)
 }
 
@@ -203,7 +202,7 @@ func (u *user) RevokeAccess(ctx context.Context, db Database) error {
 
 // grant grants or revokes access to a database for this user.
 func (u *user) grant(ctx context.Context, db Database, access string) error {
-	escapedDbName := url.QueryEscape(db.Name())
+	escapedDbName := pathEscape(db.Name())
 	req, err := u.conn.NewRequest("PUT", path.Join(u.relPath(), "database", escapedDbName))
 	if err != nil {
 		return WithStack(err)

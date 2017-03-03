@@ -3,7 +3,7 @@ SCRIPTDIR := $(shell pwd)
 ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 
 GOBUILDDIR := $(SCRIPTDIR)/.gobuild
-GOVERSION := 1.7.5-alpine
+GOVERSION := 1.8-alpine
 
 ARANGODB := arangodb:3.1.12
 #ARANGODB := neunhoef/arangodb:3.2.devel-1
@@ -32,7 +32,7 @@ $(GOBUILDDIR):
 
 DBCONTAINER := $(PROJECT)-test-db
 
-run-tests: build run-tests-single-with-auth run-tests-single-no-auth
+run-tests: run-tests-single-with-auth run-tests-single-no-auth
 
 run-tests-single-no-auth:
 	@echo "Single server, no authentication"
