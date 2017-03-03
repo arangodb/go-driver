@@ -5,7 +5,8 @@ ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 GOBUILDDIR := $(SCRIPTDIR)/.gobuild
 GOVERSION := 1.7.5-alpine
 
-ARANGODBVERSION := 3.1.12
+ARANGODB := arangodb:3.1.12
+#ARANGODB := neunhoef/arangodb:3.2.devel-1
 
 ORGPATH := github.com/arangodb
 ORGDIR := $(GOBUILDDIR)/src/$(ORGPATH)
@@ -31,14 +32,14 @@ $(GOBUILDDIR):
 
 DBCONTAINER := $(PROJECT)-test-db
 
-run-tests: build run-tests-single-no-auth run-tests-single-with-auth
+run-tests: build run-tests-single-with-auth run-tests-single-no-auth
 
 run-tests-single-no-auth:
 	@echo "Single server, no authentication"
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
 	@docker run -d --name $(DBCONTAINER) \
 		-e ARANGO_NO_AUTH=1 \
-		arangodb:$(ARANGODBVERSION)
+		$(ARANGODB)
 	@docker run \
 		--rm \
 		--net=container:$(DBCONTAINER) \
@@ -55,7 +56,7 @@ run-tests-single-with-auth:
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
 	@docker run -d --name $(DBCONTAINER) \
 		-e ARANGO_ROOT_PASSWORD=rootpw \
-		arangodb:$(ARANGODBVERSION)
+		$(ARANGODB)
 	@docker run \
 		--rm \
 		--net=container:$(DBCONTAINER) \
