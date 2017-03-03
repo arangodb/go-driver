@@ -129,3 +129,83 @@ func TestGrantUser(t *testing.T) {
 		t.Error("Expected failure, got success")
 	}
 }
+
+// TestUserAccessibleDatabases creates a user & databases and checks the list of accessible databases.
+func TestUserAccessibleDatabases(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	u := ensureUser(nil, c, "accessible_db_user1", nil, t)
+	db1 := ensureDatabase(nil, c, "accessible_db1", nil, t)
+	db2 := ensureDatabase(nil, c, "accessible_db2", nil, t)
+
+	contains := func(list []driver.Database, name string) bool {
+		for _, db := range list {
+			if db.Name() == name {
+				return true
+			}
+		}
+		return false
+	}
+
+	expectListContains := func(listName string, list []driver.Database, name ...string) {
+		for _, n := range name {
+			if !contains(list, n) {
+				t.Errorf("Expected list '%s' to contain '%s', it did not", listName, n)
+			}
+		}
+	}
+
+	expectListNotContains := func(listName string, list []driver.Database, name ...string) {
+		for _, n := range name {
+			if contains(list, n) {
+				t.Errorf("Expected list '%s' to not contain '%s', it did", listName, n)
+			}
+		}
+	}
+
+	// Nothing allowed yet
+	list, err := u.AccessibleDatabases(nil)
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+	expectListContains("expect-none", list)
+	expectListNotContains("expect-none", list, db1.Name(), db2.Name())
+
+	// Allow db1
+	if err := u.GrantReadWriteAccess(nil, db1); err != nil {
+		t.Fatalf("GrantAccess failed: %s", describe(err))
+	}
+
+	list, err = u.AccessibleDatabases(nil)
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+	expectListContains("expect-db1", list, db1.Name())
+	expectListNotContains("expect-db1", list, db2.Name())
+
+	// allow db2, revoke db1
+	if err := u.GrantReadWriteAccess(nil, db2); err != nil {
+		t.Fatalf("GrantAccess failed: %s", describe(err))
+	}
+	if err := u.RevokeAccess(nil, db1); err != nil {
+		t.Fatalf("RevokeAccess failed: %s", describe(err))
+	}
+
+	list, err = u.AccessibleDatabases(nil)
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+	expectListContains("expect-db2", list, db2.Name())
+	expectListNotContains("expect-db2", list, db1.Name())
+
+	// revoke db2
+	if err := u.RevokeAccess(nil, db2); err != nil {
+		t.Fatalf("RevokeAccess failed: %s", describe(err))
+	}
+
+	list, err = u.AccessibleDatabases(nil)
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+	expectListContains("expect-none2", list)
+	expectListNotContains("expect-none", list, db1.Name(), db2.Name())
+}

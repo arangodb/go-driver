@@ -153,13 +153,36 @@ func (u *user) Replace(ctx context.Context, options UserOptions) error {
 	return nil
 }
 
+type userAccessibleDatabasesResponse struct {
+	Result map[string]string `json:"result"`
+}
+
 // AccessibleDatabases returns a list of all databases that can be accessed by this user.
 func (u *user) AccessibleDatabases(ctx context.Context) ([]Database, error) {
-	list, err := listDatabases(ctx, u.conn, path.Join(u.relPath(), "database"))
+	req, err := u.conn.NewRequest("GET", path.Join(u.relPath(), "database"))
 	if err != nil {
 		return nil, WithStack(err)
 	}
-	return list, nil
+	resp, err := u.conn.Do(ctx, req)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return nil, WithStack(err)
+	}
+	var data userAccessibleDatabasesResponse
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, WithStack(err)
+	}
+	result := make([]Database, 0, len(data.Result))
+	for name := range data.Result {
+		db, err := newDatabase(name, u.conn)
+		if err != nil {
+			return nil, WithStack(err)
+		}
+		result = append(result, db)
+	}
+	return result, nil
 }
 
 // GrantReadWriteAccess grants this user read/write access to the given database.
