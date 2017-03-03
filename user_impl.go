@@ -152,3 +152,53 @@ func (u *user) Replace(ctx context.Context, options UserOptions) error {
 	u.data = data
 	return nil
 }
+
+// AccessibleDatabases returns a list of all databases that can be accessed by this user.
+func (u *user) AccessibleDatabases(ctx context.Context) ([]Database, error) {
+	list, err := listDatabases(ctx, u.conn, path.Join(u.relPath(), "database"))
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	return list, nil
+}
+
+// GrantAccess grants this user access to the given database.
+func (u *user) GrantAccess(ctx context.Context, db Database) error {
+	if err := u.grant(ctx, db, "rw"); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// RevokeAccess revokes this user access to the given database.
+func (u *user) RevokeAccess(ctx context.Context, db Database) error {
+	if err := u.grant(ctx, db, "none"); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// grant grants or revokes access to a database for this user.
+func (u *user) grant(ctx context.Context, db Database, access string) error {
+	escapedDbName := url.QueryEscape(db.Name())
+	req, err := u.conn.NewRequest("PUT", path.Join(u.relPath(), "database", escapedDbName))
+	if err != nil {
+		return WithStack(err)
+	}
+	input := struct {
+		Grant string `json:"grant"`
+	}{
+		Grant: access,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	resp, err := u.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}

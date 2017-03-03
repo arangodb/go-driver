@@ -29,7 +29,7 @@ $(GOBUILDDIR):
 
 DBCONTAINER := $(PROJECT)-test-db
 
-run-tests: build run-tests-single-no-auth 
+run-tests: build run-tests-single-no-auth run-tests-single-with-auth
 
 run-tests-single-no-auth:
 	@echo "Single server, no authentication"
@@ -46,4 +46,22 @@ run-tests-single-no-auth:
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -v $(REPOPATH) $(REPOPATH)/test
+	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
+
+run-tests-single-with-auth:
+	@echo "Single server, with authentication"
+	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@docker run -d --name $(DBCONTAINER) \
+		-e ARANGO_ROOT_PASSWORD=rootpw \
+		arangodb:3.1.11
+	@docker run \
+		--rm \
+		--net=container:$(DBCONTAINER) \
+		-v $(ROOTDIR):/usr/code \
+		-e GOPATH=/usr/code/.gobuild \
+		-e TEST_ENDPOINTS=http://localhost:8529 \
+		-e TEST_AUTHENTICATION=basic:root:rootpw \
+		-w /usr/code/ \
+		golang:$(GOVERSION) \
+		go test -tags auth -v $(REPOPATH)/test
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null

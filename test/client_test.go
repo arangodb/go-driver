@@ -108,7 +108,7 @@ func createClientFromEnv(t *testing.T, waitUntilReady bool) driver.Client {
 		timeout := time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		if up := waitUntilServerAvailable(ctx, c); !up {
+		if up := waitUntilServerAvailable(ctx, c, t); !up {
 			t.Fatalf("Connection is not available in %s", timeout)
 		}
 	}
@@ -116,7 +116,7 @@ func createClientFromEnv(t *testing.T, waitUntilReady bool) driver.Client {
 }
 
 // waitUntilServerAvailable keeps waiting until the server/cluster that the client is addressing is available.
-func waitUntilServerAvailable(ctx context.Context, c driver.Client) bool {
+func waitUntilServerAvailable(ctx context.Context, c driver.Client, t *testing.T) bool {
 	instanceUp := make(chan bool)
 	go func() {
 		for {
@@ -127,6 +127,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client) bool {
 				return
 			} else {
 				cancel()
+				//t.Logf("Version failed: %s", describe(err))
 				time.Sleep(time.Second)
 			}
 		}

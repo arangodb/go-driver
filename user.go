@@ -49,4 +49,13 @@ type User interface {
 	// Replace replaces all properties of the user.
 	// If the user does not exist, a NotFoundError is returned.
 	Replace(ctx context.Context, options UserOptions) error
+
+	// AccessibleDatabases returns a list of all databases that can be accessed by this user.
+	AccessibleDatabases(ctx context.Context) ([]Database, error)
+
+	// GrantAccess grants this user access to the given database.
+	GrantAccess(ctx context.Context, db Database) error
+
+	// RevokeAccess revokes this user access to the given database.
+	RevokeAccess(ctx context.Context, db Database) error
 }

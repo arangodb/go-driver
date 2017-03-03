@@ -75,6 +75,11 @@ func IsUnauthorized(err error) bool {
 	return IsArangoErrorWithCode(err, 401)
 }
 
+// IsForbidden returns true if the given error is an ArangoError with code 403, indicating a forbidden request.
+func IsForbidden(err error) bool {
+	return IsArangoErrorWithCode(err, 403)
+}
+
 // IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
 func IsNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, 404) || IsArangoErrorWithErrorNum(err, 1202, 1203)

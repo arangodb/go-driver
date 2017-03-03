@@ -20,6 +20,8 @@
 // Author Ewout Prangsma
 //
 
+// +build !auth
+
 // This example demonstrates how to create multiple documents at once.
 package driver_test
 
