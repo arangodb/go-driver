@@ -38,7 +38,8 @@ type CollectionIndexes interface {
 
 	// EnsureFullTextIndex creates a fulltext index in the collection, if it does not already exist.
 	// Fields is a slice of attribute names. Currently, the slice is limited to exactly one attribute.
-	EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, error)
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, bool, error)
 
 	// EnsureGeoIndex creates a hash index in the collection, if it does not already exist.
 	// Fields is a slice with one or two attribute paths. If it is a slice with one attribute path location,
@@ -48,19 +49,23 @@ type CollectionIndexes interface {
 	// If it is a slice with two attribute paths latitude and longitude, then a geo-spatial index on all documents is created
 	// using latitude and longitude as paths the latitude and the longitude. The value of the attribute latitude and of the
 	// attribute longitude must a double. All documents, which do not have the attribute paths or which values are not suitable, are ignored.
-	EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, error)
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, bool, error)
 
 	// EnsureHashIndex creates a hash index in the collection, if it does not already exist.
 	// Fields is a slice of attribute paths.
-	EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, error)
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, bool, error)
 
 	// EnsurePersistentIndex creates a persistent index in the collection, if it does not already exist.
 	// Fields is a slice of attribute paths.
-	EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, error)
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, bool, error)
 
 	// EnsureSkipListIndex creates a skiplist index in the collection, if it does not already exist.
 	// Fields is a slice of attribute paths.
-	EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, error)
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error)
 }
 
 // EnsureFullTextIndexOptions contains specific options for creating a full text index.

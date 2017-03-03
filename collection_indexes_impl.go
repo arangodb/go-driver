@@ -117,7 +117,8 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 // EnsureFullTextIndex creates a fulltext index in the collection, if it does not already exist.
 //
 // Fields is a slice of attribute names. Currently, the slice is limited to exactly one attribute.
-func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, error) {
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, bool, error) {
 	input := indexData{
 		Type:   "fulltext",
 		Fields: fields,
@@ -125,11 +126,11 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 	if options != nil {
 		input.MinLength = options.MinLength
 	}
-	idx, err := c.ensureIndex(ctx, input)
+	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
-	return idx, nil
+	return idx, created, nil
 }
 
 // EnsureGeoIndex creates a hash index in the collection, if it does not already exist.
@@ -141,7 +142,8 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 // If it is a slice with two attribute paths latitude and longitude, then a geo-spatial index on all documents is created
 // using latitude and longitude as paths the latitude and the longitude. The value of the attribute latitude and of the
 // attribute longitude must a double. All documents, which do not have the attribute paths or which values are not suitable, are ignored.
-func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, error) {
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, bool, error) {
 	input := indexData{
 		Type:   "geo",
 		Fields: fields,
@@ -149,16 +151,17 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 	if options != nil {
 		input.GeoJSON = &options.GeoJSON
 	}
-	idx, err := c.ensureIndex(ctx, input)
+	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
-	return idx, nil
+	return idx, created, nil
 }
 
 // EnsureHashIndex creates a hash index in the collection, if it does not already exist.
 // Fields is a slice of attribute paths.
-func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, error) {
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, bool, error) {
 	input := indexData{
 		Type:   "hash",
 		Fields: fields,
@@ -167,16 +170,17 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
 	}
-	idx, err := c.ensureIndex(ctx, input)
+	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
-	return idx, nil
+	return idx, created, nil
 }
 
 // EnsurePersistentIndex creates a persistent index in the collection, if it does not already exist.
 // Fields is a slice of attribute paths.
-func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, error) {
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, bool, error) {
 	input := indexData{
 		Type:   "persistent",
 		Fields: fields,
@@ -185,16 +189,17 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
 	}
-	idx, err := c.ensureIndex(ctx, input)
+	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
-	return idx, nil
+	return idx, created, nil
 }
 
 // EnsureSkipListIndex creates a skiplist index in the collection, if it does not already exist.
 // Fields is a slice of attribute paths.
-func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, error) {
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error) {
 	input := indexData{
 		Type:   "skiplist",
 		Fields: fields,
@@ -203,39 +208,40 @@ func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, o
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
 	}
-	idx, err := c.ensureIndex(ctx, input)
+	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
-	return idx, nil
+	return idx, created, nil
 }
 
 // ensureIndex creates a persistent index in the collection, if it does not already exist.
 // Fields is a slice of attribute paths.
-func (c *collection) ensureIndex(ctx context.Context, options indexData) (Index, error) {
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) ensureIndex(ctx context.Context, options indexData) (Index, bool, error) {
 	req, err := c.conn.NewRequest("POST", path.Join(c.db.relPath(), "_api/index"))
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
 	req.SetQuery("collection", c.name)
 	if _, err := req.SetBody(options); err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
 	if err := resp.CheckStatus(200, 201); err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
+	created := resp.StatusCode() == 201
 	var data indexData
 	if err := resp.ParseBody("", &data); err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
 	idx, err := newIndex(data.ID, c)
 	if err != nil {
-		return nil, WithStack(err)
+		return nil, false, WithStack(err)
 	}
-	return idx, nil
-
+	return idx, created, nil
 }

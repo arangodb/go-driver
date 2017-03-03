@@ -43,9 +43,12 @@ func TestEnsureFullTextIndex(t *testing.T) {
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("fulltext_index_test_%d", i), nil, t)
 
-		idx, err := col.EnsureFullTextIndex(nil, []string{"name"}, options)
+		idx, created, err := col.EnsureFullTextIndex(nil, []string{"name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
+		}
+		if !created {
+			t.Error("Expected created to be true, got false")
 		}
 
 		// Index must exists now
@@ -53,6 +56,15 @@ func TestEnsureFullTextIndex(t *testing.T) {
 			t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
 		} else if !found {
 			t.Errorf("Index '%s' does not exist, expected it to exist", idx.Name())
+		}
+
+		// Ensure again, created must be false now
+		_, created, err = col.EnsureFullTextIndex(nil, []string{"name"}, options)
+		if err != nil {
+			t.Fatalf("Failed to re-create index: %s", describe(err))
+		}
+		if created {
+			t.Error("Expected created to be false, got true")
 		}
 
 		// Remove index
@@ -83,9 +95,12 @@ func TestEnsureGeoIndex(t *testing.T) {
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("geo_index_test_%d", i), nil, t)
 
-		idx, err := col.EnsureGeoIndex(nil, []string{"name"}, options)
+		idx, created, err := col.EnsureGeoIndex(nil, []string{"name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
+		}
+		if !created {
+			t.Error("Expected created to be true, got false")
 		}
 
 		// Index must exists now
@@ -93,6 +108,15 @@ func TestEnsureGeoIndex(t *testing.T) {
 			t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
 		} else if !found {
 			t.Errorf("Index '%s' does not exist, expected it to exist", idx.Name())
+		}
+
+		// Ensure again, created must be false now
+		_, created, err = col.EnsureGeoIndex(nil, []string{"name"}, options)
+		if err != nil {
+			t.Fatalf("Failed to re-create index: %s", describe(err))
+		}
+		if created {
+			t.Error("Expected created to be false, got true")
 		}
 
 		// Remove index
@@ -125,9 +149,12 @@ func TestEnsureHashIndex(t *testing.T) {
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("hash_index_test_%d", i), nil, t)
 
-		idx, err := col.EnsureHashIndex(nil, []string{"name"}, options)
+		idx, created, err := col.EnsureHashIndex(nil, []string{"name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
+		}
+		if !created {
+			t.Error("Expected created to be true, got false")
 		}
 
 		// Index must exists now
@@ -135,6 +162,15 @@ func TestEnsureHashIndex(t *testing.T) {
 			t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
 		} else if !found {
 			t.Errorf("Index '%s' does not exist, expected it to exist", idx.Name())
+		}
+
+		// Ensure again, created must be false now
+		_, created, err = col.EnsureHashIndex(nil, []string{"name"}, options)
+		if err != nil {
+			t.Fatalf("Failed to re-create index: %s", describe(err))
+		}
+		if created {
+			t.Error("Expected created to be false, got true")
 		}
 
 		// Remove index
@@ -167,9 +203,12 @@ func TestEnsurePersistentIndex(t *testing.T) {
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("persistent_index_test_%d", i), nil, t)
 
-		idx, err := col.EnsurePersistentIndex(nil, []string{"age", "name"}, options)
+		idx, created, err := col.EnsurePersistentIndex(nil, []string{"age", "name"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
+		}
+		if !created {
+			t.Error("Expected created to be true, got false")
 		}
 
 		// Index must exists now
@@ -177,6 +216,15 @@ func TestEnsurePersistentIndex(t *testing.T) {
 			t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
 		} else if !found {
 			t.Errorf("Index '%s' does not exist, expected it to exist", idx.Name())
+		}
+
+		// Ensure again, created must be false now
+		_, created, err = col.EnsurePersistentIndex(nil, []string{"age", "name"}, options)
+		if err != nil {
+			t.Fatalf("Failed to re-create index: %s", describe(err))
+		}
+		if created {
+			t.Error("Expected created to be false, got true")
 		}
 
 		// Remove index
@@ -209,9 +257,12 @@ func TestEnsureSkipListIndex(t *testing.T) {
 	for i, options := range testOptions {
 		col := ensureCollection(nil, db, fmt.Sprintf("skiplist_index_test_%d", i), nil, t)
 
-		idx, err := col.EnsureSkipListIndex(nil, []string{"name", "title"}, options)
+		idx, created, err := col.EnsureSkipListIndex(nil, []string{"name", "title"}, options)
 		if err != nil {
 			t.Fatalf("Failed to create new index: %s", describe(err))
+		}
+		if !created {
+			t.Error("Expected created to be true, got false")
 		}
 
 		// Index must exists now
@@ -219,6 +270,15 @@ func TestEnsureSkipListIndex(t *testing.T) {
 			t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
 		} else if !found {
 			t.Errorf("Index '%s' does not exist, expected it to exist", idx.Name())
+		}
+
+		// Ensure again, created must be false now
+		_, created, err = col.EnsureSkipListIndex(nil, []string{"name", "title"}, options)
+		if err != nil {
+			t.Fatalf("Failed to re-create index: %s", describe(err))
+		}
+		if created {
+			t.Error("Expected created to be false, got true")
 		}
 
 		// Remove index
