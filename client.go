@@ -32,6 +32,9 @@ type Client interface {
 
 	// Database functions
 	ClientDatabases
+
+	// User functions
+	ClientUsers
 }
 
 // ClientConfig contains all settings needed to create a client.

@@ -36,7 +36,7 @@ type User interface {
 	IsPasswordChangeNeeded() bool
 
 	// Get extra information about this user that was passed during its creation/update/replacement
-	Extra() interface{}
+	Extra(result interface{}) error
 
 	// Remove removes the user.
 	// If the user does not exist, a NotFoundError is returned.

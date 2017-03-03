@@ -37,7 +37,7 @@ type ClientUsers interface {
 	Users(ctx context.Context) ([]User, error)
 
 	// CreateUser creates a new user with given name and opens a connection to it.
-	// If a user with given name already exists, a DuplicateError is returned.
+	// If a user with given name already exists, a Conflict error is returned.
 	CreateUser(ctx context.Context, name string, options *UserOptions) (User, error)
 }
 

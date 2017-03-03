@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"net/url"
 	"path"
 )
 
@@ -47,15 +48,16 @@ type user struct {
 }
 
 type userData struct {
-	Name           string      `json:"user,omitempty"`
-	Active         bool        `json:"active,omitempty"`
-	Extra          interface{} `json:"extra,omitempty"`
-	ChangePassword bool        `json:"changePassword,omitempty"`
+	Name           string     `json:"user,omitempty"`
+	Active         bool       `json:"active,omitempty"`
+	Extra          *RawObject `json:"extra,omitempty"`
+	ChangePassword bool       `json:"changePassword,omitempty"`
 }
 
 // relPath creates the relative path to this index (`_api/user/<name>`)
 func (u *user) relPath() string {
-	return path.Join("_api", "user", u.data.Name)
+	encodedName := url.QueryEscape(u.data.Name)
+	return path.Join("_api", "user", encodedName)
 }
 
 // Name returns the name of the user.
@@ -74,8 +76,14 @@ func (u *user) IsPasswordChangeNeeded() bool {
 }
 
 // Get extra information about this user that was passed during its creation/update/replacement
-func (u *user) Extra() interface{} {
-	return u.data.Extra
+func (u *user) Extra(result interface{}) error {
+	if u.data.Extra == nil {
+		return nil
+	}
+	if err := u.conn.Unmarshal(*u.data.Extra, result); err != nil {
+		return WithStack(err)
+	}
+	return nil
 }
 
 // Remove removes the entire user.

@@ -82,7 +82,7 @@ func IsNotFound(err error) bool {
 
 // IsConflict returns true if the given error is an ArangoError with code 409, indicating a conflict.
 func IsConflict(err error) bool {
-	return IsArangoErrorWithCode(err, 409)
+	return IsArangoErrorWithCode(err, 409) || IsArangoErrorWithErrorNum(err, 1702)
 }
 
 // IsPreconditionFailed returns true if the given error is an ArangoError with code 412, indicating a failed precondition.
