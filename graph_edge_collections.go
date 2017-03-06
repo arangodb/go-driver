@@ -24,19 +24,21 @@ package driver
 
 import "context"
 
-// EdgeCollection provides access to the edges of a single edge collection.
-type EdgeCollection interface {
-	// Name returns the name of the collection.
-	Name() string
+// GraphEdgeCollections provides access to all edge collections of a single graph in a database.
+type GraphEdgeCollections interface {
+	// EdgeCollection opens a connection to an existing edge-collection within the graph.
+	// If no edge-collection with given name exists, an NotFoundError is returned.
+	EdgeCollection(ctx context.Context, name string) (EdgeCollection, error)
 
-	// CreateEdge creates a new edge in this edge collection.
-	CreateEdge(ctx context.Context, from, to DocumentID, document interface{}) (DocumentMeta, error)
+	// EdgeCollectionExists returns true if an edge-collection with given name exists within the graph.
+	EdgeCollectionExists(ctx context.Context, name string) (bool, error)
 
-	// Remove the edge collection from the graph.
-	Remove(ctx context.Context) error
+	// EdgeCollections returns all edge collections of this graph
+	EdgeCollections(ctx context.Context) ([]EdgeCollection, error)
 
-	// Replace creates an edge collection in the graph.
+	// CreateEdgeCollection creates an edge collection in the graph.
+	// collection: The name of the edge collection to be used.
 	// from: contains the names of one or more vertex collections that can contain source vertices.
 	// to: contains the names of one or more edge collections that can contain target vertices.
-	Replace(ctx context.Context, from, to []string) error
+	CreateEdgeCollection(ctx context.Context, collection string, from, to []string) (EdgeCollection, error)
 }

@@ -58,6 +58,27 @@ func TestCreateGraph(t *testing.T) {
 	} else if !found {
 		t.Errorf("GraphExists('%s') return false, expected true", name)
 	}
+	// Graph must be listed
+	if list, err := db.Graphs(nil); err != nil {
+		t.Errorf("Graphs failed: %s", describe(err))
+	} else {
+		found := false
+		for _, g := range list {
+			if g.Name() == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Graph '%s' not found in list", name)
+		}
+	}
+	// Open graph
+	if g, err := db.Graph(nil, name); err != nil {
+		t.Errorf("Graph('%s') failed: %s", name, describe(err))
+	} else if g.Name() != name {
+		t.Errorf("Graph.Name wrong. Expected '%s', got '%s'", name, g.Name())
+	}
 }
 
 // TestRemoveGraph creates a graph and then removes it.

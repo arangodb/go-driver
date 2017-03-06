@@ -75,23 +75,3 @@ func (g *graph) Remove(ctx context.Context) error {
 	}
 	return nil
 }
-
-// CreateEdgeCollection creates an edge collection in the graph.
-func (g *graph) CreateEdgeCollection(ctx context.Context, definition EdgeDefinition) (EdgeCollection, error) {
-	req, err := g.conn.NewRequest("POST", path.Join(g.relPath(), "edge"))
-	if err != nil {
-		return nil, WithStack(err)
-	}
-	resp, err := g.conn.Do(ctx, req)
-	if err != nil {
-		return nil, WithStack(err)
-	}
-	if err := resp.CheckStatus(201, 202); err != nil {
-		return nil, WithStack(err)
-	}
-	ec, err := newEdgeCollection(definition.Collection, g)
-	if err != nil {
-		return nil, WithStack(err)
-	}
-	return ec, nil
-}

@@ -49,7 +49,7 @@ type edgeCollection struct {
 }
 
 // relPath creates the relative path to this edge collection (`_db/<db-name>/_api/gharial/<graph-name>/edge/<collection-name>`)
-func (c *edgeCollection) relPath(apiName string) string {
+func (c *edgeCollection) relPath() string {
 	escapedName := pathEscape(c.name)
 	return path.Join(c.g.relPath(), "edge", escapedName)
 }
@@ -62,4 +62,47 @@ func (c *edgeCollection) Name() string {
 // CreateEdge creates a new edge in this edge collection.
 func (c *edgeCollection) CreateEdge(ctx context.Context, from, to DocumentID, document interface{}) (DocumentMeta, error) {
 	return DocumentMeta{}, nil
+}
+
+// Remove the edge collection from the graph.
+func (c *edgeCollection) Remove(ctx context.Context) error {
+	req, err := c.conn.NewRequest("DELETE", c.relPath())
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(201, 202); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// Replace creates an edge collection in the graph.
+// collection: The name of the edge collection to be used.
+// from: contains the names of one or more vertex collections that can contain source vertices.
+// to: contains the names of one or more edge collections that can contain target vertices.
+func (c *edgeCollection) Replace(ctx context.Context, from, to []string) error {
+	req, err := c.conn.NewRequest("PUT", c.relPath())
+	if err != nil {
+		return WithStack(err)
+	}
+	input := EdgeDefinition{
+		Collection: c.name,
+		From:       from,
+		To:         to,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(201, 202); err != nil {
+		return WithStack(err)
+	}
+	return nil
 }

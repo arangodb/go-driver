@@ -33,6 +33,6 @@ type Graph interface {
 	// If the graph does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
 
-	// CreateEdgeCollection creates an edge collection in the graph.
-	CreateEdgeCollection(ctx context.Context, definition EdgeDefinition) (EdgeCollection, error)
+	// EdgeCollection functions
+	GraphEdgeCollections
 }
