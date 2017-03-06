@@ -20,27 +20,9 @@
 // Author Ewout Prangsma
 //
 
-// +build !auth
+package test
 
-package driver_test
-
-import (
-	"context"
-
-	driver "github.com/arangodb/go-driver"
-)
-
-func ExampleIsNotFound(collection driver.Collection) {
-	var result Book
-	if _, err := collection.ReadDocument(nil, "keyDoesNotExist", &result); driver.IsNotFound(err) {
-		// No document with given key exists
-	}
-}
-
-func ExampleIsPreconditionFailed(collection driver.Collection) {
-	var result Book
-	ctx := driver.WithRevision(context.Background(), "an-old-revision")
-	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); driver.IsPreconditionFailed(err) {
-		// Document is found, but its revision is incorrect
-	}
+// boolRef returns a reference to a given boolean
+func boolRef(v bool) *bool {
+	return &v
 }

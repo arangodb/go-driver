@@ -22,13 +22,40 @@
 
 package driver
 
-type CreateUserOptions struct {
-	// Loginname of the user to be created
-	UserName string `json:"user,omitempty"`
-	// The user password as a string. If not specified, it will default to an empty string.
-	Password string `json:"passwd,omitempty"`
-	// A flag indicating whether the user account should be activated or not. The default value is true. If set to false, the user won't be able to log into the database.
-	Active *bool `json:"active,omitempty"`
-	// A JSON object with extra user information. The data contained in extra will be stored for the user but not be interpreted further by ArangoDB.
-	Extra interface{} `json:"extra,omitempty"`
+import "context"
+
+// User provides access to a single user of a single server / cluster of servers.
+type User interface {
+	// Name returns the name of the user.
+	Name() string
+
+	//  Is this an active user?
+	IsActive() bool
+
+	// Is a password change for this user needed?
+	IsPasswordChangeNeeded() bool
+
+	// Get extra information about this user that was passed during its creation/update/replacement
+	Extra(result interface{}) error
+
+	// Remove removes the user.
+	// If the user does not exist, a NotFoundError is returned.
+	Remove(ctx context.Context) error
+
+	// Update updates individual properties of the user.
+	// If the user does not exist, a NotFoundError is returned.
+	Update(ctx context.Context, options UserOptions) error
+
+	// Replace replaces all properties of the user.
+	// If the user does not exist, a NotFoundError is returned.
+	Replace(ctx context.Context, options UserOptions) error
+
+	// AccessibleDatabases returns a list of all databases that can be accessed by this user.
+	AccessibleDatabases(ctx context.Context) ([]Database, error)
+
+	// GrantReadWriteAccess grants this user read/write access to the given database.
+	GrantReadWriteAccess(ctx context.Context, db Database) error
+
+	// RevokeAccess revokes this user access to the given database.
+	RevokeAccess(ctx context.Context, db Database) error
 }

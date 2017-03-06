@@ -20,27 +20,13 @@
 // Author Ewout Prangsma
 //
 
-// +build !auth
+// +build !"go1.8"
 
-package driver_test
+package driver
 
-import (
-	"context"
+import "net/url"
 
-	driver "github.com/arangodb/go-driver"
-)
-
-func ExampleIsNotFound(collection driver.Collection) {
-	var result Book
-	if _, err := collection.ReadDocument(nil, "keyDoesNotExist", &result); driver.IsNotFound(err) {
-		// No document with given key exists
-	}
-}
-
-func ExampleIsPreconditionFailed(collection driver.Collection) {
-	var result Book
-	ctx := driver.WithRevision(context.Background(), "an-old-revision")
-	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); driver.IsPreconditionFailed(err) {
-		// Document is found, but its revision is incorrect
-	}
+// Escape the given value for use in a URL path.
+func pathEscape(s string) string {
+	return url.PathEscape(s)
 }

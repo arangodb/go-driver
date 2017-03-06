@@ -25,7 +25,6 @@ package driver
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"path"
 	"reflect"
 )
@@ -37,7 +36,7 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	if err := validateKey(key); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	escapedKey := url.QueryEscape(key)
+	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -166,7 +165,7 @@ func (c *collection) UpdateDocument(ctx context.Context, key string, update inte
 	if update == nil {
 		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "update nil"})
 	}
-	escapedKey := url.QueryEscape(key)
+	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("PATCH", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -275,7 +274,7 @@ func (c *collection) ReplaceDocument(ctx context.Context, key string, document i
 	if document == nil {
 		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "document nil"})
 	}
-	escapedKey := url.QueryEscape(key)
+	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -380,7 +379,7 @@ func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMe
 	if err := validateKey(key); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	escapedKey := url.QueryEscape(key)
+	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)

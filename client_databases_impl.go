@@ -24,14 +24,13 @@ package driver
 
 import (
 	"context"
-	"net/url"
 	"path"
 )
 
 // Database opens a connection to an existing database.
 // If no database with given name exists, an NotFoundError is returned.
 func (c *client) Database(ctx context.Context, name string) (Database, error) {
-	escapedName := url.QueryEscape(name)
+	escapedName := pathEscape(name)
 	req, err := c.conn.NewRequest("GET", path.Join("_db", escapedName, "_api/database/current"))
 	if err != nil {
 		return nil, WithStack(err)
@@ -52,7 +51,7 @@ func (c *client) Database(ctx context.Context, name string) (Database, error) {
 
 // DatabaseExists returns true if a database with given name exists.
 func (c *client) DatabaseExists(ctx context.Context, name string) (bool, error) {
-	escapedName := url.QueryEscape(name)
+	escapedName := pathEscape(name)
 	req, err := c.conn.NewRequest("GET", path.Join("_db", escapedName, "_api/database/current"))
 	if err != nil {
 		return false, WithStack(err)
@@ -76,7 +75,7 @@ type getDatabaseResponse struct {
 
 // Databases returns a list of all databases found by the client.
 func (c *client) Databases(ctx context.Context) ([]Database, error) {
-	result, err := c.listDatabases(ctx, path.Join("/_db/_system/_api/database"))
+	result, err := listDatabases(ctx, c.conn, path.Join("/_db/_system/_api/database"))
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -85,7 +84,7 @@ func (c *client) Databases(ctx context.Context) ([]Database, error) {
 
 // AccessibleDatabases returns a list of all databases that can be accessed by the authenticated user.
 func (c *client) AccessibleDatabases(ctx context.Context) ([]Database, error) {
-	result, err := c.listDatabases(ctx, path.Join("/_db/_system/_api/database/user"))
+	result, err := listDatabases(ctx, c.conn, path.Join("/_db/_system/_api/database/user"))
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -93,12 +92,12 @@ func (c *client) AccessibleDatabases(ctx context.Context) ([]Database, error) {
 }
 
 // listDatabases returns a list of databases using a GET to the given path.
-func (c *client) listDatabases(ctx context.Context, path string) ([]Database, error) {
-	req, err := c.conn.NewRequest("GET", path)
+func listDatabases(ctx context.Context, conn Connection, path string) ([]Database, error) {
+	req, err := conn.NewRequest("GET", path)
 	if err != nil {
 		return nil, WithStack(err)
 	}
-	resp, err := c.conn.Do(ctx, req)
+	resp, err := conn.Do(ctx, req)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -111,7 +110,7 @@ func (c *client) listDatabases(ctx context.Context, path string) ([]Database, er
 	}
 	result := make([]Database, 0, len(data.Result))
 	for _, name := range data.Result {
-		db, err := newDatabase(name, c.conn)
+		db, err := newDatabase(name, conn)
 		if err != nil {
 			return nil, WithStack(err)
 		}

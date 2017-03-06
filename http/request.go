@@ -31,6 +31,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -117,15 +118,27 @@ func (r *httpRequest) SetHeader(key, value string) driver.Request {
 // createHTTPRequest creates a golang http.Request based on the configured arguments.
 func (r *httpRequest) createHTTPRequest(endpoint url.URL) (*http.Request, error) {
 	u := endpoint
-	u.Path = r.path
+	u.Path = ""
+	url := u.String()
+	if !strings.HasSuffix(url, "/") {
+		url = url + "/"
+	}
+	p := r.path
+	if strings.HasPrefix(p, "/") {
+		p = p[1:]
+	}
+	url = url + p
 	if r.q != nil {
-		u.RawQuery = r.q.Encode()
+		q := r.q.Encode()
+		if len(q) > 0 {
+			url = url + "?" + q
+		}
 	}
 	var body io.Reader
 	if r.body != nil {
 		body = bytes.NewReader(r.body)
 	}
-	req, err := http.NewRequest(r.method, u.String(), body)
+	req, err := http.NewRequest(r.method, url, body)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}

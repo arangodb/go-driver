@@ -20,6 +20,8 @@
 // Author Ewout Prangsma
 //
 
+// +build !auth
+
 package driver_test
 
 import (
