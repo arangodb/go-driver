@@ -60,10 +60,155 @@ func (c *collection) Name() string {
 	return c.name
 }
 
+// Status fetches the current status of the collection.
+func (c *collection) Status(ctx context.Context) (CollectionStatus, error) {
+	req, err := c.conn.NewRequest("GET", c.relPath("collection"))
+	if err != nil {
+		return CollectionStatus(0), WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return CollectionStatus(0), WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return CollectionStatus(0), WithStack(err)
+	}
+	var data CollectionInfo
+	if err := resp.ParseBody("", &data); err != nil {
+		return CollectionStatus(0), WithStack(err)
+	}
+	return data.Status, nil
+}
+
+// Count fetches the number of document in the collection.
+func (c *collection) Count(ctx context.Context) (int64, error) {
+	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("collection"), "count"))
+	if err != nil {
+		return 0, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return 0, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return 0, WithStack(err)
+	}
+	var data struct {
+		Count int64 `json:"count,omitempty"`
+	}
+	if err := resp.ParseBody("", &data); err != nil {
+		return 0, WithStack(err)
+	}
+	return data.Count, nil
+}
+
+// Properties fetches extended information about the collection.
+func (c *collection) Properties(ctx context.Context) (CollectionProperties, error) {
+	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("collection"), "properties"))
+	if err != nil {
+		return CollectionProperties{}, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return CollectionProperties{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return CollectionProperties{}, WithStack(err)
+	}
+	var data CollectionProperties
+	if err := resp.ParseBody("", &data); err != nil {
+		return CollectionProperties{}, WithStack(err)
+	}
+	return data, nil
+}
+
+// Load the collection into memory.
+func (c *collection) Load(ctx context.Context) error {
+	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "load"))
+	if err != nil {
+		return WithStack(err)
+	}
+	opts := struct {
+		Count bool `json:"count"`
+	}{
+		Count: false,
+	}
+	if _, err := req.SetBody(opts); err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// UnLoad the collection from memory.
+func (c *collection) Unload(ctx context.Context) error {
+	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "unload"))
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+
+}
+
+// Rename the collection
+func (c *collection) Rename(ctx context.Context, newName string) error {
+	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "rename"))
+	if err != nil {
+		return WithStack(err)
+	}
+	opts := struct {
+		Name string `json:"name"`
+	}{
+		Name: newName,
+	}
+	if _, err := req.SetBody(opts); err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	// Update internal name
+	c.name = newName
+	return nil
+}
+
 // Remove removes the entire collection.
 // If the collection does not exist, a NotFoundError is returned.
 func (c *collection) Remove(ctx context.Context) error {
 	req, err := c.conn.NewRequest("DELETE", c.relPath("collection"))
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// Truncate removes all documents from the collection, but leaves the indexes intact.
+func (c *collection) Truncate(ctx context.Context) error {
+	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "truncate"))
 	if err != nil {
 		return WithStack(err)
 	}
