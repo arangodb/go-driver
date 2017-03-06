@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -87,16 +88,244 @@ func TestRemoveCollection(t *testing.T) {
 	}
 }
 
+// TestLoadUnloadCollection creates a collection and unloads, loads & unloads it.
+func TestLoadUnloadCollection(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_load_collection"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+	// Collection must be loaded
+	if status, err := col.Status(nil); err != nil {
+		t.Errorf("Status failed: %s", describe(err))
+	} else if status != driver.CollectionStatusLoaded {
+		t.Errorf("Expected status loaded, got %v", status)
+	}
+
+	// Unload the collection now
+	if err := col.Unload(nil); err != nil {
+		t.Errorf("Unload failed: %s", describe(err))
+	}
+
+	// Collection must be unloaded
+	if status, err := col.Status(nil); err != nil {
+		t.Errorf("Status failed: %s", describe(err))
+	} else if status != driver.CollectionStatusUnloaded {
+		t.Errorf("Expected status unloaded, got %v", status)
+	}
+
+	// Load the collection now
+	if err := col.Load(nil); err != nil {
+		t.Errorf("Load failed: %s", describe(err))
+	}
+
+	// Collection must be loaded
+	if status, err := col.Status(nil); err != nil {
+		t.Errorf("Status failed: %s", describe(err))
+	} else if status != driver.CollectionStatusLoaded {
+		t.Errorf("Expected status loaded, got %v", status)
+	}
+}
+
 // TestCollectionName creates a collection and checks its name
 func TestCollectionName(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
-	name := "test_remove_collection"
+	name := "test_collection_name"
 	col, err := db.CreateCollection(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
 	}
 	if col.Name() != name {
 		t.Errorf("Collection.Name() is wrong, got '%s', expected '%s'", col.Name(), name)
+	}
+}
+
+// TestCollectionRename creates a collection and renames it
+func TestCollectionRename(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_rename"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+	if col.Name() != name {
+		t.Errorf("Collection.Name() is wrong, got '%s', expected '%s'", col.Name(), name)
+	}
+
+	// Now rename
+	newName := name + "_new"
+	if err := col.Rename(nil, newName); err != nil {
+		t.Errorf("Rename collection failed: %s", describe(err))
+	} else if col.Name() != newName {
+		t.Errorf("Collection.Name is invalid, expected '%s', got '%s'", newName, col.Name())
+	}
+
+	// Fetch using new name
+	if _, err := db.Collection(nil, newName); err != nil {
+		t.Errorf("Failed to open collection '%s': %s", newName, describe(err))
+	}
+
+	// Fetch using old name
+	if _, err := db.Collection(nil, name); !driver.IsNotFound(err) {
+		t.Errorf("Expected NotFoundError, got %s", describe(err))
+	}
+}
+
+// TestCollectionTruncate creates a collection, adds some documents and truncates it.
+func TestCollectionTruncate(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_truncate"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	// create some documents
+	for i := 0; i < 10; i++ {
+		doc := Book{Title: fmt.Sprintf("Book %d", i)}
+		if _, err := col.CreateDocument(nil, doc); err != nil {
+			t.Fatalf("Failed to create document: %s", describe(err))
+		}
+	}
+
+	// count before truncation
+	if c, err := col.Count(nil); err != nil {
+		t.Errorf("Failed to count documents: %s", describe(err))
+	} else if c != 10 {
+		t.Errorf("Expected 10 documents, got %d", c)
+	}
+
+	// Truncate collection
+	if err := col.Truncate(nil); err != nil {
+		t.Errorf("Failed to truncate collection: %s", describe(err))
+	}
+
+	// count after truncation
+	if c, err := col.Count(nil); err != nil {
+		t.Errorf("Failed to count documents: %s", describe(err))
+	} else if c != 0 {
+		t.Errorf("Expected 0 documents, got %d", c)
+	}
+}
+
+// TestCollectionProperties creates a collection and checks its properties
+func TestCollectionProperties(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_properties"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.ID == "" {
+			t.Errorf("Got empty collection ID")
+		}
+		if p.Name != name {
+			t.Errorf("Expected name '%s', got '%s'", name, p.Name)
+		}
+		if p.Type != driver.CollectionTypeDocument {
+			t.Errorf("Expected type %d, got %d", driver.CollectionTypeDocument, p.Type)
+		}
+	}
+}
+
+// TestCollectionSetProperties creates a collection and modifies its properties
+func TestCollectionSetProperties(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_set_properties"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	// Set WaitForSync to false
+	waitForSync := false
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{WaitForSync: &waitForSync}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.WaitForSync != waitForSync {
+			t.Errorf("Expected WaitForSync %v, got %v", waitForSync, p.WaitForSync)
+		}
+	}
+
+	// Set WaitForSync to true
+	waitForSync = true
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{WaitForSync: &waitForSync}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.WaitForSync != waitForSync {
+			t.Errorf("Expected WaitForSync %v, got %v", waitForSync, p.WaitForSync)
+		}
+	}
+
+	// Set JournalSize
+	journalSize := int64(1048576 * 17)
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.JournalSize != journalSize {
+			t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
+		}
+	}
+
+	// Set JournalSize again
+	journalSize = int64(1048576 * 21)
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.JournalSize != journalSize {
+			t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
+		}
+	}
+}
+
+// TestCollectionRevision creates a collection, checks revision after adding documents.
+func TestCollectionRevision(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_revision"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	// create some documents
+	for i := 0; i < 10; i++ {
+		before, err := col.Revision(nil)
+		if err != nil {
+			t.Fatalf("Failed to fetch before revision: %s", describe(err))
+		}
+		doc := Book{Title: fmt.Sprintf("Book %d", i)}
+		if _, err := col.CreateDocument(nil, doc); err != nil {
+			t.Fatalf("Failed to create document: %s", describe(err))
+		}
+		after, err := col.Revision(nil)
+		if err != nil {
+			t.Fatalf("Failed to fetch after revision: %s", describe(err))
+		}
+		if before == after {
+			t.Errorf("Expected revision before, after to be different. Got '%s', '%s'", before, after)
+		}
 	}
 }
