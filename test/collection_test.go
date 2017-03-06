@@ -299,3 +299,33 @@ func TestCollectionSetProperties(t *testing.T) {
 		}
 	}
 }
+
+// TestCollectionRevision creates a collection, checks revision after adding documents.
+func TestCollectionRevision(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_revision"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	// create some documents
+	for i := 0; i < 10; i++ {
+		before, err := col.Revision(nil)
+		if err != nil {
+			t.Fatalf("Failed to fetch before revision: %s", describe(err))
+		}
+		doc := Book{Title: fmt.Sprintf("Book %d", i)}
+		if _, err := col.CreateDocument(nil, doc); err != nil {
+			t.Fatalf("Failed to create document: %s", describe(err))
+		}
+		after, err := col.Revision(nil)
+		if err != nil {
+			t.Fatalf("Failed to fetch after revision: %s", describe(err))
+		}
+		if before == after {
+			t.Errorf("Expected revision before, after to be different. Got '%s', '%s'", before, after)
+		}
+	}
+}

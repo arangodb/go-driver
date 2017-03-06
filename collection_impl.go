@@ -102,6 +102,30 @@ func (c *collection) Count(ctx context.Context) (int64, error) {
 	return data.Count, nil
 }
 
+// Revision fetches the revision ID of the collection.
+// The revision ID is a server-generated string that clients can use to check whether data
+// in a collection has changed since the last revision check.
+func (c *collection) Revision(ctx context.Context) (string, error) {
+	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("collection"), "revision"))
+	if err != nil {
+		return "", WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return "", WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return "", WithStack(err)
+	}
+	var data struct {
+		Revision string `json:"revision,omitempty"`
+	}
+	if err := resp.ParseBody("", &data); err != nil {
+		return "", WithStack(err)
+	}
+	return data.Revision, nil
+}
+
 // Properties fetches extended information about the collection.
 func (c *collection) Properties(ctx context.Context) (CollectionProperties, error) {
 	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("collection"), "properties"))

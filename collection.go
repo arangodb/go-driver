@@ -35,6 +35,11 @@ type Collection interface {
 	// Count fetches the number of document in the collection.
 	Count(ctx context.Context) (int64, error)
 
+	// Revision fetches the revision ID of the collection.
+	// The revision ID is a server-generated string that clients can use to check whether data
+	// in a collection has changed since the last revision check.
+	Revision(ctx context.Context) (string, error)
+
 	// Properties fetches extended information about the collection.
 	Properties(ctx context.Context) (CollectionProperties, error)
 
