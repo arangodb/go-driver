@@ -133,6 +133,11 @@ func TestGrantUser(t *testing.T) {
 // TestUserAccessibleDatabases creates a user & databases and checks the list of accessible databases.
 func TestUserAccessibleDatabases(t *testing.T) {
 	c := createClientFromEnv(t, true)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
 	u := ensureUser(nil, c, "accessible_db_user1", nil, t)
 	db1 := ensureDatabase(nil, c, "accessible_db1", nil, t)
 	db2 := ensureDatabase(nil, c, "accessible_db2", nil, t)
@@ -190,22 +195,26 @@ func TestUserAccessibleDatabases(t *testing.T) {
 		t.Fatalf("RevokeAccess failed: %s", describe(err))
 	}
 
-	list, err = u.AccessibleDatabases(nil)
-	if err != nil {
-		t.Fatalf("Expected success, got %s", describe(err))
-	}
-	expectListContains("expect-db2", list, db2.Name())
-	expectListNotContains("expect-db2", list, db1.Name())
+	if isv32p {
+		list, err = u.AccessibleDatabases(nil)
+		if err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+		expectListContains("expect-db2", list, db2.Name())
+		expectListNotContains("expect-db2", list, db1.Name())
 
-	// revoke db2
-	if err := u.RevokeAccess(nil, db2); err != nil {
-		t.Fatalf("RevokeAccess failed: %s", describe(err))
-	}
+		// revoke db2
+		if err := u.RevokeAccess(nil, db2); err != nil {
+			t.Fatalf("RevokeAccess failed: %s", describe(err))
+		}
 
-	list, err = u.AccessibleDatabases(nil)
-	if err != nil {
-		t.Fatalf("Expected success, got %s", describe(err))
+		list, err = u.AccessibleDatabases(nil)
+		if err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+		expectListContains("expect-none2", list)
+		expectListNotContains("expect-none2", list, db1.Name(), db2.Name())
+	} else {
+		t.Logf("Last part of test fails on version < 3.2 (got version %s)", version.Version)
 	}
-	expectListContains("expect-none2", list)
-	expectListNotContains("expect-none", list, db1.Name(), db2.Name())
 }
