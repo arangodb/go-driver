@@ -28,5 +28,11 @@ import "net/url"
 
 // Escape the given value for use in a URL path.
 func pathEscape(s string) string {
-	return url.PathEscape(s)
+	return url.QueryEscape(s)
+}
+
+// pathUnescape unescapes the given value for use in a URL path.
+func pathUnescape(s string) string {
+	r, _ := url.QueryUnescape(s)
+	return r
 }

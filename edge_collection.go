@@ -20,18 +20,15 @@
 // Author Ewout Prangsma
 //
 
-// +build "go1.8"
-
 package driver
 
-import "net/url"
+import "context"
 
-// pathEscape the given value for use in a URL path.
-func pathEscape(s string) string {
-	return url.PathEscape(s)
-}
+// EdgeCollection provides access to the edges of a single edge collection.
+type EdgeCollection interface {
+	// Name returns the name of the collection.
+	Name() string
 
-// pathUnescape unescapes the given value for use in a URL path.
-func pathUnescape(s string) string {
-	return url.PathUnescape(s)
+	// CreateEdge creates a new edge in this edge collection.
+	CreateEdge(ctx context.Context, from, to DocumentID, document interface{}) (DocumentMeta, error)
 }
