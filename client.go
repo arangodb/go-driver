@@ -52,7 +52,7 @@ type VersionInfo struct {
 	Server string `json:"server,omitempty"`
 	//  The server version string. The string has the format "major.minor.sub".
 	// Major and minor will be numeric, and sub may contain a number or a textual version.
-	Version string `json:"version,omitempty"`
+	Version Version `json:"version,omitempty"`
 	// Type of license of the server
 	License string `json:"license,omitempty"`
 	// Optional additional details. This is returned only if the context is configured using WithDetails.
