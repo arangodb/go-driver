@@ -49,6 +49,23 @@ func (id DocumentID) Validate() error {
 	return nil
 }
 
+// ValidateOrEmpty validates the given id unless it is empty.
+// In case of empty, nil is returned.
+func (id DocumentID) ValidateOrEmpty() error {
+	if id == "" {
+		return nil
+	}
+	if err := id.Validate(); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// IsEmpty returns true if the given ID is empty, false otherwise.
+func (id DocumentID) IsEmpty() bool {
+	return id == ""
+}
+
 // Collection returns the collection part of the ID.
 func (id DocumentID) Collection() string {
 	parts := strings.Split(string(id), "/")

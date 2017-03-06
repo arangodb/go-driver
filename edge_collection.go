@@ -29,8 +29,24 @@ type EdgeCollection interface {
 	// Name returns the name of the collection.
 	Name() string
 
+	// ReadEdge reads a single edge with given key from this edge collection.
+	// The document data is stored into result, the document meta data is returned.
+	// If no document exists with given key, a NotFoundError is returned.
+	ReadEdge(ctx context.Context, key string, result interface{}) (EdgeMeta, error)
+
 	// CreateEdge creates a new edge in this edge collection.
 	CreateEdge(ctx context.Context, from, to DocumentID, document interface{}) (DocumentMeta, error)
+
+	// UpdateEdge updates a single edge with given key in the collection.
+	// To & from are allowed to be empty. If they are empty, they are not updated.
+	// The document meta data is returned.
+	// If no document exists with given key, a NotFoundError is returned.
+	UpdateEdge(ctx context.Context, key string, from, to DocumentID, update interface{}) (DocumentMeta, error)
+
+	// ReplaceEdge replaces a single edge with given key in the collection.
+	// The document meta data is returned.
+	// If no document exists with given key, a NotFoundError is returned.
+	ReplaceEdge(ctx context.Context, key string, from, to DocumentID, document interface{}) (DocumentMeta, error)
 
 	// Remove the edge collection from the graph.
 	Remove(ctx context.Context) error
@@ -39,4 +55,11 @@ type EdgeCollection interface {
 	// from: contains the names of one or more vertex collections that can contain source vertices.
 	// to: contains the names of one or more edge collections that can contain target vertices.
 	Replace(ctx context.Context, from, to []string) error
+}
+
+// EdgeMeta is DocumentMeta data extended with From & To fields.
+type EdgeMeta struct {
+	DocumentMeta
+	From DocumentID `json:"_from,omitempty"`
+	To   DocumentID `json:"_to,omitempty"`
 }

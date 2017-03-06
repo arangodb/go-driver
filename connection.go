@@ -47,7 +47,8 @@ type Request interface {
 	SetQuery(key, value string) Request
 	// SetBody sets the content of the request.
 	// The protocol of the connection determines what kinds of marshalling is taking place.
-	SetBody(body interface{}) (Request, error)
+	// When multiple bodies are given, they are merged, with fields in the first document prevailing.
+	SetBody(body ...interface{}) (Request, error)
 	// SetBodyArray sets the content of the request as an array.
 	// If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
 	// The merge is NOT recursive.

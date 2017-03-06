@@ -57,13 +57,29 @@ func (r *httpRequest) SetQuery(key, value string) driver.Request {
 
 // SetBody sets the content of the request.
 // The protocol of the connection determines what kinds of marshalling is taking place.
-func (r *httpRequest) SetBody(body interface{}) (driver.Request, error) {
-	if data, err := json.Marshal(body); err != nil {
-		return r, driver.WithStack(err)
-	} else {
-		r.body = data
+func (r *httpRequest) SetBody(body ...interface{}) (driver.Request, error) {
+	switch len(body) {
+	case 0:
+		return r, driver.WithStack(fmt.Errorf("Must provide at least 1 body"))
+	case 1:
+		if data, err := json.Marshal(body[0]); err != nil {
+			return r, driver.WithStack(err)
+		} else {
+			r.body = data
+		}
+		return r, nil
+	case 2:
+		mo := mergeObject{Object: body[1], Merge: body[0]}
+		if data, err := json.Marshal(mo); err != nil {
+			return r, driver.WithStack(err)
+		} else {
+			r.body = data
+		}
+		return r, nil
+	default:
+		return r, driver.WithStack(fmt.Errorf("Must provide at most 2 bodies"))
 	}
-	return r, nil
+
 }
 
 // SetBodyArray sets the content of the request as an array.
