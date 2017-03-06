@@ -212,3 +212,90 @@ func TestCollectionTruncate(t *testing.T) {
 		t.Errorf("Expected 0 documents, got %d", c)
 	}
 }
+
+// TestCollectionProperties creates a collection and checks its properties
+func TestCollectionProperties(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_properties"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.ID == "" {
+			t.Errorf("Got empty collection ID")
+		}
+		if p.Name != name {
+			t.Errorf("Expected name '%s', got '%s'", name, p.Name)
+		}
+		if p.Type != driver.CollectionTypeDocument {
+			t.Errorf("Expected type %d, got %d", driver.CollectionTypeDocument, p.Type)
+		}
+	}
+}
+
+// TestCollectionSetProperties creates a collection and modifies its properties
+func TestCollectionSetProperties(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_set_properties"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	// Set WaitForSync to false
+	waitForSync := false
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{WaitForSync: &waitForSync}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.WaitForSync != waitForSync {
+			t.Errorf("Expected WaitForSync %v, got %v", waitForSync, p.WaitForSync)
+		}
+	}
+
+	// Set WaitForSync to true
+	waitForSync = true
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{WaitForSync: &waitForSync}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.WaitForSync != waitForSync {
+			t.Errorf("Expected WaitForSync %v, got %v", waitForSync, p.WaitForSync)
+		}
+	}
+
+	// Set JournalSize
+	journalSize := int64(1048576 * 17)
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.JournalSize != journalSize {
+			t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
+		}
+	}
+
+	// Set JournalSize again
+	journalSize = int64(1048576 * 21)
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
+		t.Fatalf("Failed to set properties: %s", describe(err))
+	}
+	if p, err := col.Properties(nil); err != nil {
+		t.Errorf("Failed to fetch collection properties: %s", describe(err))
+	} else {
+		if p.JournalSize != journalSize {
+			t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
+		}
+	}
+}
