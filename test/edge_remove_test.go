@@ -65,6 +65,7 @@ func TestRemoveEdge(t *testing.T) {
 func TestRemoveEdgeReturnOld(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	g := ensureGraph(ctx, db, "remove_edge_returnOld_test", nil, t)
 	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)

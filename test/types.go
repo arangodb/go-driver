@@ -41,3 +41,15 @@ type RouteEdge struct {
 	To       string `json:"_to,omitempty"`
 	Distance int    `json:"distance,omitempty"`
 }
+
+type RelationEdge struct {
+	From string `json:"_from,omitempty"`
+	To   string `json:"_to,omitempty"`
+	Type string `json:"type,omitempty"`
+}
+
+type AccountEdge struct {
+	From string   `json:"_from,omitempty"`
+	To   string   `json:"_to,omitempty"`
+	User *UserDoc `json:"user"`
+}

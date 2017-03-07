@@ -33,6 +33,18 @@ import (
 	"github.com/arangodb/go-driver/http"
 )
 
+// skipBelowVersion skips the test if the current server version is less than
+// the given version.
+func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
+	}
+	if x.Version.CompareTo(version) < 0 {
+		t.Skipf("Skipping below version '%s', got version '%s'", version, x.Version)
+	}
+}
+
 // getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS
 // environment variable.
 func getEndpointsFromEnv(t *testing.T) []string {

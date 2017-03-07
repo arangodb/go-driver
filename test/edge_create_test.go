@@ -94,6 +94,7 @@ func TestCreateCustomEdge(t *testing.T) {
 func TestCreateEdgeReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	g := ensureGraph(ctx, db, "create_edge_return_new_est", nil, t)
 	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
