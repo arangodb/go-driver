@@ -22,7 +22,27 @@
 
 package test
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	driver "github.com/arangodb/go-driver"
+)
+
+// ensureEdgeCollection returns the edge collection with given name, creating it if needed.
+func ensureEdgeCollection(ctx context.Context, g driver.Graph, collection string, from, to []string, t *testing.T) driver.Collection {
+	ec, err := g.EdgeCollection(ctx, collection)
+	if driver.IsNotFound(err) {
+		ec, err := g.CreateEdgeCollection(ctx, collection, from, to)
+		if err != nil {
+			t.Fatalf("Failed to create edge collection: %s", describe(err))
+		}
+		return ec
+	} else if err != nil {
+		t.Fatalf("Failed to open edge collection: %s", describe(err))
+	}
+	return ec
+}
 
 // TestCreateEdgeCollection creates a graph and then adds an edge collection in it
 func TestCreateEdgeCollection(t *testing.T) {
@@ -114,7 +134,7 @@ func TestRemoveEdgeCollection(t *testing.T) {
 }
 
 // TestReplaceEdgeCollection creates a graph and then adds an edge collection in it and then replaces the edge collection.
-func TestReplaceEdgeCollection(t *testing.T) {
+/*func TestReplaceEdgeCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
 	name := "test_replace_edge_collection"
@@ -146,3 +166,4 @@ func TestReplaceEdgeCollection(t *testing.T) {
 	assertCollection(nil, db, "city", t)
 	assertCollection(nil, db, "state", t)
 }
+*/

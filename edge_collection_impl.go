@@ -29,7 +29,7 @@ import (
 )
 
 // newEdgeCollection creates a new EdgeCollection implementation.
-func newEdgeCollection(name string, g *graph) (EdgeCollection, error) {
+func newEdgeCollection(name string, g *graph) (Collection, error) {
 	if name == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "name is empty"})
 	}
@@ -49,11 +49,6 @@ type edgeCollection struct {
 	conn Connection
 }
 
-type edgeDocument struct {
-	From DocumentID `json:"_from,omitempty"`
-	To   DocumentID `json:"_to,omitempty"`
-}
-
 // relPath creates the relative path to this edge collection (`_db/<db-name>/_api/gharial/<graph-name>/edge/<collection-name>`)
 func (c *edgeCollection) relPath() string {
 	escapedName := pathEscape(c.name)
@@ -65,141 +60,83 @@ func (c *edgeCollection) Name() string {
 	return c.name
 }
 
-// ReadEdge reads a single edge with given key from this edge collection.
-// The document data is stored into result, the document meta data is returned.
-// If no document exists with given key, a NotFoundError is returned.
-func (c *edgeCollection) ReadEdge(ctx context.Context, key string, result interface{}) (EdgeMeta, error) {
-	if err := validateKey(key); err != nil {
-		return EdgeMeta{}, WithStack(err)
-	}
-	escapedKey := pathEscape(key)
-	req, err := c.conn.NewRequest("GET", path.Join(c.relPath(), escapedKey))
-	if err != nil {
-		return EdgeMeta{}, WithStack(err)
-	}
-	applyContextSettings(ctx, req)
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return EdgeMeta{}, WithStack(err)
-	}
-	if err := resp.CheckStatus(200); err != nil {
-		return EdgeMeta{}, WithStack(err)
-	}
-	// Parse metadata
-	var meta EdgeMeta
-	if err := resp.ParseBody("edge", &meta); err != nil {
-		return EdgeMeta{}, WithStack(err)
-	}
-	return meta, nil
+// rawCollection returns a standard document implementation of Collection
+// for this edge collection.
+func (c *edgeCollection) rawCollection() Collection {
+	result, _ := newCollection(c.name, c.g.db)
+	return result
 }
 
-// CreateEdge creates a new edge in this edge collection.
-func (c *edgeCollection) CreateEdge(ctx context.Context, from, to DocumentID, document interface{}) (DocumentMeta, error) {
-	if err := from.Validate(); err != nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("from invalid: %v", err)})
-	}
-	if err := to.Validate(); err != nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("to invalid: %v", err)})
-	}
-	req, err := c.conn.NewRequest("POST", c.relPath())
+// Status fetches the current status of the collection.
+func (c *edgeCollection) Status(ctx context.Context) (CollectionStatus, error) {
+	result, err := c.rawCollection().Status(ctx)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return CollectionStatus(0), WithStack(err)
 	}
-	if _, err := req.SetBody(edgeDocument{To: to, From: from}, document); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	applyContextSettings(ctx, req)
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	if err := resp.CheckStatus(201, 202); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	// Parse metadata
-	var meta DocumentMeta
-	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	return meta, nil
+	return result, nil
 }
 
-// UpdateEdge updates a single edge with given key in the collection.
-// To & from are allowed to be empty. If they are empty, they are not updated.
-// The document meta data is returned.
-// If no document exists with given key, a NotFoundError is returned.
-func (c *edgeCollection) UpdateEdge(ctx context.Context, key string, from, to DocumentID, update interface{}) (DocumentMeta, error) {
-	if err := from.ValidateOrEmpty(); err != nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("from invalid: %v", err)})
-	}
-	if err := to.ValidateOrEmpty(); err != nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("to invalid: %v", err)})
-	}
-	var edgeDoc *edgeDocument
-	if !from.IsEmpty() || !to.IsEmpty() {
-		edgeDoc = &edgeDocument{
-			From: from,
-			To:   to,
-		}
-	}
-	req, err := c.conn.NewRequest("PATCH", c.relPath())
+// Count fetches the number of document in the collection.
+func (c *edgeCollection) Count(ctx context.Context) (int64, error) {
+	result, err := c.rawCollection().Count(ctx)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return 0, WithStack(err)
 	}
-	if _, err := req.SetBody(edgeDoc, update); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	applyContextSettings(ctx, req)
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	if err := resp.CheckStatus(200, 202); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	// Parse metadata
-	var meta DocumentMeta
-	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	return meta, nil
+	return result, nil
 }
 
-func (c *edgeCollection) ReplaceEdge(ctx context.Context, key string, from, to DocumentID, update interface{}) (DocumentMeta, error) {
-	if err := from.Validate(); err != nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("from invalid: %v", err)})
-	}
-	if err := to.Validate(); err != nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("to invalid: %v", err)})
-	}
-	edgeDoc := edgeDocument{
-		From: from,
-		To:   to,
-	}
-	req, err := c.conn.NewRequest("PUT", c.relPath())
+// Revision fetches the revision ID of the collection.
+// The revision ID is a server-generated string that clients can use to check whether data
+// in a collection has changed since the last revision check.
+func (c *edgeCollection) Revision(ctx context.Context) (string, error) {
+	result, err := c.rawCollection().Revision(ctx)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return "", WithStack(err)
 	}
-	if _, err := req.SetBody(edgeDoc, update); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	applyContextSettings(ctx, req)
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	if err := resp.CheckStatus(201, 202); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	// Parse metadata
-	var meta DocumentMeta
-	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
-	}
-	return meta, nil
+	return result, nil
 }
 
-// Remove the edge collection from the graph.
+// Properties fetches extended information about the collection.
+func (c *edgeCollection) Properties(ctx context.Context) (CollectionProperties, error) {
+	result, err := c.rawCollection().Properties(ctx)
+	if err != nil {
+		return CollectionProperties{}, WithStack(err)
+	}
+	return result, nil
+}
+
+// SetProperties changes properties of the collection.
+func (c *edgeCollection) SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error {
+	if err := c.rawCollection().SetProperties(ctx, options); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// Load the collection into memory.
+func (c *edgeCollection) Load(ctx context.Context) error {
+	if err := c.rawCollection().Load(ctx); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// UnLoad the collection from memory.
+func (c *edgeCollection) Unload(ctx context.Context) error {
+	if err := c.rawCollection().Unload(ctx); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// Rename the collection
+func (c *edgeCollection) Rename(ctx context.Context, newName string) error {
+	// Rename is currently not supported
+	return WithStack(fmt.Errorf("Rename is not supported"))
+}
+
+// Remove removes the entire collection.
+// If the collection does not exist, a NotFoundError is returned.
 func (c *edgeCollection) Remove(ctx context.Context) error {
 	req, err := c.conn.NewRequest("DELETE", c.relPath())
 	if err != nil {
@@ -215,28 +152,9 @@ func (c *edgeCollection) Remove(ctx context.Context) error {
 	return nil
 }
 
-// Replace creates an edge collection in the graph.
-// collection: The name of the edge collection to be used.
-// from: contains the names of one or more vertex collections that can contain source vertices.
-// to: contains the names of one or more edge collections that can contain target vertices.
-func (c *edgeCollection) Replace(ctx context.Context, from, to []string) error {
-	req, err := c.conn.NewRequest("PUT", c.relPath())
-	if err != nil {
-		return WithStack(err)
-	}
-	input := EdgeDefinition{
-		Collection: c.name,
-		From:       from,
-		To:         to,
-	}
-	if _, err := req.SetBody(input); err != nil {
-		return WithStack(err)
-	}
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return WithStack(err)
-	}
-	if err := resp.CheckStatus(201, 202); err != nil {
+// Truncate removes all documents from the collection, but leaves the indexes intact.
+func (c *edgeCollection) Truncate(ctx context.Context) error {
+	if err := c.rawCollection().Truncate(ctx); err != nil {
 		return WithStack(err)
 	}
 	return nil

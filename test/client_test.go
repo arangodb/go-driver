@@ -24,8 +24,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -34,20 +32,6 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
-
-// describe returns a string description of the given error.
-func describe(err error) string {
-	if err == nil {
-		return "nil"
-	}
-	cause := driver.Cause(err)
-	c, _ := json.Marshal(cause)
-	if cause.Error() != err.Error() {
-		return fmt.Sprintf("%v caused by %v", err, string(c))
-	} else {
-		return fmt.Sprintf("%v", string(c))
-	}
-}
 
 // getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS
 // environment variable.

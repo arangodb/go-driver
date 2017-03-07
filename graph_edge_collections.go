@@ -28,17 +28,17 @@ import "context"
 type GraphEdgeCollections interface {
 	// EdgeCollection opens a connection to an existing edge-collection within the graph.
 	// If no edge-collection with given name exists, an NotFoundError is returned.
-	EdgeCollection(ctx context.Context, name string) (EdgeCollection, error)
+	EdgeCollection(ctx context.Context, name string) (Collection, error)
 
 	// EdgeCollectionExists returns true if an edge-collection with given name exists within the graph.
 	EdgeCollectionExists(ctx context.Context, name string) (bool, error)
 
 	// EdgeCollections returns all edge collections of this graph
-	EdgeCollections(ctx context.Context) ([]EdgeCollection, error)
+	EdgeCollections(ctx context.Context) ([]Collection, error)
 
 	// CreateEdgeCollection creates an edge collection in the graph.
 	// collection: The name of the edge collection to be used.
 	// from: contains the names of one or more vertex collections that can contain source vertices.
 	// to: contains the names of one or more edge collections that can contain target vertices.
-	CreateEdgeCollection(ctx context.Context, collection string, from, to []string) (EdgeCollection, error)
+	CreateEdgeCollection(ctx context.Context, collection string, from, to []string) (Collection, error)
 }

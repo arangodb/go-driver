@@ -20,38 +20,12 @@
 // Author Ewout Prangsma
 //
 
-package test
+package driver
 
-import (
-	"encoding/json"
-	"fmt"
-	"testing"
-
-	driver "github.com/arangodb/go-driver"
-)
-
-// boolRef returns a reference to a given boolean
-func boolRef(v bool) *bool {
-	return &v
-}
-
-// assertOK fails the test if the given error is not nil.
-func assertOK(err error, t *testing.T) {
-	if err != nil {
-		t.Fatalf("Assertion failed: %s", describe(err))
-	}
-}
-
-// describe returns a string description of the given error.
-func describe(err error) string {
-	if err == nil {
-		return "nil"
-	}
-	cause := driver.Cause(err)
-	c, _ := json.Marshal(cause)
-	if cause.Error() != err.Error() {
-		return fmt.Sprintf("%v caused by %v", err, string(c))
-	} else {
-		return fmt.Sprintf("%v", string(c))
-	}
+// EdgeDocument is a minimal document for use in edge collection.
+// You can use this in your own edge document structures completely use your own.
+// If you use your own, make sure to include a `_from` and `_to` field.
+type EdgeDocument struct {
+	From DocumentID `json:"_from,omitempty"`
+	To   DocumentID `json:"_to,omitempty"`
 }

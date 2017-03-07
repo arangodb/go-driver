@@ -33,7 +33,7 @@ type listEdgeCollectionResponse struct {
 
 // EdgeCollection opens a connection to an existing edge-collection within the graph.
 // If no edge-collection with given name exists, an NotFoundError is returned.
-func (g *graph) EdgeCollection(ctx context.Context, name string) (EdgeCollection, error) {
+func (g *graph) EdgeCollection(ctx context.Context, name string) (Collection, error) {
 	req, err := g.conn.NewRequest("GET", path.Join(g.relPath(), "edge"))
 	if err != nil {
 		return nil, WithStack(err)
@@ -87,7 +87,7 @@ func (g *graph) EdgeCollectionExists(ctx context.Context, name string) (bool, er
 }
 
 // EdgeCollections returns all edge collections of this graph
-func (g *graph) EdgeCollections(ctx context.Context) ([]EdgeCollection, error) {
+func (g *graph) EdgeCollections(ctx context.Context) ([]Collection, error) {
 	req, err := g.conn.NewRequest("GET", path.Join(g.relPath(), "edge"))
 	if err != nil {
 		return nil, WithStack(err)
@@ -103,7 +103,7 @@ func (g *graph) EdgeCollections(ctx context.Context) ([]EdgeCollection, error) {
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	result := make([]EdgeCollection, 0, len(data.Collections))
+	result := make([]Collection, 0, len(data.Collections))
 	for _, name := range data.Collections {
 		ec, err := newEdgeCollection(name, g)
 		if err != nil {
@@ -117,7 +117,7 @@ func (g *graph) EdgeCollections(ctx context.Context) ([]EdgeCollection, error) {
 // collection: The name of the edge collection to be used.
 // from: contains the names of one or more vertex collections that can contain source vertices.
 // to: contains the names of one or more edge collections that can contain target vertices.
-func (g *graph) CreateEdgeCollection(ctx context.Context, collection string, from, to []string) (EdgeCollection, error) {
+func (g *graph) CreateEdgeCollection(ctx context.Context, collection string, from, to []string) (Collection, error) {
 	req, err := g.conn.NewRequest("POST", path.Join(g.relPath(), "edge"))
 	if err != nil {
 		return nil, WithStack(err)
