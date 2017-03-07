@@ -139,6 +139,10 @@ func (c *edgeCollection) CreateDocuments(ctx context.Context, documents interfac
 	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
+		ctx, err := withDocumentAt(ctx, i)
+		if err != nil {
+			return nil, nil, WithStack(err)
+		}
 		meta, cs, err := c.createDocument(ctx, doc.Interface())
 		if cs.Silent {
 			silent = true
@@ -243,6 +247,10 @@ func (c *edgeCollection) UpdateDocuments(ctx context.Context, keys []string, upd
 	silent := false
 	for i := 0; i < updateCount; i++ {
 		update := updatesVal.Index(i)
+		ctx, err := withDocumentAt(ctx, i)
+		if err != nil {
+			return nil, nil, WithStack(err)
+		}
 		var key string
 		if keys != nil {
 			key = keys[i]
@@ -358,6 +366,10 @@ func (c *edgeCollection) ReplaceDocuments(ctx context.Context, keys []string, do
 	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
+		ctx, err := withDocumentAt(ctx, i)
+		if err != nil {
+			return nil, nil, WithStack(err)
+		}
 		var key string
 		if keys != nil {
 			key = keys[i]
@@ -447,6 +459,10 @@ func (c *edgeCollection) RemoveDocuments(ctx context.Context, keys []string) (Do
 	silent := false
 	for i := 0; i < keyCount; i++ {
 		key := keys[i]
+		ctx, err := withDocumentAt(ctx, i)
+		if err != nil {
+			return nil, nil, WithStack(err)
+		}
 		meta, cs, err := c.removeDocument(ctx, key)
 		if cs.Silent {
 			silent = true

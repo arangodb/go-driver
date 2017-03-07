@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"reflect"
 	"strconv"
 )
 
@@ -208,4 +209,37 @@ func contextOrBackground(ctx context.Context) context.Context {
 		return ctx
 	}
 	return context.Background()
+}
+
+// withDocumentAt returns a context derived from the given parent context to be used in multi-document options
+// that needs a client side "loop" implementation.
+// It handle:
+// - WithRevisions
+// - WithReturnNew
+// - WithReturnOld
+func withDocumentAt(ctx context.Context, index int) (context.Context, error) {
+	if ctx == nil {
+		return nil, nil
+	}
+	// Revisions
+	if v := ctx.Value(keyRevisions); v != nil {
+		if revs, ok := v.([]string); ok {
+			if index >= len(revs) {
+				return nil, WithStack(InvalidArgumentError{Message: "Index out of range: revisions"})
+			}
+			ctx = WithRevision(ctx, revs[index])
+		}
+	}
+	// ReturnOld
+	if v := ctx.Value(keyReturnOld); v != nil {
+		val := reflect.ValueOf(v)
+		ctx = WithReturnOld(ctx, val.Index(index).Interface())
+	}
+	// ReturnNew
+	if v := ctx.Value(keyReturnNew); v != nil {
+		val := reflect.ValueOf(v)
+		ctx = WithReturnNew(ctx, val.Index(index).Interface())
+	}
+
+	return ctx, nil
 }
