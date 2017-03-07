@@ -33,6 +33,9 @@ type Graph interface {
 	// If the graph does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
 
-	// EdgeCollection functions
+	// Edge collection functions
 	GraphEdgeCollections
+
+	// Vertex collection functions
+	GraphVertexCollections
 }
