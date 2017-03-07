@@ -263,10 +263,19 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 		if err := json.Unmarshal(rawResponse, &jsonMap); err != nil {
 			t.Fatalf("Failed to parse raw response: %s", describe(err))
 		}
-		if raw, found := jsonMap["user"]; !found {
-			t.Errorf("Expected user to be found but got not found")
-		} else if raw != nil {
-			t.Errorf("Expected user to be found and nil, got %s", string(*raw))
+		// Get "edge" field and unmarshal it
+		if raw, found := jsonMap["edge"]; !found {
+			t.Errorf("Expected edge to be found but got not found")
+		} else {
+			jsonMap = nil
+			if err := json.Unmarshal(*raw, &jsonMap); err != nil {
+				t.Fatalf("Failed to parse raw edge object: %s", describe(err))
+			}
+			if raw, found := jsonMap["user"]; !found {
+				t.Errorf("Expected user to be found but got not found")
+			} else if raw != nil {
+				t.Errorf("Expected user to be found and nil, got %s", string(*raw))
+			}
 		}
 	}
 }
