@@ -30,6 +30,15 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+// createDocument creates a document in the given collection, failing the test on error.
+func createDocument(ctx context.Context, col driver.Collection, document interface{}, t *testing.T) driver.DocumentMeta {
+	meta, err := col.CreateDocument(ctx, document)
+	if err != nil {
+		t.Fatalf("Failed to create document: %s", describe(err))
+	}
+	return meta
+}
+
 // TestCreateDocument creates a document and then checks that it exists.
 func TestCreateDocument(t *testing.T) {
 	c := createClientFromEnv(t, true)

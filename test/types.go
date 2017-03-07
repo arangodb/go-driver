@@ -35,3 +35,9 @@ type Account struct {
 type Book struct {
 	Title string
 }
+
+type RouteEdge struct {
+	From     string `json:"_from,omitempty"`
+	To       string `json:"_to,omitempty"`
+	Distance int    `json:"distance,omitempty"`
+}

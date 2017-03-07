@@ -31,6 +31,11 @@ import (
 // Format: collection/_key
 type DocumentID string
 
+// String returns a string representation of the document ID.
+func (id DocumentID) String() string {
+	return string(id)
+}
+
 // Validate validates the given id.
 func (id DocumentID) Validate() error {
 	if id == "" {

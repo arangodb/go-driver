@@ -71,40 +71,48 @@ func (c *edgeCollection) ReadDocument(ctx context.Context, key string, result in
 // To return the NEW document, prepare a context with `WithReturnNew`.
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 func (c *edgeCollection) CreateDocument(ctx context.Context, document interface{}) (DocumentMeta, error) {
-	if document == nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "document nil"})
-	}
-	req, err := c.conn.NewRequest("POST", c.relPath())
+	meta, _, err := c.createDocument(ctx, document)
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
+	return meta, nil
+}
+
+func (c *edgeCollection) createDocument(ctx context.Context, document interface{}) (DocumentMeta, contextSettings, error) {
+	if document == nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "document nil"})
+	}
+	req, err := c.conn.NewRequest("POST", c.relPath())
+	if err != nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
+	}
 	if _, err := req.SetBody(document); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
-		return DocumentMeta{}, nil
+		return DocumentMeta{}, cs, nil
 	}
 	// Parse metadata
 	var meta DocumentMeta
 	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	// Parse returnNew (if needed)
 	if cs.ReturnNew != nil {
 		if err := resp.ParseBody("new", cs.ReturnNew); err != nil {
-			return meta, WithStack(err)
+			return meta, cs, WithStack(err)
 		}
 	}
-	return meta, nil
+	return meta, cs, nil
 }
 
 // CreateDocuments creates multiple documents in the collection.
@@ -128,9 +136,18 @@ func (c *edgeCollection) CreateDocuments(ctx context.Context, documents interfac
 	documentCount := documentsVal.Len()
 	metas := make(DocumentMetaSlice, documentCount)
 	errs := make(ErrorSlice, documentCount)
+	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
-		metas[i], errs[i] = c.CreateDocument(ctx, doc.Interface())
+		meta, cs, err := c.createDocument(ctx, doc.Interface())
+		if cs.Silent {
+			silent = true
+		} else {
+			metas[i], errs[i] = meta, err
+		}
+	}
+	if silent {
+		return nil, nil, nil
 	}
 	return metas, errs, nil
 }
@@ -142,50 +159,58 @@ func (c *edgeCollection) CreateDocuments(ctx context.Context, documents interfac
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *edgeCollection) UpdateDocument(ctx context.Context, key string, update interface{}) (DocumentMeta, error) {
-	if err := validateKey(key); err != nil {
+	meta, _, err := c.updateDocument(ctx, key, update)
+	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
+	return meta, nil
+}
+
+func (c *edgeCollection) updateDocument(ctx context.Context, key string, update interface{}) (DocumentMeta, contextSettings, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
+	}
 	if update == nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "update nil"})
+		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "update nil"})
 	}
 	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("PATCH", path.Join(c.relPath(), escapedKey))
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	if _, err := req.SetBody(update); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if err := resp.CheckStatus(200, 201, 202); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
-		return DocumentMeta{}, nil
+		return DocumentMeta{}, cs, nil
 	}
 	// Parse metadata
 	var meta DocumentMeta
 	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	// Parse returnOld (if needed)
 	if cs.ReturnOld != nil {
 		if err := resp.ParseBody("old", cs.ReturnOld); err != nil {
-			return meta, WithStack(err)
+			return meta, cs, WithStack(err)
 		}
 	}
 	// Parse returnNew (if needed)
 	if cs.ReturnNew != nil {
 		if err := resp.ParseBody("new", cs.ReturnNew); err != nil {
-			return meta, WithStack(err)
+			return meta, cs, WithStack(err)
 		}
 	}
-	return meta, nil
+	return meta, cs, nil
 }
 
 // UpdateDocuments updates multiple document with given keys in the collection.
@@ -215,6 +240,7 @@ func (c *edgeCollection) UpdateDocuments(ctx context.Context, keys []string, upd
 	}
 	metas := make(DocumentMetaSlice, updateCount)
 	errs := make(ErrorSlice, updateCount)
+	silent := false
 	for i := 0; i < updateCount; i++ {
 		update := updatesVal.Index(i)
 		var key string
@@ -228,7 +254,15 @@ func (c *edgeCollection) UpdateDocuments(ctx context.Context, keys []string, upd
 				continue
 			}
 		}
-		metas[i], errs[i] = c.UpdateDocument(ctx, key, update.Interface())
+		meta, cs, err := c.updateDocument(ctx, key, update.Interface())
+		if cs.Silent {
+			silent = true
+		} else {
+			metas[i], errs[i] = meta, err
+		}
+	}
+	if silent {
+		return nil, nil, nil
 	}
 	return metas, errs, nil
 }
@@ -240,50 +274,58 @@ func (c *edgeCollection) UpdateDocuments(ctx context.Context, keys []string, upd
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *edgeCollection) ReplaceDocument(ctx context.Context, key string, document interface{}) (DocumentMeta, error) {
-	if err := validateKey(key); err != nil {
+	meta, _, err := c.replaceDocument(ctx, key, document)
+	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
+	return meta, nil
+}
+
+func (c *edgeCollection) replaceDocument(ctx context.Context, key string, document interface{}) (DocumentMeta, contextSettings, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
+	}
 	if document == nil {
-		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "document nil"})
+		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "document nil"})
 	}
 	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath(), escapedKey))
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	if _, err := req.SetBody(document); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
-		return DocumentMeta{}, nil
+		return DocumentMeta{}, cs, nil
 	}
 	// Parse metadata
 	var meta DocumentMeta
 	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	// Parse returnOld (if needed)
 	if cs.ReturnOld != nil {
 		if err := resp.ParseBody("old", cs.ReturnOld); err != nil {
-			return meta, WithStack(err)
+			return meta, cs, WithStack(err)
 		}
 	}
 	// Parse returnNew (if needed)
 	if cs.ReturnNew != nil {
 		if err := resp.ParseBody("new", cs.ReturnNew); err != nil {
-			return meta, WithStack(err)
+			return meta, cs, WithStack(err)
 		}
 	}
-	return meta, nil
+	return meta, cs, nil
 }
 
 // ReplaceDocuments replaces multiple documents with given keys in the collection with the documents given in the documents argument.
@@ -313,6 +355,7 @@ func (c *edgeCollection) ReplaceDocuments(ctx context.Context, keys []string, do
 	}
 	metas := make(DocumentMetaSlice, documentCount)
 	errs := make(ErrorSlice, documentCount)
+	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
 		var key string
@@ -326,7 +369,15 @@ func (c *edgeCollection) ReplaceDocuments(ctx context.Context, keys []string, do
 				continue
 			}
 		}
-		metas[i], errs[i] = c.ReplaceDocument(ctx, key, doc.Interface())
+		meta, cs, err := c.replaceDocument(ctx, key, doc.Interface())
+		if cs.Silent {
+			silent = true
+		} else {
+			metas[i], errs[i] = meta, err
+		}
+	}
+	if silent {
+		return nil, nil, nil
 	}
 	return metas, errs, nil
 }
@@ -337,38 +388,46 @@ func (c *edgeCollection) ReplaceDocuments(ctx context.Context, keys []string, do
 // To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *edgeCollection) RemoveDocument(ctx context.Context, key string) (DocumentMeta, error) {
-	if err := validateKey(key); err != nil {
+	meta, _, err := c.removeDocument(ctx, key)
+	if err != nil {
 		return DocumentMeta{}, WithStack(err)
+	}
+	return meta, nil
+}
+
+func (c *edgeCollection) removeDocument(ctx context.Context, key string) (DocumentMeta, contextSettings, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath(), escapedKey))
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if err := resp.CheckStatus(cs.okStatus(200, 202)); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
-		return DocumentMeta{}, nil
+		return DocumentMeta{}, cs, nil
 	}
 	// Parse metadata
 	var meta DocumentMeta
 	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, cs, WithStack(err)
 	}
 	// Parse returnOld (if needed)
 	if cs.ReturnOld != nil {
 		if err := resp.ParseBody("old", cs.ReturnOld); err != nil {
-			return meta, WithStack(err)
+			return meta, cs, WithStack(err)
 		}
 	}
-	return meta, nil
+	return meta, cs, nil
 }
 
 // RemoveDocuments removes multiple documents with given keys from the collection.
@@ -385,9 +444,18 @@ func (c *edgeCollection) RemoveDocuments(ctx context.Context, keys []string) (Do
 	}
 	metas := make(DocumentMetaSlice, keyCount)
 	errs := make(ErrorSlice, keyCount)
+	silent := false
 	for i := 0; i < keyCount; i++ {
 		key := keys[i]
-		metas[i], errs[i] = c.RemoveDocument(ctx, key)
+		meta, cs, err := c.removeDocument(ctx, key)
+		if cs.Silent {
+			silent = true
+		} else {
+			metas[i], errs[i] = meta, err
+		}
+	}
+	if silent {
+		return nil, nil, nil
 	}
 	return metas, errs, nil
 }
