@@ -108,7 +108,7 @@ func TestRemoveEdgeCollection(t *testing.T) {
 	// Now create an edge collection
 	ec, err := g.CreateEdgeCollection(nil, "friends", []string{"person"}, []string{"person"})
 	if err != nil {
-		t.Errorf("CreateEdgeCollection failed: %s", describe(err))
+		t.Fatalf("CreateEdgeCollection failed: %s", describe(err))
 	} else if ec.Name() != "friends" {
 		t.Errorf("Invalid name, expected 'friends', got '%s'", ec.Name())
 	}
