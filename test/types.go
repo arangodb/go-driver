@@ -48,6 +48,13 @@ type RouteEdge struct {
 	Distance int    `json:"distance,omitempty"`
 }
 
+type RouteEdgeWithKey struct {
+	Key      string `json:"_key"`
+	From     string `json:"_from,omitempty"`
+	To       string `json:"_to,omitempty"`
+	Distance int    `json:"distance,omitempty"`
+}
+
 type RelationEdge struct {
 	From string `json:"_from,omitempty"`
 	To   string `json:"_to,omitempty"`
