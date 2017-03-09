@@ -23,16 +23,19 @@
 package test
 
 import (
+	"context"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
 )
 
-// TestImportDocumentsWithKeys imports documents and then checks that it exists.
-func TestImportDocumentsWithKeys(t *testing.T) {
+// TestImportVerticesWithKeys imports documents and then checks that it exists.
+func TestImportVerticesWithKeys(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_withKeys_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_withKeys_test", t)
 	docs := []UserDocWithKey{
 		UserDocWithKey{
 			"jan",
@@ -52,7 +55,7 @@ func TestImportDocumentsWithKeys(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, nil)
 	if err != nil {
 		t.Fatalf("Failed to import documents: %s", describe(err))
@@ -69,11 +72,13 @@ func TestImportDocumentsWithKeys(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsWithoutKeys imports documents and then checks that it exists.
-func TestImportDocumentsWithoutKeys(t *testing.T) {
+// TestImportVerticesWithoutKeys imports documents and then checks that it exists.
+func TestImportVerticesWithoutKeys(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_withoutKeys_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_withoutKeys_test", t)
 	docs := []UserDoc{
 		UserDoc{
 			"Jan",
@@ -90,7 +95,7 @@ func TestImportDocumentsWithoutKeys(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, nil)
 	if err != nil {
 		t.Fatalf("Failed to import documents: %s", describe(err))
@@ -107,11 +112,13 @@ func TestImportDocumentsWithoutKeys(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsEmptyEntries imports documents and then checks that it exists.
-func TestImportDocumentsEmptyEntries(t *testing.T) {
+// TestImportVerticesEmptyEntries imports documents and then checks that it exists.
+func TestImportVerticesEmptyEntries(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_emptyEntries_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_emptyEntries_test", t)
 	docs := []*UserDocWithKey{
 		&UserDocWithKey{
 			"jan",
@@ -132,7 +139,7 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, nil)
 	if err != nil {
 		t.Fatalf("Failed to import documents: %s", describe(err))
@@ -149,11 +156,13 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsInvalidEntries imports documents and then checks that it exists.
-func TestImportDocumentsInvalidEntries(t *testing.T) {
+// TestImportVerticesInvalidEntries imports documents and then checks that it exists.
+func TestImportVerticesInvalidEntries(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_invalidEntries_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_invalidEntries_test", t)
 	docs := []interface{}{
 		&UserDocWithKey{
 			"jan",
@@ -176,7 +185,7 @@ func TestImportDocumentsInvalidEntries(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, nil)
 	if err != nil {
 		t.Fatalf("Failed to import documents: %s", describe(err))
@@ -193,11 +202,13 @@ func TestImportDocumentsInvalidEntries(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsDuplicateEntries imports documents and then checks that it exists.
-func TestImportDocumentsDuplicateEntries(t *testing.T) {
+// TestImportVerticesDuplicateEntries imports documents and then checks that it exists.
+func TestImportVerticesDuplicateEntries(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_duplicateEntries_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_duplicateEntries_test", t)
 	docs := []interface{}{
 		&UserDocWithKey{
 			"jan",
@@ -212,7 +223,7 @@ func TestImportDocumentsDuplicateEntries(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, nil)
 	if err != nil {
 		t.Fatalf("Failed to import documents: %s", describe(err))
@@ -235,11 +246,13 @@ func TestImportDocumentsDuplicateEntries(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsDuplicateEntriesComplete imports documents and then checks that it exists.
-func TestImportDocumentsDuplicateEntriesComplete(t *testing.T) {
+// TestImportVerticesDuplicateEntriesComplete imports documents and then checks that it exists.
+func TestImportVerticesDuplicateEntriesComplete(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_duplicateEntriesComplete_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_duplicateEntriesComplete_test", t)
 	docs := []interface{}{
 		&UserDocWithKey{
 			"jan",
@@ -254,7 +267,7 @@ func TestImportDocumentsDuplicateEntriesComplete(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	if _, err := col.ImportDocuments(ctx, docs, &driver.ImportDocumentOptions{
 		Complete: true,
 	}); !driver.IsConflict(err) {
@@ -262,11 +275,13 @@ func TestImportDocumentsDuplicateEntriesComplete(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsDuplicateEntriesUpdate imports documents and then checks that it exists.
-func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
+// TestImportVerticesDuplicateEntriesUpdate imports documents and then checks that it exists.
+func TestImportVerticesDuplicateEntriesUpdate(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_duplicateEntriesUpdate_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_duplicateEntriesUpdate_test", t)
 	docs := []interface{}{
 		&UserDocWithKey{
 			"jan",
@@ -280,7 +295,7 @@ func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, &driver.ImportDocumentOptions{
 		OnDuplicate: driver.ImportOnDuplicateUpdate,
 	})
@@ -317,11 +332,13 @@ func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsDuplicateEntriesReplace imports documents and then checks that it exists.
-func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
+// TestImportVerticesDuplicateEntriesReplace imports documents and then checks that it exists.
+func TestImportVerticesDuplicateEntriesReplace(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_duplicateEntriesReplace_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_duplicateEntriesReplace_test", t)
 	docs := []interface{}{
 		&UserDocWithKey{
 			"jan",
@@ -335,7 +352,7 @@ func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, &driver.ImportDocumentOptions{
 		OnDuplicate: driver.ImportOnDuplicateReplace,
 	})
@@ -372,11 +389,13 @@ func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsDuplicateEntriesIgnore imports documents and then checks that it exists.
-func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
+// TestImportVerticesDuplicateEntriesIgnore imports documents and then checks that it exists.
+func TestImportVerticesDuplicateEntriesIgnore(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_duplicateEntriesIgnore_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_duplicateEntriesIgnore_test", t)
 	docs := []interface{}{
 		&UserDocWithKey{
 			"jan",
@@ -390,7 +409,7 @@ func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
 	}
 
 	var raw []byte
-	ctx := driver.WithRawResponse(nil, &raw)
+	ctx = driver.WithRawResponse(ctx, &raw)
 	stats, err := col.ImportDocuments(ctx, docs, &driver.ImportDocumentOptions{
 		OnDuplicate: driver.ImportOnDuplicateIgnore,
 	})
@@ -427,11 +446,13 @@ func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsDetails imports documents and then checks that it exists.
-func TestImportDocumentsDetails(t *testing.T) {
+// TestImportVerticesDetails imports documents and then checks that it exists.
+func TestImportVerticesDetails(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_details_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_details_test", t)
 	docs := []interface{}{
 		&UserDocWithKey{
 			"jan",
@@ -446,7 +467,7 @@ func TestImportDocumentsDetails(t *testing.T) {
 
 	var raw []byte
 	var details []string
-	ctx := driver.WithImportDetails(driver.WithRawResponse(nil, &raw), &details)
+	ctx = driver.WithImportDetails(driver.WithRawResponse(ctx, &raw), &details)
 	stats, err := col.ImportDocuments(ctx, docs, nil)
 	if err != nil {
 		t.Fatalf("Failed to import documents: %s", describe(err))
@@ -476,11 +497,13 @@ func TestImportDocumentsDetails(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsOverwriteYes imports documents and then checks that it exists.
-func TestImportDocumentsOverwriteYes(t *testing.T) {
+// TestImportVerticesOverwriteYes imports documents and then checks that it exists.
+func TestImportVerticesOverwriteYes(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_overwriteYes_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_overwriteYes_test", t)
 	docs := []interface{}{
 		&UserDoc{
 			"Jan",
@@ -515,11 +538,13 @@ func TestImportDocumentsOverwriteYes(t *testing.T) {
 	}
 }
 
-// TestImportDocumentsOverwriteNo imports documents and then checks that it exists.
-func TestImportDocumentsOverwriteNo(t *testing.T) {
+// TestImportVerticesOverwriteNo imports documents and then checks that it exists.
+func TestImportVerticesOverwriteNo(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "import_overwriteNo_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
+	col := ensureVertexCollection(nil, g, "import_overwriteNo_test", t)
 	docs := []interface{}{
 		&UserDoc{
 			"Jan",
