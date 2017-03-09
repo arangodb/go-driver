@@ -24,9 +24,9 @@ package driver
 
 // DocumentMeta contains all meta data used to identifier a document.
 type DocumentMeta struct {
-	Key string `json:"_key,omitempty"`
-	ID  string `json:"_id,omitempty"`
-	Rev string `json:"_rev,omitempty"`
+	Key string     `json:"_key,omitempty"`
+	ID  DocumentID `json:"_id,omitempty"`
+	Rev string     `json:"_rev,omitempty"`
 }
 
 // validateKey returns an error if the given key is empty otherwise invalid.
@@ -59,8 +59,8 @@ func (l DocumentMetaSlice) Revs() []string {
 }
 
 // IDs returns the ID's of all elements.
-func (l DocumentMetaSlice) IDs() []string {
-	ids := make([]string, len(l))
+func (l DocumentMetaSlice) IDs() []DocumentID {
+	ids := make([]DocumentID, len(l))
 	for i, m := range l {
 		ids[i] = m.ID
 	}

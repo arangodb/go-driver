@@ -45,6 +45,17 @@ func ensureCollection(ctx context.Context, db driver.Database, name string, opti
 	return c
 }
 
+// assertCollection is a helper to check if a collection exists and fail if it does not.
+func assertCollection(ctx context.Context, db driver.Database, name string, t *testing.T) driver.Collection {
+	c, err := db.Collection(ctx, name)
+	if driver.IsNotFound(err) {
+		t.Fatalf("Collection '%s': does not exist", name)
+	} else if err != nil {
+		t.Fatalf("Failed to open collection '%s': %s", name, describe(err))
+	}
+	return c
+}
+
 // TestCreateCollection creates a collection and then checks that it exists.
 func TestCreateCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)

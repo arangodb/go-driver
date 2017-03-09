@@ -24,8 +24,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -35,17 +33,15 @@ import (
 	"github.com/arangodb/go-driver/http"
 )
 
-// describe returns a string description of the given error.
-func describe(err error) string {
-	if err == nil {
-		return "nil"
+// skipBelowVersion skips the test if the current server version is less than
+// the given version.
+func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
 	}
-	cause := driver.Cause(err)
-	c, _ := json.Marshal(cause)
-	if cause.Error() != err.Error() {
-		return fmt.Sprintf("%v caused by %v", err, string(c))
-	} else {
-		return fmt.Sprintf("%v", string(c))
+	if x.Version.CompareTo(version) < 0 {
+		t.Skipf("Skipping below version '%s', got version '%s'", version, x.Version)
 	}
 }
 

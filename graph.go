@@ -20,18 +20,22 @@
 // Author Ewout Prangsma
 //
 
-// +build "go1.8"
-
 package driver
 
-import "net/url"
+import "context"
 
-// pathEscape the given value for use in a URL path.
-func pathEscape(s string) string {
-	return url.PathEscape(s)
-}
+// Graph provides access to all edge & vertex collections of a single graph in a database.
+type Graph interface {
+	// Name returns the name of the graph.
+	Name() string
 
-// pathUnescape unescapes the given value for use in a URL path.
-func pathUnescape(s string) string {
-	return url.PathUnescape(s)
+	// Remove removes the entire graph.
+	// If the graph does not exist, a NotFoundError is returned.
+	Remove(ctx context.Context) error
+
+	// Edge collection functions
+	GraphEdgeCollections
+
+	// Vertex collection functions
+	GraphVertexCollections
 }

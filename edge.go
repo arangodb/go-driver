@@ -20,18 +20,12 @@
 // Author Ewout Prangsma
 //
 
-// +build "go1.8"
-
 package driver
 
-import "net/url"
-
-// pathEscape the given value for use in a URL path.
-func pathEscape(s string) string {
-	return url.PathEscape(s)
-}
-
-// pathUnescape unescapes the given value for use in a URL path.
-func pathUnescape(s string) string {
-	return url.PathUnescape(s)
+// EdgeDocument is a minimal document for use in edge collection.
+// You can use this in your own edge document structures completely use your own.
+// If you use your own, make sure to include a `_from` and `_to` field.
+type EdgeDocument struct {
+	From DocumentID `json:"_from,omitempty"`
+	To   DocumentID `json:"_to,omitempty"`
 }
