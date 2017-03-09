@@ -39,7 +39,7 @@ DBCONTAINER := $(PROJECT)-test-db
 
 run-tests: run-tests-http run-tests-single-with-auth run-tests-single-no-auth
 
-run-tests-http:
+run-tests-http: $(GOBUILDDIR)
 	@docker run \
 		--rm \
 		-v $(ROOTDIR):/usr/code \
@@ -48,7 +48,7 @@ run-tests-http:
 		golang:$(GOVERSION) \
 		go test $(TESTOPTIONS) $(REPOPATH)/http
 
-run-tests-single-no-auth:
+run-tests-single-no-auth: $(GOBUILDDIR)
 	@echo "Single server, no authentication"
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
 	@docker run -d --name $(DBCONTAINER) \
@@ -65,7 +65,7 @@ run-tests-single-no-auth:
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/test
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
 
-run-tests-single-with-auth:
+run-tests-single-with-auth: $(GOBUILDDIR)
 	@echo "Single server, with authentication"
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
 	@docker run -d --name $(DBCONTAINER) \
@@ -82,3 +82,20 @@ run-tests-single-with-auth:
 		golang:$(GOVERSION) \
 		go test -tags auth $(TESTOPTIONS) $(REPOPATH)/test
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
+
+run-tests-cluster-no-auth: $(GOBUILDDIR)
+	@echo "Cluster server, no authentication"
+	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh start
+	docker run \
+		--rm \
+		--net=host \
+		-v $(ROOTDIR):/usr/code \
+		-e GOPATH=/usr/code/.gobuild \
+		-e TEST_ENDPOINTS=http://localhost:7002 \
+		-w /usr/code/ \
+		golang:$(GOVERSION) \
+		go test $(TESTOPTIONS) $(REPOPATH)/test
+	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+
+run-tests-cluster-cleanup:
+	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
