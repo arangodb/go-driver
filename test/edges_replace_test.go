@@ -335,14 +335,16 @@ func TestReplaceEdgesRevision(t *testing.T) {
 
 // TestReplaceEdgesKeyEmpty replaces a document it with an empty key.
 func TestReplaceEdgesKeyEmpty(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "document_test", nil, t)
-	col := ensureCollection(nil, db, "documents_test", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	g := ensureGraph(ctx, db, "replace_edges_updateNil_test", nil, t)
+	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
 	// Replacement document
 	replacement := map[string]interface{}{
 		"name": "Updated",
 	}
-	if _, _, err := col.ReplaceDocuments(nil, []string{""}, replacement); !driver.IsInvalidArgument(err) {
+	if _, _, err := ec.ReplaceDocuments(nil, []string{""}, replacement); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
