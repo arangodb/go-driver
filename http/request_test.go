@@ -32,7 +32,7 @@ type Sample struct {
 	Age   int    `json:"b,omitempty"`
 }
 
-func TestSetBodyImportArray(t *testing.T) {
+func TestSetBodyImportArrayStructs(t *testing.T) {
 	r := &httpRequest{}
 	docs := []Sample{
 		Sample{"Foo", 2},
@@ -45,6 +45,75 @@ func TestSetBodyImportArray(t *testing.T) {
 		`{"a":"Dunn","b":23}`,
 		`{"a":"Short"}`,
 		`{"a":"Sample","b":45}`,
+	}, "\n")
+	if _, err := r.SetBodyImportArray(docs); err != nil {
+		t.Fatalf("SetBodyImportArray failed: %v", err)
+	}
+	data := strings.TrimSpace(string(r.body))
+	if data != expected {
+		t.Errorf("Encoding failed: Expected\n%s\nGot\n%s\n", expected, data)
+	}
+}
+
+func TestSetBodyImportArrayStructPtrs(t *testing.T) {
+	r := &httpRequest{}
+	docs := []*Sample{
+		&Sample{"Foo", 2},
+		&Sample{"Dunn", 23},
+		&Sample{"Short", 0},
+		&Sample{"Sample", 45},
+	}
+	expected := strings.Join([]string{
+		`{"a":"Foo","b":2}`,
+		`{"a":"Dunn","b":23}`,
+		`{"a":"Short"}`,
+		`{"a":"Sample","b":45}`,
+	}, "\n")
+	if _, err := r.SetBodyImportArray(docs); err != nil {
+		t.Fatalf("SetBodyImportArray failed: %v", err)
+	}
+	data := strings.TrimSpace(string(r.body))
+	if data != expected {
+		t.Errorf("Encoding failed: Expected\n%s\nGot\n%s\n", expected, data)
+	}
+}
+
+func TestSetBodyImportArrayStructPtrsNil(t *testing.T) {
+	r := &httpRequest{}
+	docs := []*Sample{
+		&Sample{"Foo", 2},
+		nil,
+		&Sample{"Dunn", 23},
+		&Sample{"Short", 0},
+		nil,
+		&Sample{"Sample", 45},
+	}
+	expected := strings.Join([]string{
+		`{"a":"Foo","b":2}`,
+		``,
+		`{"a":"Dunn","b":23}`,
+		`{"a":"Short"}`,
+		``,
+		`{"a":"Sample","b":45}`,
+	}, "\n")
+	if _, err := r.SetBodyImportArray(docs); err != nil {
+		t.Fatalf("SetBodyImportArray failed: %v", err)
+	}
+	data := strings.TrimSpace(string(r.body))
+	if data != expected {
+		t.Errorf("Encoding failed: Expected\n%s\nGot\n%s\n", expected, data)
+	}
+}
+
+func TestSetBodyImportArrayMaps(t *testing.T) {
+	r := &httpRequest{}
+	docs := []map[string]interface{}{
+		map[string]interface{}{"a": 5, "b": "c", "c": true},
+		map[string]interface{}{"a": 77, "c": false},
+	}
+	expected := strings.Join([]string{
+		`{"a":5,"b":"c","c":true}`,
+		`{"a":77,"c":false}`,
 	}, "\n")
 	if _, err := r.SetBodyImportArray(docs); err != nil {
 		t.Fatalf("SetBodyImportArray failed: %v", err)

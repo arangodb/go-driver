@@ -135,14 +135,26 @@ func (r *httpRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request,
 	buf := &bytes.Buffer{}
 	encoder := json.NewEncoder(buf)
 	for i := 0; i < elementCount; i++ {
-		document := bodyArrayVal.Index(i).Interface()
-		if err := encoder.Encode(document); err != nil {
-			return nil, driver.WithStack(err)
+		entryVal := bodyArrayVal.Index(i)
+		if isNil(entryVal) {
+			buf.WriteString("\n")
+		} else {
+			if err := encoder.Encode(entryVal.Interface()); err != nil {
+				return nil, driver.WithStack(err)
+			}
 		}
 	}
 	r.body = buf.Bytes()
 	return r, nil
+}
 
+func isNil(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
 
 // SetHeader sets a single header arguments of the request.

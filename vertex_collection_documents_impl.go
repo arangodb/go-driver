@@ -482,10 +482,10 @@ func (c *vertexCollection) RemoveDocuments(ctx context.Context, keys []string) (
 // - An array of maps: All maps will be imported as individual documents.
 // To wait until all documents have been synced to disk, prepare a context with `WithWaitForSync`.
 // To return details about documents that could not be imported, prepare a context with `WithImportDetails`.
-func (c *vertexCollection) ImportDocuments(ctx context.Context, documents interface{}, options *ImportOptions) (ImportStatistics, error) {
+func (c *vertexCollection) ImportDocuments(ctx context.Context, documents interface{}, options *ImportDocumentOptions) (ImportDocumentStatistics, error) {
 	stats, err := c.rawCollection().ImportDocuments(ctx, documents, options)
 	if err != nil {
-		return ImportStatistics{}, WithStack(err)
+		return ImportDocumentStatistics{}, WithStack(err)
 	}
 	return stats, nil
 }

@@ -107,11 +107,11 @@ type CollectionDocuments interface {
 	// - An array of maps: All maps will be imported as individual documents.
 	// To wait until all documents have been synced to disk, prepare a context with `WithWaitForSync`.
 	// To return details about documents that could not be imported, prepare a context with `WithImportDetails`.
-	ImportDocuments(ctx context.Context, documents interface{}, options *ImportOptions) (ImportStatistics, error)
+	ImportDocuments(ctx context.Context, documents interface{}, options *ImportDocumentOptions) (ImportDocumentStatistics, error)
 }
 
-// ImportOptions holds optional options that control the import process.
-type ImportOptions struct {
+// ImportDocumentOptions holds optional options that control the import document process.
+type ImportDocumentOptions struct {
 	// FromPrefix is an optional prefix for the values in _from attributes. If specified, the value is automatically
 	// prepended to each _from input value. This allows specifying just the keys for _from.
 	FromPrefix string `json:"fromPrefix,omitempty"`
@@ -149,8 +149,8 @@ const (
 	ImportOnDuplicateIgnore = ImportOnDuplicate("ignore")
 )
 
-// ImportStatistics holds statistics of an import action.
-type ImportStatistics struct {
+// ImportDocumentStatistics holds statistics of an import action.
+type ImportDocumentStatistics struct {
 	// Created holds the number of documents imported.
 	Created int64 `json:"created,omitempty"`
 	// Errors holds the number of documents that were not imported due to an error.

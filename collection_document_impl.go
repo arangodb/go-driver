@@ -460,17 +460,17 @@ func (c *collection) RemoveDocuments(ctx context.Context, keys []string) (Docume
 // - An array of maps: All maps will be imported as individual documents.
 // To wait until all documents have been synced to disk, prepare a context with `WithWaitForSync`.
 // To return details about documents that could not be imported, prepare a context with `WithImportDetails`.
-func (c *collection) ImportDocuments(ctx context.Context, documents interface{}, options *ImportOptions) (ImportStatistics, error) {
+func (c *collection) ImportDocuments(ctx context.Context, documents interface{}, options *ImportDocumentOptions) (ImportDocumentStatistics, error) {
 	documentsVal := reflect.ValueOf(documents)
 	switch documentsVal.Kind() {
 	case reflect.Array, reflect.Slice:
 		// OK
 	default:
-		return ImportStatistics{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("documents data must be of kind Array, got %s", documentsVal.Kind())})
+		return ImportDocumentStatistics{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("documents data must be of kind Array, got %s", documentsVal.Kind())})
 	}
 	req, err := c.conn.NewRequest("POST", path.Join(c.db.relPath(), "_api/import"))
 	if err != nil {
-		return ImportStatistics{}, WithStack(err)
+		return ImportDocumentStatistics{}, WithStack(err)
 	}
 	req.SetQuery("collection", c.name)
 	req.SetQuery("type", "documents")
@@ -492,25 +492,25 @@ func (c *collection) ImportDocuments(ctx context.Context, documents interface{},
 		}
 	}
 	if _, err := req.SetBodyImportArray(documents); err != nil {
-		return ImportStatistics{}, WithStack(err)
+		return ImportDocumentStatistics{}, WithStack(err)
 	}
 	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return ImportStatistics{}, WithStack(err)
+		return ImportDocumentStatistics{}, WithStack(err)
 	}
 	if status := resp.StatusCode(); status != 201 {
-		return ImportStatistics{}, WithStack(newArangoError(status, 0, "Invalid status"))
+		return ImportDocumentStatistics{}, WithStack(newArangoError(status, 0, "Invalid status"))
 	}
 	// Parse response
-	var data ImportStatistics
+	var data ImportDocumentStatistics
 	if err := resp.ParseBody("", &data); err != nil {
-		return ImportStatistics{}, WithStack(err)
+		return ImportDocumentStatistics{}, WithStack(err)
 	}
 	// Import details (if needed)
 	if details := cs.ImportDetails; details != nil {
 		if err := resp.ParseBody("details", details); err != nil {
-			return ImportStatistics{}, WithStack(err)
+			return ImportDocumentStatistics{}, WithStack(err)
 		}
 	}
 	return data, nil
