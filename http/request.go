@@ -118,6 +118,30 @@ func (r *httpRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[strin
 		r.body = data
 	}
 	return r, nil
+}
+
+// SetBodyImportArray sets the content of the request as an array formatted for importing documents.
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (r *httpRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request, error) {
+	bodyArrayVal := reflect.ValueOf(bodyArray)
+	switch bodyArrayVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	}
+	// Render elements
+	elementCount := bodyArrayVal.Len()
+	buf := &bytes.Buffer{}
+	encoder := json.NewEncoder(buf)
+	for i := 0; i < elementCount; i++ {
+		document := bodyArrayVal.Index(i).Interface()
+		if err := encoder.Encode(document); err != nil {
+			return nil, driver.WithStack(err)
+		}
+	}
+	r.body = buf.Bytes()
+	return r, nil
 
 }
 

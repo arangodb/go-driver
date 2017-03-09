@@ -99,4 +99,66 @@ type CollectionDocuments interface {
 	// To wait until removal has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	RemoveDocuments(ctx context.Context, keys []string) (DocumentMetaSlice, ErrorSlice, error)
+
+	// ImportDocuments imports one or more documents into the collection.
+	// The document data is loaded from the given documents argument, statistics are returned.
+	// The documents argument can be one of the following:
+	// - An array of structs: All structs will be imported as individual documents.
+	// - An array of maps: All maps will be imported as individual documents.
+	// To wait until all documents have been synced to disk, prepare a context with `WithWaitForSync`.
+	// To return details about documents that could not be imported, prepare a context with `WithImportDetails`.
+	ImportDocuments(ctx context.Context, documents interface{}, options *ImportOptions) (ImportStatistics, error)
+}
+
+// ImportOptions holds optional options that control the import process.
+type ImportOptions struct {
+	// FromPrefix is an optional prefix for the values in _from attributes. If specified, the value is automatically
+	// prepended to each _from input value. This allows specifying just the keys for _from.
+	FromPrefix string `json:"fromPrefix,omitempty"`
+	// ToPrefix is an optional prefix for the values in _to attributes. If specified, the value is automatically
+	// prepended to each _to input value. This allows specifying just the keys for _to.
+	ToPrefix string `json:"toPrefix,omitempty"`
+	// Overwrite is a flag that if set, then all data in the collection will be removed prior to the import.
+	// Note that any existing index definitions will be preseved.
+	Overwrite bool `json:"overwrite,omitempty"`
+	// OnDuplicate controls what action is carried out in case of a unique key constraint violation.
+	// Possible values are:
+	// - ImportOnDuplicateError
+	// - ImportOnDuplicateUpdate
+	// - ImportOnDuplicateReplace
+	// - ImportOnDuplicateIgnore
+	OnDuplicate ImportOnDuplicate `json:"onDuplicate,omitempty"`
+	// Complete is a flag that if set, will make the whole import fail if any error occurs.
+	// Otherwise the import will continue even if some documents cannot be imported.
+	Complete bool `json:"complete,omitempty"`
+}
+
+// ImportOnDuplicate is a type to control what action is carried out in case of a unique key constraint violation.
+type ImportOnDuplicate string
+
+const (
+	// ImportOnDuplicateError will not import the current document because of the unique key constraint violation.
+	// This is the default setting.
+	ImportOnDuplicateError = ImportOnDuplicate("error")
+	// ImportOnDuplicateUpdate will update an existing document in the database with the data specified in the request.
+	// Attributes of the existing document that are not present in the request will be preseved.
+	ImportOnDuplicateUpdate = ImportOnDuplicate("update")
+	// ImportOnDuplicateReplace will replace an existing document in the database with the data specified in the request.
+	ImportOnDuplicateReplace = ImportOnDuplicate("replace")
+	// ImportOnDuplicateIgnore will not update an existing document and simply ignore the error caused by a unique key constraint violation.
+	ImportOnDuplicateIgnore = ImportOnDuplicate("ignore")
+)
+
+// ImportStatistics holds statistics of an import action.
+type ImportStatistics struct {
+	// Created holds the number of documents imported.
+	Created int64 `json:"created,omitempty"`
+	// Errors holds the number of documents that were not imported due to an error.
+	Errors int64 `json:"errors,omitempty"`
+	// Empty holds the number of empty lines found in the input (will only contain a value greater zero for types documents or auto).
+	Empty int64 `json:"empty,omitempty"`
+	// Updated holds the number of updated/replaced documents (in case onDuplicate was set to either update or replace).
+	Updated int64 `json:"updated,omitempty"`
+	// Ignored holds the number of failed but ignored insert operations (in case onDuplicate was set to ignore).
+	Ignored int64 `json:"ignored,omitempty"`
 }

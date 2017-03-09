@@ -27,6 +27,12 @@ type UserDoc struct {
 	Age  int    `json:"age"`
 }
 
+type UserDocWithKey struct {
+	Key  string `json:"_key"`
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
 type Account struct {
 	ID   string   `json:"id"`
 	User *UserDoc `json:"user"`

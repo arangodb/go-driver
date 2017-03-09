@@ -54,6 +54,9 @@ type Request interface {
 	// The merge is NOT recursive.
 	// The protocol of the connection determines what kinds of marshalling is taking place.
 	SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (Request, error)
+	// SetBodyImportArray sets the content of the request as an array formatted for importing documents.
+	// The protocol of the connection determines what kinds of marshalling is taking place.
+	SetBodyImportArray(bodyArray interface{}) (Request, error)
 	// SetHeader sets a single header arguments of the request.
 	// Any existing header argument with the same key is overwritten.
 	SetHeader(key, value string) Request

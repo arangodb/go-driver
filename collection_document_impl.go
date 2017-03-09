@@ -453,6 +453,69 @@ func (c *collection) RemoveDocuments(ctx context.Context, keys []string) (Docume
 	return metas, errs, nil
 }
 
+// ImportDocuments imports one or more documents into the collection.
+// The document data is loaded from the given documents argument, statistics are returned.
+// The documents argument can be one of the following:
+// - An array of structs: All structs will be imported as individual documents.
+// - An array of maps: All maps will be imported as individual documents.
+// To wait until all documents have been synced to disk, prepare a context with `WithWaitForSync`.
+// To return details about documents that could not be imported, prepare a context with `WithImportDetails`.
+func (c *collection) ImportDocuments(ctx context.Context, documents interface{}, options *ImportOptions) (ImportStatistics, error) {
+	documentsVal := reflect.ValueOf(documents)
+	switch documentsVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return ImportStatistics{}, WithStack(InvalidArgumentError{Message: fmt.Sprintf("documents data must be of kind Array, got %s", documentsVal.Kind())})
+	}
+	req, err := c.conn.NewRequest("POST", path.Join(c.db.relPath(), "_api/import"))
+	if err != nil {
+		return ImportStatistics{}, WithStack(err)
+	}
+	req.SetQuery("collection", c.name)
+	req.SetQuery("type", "documents")
+	if options != nil {
+		if v := options.FromPrefix; v != "" {
+			req.SetQuery("fromPrefix", v)
+		}
+		if v := options.ToPrefix; v != "" {
+			req.SetQuery("toPrefix", v)
+		}
+		if v := options.Overwrite; v {
+			req.SetQuery("overwrite", "true")
+		}
+		if v := options.OnDuplicate; v != "" {
+			req.SetQuery("onDuplicate", string(v))
+		}
+		if v := options.Complete; v {
+			req.SetQuery("complete", "true")
+		}
+	}
+	if _, err := req.SetBodyImportArray(documents); err != nil {
+		return ImportStatistics{}, WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return ImportStatistics{}, WithStack(err)
+	}
+	if status := resp.StatusCode(); status != 201 {
+		return ImportStatistics{}, WithStack(newArangoError(status, 0, "Invalid status"))
+	}
+	// Parse response
+	var data ImportStatistics
+	if err := resp.ParseBody("", &data); err != nil {
+		return ImportStatistics{}, WithStack(err)
+	}
+	// Import details (if needed)
+	if details := cs.ImportDetails; details != nil {
+		if err := resp.ParseBody("details", details); err != nil {
+			return ImportStatistics{}, WithStack(err)
+		}
+	}
+	return data, nil
+}
+
 // createMergeArray returns an array of metadata maps with `_key` and/or `_rev` elements.
 func createMergeArray(keys, revs []string) ([]map[string]interface{}, error) {
 	if keys == nil && revs == nil {

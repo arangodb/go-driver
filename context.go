@@ -29,16 +29,17 @@ import (
 )
 
 const (
-	keyRevision     = "arangodb-revision"
-	keyRevisions    = "arangodb-revisions"
-	keyReturnNew    = "arangodb-returnNew"
-	keyReturnOld    = "arangodb-returnOld"
-	keySilent       = "arangodb-silent"
-	keyWaitForSync  = "arangodb-waitForSync"
-	keyDetails      = "arangodb-details"
-	keyKeepNull     = "arangodb-keepNull"
-	keyMergeObjects = "arangodb-mergeObjects"
-	keyRawResponse  = "arangodb-rawResponse"
+	keyRevision      = "arangodb-revision"
+	keyRevisions     = "arangodb-revisions"
+	keyReturnNew     = "arangodb-returnNew"
+	keyReturnOld     = "arangodb-returnOld"
+	keySilent        = "arangodb-silent"
+	keyWaitForSync   = "arangodb-waitForSync"
+	keyDetails       = "arangodb-details"
+	keyKeepNull      = "arangodb-keepNull"
+	keyMergeObjects  = "arangodb-mergeObjects"
+	keyRawResponse   = "arangodb-rawResponse"
+	keyImportDetails = "arangodb-importDetails"
 )
 
 // WithRevision is used to configure a context to make document
@@ -117,13 +118,20 @@ func WithRawResponse(parent context.Context, value *[]byte) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyRawResponse, value)
 }
 
+// WithImportDetails is used to configure a context that will make import document requests return
+// details about documents that could not be imported.
+func WithImportDetails(parent context.Context, value *[]string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyImportDetails, value)
+}
+
 type contextSettings struct {
-	Silent      bool
-	WaitForSync bool
-	ReturnOld   interface{}
-	ReturnNew   interface{}
-	Revision    string
-	Revisions   []string
+	Silent        bool
+	WaitForSync   bool
+	ReturnOld     interface{}
+	ReturnNew     interface{}
+	Revision      string
+	Revisions     []string
+	ImportDetails *[]string
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -187,6 +195,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if revs, ok := v.([]string); ok {
 			req.SetQuery("ignoreRevs", "false")
 			result.Revisions = revs
+		}
+	}
+	// ImportDetails
+	if v := ctx.Value(keyImportDetails); v != nil {
+		if details, ok := v.(*[]string); ok {
+			req.SetQuery("details", "true")
+			result.ImportDetails = details
 		}
 	}
 	return result
