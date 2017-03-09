@@ -8,6 +8,11 @@ GOVERSION := 1.8-alpine
 ARANGODB := arangodb:3.1.12
 #ARANGODB := neunhoef/arangodb:3.2.devel-1
 
+TESTOPTIONS := 
+ifdef VERBOSE
+	TESTOPTIONS := -v
+endif
+
 ORGPATH := github.com/arangodb
 ORGDIR := $(GOBUILDDIR)/src/$(ORGPATH)
 REPONAME := $(PROJECT)
@@ -32,7 +37,16 @@ $(GOBUILDDIR):
 
 DBCONTAINER := $(PROJECT)-test-db
 
-run-tests: run-tests-single-with-auth run-tests-single-no-auth
+run-tests: run-tests-http run-tests-single-with-auth run-tests-single-no-auth
+
+run-tests-http:
+	@docker run \
+		--rm \
+		-v $(ROOTDIR):/usr/code \
+		-e GOPATH=/usr/code/.gobuild \
+		-w /usr/code/ \
+		golang:$(GOVERSION) \
+		go test $(TESTOPTIONS) $(REPOPATH)/http
 
 run-tests-single-no-auth:
 	@echo "Single server, no authentication"
@@ -48,7 +62,7 @@ run-tests-single-no-auth:
 		-e TEST_ENDPOINTS=http://localhost:8529 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test -v $(REPOPATH) $(REPOPATH)/test
+		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/test
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
 
 run-tests-single-with-auth:
@@ -66,5 +80,5 @@ run-tests-single-with-auth:
 		-e TEST_AUTHENTICATION=basic:root:rootpw \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test -tags auth -v $(REPOPATH)/test
+		go test -tags auth $(TESTOPTIONS) $(REPOPATH)/test
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null

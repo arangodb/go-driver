@@ -476,6 +476,21 @@ func (c *edgeCollection) RemoveDocuments(ctx context.Context, keys []string) (Do
 	return metas, errs, nil
 }
 
+// ImportDocuments imports one or more documents into the collection.
+// The document data is loaded from the given documents argument, statistics are returned.
+// The documents argument can be one of the following:
+// - An array of structs: All structs will be imported as individual documents.
+// - An array of maps: All maps will be imported as individual documents.
+// To wait until all documents have been synced to disk, prepare a context with `WithWaitForSync`.
+// To return details about documents that could not be imported, prepare a context with `WithImportDetails`.
+func (c *edgeCollection) ImportDocuments(ctx context.Context, documents interface{}, options *ImportDocumentOptions) (ImportDocumentStatistics, error) {
+	stats, err := c.rawCollection().ImportDocuments(ctx, documents, options)
+	if err != nil {
+		return ImportDocumentStatistics{}, WithStack(err)
+	}
+	return stats, nil
+}
+
 // getKeyFromDocument looks for a `_key` document in the given document and returns it.
 func getKeyFromDocument(doc reflect.Value) (string, error) {
 	if doc.IsNil() {

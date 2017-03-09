@@ -27,6 +27,12 @@ type UserDoc struct {
 	Age  int    `json:"age"`
 }
 
+type UserDocWithKey struct {
+	Key  string `json:"_key"`
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
 type Account struct {
 	ID   string   `json:"id"`
 	User *UserDoc `json:"user"`
@@ -37,6 +43,13 @@ type Book struct {
 }
 
 type RouteEdge struct {
+	From     string `json:"_from,omitempty"`
+	To       string `json:"_to,omitempty"`
+	Distance int    `json:"distance,omitempty"`
+}
+
+type RouteEdgeWithKey struct {
+	Key      string `json:"_key"`
 	From     string `json:"_from,omitempty"`
 	To       string `json:"_to,omitempty"`
 	Distance int    `json:"distance,omitempty"`
