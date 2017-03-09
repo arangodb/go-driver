@@ -62,6 +62,34 @@ func TestCreateDocument(t *testing.T) {
 	}
 }
 
+// TestCreateDocumentWithKey creates a document with given key and then checks that it exists.
+func TestCreateDocumentWithKey(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "document_test", nil, t)
+	col := ensureCollection(nil, db, "document_withKey_test", nil, t)
+	doc := UserDocWithKey{
+		"jan",
+		"Jan",
+		40,
+	}
+	meta, err := col.CreateDocument(nil, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+	// Key must be given key
+	if meta.Key != doc.Key {
+		t.Errorf("Expected key to be '%s', got '%s'", doc.Key, meta.Key)
+	}
+	// Document must exists now
+	var readDoc UserDocWithKey
+	if _, err := col.ReadDocument(nil, meta.Key, &readDoc); err != nil {
+		t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+	}
+	if !reflect.DeepEqual(doc, readDoc) {
+		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+}
+
 // TestCreateDocumentReturnNew creates a document and checks the document returned in in ReturnNew.
 func TestCreateDocumentReturnNew(t *testing.T) {
 	ctx := context.Background()
