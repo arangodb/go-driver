@@ -32,7 +32,7 @@ import (
 
 // ensureCollection is a helper to check if a collection exists and create if if needed.
 // It will fail the test when an error occurs.
-func ensureCollection(ctx context.Context, db driver.Database, name string, options *driver.CreateCollectionOptions, t *testing.T) driver.Collection {
+func ensureCollection(ctx context.Context, db driver.Database, name string, options *driver.CreateCollectionOptions, t testEnv) driver.Collection {
 	c, err := db.Collection(ctx, name)
 	if driver.IsNotFound(err) {
 		c, err = db.CreateCollection(ctx, name, options)

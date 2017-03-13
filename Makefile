@@ -136,3 +136,21 @@ run-tests-cluster-ssl: $(GOBUILDDIR)
 
 run-tests-cluster-cleanup:
 	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+
+# Benchmarks
+run-benchmarks-single-no-auth: $(GOBUILDDIR)
+	@echo "Single server, no authentication"
+	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@docker run -d --name $(DBCONTAINER) \
+		-e ARANGO_NO_AUTH=1 \
+		$(ARANGODB)
+	@docker run \
+		--rm \
+		--net=container:$(DBCONTAINER) \
+		-v $(ROOTDIR):/usr/code \
+		-e GOPATH=/usr/code/.gobuild \
+		-e TEST_ENDPOINTS=http://localhost:8529 \
+		-w /usr/code/ \
+		golang:$(GOVERSION) \
+		go test $(TESTOPTIONS) -bench=. -run=notests $(REPOPATH)/test
+	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
