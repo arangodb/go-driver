@@ -38,6 +38,12 @@ type Connection interface {
 
 	// Unmarshal unmarshals the given raw object into the given result interface.
 	Unmarshal(data RawObject, result interface{}) error
+
+	// UpdateEndpoints reconfigures the connection to use the given endpoints.
+	UpdateEndpoints(endpoints []string) error
+
+	// Endpoints returns the endpoints used by this connection.
+	Endpoints() []string
 }
 
 // Request represents the input to a request on the server.

@@ -32,6 +32,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/cluster"
+	"github.com/arangodb/go-driver/util"
 )
 
 const (
@@ -52,27 +53,13 @@ type ConnectionConfig struct {
 
 // NewConnection creates a new HTTP connection based on the given configuration settings.
 func NewConnection(config ConnectionConfig) (driver.Connection, error) {
-	switch len(config.Endpoints) {
-	case 0:
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "You must provide at least 1 endpoint"})
-	case 1:
-		// Single server
-		c, err := newHTTPConnection(config.Endpoints[0], config)
+	c, err := cluster.NewConnection(config.ConnectionConfig, func(endpoint string) (driver.Connection, error) {
+		conn, err := newHTTPConnection(endpoint, config)
 		if err != nil {
 			return nil, driver.WithStack(err)
 		}
-		return c, nil
-	}
-	// Cluster connection
-	servers := make([]driver.Connection, len(config.Endpoints))
-	for i, ep := range config.Endpoints {
-		c, err := newHTTPConnection(ep, config)
-		if err != nil {
-			return nil, driver.WithStack(err)
-		}
-		servers[i] = c
-	}
-	c, err := cluster.NewConnection(config.ConnectionConfig, servers...)
+		return conn, nil
+	}, config.Endpoints)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -81,6 +68,7 @@ func NewConnection(config ConnectionConfig) (driver.Connection, error) {
 
 // newHTTPConnection creates a new HTTP connection for a single endpoint and the remainder of the given configuration settings.
 func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connection, error) {
+	endpoint = util.FixupEndpointURLScheme(endpoint)
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, driver.WithStack(err)
@@ -154,4 +142,16 @@ func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) er
 		return driver.WithStack(err)
 	}
 	return nil
+}
+
+// UpdateEndpoints reconfigures the connection to use the given endpoints.
+func (c *httpConnection) UpdateEndpoints(endpoints []string) error {
+	// Do nothing here.
+	// The real updating is done in cluster Connection.
+	return nil
+}
+
+// Endpoints returns the endpoints used by this connection.
+func (c *httpConnection) Endpoints() []string {
+	return []string{c.endpoint.String()}
 }

@@ -27,11 +27,16 @@ import (
 	"crypto/tls"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
+)
+
+var (
+	logEndpointsOnce sync.Once
 )
 
 // skipBelowVersion skips the test if the current server version is less than
@@ -95,8 +100,9 @@ func createConnectionFromEnv(t *testing.T) driver.Connection {
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
 func createClientFromEnv(t *testing.T, waitUntilReady bool) driver.Client {
+	conn := createConnectionFromEnv(t)
 	c, err := driver.NewClient(driver.ClientConfig{
-		Connection:     createConnectionFromEnv(t),
+		Connection:     conn,
 		Authentication: createAuthenticationFromEnv(t),
 	})
 	if err != nil {
@@ -108,6 +114,14 @@ func createClientFromEnv(t *testing.T, waitUntilReady bool) driver.Client {
 		defer cancel()
 		if up := waitUntilServerAvailable(ctx, c, t); !up {
 			t.Fatalf("Connection is not available in %s", timeout)
+		}
+		// Synchronize endpoints
+		if err := c.SynchronizeEndpoints(context.Background()); err != nil {
+			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
+		} else {
+			logEndpointsOnce.Do(func() {
+				t.Logf("Found endpoints: %v", conn.Endpoints())
+			})
 		}
 	}
 	return c
