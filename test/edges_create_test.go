@@ -35,10 +35,11 @@ func TestCreateEdges(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "create_edges_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "create_edges_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -88,10 +89,11 @@ func TestCreateEdgesReturnNew(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "create_edges_returnNew_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "create_edges_returnNew_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -144,10 +146,11 @@ func TestCreateEdgesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "create_edges_silent_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "create_edges_silent_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -185,8 +188,9 @@ func TestCreateEdgesNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "create_edges_nil_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
+	prefix := "create_edges_nil_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 	if _, _, err := ec.CreateDocuments(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
@@ -197,8 +201,9 @@ func TestCreateEdgesNonSlice(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "create_edges_nonSlice_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
+	prefix := "create_edges_nonSlice_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 
 	var obj UserDoc
 	if _, _, err := ec.CreateDocuments(nil, &obj); !driver.IsInvalidArgument(err) {

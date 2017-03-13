@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -33,11 +34,12 @@ import (
 func TestImportEdgesWithKeys(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -84,11 +86,12 @@ func TestImportEdgesWithKeys(t *testing.T) {
 func TestImportEdgesWithoutKeys(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_withhoutKeys_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_withhoutKeys_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_withhoutKeys_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -135,11 +138,12 @@ func TestImportEdgesWithoutKeys(t *testing.T) {
 func TestImportEdgesEmptyEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_emptyEntries_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_emptyEntries_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_emptyEntries_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -187,11 +191,12 @@ func TestImportEdgesEmptyEntries(t *testing.T) {
 func TestImportEdgesInvalidEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_invalidEntries_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_invalidEntries_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_invalidEntries_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -241,11 +246,12 @@ func TestImportEdgesInvalidEntries(t *testing.T) {
 func TestImportEdgesDuplicateEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_duplicateEntries_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_duplicateEntries_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_duplicateEntries_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -292,11 +298,12 @@ func TestImportEdgesDuplicateEntries(t *testing.T) {
 func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_duplicateEntriesComplete_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_duplicateEntriesComplete_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_duplicateEntriesComplete_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -329,11 +336,12 @@ func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_duplicateEntriesUpdate_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_duplicateEntriesUpdate_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_duplicateEntriesUpdate_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -393,11 +401,12 @@ func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_duplicateEntriesReplace_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_duplicateEntriesReplace_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_duplicateEntriesReplace_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -457,11 +466,12 @@ func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_duplicateEntriesIgnore_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_duplicateEntriesIgnore_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_duplicateEntriesIgnore_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -521,11 +531,12 @@ func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 func TestImportEdgesDetails(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_details_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_details_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_details_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"_key": "venlo", "name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"_key": "lb", "name": "Limburg"}, t)
 
@@ -566,7 +577,7 @@ func TestImportEdgesDetails(t *testing.T) {
 			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
 		}
 
-		detailsExpected := `at position 1: creating document failed with error 'unique constraint violated', offending document: {"_from":"state/lb","_key":"edge1","_to":"city/venlo"}`
+		detailsExpected := fmt.Sprintf(`at position 1: creating document failed with error 'unique constraint violated', offending document: {"_from":"%sstate/lb","_key":"edge1","_to":"%scity/venlo"}`, prefix, prefix)
 		if len(details) != 1 {
 			t.Errorf("Expected 1 details, to %d", len(details))
 		} else if details[0] != detailsExpected {
@@ -579,11 +590,12 @@ func TestImportEdgesDetails(t *testing.T) {
 func TestImportEdgesOverwriteYes(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_overwriteYes_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_overwriteYes_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_overwriteYes_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -627,11 +639,12 @@ func TestImportEdgesOverwriteYes(t *testing.T) {
 func TestImportEdgesOverwriteNo(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_overwriteNo_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_overwriteNo_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_overwriteNo_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -675,11 +688,12 @@ func TestImportEdgesOverwriteNo(t *testing.T) {
 func TestImportEdgesPrefix(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(ctx, c, "import_edges_prefix_test", nil, t)
-	g := ensureGraph(ctx, db, "import_edges_prefix_test", nil, t)
-	col := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	prefix := "import_edges_prefix_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	createDocument(ctx, cities, map[string]interface{}{"_key": "venlo", "name": "Venlo"}, t)
 	createDocument(ctx, states, map[string]interface{}{"_key": "lb", "name": "Limburg"}, t)
 
@@ -699,8 +713,8 @@ func TestImportEdgesPrefix(t *testing.T) {
 	var details []string
 	ctx = driver.WithImportDetails(driver.WithRawResponse(ctx, &raw), &details)
 	stats, err := col.ImportDocuments(ctx, docs, &driver.ImportDocumentOptions{
-		FromPrefix: "city",
-		ToPrefix:   "state",
+		FromPrefix: prefix + "city",
+		ToPrefix:   prefix + "state",
 	})
 	if err != nil {
 		t.Fatalf("Failed to import documents: %s", describe(err))

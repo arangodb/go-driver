@@ -24,7 +24,6 @@ package driver
 
 import (
 	"context"
-	"fmt"
 	"path"
 )
 
@@ -127,12 +126,6 @@ func (c *vertexCollection) Unload(ctx context.Context) error {
 		return WithStack(err)
 	}
 	return nil
-}
-
-// Rename the collection
-func (c *vertexCollection) Rename(ctx context.Context, newName string) error {
-	// Rename is currently not supported
-	return WithStack(fmt.Errorf("Rename is not supported"))
 }
 
 // Remove removes the entire collection.

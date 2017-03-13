@@ -52,9 +52,6 @@ type Collection interface {
 	// UnLoad the collection from memory.
 	Unload(ctx context.Context) error
 
-	// Rename the collection
-	Rename(ctx context.Context, newName string) error
-
 	// Remove removes the entire collection.
 	// If the collection does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error

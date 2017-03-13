@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"crypto/tls"
 	"os"
 	"strings"
 	"testing"
@@ -84,6 +85,7 @@ func createAuthenticationFromEnv(t *testing.T) driver.Authentication {
 func createConnectionFromEnv(t *testing.T) driver.Connection {
 	conn, err := http.NewConnection(http.ConnectionConfig{
 		Endpoints: getEndpointsFromEnv(t),
+		TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	})
 	if err != nil {
 		t.Fatalf("Failed to create new http connection: %s", describe(err))
@@ -141,6 +143,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t *testing.T
 func TestCreateClientHttpConnection(t *testing.T) {
 	conn, err := http.NewConnection(http.ConnectionConfig{
 		Endpoints: getEndpointsFromEnv(t),
+		TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	})
 	if err != nil {
 		t.Fatalf("Failed to create new http connection: %s", describe(err))

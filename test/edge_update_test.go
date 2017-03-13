@@ -36,10 +36,11 @@ func TestUpdateEdge(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "update_edge_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -76,10 +77,11 @@ func TestUpdateEdgeReturnOld(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_returnOld_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "update_edge_returnOld_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -113,10 +115,11 @@ func TestUpdateEdgeReturnNew(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_returnNew_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "update_edge_returnNew_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -151,10 +154,11 @@ func TestUpdateEdgeKeepNullTrue(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_keepNullTrue_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "update_edge_keepNullTrue_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -212,10 +216,11 @@ func TestUpdateEdgeKeepNullFalse(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_keepNullFalse_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "update_edge_keepNullFalse_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -254,10 +259,11 @@ func TestUpdateEdgeSilent(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_silent_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "update_edge_silent_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -288,10 +294,11 @@ func TestUpdateEdgeRevision(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_revision_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "update_edge_revision_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -338,8 +345,9 @@ func TestUpdateEdgeKeyEmpty(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_keyEmpty_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
+	prefix := "update_edge_keyEmpty_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 
 	// Update document
 	update := map[string]interface{}{
@@ -355,8 +363,9 @@ func TestUpdateEdgeUpdateNil(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edge_updateNil_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
+	prefix := "update_edge_updateNil_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 
 	if _, err := ec.UpdateDocument(nil, "validKey", nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))

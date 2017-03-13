@@ -205,32 +205,6 @@ func (c *collection) Unload(ctx context.Context) error {
 
 }
 
-// Rename the collection
-func (c *collection) Rename(ctx context.Context, newName string) error {
-	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "rename"))
-	if err != nil {
-		return WithStack(err)
-	}
-	opts := struct {
-		Name string `json:"name"`
-	}{
-		Name: newName,
-	}
-	if _, err := req.SetBody(opts); err != nil {
-		return WithStack(err)
-	}
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return WithStack(err)
-	}
-	if err := resp.CheckStatus(200); err != nil {
-		return WithStack(err)
-	}
-	// Update internal name
-	c.name = newName
-	return nil
-}
-
 // Remove removes the entire collection.
 // If the collection does not exist, a NotFoundError is returned.
 func (c *collection) Remove(ctx context.Context) error {
