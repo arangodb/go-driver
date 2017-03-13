@@ -7,20 +7,16 @@ API and implementation WILL change.
 
 This project contains a Go driver for the [ArangoDB database](https://arangodb.com).
 
-## Supported ArangoDB versions
+## Supported versions
 
 - ArangoDB versions 3.1 and up.
-- Single server setups
-- Server cluster setups.
-
-## Supported Go versions 
-
+    - Single server & cluster setups
+    - With or without authentication
 - Go 1.7 and up.
 
 ## Go dependencies 
 
-- None
-- Additional error libraries are supported.
+- None (Additional error libraries are supported).
 
 ## Getting started 
 
