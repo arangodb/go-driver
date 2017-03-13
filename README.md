@@ -167,6 +167,29 @@ if err != nil {
 Note that a valid endpoint is an URL to either a standalone server, or a URL to a coordinator 
 in a cluster.
 
+### Secure connections (SSL)
+
+The driver supports endpoints that use SSL using the `https` URL scheme.
+
+The following example shows how to connect to a server that has a secure endpoint using 
+a self-signed certificate.
+
+```
+conn, err := http.NewConnection(http.ConnectionConfig{
+    Endpoints: []string{"https://localhost:8529"},
+    TLSConfig: &tls.Config{InsecureSkipVerify: true},
+})
+if err != nil {
+    // Handle error
+}
+c, err := driver.NewClient(driver.ClientConfig{
+    Connection: conn,
+})
+if err != nil {
+    // Handle error
+}
+```
+
 # Sample requests 
 
 ## Connecting to ArangoDB
