@@ -42,6 +42,29 @@ func BenchmarkCreateDocument(b *testing.B) {
 	}
 }
 
+// BenchmarkReadDocument measures the ReadDocument operation for a simple document.
+func BenchmarkReadDocument(b *testing.B) {
+	c := createClientFromEnv(b, true)
+	db := ensureDatabase(nil, c, "document_test", nil, b)
+	col := ensureCollection(nil, db, "document_test", nil, b)
+	doc := UserDoc{
+		"Jan",
+		40,
+	}
+	meta, err := col.CreateDocument(nil, doc)
+	if err != nil {
+		b.Fatalf("Failed to create new document: %s", describe(err))
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var result UserDoc
+		if _, err := col.ReadDocument(nil, meta.Key, &result); err != nil {
+			b.Errorf("Failed to read document: %s", describe(err))
+		}
+	}
+}
+
 // BenchmarkRemoveDocument measures the RemoveDocument operation for a simple document.
 func BenchmarkRemoveDocument(b *testing.B) {
 	c := createClientFromEnv(b, true)
