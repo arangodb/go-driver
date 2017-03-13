@@ -88,7 +88,7 @@ run-tests-single-with-auth: $(GOBUILDDIR)
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
 
 # Cluster mode tests
-run-tests-cluster: run-tests-cluster-no-auth run-tests-cluster-with-auth
+run-tests-cluster: run-tests-cluster-no-auth run-tests-cluster-with-auth run-tests-cluster-ssl
 
 run-tests-cluster-no-auth: $(GOBUILDDIR)
 	@echo "Cluster server, no authentication"
@@ -116,7 +116,22 @@ run-tests-cluster-with-auth: $(GOBUILDDIR)
 		-e TEST_AUTHENTICATION=basic:root: \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test  -tags auth $(TESTOPTIONS) $(REPOPATH)/test
+		go test -tags auth $(TESTOPTIONS) $(REPOPATH)/test
+	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+
+run-tests-cluster-ssl: $(GOBUILDDIR)
+	@echo "Cluster server, SSL, with authentication"
+	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) SSL=auto TMPDIR=${GOBUILDDIR} JWTSECRET=testing $(ROOTDIR)/test/cluster.sh start
+	docker run \
+		--rm \
+		--net=host \
+		-v $(ROOTDIR):/usr/code \
+		-e GOPATH=/usr/code/.gobuild \
+		-e TEST_ENDPOINTS=https://localhost:7002 \
+		-e TEST_AUTHENTICATION=basic:root: \
+		-w /usr/code/ \
+		golang:$(GOVERSION) \
+		go test -tags auth $(TESTOPTIONS) $(REPOPATH)/test
 	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 
 run-tests-cluster-cleanup:

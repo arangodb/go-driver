@@ -85,9 +85,15 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
+	transport := &http.Transport{}
+	if config.TLSConfig != nil {
+		transport.TLSClientConfig = config.TLSConfig
+	}
 	c := &httpConnection{
 		endpoint: *u,
-		client:   &http.Client{},
+		client: &http.Client{
+			Transport: transport,
+		},
 	}
 	return c, nil
 }

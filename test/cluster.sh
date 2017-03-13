@@ -41,6 +41,9 @@ if [ "$CMD" == "start" ]; then
         DOCKERARGS="$DOCKERARGS -v $JWTSECRETFILE:/jwtsecret:ro"
         STARTERARGS="$STARTERARGS --jwtSecretFile=/jwtsecret"
     fi 
+    if [ "$SSL" == "auto" ]; then 
+        STARTERARGS="$STARTERARGS --sslAutoKeyFile"
+    fi
 
     # Start starters 
     docker run -d --name=${STARTERCONTAINER1} --net=host \
