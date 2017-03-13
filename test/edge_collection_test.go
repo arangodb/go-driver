@@ -62,13 +62,14 @@ func TestCreateEdgeCollection(t *testing.T) {
 	}
 
 	// Now create an edge collection
-	if ec, err := g.CreateEdgeCollection(nil, "friends", []string{"person"}, []string{"person"}); err != nil {
+	colName := "create_edge_collection_friends"
+	if ec, err := g.CreateEdgeCollection(nil, colName, []string{"person"}, []string{"person"}); err != nil {
 		t.Errorf("CreateEdgeCollection failed: %s", describe(err))
-	} else if ec.Name() != "friends" {
-		t.Errorf("Invalid name, expected 'friends', got '%s'", ec.Name())
+	} else if ec.Name() != colName {
+		t.Errorf("Invalid name, expected '%s', got '%s'", colName, ec.Name())
 	}
 
-	assertCollection(nil, db, "friends", t)
+	assertCollection(nil, db, colName, t)
 	assertCollection(nil, db, "person", t)
 
 	// List edge collections, must be contain 'friends'
@@ -76,22 +77,22 @@ func TestCreateEdgeCollection(t *testing.T) {
 		t.Errorf("EdgeCollections failed: %s", describe(err))
 	} else if len(list) != 1 {
 		t.Errorf("EdgeCollections return %d edge collections, expected 1", len(list))
-	} else if list[0].Name() != "friends" {
-		t.Errorf("Invalid list[0].name, expected 'friends', got '%s'", list[0].Name())
+	} else if list[0].Name() != colName {
+		t.Errorf("Invalid list[0].name, expected '%s', got '%s'", colName, list[0].Name())
 	}
 
 	// Friends edge collection must exits
-	if found, err := g.EdgeCollectionExists(nil, "friends"); err != nil {
+	if found, err := g.EdgeCollectionExists(nil, colName); err != nil {
 		t.Errorf("EdgeCollectionExists failed: %s", describe(err))
 	} else if !found {
 		t.Errorf("EdgeCollectionExists return false, expected true")
 	}
 
 	// Open friends edge collection must exits
-	if ec, err := g.EdgeCollection(nil, "friends"); err != nil {
+	if ec, err := g.EdgeCollection(nil, colName); err != nil {
 		t.Errorf("EdgeCollection failed: %s", describe(err))
-	} else if ec.Name() != "friends" {
-		t.Errorf("EdgeCollection return invalid collection, expected 'friends', got '%s'", ec.Name())
+	} else if ec.Name() != colName {
+		t.Errorf("EdgeCollection return invalid collection, expected '%s', got '%s'", colName, ec.Name())
 	}
 }
 
@@ -106,15 +107,16 @@ func TestRemoveEdgeCollection(t *testing.T) {
 	}
 
 	// Now create an edge collection
-	ec, err := g.CreateEdgeCollection(nil, "friends", []string{"person"}, []string{"person"})
+	colName := "remove_edge_collection_friends"
+	ec, err := g.CreateEdgeCollection(nil, colName, []string{"person"}, []string{"person"})
 	if err != nil {
 		t.Fatalf("CreateEdgeCollection failed: %s", describe(err))
-	} else if ec.Name() != "friends" {
-		t.Errorf("Invalid name, expected 'friends', got '%s'", ec.Name())
+	} else if ec.Name() != colName {
+		t.Errorf("Invalid name, expected '%s', got '%s'", colName, ec.Name())
 	}
 
 	// Friends edge collection must exits
-	if found, err := g.EdgeCollectionExists(nil, "friends"); err != nil {
+	if found, err := g.EdgeCollectionExists(nil, colName); err != nil {
 		t.Errorf("EdgeCollectionExists failed: %s", describe(err))
 	} else if !found {
 		t.Errorf("EdgeCollectionExists return false, expected true")
@@ -126,7 +128,7 @@ func TestRemoveEdgeCollection(t *testing.T) {
 	}
 
 	// Friends edge collection must NOT exits
-	if found, err := g.EdgeCollectionExists(nil, "friends"); err != nil {
+	if found, err := g.EdgeCollectionExists(nil, colName); err != nil {
 		t.Errorf("EdgeCollectionExists failed: %s", describe(err))
 	} else if found {
 		t.Errorf("EdgeCollectionExists return true, expected false")

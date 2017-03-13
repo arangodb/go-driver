@@ -38,10 +38,11 @@ func TestUpdateEdges(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
-	male := ensureCollection(ctx, db, "male", nil, t)
-	female := ensureCollection(ctx, db, "female", nil, t)
+	prefix := "update_edges_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
+	male := ensureCollection(ctx, db, prefix+"male", nil, t)
+	female := ensureCollection(ctx, db, prefix+"female", nil, t)
 	from := createDocument(ctx, male, map[string]interface{}{"name": "Jan"}, t)
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
@@ -95,10 +96,11 @@ func TestUpdateEdgesReturnOld(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_returnOld_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
-	male := ensureCollection(ctx, db, "male", nil, t)
-	female := ensureCollection(ctx, db, "female", nil, t)
+	prefix := "update_edges_returnOld_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
+	male := ensureCollection(ctx, db, prefix+"male", nil, t)
+	female := ensureCollection(ctx, db, prefix+"female", nil, t)
 	from := createDocument(ctx, male, map[string]interface{}{"name": "Jan"}, t)
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
@@ -148,10 +150,11 @@ func TestUpdateEdgesReturnNew(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_returnOld_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
-	male := ensureCollection(ctx, db, "male", nil, t)
-	female := ensureCollection(ctx, db, "female", nil, t)
+	prefix := "update_edges_returnOld_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
+	male := ensureCollection(ctx, db, prefix+"male", nil, t)
+	female := ensureCollection(ctx, db, prefix+"female", nil, t)
 	from := createDocument(ctx, male, map[string]interface{}{"name": "Jan"}, t)
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
@@ -202,10 +205,11 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_keepNullTrue_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
-	male := ensureCollection(ctx, db, "male", nil, t)
-	female := ensureCollection(ctx, db, "female", nil, t)
+	prefix := "update_edges_keepNullTrue_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
+	male := ensureCollection(ctx, db, prefix+"male", nil, t)
+	female := ensureCollection(ctx, db, prefix+"female", nil, t)
 	from := createDocument(ctx, male, map[string]interface{}{"name": "Jan"}, t)
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
@@ -285,10 +289,11 @@ func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_keepNullFalse_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
-	male := ensureCollection(ctx, db, "male", nil, t)
-	female := ensureCollection(ctx, db, "female", nil, t)
+	prefix := "update_edges_keepNullFalse_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
+	male := ensureCollection(ctx, db, prefix+"male", nil, t)
+	female := ensureCollection(ctx, db, prefix+"female", nil, t)
 	from := createDocument(ctx, male, map[string]interface{}{"name": "Jan"}, t)
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
@@ -348,10 +353,11 @@ func TestUpdateEdgesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_silent_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
-	male := ensureCollection(ctx, db, "male", nil, t)
-	female := ensureCollection(ctx, db, "female", nil, t)
+	prefix := "update_edges_silent_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
+	male := ensureCollection(ctx, db, prefix+"male", nil, t)
+	female := ensureCollection(ctx, db, prefix+"female", nil, t)
 	from := createDocument(ctx, male, map[string]interface{}{"name": "Jan"}, t)
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
@@ -396,10 +402,11 @@ func TestUpdateEdgesRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_revision_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
-	male := ensureCollection(ctx, db, "male", nil, t)
-	female := ensureCollection(ctx, db, "female", nil, t)
+	prefix := "update_edges_revision_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
+	male := ensureCollection(ctx, db, prefix+"male", nil, t)
+	female := ensureCollection(ctx, db, prefix+"female", nil, t)
 	from := createDocument(ctx, male, map[string]interface{}{"name": "Jan"}, t)
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
@@ -469,8 +476,9 @@ func TestUpdateEdgesKeyEmpty(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_keyEmpty_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
+	prefix := "update_edges_keyEmpty_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
 
 	// Update document
 	updates := []map[string]interface{}{
@@ -488,8 +496,9 @@ func TestUpdateEdgesUpdateNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_updateNil_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
+	prefix := "update_edges_updateNil_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
 
 	if _, _, err := ec.UpdateDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
@@ -501,8 +510,9 @@ func TestUpdateEdgesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
-	g := ensureGraph(ctx, db, "update_edges_updateLenDiff_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "relation", []string{"male", "female"}, []string{"male", "female"}, t)
+	prefix := "update_edges_updateLenDiff_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
 
 	updates := []map[string]interface{}{
 		map[string]interface{}{

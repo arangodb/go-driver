@@ -35,10 +35,11 @@ func TestRemoveEdge(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "remove_edge_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "remove_edge_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -67,10 +68,11 @@ func TestRemoveEdgeReturnOld(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "remove_edge_returnOld_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "remove_edge_returnOld_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -104,10 +106,11 @@ func TestRemoveEdgeSilent(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "remove_edge_silent_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "remove_edge_silent_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -138,10 +141,11 @@ func TestRemoveEdgeRevision(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "remove_edge_revision_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
-	cities := ensureCollection(ctx, db, "city", nil, t)
-	states := ensureCollection(ctx, db, "state", nil, t)
+	prefix := "remove_edge_revision_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
+	cities := ensureCollection(ctx, db, prefix+"city", nil, t)
+	states := ensureCollection(ctx, db, prefix+"state", nil, t)
 	from := createDocument(ctx, cities, map[string]interface{}{"name": "Venlo"}, t)
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
@@ -190,8 +194,9 @@ func TestRemoveEdgeKeyEmpty(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
-	g := ensureGraph(ctx, db, "remove_edge_nil_test", nil, t)
-	ec := ensureEdgeCollection(ctx, g, "citiesPerState", []string{"city"}, []string{"state"}, t)
+	prefix := "remove_edge_nil_"
+	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
+	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 
 	if _, err := ec.RemoveDocument(nil, ""); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
