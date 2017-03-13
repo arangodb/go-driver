@@ -154,38 +154,6 @@ func TestCollectionName(t *testing.T) {
 	}
 }
 
-// TestCollectionRename creates a collection and renames it
-func TestCollectionRename(t *testing.T) {
-	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "collection_test", nil, t)
-	name := "test_collection_rename"
-	col, err := db.CreateCollection(nil, name, nil)
-	if err != nil {
-		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
-	}
-	if col.Name() != name {
-		t.Errorf("Collection.Name() is wrong, got '%s', expected '%s'", col.Name(), name)
-	}
-
-	// Now rename
-	newName := name + "_new"
-	if err := col.Rename(nil, newName); err != nil {
-		t.Errorf("Rename collection failed: %s", describe(err))
-	} else if col.Name() != newName {
-		t.Errorf("Collection.Name is invalid, expected '%s', got '%s'", newName, col.Name())
-	}
-
-	// Fetch using new name
-	if _, err := db.Collection(nil, newName); err != nil {
-		t.Errorf("Failed to open collection '%s': %s", newName, describe(err))
-	}
-
-	// Fetch using old name
-	if _, err := db.Collection(nil, name); !driver.IsNotFound(err) {
-		t.Errorf("Expected NotFoundError, got %s", describe(err))
-	}
-}
-
 // TestCollectionTruncate creates a collection, adds some documents and truncates it.
 func TestCollectionTruncate(t *testing.T) {
 	c := createClientFromEnv(t, true)
