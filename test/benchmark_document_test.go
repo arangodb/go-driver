@@ -42,6 +42,26 @@ func BenchmarkCreateDocument(b *testing.B) {
 	}
 }
 
+// BenchmarkCreateDocumentParallel measures parallel CreateDocument operations for a simple document.
+func BenchmarkCreateDocumentParallel(b *testing.B) {
+	c := createClientFromEnv(b, true)
+	db := ensureDatabase(nil, c, "document_test", nil, b)
+	col := ensureCollection(nil, db, "document_test", nil, b)
+
+	b.SetParallelism(100)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			doc := UserDoc{
+				"Jan",
+				40,
+			}
+			if _, err := col.CreateDocument(nil, doc); err != nil {
+				b.Fatalf("Failed to create new document: %s", describe(err))
+			}
+		}
+	})
+}
+
 // BenchmarkReadDocument measures the ReadDocument operation for a simple document.
 func BenchmarkReadDocument(b *testing.B) {
 	c := createClientFromEnv(b, true)
@@ -63,6 +83,31 @@ func BenchmarkReadDocument(b *testing.B) {
 			b.Errorf("Failed to read document: %s", describe(err))
 		}
 	}
+}
+
+// BenchmarkReadDocumentParallel measures parallel ReadDocument operations for a simple document.
+func BenchmarkReadDocumentParallel(b *testing.B) {
+	c := createClientFromEnv(b, true)
+	db := ensureDatabase(nil, c, "document_test", nil, b)
+	col := ensureCollection(nil, db, "document_test", nil, b)
+	doc := UserDoc{
+		"Jan",
+		40,
+	}
+	meta, err := col.CreateDocument(nil, doc)
+	if err != nil {
+		b.Fatalf("Failed to create new document: %s", describe(err))
+	}
+
+	b.SetParallelism(100)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			var result UserDoc
+			if _, err := col.ReadDocument(nil, meta.Key, &result); err != nil {
+				b.Errorf("Failed to read document: %s", describe(err))
+			}
+		}
+	})
 }
 
 // BenchmarkRemoveDocument measures the RemoveDocument operation for a simple document.

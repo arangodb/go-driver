@@ -152,5 +152,5 @@ run-benchmarks-single-no-auth: $(GOBUILDDIR)
 		-e TEST_ENDPOINTS=http://localhost:8529 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test $(TESTOPTIONS) -bench=. -run=notests $(REPOPATH)/test
+		go test $(TESTOPTIONS) -bench=. -run=notests -cpu=1,2,4 $(REPOPATH)/test
 	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
