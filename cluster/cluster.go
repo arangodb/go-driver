@@ -24,6 +24,7 @@ package cluster
 
 import (
 	"context"
+	"net"
 	"sync"
 	"time"
 
@@ -89,22 +90,27 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 	for {
 		serverCtx, cancel := context.WithTimeout(ctx, timeout/3)
 		resp, err := s.Do(serverCtx, req)
-		if driver.Cause(err) == context.Canceled {
-			// Request was cancelled, we return directly.
-			cancel()
-			return nil, driver.WithStack(err)
-		} else if driver.Cause(err) == context.DeadlineExceeded {
-			// Server context timeout, failover to a new server
-			cancel()
-			// Will continue after this
-		} else if err == nil {
+		cancel()
+		if err == nil {
 			// We're done
-			cancel()
 			return resp, nil
-		} else {
-			// A connection error has occurred, return the error.
-			cancel()
+		}
+		// No success yet
+		cause := driver.Cause(err)
+		if cause == context.Canceled {
+			// Request was cancelled, we return directly.
 			return nil, driver.WithStack(err)
+		}
+		if cause == context.DeadlineExceeded {
+			// Server context timeout, failover to a new server
+		} else {
+			// Some other error has occurred, check for network errors
+			if _, ok := cause.(net.Error); ok {
+				// Error is a network error, failover to new server
+			} else {
+				// A connection error has occurred, return the error.
+				return nil, driver.WithStack(err)
+			}
 		}
 
 		// Failed, try next server

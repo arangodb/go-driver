@@ -104,6 +104,11 @@ type httpConnection struct {
 	client   *http.Client
 }
 
+// String returns the endpoint as string
+func (c *httpConnection) String() string {
+	return c.endpoint.String()
+}
+
 // NewRequest creates a new request with given method and path.
 func (c *httpConnection) NewRequest(method, path string) (driver.Request, error) {
 	switch method {

@@ -58,6 +58,11 @@ func (r *httpResponseElement) StatusCode() int {
 	return *r.statusCode
 }
 
+// Endpoint returns the endpoint that handled the request.
+func (r *httpResponseElement) Endpoint() string {
+	return ""
+}
+
 // CheckStatus checks if the status of the response equals to one of the given status codes.
 // If so, nil is returned.
 // If not, an attempt is made to parse an error response in the body and an error is returned.

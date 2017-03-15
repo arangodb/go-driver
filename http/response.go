@@ -46,6 +46,13 @@ func (r *httpResponse) StatusCode() int {
 	return r.resp.StatusCode
 }
 
+// Endpoint returns the endpoint that handled the request.
+func (r *httpResponse) Endpoint() string {
+	u := *r.resp.Request.URL
+	u.Path = ""
+	return u.String()
+}
+
 // CheckStatus checks if the status of the response equals to one of the given status codes.
 // If so, nil is returned.
 // If not, an attempt is made to parse an error response in the body and an error is returned.
