@@ -88,6 +88,11 @@ func TestCreateDocumentWithKey(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
+
+	// Retry creating the document with same key. This must fail.
+	if _, err := col.CreateDocument(nil, doc); !driver.IsConflict(err) {
+		t.Fatalf("Expected ConflictError, got %s", describe(err))
+	}
 }
 
 // TestCreateDocumentReturnNew creates a document and checks the document returned in in ReturnNew.
