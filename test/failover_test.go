@@ -74,12 +74,10 @@ func failoverTest(action string, t *testing.T) {
 
 		// Perform low lever request and check handling endpoint
 		for {
-			req, err := conn.NewRequest("GET", "/_api/version")
-			if err != nil {
-				t.Fatalf("Cannot create request: %s", describe(err))
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*9)
-			resp, err := conn.Do(ctx, req)
+			var resp driver.Response
+			ctx := driver.WithResponse(nil, &resp)
+			ctx, cancel := context.WithTimeout(ctx, time.Second*9)
+			_, err := c.Version(ctx)
 			cancel()
 			if driver.IsResponseError(err) {
 				t.Logf("ResponseError in version request")

@@ -24,6 +24,7 @@ package cluster
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -83,12 +84,13 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 	} else {
 		timeout = c.defaultTimeout
 	}
+	timeoutDivider := math.Max(1.0, math.Min(3.0, float64(len(c.servers))))
 
 	attempt := 1
 	s := c.getCurrentServer()
 	for {
 		// Send request to specific endpoint with a 1/3 timeout (so we get 3 attempts)
-		serverCtx, cancel := context.WithTimeout(ctx, timeout/3)
+		serverCtx, cancel := context.WithTimeout(ctx, time.Duration(float64(timeout)/timeoutDivider))
 		resp, err := s.Do(serverCtx, req)
 		cancel()
 		if err == nil {
