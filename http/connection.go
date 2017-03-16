@@ -48,6 +48,11 @@ type ConnectionConfig struct {
 	// TLSConfig holds settings used to configure a TLS (HTTPS) connection.
 	// This is only used for endpoints using the HTTPS scheme.
 	TLSConfig *tls.Config
+	// Transport allows the use of a custom round tripper.
+	// If Transport is not of type `*http.Transport`, the `TLSConfig` property is not used.
+	// Otherwise a `TLSConfig` property other than `nil` will overwrite the `TLSClientConfig`
+	// property of `Transport`.
+	Transport http.RoundTripper
 	// Cluster configuration settings
 	cluster.ConnectionConfig
 }
@@ -87,14 +92,20 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
-	transport := &http.Transport{}
-	if config.TLSConfig != nil {
-		transport.TLSClientConfig = config.TLSConfig
+	var httpTransport *http.Transport
+	if config.Transport != nil {
+		httpTransport, _ = config.Transport.(*http.Transport)
+	} else {
+		httpTransport = &http.Transport{}
+		config.Transport = httpTransport
+	}
+	if config.TLSConfig != nil && httpTransport != nil {
+		httpTransport.TLSClientConfig = config.TLSConfig
 	}
 	c := &httpConnection{
 		endpoint: *u,
 		client: &http.Client{
-			Transport: transport,
+			Transport: config.Transport,
 		},
 	}
 	return c, nil
