@@ -38,6 +38,9 @@ type Connection interface {
 
 	// Unmarshal unmarshals the given raw object into the given result interface.
 	Unmarshal(data RawObject, result interface{}) error
+
+	// Endpoints returns the endpoints used by this connection.
+	Endpoints() []string
 }
 
 // Request represents the input to a request on the server.

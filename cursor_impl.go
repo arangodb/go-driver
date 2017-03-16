@@ -30,12 +30,13 @@ import (
 )
 
 // newCursor creates a new Cursor implementation.
-func newCursor(data cursorData, db *database) (Cursor, error) {
+func newCursor(data cursorData, endpoint string, db *database) (Cursor, error) {
 	if db == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "db is nil"})
 	}
 	return &cursor{
 		cursorData: data,
+		endpoint:   endpoint,
 		db:         db,
 		conn:       db.conn,
 	}, nil
@@ -43,6 +44,7 @@ func newCursor(data cursorData, db *database) (Cursor, error) {
 
 type cursor struct {
 	cursorData
+	endpoint    string
 	resultIndex int
 	db          *database
 	conn        Connection
@@ -87,11 +89,14 @@ func (c *cursor) Close() error {
 	defer c.closeMutex.Unlock()
 	if c.closed == 0 {
 		if c.cursorData.ID != "" {
+			// Force use of initial endpoint
+			ctx := WithEndpoint(nil, c.endpoint)
+
 			req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath(), c.cursorData.ID))
 			if err != nil {
 				return WithStack(err)
 			}
-			resp, err := c.conn.Do(nil, req)
+			resp, err := c.conn.Do(ctx, req)
 			if err != nil {
 				return WithStack(err)
 			}
@@ -108,6 +113,9 @@ func (c *cursor) Close() error {
 // The document data is stored into result, the document meta data is returned.
 // If the cursor has no more documents, a NoMoreDocuments error is returned.
 func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
+	// Force use of initial endpoint
+	ctx = WithEndpoint(ctx, c.endpoint)
+
 	if c.resultIndex >= len(c.Result) && c.cursorData.HasMore {
 		// Fetch next batch
 		req, err := c.conn.NewRequest("PUT", path.Join(c.relPath(), c.cursorData.ID))

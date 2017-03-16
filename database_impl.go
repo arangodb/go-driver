@@ -83,7 +83,7 @@ func (d *database) Query(ctx context.Context, query string, bindVars map[string]
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	col, err := newCursor(data, d)
+	col, err := newCursor(data, resp.Endpoint(), d)
 	if err != nil {
 		return nil, WithStack(err)
 	}

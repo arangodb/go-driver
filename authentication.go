@@ -191,6 +191,11 @@ func (c *authenticatedConnection) Unmarshal(data RawObject, result interface{}) 
 	return nil
 }
 
+// Endpoints returns the endpoints used by this connection.
+func (c *authenticatedConnection) Endpoints() []string {
+	return c.conn.Endpoints()
+}
+
 // prepare calls Authentication.Prepare if needed.
 func (c *authenticatedConnection) prepare(ctx context.Context) error {
 	c.prepareMutex.Lock()

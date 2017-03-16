@@ -175,3 +175,8 @@ func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) er
 	}
 	return nil
 }
+
+// Endpoints returns the endpoints used by this connection.
+func (c *httpConnection) Endpoints() []string {
+	return []string{c.endpoint.String()}
+}

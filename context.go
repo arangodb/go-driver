@@ -41,6 +41,7 @@ const (
 	keyRawResponse   = "arangodb-rawResponse"
 	keyImportDetails = "arangodb-importDetails"
 	keyResponse      = "arangodb-response"
+	keyEndpoint      = "arangodb-endpoint"
 )
 
 // WithRevision is used to configure a context to make document
@@ -75,6 +76,13 @@ func WithDetails(parent context.Context, value ...bool) context.Context {
 		v = value[0]
 	}
 	return context.WithValue(contextOrBackground(parent), keyDetails, v)
+}
+
+// WithEndpoint is used to configure a context that forces a request to be executed on a specific endpoint.
+// If you specify and endpoint like this, failover is disabled.
+// If you specify an unknown endpoint, and InvalidArgumentError is returned from requests.
+func WithEndpoint(parent context.Context, endpoint string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyEndpoint, endpoint)
 }
 
 // WithKeepNull is used to configure a context to make update functions keep null fields (value==true)
