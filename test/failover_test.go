@@ -79,7 +79,7 @@ func failoverTest(action string, t *testing.T) {
 			ctx, cancel := context.WithTimeout(ctx, time.Second*9)
 			_, err := c.Version(ctx)
 			cancel()
-			if driver.IsResponseError(err) {
+			if driver.IsResponse(err) {
 				t.Logf("ResponseError in version request")
 				continue
 			} else if err != nil {
