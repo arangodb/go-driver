@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -38,11 +39,12 @@ import (
 
 // httpRequest implements driver.Request using standard golang http requests.
 type httpRequest struct {
-	method string
-	path   string
-	q      url.Values
-	hdr    map[string]string
-	body   []byte
+	method  string
+	path    string
+	q       url.Values
+	hdr     map[string]string
+	body    []byte
+	written bool
 }
 
 // SetQuery sets a single query argument of the request.
@@ -167,8 +169,21 @@ func (r *httpRequest) SetHeader(key, value string) driver.Request {
 	return r
 }
 
+// Written returns true as soon as this request has been written completely to the network.
+// This does not guarantee that the server has received or processed the request.
+func (r *httpRequest) Written() bool {
+	return r.written
+}
+
+// WroteRequest implements the WroteRequest function of an httptrace.
+// It sets written to true.
+func (r *httpRequest) WroteRequest(httptrace.WroteRequestInfo) {
+	r.written = true
+}
+
 // createHTTPRequest creates a golang http.Request based on the configured arguments.
 func (r *httpRequest) createHTTPRequest(endpoint url.URL) (*http.Request, error) {
+	r.written = false
 	u := endpoint
 	u.Path = ""
 	url := u.String()

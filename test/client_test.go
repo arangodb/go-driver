@@ -94,9 +94,13 @@ func createConnectionFromEnv(t testEnv) driver.Connection {
 }
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
-func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
+func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.Connection) driver.Client {
+	conn := createConnectionFromEnv(t)
+	if len(connection) == 1 {
+		*connection[0] = conn
+	}
 	c, err := driver.NewClient(driver.ClientConfig{
-		Connection:     createConnectionFromEnv(t),
+		Connection:     conn,
 		Authentication: createAuthenticationFromEnv(t),
 	})
 	if err != nil {

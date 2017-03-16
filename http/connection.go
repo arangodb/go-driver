@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 
 	driver "github.com/arangodb/go-driver"
@@ -36,6 +37,7 @@ import (
 
 const (
 	keyRawResponse = "arangodb-rawResponse"
+	keyResponse    = "arangodb-response"
 )
 
 // ConnectionConfig provides all configuration options for a HTTP connection.
@@ -104,6 +106,11 @@ type httpConnection struct {
 	client   *http.Client
 }
 
+// String returns the endpoint as string
+func (c *httpConnection) String() string {
+	return c.endpoint.String()
+}
+
 // NewRequest creates a new request with given method and path.
 func (c *httpConnection) NewRequest(method, path string) (driver.Request, error) {
 	switch method {
@@ -126,9 +133,14 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest"})
 	}
 	r, err := httpReq.createHTTPRequest(c.endpoint)
-	if ctx != nil {
-		r = r.WithContext(ctx)
+	rctx := ctx
+	if rctx == nil {
+		rctx = context.Background()
 	}
+	rctx = httptrace.WithClientTrace(rctx, &httptrace.ClientTrace{
+		WroteRequest: httpReq.WroteRequest,
+	})
+	r = r.WithContext(rctx)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -145,7 +157,15 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		}
 	}
 
-	return &httpResponse{resp: resp, rawResponse: rawResponse}, nil
+	httpResp := &httpResponse{resp: resp, rawResponse: rawResponse}
+	if ctx != nil {
+		if v := ctx.Value(keyResponse); v != nil {
+			if respPtr, ok := v.(*driver.Response); ok {
+				*respPtr = httpResp
+			}
+		}
+	}
+	return httpResp, nil
 }
 
 // Unmarshal unmarshals the given raw object into the given result interface.

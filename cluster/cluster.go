@@ -24,6 +24,7 @@ package cluster
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -83,28 +84,34 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 	} else {
 		timeout = c.defaultTimeout
 	}
+	timeoutDivider := math.Max(1.0, math.Min(3.0, float64(len(c.servers))))
 
 	attempt := 1
 	s := c.getCurrentServer()
 	for {
-		serverCtx, cancel := context.WithTimeout(ctx, timeout/3)
+		// Send request to specific endpoint with a 1/3 timeout (so we get 3 attempts)
+		serverCtx, cancel := context.WithTimeout(ctx, time.Duration(float64(timeout)/timeoutDivider))
 		resp, err := s.Do(serverCtx, req)
-		if driver.Cause(err) == context.Canceled {
-			// Request was cancelled, we return directly.
-			cancel()
-			return nil, driver.WithStack(err)
-		} else if driver.Cause(err) == context.DeadlineExceeded {
-			// Server context timeout, failover to a new server
-			cancel()
-			// Will continue after this
-		} else if err == nil {
+		cancel()
+		if err == nil {
 			// We're done
-			cancel()
 			return resp, nil
-		} else {
-			// A connection error has occurred, return the error.
-			cancel()
+		}
+		// No success yet
+		if driver.IsCanceled(err) {
+			// Request was cancelled, we return directly.
 			return nil, driver.WithStack(err)
+		}
+		// If we've completely written the request, we return the error,
+		// otherwise we'll failover to a new server.
+		if req.Written() {
+			// Request has been written to network, do not failover
+			if driver.IsArangoError(err) {
+				// ArangoError, so we got an error response from server.
+				return nil, driver.WithStack(err)
+			}
+			// Not an ArangoError, so it must be some kind of timeout, network ... error.
+			return nil, driver.WithStack(&driver.ResponseError{Err: err})
 		}
 
 		// Failed, try next server
@@ -116,6 +123,20 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 		s = c.getNextServer()
 	}
 }
+
+/*func printError(err error, indent string) {
+	if err == nil {
+		return
+	}
+	fmt.Printf("%sGot %T %+v\n", indent, err, err)
+	if xerr, ok := err.(*os.SyscallError); ok {
+		printError(xerr.Err, indent+"  ")
+	} else if xerr, ok := err.(*net.OpError); ok {
+		printError(xerr.Err, indent+"  ")
+	} else if xerr, ok := err.(*url.Error); ok {
+		printError(xerr.Err, indent+"  ")
+	}
+}*/
 
 // Unmarshal unmarshals the given raw object into the given result interface.
 func (c *clusterConnection) Unmarshal(data driver.RawObject, result interface{}) error {
