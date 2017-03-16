@@ -79,8 +79,8 @@ func WithDetails(parent context.Context, value ...bool) context.Context {
 }
 
 // WithEndpoint is used to configure a context that forces a request to be executed on a specific endpoint.
-// If you specify and endpoint like this, failover is disabled.
-// If you specify an unknown endpoint, and InvalidArgumentError is returned from requests.
+// If you specify an endpoint like this, failover is disabled.
+// If you specify an unknown endpoint, an InvalidArgumentError is returned from requests.
 func WithEndpoint(parent context.Context, endpoint string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyEndpoint, endpoint)
 }
