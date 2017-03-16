@@ -149,8 +149,8 @@ func (e *ResponseError) Error() string {
 	return e.Err.Error()
 }
 
-// IsResponseError returns true if the given error is (or is caused by) a ResponseError.
-func IsResponseError(err error) bool {
+// IsResponse returns true if the given error is (or is caused by) a ResponseError.
+func IsResponse(err error) bool {
 	return isCausedBy(err, func(e error) bool { _, ok := e.(*ResponseError); return ok })
 }
 
