@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"crypto/tls"
+	httplib "net/http"
 	"os"
 	"strings"
 	"testing"
@@ -158,5 +159,31 @@ func TestCreateClientHttpConnection(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("Failed to create new client: %s", describe(err))
+	}
+}
+
+// TestCreateClientHttpConnectionCustomTransport creates an HTTP connection to the environment specified
+// endpoints with a custom HTTP roundtripper and creates a client for that.
+func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
+	conn, err := http.NewConnection(http.ConnectionConfig{
+		Endpoints: getEndpointsFromEnv(t),
+		Transport: &httplib.Transport{},
+		TLSConfig: &tls.Config{InsecureSkipVerify: true},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create new http connection: %s", describe(err))
+	}
+	c, err := driver.NewClient(driver.ClientConfig{
+		Connection:     conn,
+		Authentication: createAuthenticationFromEnv(t),
+	})
+	if err != nil {
+		t.Fatalf("Failed to create new client: %s", describe(err))
+	}
+	timeout := time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if up := waitUntilServerAvailable(ctx, c, t); !up {
+		t.Fatalf("Connection is not available in %s", timeout)
 	}
 }
