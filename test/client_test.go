@@ -53,7 +53,7 @@ func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) {
 
 // getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS
 // environment variable.
-func getEndpointsFromEnv(t *testing.T) []string {
+func getEndpointsFromEnv(t testEnv) []string {
 	eps := strings.Split(os.Getenv("TEST_ENDPOINTS"), ",")
 	if len(eps) == 0 {
 		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
@@ -63,7 +63,7 @@ func getEndpointsFromEnv(t *testing.T) []string {
 
 // createAuthenticationFromEnv initializes an authentication specified in the TEST_AUTHENTICATION
 // environment variable.
-func createAuthenticationFromEnv(t *testing.T) driver.Authentication {
+func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 	authSpec := os.Getenv("TEST_AUTHENTICATION")
 	if authSpec == "" {
 		return nil
@@ -87,7 +87,7 @@ func createAuthenticationFromEnv(t *testing.T) driver.Authentication {
 }
 
 // createConnectionFromEnv initializes a Connection from information specified in environment variables.
-func createConnectionFromEnv(t *testing.T) driver.Connection {
+func createConnectionFromEnv(t testEnv) driver.Connection {
 	conn, err := http.NewConnection(http.ConnectionConfig{
 		Endpoints: getEndpointsFromEnv(t),
 		TLSConfig: &tls.Config{InsecureSkipVerify: true},
@@ -99,8 +99,11 @@ func createConnectionFromEnv(t *testing.T) driver.Connection {
 }
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
-func createClientFromEnv(t *testing.T, waitUntilReady bool) driver.Client {
+func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.Connection) driver.Client {
 	conn := createConnectionFromEnv(t)
+	if len(connection) == 1 {
+		*connection[0] = conn
+	}
 	c, err := driver.NewClient(driver.ClientConfig{
 		Connection:     conn,
 		Authentication: createAuthenticationFromEnv(t),
@@ -128,7 +131,7 @@ func createClientFromEnv(t *testing.T, waitUntilReady bool) driver.Client {
 }
 
 // waitUntilServerAvailable keeps waiting until the server/cluster that the client is addressing is available.
-func waitUntilServerAvailable(ctx context.Context, c driver.Client, t *testing.T) bool {
+func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) bool {
 	instanceUp := make(chan bool)
 	go func() {
 		for {

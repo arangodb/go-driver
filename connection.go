@@ -39,11 +39,11 @@ type Connection interface {
 	// Unmarshal unmarshals the given raw object into the given result interface.
 	Unmarshal(data RawObject, result interface{}) error
 
-	// UpdateEndpoints reconfigures the connection to use the given endpoints.
-	UpdateEndpoints(endpoints []string) error
-
 	// Endpoints returns the endpoints used by this connection.
 	Endpoints() []string
+
+	// UpdateEndpoints reconfigures the connection to use the given endpoints.
+	UpdateEndpoints(endpoints []string) error
 }
 
 // Request represents the input to a request on the server.
@@ -66,12 +66,17 @@ type Request interface {
 	// SetHeader sets a single header arguments of the request.
 	// Any existing header argument with the same key is overwritten.
 	SetHeader(key, value string) Request
+	// Written returns true as soon as this request has been written completely to the network.
+	// This does not guarantee that the server has received or processed the request.
+	Written() bool
 }
 
 // Response represents the response from the server on a given request.
 type Response interface {
 	// StatusCode returns an HTTP compatible status code of the response.
 	StatusCode() int
+	// Endpoint returns the endpoint that handled the request.
+	Endpoint() string
 	// CheckStatus checks if the status of the response equals to one of the given status codes.
 	// If so, nil is returned.
 	// If not, an attempt is made to parse an error response in the body and an error is returned.

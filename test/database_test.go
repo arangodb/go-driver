@@ -31,7 +31,7 @@ import (
 
 // ensureDatabase is a helper to check if a database exists and create it if needed.
 // It will fail the test when an error occurs.
-func ensureDatabase(ctx context.Context, c driver.Client, name string, options *driver.CreateDatabaseOptions, t *testing.T) driver.Database {
+func ensureDatabase(ctx context.Context, c driver.Client, name string, options *driver.CreateDatabaseOptions, t testEnv) driver.Database {
 	db, err := c.Database(ctx, name)
 	if driver.IsNotFound(err) {
 		db, err = c.CreateDatabase(ctx, name, options)

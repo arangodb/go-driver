@@ -26,6 +26,8 @@ import (
 	"context"
 	"reflect"
 	"strconv"
+
+	"github.com/arangodb/go-driver/util"
 )
 
 const (
@@ -40,6 +42,8 @@ const (
 	keyMergeObjects  = "arangodb-mergeObjects"
 	keyRawResponse   = "arangodb-rawResponse"
 	keyImportDetails = "arangodb-importDetails"
+	keyResponse      = "arangodb-response"
+	keyEndpoint      = "arangodb-endpoint"
 )
 
 // WithRevision is used to configure a context to make document
@@ -74,6 +78,14 @@ func WithDetails(parent context.Context, value ...bool) context.Context {
 		v = value[0]
 	}
 	return context.WithValue(contextOrBackground(parent), keyDetails, v)
+}
+
+// WithEndpoint is used to configure a context that forces a request to be executed on a specific endpoint.
+// If you specify and endpoint like this, failover is disabled.
+// If you specify an unknown endpoint, and InvalidArgumentError is returned from requests.
+func WithEndpoint(parent context.Context, endpoint string) context.Context {
+	endpoint = util.FixupEndpointURLScheme(endpoint)
+	return context.WithValue(contextOrBackground(parent), keyEndpoint, endpoint)
 }
 
 // WithKeepNull is used to configure a context to make update functions keep null fields (value==true)
@@ -116,6 +128,11 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 // buffer.
 func WithRawResponse(parent context.Context, value *[]byte) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyRawResponse, value)
+}
+
+// WithResponse is used to configure a context that will make all functions store the response into the given value.
+func WithResponse(parent context.Context, value *Response) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyResponse, value)
 }
 
 // WithImportDetails is used to configure a context that will make import document requests return

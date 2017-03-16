@@ -191,17 +191,17 @@ func (c *authenticatedConnection) Unmarshal(data RawObject, result interface{}) 
 	return nil
 }
 
+// Endpoints returns the endpoints used by this connection.
+func (c *authenticatedConnection) Endpoints() []string {
+	return c.conn.Endpoints()
+}
+
 // UpdateEndpoints reconfigures the connection to use the given endpoints.
 func (c *authenticatedConnection) UpdateEndpoints(endpoints []string) error {
 	if err := c.conn.UpdateEndpoints(endpoints); err != nil {
 		return WithStack(err)
 	}
 	return nil
-}
-
-// Endpoints returns the endpoints used by this connection.
-func (c *authenticatedConnection) Endpoints() []string {
-	return c.conn.Endpoints()
 }
 
 // prepare calls Authentication.Prepare if needed.

@@ -30,6 +30,15 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+type testEnv interface {
+	Error(message ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatal(message ...interface{})
+	Fatalf(format string, args ...interface{})
+	Log(message ...interface{})
+	Logf(format string, args ...interface{})
+}
+
 // boolRef returns a reference to a given boolean
 func boolRef(v bool) *bool {
 	return &v

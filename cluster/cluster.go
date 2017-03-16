@@ -24,6 +24,8 @@ package cluster
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -67,6 +69,7 @@ func NewConnection(config ConnectionConfig, connectionBuilder ServerConnectionBu
 
 const (
 	defaultTimeout = time.Minute
+	keyEndpoint    = "arangodb-endpoint"
 )
 
 type clusterConnection struct {
@@ -100,31 +103,58 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 		timeout = c.defaultTimeout
 	}
 
+	serverCount := len(c.servers)
+	var specificServer driver.Connection
+	if v := ctx.Value(keyEndpoint); v != nil {
+		if endpoint, ok := v.(string); ok {
+			// Specific endpoint specified
+			serverCount = 1
+			var err error
+			specificServer, err = c.getSpecificServer(endpoint)
+			if err != nil {
+				return nil, driver.WithStack(err)
+			}
+		}
+	}
+
+	timeoutDivider := math.Max(1.0, math.Min(3.0, float64(serverCount)))
 	attempt := 1
-	s := c.getCurrentServer()
+	s := specificServer
+	if s == nil {
+		s = c.getCurrentServer()
+	}
 	for {
-		serverCtx, cancel := context.WithTimeout(ctx, timeout/3)
+		// Send request to specific endpoint with a 1/3 timeout (so we get 3 attempts)
+		serverCtx, cancel := context.WithTimeout(ctx, time.Duration(float64(timeout)/timeoutDivider))
 		resp, err := s.Do(serverCtx, req)
-		if driver.Cause(err) == context.Canceled {
-			// Request was cancelled, we return directly.
-			cancel()
-			return nil, driver.WithStack(err)
-		} else if driver.Cause(err) == context.DeadlineExceeded {
-			// Server context timeout, failover to a new server
-			cancel()
-			// Will continue after this
-		} else if err == nil {
+		cancel()
+		if err == nil {
 			// We're done
-			cancel()
 			return resp, nil
-		} else {
-			// A connection error has occurred, return the error.
-			cancel()
+		}
+		// No success yet
+		if driver.IsCanceled(err) {
+			// Request was cancelled, we return directly.
 			return nil, driver.WithStack(err)
+		}
+		// If we've completely written the request, we return the error,
+		// otherwise we'll failover to a new server.
+		if req.Written() {
+			// Request has been written to network, do not failover
+			if driver.IsArangoError(err) {
+				// ArangoError, so we got an error response from server.
+				return nil, driver.WithStack(err)
+			}
+			// Not an ArangoError, so it must be some kind of timeout, network ... error.
+			return nil, driver.WithStack(&driver.ResponseError{Err: err})
 		}
 
 		// Failed, try next server
 		attempt++
+		if specificServer != nil {
+			// A specific server was specified, no failover.
+			return nil, driver.WithStack(err)
+		}
 		if attempt > len(c.servers) {
 			// We've tried all servers. Giving up.
 			return nil, driver.WithStack(err)
@@ -133,12 +163,38 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 	}
 }
 
+/*func printError(err error, indent string) {
+	if err == nil {
+		return
+	}
+	fmt.Printf("%sGot %T %+v\n", indent, err, err)
+	if xerr, ok := err.(*os.SyscallError); ok {
+		printError(xerr.Err, indent+"  ")
+	} else if xerr, ok := err.(*net.OpError); ok {
+		printError(xerr.Err, indent+"  ")
+	} else if xerr, ok := err.(*url.Error); ok {
+		printError(xerr.Err, indent+"  ")
+	}
+}*/
+
 // Unmarshal unmarshals the given raw object into the given result interface.
 func (c *clusterConnection) Unmarshal(data driver.RawObject, result interface{}) error {
 	if err := c.servers[0].Unmarshal(data, result); err != nil {
 		return driver.WithStack(err)
 	}
 	return nil
+}
+
+// Endpoints returns the endpoints used by this connection.
+func (c *clusterConnection) Endpoints() []string {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	var result []string
+	for _, s := range c.servers {
+		result = append(result, s.Endpoints()...)
+	}
+	return result
 }
 
 // UpdateEndpoints reconfigures the connection to use the given endpoints.
@@ -172,24 +228,33 @@ func (c *clusterConnection) UpdateEndpoints(endpoints []string) error {
 	return nil
 }
 
-// Endpoints returns the endpoints used by this connection.
-func (c *clusterConnection) Endpoints() []string {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	var endpoints []string
-	for _, s := range c.servers {
-		endpoints = append(endpoints, s.Endpoints()...)
-	}
-
-	return endpoints
-}
-
 // getCurrentServer returns the currently used server.
 func (c *clusterConnection) getCurrentServer() driver.Connection {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 	return c.servers[c.current]
+}
+
+// getSpecificServer returns the server with the given endpoint.
+func (c *clusterConnection) getSpecificServer(endpoint string) (driver.Connection, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	for _, s := range c.servers {
+		endpoints := s.Endpoints()
+		found := false
+		for _, x := range endpoints {
+			if x == endpoint {
+				found = true
+				break
+			}
+		}
+		if found {
+			return s, nil
+		}
+	}
+
+	return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("unknown endpoint: %s", endpoint)})
 }
 
 // getNextServer changes the currently used server and returns the new server.
