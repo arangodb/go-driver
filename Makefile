@@ -6,6 +6,7 @@ GOBUILDDIR := $(SCRIPTDIR)/.gobuild
 GOVERSION := 1.8-alpine
 
 ARANGODB := arangodb:3.1.14
+#ARANGODB := neunhoef/arangodb:3.1.test
 #ARANGODB := neunhoef/arangodb:3.2.devel-1
 
 TESTOPTIONS := 
