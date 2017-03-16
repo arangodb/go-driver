@@ -73,21 +73,27 @@ func failoverTest(action string, t *testing.T) {
 		ruleSpec := blockPort(iptc, port, action, t)
 
 		// Perform low lever request and check handling endpoint
-		req, err := conn.NewRequest("GET", "/_api/version")
-		if err != nil {
-			t.Fatalf("Cannot create request: %s", describe(err))
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*9)
-		resp, err := conn.Do(ctx, req)
-		cancel()
-		if err != nil {
-			t.Fatalf("Cannot execute request: %s", describe(err))
-		}
-		ep := resp.Endpoint()
-		if ep != lastEndpoint {
-			lastEndpoint = ep
-			endpointChanges++
-			t.Logf("New server detected: %s", ep)
+		for {
+			req, err := conn.NewRequest("GET", "/_api/version")
+			if err != nil {
+				t.Fatalf("Cannot create request: %s", describe(err))
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*9)
+			resp, err := conn.Do(ctx, req)
+			cancel()
+			if driver.IsResponseError(err) {
+				t.Logf("ResponseError in version request")
+				continue
+			} else if err != nil {
+				t.Fatalf("Cannot execute request: %s", describe(err))
+			}
+			ep := resp.Endpoint()
+			if ep != lastEndpoint {
+				lastEndpoint = ep
+				endpointChanges++
+				t.Logf("New server detected: %s", ep)
+			}
+			break
 		}
 
 		// Create document & read it

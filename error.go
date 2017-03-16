@@ -22,6 +22,13 @@
 
 package driver
 
+import (
+	"context"
+	"net"
+	"net/url"
+	"os"
+)
+
 // ArangoError is a Go error with arangodb specific error information.
 type ArangoError struct {
 	HasError     bool   `json:"error"`
@@ -43,6 +50,12 @@ func newArangoError(code, errorNum int, errorMessage string) error {
 		ErrorNum:     errorNum,
 		ErrorMessage: errorMessage,
 	}
+}
+
+// IsArangoError returns true when the given error is an ArangoError.
+func IsArangoError(err error) bool {
+	ae, ok := Cause(err).(ArangoError)
+	return ok && ae.HasError
 }
 
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
@@ -123,6 +136,59 @@ func (e NoMoreDocumentsError) Error() string {
 func IsNoMoreDocuments(err error) bool {
 	_, ok := Cause(err).(NoMoreDocumentsError)
 	return ok
+}
+
+// A ResponseError is returned when a request was completely written to a server, but
+// the server did not respond, or some kind of network error occurred during the response.
+type ResponseError struct {
+	Err error
+}
+
+// Error returns the Error() result of the underlying error.
+func (e *ResponseError) Error() string {
+	return e.Err.Error()
+}
+
+// IsResponseError returns true if the given error is (or is caused by) a ResponseError.
+func IsResponseError(err error) bool {
+	return isCausedBy(err, func(e error) bool { _, ok := e.(*ResponseError); return ok })
+}
+
+// IsCanceled returns true if the given error is the result on a cancelled context.
+func IsCanceled(err error) bool {
+	return isCausedBy(err, func(e error) bool { return e == context.Canceled })
+}
+
+// IsTimeout returns true if the given error is the result on a deadline that has been exceeded.
+func IsTimeout(err error) bool {
+	return isCausedBy(err, func(e error) bool { return e == context.DeadlineExceeded })
+}
+
+// isCausedBy returns true if the given error returns true on the given predicate,
+// unwrapping various standard library error wrappers.
+func isCausedBy(err error, p func(error) bool) bool {
+	if p(err) {
+		return true
+	}
+	err = Cause(err)
+	for {
+		if p(err) {
+			return true
+		} else if err == nil {
+			return false
+		}
+		if xerr, ok := err.(*ResponseError); ok {
+			err = xerr.Err
+		} else if xerr, ok := err.(*url.Error); ok {
+			err = xerr.Err
+		} else if xerr, ok := err.(*net.OpError); ok {
+			err = xerr.Err
+		} else if xerr, ok := err.(*os.SyscallError); ok {
+			err = xerr.Err
+		} else {
+			return false
+		}
+	}
 }
 
 var (

@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 
 	driver "github.com/arangodb/go-driver"
@@ -131,9 +132,13 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest"})
 	}
 	r, err := httpReq.createHTTPRequest(c.endpoint)
-	if ctx != nil {
-		r = r.WithContext(ctx)
+	if ctx == nil {
+		ctx = context.Background()
 	}
+	ctx = httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+		WroteRequest: httpReq.WroteRequest,
+	})
+	r = r.WithContext(ctx)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}

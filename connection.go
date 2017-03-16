@@ -60,6 +60,9 @@ type Request interface {
 	// SetHeader sets a single header arguments of the request.
 	// Any existing header argument with the same key is overwritten.
 	SetHeader(key, value string) Request
+	// Written returns true as soon as this request has been written completely to the network.
+	// This does not guarantee that the server has received or processed the request.
+	Written() bool
 }
 
 // Response represents the response from the server on a given request.
