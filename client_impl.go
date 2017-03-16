@@ -93,17 +93,13 @@ func (c *client) SynchronizeEndpoints(ctx context.Context) error {
 	}
 
 	// Cluster mode, fetch endpoints
-	ch, err := c.clusterHealth(ctx)
+	cep, err := c.clusterEndpoints(ctx)
 	if err != nil {
 		return WithStack(err)
 	}
 	var endpoints []string
-	for _, sh := range ch.Health {
-		if sh.Role != "Coordinator" {
-			continue
-		}
-		ep := util.FixupEndpointURLScheme(sh.Endpoint)
-		endpoints = append(endpoints, ep)
+	for _, ep := range cep.Endpoints {
+		endpoints = append(endpoints, util.FixupEndpointURLScheme(ep.Endpoint))
 	}
 
 	// Update connection
@@ -150,33 +146,31 @@ func (c *client) role(ctx context.Context) (string, error) {
 	return data.Role, nil
 }
 
-type healthResponse struct {
-	Health map[string]serverHealth `json:"Health,omitempty"`
+type clusterEndpointsResponse struct {
+	Endpoints []clusterEndpoint `json:"endpoints,omitempty"`
 }
 
-type serverHealth struct {
-	Endpoint string `json:"Endpoint,omitempty"`
-	Role     string `json:"Role,omitempty"`
-	Status   string `json:"Status,omitempty"`
+type clusterEndpoint struct {
+	Endpoint string `json:"endpoint,omitempty"`
 }
 
-// clusterHealth returns the health information about a cluster.
-func (c *client) clusterHealth(ctx context.Context) (healthResponse, error) {
-	req, err := c.conn.NewRequest("GET", "_admin/cluster/health")
+// clusterEndpoints returns the endpoints of a cluster.
+func (c *client) clusterEndpoints(ctx context.Context) (clusterEndpointsResponse, error) {
+	req, err := c.conn.NewRequest("GET", "_api/cluster/endpoints")
 	if err != nil {
-		return healthResponse{}, WithStack(err)
+		return clusterEndpointsResponse{}, WithStack(err)
 	}
 	applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return healthResponse{}, WithStack(err)
+		return clusterEndpointsResponse{}, WithStack(err)
 	}
 	if err := resp.CheckStatus(200); err != nil {
-		return healthResponse{}, WithStack(err)
+		return clusterEndpointsResponse{}, WithStack(err)
 	}
-	var data healthResponse
+	var data clusterEndpointsResponse
 	if err := resp.ParseBody("", &data); err != nil {
-		return healthResponse{}, WithStack(err)
+		return clusterEndpointsResponse{}, WithStack(err)
 	}
 	return data, nil
 }

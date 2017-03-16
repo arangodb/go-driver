@@ -38,6 +38,7 @@ type Client interface {
 	// When this client is connected to a single server, nothing happens.
 	// When this client is connected to a cluster of servers, the connection will be updated to reflect
 	// the layout of the cluster.
+	// This function requires ArangoDB 3.1.15 or up.
 	SynchronizeEndpoints(ctx context.Context) error
 
 	// Database functions
@@ -57,6 +58,7 @@ type ClientConfig struct {
 	// SynchronizeEndpointsInterval is the interval between automatisch synchronization of endpoints.
 	// If this value is 0, no automatic synchronization is performed.
 	// If this value is > 0, automatic synchronization is started on a go routine.
+	// This feature requires ArangoDB 3.1.15 or up.
 	SynchronizeEndpointsInterval time.Duration
 }
 
