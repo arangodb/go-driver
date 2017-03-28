@@ -5,8 +5,10 @@ ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 GOBUILDDIR := $(SCRIPTDIR)/.gobuild
 GOVERSION := 1.8-alpine
 
-ARANGODB := arangodb:3.1.14
-#ARANGODB := neunhoef/arangodb:3.2.devel-1
+ifndef ARANGODB
+	ARANGODB := arangodb/arangodb:3.1.16
+	#ARANGODB := neunhoef/arangodb:3.2.devel-1
+endif
 
 TESTOPTIONS := 
 ifdef VERBOSE
