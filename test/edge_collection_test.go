@@ -31,9 +31,9 @@ import (
 
 // ensureEdgeCollection returns the edge collection with given name, creating it if needed.
 func ensureEdgeCollection(ctx context.Context, g driver.Graph, collection string, from, to []string, t *testing.T) driver.Collection {
-	ec, err := g.EdgeCollection(ctx, collection)
+	ec, _, err := g.EdgeCollection(ctx, collection)
 	if driver.IsNotFound(err) {
-		ec, err := g.CreateEdgeCollection(ctx, collection, from, to)
+		ec, err := g.CreateEdgeCollection(ctx, collection, driver.VertexConstraints{From: from, To: to})
 		if err != nil {
 			t.Fatalf("Failed to create edge collection: %s", describe(err))
 		}
@@ -55,7 +55,7 @@ func TestCreateEdgeCollection(t *testing.T) {
 	}
 
 	// List edge collections, must be empty
-	if list, err := g.EdgeCollections(nil); err != nil {
+	if list, _, err := g.EdgeCollections(nil); err != nil {
 		t.Errorf("EdgeCollections failed: %s", describe(err))
 	} else if len(list) > 0 {
 		t.Errorf("EdgeCollections return %d edge collections, expected 0", len(list))
@@ -63,7 +63,7 @@ func TestCreateEdgeCollection(t *testing.T) {
 
 	// Now create an edge collection
 	colName := "create_edge_collection_friends"
-	if ec, err := g.CreateEdgeCollection(nil, colName, []string{"person"}, []string{"person"}); err != nil {
+	if ec, err := g.CreateEdgeCollection(nil, colName, driver.VertexConstraints{From: []string{"person"}, To: []string{"person"}}); err != nil {
 		t.Errorf("CreateEdgeCollection failed: %s", describe(err))
 	} else if ec.Name() != colName {
 		t.Errorf("Invalid name, expected '%s', got '%s'", colName, ec.Name())
@@ -73,7 +73,7 @@ func TestCreateEdgeCollection(t *testing.T) {
 	assertCollection(nil, db, "person", t)
 
 	// List edge collections, must be contain 'friends'
-	if list, err := g.EdgeCollections(nil); err != nil {
+	if list, _, err := g.EdgeCollections(nil); err != nil {
 		t.Errorf("EdgeCollections failed: %s", describe(err))
 	} else if len(list) != 1 {
 		t.Errorf("EdgeCollections return %d edge collections, expected 1", len(list))
@@ -89,7 +89,7 @@ func TestCreateEdgeCollection(t *testing.T) {
 	}
 
 	// Open friends edge collection must exits
-	if ec, err := g.EdgeCollection(nil, colName); err != nil {
+	if ec, _, err := g.EdgeCollection(nil, colName); err != nil {
 		t.Errorf("EdgeCollection failed: %s", describe(err))
 	} else if ec.Name() != colName {
 		t.Errorf("EdgeCollection return invalid collection, expected '%s', got '%s'", colName, ec.Name())
@@ -108,7 +108,7 @@ func TestRemoveEdgeCollection(t *testing.T) {
 
 	// Now create an edge collection
 	colName := "remove_edge_collection_friends"
-	ec, err := g.CreateEdgeCollection(nil, colName, []string{"person"}, []string{"person"})
+	ec, err := g.CreateEdgeCollection(nil, colName, driver.VertexConstraints{From: []string{"person"}, To: []string{"person"}})
 	if err != nil {
 		t.Fatalf("CreateEdgeCollection failed: %s", describe(err))
 	} else if ec.Name() != colName {
