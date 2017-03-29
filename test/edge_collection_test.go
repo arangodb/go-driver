@@ -146,6 +146,9 @@ func TestRemoveEdgeCollection(t *testing.T) {
 	} else if found {
 		t.Errorf("EdgeCollectionExists return true, expected false")
 	}
+
+	// Collection must still exist in database
+	assertCollection(nil, db, colName, t)
 }
 
 // TestSetVertexConstraints creates a graph and then adds an edge collection in it and then removes the edge collection.
