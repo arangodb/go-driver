@@ -84,6 +84,15 @@ func (c *vertexCollection) Count(ctx context.Context) (int64, error) {
 	return result, nil
 }
 
+// Statistics returns the number of documents and additional statistical information about the collection.
+func (c *vertexCollection) Statistics(ctx context.Context) (CollectionStatistics, error) {
+	result, err := c.rawCollection().Statistics(ctx)
+	if err != nil {
+		return CollectionStatistics{}, WithStack(err)
+	}
+	return result, nil
+}
+
 // Revision fetches the revision ID of the collection.
 // The revision ID is a server-generated string that clients can use to check whether data
 // in a collection has changed since the last revision check.

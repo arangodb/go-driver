@@ -308,3 +308,36 @@ func TestCollectionRevision(t *testing.T) {
 		}
 	}
 }
+
+// TestCollectionStatistics creates a collection, checks statistics after adding documents.
+func TestCollectionStatistics(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_statistics"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	// create some documents
+	for i := 0; i < 10; i++ {
+		before, err := col.Statistics(nil)
+		if err != nil {
+			t.Fatalf("Failed to fetch before statistics: %s", describe(err))
+		}
+		doc := Book{Title: fmt.Sprintf("Book %d", i)}
+		if _, err := col.CreateDocument(nil, doc); err != nil {
+			t.Fatalf("Failed to create document: %s", describe(err))
+		}
+		after, err := col.Statistics(nil)
+		if err != nil {
+			t.Fatalf("Failed to fetch after statistics: %s", describe(err))
+		}
+		if before.Count+1 != after.Count {
+			t.Errorf("Expected Count before, after to be 1 different. Got %d, %d", before.Count, after.Count)
+		}
+		if before.Figures.DataFiles.FileSize > after.Figures.DataFiles.FileSize {
+			t.Errorf("Expected DataFiles.FileSize before <= after. Got %d, %d", before.Figures.DataFiles.FileSize, after.Figures.DataFiles.FileSize)
+		}
+	}
+}
