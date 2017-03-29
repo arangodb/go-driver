@@ -29,6 +29,24 @@ import (
 	"reflect"
 )
 
+// DocumentExists checks if a document with given key exists in the collection.
+func (c *collection) DocumentExists(ctx context.Context, key string) (bool, error) {
+	if err := validateKey(key); err != nil {
+		return false, WithStack(err)
+	}
+	escapedKey := pathEscape(key)
+	req, err := c.conn.NewRequest("HEAD", path.Join(c.relPath("document"), escapedKey))
+	if err != nil {
+		return false, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return false, WithStack(err)
+	}
+	found := resp.StatusCode() == 200
+	return found, nil
+}
+
 // ReadDocument reads a single document with given key from the collection.
 // The document data is stored into result, the document meta data is returned.
 // If no document exists with given key, a NotFoundError is returned.

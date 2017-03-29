@@ -53,6 +53,12 @@ func TestCreateDocument(t *testing.T) {
 		t.Fatalf("Failed to create new document: %s", describe(err))
 	}
 	// Document must exists now
+	if found, err := col.DocumentExists(nil, meta.Key); err != nil {
+		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
+	} else if !found {
+		t.Errorf("DocumentExists returned false for '%s', expected true", meta.Key)
+	}
+	// Read document
 	var readDoc UserDoc
 	if _, err := col.ReadDocument(nil, meta.Key, &readDoc); err != nil {
 		t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))

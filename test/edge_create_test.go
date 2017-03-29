@@ -48,6 +48,12 @@ func TestCreateEdge(t *testing.T) {
 		t.Fatalf("Failed to create new edge: %s", describe(err))
 	}
 	// Document must exists now
+	if found, err := ec.DocumentExists(nil, meta.Key); err != nil {
+		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
+	} else if !found {
+		t.Errorf("DocumentExists returned false for '%s', expected true", meta.Key)
+	}
+	// Read edge
 	var readDoc driver.EdgeDocument
 	if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
 		t.Fatalf("Failed to read edge '%s': %s", meta.Key, describe(err))

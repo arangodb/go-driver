@@ -44,6 +44,13 @@ func TestCreateVertex(t *testing.T) {
 		t.Fatalf("Failed to create new vertex: %s", describe(err))
 	}
 	// Document must exists now
+	if found, err := vc.DocumentExists(nil, meta.Key); err != nil {
+		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
+	} else if !found {
+		t.Errorf("DocumentExists returned false for '%s', expected true", meta.Key)
+	}
+
+	// Read document
 	var readDoc Book
 	if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
 		t.Fatalf("Failed to read vertex '%s': %s", meta.Key, describe(err))

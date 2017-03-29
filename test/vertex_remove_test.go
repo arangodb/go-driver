@@ -54,6 +54,13 @@ func TestRemoveVertex(t *testing.T) {
 	if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
+
+	// Document must not exist now
+	if found, err := vc.DocumentExists(nil, meta.Key); err != nil {
+		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
+	} else if found {
+		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
+	}
 }
 
 // TestRemoveVertexReturnOld creates a document, removes it checks the ReturnOld value.
