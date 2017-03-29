@@ -94,7 +94,7 @@ func (g *graph) EdgeCollectionExists(ctx context.Context, name string) (bool, er
 
 // EdgeCollections returns all edge collections of this graph
 func (g *graph) EdgeCollections(ctx context.Context) ([]Collection, []VertexConstraints, error) {
-	req, err := g.conn.NewRequest("GET", path.Join(g.relPath(), "edge"))
+	req, err := g.conn.NewRequest("GET", g.relPath())
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
@@ -153,4 +153,28 @@ func (g *graph) CreateEdgeCollection(ctx context.Context, collection string, con
 		return nil, WithStack(err)
 	}
 	return ec, nil
+}
+
+// SetVertexConstraints modifies the vertex constraints of an existing edge collection in the graph.
+func (g *graph) SetVertexConstraints(ctx context.Context, collection string, constraints VertexConstraints) error {
+	req, err := g.conn.NewRequest("PUT", path.Join(g.relPath(), "edge", collection))
+	if err != nil {
+		return WithStack(err)
+	}
+	input := EdgeDefinition{
+		Collection: collection,
+		From:       constraints.From,
+		To:         constraints.To,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	resp, err := g.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(201, 202); err != nil {
+		return WithStack(err)
+	}
+	return nil
 }

@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -73,12 +74,24 @@ func TestCreateEdgeCollection(t *testing.T) {
 	assertCollection(nil, db, "person", t)
 
 	// List edge collections, must be contain 'friends'
-	if list, _, err := g.EdgeCollections(nil); err != nil {
+	if list, constraints, err := g.EdgeCollections(nil); err != nil {
 		t.Errorf("EdgeCollections failed: %s", describe(err))
-	} else if len(list) != 1 {
-		t.Errorf("EdgeCollections return %d edge collections, expected 1", len(list))
-	} else if list[0].Name() != colName {
-		t.Errorf("Invalid list[0].name, expected '%s', got '%s'", colName, list[0].Name())
+	} else {
+		if len(list) != 1 {
+			t.Errorf("EdgeCollections return %d edge collections, expected 1", len(list))
+		} else if list[0].Name() != colName {
+			t.Errorf("Invalid list[0].name, expected '%s', got '%s'", colName, list[0].Name())
+		}
+		if len(constraints) != 1 {
+			t.Errorf("EdgeCollections return %d constraints, expected 1", len(constraints))
+		} else {
+			if strings.Join(constraints[0].From, ",") != "person" {
+				t.Errorf("Invalid constraints[0].From, expected ['person'], got %q", constraints[0].From)
+			}
+			if strings.Join(constraints[0].To, ",") != "person" {
+				t.Errorf("Invalid constraints[0].From, expected ['person'], got %q", constraints[0].To)
+			}
+		}
 	}
 
 	// Friends edge collection must exits
@@ -135,37 +148,58 @@ func TestRemoveEdgeCollection(t *testing.T) {
 	}
 }
 
-// TestReplaceEdgeCollection creates a graph and then adds an edge collection in it and then replaces the edge collection.
-/*func TestReplaceEdgeCollection(t *testing.T) {
+// TestSetVertexConstraints creates a graph and then adds an edge collection in it and then removes the edge collection.
+func TestSetVertexConstraints(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
-	name := "test_replace_edge_collection"
+	name := "set_vertex_constraints"
 	g, err := db.CreateGraph(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
 
 	// Now create an edge collection
-	ec, err := g.CreateEdgeCollection(nil, "friends", []string{"person"}, []string{"person"})
+	colName := "set_vertex_constraints_collection"
+	ec, err := g.CreateEdgeCollection(nil, colName, driver.VertexConstraints{From: []string{"cola"}, To: []string{"colb"}})
 	if err != nil {
-		t.Errorf("CreateEdgeCollection failed: %s", describe(err))
-	} else if ec.Name() != "friends" {
-		t.Errorf("Invalid name, expected 'friends', got '%s'", ec.Name())
+		t.Fatalf("CreateEdgeCollection failed: %s", describe(err))
+	} else if ec.Name() != colName {
+		t.Errorf("Invalid name, expected '%s', got '%s'", colName, ec.Name())
 	}
 
-	// Friends edge collection must exits
-	if found, err := g.EdgeCollectionExists(nil, "friends"); err != nil {
+	// Edge collection must exits
+	if found, err := g.EdgeCollectionExists(nil, colName); err != nil {
 		t.Errorf("EdgeCollectionExists failed: %s", describe(err))
 	} else if !found {
 		t.Errorf("EdgeCollectionExists return false, expected true")
 	}
 
-	// Replace edge collection
-	if err := ec.Replace(nil, []string{"city"}, []string{"state"}); err != nil {
-		t.Errorf("Replace failed: %s", describe(err))
+	// Edge collection must have proper constraints
+	if _, constraints, err := g.EdgeCollection(nil, colName); err != nil {
+		t.Errorf("EdgeCollection failed: %s", describe(err))
+	} else {
+		if strings.Join(constraints.From, ",") != "cola" {
+			t.Errorf("Invalid from constraints. Expected ['cola'], got %q", constraints.From)
+		}
+		if strings.Join(constraints.To, ",") != "colb" {
+			t.Errorf("Invalid to constraints. Expected ['colb'], got %q", constraints.To)
+		}
 	}
 
-	assertCollection(nil, db, "city", t)
-	assertCollection(nil, db, "state", t)
+	// Modify constraints
+	if err := g.SetVertexConstraints(nil, colName, driver.VertexConstraints{From: []string{"colC"}, To: []string{"colD"}}); err != nil {
+		t.Errorf("SetVertexConstraints failed: %s", describe(err))
+	}
+
+	// Edge collection must have modified constraints
+	if _, constraints, err := g.EdgeCollection(nil, colName); err != nil {
+		t.Errorf("EdgeCollection failed: %s", describe(err))
+	} else {
+		if strings.Join(constraints.From, ",") != "colC" {
+			t.Errorf("Invalid from constraints. Expected ['colC'], got %q", constraints.From)
+		}
+		if strings.Join(constraints.To, ",") != "colD" {
+			t.Errorf("Invalid to constraints. Expected ['colD'], got %q", constraints.To)
+		}
+	}
 }
-*/
