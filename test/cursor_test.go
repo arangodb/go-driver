@@ -172,11 +172,18 @@ func TestCreateCursor(t *testing.T) {
 				}
 				var result []interface{}
 				for {
+					hasMore := cursor.HasMore()
 					doc := reflect.New(test.DocumentType)
 					if _, err := cursor.ReadDocument(ctx, doc.Interface()); driver.IsNoMoreDocuments(err) {
+						if hasMore {
+							t.Error("HasMore returned true, but ReadDocument returns a IsNoMoreDocuments error")
+						}
 						break
 					} else if err != nil {
 						t.Errorf("Failed to result document %d: %s", len(result), describe(err))
+					}
+					if !hasMore {
+						t.Error("HasMore returned false, but ReadDocument returns a document")
 					}
 					result = append(result, doc.Elem().Interface())
 				}

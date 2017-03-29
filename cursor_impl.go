@@ -66,7 +66,7 @@ func (c *cursor) relPath() string {
 
 // Name returns the name of the collection.
 func (c *cursor) HasMore() bool {
-	return c.cursorData.HasMore
+	return c.resultIndex < len(c.Result) || c.cursorData.HasMore
 }
 
 // Count returns the total number of result documents available.
