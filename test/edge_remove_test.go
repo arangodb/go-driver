@@ -187,6 +187,13 @@ func TestRemoveEdgeRevision(t *testing.T) {
 	if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
+
+	// Document must not exists now
+	if found, err := ec.DocumentExists(nil, meta.Key); err != nil {
+		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
+	} else if found {
+		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
+	}
 }
 
 // TestRemoveEdgeKeyEmpty removes a document it with an empty key.

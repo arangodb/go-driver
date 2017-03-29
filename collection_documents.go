@@ -26,6 +26,9 @@ import "context"
 
 // CollectionDocuments provides access to the documents in a single collection.
 type CollectionDocuments interface {
+	// DocumentExists checks if a document with given key exists in the collection.
+	DocumentExists(ctx context.Context, key string) (bool, error)
+
 	// ReadDocument reads a single document with given key from the collection.
 	// The document data is stored into result, the document meta data is returned.
 	// If no document exists with given key, a NotFoundError is returned.

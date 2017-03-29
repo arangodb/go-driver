@@ -52,6 +52,12 @@ func TestRemoveDocument(t *testing.T) {
 	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
+	// Document must exists now
+	if found, err := col.DocumentExists(ctx, meta.Key); err != nil {
+		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
+	} else if found {
+		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
+	}
 }
 
 // TestRemoveDocumentReturnOld creates a document, removes it checks the ReturnOld value.

@@ -29,6 +29,15 @@ import (
 	"reflect"
 )
 
+// DocumentExists checks if a document with given key exists in the collection.
+func (c *vertexCollection) DocumentExists(ctx context.Context, key string) (bool, error) {
+	if result, err := c.rawCollection().DocumentExists(ctx, key); err != nil {
+		return false, WithStack(err)
+	} else {
+		return result, nil
+	}
+}
+
 // ReadDocument reads a single document with given key from the collection.
 // The document data is stored into result, the document meta data is returned.
 // If no document exists with given key, a NotFoundError is returned.
