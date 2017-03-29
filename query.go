@@ -147,3 +147,8 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 		}
 	}
 }
+
+type parseQueryRequest struct {
+	// contains the query string to be executed
+	Query string `json:"query"`
+}
