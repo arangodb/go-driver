@@ -22,7 +22,7 @@ This project contains a Go driver for the [ArangoDB database](https://arangodb.c
 
 To use the driver, first fetch the sources into your GOPATH.
 
-```
+```sh
 go get github.com/arangodb/go-driver
 ```
 
@@ -30,7 +30,7 @@ Using the driver, you always need to create a `Client`.
 The following example shows how to create a `Client` for a single server 
 running on localhost.
 
-```
+```go
 import (
 	"fmt"
 
@@ -60,7 +60,7 @@ access/create collections, graphs, documents and so on.
 The following example shows how to open an existing collection in an existing database 
 and create a new document in that collection.
 
-```
+```go
 // Open "examples_books" database
 db, err := c.Database(nil, "examples_books")
 if err != nil {
@@ -117,7 +117,7 @@ Note that `WithStack` and `Cause` are actually variables to you can implement it
 wrapper library. 
 
 If you for example use https://github.com/pkg/errors, you want to initialize to go driver like this:
-```
+```go
 import (
     driver "github.com/arangodb/go-driver"
     "github.com/pkg/errors"
@@ -142,7 +142,7 @@ Many functions support 1 or more optional (and infrequently used) additional opt
 These can be used with a `With<OptionName>` function.
 E.g. to force a create document call to wait until the data is synchronized to disk, 
 use a prepared context like this:
-```
+```go
 ctx := driver.WithWaitForSync(parentContext)
 collection.CreateDocument(ctx, yourDocument)
 ```
@@ -155,7 +155,7 @@ In that case a new endpoint is chosen and the operation is retried.
 
 The following example shows how to connect to a cluster of 3 servers.
 
-```
+```go
 conn, err := http.NewConnection(http.ConnectionConfig{
     Endpoints: []string{"http://server1:8529", "http://server2:8529", "http://server3:8529"},
 })
@@ -215,7 +215,7 @@ The driver supports endpoints that use SSL using the `https` URL scheme.
 The following example shows how to connect to a server that has a secure endpoint using 
 a self-signed certificate.
 
-```
+```go
 conn, err := http.NewConnection(http.ConnectionConfig{
     Endpoints: []string{"https://localhost:8529"},
     TLSConfig: &tls.Config{InsecureSkipVerify: true},
@@ -235,7 +235,7 @@ if err != nil {
 
 ## Connecting to ArangoDB
 
-```
+```go
 conn, err := http.NewConnection(http.ConnectionConfig{
     Endpoints: []string{"http://localhost:8529"},
     TLSConfig: &tls.Config{ /*...*/ },
@@ -254,7 +254,7 @@ if err != nil {
 
 ## Opening a database 
 
-```
+```go
 ctx := context.Background()
 db, err := client.Database(ctx, "myDB")
 if err != nil {
@@ -264,7 +264,7 @@ if err != nil {
 
 ## Opening a collection
 
-```
+```go
 ctx := context.Background()
 col, err := db.Collection(ctx, "myCollection")
 if err != nil {
@@ -274,7 +274,7 @@ if err != nil {
 
 ## Checking if a collection exists
 
-```
+```go
 ctx := context.Background()
 found, err := db.CollectionExists(ctx, "myCollection")
 if err != nil {
@@ -284,7 +284,7 @@ if err != nil {
 
 ## Creating a collection
 
-```
+```go
 ctx := context.Background()
 options := &driver.CreateCollectionOptions{ /* ... */ }
 col, err := db.CreateCollection(ctx, "myCollection", options)
@@ -295,7 +295,7 @@ if err != nil {
 
 ## Reading a document from a collection 
 
-```
+```go
 var doc MyDocument 
 ctx := context.Background()
 meta, err := col.ReadDocument(ctx, myDocumentKey, &doc)
@@ -306,7 +306,7 @@ if err != nil {
 
 ## Reading a document from a collection with an explicit revision
 
-```
+```go
 var doc MyDocument 
 revCtx := driver.WithRevision(ctx, "mySpecificRevision")
 meta, err := col.ReadDocument(revCtx, myDocumentKey, &doc)
@@ -317,7 +317,7 @@ if err != nil {
 
 ## Creating a document 
 
-```
+```go
 doc := MyDocument{
     Name: "jan",
     Counter: 23,
@@ -332,7 +332,7 @@ fmt.Printf("Created document with key '%s', revision '%s'\n", meta.Key, meta.Rev
 
 ## Removing a document 
 
-```
+```go
 ctx := context.Background()
 err := col.RemoveDocument(revCtx, myDocumentKey)
 if err != nil {
@@ -342,7 +342,7 @@ if err != nil {
 
 ## Removing a document with an explicit revision
 
-```
+```go
 revCtx := driver.WithRevision(ctx, "mySpecificRevision")
 err := col.RemoveDocument(revCtx, myDocumentKey)
 if err != nil {
@@ -352,7 +352,7 @@ if err != nil {
 
 ## Updating a document 
 
-```
+```go
 ctx := context.Background()
 patch := map[string]interface{}{
     "Name": "Frank",
@@ -365,7 +365,7 @@ if err != nil {
 
 ## Querying documents, one document at a time 
 
-```
+```go
 ctx := context.Background()
 query := "FOR d IN myCollection LIMIT 10 RETURN d"
 cursor, err := db.Query(ctx, query, nil)
@@ -387,7 +387,7 @@ for {
 
 ## Querying documents, fetching total count
 
-```
+```go
 ctx := driver.WithQueryCount(context.Background())
 query := "FOR d IN myCollection RETURN d"
 cursor, err := db.Query(ctx, query, nil)
@@ -400,7 +400,7 @@ fmt.Printf("Query yields %d documents\n", cursor.Count())
 
 ## Querying documents, with bind variables
 
-```
+```go
 ctx := context.Background()
 query := "FOR d IN myCollection FILTER d.Name == @name RETURN d"
 bindVars := map[string]interface{}{
