@@ -69,7 +69,7 @@ func (d *database) GraphExists(ctx context.Context, name string) (bool, error) {
 	}
 }
 
-type getGraphResponse struct {
+type getGraphsResponse struct {
 	Graphs []DocumentMeta `json:"graphs,omitempty"`
 }
 
@@ -86,7 +86,7 @@ func (d *database) Graphs(ctx context.Context) ([]Graph, error) {
 	if err := resp.CheckStatus(200); err != nil {
 		return nil, WithStack(err)
 	}
-	var data getGraphResponse
+	var data getGraphsResponse
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}

@@ -28,17 +28,30 @@ import "context"
 type GraphEdgeCollections interface {
 	// EdgeCollection opens a connection to an existing edge-collection within the graph.
 	// If no edge-collection with given name exists, an NotFoundError is returned.
-	EdgeCollection(ctx context.Context, name string) (Collection, error)
+	// Note: When calling Remove on the returned Collection, the collection is removed from the graph. Not from the database.
+	EdgeCollection(ctx context.Context, name string) (Collection, VertexConstraints, error)
 
 	// EdgeCollectionExists returns true if an edge-collection with given name exists within the graph.
 	EdgeCollectionExists(ctx context.Context, name string) (bool, error)
 
 	// EdgeCollections returns all edge collections of this graph
-	EdgeCollections(ctx context.Context) ([]Collection, error)
+	// Note: When calling Remove on any of the returned Collection's, the collection is removed from the graph. Not from the database.
+	EdgeCollections(ctx context.Context) ([]Collection, []VertexConstraints, error)
 
 	// CreateEdgeCollection creates an edge collection in the graph.
 	// collection: The name of the edge collection to be used.
-	// from: contains the names of one or more vertex collections that can contain source vertices.
-	// to: contains the names of one or more edge collections that can contain target vertices.
-	CreateEdgeCollection(ctx context.Context, collection string, from, to []string) (Collection, error)
+	// constraints.From: contains the names of one or more vertex collections that can contain source vertices.
+	// constraints.To: contains the names of one or more edge collections that can contain target vertices.
+	CreateEdgeCollection(ctx context.Context, collection string, constraints VertexConstraints) (Collection, error)
+
+	// SetVertexConstraints modifies the vertex constraints of an existing edge collection in the graph.
+	SetVertexConstraints(ctx context.Context, collection string, constraints VertexConstraints) error
+}
+
+// VertexConstraints limit the vertex collection you can use in an edge.
+type VertexConstraints struct {
+	// From contains names of vertex collection that are allowed to be used in the From part of an edge.
+	From []string
+	// To contains names of vertex collection that are allowed to be used in the To part of an edge.
+	To []string
 }

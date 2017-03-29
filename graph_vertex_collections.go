@@ -28,12 +28,14 @@ import "context"
 type GraphVertexCollections interface {
 	// VertexCollection opens a connection to an existing vertex-collection within the graph.
 	// If no vertex-collection with given name exists, an NotFoundError is returned.
+	// Note: When calling Remove on the returned Collection, the collection is removed from the graph. Not from the database.
 	VertexCollection(ctx context.Context, name string) (Collection, error)
 
 	// VertexCollectionExists returns true if an vertex-collection with given name exists within the graph.
 	VertexCollectionExists(ctx context.Context, name string) (bool, error)
 
 	// VertexCollections returns all vertex collections of this graph
+	// Note: When calling Remove on any of the returned Collection's, the collection is removed from the graph. Not from the database.
 	VertexCollections(ctx context.Context) ([]Collection, error)
 
 	// CreateVertexCollection creates a vertex collection in the graph.
