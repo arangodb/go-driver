@@ -20,6 +20,12 @@ This project contains a Go driver for the [ArangoDB database](https://arangodb.c
 
 ## Getting started 
 
+To use the driver, first fetch the sources into your GOPATH.
+
+```
+go get github.com/arangodb/go-driver
+```
+
 Using the driver, you always need to create a `Client`.
 The following example shows how to create a `Client` for a single server 
 running on localhost.
