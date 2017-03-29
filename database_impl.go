@@ -58,6 +58,23 @@ func (d *database) Name() string {
 	return d.name
 }
 
+// Remove removes the entire database.
+// If the database does not exist, a NotFoundError is returned.
+func (d *database) Remove(ctx context.Context) error {
+	req, err := d.conn.NewRequest("DELETE", path.Join("_db/_system/_api/database", pathEscape(d.name)))
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // Query performs an AQL query, returning a cursor used to iterate over the returned documents.
 func (d *database) Query(ctx context.Context, query string, bindVars map[string]interface{}) (Cursor, error) {
 	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/cursor"))
