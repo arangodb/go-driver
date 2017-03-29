@@ -42,4 +42,9 @@ type Database interface {
 	// Query performs an AQL query, returning a cursor used to iterate over the returned documents.
 	// Note that the returned Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
 	Query(ctx context.Context, query string, bindVars map[string]interface{}) (Cursor, error)
+
+	// ValidateQuery validates an AQL query.
+	// When the query is valid, nil returned, otherwise an error is returned.
+	// The query is not executed.
+	ValidateQuery(ctx context.Context, query string) error
 }

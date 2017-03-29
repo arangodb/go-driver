@@ -106,3 +106,27 @@ func (d *database) Query(ctx context.Context, query string, bindVars map[string]
 	}
 	return col, nil
 }
+
+// ValidateQuery validates an AQL query.
+// When the query is valid, nil returned, otherwise an error is returned.
+// The query is not executed.
+func (d *database) ValidateQuery(ctx context.Context, query string) error {
+	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/query"))
+	if err != nil {
+		return WithStack(err)
+	}
+	input := parseQueryRequest{
+		Query: query,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
