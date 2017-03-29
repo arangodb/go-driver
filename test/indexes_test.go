@@ -59,4 +59,12 @@ func TestIndexes(t *testing.T) {
 			}
 		}
 	}
+
+	// Check index count
+	if stats, err := col.Statistics(nil); err != nil {
+		t.Fatalf("Statistics failed: %s", describe(err))
+	} else if stats.Figures.Indexes.Count != 3 {
+		// 3 because 1 system index + 2 created above
+		t.Errorf("Expected 3 indexes, got %d", stats.Figures.Indexes.Count)
+	}
 }

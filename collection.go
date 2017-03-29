@@ -22,7 +22,10 @@
 
 package driver
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Collection provides access to the information of a single collection, all its documents and all its indexes.
 type Collection interface {
@@ -34,6 +37,9 @@ type Collection interface {
 
 	// Count fetches the number of document in the collection.
 	Count(ctx context.Context) (int64, error)
+
+	// Statistics returns the number of documents and additional statistical information about the collection.
+	Statistics(ctx context.Context) (CollectionStatistics, error)
 
 	// Revision fetches the revision ID of the collection.
 	// The revision ID is a server-generated string that clients can use to check whether data
@@ -128,3 +134,77 @@ const (
 	CollectionStatusDeleted   = CollectionStatus(5)
 	CollectionStatusLoading   = CollectionStatus(6)
 )
+
+// CollectionStatistics contains the number of documents and additional statistical information about a collection.
+type CollectionStatistics struct {
+	//The number of documents currently present in the collection.
+	Count int64 `json:"count,omitempty"`
+	// The maximal size of a journal or datafile in bytes.
+	JournalSize int64 `json:"journalSize,omitempty"`
+	Figures     struct {
+		DataFiles struct {
+			// The number of datafiles.
+			Count int64 `json:"count,omitempty"`
+			// The total filesize of datafiles (in bytes).
+			FileSize int64 `json:"fileSize,omitempty"`
+		} `json:"datafiles"`
+		// The number of markers in the write-ahead log for this collection that have not been transferred to journals or datafiles.
+		UncollectedLogfileEntries int64 `json:"uncollectedLogfileEntries,omitempty"`
+		// The number of references to documents in datafiles that JavaScript code currently holds. This information can be used for debugging compaction and unload issues.
+		DocumentReferences int64 `json:"documentReferences,omitempty"`
+		CompactionStatus   struct {
+			// The action that was performed when the compaction was last run for the collection. This information can be used for debugging compaction issues.
+			Message string `json:"message,omitempty"`
+			// The point in time the compaction for the collection was last executed. This information can be used for debugging compaction issues.
+			Time time.Time `json:"time,omitempty"`
+		} `json:"compactionStatus"`
+		Compactors struct {
+			// The number of compactor files.
+			Count int64 `json:"count,omitempty"`
+			// The total filesize of all compactor files (in bytes).
+			FileSize int64 `json:"fileSize,omitempty"`
+		} `json:"compactors"`
+		Dead struct {
+			// The number of dead documents. This includes document versions that have been deleted or replaced by a newer version. Documents deleted or replaced that are contained the write-ahead log only are not reported in this figure.
+			Count int64 `json:"count,omitempty"`
+			// The total number of deletion markers. Deletion markers only contained in the write-ahead log are not reporting in this figure.
+			Deletion int64 `json:"deletion,omitempty"`
+			// The total size in bytes used by all dead documents.
+			Size int64 `json:"size,omitempty"`
+		} `json:"dead"`
+		Indexes struct {
+			// The total number of indexes defined for the collection, including the pre-defined indexes (e.g. primary index).
+			Count int64 `json:"count,omitempty"`
+			// The total memory allocated for indexes in bytes.
+			Size int64 `json:"size,omitempty"`
+		} `json:"indexes"`
+		ReadCache struct {
+			// The number of revisions of this collection stored in the document revisions cache.
+			Count int64 `json:"count,omitempty"`
+			// The memory used for storing the revisions of this collection in the document revisions cache (in bytes). This figure does not include the document data but only mappings from document revision ids to cache entry locations.
+			Size int64 `json:"size,omitempty"`
+		} `json:"readcache"`
+		// An optional string value that contains information about which object type is at the head of the collection's cleanup queue. This information can be used for debugging compaction and unload issues.
+		WaitingFor string `json:"waitingFor,omitempty"`
+		Alive      struct {
+			// The number of currently active documents in all datafiles and journals of the collection. Documents that are contained in the write-ahead log only are not reported in this figure.
+			Count int64 `json:"count,omitempty"`
+			// The total size in bytes used by all active documents of the collection. Documents that are contained in the write-ahead log only are not reported in this figure.
+			Size int64 `json:"size,omitempty"`
+		} `json:"alive"`
+		// The tick of the last marker that was stored in a journal of the collection. This might be 0 if the collection does not yet have a journal.
+		LastTick int64 `json:"lastTick,omitempty"`
+		Journals struct {
+			// The number of journal files.
+			Count int64 `json:"count,omitempty"`
+			// The total filesize of all journal files (in bytes).
+			FileSize int64 `json:"fileSize,omitempty"`
+		} `json:"journals"`
+		Revisions struct {
+			// The number of revisions of this collection managed by the storage engine.
+			Count int64 `json:"count,omitempty"`
+			// The memory used for storing the revisions of this collection in the storage engine (in bytes). This figure does not include the document data but only mappings from document revision ids to storage engine datafile positions.
+			Size int64 `json:"size,omitempty"`
+		} `json:"revisions"`
+	} `json:"figures"`
+}

@@ -101,6 +101,26 @@ func (c *collection) Count(ctx context.Context) (int64, error) {
 	return data.Count, nil
 }
 
+// Statistics returns the number of documents and additional statistical information about the collection.
+func (c *collection) Statistics(ctx context.Context) (CollectionStatistics, error) {
+	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("collection"), "figures"))
+	if err != nil {
+		return CollectionStatistics{}, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return CollectionStatistics{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return CollectionStatistics{}, WithStack(err)
+	}
+	var data CollectionStatistics
+	if err := resp.ParseBody("", &data); err != nil {
+		return CollectionStatistics{}, WithStack(err)
+	}
+	return data, nil
+}
+
 // Revision fetches the revision ID of the collection.
 // The revision ID is a server-generated string that clients can use to check whether data
 // in a collection has changed since the last revision check.
