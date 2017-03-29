@@ -29,6 +29,10 @@ type Database interface {
 	// Name returns the name of the database.
 	Name() string
 
+	// Remove removes the entire database.
+	// If the database does not exist, a NotFoundError is returned.
+	Remove(ctx context.Context) error
+
 	// Collection functions
 	DatabaseCollections
 
