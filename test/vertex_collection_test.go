@@ -128,4 +128,8 @@ func TestRemoveVertexCollection(t *testing.T) {
 	} else if found {
 		t.Errorf("VertexCollectionExists return true, expected false")
 	}
+
+	// Collection must still exist in database
+	assertCollection(nil, db, "friends", t)
+
 }
