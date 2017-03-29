@@ -26,6 +26,8 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,19 +40,31 @@ type ConnectionConfig struct {
 	DefaultTimeout time.Duration
 }
 
+// ServerConnectionBuilder specifies a function called by the cluster connection when it
+// needs to create an underlying connection to a specific endpoint.
+type ServerConnectionBuilder func(endpoint string) (driver.Connection, error)
+
 // NewConnection creates a new cluster connection to a cluster of servers.
 // The given connections are existing connections to each of the servers.
-func NewConnection(config ConnectionConfig, servers ...driver.Connection) (driver.Connection, error) {
-	if len(servers) == 0 {
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "Must provide at least 1 server"})
+func NewConnection(config ConnectionConfig, connectionBuilder ServerConnectionBuilder, endpoints []string) (driver.Connection, error) {
+	if connectionBuilder == nil {
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "Must a connection builder"})
+	}
+	if len(endpoints) == 0 {
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "Must provide at least 1 endpoint"})
 	}
 	if config.DefaultTimeout == 0 {
 		config.DefaultTimeout = defaultTimeout
 	}
-	return &clusterConnection{
-		servers:        servers,
-		defaultTimeout: config.DefaultTimeout,
-	}, nil
+	cConn := &clusterConnection{
+		connectionBuilder: connectionBuilder,
+		defaultTimeout:    config.DefaultTimeout,
+	}
+	// Initialize endpoints
+	if err := cConn.UpdateEndpoints(endpoints); err != nil {
+		return nil, driver.WithStack(err)
+	}
+	return cConn, nil
 }
 
 const (
@@ -59,10 +73,12 @@ const (
 )
 
 type clusterConnection struct {
-	servers        []driver.Connection
-	current        int
-	mutex          sync.RWMutex
-	defaultTimeout time.Duration
+	connectionBuilder ServerConnectionBuilder
+	servers           []driver.Connection
+	endpoints         []string
+	current           int
+	mutex             sync.RWMutex
+	defaultTimeout    time.Duration
 }
 
 // NewRequest creates a new request with given method and path.
@@ -179,6 +195,37 @@ func (c *clusterConnection) Endpoints() []string {
 		result = append(result, s.Endpoints()...)
 	}
 	return result
+}
+
+// UpdateEndpoints reconfigures the connection to use the given endpoints.
+func (c *clusterConnection) UpdateEndpoints(endpoints []string) error {
+	if len(endpoints) == 0 {
+		return driver.WithStack(driver.InvalidArgumentError{Message: "Must provide at least 1 endpoint"})
+	}
+	sort.Strings(endpoints)
+	if strings.Join(endpoints, ",") == strings.Join(c.endpoints, ",") {
+		// No changes
+		return nil
+	}
+
+	// Create new connections
+	servers := make([]driver.Connection, 0, len(endpoints))
+	for _, ep := range endpoints {
+		conn, err := c.connectionBuilder(ep)
+		if err != nil {
+			return driver.WithStack(err)
+		}
+		servers = append(servers, conn)
+	}
+
+	// Swap connections
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.servers = servers
+	c.endpoints = endpoints
+	c.current = 0
+
+	return nil
 }
 
 // getCurrentServer returns the currently used server.

@@ -196,6 +196,14 @@ func (c *authenticatedConnection) Endpoints() []string {
 	return c.conn.Endpoints()
 }
 
+// UpdateEndpoints reconfigures the connection to use the given endpoints.
+func (c *authenticatedConnection) UpdateEndpoints(endpoints []string) error {
+	if err := c.conn.UpdateEndpoints(endpoints); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // prepare calls Authentication.Prepare if needed.
 func (c *authenticatedConnection) prepare(ctx context.Context) error {
 	c.prepareMutex.Lock()

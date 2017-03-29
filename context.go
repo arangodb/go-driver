@@ -26,6 +26,8 @@ import (
 	"context"
 	"reflect"
 	"strconv"
+
+	"github.com/arangodb/go-driver/util"
 )
 
 const (
@@ -82,6 +84,7 @@ func WithDetails(parent context.Context, value ...bool) context.Context {
 // If you specify an endpoint like this, failover is disabled.
 // If you specify an unknown endpoint, an InvalidArgumentError is returned from requests.
 func WithEndpoint(parent context.Context, endpoint string) context.Context {
+	endpoint = util.FixupEndpointURLScheme(endpoint)
 	return context.WithValue(contextOrBackground(parent), keyEndpoint, endpoint)
 }
 

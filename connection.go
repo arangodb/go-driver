@@ -41,6 +41,9 @@ type Connection interface {
 
 	// Endpoints returns the endpoints used by this connection.
 	Endpoints() []string
+
+	// UpdateEndpoints reconfigures the connection to use the given endpoints.
+	UpdateEndpoints(endpoints []string) error
 }
 
 // Request represents the input to a request on the server.

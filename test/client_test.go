@@ -28,11 +28,16 @@ import (
 	httplib "net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
+)
+
+var (
+	logEndpointsOnce sync.Once
 )
 
 // skipBelowVersion skips the test if the current server version is less than
@@ -113,6 +118,14 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		defer cancel()
 		if up := waitUntilServerAvailable(ctx, c, t); !up {
 			t.Fatalf("Connection is not available in %s", timeout)
+		}
+		// Synchronize endpoints
+		if err := c.SynchronizeEndpoints(context.Background()); err != nil {
+			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
+		} else {
+			logEndpointsOnce.Do(func() {
+				t.Logf("Found endpoints: %v", conn.Endpoints())
+			})
 		}
 	}
 	return c

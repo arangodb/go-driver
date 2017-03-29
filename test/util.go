@@ -35,6 +35,8 @@ type testEnv interface {
 	Errorf(format string, args ...interface{})
 	Fatal(message ...interface{})
 	Fatalf(format string, args ...interface{})
+	Log(message ...interface{})
+	Logf(format string, args ...interface{})
 }
 
 // boolRef returns a reference to a given boolean

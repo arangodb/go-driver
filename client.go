@@ -22,13 +22,24 @@
 
 package driver
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Client provides access to a single arangodb database server, or an entire cluster of arangodb servers.
 type Client interface {
 	// Version returns version information from the connected database server.
 	// Use WithDetails to configure a context that will include additional details in the return VersionInfo.
 	Version(ctx context.Context) (VersionInfo, error)
+
+	// SynchronizeEndpoints fetches all endpoints from an ArangoDB cluster and updates the
+	// connection to use those endpoints.
+	// When this client is connected to a single server, nothing happens.
+	// When this client is connected to a cluster of servers, the connection will be updated to reflect
+	// the layout of the cluster.
+	// This function requires ArangoDB 3.1.15 or up.
+	SynchronizeEndpoints(ctx context.Context) error
 
 	// Database functions
 	ClientDatabases
@@ -44,6 +55,11 @@ type ClientConfig struct {
 	Connection Connection
 	// Authentication implements authentication on the server.
 	Authentication Authentication
+	// SynchronizeEndpointsInterval is the interval between automatisch synchronization of endpoints.
+	// If this value is 0, no automatic synchronization is performed.
+	// If this value is > 0, automatic synchronization is started on a go routine.
+	// This feature requires ArangoDB 3.1.15 or up.
+	SynchronizeEndpointsInterval time.Duration
 }
 
 // VersionInfo describes the version of a database server.
