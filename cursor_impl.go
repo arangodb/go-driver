@@ -145,7 +145,8 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 	c.resultIndex++
 	var meta DocumentMeta
 	if err := c.conn.Unmarshal(*c.Result[index], &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		// If a cursor returns something other than a document, this will fail.
+		// Just ignore it.
 	}
 	if err := c.conn.Unmarshal(*c.Result[index], result); err != nil {
 		return DocumentMeta{}, WithStack(err)
