@@ -127,6 +127,12 @@ func TestCreateCursor(t *testing.T) {
 			BindVars:      map[string]interface{}{"maxage": 20},
 			ExpectSuccess: false, // `@maxage` versus `@maxAge`
 		},
+		queryTest{
+			Query:             "FOR u IN users SORT u.age RETURN u.age",
+			ExpectedDocuments: []interface{}{12, 13, 25, 42, 67},
+			DocumentType:      reflect.TypeOf(12),
+			ExpectSuccess:     true,
+		},
 	}
 
 	// Setup context alternatives
