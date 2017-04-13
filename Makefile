@@ -38,6 +38,7 @@ $(GOBUILDDIR):
 	@rm -f $(REPODIR) && ln -s ../../../.. $(REPODIR)
 
 DBCONTAINER := $(PROJECT)-test-db
+TESTCONTAINER := $(PROJECT)-test
 
 run-tests: run-tests-http run-tests-single run-test-cluster
 
@@ -56,12 +57,12 @@ run-tests-single: run-tests-single-with-auth run-tests-single-no-auth
 
 run-tests-single-no-auth: $(GOBUILDDIR)
 	@echo "Single server, no authentication"
-	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
 	@docker run -d --name $(DBCONTAINER) \
 		-e ARANGO_NO_AUTH=1 \
 		$(ARANGODB)
 	@docker run \
-		--rm \
+		--name=$(TESTCONTAINER) \
 		--net=container:$(DBCONTAINER) \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
@@ -69,16 +70,17 @@ run-tests-single-no-auth: $(GOBUILDDIR)
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/test
-	docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@docker rm -f -v $(DBCONTAINER) &> /dev/null
 
 run-tests-single-with-auth: $(GOBUILDDIR)
 	@echo "Single server, with authentication"
-	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
 	@docker run -d --name $(DBCONTAINER) \
 		-e ARANGO_ROOT_PASSWORD=rootpw \
 		$(ARANGODB)
 	@docker run \
-		--rm \
+		--name=$(TESTCONTAINER) \
 		--net=container:$(DBCONTAINER) \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
@@ -87,7 +89,8 @@ run-tests-single-with-auth: $(GOBUILDDIR)
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -tags auth $(TESTOPTIONS) $(REPOPATH)/test
-	docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@docker rm -f -v $(DBCONTAINER) &> /dev/null
 
 # Cluster mode tests
 run-tests-cluster: run-tests-cluster-no-auth run-tests-cluster-with-auth run-tests-cluster-ssl
@@ -161,12 +164,12 @@ run-tests-cluster-cleanup:
 # Benchmarks
 run-benchmarks-single-no-auth: $(GOBUILDDIR)
 	@echo "Single server, no authentication"
-	@-docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
 	@docker run -d --name $(DBCONTAINER) \
 		-e ARANGO_NO_AUTH=1 \
 		$(ARANGODB)
 	@docker run \
-		--rm \
+		--name=$(TESTCONTAINER) \
 		--net=container:$(DBCONTAINER) \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
@@ -174,4 +177,5 @@ run-benchmarks-single-no-auth: $(GOBUILDDIR)
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TESTOPTIONS) -bench=. -run=notests -cpu=1,2,4 $(REPOPATH)/test
-	docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@docker rm -f -v $(DBCONTAINER) &> /dev/null
