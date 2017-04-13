@@ -72,6 +72,7 @@ run-tests-single-no-auth: $(GOBUILDDIR)
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/test
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@sleep 3
 
 run-tests-single-with-auth: $(GOBUILDDIR)
 	@echo "Single server, with authentication"
@@ -91,6 +92,7 @@ run-tests-single-with-auth: $(GOBUILDDIR)
 		go test -tags auth $(TESTOPTIONS) $(REPOPATH)/test
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@sleep 3
 
 # Cluster mode tests
 run-tests-cluster: run-tests-cluster-no-auth run-tests-cluster-with-auth run-tests-cluster-ssl
@@ -179,3 +181,4 @@ run-benchmarks-single-no-auth: $(GOBUILDDIR)
 		go test $(TESTOPTIONS) -bench=. -run=notests -cpu=1,2,4 $(REPOPATH)/test
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@sleep 3
