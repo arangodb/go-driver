@@ -69,8 +69,7 @@ run-tests-single-no-auth: $(GOBUILDDIR)
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/test
-	@sleep 2
-	@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	docker rm -f -v $(DBCONTAINER) &> /dev/null
 
 run-tests-single-with-auth: $(GOBUILDDIR)
 	@echo "Single server, with authentication"
@@ -88,8 +87,7 @@ run-tests-single-with-auth: $(GOBUILDDIR)
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -tags auth $(TESTOPTIONS) $(REPOPATH)/test
-	@sleep 2
-	@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	docker rm -f -v $(DBCONTAINER) &> /dev/null
 
 # Cluster mode tests
 run-tests-cluster: run-tests-cluster-no-auth run-tests-cluster-with-auth run-tests-cluster-ssl
@@ -176,5 +174,4 @@ run-benchmarks-single-no-auth: $(GOBUILDDIR)
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TESTOPTIONS) -bench=. -run=notests -cpu=1,2,4 $(REPOPATH)/test
-	@sleep 2
-	@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	docker rm -f -v $(DBCONTAINER) &> /dev/null
