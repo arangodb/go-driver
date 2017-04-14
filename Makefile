@@ -40,7 +40,7 @@ $(GOBUILDDIR):
 DBCONTAINER := $(PROJECT)-test-db
 TESTCONTAINER := $(PROJECT)-test
 
-run-tests: run-tests-http run-tests-single run-test-cluster
+run-tests: run-tests-http run-tests-single run-tests-cluster
 
 # Tests of HTTP package 
 run-tests-http: $(GOBUILDDIR)
