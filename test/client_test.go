@@ -62,6 +62,20 @@ func getEndpointsFromEnv(t testEnv) []string {
 	return eps
 }
 
+// getContentTypeFromEnv returns the content-type specified in the TEST_CONTENT_TYPE
+// environment variable (json|vpack).
+func getContentTypeFromEnv(t testEnv) driver.ContentType {
+	switch ct := os.Getenv("TEST_CONTENT_TYPE"); ct {
+	case "vpack":
+		return driver.ContentTypeVelocypack
+	case "json", "":
+		return driver.ContentTypeJSON
+	default:
+		t.Fatalf("Unknown content type '%s'", ct)
+		return 0
+	}
+}
+
 // createAuthenticationFromEnv initializes an authentication specified in the TEST_AUTHENTICATION
 // environment variable.
 func createAuthenticationFromEnv(t testEnv) driver.Authentication {
@@ -92,7 +106,7 @@ func createConnectionFromEnv(t testEnv) driver.Connection {
 	config := http.ConnectionConfig{
 		Endpoints:   getEndpointsFromEnv(t),
 		TLSConfig:   &tls.Config{InsecureSkipVerify: true},
-		ContentType: http.ContentTypeVelocypack,
+		ContentType: getContentTypeFromEnv(t),
 	}
 	conn, err := http.NewConnection(config)
 	if err != nil {
@@ -146,7 +160,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) b
 				return
 			} else {
 				cancel()
-				t.Logf("Version failed: %s %#v", describe(err), err)
+				//t.Logf("Version failed: %s %#v", describe(err), err)
 				time.Sleep(time.Second)
 			}
 		}

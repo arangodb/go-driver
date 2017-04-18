@@ -133,21 +133,13 @@ func (r *httpVPackRequest) SetBodyImportArray(bodyArray interface{}) (driver.Req
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
 	}
 	// Render elements
-	elementCount := bodyArrayVal.Len()
 	buf := &bytes.Buffer{}
 	encoder := velocypack.NewEncoder(buf)
-	for i := 0; i < elementCount; i++ {
-		entryVal := bodyArrayVal.Index(i)
-		if isNil(entryVal) {
-			buf.Write(velocypack.NullSlice())
-			//buf.WriteString("\n")
-		} else {
-			if err := encoder.Encode(entryVal.Interface()); err != nil {
-				return nil, driver.WithStack(err)
-			}
-		}
+	if err := encoder.Encode(bodyArray); err != nil {
+		return nil, driver.WithStack(err)
 	}
 	r.body = buf.Bytes()
+	r.SetQuery("type", "list")
 	return r, nil
 }
 

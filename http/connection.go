@@ -59,7 +59,7 @@ type ConnectionConfig struct {
 	// Cluster configuration settings
 	cluster.ConnectionConfig
 	// ContentType specified type of content encoding to use.
-	ContentType ContentType
+	ContentType driver.ContentType
 }
 
 // NewConnection creates a new HTTP connection based on the given configuration settings.
@@ -107,7 +107,7 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 // httpConnection implements an HTTP + JSON connection to an arangodb server.
 type httpConnection struct {
 	endpoint    url.URL
-	contentType ContentType
+	contentType driver.ContentType
 	client      *http.Client
 }
 
@@ -125,17 +125,17 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
 	ct := c.contentType
-	if strings.Contains(path, "gharial") || strings.Contains(path, "import") {
-		ct = ContentTypeJSON
+	if strings.Contains(path, "gharial") /*|| strings.Contains(path, "import")*/ {
+		ct = driver.ContentTypeJSON
 	}
 	switch ct {
-	case ContentTypeJSON:
+	case driver.ContentTypeJSON:
 		r := &httpJSONRequest{
 			method: method,
 			path:   path,
 		}
 		return r, nil
-	case ContentTypeVelocypack:
+	case driver.ContentTypeVelocypack:
 		r := &httpVPackRequest{
 			method: method,
 			path:   path,
@@ -202,15 +202,19 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 // Unmarshal unmarshals the given raw object into the given result interface.
 func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) error {
 	ct := c.contentType
-	if len(data) >= 2 && data[0] == '{' && data[len(data)-1] == '}' {
-		ct = ContentTypeJSON
+	if ct == driver.ContentTypeVelocypack && len(data) >= 2 {
+		// Poor mans auto detection of json
+		l := len(data)
+		if (data[0] == '{' && data[l-1] == '}') || (data[0] == '[' && data[l-1] == ']') {
+			ct = driver.ContentTypeJSON
+		}
 	}
 	switch ct {
-	case ContentTypeJSON:
+	case driver.ContentTypeJSON:
 		if err := json.Unmarshal(data, result); err != nil {
 			return driver.WithStack(err)
 		}
-	case ContentTypeVelocypack:
+	case driver.ContentTypeVelocypack:
 		//panic(velocypack.Slice(data))
 		if err := velocypack.Unmarshal(velocypack.Slice(data), result); err != nil {
 			return driver.WithStack(err)
