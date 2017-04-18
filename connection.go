@@ -26,6 +26,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
+	velocypack "github.com/arangodb/go-velocypack"
 )
 
 // Connection is a connenction to a database server using a specific protocol.
@@ -111,3 +113,23 @@ func (r *RawObject) UnmarshalJSON(data []byte) error {
 // Ensure RawObject implements json.Marshaler & json.Unmarshaler
 var _ json.Marshaler = (*RawObject)(nil)
 var _ json.Unmarshaler = (*RawObject)(nil)
+
+// MarshalVPack returns m as the Velocypack encoding of m.
+func (r RawObject) MarshalVPack() (velocypack.Slice, error) {
+	if r == nil {
+		return velocypack.NullSlice(), nil
+	}
+	return velocypack.Slice(r), nil
+}
+
+// UnmarshalVPack sets *m to a copy of data.
+func (r *RawObject) UnmarshalVPack(data velocypack.Slice) error {
+	if r == nil {
+		return errors.New("velocypack.RawSlice: UnmarshalVPack on nil pointer")
+	}
+	*r = append((*r)[0:0], data...)
+	return nil
+}
+
+var _ velocypack.Marshaler = (*RawObject)(nil)
+var _ velocypack.Unmarshaler = (*RawObject)(nil)
