@@ -113,19 +113,17 @@ func (r *httpVPackResponse) ParseArrayBody() ([]driver.Response, error) {
 			return nil, driver.WithStack(err)
 		}
 
-		bodyArray := make([]driver.Response, l)
+		bodyArray := make([]driver.Response, 0, l)
 		it, err := velocypack.NewArrayIterator(slice)
 		if err != nil {
 			return nil, driver.WithStack(err)
 		}
-		i := 0
 		for it.IsValid() {
 			v, err := it.Value()
 			if err != nil {
 				return nil, driver.WithStack(err)
 			}
-			bodyArray[i] = &httpVPackResponseElement{slice: v}
-			i++
+			bodyArray = append(bodyArray, &httpVPackResponseElement{slice: v})
 			it.Next()
 		}
 		r.bodyArray = bodyArray
@@ -147,6 +145,7 @@ func (r *httpVPackResponse) getSlice() (velocypack.Slice, error) {
 			*r.rawResponse = content
 		}
 		r.slice = velocypack.Slice(content)
+		//fmt.Println(r.slice)
 	}
 	return r.slice, nil
 }

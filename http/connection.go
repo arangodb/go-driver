@@ -30,10 +30,12 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"strings"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/cluster"
 	"github.com/arangodb/go-driver/util"
+	velocypack "github.com/arangodb/go-velocypack"
 )
 
 const (
@@ -122,9 +124,19 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 	default:
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
-	switch c.contentType {
+	ct := c.contentType
+	if strings.Contains(path, "gharial") || strings.Contains(path, "import") {
+		ct = ContentTypeJSON
+	}
+	switch ct {
 	case ContentTypeJSON:
 		r := &httpJSONRequest{
+			method: method,
+			path:   path,
+		}
+		return r, nil
+	case ContentTypeVelocypack:
+		r := &httpVPackRequest{
 			method: method,
 			path:   path,
 		}
@@ -146,7 +158,9 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		rctx = context.Background()
 	}
 	rctx = httptrace.WithClientTrace(rctx, &httptrace.ClientTrace{
-		WroteRequest: httpReq.WroteRequest,
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			httpReq.WroteRequest(info)
+		},
 	})
 	r = r.WithContext(rctx)
 	if err != nil {
@@ -165,10 +179,13 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		}
 	}
 
+	ct := resp.Header.Get("Content-Type")
 	var httpResp driver.Response
-	switch ct := resp.Header.Get("Content-Type"); ct {
+	switch strings.Split(ct, ";")[0] {
 	case "application/json":
 		httpResp = &httpJSONResponse{resp: resp, rawResponse: rawResponse}
+	case "application/x-velocypack":
+		httpResp = &httpVPackResponse{resp: resp, rawResponse: rawResponse}
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
 	}
@@ -184,8 +201,22 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 
 // Unmarshal unmarshals the given raw object into the given result interface.
 func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) error {
-	if err := json.Unmarshal(data, result); err != nil {
-		return driver.WithStack(err)
+	ct := c.contentType
+	if len(data) >= 2 && data[0] == '{' && data[len(data)-1] == '}' {
+		ct = ContentTypeJSON
+	}
+	switch ct {
+	case ContentTypeJSON:
+		if err := json.Unmarshal(data, result); err != nil {
+			return driver.WithStack(err)
+		}
+	case ContentTypeVelocypack:
+		//panic(velocypack.Slice(data))
+		if err := velocypack.Unmarshal(velocypack.Slice(data), result); err != nil {
+			return driver.WithStack(err)
+		}
+	default:
+		return driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
 	}
 	return nil
 }

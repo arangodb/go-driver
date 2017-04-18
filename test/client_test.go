@@ -89,10 +89,12 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 
 // createConnectionFromEnv initializes a Connection from information specified in environment variables.
 func createConnectionFromEnv(t testEnv) driver.Connection {
-	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: getEndpointsFromEnv(t),
-		TLSConfig: &tls.Config{InsecureSkipVerify: true},
-	})
+	config := http.ConnectionConfig{
+		Endpoints:   getEndpointsFromEnv(t),
+		TLSConfig:   &tls.Config{InsecureSkipVerify: true},
+		ContentType: http.ContentTypeVelocypack,
+	}
+	conn, err := http.NewConnection(config)
 	if err != nil {
 		t.Fatalf("Failed to create new http connection: %s", describe(err))
 	}
@@ -113,7 +115,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
 	if waitUntilReady {
-		timeout := time.Second * 10
+		timeout := time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if up := waitUntilServerAvailable(ctx, c, t); !up {
@@ -138,6 +140,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) b
 		for {
 			verCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 			if _, err := c.Version(verCtx); err == nil {
+				//t.Logf("Found version %s", v.Version)
 				cancel()
 				instanceUp <- true
 				return
