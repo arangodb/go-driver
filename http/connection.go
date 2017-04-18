@@ -56,6 +56,8 @@ type ConnectionConfig struct {
 	Transport http.RoundTripper
 	// Cluster configuration settings
 	cluster.ConnectionConfig
+	// ContentType specified type of content encoding to use.
+	ContentType ContentType
 }
 
 // NewConnection creates a new HTTP connection based on the given configuration settings.
@@ -91,7 +93,8 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 		httpTransport.TLSClientConfig = config.TLSConfig
 	}
 	c := &httpConnection{
-		endpoint: *u,
+		endpoint:    *u,
+		contentType: config.ContentType,
 		client: &http.Client{
 			Transport: config.Transport,
 		},
@@ -101,8 +104,9 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 
 // httpConnection implements an HTTP + JSON connection to an arangodb server.
 type httpConnection struct {
-	endpoint url.URL
-	client   *http.Client
+	endpoint    url.URL
+	contentType ContentType
+	client      *http.Client
 }
 
 // String returns the endpoint as string
@@ -118,16 +122,21 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 	default:
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
-	r := &httpRequest{
-		method: method,
-		path:   path,
+	switch c.contentType {
+	case ContentTypeJSON:
+		r := &httpJSONRequest{
+			method: method,
+			path:   path,
+		}
+		return r, nil
+	default:
+		return nil, driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
 	}
-	return r, nil
 }
 
 // Do performs a given request, returning its response.
 func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
-	httpReq, ok := req.(*httpRequest)
+	httpReq, ok := req.(httpRequest)
 	if !ok {
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest"})
 	}
@@ -156,7 +165,13 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		}
 	}
 
-	httpResp := &httpResponse{resp: resp, rawResponse: rawResponse}
+	var httpResp driver.Response
+	switch ct := resp.Header.Get("Content-Type"); ct {
+	case "application/json":
+		httpResp = &httpJSONResponse{resp: resp, rawResponse: rawResponse}
+	default:
+		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
+	}
 	if ctx != nil {
 		if v := ctx.Value(keyResponse); v != nil {
 			if respPtr, ok := v.(*driver.Response); ok {

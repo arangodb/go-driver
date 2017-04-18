@@ -36,6 +36,7 @@ clean:
 $(GOBUILDDIR):
 	@mkdir -p $(ORGDIR)
 	@rm -f $(REPODIR) && ln -s ../../../.. $(REPODIR)
+	GOPATH=$(GOBUILDDIR) go get github.com/arangodb/go-velocypack
 
 DBCONTAINER := $(PROJECT)-test-db
 TESTCONTAINER := $(PROJECT)-test

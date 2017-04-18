@@ -113,7 +113,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
 	if waitUntilReady {
-		timeout := time.Minute
+		timeout := time.Second * 10
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if up := waitUntilServerAvailable(ctx, c, t); !up {
@@ -143,7 +143,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) b
 				return
 			} else {
 				cancel()
-				//t.Logf("Version failed: %s", describe(err))
+				t.Logf("Version failed: %s %#v", describe(err), err)
 				time.Sleep(time.Second)
 			}
 		}

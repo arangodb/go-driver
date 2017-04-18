@@ -22,17 +22,25 @@
 
 package http
 
-import (
-	"net/http"
-	"net/http/httptrace"
-	"net/url"
+import "fmt"
+
+// ContentType identifies the type of encoding to use for the data.
+type ContentType int
+
+const (
+	// ContentTypeJSON encodes data as json
+	ContentTypeJSON ContentType = iota
+	// ContentTypeVelocypack encodes data as Velocypack
+	ContentTypeVelocypack
 )
 
-// httpRequest implements driver.Request using standard golang http requests.
-type httpRequest interface {
-	// createHTTPRequest creates a golang http.Request based on the configured arguments.
-	createHTTPRequest(endpoint url.URL) (*http.Request, error)
-	// WroteRequest implements the WroteRequest function of an httptrace.
-	// It sets written to true.
-	WroteRequest(httptrace.WroteRequestInfo)
+func (ct ContentType) String() string {
+	switch ct {
+	case ContentTypeJSON:
+		return "application/json"
+	case ContentTypeVelocypack:
+		return "application/x-velocypack"
+	default:
+		panic(fmt.Sprintf("Unknown content type %d", int(ct)))
+	}
 }
