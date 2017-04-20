@@ -24,6 +24,9 @@ package driver
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -73,4 +76,18 @@ type VersionInfo struct {
 	License string `json:"license,omitempty"`
 	// Optional additional details. This is returned only if the context is configured using WithDetails.
 	Details map[string]interface{} `json:"details,omitempty"`
+}
+
+// String creates a string representation of the given VersionInfo.
+func (v VersionInfo) String() string {
+	result := fmt.Sprintf("%s, version %s, license %s", v.Server, v.Version, v.License)
+	if len(v.Details) > 0 {
+		lines := make([]string, 0, len(v.Details))
+		for k, v := range v.Details {
+			lines = append(lines, fmt.Sprintf("%s: %v", k, v))
+		}
+		sort.Strings(lines)
+		result = result + "\n" + strings.Join(lines, "\n")
+	}
+	return result
 }
