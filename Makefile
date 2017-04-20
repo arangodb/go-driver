@@ -106,7 +106,7 @@ run-tests-cluster-no-auth: $(GOBUILDDIR)
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh start
 	docker run \
 		--rm \
-		--net=host \
+		--net=container:$(TESTCONTAINER)-ns \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=http://localhost:7002 \
@@ -120,7 +120,7 @@ run-tests-cluster-with-auth: $(GOBUILDDIR)
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) TMPDIR=${GOBUILDDIR} JWTSECRET=testing $(ROOTDIR)/test/cluster.sh start
 	docker run \
 		--rm \
-		--net=host \
+		--net=container:$(TESTCONTAINER)-ns \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=http://localhost:7002 \
@@ -135,7 +135,7 @@ run-tests-cluster-ssl: $(GOBUILDDIR)
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) SSL=auto TMPDIR=${GOBUILDDIR} JWTSECRET=testing $(ROOTDIR)/test/cluster.sh start
 	docker run \
 		--rm \
-		--net=host \
+		--net=container:$(TESTCONTAINER)-ns \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=https://localhost:7002 \
@@ -153,7 +153,7 @@ run-tests-cluster-failover: $(GOBUILDDIR)
 	GOPATH=$(GOBUILDDIR) go get github.com/coreos/go-iptables/iptables
 	docker run \
 		--rm \
-		--net=host \
+		--net=container:$(TESTCONTAINER)-ns \
 		--privileged \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
