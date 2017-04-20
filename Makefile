@@ -46,10 +46,10 @@ ifeq ("$(TEST_MODE)", "single")
 else 
 	TEST_NET := host
 	TEST_ENDPOINTS := http://localhost:7002
+	TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
 	TEST_AUTHENTICATION := basic:root:
-	TESTS := $(REPOPATH)/test
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
