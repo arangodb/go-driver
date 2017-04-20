@@ -49,7 +49,7 @@ ifeq ("$(TEST_MODE)", "single")
 	TEST_NET := container:$(DBCONTAINER)
 	TEST_ENDPOINTS := http://localhost:8529
 else 
-	TEST_NET := host
+	TEST_NET := container:$(TESTCONTAINER)-ns
 	TEST_ENDPOINTS := http://localhost:7002
 	TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
@@ -193,7 +193,7 @@ run-tests-cluster-failover: $(GOBUILDDIR)
 	GOPATH=$(GOBUILDDIR) go get github.com/coreos/go-iptables/iptables
 	docker run \
 		--rm \
-		--net=host \
+		--net=container:$(TESTCONTAINER)-ns \
 		--privileged \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \

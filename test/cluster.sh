@@ -5,6 +5,7 @@ if [ -z "$TESTCONTAINER" ]; then
     exit 1 
 fi
 
+NAMESPACE=${TESTCONTAINER}-ns
 STARTERVOLUME1=${TESTCONTAINER}-vol1
 STARTERVOLUME2=${TESTCONTAINER}-vol2
 STARTERVOLUME3=${TESTCONTAINER}-vol3
@@ -45,14 +46,18 @@ if [ "$CMD" == "start" ]; then
         STARTERARGS="$STARTERARGS --sslAutoKeyFile"
     fi
 
+    # Start network namespace
+    docker run -d --name=${NAMESPACE} alpine:3.4 sleep 365d
+
     # Start starters 
-    docker run -d --name=${STARTERCONTAINER1} --net=host \
+    # arangodb/arangodb-starter 0.6.0 or higher is needed.
+    docker run -d --name=${STARTERCONTAINER1} --net=container:${NAMESPACE} \
         -v ${STARTERVOLUME1}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS arangodb/arangodb-starter \
-        --dockerContainer=${STARTERCONTAINER1} --dockerNetHost --masterPort=7000 --ownAddress=127.0.0.1 --docker=${ARANGODB} $STARTERARGS
-    docker run -d --name=${STARTERCONTAINER2} --net=host \
+        --dockerContainer=${STARTERCONTAINER1} --masterPort=7000 --ownAddress=127.0.0.1 --docker=${ARANGODB} $STARTERARGS
+    docker run -d --name=${STARTERCONTAINER2} --net=container:${NAMESPACE} \
         -v ${STARTERVOLUME2}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS arangodb/arangodb-starter \
-        --dockerContainer=${STARTERCONTAINER2} --dockerNetHost --masterPort=7000 --ownAddress=127.0.0.1 --docker=${ARANGODB} $STARTERARGS --join=127.0.0.1
-    docker run -d --name=${STARTERCONTAINER3} --net=host \
+        --dockerContainer=${STARTERCONTAINER2} --masterPort=7000 --ownAddress=127.0.0.1 --docker=${ARANGODB} $STARTERARGS --join=127.0.0.1
+    docker run -d --name=${STARTERCONTAINER3} --net=container:${NAMESPACE} \
         -v ${STARTERVOLUME3}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS arangodb/arangodb-starter \
-        --dockerContainer=${STARTERCONTAINER3} --dockerNetHost --masterPort=7000 --ownAddress=127.0.0.1 --docker=${ARANGODB} $STARTERARGS --join=127.0.0.1
+        --dockerContainer=${STARTERCONTAINER3} --masterPort=7000 --ownAddress=127.0.0.1 --docker=${ARANGODB} $STARTERARGS --join=127.0.0.1
 fi
