@@ -49,6 +49,7 @@ else
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
 	TEST_AUTHENTICATION := basic:root:
+	TESTS := $(REPOPATH)/test
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
