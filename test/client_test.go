@@ -199,4 +199,9 @@ func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
 	if up := waitUntilServerAvailable(ctx, c, t); !up {
 		t.Fatalf("Connection is not available in %s", timeout)
 	}
+	if info, err := c.Version(driver.WithDetails(ctx)); err != nil {
+		t.Errorf("Version failed: %s", describe(err))
+	} else {
+		t.Logf("Got server version %s", info)
+	}
 }
