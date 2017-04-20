@@ -23,6 +23,13 @@ REPOPATH := $(ORGPATH)/$(REPONAME)
 
 SOURCES := $(shell find . -name '*.go')
 
+ifndef TESTCONTAINER
+	TESTCONTAINER := $(PROJECT)-test
+endif
+ifndef DBCONTAINER
+	DBCONTAINER := $(TESTCONTAINER)-db
+endif
+
 .PHONY: all build clean run-tests
 
 all: build
@@ -36,9 +43,6 @@ clean:
 $(GOBUILDDIR):
 	@mkdir -p $(ORGDIR)
 	@rm -f $(REPODIR) && ln -s ../../../.. $(REPODIR)
-
-DBCONTAINER := $(PROJECT)-test-db
-TESTCONTAINER := $(PROJECT)-test
 
 run-tests: run-tests-http run-tests-single run-tests-cluster
 
@@ -58,7 +62,7 @@ run-tests-single: run-tests-single-with-auth run-tests-single-no-auth
 run-tests-single-no-auth: $(GOBUILDDIR)
 	@echo "Single server, no authentication"
 	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
-	@docker run -d --name $(DBCONTAINER) \
+	docker run -d --name $(DBCONTAINER) \
 		-e ARANGO_NO_AUTH=1 \
 		$(ARANGODB)
 	@docker run \
