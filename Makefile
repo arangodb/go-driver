@@ -129,7 +129,7 @@ run-tests-cluster-json-no-auth: $(GOBUILDDIR)
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="json" __run_tests
 
 run-tests-cluster-vpack-no-auth: $(GOBUILDDIR)
-	@echo "Cluster server, Velocpack, no authentication"
+	@echo "Cluster server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" __run_tests
 
 run-tests-cluster-json-with-auth: $(GOBUILDDIR)
