@@ -8,6 +8,7 @@ GOVERSION := 1.8-alpine
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:3.1.17
 	#ARANGODB := neunhoef/arangodb:3.2.devel-1
+	#ARANGODB := arangodb/arangodb-preview:3.2.devel
 endif
 
 TESTOPTIONS := 
