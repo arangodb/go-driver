@@ -125,7 +125,8 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
 	ct := c.contentType
-	if strings.Contains(path, "gharial") /*|| strings.Contains(path, "import")*/ {
+	if ct != driver.ContentTypeJSON && strings.Contains(path, "_api/gharial") {
+		// Currently (3.1.17) calls to this API do not work well with vpack.
 		ct = driver.ContentTypeJSON
 	}
 	switch ct {
