@@ -1,22 +1,22 @@
 #!/bin/bash 
 
-if [ -z "$PROJECT" ]; then 
-    echo "PROJECT environment variable must be set"
+if [ -z "$TESTCONTAINER" ]; then 
+    echo "TESTCONTAINER environment variable must be set"
     exit 1 
 fi
 
-STARTERVOLUME1=${PROJECT}-test-vol1
-STARTERVOLUME2=${PROJECT}-test-vol2
-STARTERVOLUME3=${PROJECT}-test-vol3
-STARTERCONTAINER1=${PROJECT}-test-s1
-STARTERCONTAINER2=${PROJECT}-test-s2
-STARTERCONTAINER3=${PROJECT}-test-s3
+STARTERVOLUME1=${TESTCONTAINER}-vol1
+STARTERVOLUME2=${TESTCONTAINER}-vol2
+STARTERVOLUME3=${TESTCONTAINER}-vol3
+STARTERCONTAINER1=${TESTCONTAINER}-s1
+STARTERCONTAINER2=${TESTCONTAINER}-s2
+STARTERCONTAINER3=${TESTCONTAINER}-s3
 CMD=$1
 DOCKERARGS=
 STARTERARGS=
 
 # Cleanup
-docker rm -f -v $(docker ps -a | grep ${PROJECT}-test | awk '{print $1}') &> /dev/null
+docker rm -f -v $(docker ps -a | grep ${TESTCONTAINER} | awk '{print $1}') &> /dev/null
 docker volume rm -f ${STARTERVOLUME1} ${STARTERVOLUME2} ${STARTERVOLUME3} &> /dev/null
 
 if [ "$CMD" == "start" ]; then
@@ -36,7 +36,7 @@ if [ "$CMD" == "start" ]; then
             echo "TMPDIR environment variable must be set"
             exit 1 
         fi
-        JWTSECRETFILE="$TMPDIR/$PROJECT-jwtsecret"
+        JWTSECRETFILE="$TMPDIR/$TESTCONTAINER-jwtsecret"
         echo "$JWTSECRET" > ${JWTSECRETFILE}
         DOCKERARGS="$DOCKERARGS -v $JWTSECRETFILE:/jwtsecret:ro"
         STARTERARGS="$STARTERARGS --jwtSecretFile=/jwtsecret"

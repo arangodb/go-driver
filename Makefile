@@ -172,7 +172,7 @@ ifeq ("$(TEST_MODE)", "single")
 		$(ARANGODB)
 else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
-	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
 endif
 
 __test_cleanup:
@@ -180,7 +180,7 @@ __test_cleanup:
 ifeq ("$(TEST_MODE)", "single")
 	@docker rm -f -v $(DBCONTAINER) &> /dev/null
 else
-	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 endif
 	@sleep 3
 
@@ -189,7 +189,7 @@ run-tests-cluster-failover: $(GOBUILDDIR)
 	# Note that we use 127.0.0.1:7002.. as endpoints, so we force using IPv4
 	# This is essential since we only block IPv4 ports in the test.
 	@echo "Cluster server, failover, no authentication"
-	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh start
 	GOPATH=$(GOBUILDDIR) go get github.com/coreos/go-iptables/iptables
 	docker run \
 		--rm \
@@ -202,10 +202,10 @@ run-tests-cluster-failover: $(GOBUILDDIR)
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		/bin/sh -c 'apk add -U iptables && go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test'
-	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 
 run-tests-cluster-cleanup:
-	@PROJECT=$(PROJECT) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 
