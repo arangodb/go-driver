@@ -26,8 +26,12 @@ SOURCES := $(shell find . -name '*.go')
 
 # Test variables
 
-DBCONTAINER := $(PROJECT)-test-db
-TESTCONTAINER := $(PROJECT)-test
+ifndef TESTCONTAINER
+	TESTCONTAINER := $(PROJECT)-test
+endif
+ifndef DBCONTAINER
+	DBCONTAINER := $(TESTCONTAINER)-db
+endif 
 
 ifeq ("$(TEST_AUTH)", "none")
 	ARANGOENV := -e ARANGO_NO_AUTH=1
