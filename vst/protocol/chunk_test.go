@@ -67,7 +67,7 @@ func TestReadChunk(t *testing.T) {
 			t.Fatalf("Hex decode failed: %#v", err)
 		}
 		r := bytes.NewReader(raw)
-		c, err := ReadChunk(r)
+		c, err := readChunk(r)
 		if err != nil {
 			t.Errorf("ReadChunk for '%s' failed: %#v", test.ChunkHex, err)
 		}
@@ -133,7 +133,7 @@ func TestBuildChunks(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		chunks, err := BuildChunks(test.MessageID, test.MaxChunkSize, test.MessageParts...)
+		chunks, err := buildChunks(test.MessageID, test.MaxChunkSize, test.MessageParts...)
 		if err != nil {
 			t.Fatalf("BuildChunks failed: %#v", err)
 		}

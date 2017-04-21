@@ -30,8 +30,8 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-// Chunk is a part of a larger message.
-type Chunk struct {
+// chunk is a part of a larger message.
+type chunk struct {
 	chunkX        uint32
 	MessageID     uint64
 	MessageLength uint64
@@ -42,11 +42,11 @@ const (
 	chunkHeaderSize = 24
 )
 
-// ReadChunk reads an entire chunk from the given reader.
-func ReadChunk(r io.Reader) (Chunk, error) {
+// readChunk reads an entire chunk from the given reader.
+func readChunk(r io.Reader) (chunk, error) {
 	hdr := [chunkHeaderSize]byte{}
 	if err := readBytes(hdr[:], r); err != nil {
-		return Chunk{}, driver.WithStack(err)
+		return chunk{}, driver.WithStack(err)
 	}
 	le := binary.LittleEndian
 	length := le.Uint32(hdr[0:])
@@ -56,9 +56,9 @@ func ReadChunk(r io.Reader) (Chunk, error) {
 
 	data := make([]byte, length-chunkHeaderSize)
 	if err := readBytes(data, r); err != nil {
-		return Chunk{}, driver.WithStack(err)
+		return chunk{}, driver.WithStack(err)
 	}
-	return Chunk{
+	return chunk{
 		chunkX:        chunkX,
 		MessageID:     messageID,
 		MessageLength: messageLength,
@@ -66,8 +66,8 @@ func ReadChunk(r io.Reader) (Chunk, error) {
 	}, nil
 }
 
-// BuildChunks splits a message consisting of 1 or more parts into chunks.
-func BuildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) ([]Chunk, error) {
+// buildChunks splits a message consisting of 1 or more parts into chunks.
+func buildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) ([]chunk, error) {
 	if maxChunkSize <= chunkHeaderSize {
 		return nil, fmt.Errorf("maxChunkSize is too small (%d)", maxChunkSize)
 	}
@@ -77,7 +77,7 @@ func BuildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) 
 	}
 	minChunkCount := int(messageLength / uint64(maxChunkSize))
 	maxDataLength := int(maxChunkSize - chunkHeaderSize)
-	chunks := make([]Chunk, 0, minChunkCount+len(messageParts))
+	chunks := make([]chunk, 0, minChunkCount+len(messageParts))
 	chunkIndex := uint32(0)
 	for _, m := range messageParts {
 		offset := 0
@@ -91,7 +91,7 @@ func BuildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) 
 			if chunkIndex > 0 {
 				chunkX = chunkIndex << 1
 			}
-			c := Chunk{
+			c := chunk{
 				chunkX:        chunkX,
 				MessageID:     messageID,
 				MessageLength: messageLength,
@@ -126,12 +126,12 @@ func readBytes(dst []byte, r io.Reader) error {
 }
 
 // IsFirst returns true when the "first chunk" flag has been set.
-func (c Chunk) IsFirst() bool {
+func (c chunk) IsFirst() bool {
 	return (c.chunkX & 0x01) == 1
 }
 
 // Index return the index of this chunk in the message.
-func (c Chunk) Index() uint32 {
+func (c chunk) Index() uint32 {
 	if (c.chunkX & 0x01) == 1 {
 		return 0
 	}
@@ -140,7 +140,7 @@ func (c Chunk) Index() uint32 {
 
 // NumberOfChunks return the number of chunks that make up the entire message.
 // This function is only valid for first chunks.
-func (c Chunk) NumberOfChunks() uint32 {
+func (c chunk) NumberOfChunks() uint32 {
 	if (c.chunkX & 0x01) == 1 {
 		return c.chunkX >> 1
 	}
@@ -149,7 +149,7 @@ func (c Chunk) NumberOfChunks() uint32 {
 
 // WriteTo write the chunk to the given writer.
 // An error is returned when less than the entire chunk was written.
-func (c Chunk) WriteTo(w io.Writer) (int64, error) {
+func (c chunk) WriteTo(w io.Writer) (int64, error) {
 	hdr := [chunkHeaderSize]byte{}
 
 	le := binary.LittleEndian
