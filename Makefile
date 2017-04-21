@@ -6,7 +6,7 @@ GOBUILDDIR := $(SCRIPTDIR)/.gobuild
 GOVERSION := 1.8-alpine
 
 ifndef ARANGODB
-	ARANGODB := arangodb/arangodb:3.1.17
+	ARANGODB := arangodb/arangodb:3.1.18
 	#ARANGODB := neunhoef/arangodb:3.2.devel-1
 	#ARANGODB := arangodb/arangodb-preview:3.2.devel
 endif
@@ -62,6 +62,13 @@ ifeq ("$(TEST_SSL)", "auto")
 endif
 endif
 
+ifeq ("$(TEST_CONNECTION)", "vst")
+	TESTS := $(REPOPATH)/test
+ifndef TEST_CONTENT_TYPE
+	TEST_CONTENT_TYPE := vpack
+endif
+endif
+
 ifeq ("$(TEST_BENCHMARK)", "true")
 	TAGS := -bench=. -run=notests -cpu=1,2,4
 	TESTS := $(REPOPATH)/test
@@ -72,7 +79,7 @@ endif
 all: build
 
 build: $(GOBUILDDIR) $(SOURCES)
-	GOPATH=$(GOBUILDDIR) go build -v github.com/arangodb/go-driver github.com/arangodb/go-driver/http
+	GOPATH=$(GOBUILDDIR) go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst
 
 clean:
 	rm -Rf $(GOBUILDDIR)
@@ -108,6 +115,10 @@ run-tests-single-json-no-auth:
 run-tests-single-vpack-no-auth:
 	@echo "Single server, HTTP+Velocypack, no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" __run_tests
+
+run-tests-single-vst-no-auth:
+	@echo "Single server, Velocystream, no authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONNECTION="vst" __run_tests
 
 run-tests-single-json-with-auth:
 	@echo "Single server, HTTP+JSON, with authentication"
@@ -159,6 +170,7 @@ __test_go_test:
 		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
+		-e TEST_CONNECTION=$(TEST_CONNECTION) \
 		-e TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \

@@ -39,25 +39,38 @@ type chunk struct {
 }
 
 const (
-	chunkHeaderSize = 24
+	minChunkHeaderSize = 16
+	maxChunkHeaderSize = 24
 )
 
 // readChunk reads an entire chunk from the given reader.
 func readChunk(r io.Reader) (chunk, error) {
-	hdr := [chunkHeaderSize]byte{}
-	if err := readBytes(hdr[:], r); err != nil {
+	hdr := [maxChunkHeaderSize]byte{}
+	if err := readBytes(hdr[:minChunkHeaderSize], r); err != nil {
 		return chunk{}, driver.WithStack(err)
 	}
 	le := binary.LittleEndian
 	length := le.Uint32(hdr[0:])
 	chunkX := le.Uint32(hdr[4:])
 	messageID := le.Uint64(hdr[8:])
-	messageLength := le.Uint64(hdr[16:])
+	var messageLength uint64
+	contentLength := length - minChunkHeaderSize
 
-	data := make([]byte, length-chunkHeaderSize)
+	if (1 == (chunkX & 0x1)) && ((chunkX >> 1) > 1) {
+		// First chunk, numberOfChunks>1 -> read messageLength
+		fmt.Println("Reading maxHdr")
+		if err := readBytes(hdr[minChunkHeaderSize:], r); err != nil {
+			return chunk{}, driver.WithStack(err)
+		}
+		messageLength = le.Uint64(hdr[16:])
+		contentLength = length - maxChunkHeaderSize
+	}
+
+	data := make([]byte, contentLength)
 	if err := readBytes(data, r); err != nil {
 		return chunk{}, driver.WithStack(err)
 	}
+	//fmt.Printf("data: " + hex.EncodeToString(data) + "\n")
 	return chunk{
 		chunkX:        chunkX,
 		MessageID:     messageID,
@@ -68,7 +81,7 @@ func readChunk(r io.Reader) (chunk, error) {
 
 // buildChunks splits a message consisting of 1 or more parts into chunks.
 func buildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) ([]chunk, error) {
-	if maxChunkSize <= chunkHeaderSize {
+	if maxChunkSize <= maxChunkHeaderSize {
 		return nil, fmt.Errorf("maxChunkSize is too small (%d)", maxChunkSize)
 	}
 	messageLength := uint64(0)
@@ -76,7 +89,7 @@ func buildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) 
 		messageLength += uint64(len(m))
 	}
 	minChunkCount := int(messageLength / uint64(maxChunkSize))
-	maxDataLength := int(maxChunkSize - chunkHeaderSize)
+	maxDataLength := int(maxChunkSize - maxChunkHeaderSize)
 	chunks := make([]chunk, 0, minChunkCount+len(messageParts))
 	chunkIndex := uint32(0)
 	for _, m := range messageParts {
@@ -87,10 +100,7 @@ func buildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) 
 			if dataLength > maxDataLength {
 				dataLength = maxDataLength
 			}
-			var chunkX uint32
-			if chunkIndex > 0 {
-				chunkX = chunkIndex << 1
-			}
+			chunkX := chunkIndex << 1
 			c := chunk{
 				chunkX:        chunkX,
 				MessageID:     messageID,
@@ -104,7 +114,11 @@ func buildChunks(messageID uint64, maxChunkSize uint32, messageParts ...[]byte) 
 		}
 	}
 	// Set chunkX of first chunk
-	chunks[0].chunkX = uint32((len(chunks) << 1) + 1)
+	if len(chunks) == 1 {
+		chunks[0].chunkX = 3
+	} else {
+		chunks[0].chunkX = uint32((len(chunks) << 1) + 1)
+	}
 	return chunks, nil
 }
 
@@ -150,22 +164,32 @@ func (c chunk) NumberOfChunks() uint32 {
 // WriteTo write the chunk to the given writer.
 // An error is returned when less than the entire chunk was written.
 func (c chunk) WriteTo(w io.Writer) (int64, error) {
-	hdr := [chunkHeaderSize]byte{}
-
 	le := binary.LittleEndian
-	le.PutUint32(hdr[0:], uint32(len(c.Data)+chunkHeaderSize)) // length
-	le.PutUint32(hdr[4:], c.chunkX)                            // chunkX
-	le.PutUint64(hdr[8:], c.MessageID)                         // message ID
-	le.PutUint64(hdr[16:], c.MessageLength)                    // message length
+	hdrArr := [maxChunkHeaderSize]byte{}
+	var hdr []byte
+	if c.IsFirst() && c.NumberOfChunks() > 1 {
+		// Use extended header
+		hdr = hdrArr[:maxChunkHeaderSize]
+		le.PutUint64(hdr[16:], c.MessageLength) // message length
+	} else {
+		// Use minimal header
+		hdr = hdrArr[:minChunkHeaderSize]
+	}
+
+	le.PutUint32(hdr[0:], uint32(len(c.Data)+len(hdr))) // length
+	le.PutUint32(hdr[4:], c.chunkX)                     // chunkX
+	le.PutUint64(hdr[8:], c.MessageID)                  // message ID
 
 	// Write header
-	if n, err := w.Write(hdr[:]); err != nil {
+	//fmt.Printf("Writing hdr: %s\n", hex.EncodeToString(hdr))
+	if n, err := w.Write(hdr); err != nil {
 		return int64(n), driver.WithStack(err)
 	}
 
 	// Write data
+	//fmt.Printf("Writing data: %s\n", hex.EncodeToString(c.Data))
 	n, err := w.Write(c.Data)
-	result := int64(n) + chunkHeaderSize
+	result := int64(n) + int64(len(hdr))
 	if err != nil {
 		return result, driver.WithStack(err)
 	}
