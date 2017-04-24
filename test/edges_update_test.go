@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -203,7 +202,8 @@ func TestUpdateEdgesReturnNew(t *testing.T) {
 // TestUpdateEdgesKeepNullTrue creates documents, updates them with KeepNull(true) and then checks the updates have succeeded.
 func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	var conn driver.Connection
+	c := createClientFromEnv(t, true, &conn)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_keepNullTrue_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -263,8 +263,8 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 		}
 		// We parse to this type of map, since unmarshalling nil values to a map of type map[string]interface{}
 		// will cause the entry to be deleted.
-		var jsonMap map[string]*json.RawMessage
-		if err := json.Unmarshal(rawResponse, &jsonMap); err != nil {
+		var jsonMap map[string]*driver.RawObject
+		if err := conn.Unmarshal(rawResponse, &jsonMap); err != nil {
 			t.Fatalf("Failed to parse raw response: %s", describe(err))
 		}
 		// Get "edge" field and unmarshal it
@@ -272,7 +272,7 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 			t.Errorf("Expected edge to be found but got not found")
 		} else {
 			jsonMap = nil
-			if err := json.Unmarshal(*raw, &jsonMap); err != nil {
+			if err := conn.Unmarshal(*raw, &jsonMap); err != nil {
 				t.Fatalf("Failed to parse raw edge object: %s", describe(err))
 			}
 			if raw, found := jsonMap["user"]; !found {
