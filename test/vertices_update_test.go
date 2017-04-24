@@ -85,7 +85,7 @@ func TestUpdateVertices(t *testing.T) {
 func TestUpdateVerticesReturnOld(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertices_returnOld_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "books", t)
@@ -130,7 +130,7 @@ func TestUpdateVerticesReturnOld(t *testing.T) {
 func TestUpdateVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertices_returnOld_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "users", t)
