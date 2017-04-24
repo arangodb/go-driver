@@ -75,7 +75,7 @@ func TestUpdateEdge(t *testing.T) {
 func TestUpdateEdgeReturnOld(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_returnOld_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -113,7 +113,7 @@ func TestUpdateEdgeReturnOld(t *testing.T) {
 func TestUpdateEdgeReturnNew(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_returnNew_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
