@@ -101,11 +101,13 @@ run-tests-http: $(GOBUILDDIR)
 		go test $(TESTOPTIONS) $(REPOPATH)/http
 
 # Single server tests 
-run-tests-single: run-tests-single-json run-tests-single-vpack
+run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst
 
 run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth
 
 run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-no-auth
+
+run-tests-single-vst: run-tests-single-vst-with-auth run-tests-vst-vpack-no-auth
 
 run-tests-single-json-no-auth:
 	@echo "Single server, HTTP+JSON, no authentication"
@@ -126,6 +128,10 @@ run-tests-single-json-with-auth:
 run-tests-single-vpack-with-auth:
 	@echo "Single server, HTTP+Velocypack, with authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
+
+run-tests-single-vst-with-auth:
+	@echo "Single server, Velocystream, with authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONNECTION="vst" __run_tests
 
 # Cluster mode tests
 run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack

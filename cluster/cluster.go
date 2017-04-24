@@ -79,6 +79,7 @@ type clusterConnection struct {
 	current           int
 	mutex             sync.RWMutex
 	defaultTimeout    time.Duration
+	auth              driver.Authentication
 }
 
 // NewRequest creates a new request with given method and path.
@@ -215,6 +216,12 @@ func (c *clusterConnection) UpdateEndpoints(endpoints []string) error {
 		if err != nil {
 			return driver.WithStack(err)
 		}
+		if c.auth != nil {
+			conn, err = conn.SetAuthentication(c.auth)
+			if err != nil {
+				return driver.WithStack(err)
+			}
+		}
 		servers = append(servers, conn)
 	}
 
@@ -226,6 +233,28 @@ func (c *clusterConnection) UpdateEndpoints(endpoints []string) error {
 	c.current = 0
 
 	return nil
+}
+
+// Configure the authentication used for this connection.
+func (c *clusterConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Configure underlying servers
+	newServerConnections := make([]driver.Connection, len(c.servers))
+	for i, s := range c.servers {
+		authConn, err := s.SetAuthentication(auth)
+		if err != nil {
+			return nil, driver.WithStack(err)
+		}
+		newServerConnections[i] = authConn
+	}
+
+	// Save authentication
+	c.auth = auth
+	c.servers = newServerConnections
+
+	return c, nil
 }
 
 // getCurrentServer returns the currently used server.

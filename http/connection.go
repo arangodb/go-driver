@@ -237,3 +237,26 @@ func (c *httpConnection) UpdateEndpoints(endpoints []string) error {
 	// The real updating is done in cluster Connection.
 	return nil
 }
+
+// Configure the authentication used for this connection.
+func (c *httpConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
+	var httpAuth httpAuthentication
+	switch auth.Type() {
+	case driver.AuthenticationTypeBasic:
+		userName := auth.Get("username")
+		password := auth.Get("password")
+		httpAuth = newBasicAuthentication(userName, password)
+	case driver.AuthenticationTypeJWT:
+		userName := auth.Get("username")
+		password := auth.Get("password")
+		httpAuth = newJWTAuthentication(userName, password)
+	default:
+		return nil, driver.WithStack(fmt.Errorf("Unsupported authentication type %d", int(auth.Type())))
+	}
+
+	result, err := newAuthenticatedConnection(c, httpAuth)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	return result, nil
+}
