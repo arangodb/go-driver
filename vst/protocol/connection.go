@@ -35,8 +35,8 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-// connection is a single socket connection to a server.
-type connection struct {
+// Connection is a single socket connection to a server.
+type Connection struct {
 	lastMessageID uint64
 	maxChunkSize  uint32
 	msgStore      messageStore
@@ -55,7 +55,7 @@ var (
 )
 
 // dial opens a new connection to the server on the given address.
-func dial(addr string, tlsConfig *tls.Config) (*connection, error) {
+func dial(addr string, tlsConfig *tls.Config) (*Connection, error) {
 	var conn net.Conn
 	var err error
 	if tlsConfig != nil {
@@ -79,7 +79,7 @@ func dial(addr string, tlsConfig *tls.Config) (*connection, error) {
 	}
 
 	// prepare connection
-	c := &connection{
+	c := &Connection{
 		maxChunkSize: defaultMaxChunkSize,
 		conn:         conn,
 	}
@@ -92,7 +92,7 @@ func dial(addr string, tlsConfig *tls.Config) (*connection, error) {
 }
 
 // Close the connection to the server
-func (c *connection) Close() error {
+func (c *Connection) Close() error {
 	if !c.closing {
 		c.closing = true
 		if err := c.conn.Close(); err != nil {
@@ -109,7 +109,7 @@ func (c *connection) Close() error {
 }
 
 // IsClosed returns true when the connection is closed, false otherwise.
-func (c *connection) IsClosed() bool {
+func (c *Connection) IsClosed() bool {
 	return c.closing
 }
 
@@ -117,7 +117,7 @@ func (c *connection) IsClosed() bool {
 // a channel on which the response will be delivered.
 // When the connection is closed before a response was received, the returned
 // channel will be closed.
-func (c *connection) Send(ctx context.Context, messageParts ...[]byte) (<-chan Message, error) {
+func (c *Connection) Send(ctx context.Context, messageParts ...[]byte) (<-chan Message, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -163,7 +163,7 @@ func (c *connection) Send(ctx context.Context, messageParts ...[]byte) (<-chan M
 }
 
 // sendChunk sends a single chunk to the server.
-func (c *connection) sendChunk(deadline time.Time, chunk chunk) error {
+func (c *Connection) sendChunk(deadline time.Time, chunk chunk) error {
 	c.writeMutex.Lock()
 	defer c.writeMutex.Unlock()
 
@@ -177,7 +177,7 @@ func (c *connection) sendChunk(deadline time.Time, chunk chunk) error {
 }
 
 // readChunkLoop reads chunks from the connection until it is closed.
-func (c *connection) readChunkLoop() {
+func (c *Connection) readChunkLoop() {
 	for {
 		if c.closing {
 			// Closing, we're done
@@ -204,7 +204,7 @@ func (c *connection) readChunkLoop() {
 
 // processChunk adds the given chunk to its message and notifies the listener
 // when the message is complete.
-func (c *connection) processChunk(chunk chunk) {
+func (c *Connection) processChunk(chunk chunk) {
 	m := c.msgStore.Get(chunk.MessageID)
 	if m == nil {
 		// Unexpected chunk, ignore it
@@ -231,11 +231,11 @@ func (c *connection) processChunk(chunk chunk) {
 }
 
 // updateLastActivity sets the lastActivity field to the current time.
-func (c *connection) updateLastActivity() {
+func (c *Connection) updateLastActivity() {
 	c.lastActivity = time.Now()
 }
 
 // IsIdle returns true when the last activity was more than the given timeout ago.
-func (c *connection) IsIdle(idleTimeout time.Duration) bool {
+func (c *Connection) IsIdle(idleTimeout time.Duration) bool {
 	return time.Since(c.lastActivity) > idleTimeout
 }

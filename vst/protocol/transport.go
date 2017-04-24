@@ -48,10 +48,11 @@ type TransportConfig struct {
 type Transport struct {
 	TransportConfig
 
-	hostAddr    string
-	tlsConfig   *tls.Config
-	connMutex   sync.Mutex
-	connections []*connection
+	hostAddr            string
+	tlsConfig           *tls.Config
+	connMutex           sync.Mutex
+	connections         []*Connection
+	onConnectionCreated func(context.Context, *Connection) error
 }
 
 // NewTransport creates a new Transport for given address & tls settings.
@@ -71,7 +72,7 @@ func NewTransport(hostAddr string, tlsConfig *tls.Config, config TransportConfig
 // When the connection is closed before a response was received, the returned
 // channel will be closed.
 func (c *Transport) Send(ctx context.Context, messageParts ...[]byte) (<-chan Message, error) {
-	conn, err := c.getConnection()
+	conn, err := c.getConnection(ctx)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -101,9 +102,25 @@ func (c *Transport) CloseIdleConnections() (closed, remaining int) {
 	return closed, remaining
 }
 
+// CloseAllConnections closes all connections.
+func (c *Transport) CloseAllConnections() {
+	c.connMutex.Lock()
+	defer c.connMutex.Unlock()
+
+	for _, conn := range c.connections {
+		// Close connection
+		go conn.Close()
+	}
+}
+
+// SetOnConnectionCreated stores a callback function that is called every time a new connection has been created.
+func (c *Transport) SetOnConnectionCreated(handler func(context.Context, *Connection) error) {
+	c.onConnectionCreated = handler
+}
+
 // getConnection returns the first available connection, or when no such connection is available,
 // is created a new connection.
-func (c *Transport) getConnection() (*connection, error) {
+func (c *Transport) getConnection(ctx context.Context) (*Connection, error) {
 	conn := c.getAvailableConnection()
 	if conn != nil {
 		return conn, nil
@@ -112,14 +129,23 @@ func (c *Transport) getConnection() (*connection, error) {
 	// No connections available, make a new one
 	conn, err := c.createConnection()
 	if err != nil {
+		conn.Close()
 		return nil, driver.WithStack(err)
 	}
+
+	// Invoke callback
+	if cb := c.onConnectionCreated; cb != nil {
+		if err := cb(ctx, conn); err != nil {
+			return nil, driver.WithStack(err)
+		}
+	}
+
 	return conn, nil
 }
 
 // getAvailableConnection returns the first available connection.
 // If no such connection is available, nil is returned.
-func (c *Transport) getAvailableConnection() *connection {
+func (c *Transport) getAvailableConnection() *Connection {
 	c.connMutex.Lock()
 	defer c.connMutex.Unlock()
 
@@ -135,7 +161,7 @@ func (c *Transport) getAvailableConnection() *connection {
 }
 
 // createConnection creates a new connection.
-func (c *Transport) createConnection() (*connection, error) {
+func (c *Transport) createConnection() (*Connection, error) {
 	conn, err := dial(c.hostAddr, c.tlsConfig)
 	if err != nil {
 		return nil, driver.WithStack(err)
@@ -149,7 +175,7 @@ func (c *Transport) createConnection() (*connection, error) {
 
 	if startCleanup {
 		// TODO enable cleanup
-		//go c.cleanup()
+		go c.cleanup()
 	}
 
 	return conn, nil

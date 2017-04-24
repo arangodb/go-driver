@@ -227,9 +227,10 @@ func (c *vstConnection) SetAuthentication(auth driver.Authentication) (driver.Co
 		return nil, driver.WithStack(fmt.Errorf("Unsupported authentication type %d", int(auth.Type())))
 	}
 
-	result, err := newAuthenticatedConnection(c, vstAuth)
-	if err != nil {
-		return nil, driver.WithStack(err)
-	}
-	return result, nil
+	// Set authentication callback
+	c.transport.SetOnConnectionCreated(vstAuth.Prepare)
+	// Close all existing connections
+	c.transport.CloseAllConnections()
+
+	return c, nil
 }

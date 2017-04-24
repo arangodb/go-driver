@@ -25,17 +25,16 @@ package vst
 import (
 	"context"
 	"fmt"
-	"sync"
-	"sync/atomic"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/vst/protocol"
 	velocypack "github.com/arangodb/go-velocypack"
 )
 
 // Authentication implements a kind of authentication.
 type vstAuthentication interface {
-	// Prepare is called before the first request of the given connection is made.
-	Prepare(ctx context.Context, conn driver.Connection) error
+	// Prepare is called when the given Connection has been created.
+	Prepare(ctx context.Context, conn *protocol.Connection) error
 
 	// Configure is called for every request made on a connection.
 	//Configure(req driver.Request) error
@@ -77,14 +76,15 @@ type jwtOpenResponse struct {
 }
 
 // Prepare is called before the first request of the given connection is made.
-func (a *vstAuthenticationImpl) Prepare(ctx context.Context, conn driver.Connection) error {
+func (a *vstAuthenticationImpl) Prepare(ctx context.Context, conn *protocol.Connection) error {
 	var authReq velocypack.Slice
 	var err error
 
 	if a.encryption == "jwt" {
+		return fmt.Errorf("Nt ready yet")
 		// Call _open/auth
 		// Prepare request
-		r, err := conn.NewRequest("POST", "/_open/auth")
+		/*r, err := conn.NewRequest("POST", "/_open/auth")
 		if err != nil {
 			return driver.WithStack(err)
 		}
@@ -119,7 +119,7 @@ func (a *vstAuthenticationImpl) Prepare(ctx context.Context, conn driver.Connect
 		authReq, err = b.Slice()
 		if err != nil {
 			return driver.WithStack(err)
-		}
+		}*/
 	} else {
 		// Create request
 		var b velocypack.Builder
@@ -137,18 +137,14 @@ func (a *vstAuthenticationImpl) Prepare(ctx context.Context, conn driver.Connect
 	}
 
 	// Send request
-	vstConn, ok := conn.(*vstConnection)
-	if !ok {
-		return driver.WithStack(fmt.Errorf("*vstConnection expected"))
-	}
-	respChan, err := vstConn.transport.Send(ctx, authReq)
+	respChan, err := conn.Send(ctx, authReq)
 	if err != nil {
 		return driver.WithStack(err)
 	}
 
 	// Wait for response
 	m := <-respChan
-	resp, err := newResponse(m, vstConn.endpoint.String(), nil)
+	resp, err := newResponse(m, "", nil)
 	if err != nil {
 		return driver.WithStack(err)
 	}
@@ -157,106 +153,5 @@ func (a *vstAuthenticationImpl) Prepare(ctx context.Context, conn driver.Connect
 	}
 
 	// Ok
-	return nil
-}
-
-// newAuthenticatedConnection creates a Connection that applies the given connection on the given underlying connection.
-func newAuthenticatedConnection(conn driver.Connection, auth vstAuthentication) (driver.Connection, error) {
-	if conn == nil {
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "conn is nil"})
-	}
-	if auth == nil {
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "auth is nil"})
-	}
-	return &authenticatedConnection{
-		conn: conn,
-		auth: auth,
-	}, nil
-}
-
-// authenticatedConnection implements authentication behavior for connections.
-type authenticatedConnection struct {
-	conn         driver.Connection // Un-authenticated connection
-	auth         vstAuthentication
-	prepareMutex sync.Mutex
-	prepared     int32
-}
-
-// NewRequest creates a new request with given method and path.
-func (c *authenticatedConnection) NewRequest(method, path string) (driver.Request, error) {
-	r, err := c.conn.NewRequest(method, path)
-	if err != nil {
-		return nil, driver.WithStack(err)
-	}
-	return r, nil
-}
-
-// Do performs a given request, returning its response.
-func (c *authenticatedConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
-	if atomic.LoadInt32(&c.prepared) == 0 {
-		// Probably we're not yet prepared
-		if err := c.prepare(ctx); err != nil {
-			// Authentication failed
-			return nil, driver.WithStack(err)
-		}
-	}
-	// Configure the request for authentication.
-	/*if err := c.auth.Configure(req); err != nil {
-		// Failed to configure request for authentication
-		return nil, driver.WithStack(err)
-	}*/
-	// Do the authenticated request
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return nil, driver.WithStack(err)
-	}
-	return resp, nil
-}
-
-// Unmarshal unmarshals the given raw object into the given result interface.
-func (c *authenticatedConnection) Unmarshal(data driver.RawObject, result interface{}) error {
-	if err := c.conn.Unmarshal(data, result); err != nil {
-		return driver.WithStack(err)
-	}
-	return nil
-}
-
-// Endpoints returns the endpoints used by this connection.
-func (c *authenticatedConnection) Endpoints() []string {
-	return c.conn.Endpoints()
-}
-
-// UpdateEndpoints reconfigures the connection to use the given endpoints.
-func (c *authenticatedConnection) UpdateEndpoints(endpoints []string) error {
-	if err := c.conn.UpdateEndpoints(endpoints); err != nil {
-		return driver.WithStack(err)
-	}
-	return nil
-}
-
-// Configure the authentication used for this connection.
-func (c *authenticatedConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
-	result, err := c.conn.SetAuthentication(auth)
-	if err != nil {
-		return nil, driver.WithStack(err)
-	}
-	return result, nil
-}
-
-// prepare calls Authentication.Prepare if needed.
-func (c *authenticatedConnection) prepare(ctx context.Context) error {
-	c.prepareMutex.Lock()
-	defer c.prepareMutex.Unlock()
-	if c.prepared == 0 {
-		// We need to prepare first
-		if err := c.auth.Prepare(ctx, c.conn); err != nil {
-			// Authentication failed
-			return driver.WithStack(err)
-		}
-		// We're now prepared
-		atomic.StoreInt32(&c.prepared, 1)
-	} else {
-		// We're already prepared, do nothing
-	}
 	return nil
 }
