@@ -155,8 +155,8 @@ func (c *collection) CreateDocuments(ctx context.Context, documents interface{})
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if status := resp.StatusCode(); status != cs.okStatus(201, 202) {
-		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
@@ -264,8 +264,8 @@ func (c *collection) UpdateDocuments(ctx context.Context, keys []string, updates
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if status := resp.StatusCode(); status != cs.okStatus(201, 202) {
-		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
@@ -373,8 +373,8 @@ func (c *collection) ReplaceDocuments(ctx context.Context, keys []string, docume
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if status := resp.StatusCode(); status != cs.okStatus(201, 202) {
-		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
@@ -456,8 +456,8 @@ func (c *collection) RemoveDocuments(ctx context.Context, keys []string) (Docume
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if status := resp.StatusCode(); status != cs.okStatus(200, 202) {
-		return nil, nil, WithStack(newArangoError(status, 0, "Invalid status"))
+	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
 		// Empty response, we're done
@@ -517,8 +517,8 @@ func (c *collection) ImportDocuments(ctx context.Context, documents interface{},
 	if err != nil {
 		return ImportDocumentStatistics{}, WithStack(err)
 	}
-	if status := resp.StatusCode(); status != 201 {
-		return ImportDocumentStatistics{}, WithStack(newArangoError(status, 0, "Invalid status"))
+	if err := resp.CheckStatus(201); err != nil {
+		return ImportDocumentStatistics{}, WithStack(err)
 	}
 	// Parse response
 	var data ImportDocumentStatistics
