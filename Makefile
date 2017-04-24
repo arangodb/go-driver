@@ -148,6 +148,10 @@ run-tests-cluster-vpack-no-auth: $(GOBUILDDIR)
 	@echo "Cluster server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" __run_tests
 
+run-tests-cluster-vst-no-auth: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream, no authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONNECTION="vst" __run_tests
+
 run-tests-cluster-json-with-auth: $(GOBUILDDIR)
 	@echo "Cluster server, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
@@ -156,6 +160,10 @@ run-tests-cluster-vpack-with-auth: $(GOBUILDDIR)
 	@echo "Cluster server, Velocypack, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
 
+run-tests-cluster-vst-with-auth: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream, with authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONNECTION="vst" __run_tests
+
 run-tests-cluster-json-ssl: $(GOBUILDDIR)
 	@echo "Cluster server, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONTENT_TYPE="json" __run_tests
@@ -163,6 +171,10 @@ run-tests-cluster-json-ssl: $(GOBUILDDIR)
 run-tests-cluster-vpack-ssl: $(GOBUILDDIR)
 	@echo "Cluster server, Velocypack, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONTENT_TYPE="vpack" __run_tests
+
+run-tests-cluster-vst-ssl: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream, SSL, with authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" __run_tests
 
 # Internal test tasks
 __run_tests: $(GOBUILDDIR) __test_prepare __test_go_test __test_cleanup

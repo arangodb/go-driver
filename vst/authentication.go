@@ -66,20 +66,74 @@ type vstAuthenticationImpl struct {
 	password   string
 }
 
+type jwtOpenRequest struct {
+	UserName string `json:"username"`
+	Password string `json:"password"`
+}
+
+type jwtOpenResponse struct {
+	Token              string `json:"jwt"`
+	MustChangePassword bool   `json:"must_change_password,omitempty"`
+}
+
 // Prepare is called before the first request of the given connection is made.
 func (a *vstAuthenticationImpl) Prepare(ctx context.Context, conn driver.Connection) error {
-	// Create request
-	var b velocypack.Builder
-	b.OpenArray()
-	b.AddValue(velocypack.NewIntValue(1))               // Version
-	b.AddValue(velocypack.NewIntValue(1000))            // Type (1000=Auth)
-	b.AddValue(velocypack.NewStringValue(a.encryption)) // Encryption type
-	b.AddValue(velocypack.NewStringValue(a.userName))   // Username
-	b.AddValue(velocypack.NewStringValue(a.password))   // Password
-	b.Close()                                           // request
-	authReq, err := b.Slice()
-	if err != nil {
-		return driver.WithStack(err)
+	var authReq velocypack.Slice
+	var err error
+
+	if a.encryption == "jwt" {
+		// Call _open/auth
+		// Prepare request
+		r, err := conn.NewRequest("POST", "/_open/auth")
+		if err != nil {
+			return driver.WithStack(err)
+		}
+		r.SetBody(jwtOpenRequest{
+			UserName: a.userName,
+			Password: a.password,
+		})
+
+		// Perform request
+		resp, err := conn.Do(ctx, r)
+		if err != nil {
+			return driver.WithStack(err)
+		}
+		if err := resp.CheckStatus(200); err != nil {
+			return driver.WithStack(err)
+		}
+
+		// Parse response
+		var data jwtOpenResponse
+		if err := resp.ParseBody("", &data); err != nil {
+			return driver.WithStack(err)
+		}
+
+		// Create request
+		var b velocypack.Builder
+		b.OpenArray()
+		b.AddValue(velocypack.NewIntValue(1))             // Version
+		b.AddValue(velocypack.NewIntValue(1000))          // Type (1000=Auth)
+		b.AddValue(velocypack.NewStringValue("jwt"))      // Encryption type
+		b.AddValue(velocypack.NewStringValue(data.Token)) // Token
+		b.Close()                                         // request
+		authReq, err = b.Slice()
+		if err != nil {
+			return driver.WithStack(err)
+		}
+	} else {
+		// Create request
+		var b velocypack.Builder
+		b.OpenArray()
+		b.AddValue(velocypack.NewIntValue(1))               // Version
+		b.AddValue(velocypack.NewIntValue(1000))            // Type (1000=Auth)
+		b.AddValue(velocypack.NewStringValue(a.encryption)) // Encryption type
+		b.AddValue(velocypack.NewStringValue(a.userName))   // Username
+		b.AddValue(velocypack.NewStringValue(a.password))   // Password
+		b.Close()                                           // request
+		authReq, err = b.Slice()
+		if err != nil {
+			return driver.WithStack(err)
+		}
 	}
 
 	// Send request
