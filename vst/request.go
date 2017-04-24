@@ -24,7 +24,6 @@ package vst
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -42,7 +41,6 @@ type vstRequest struct {
 	hdr     map[string]string
 	body    []byte
 	written bool
-	debug   bool
 }
 
 // SetQuery sets a single query argument of the request.
@@ -130,8 +128,6 @@ func (r *vstRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string
 				return nil, driver.WithStack(err)
 			}
 			// Merge elemSlice with bodySlice
-			fmt.Println("elemSlice: ", hex.EncodeToString(elemSlice))
-			fmt.Println("bodySlice: ", hex.EncodeToString(bodySlice))
 			sliceToAdd, err = velocypack.Merge(elemSlice, bodySlice)
 			if err != nil {
 				return nil, driver.WithStack(err)
@@ -142,7 +138,6 @@ func (r *vstRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string
 		}
 
 		// Add resulting slice
-		fmt.Println("sliceToAdd: ", hex.EncodeToString(sliceToAdd))
 		if err := b.AddValue(velocypack.NewSliceValue(sliceToAdd)); err != nil {
 			return nil, driver.WithStack(err)
 		}
@@ -159,8 +154,6 @@ func (r *vstRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string
 		return nil, driver.WithStack(err)
 	}
 	r.body = arraySlice
-	r.debug = true
-	fmt.Println("BodyArray: ", hex.EncodeToString(arraySlice))
 
 	return r, nil
 }
@@ -252,10 +245,6 @@ func (r *vstRequest) createMessageParts() ([][]byte, error) {
 	hdr, err := b.Bytes()
 	if err != nil {
 		return nil, driver.WithStack(err)
-	}
-
-	if r.debug {
-		fmt.Println("hdr: ", hex.EncodeToString(hdr))
 	}
 
 	if len(r.body) == 0 {
