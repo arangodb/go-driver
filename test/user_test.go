@@ -61,8 +61,8 @@ func TestCreateUser(t *testing.T) {
 		"測試用例":      nil,
 		"測試用例@foo":  nil,
 		"_":         nil,
-		" ":         nil,
-		"/":         nil,
+		//" ":         nil, // No longer valid in 3.2
+		"/": nil,
 	}
 
 	for name, options := range tests {
