@@ -107,7 +107,7 @@ run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-
 
 run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-no-auth
 
-run-tests-single-vst: run-tests-single-vst-with-auth run-tests-vst-vpack-no-auth
+run-tests-single-vst: run-tests-single-vst-with-auth run-tests-single-vst-no-auth
 
 run-tests-single-json-no-auth:
 	@echo "Single server, HTTP+JSON, no authentication"
