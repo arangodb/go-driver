@@ -71,13 +71,13 @@ func TestImportEdgesWithKeys(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs)) {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
@@ -123,19 +123,22 @@ func TestImportEdgesWithoutKeys(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs)) {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
 
 // TestImportEdgesEmptyEntries imports documents and then checks that it exists.
 func TestImportEdgesEmptyEntries(t *testing.T) {
+	if getContentTypeFromEnv(t) == driver.ContentTypeVelocypack {
+		t.Skip("Not supported on vpack")
+	}
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
@@ -176,19 +179,22 @@ func TestImportEdgesEmptyEntries(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs))-1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 1 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
 
 // TestImportEdgesInvalidEntries imports documents and then checks that it exists.
 func TestImportEdgesInvalidEntries(t *testing.T) {
+	if getContentTypeFromEnv(t) == driver.ContentTypeVelocypack {
+		t.Skip("Not supported on vpack")
+	}
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
@@ -231,13 +237,13 @@ func TestImportEdgesInvalidEntries(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs))-3 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-3, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-3, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 2 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 2, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 2, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 1 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
@@ -277,25 +283,28 @@ func TestImportEdgesDuplicateEntries(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 1 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 0 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 	}
 }
 
 // TestImportEdgesDuplicateEntriesComplete imports documents and then checks that it exists.
 func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
+	if getContentTypeFromEnv(t) == driver.ContentTypeVelocypack {
+		t.Skip("Not supported on vpack")
+	}
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
@@ -368,19 +377,19 @@ func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 1 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 
 		var edge RouteEdgeWithKey
@@ -433,19 +442,19 @@ func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 1 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 
 		var edge RouteEdgeWithKey
@@ -498,19 +507,19 @@ func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 0 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 1 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 1, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 1, stats.Ignored, formatRawResponse(raw))
 		}
 
 		var edge RouteEdgeWithKey
@@ -562,19 +571,19 @@ func TestImportEdgesDetails(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 1 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 0 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 
 		detailsExpected := fmt.Sprintf(`at position 1: creating document failed with error 'unique constraint violated', offending document: {"_from":"%sstate/lb","_key":"edge1","_to":"%scity/venlo"}`, prefix, prefix)
@@ -622,7 +631,7 @@ func TestImportEdgesOverwriteYes(t *testing.T) {
 			t.Fatalf("Failed to import documents: %s", describe(err))
 		} else {
 			if stats.Created != 2 {
-				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, string(raw))
+				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, formatRawResponse(raw))
 			}
 		}
 
@@ -671,7 +680,7 @@ func TestImportEdgesOverwriteNo(t *testing.T) {
 			t.Fatalf("Failed to import documents: %s", describe(err))
 		} else {
 			if stats.Created != 2 {
-				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, string(raw))
+				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, formatRawResponse(raw))
 			}
 		}
 
@@ -720,7 +729,7 @@ func TestImportEdgesPrefix(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 2 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, formatRawResponse(raw))
 		}
 	}
 

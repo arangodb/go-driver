@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -75,7 +74,7 @@ func TestUpdateEdge(t *testing.T) {
 func TestUpdateEdgeReturnOld(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_returnOld_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -113,7 +112,7 @@ func TestUpdateEdgeReturnOld(t *testing.T) {
 func TestUpdateEdgeReturnNew(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_returnNew_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -152,7 +151,8 @@ func TestUpdateEdgeReturnNew(t *testing.T) {
 // TestUpdateEdgeKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateEdgeKeepNullTrue(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	var conn driver.Connection
+	c := createClientFromEnv(t, true, &conn)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_keepNullTrue_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -191,8 +191,8 @@ func TestUpdateEdgeKeepNullTrue(t *testing.T) {
 	}
 	// We parse to this type of map, since unmarshalling nil values to a map of type map[string]interface{}
 	// will cause the entry to be deleted.
-	var jsonMap map[string]*json.RawMessage
-	if err := json.Unmarshal(rawResponse, &jsonMap); err != nil {
+	var jsonMap map[string]*driver.RawObject
+	if err := conn.Unmarshal(rawResponse, &jsonMap); err != nil {
 		t.Fatalf("Failed to parse raw response: %s", describe(err))
 	}
 	// Get "edge" field and unmarshal it
@@ -200,7 +200,7 @@ func TestUpdateEdgeKeepNullTrue(t *testing.T) {
 		t.Errorf("Expected edge to be found but got not found")
 	} else {
 		jsonMap = nil
-		if err := json.Unmarshal(*raw, &jsonMap); err != nil {
+		if err := conn.Unmarshal(*raw, &jsonMap); err != nil {
 			t.Fatalf("Failed to parse raw edge object: %s", describe(err))
 		}
 		if raw, found := jsonMap["user"]; !found {

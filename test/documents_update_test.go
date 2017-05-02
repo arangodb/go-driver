@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -188,7 +187,8 @@ func TestUpdateDocumentsReturnNew(t *testing.T) {
 // TestUpdateDocumentsKeepNullTrue creates documents, updates them with KeepNull(true) and then checks the updates have succeeded.
 func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	var conn driver.Connection
+	c := createClientFromEnv(t, true, &conn)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []Account{
@@ -238,8 +238,8 @@ func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 		}
 		// We parse to this type of map, since unmarshalling nil values to a map of type map[string]interface{}
 		// will cause the entry to be deleted.
-		var jsonMap map[string]*json.RawMessage
-		if err := json.Unmarshal(rawResponse, &jsonMap); err != nil {
+		var jsonMap map[string]*driver.RawObject
+		if err := conn.Unmarshal(rawResponse, &jsonMap); err != nil {
 			t.Fatalf("Failed to parse raw response: %s", describe(err))
 		}
 		if raw, found := jsonMap["user"]; !found {

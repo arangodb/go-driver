@@ -29,14 +29,14 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-// httpResponseElement implements driver.Response for an entry of an array response.
-type httpResponseElement struct {
+// httpJSONResponseElement implements driver.Response for an entry of an array response.
+type httpJSONResponseElement struct {
 	statusCode *int
 	bodyObject map[string]*json.RawMessage
 }
 
 // StatusCode returns an HTTP compatible status code of the response.
-func (r *httpResponseElement) StatusCode() int {
+func (r *httpJSONResponseElement) StatusCode() int {
 	if r.statusCode == nil {
 		statusCode := 200
 		// Look for "error" field
@@ -59,14 +59,14 @@ func (r *httpResponseElement) StatusCode() int {
 }
 
 // Endpoint returns the endpoint that handled the request.
-func (r *httpResponseElement) Endpoint() string {
+func (r *httpJSONResponseElement) Endpoint() string {
 	return ""
 }
 
 // CheckStatus checks if the status of the response equals to one of the given status codes.
 // If so, nil is returned.
 // If not, an attempt is made to parse an error response in the body and an error is returned.
-func (r *httpResponseElement) CheckStatus(validStatusCodes ...int) error {
+func (r *httpJSONResponseElement) CheckStatus(validStatusCodes ...int) error {
 	statusCode := r.StatusCode()
 	for _, x := range validStatusCodes {
 		if x == statusCode {
@@ -91,7 +91,7 @@ func (r *httpResponseElement) CheckStatus(validStatusCodes ...int) error {
 
 // ParseBody performs protocol specific unmarshalling of the response data into the given result.
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
-func (r *httpResponseElement) ParseBody(field string, result interface{}) error {
+func (r *httpJSONResponseElement) ParseBody(field string, result interface{}) error {
 	if err := parseBody(r.bodyObject, field, result); err != nil {
 		return driver.WithStack(err)
 	}
@@ -100,6 +100,6 @@ func (r *httpResponseElement) ParseBody(field string, result interface{}) error 
 
 // ParseArrayBody performs protocol specific unmarshalling of the response array data into individual response objects.
 // This can only be used for requests that return an array of objects.
-func (r *httpResponseElement) ParseArrayBody() ([]driver.Response, error) {
+func (r *httpJSONResponseElement) ParseArrayBody() ([]driver.Response, error) {
 	return nil, driver.WithStack(driver.InvalidArgumentError{Message: "ParseArrayBody not allowed"})
 }

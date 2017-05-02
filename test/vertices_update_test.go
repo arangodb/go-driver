@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -85,7 +84,7 @@ func TestUpdateVertices(t *testing.T) {
 func TestUpdateVerticesReturnOld(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertices_returnOld_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "books", t)
@@ -130,7 +129,7 @@ func TestUpdateVerticesReturnOld(t *testing.T) {
 func TestUpdateVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.2", t)
+	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertices_returnOld_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "users", t)
@@ -176,7 +175,8 @@ func TestUpdateVerticesReturnNew(t *testing.T) {
 // TestUpdateVerticesKeepNullTrue creates documents, updates them with KeepNull(true) and then checks the updates have succeeded.
 func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	var conn driver.Connection
+	c := createClientFromEnv(t, true, &conn)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertices_keepNullTrue_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "keepers", t)
@@ -229,8 +229,8 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 		}
 		// We parse to this type of map, since unmarshalling nil values to a map of type map[string]interface{}
 		// will cause the entry to be deleted.
-		var jsonMap map[string]*json.RawMessage
-		if err := json.Unmarshal(rawResponse, &jsonMap); err != nil {
+		var jsonMap map[string]*driver.RawObject
+		if err := conn.Unmarshal(rawResponse, &jsonMap); err != nil {
 			t.Fatalf("Failed to parse raw response: %s", describe(err))
 		}
 		// Get "vertex" field and unmarshal it
@@ -238,7 +238,7 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 			t.Errorf("Expected vertex to be found but got not found")
 		} else {
 			jsonMap = nil
-			if err := json.Unmarshal(*raw, &jsonMap); err != nil {
+			if err := conn.Unmarshal(*raw, &jsonMap); err != nil {
 				t.Fatalf("Failed to parse raw vertex object: %s", describe(err))
 			}
 			if raw, found := jsonMap["user"]; !found {
