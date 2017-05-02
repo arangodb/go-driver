@@ -59,6 +59,10 @@ type ConnectionConfig struct {
 	cluster.ConnectionConfig
 }
 
+type messageTransport interface {
+	Send(ctx context.Context, messageParts ...[]byte) (<-chan protocol.Message, error)
+}
+
 // NewConnection creates a new Velocystream connection based on the given configuration settings.
 func NewConnection(config ConnectionConfig) (driver.Connection, error) {
 	c, err := cluster.NewConnection(config.ConnectionConfig, func(endpoint string) (driver.Connection, error) {
@@ -126,6 +130,15 @@ func (c *vstConnection) NewRequest(method, path string) (driver.Request, error) 
 
 // Do performs a given request, returning its response.
 func (c *vstConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
+	resp, err := c.do(ctx, req, c.transport)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	return resp, nil
+}
+
+// Do performs a given request, returning its response.
+func (c *vstConnection) do(ctx context.Context, req driver.Request, transport messageTransport) (driver.Response, error) {
 	vstReq, ok := req.(*vstRequest)
 	if !ok {
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a *vstRequest"})
@@ -134,7 +147,7 @@ func (c *vstConnection) Do(ctx context.Context, req driver.Request) (driver.Resp
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
-	resp, err := c.transport.Send(ctx, msgParts...)
+	resp, err := transport.Send(ctx, msgParts...)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -220,15 +233,16 @@ func (c *vstConnection) SetAuthentication(auth driver.Authentication) (driver.Co
 		password := auth.Get("password")
 		vstAuth = newBasicAuthentication(userName, password)
 	case driver.AuthenticationTypeJWT:
-		userName := auth.Get("username")
+		return nil, driver.WithStack(fmt.Errorf("JWT Authentication is currently not supported using Velocystream"))
+		/*userName := auth.Get("username")
 		password := auth.Get("password")
-		vstAuth = newJWTAuthentication(userName, password)
+		vstAuth = newJWTAuthentication(userName, password)*/
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported authentication type %d", int(auth.Type())))
 	}
 
 	// Set authentication callback
-	c.transport.SetOnConnectionCreated(vstAuth.Prepare)
+	c.transport.SetOnConnectionCreated(vstAuth.PrepareFunc(c))
 	// Close all existing connections
 	c.transport.CloseAllConnections()
 
