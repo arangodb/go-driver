@@ -33,8 +33,8 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-// httpResponse implements driver.Response for standard golang http responses.
-type httpResponse struct {
+// httpJSONResponse implements driver.Response for standard golang JSON encoded http responses.
+type httpJSONResponse struct {
 	resp        *http.Response
 	rawResponse *[]byte
 	bodyObject  map[string]*json.RawMessage
@@ -42,12 +42,12 @@ type httpResponse struct {
 }
 
 // StatusCode returns an HTTP compatible status code of the response.
-func (r *httpResponse) StatusCode() int {
+func (r *httpJSONResponse) StatusCode() int {
 	return r.resp.StatusCode
 }
 
 // Endpoint returns the endpoint that handled the request.
-func (r *httpResponse) Endpoint() string {
+func (r *httpJSONResponse) Endpoint() string {
 	u := *r.resp.Request.URL
 	u.Path = ""
 	return u.String()
@@ -56,7 +56,7 @@ func (r *httpResponse) Endpoint() string {
 // CheckStatus checks if the status of the response equals to one of the given status codes.
 // If so, nil is returned.
 // If not, an attempt is made to parse an error response in the body and an error is returned.
-func (r *httpResponse) CheckStatus(validStatusCodes ...int) error {
+func (r *httpJSONResponse) CheckStatus(validStatusCodes ...int) error {
 	for _, x := range validStatusCodes {
 		if x == r.resp.StatusCode {
 			// Found valid status code
@@ -80,7 +80,7 @@ func (r *httpResponse) CheckStatus(validStatusCodes ...int) error {
 
 // ParseBody performs protocol specific unmarshalling of the response data into the given result.
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
-func (r *httpResponse) ParseBody(field string, result interface{}) error {
+func (r *httpJSONResponse) ParseBody(field string, result interface{}) error {
 	if r.bodyObject == nil {
 		body := r.resp.Body
 		defer body.Close()
@@ -105,7 +105,7 @@ func (r *httpResponse) ParseBody(field string, result interface{}) error {
 
 // ParseArrayBody performs protocol specific unmarshalling of the response array data into individual response objects.
 // This can only be used for requests that return an array of objects.
-func (r *httpResponse) ParseArrayBody() ([]driver.Response, error) {
+func (r *httpJSONResponse) ParseArrayBody() ([]driver.Response, error) {
 	if r.bodyArray == nil {
 		body := r.resp.Body
 		defer body.Close()
@@ -124,7 +124,7 @@ func (r *httpResponse) ParseArrayBody() ([]driver.Response, error) {
 	}
 	resps := make([]driver.Response, len(r.bodyArray))
 	for i, x := range r.bodyArray {
-		resps[i] = &httpResponseElement{bodyObject: x}
+		resps[i] = &httpJSONResponseElement{bodyObject: x}
 	}
 	return resps, nil
 }

@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -133,7 +132,8 @@ func TestUpdateVertexReturnNew(t *testing.T) {
 // TestUpdateVertexKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateVertexKeepNullTrue(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	var conn driver.Connection
+	c := createClientFromEnv(t, true, &conn)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_keepNullTrue_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "accounts", t)
@@ -166,8 +166,8 @@ func TestUpdateVertexKeepNullTrue(t *testing.T) {
 	}
 	// We parse to this type of map, since unmarshalling nil values to a map of type map[string]interface{}
 	// will cause the entry to be deleted.
-	var jsonMap map[string]*json.RawMessage
-	if err := json.Unmarshal(rawResponse, &jsonMap); err != nil {
+	var jsonMap map[string]*driver.RawObject
+	if err := conn.Unmarshal(rawResponse, &jsonMap); err != nil {
 		t.Fatalf("Failed to parse raw response: %s", describe(err))
 	}
 	// Get "vertex" field and unmarshal it
@@ -175,7 +175,7 @@ func TestUpdateVertexKeepNullTrue(t *testing.T) {
 		t.Errorf("Expected vertex to be found but got not found")
 	} else {
 		jsonMap = nil
-		if err := json.Unmarshal(*raw, &jsonMap); err != nil {
+		if err := conn.Unmarshal(*raw, &jsonMap); err != nil {
 			t.Fatalf("Failed to parse raw vertex object: %s", describe(err))
 		}
 		if raw, found := jsonMap["user"]; !found {

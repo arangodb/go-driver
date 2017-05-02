@@ -61,13 +61,13 @@ func TestImportVerticesWithKeys(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs)) {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
@@ -101,19 +101,22 @@ func TestImportVerticesWithoutKeys(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs)) {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
 
 // TestImportVerticesEmptyEntries imports documents and then checks that it exists.
 func TestImportVerticesEmptyEntries(t *testing.T) {
+	if getContentTypeFromEnv(t) == driver.ContentTypeVelocypack {
+		t.Skip("Not supported on vpack")
+	}
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
@@ -145,19 +148,22 @@ func TestImportVerticesEmptyEntries(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs))-1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 1 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
 
 // TestImportVerticesInvalidEntries imports documents and then checks that it exists.
 func TestImportVerticesInvalidEntries(t *testing.T) {
+	if getContentTypeFromEnv(t) == driver.ContentTypeVelocypack {
+		t.Skip("Not supported on vpack")
+	}
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
@@ -191,13 +197,13 @@ func TestImportVerticesInvalidEntries(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != int64(len(docs))-3 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-3, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs)-3, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 2 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 2, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 2, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 1 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
 }
@@ -229,19 +235,19 @@ func TestImportVerticesDuplicateEntries(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 1 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 0 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 	}
 }
@@ -303,19 +309,19 @@ func TestImportVerticesDuplicateEntriesUpdate(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 1 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 
 		var user UserDocWithKey
@@ -360,19 +366,19 @@ func TestImportVerticesDuplicateEntriesReplace(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 1 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 1, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 
 		var user UserDocWithKey
@@ -417,19 +423,19 @@ func TestImportVerticesDuplicateEntriesIgnore(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 0 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 0 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 1 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 1, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 1, stats.Ignored, formatRawResponse(raw))
 		}
 
 		var user UserDocWithKey
@@ -473,19 +479,19 @@ func TestImportVerticesDetails(t *testing.T) {
 		t.Fatalf("Failed to import documents: %s", describe(err))
 	} else {
 		if stats.Created != 1 {
-			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, string(raw))
+			t.Errorf("Expected %d created documents, got %d (json %s)", 1, stats.Created, formatRawResponse(raw))
 		}
 		if stats.Errors != 1 {
-			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, string(raw))
+			t.Errorf("Expected %d error documents, got %d (json %s)", 1, stats.Errors, formatRawResponse(raw))
 		}
 		if stats.Empty != 0 {
-			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, string(raw))
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 		if stats.Updated != 0 {
-			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, string(raw))
+			t.Errorf("Expected %d updated documents, got %d (json %s)", 0, stats.Updated, formatRawResponse(raw))
 		}
 		if stats.Ignored != 0 {
-			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, string(raw))
+			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 
 		detailsExpected := `at position 1: creating document failed with error 'unique constraint violated', offending document: {"_key":"jan","name":"Jan2"}`
@@ -525,7 +531,7 @@ func TestImportVerticesOverwriteYes(t *testing.T) {
 			t.Fatalf("Failed to import documents: %s", describe(err))
 		} else {
 			if stats.Created != 2 {
-				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, string(raw))
+				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, formatRawResponse(raw))
 			}
 		}
 
@@ -566,7 +572,7 @@ func TestImportVerticesOverwriteNo(t *testing.T) {
 			t.Fatalf("Failed to import documents: %s", describe(err))
 		} else {
 			if stats.Created != 2 {
-				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, string(raw))
+				t.Errorf("Expected %d created documents, got %d (json %s)", 2, stats.Created, formatRawResponse(raw))
 			}
 		}
 

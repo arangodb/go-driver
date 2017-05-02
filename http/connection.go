@@ -30,10 +30,12 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"strings"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/cluster"
 	"github.com/arangodb/go-driver/util"
+	velocypack "github.com/arangodb/go-velocypack"
 )
 
 const (
@@ -56,6 +58,8 @@ type ConnectionConfig struct {
 	Transport http.RoundTripper
 	// Cluster configuration settings
 	cluster.ConnectionConfig
+	// ContentType specified type of content encoding to use.
+	ContentType driver.ContentType
 }
 
 // NewConnection creates a new HTTP connection based on the given configuration settings.
@@ -91,7 +95,8 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 		httpTransport.TLSClientConfig = config.TLSConfig
 	}
 	c := &httpConnection{
-		endpoint: *u,
+		endpoint:    *u,
+		contentType: config.ContentType,
 		client: &http.Client{
 			Transport: config.Transport,
 		},
@@ -101,8 +106,9 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 
 // httpConnection implements an HTTP + JSON connection to an arangodb server.
 type httpConnection struct {
-	endpoint url.URL
-	client   *http.Client
+	endpoint    url.URL
+	contentType driver.ContentType
+	client      *http.Client
 }
 
 // String returns the endpoint as string
@@ -118,16 +124,32 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 	default:
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
-	r := &httpRequest{
-		method: method,
-		path:   path,
+	ct := c.contentType
+	if ct != driver.ContentTypeJSON && strings.Contains(path, "_api/gharial") {
+		// Currently (3.1.18) calls to this API do not work well with vpack.
+		ct = driver.ContentTypeJSON
 	}
-	return r, nil
+	switch ct {
+	case driver.ContentTypeJSON:
+		r := &httpJSONRequest{
+			method: method,
+			path:   path,
+		}
+		return r, nil
+	case driver.ContentTypeVelocypack:
+		r := &httpVPackRequest{
+			method: method,
+			path:   path,
+		}
+		return r, nil
+	default:
+		return nil, driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
+	}
 }
 
 // Do performs a given request, returning its response.
 func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
-	httpReq, ok := req.(*httpRequest)
+	httpReq, ok := req.(httpRequest)
 	if !ok {
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest"})
 	}
@@ -137,7 +159,9 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		rctx = context.Background()
 	}
 	rctx = httptrace.WithClientTrace(rctx, &httptrace.ClientTrace{
-		WroteRequest: httpReq.WroteRequest,
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			httpReq.WroteRequest(info)
+		},
 	})
 	r = r.WithContext(rctx)
 	if err != nil {
@@ -156,7 +180,16 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		}
 	}
 
-	httpResp := &httpResponse{resp: resp, rawResponse: rawResponse}
+	ct := resp.Header.Get("Content-Type")
+	var httpResp driver.Response
+	switch strings.Split(ct, ";")[0] {
+	case "application/json":
+		httpResp = &httpJSONResponse{resp: resp, rawResponse: rawResponse}
+	case "application/x-velocypack":
+		httpResp = &httpVPackResponse{resp: resp, rawResponse: rawResponse}
+	default:
+		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
+	}
 	if ctx != nil {
 		if v := ctx.Value(keyResponse); v != nil {
 			if respPtr, ok := v.(*driver.Response); ok {
@@ -169,8 +202,26 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 
 // Unmarshal unmarshals the given raw object into the given result interface.
 func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) error {
-	if err := json.Unmarshal(data, result); err != nil {
-		return driver.WithStack(err)
+	ct := c.contentType
+	if ct == driver.ContentTypeVelocypack && len(data) >= 2 {
+		// Poor mans auto detection of json
+		l := len(data)
+		if (data[0] == '{' && data[l-1] == '}') || (data[0] == '[' && data[l-1] == ']') {
+			ct = driver.ContentTypeJSON
+		}
+	}
+	switch ct {
+	case driver.ContentTypeJSON:
+		if err := json.Unmarshal(data, result); err != nil {
+			return driver.WithStack(err)
+		}
+	case driver.ContentTypeVelocypack:
+		//panic(velocypack.Slice(data))
+		if err := velocypack.Unmarshal(velocypack.Slice(data), result); err != nil {
+			return driver.WithStack(err)
+		}
+	default:
+		return driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
 	}
 	return nil
 }

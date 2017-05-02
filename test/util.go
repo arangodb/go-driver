@@ -23,6 +23,7 @@
 package test
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -63,4 +64,15 @@ func describe(err error) string {
 	} else {
 		return fmt.Sprintf("%v", string(c))
 	}
+}
+
+func formatRawResponse(raw []byte) string {
+	l := len(raw)
+	if l < 2 {
+		return hex.EncodeToString(raw)
+	}
+	if (raw[0] == '{' && raw[l-1] == '}') || (raw[0] == '[' && raw[l-1] == ']') {
+		return string(raw)
+	}
+	return hex.EncodeToString(raw)
 }
