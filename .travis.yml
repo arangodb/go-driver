@@ -5,4 +5,4 @@ services:
 
 language: go
 
-script: make run-tests
+script: make run-tests-http run-tests-single
