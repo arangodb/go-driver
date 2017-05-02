@@ -126,7 +126,7 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 	}
 	ct := c.contentType
 	if ct != driver.ContentTypeJSON && strings.Contains(path, "_api/gharial") {
-		// Currently (3.1.17) calls to this API do not work well with vpack.
+		// Currently (3.1.18) calls to this API do not work well with vpack.
 		ct = driver.ContentTypeJSON
 	}
 	switch ct {

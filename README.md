@@ -1,5 +1,6 @@
 # ArangoDB GO Driver.
 
+[![Build Status](https://travis-ci.org/arangodb/go-driver.svg?branch=master)](https://travis-ci.org/arangodb/go-driver)
 [![GoDoc](https://godoc.org/github.com/arangodb/g-driver?status.svg)](http://godoc.org/github.com/arangodb/go-driver)
 
 NOTE: THIS IS WORK IN PROGRESS.
