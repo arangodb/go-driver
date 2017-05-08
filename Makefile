@@ -6,7 +6,7 @@ GOBUILDDIR := $(SCRIPTDIR)/.gobuild
 GOVERSION := 1.8-alpine
 
 ifndef ARANGODB
-	ARANGODB := arangodb/arangodb-preview:3.2.devel
+	ARANGODB := neunhoef/arangodb:3.2.devel
 endif
 
 TESTOPTIONS := 
