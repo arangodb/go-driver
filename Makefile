@@ -197,7 +197,7 @@ ifeq ("$(TEST_MODE)", "single")
 	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
 	docker run -d --name $(DBCONTAINER) \
 		$(ARANGOENV) \
-		$(ARANGODB)
+		$(ARANGODB) --log.level requests=debug --log.use-microtime true
 else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
@@ -206,7 +206,7 @@ endif
 __test_cleanup:
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
 ifeq ("$(TEST_MODE)", "single")
-	@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	#@docker rm -f -v $(DBCONTAINER) &> /dev/null
 else
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 endif
