@@ -27,6 +27,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -180,13 +181,23 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		}
 	}
 
+	// Read response body
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	if rawResponse != nil {
+		*rawResponse = body
+	}
+
 	ct := resp.Header.Get("Content-Type")
 	var httpResp driver.Response
 	switch strings.Split(ct, ";")[0] {
 	case "application/json":
-		httpResp = &httpJSONResponse{resp: resp, rawResponse: rawResponse}
+		httpResp = &httpJSONResponse{resp: resp, rawResponse: body}
 	case "application/x-velocypack":
-		httpResp = &httpVPackResponse{resp: resp, rawResponse: rawResponse}
+		httpResp = &httpVPackResponse{resp: resp, rawResponse: body}
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
 	}
