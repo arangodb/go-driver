@@ -24,7 +24,6 @@ package http
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	driver "github.com/arangodb/go-driver"
@@ -34,7 +33,7 @@ import (
 // httpVPackResponse implements driver.Response for standard golang Velocypack encoded http responses.
 type httpVPackResponse struct {
 	resp        *http.Response
-	rawResponse *[]byte
+	rawResponse []byte
 	slice       velocypack.Slice
 	bodyArray   []driver.Response
 }
@@ -135,16 +134,7 @@ func (r *httpVPackResponse) ParseArrayBody() ([]driver.Response, error) {
 // getSlice reads the slice from the response if needed.
 func (r *httpVPackResponse) getSlice() (velocypack.Slice, error) {
 	if r.slice == nil {
-		body := r.resp.Body
-		defer body.Close()
-		content, err := ioutil.ReadAll(body)
-		if err != nil {
-			return nil, driver.WithStack(err)
-		}
-		if r.rawResponse != nil {
-			*r.rawResponse = content
-		}
-		r.slice = velocypack.Slice(content)
+		r.slice = velocypack.Slice(r.rawResponse)
 		//fmt.Println(r.slice)
 	}
 	return r.slice, nil
