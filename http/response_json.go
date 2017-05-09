@@ -25,7 +25,6 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -36,7 +35,7 @@ import (
 // httpJSONResponse implements driver.Response for standard golang JSON encoded http responses.
 type httpJSONResponse struct {
 	resp        *http.Response
-	rawResponse *[]byte
+	rawResponse []byte
 	bodyObject  map[string]*json.RawMessage
 	bodyArray   []map[string]*json.RawMessage
 }
@@ -82,23 +81,16 @@ func (r *httpJSONResponse) CheckStatus(validStatusCodes ...int) error {
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
 func (r *httpJSONResponse) ParseBody(field string, result interface{}) error {
 	if r.bodyObject == nil {
-		body := r.resp.Body
-		defer body.Close()
-		content, err := ioutil.ReadAll(body)
-		if err != nil {
-			return driver.WithStack(err)
-		}
-		if r.rawResponse != nil {
-			*r.rawResponse = content
-		}
 		bodyMap := make(map[string]*json.RawMessage)
-		if err := json.Unmarshal(content, &bodyMap); err != nil {
+		if err := json.Unmarshal(r.rawResponse, &bodyMap); err != nil {
 			return driver.WithStack(err)
 		}
 		r.bodyObject = bodyMap
 	}
-	if err := parseBody(r.bodyObject, field, result); err != nil {
-		return driver.WithStack(err)
+	if result != nil {
+		if err := parseBody(r.bodyObject, field, result); err != nil {
+			return driver.WithStack(err)
+		}
 	}
 	return nil
 }
@@ -107,17 +99,8 @@ func (r *httpJSONResponse) ParseBody(field string, result interface{}) error {
 // This can only be used for requests that return an array of objects.
 func (r *httpJSONResponse) ParseArrayBody() ([]driver.Response, error) {
 	if r.bodyArray == nil {
-		body := r.resp.Body
-		defer body.Close()
-		content, err := ioutil.ReadAll(body)
-		if err != nil {
-			return nil, driver.WithStack(err)
-		}
-		if r.rawResponse != nil {
-			*r.rawResponse = content
-		}
 		var bodyArray []map[string]*json.RawMessage
-		if err := json.Unmarshal(content, &bodyArray); err != nil {
+		if err := json.Unmarshal(r.rawResponse, &bodyArray); err != nil {
 			return nil, driver.WithStack(err)
 		}
 		r.bodyArray = bodyArray
