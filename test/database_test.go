@@ -36,7 +36,11 @@ func ensureDatabase(ctx context.Context, c driver.Client, name string, options *
 	if driver.IsNotFound(err) {
 		db, err = c.CreateDatabase(ctx, name, options)
 		if err != nil {
-			t.Fatalf("Failed to create database '%s': %s", name, describe(err))
+			if driver.IsConflict(err) {
+				t.Fatalf("Failed to create database (conflict) '%s': %s %#v", name, describe(err), err)
+			} else {
+				t.Fatalf("Failed to create database '%s': %s %#v", name, describe(err), err)
+			}
 		}
 	} else if err != nil {
 		t.Fatalf("Failed to open database '%s': %s", name, describe(err))

@@ -68,7 +68,7 @@ func NewConnection(config ConnectionConfig, connectionBuilder ServerConnectionBu
 }
 
 const (
-	defaultTimeout = time.Minute
+	defaultTimeout = 9*time.Minute
 	keyEndpoint    = "arangodb-endpoint"
 )
 
