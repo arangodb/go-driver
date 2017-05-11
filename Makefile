@@ -48,7 +48,7 @@ ifeq ("$(TEST_MODE)", "single")
 	TEST_ENDPOINTS := http://localhost:8529
 else 
 	TEST_NET := container:$(TESTCONTAINER)-ns
-	TEST_ENDPOINTS := http://localhost:7002
+	TEST_ENDPOINTS := http://localhost:7001
 	TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
@@ -56,7 +56,7 @@ ifeq ("$(TEST_AUTH)", "rootpw")
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
-	TEST_ENDPOINTS = https://localhost:7002
+	TEST_ENDPOINTS = https://localhost:7001
 endif
 endif
 
@@ -184,7 +184,7 @@ endif
 
 
 run-tests-cluster-failover: $(GOBUILDDIR)
-	# Note that we use 127.0.0.1:7002.. as endpoints, so we force using IPv4
+	# Note that we use 127.0.0.1:7001.. as endpoints, so we force using IPv4
 	# This is essential since we only block IPv4 ports in the test.
 	@echo "Cluster server, failover, no authentication"
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh start
@@ -195,7 +195,7 @@ run-tests-cluster-failover: $(GOBUILDDIR)
 		--privileged \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
-		-e TEST_ENDPOINTS=http://127.0.0.1:7002,http://127.0.0.1:7007,http://127.0.0.1:7012 \
+		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
 		-e TEST_AUTHENTICATION=basic:root: \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
