@@ -42,6 +42,9 @@ type TransportConfig struct {
 	// itself.
 	// Zero means no limit.
 	IdleConnTimeout time.Duration
+
+	// Version specifies the version of the Velocystream protocol
+	Version Version
 }
 
 // Transport manages client-server connections using the VST protocol to a specific host.
@@ -162,7 +165,7 @@ func (c *Transport) getAvailableConnection() *Connection {
 
 // createConnection creates a new connection.
 func (c *Transport) createConnection() (*Connection, error) {
-	conn, err := dial(c.hostAddr, c.tlsConfig)
+	conn, err := dial(c.Version, c.hostAddr, c.tlsConfig)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}

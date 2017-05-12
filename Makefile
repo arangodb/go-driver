@@ -100,13 +100,15 @@ run-tests-http: $(GOBUILDDIR)
 		go test $(TESTOPTIONS) $(REPOPATH)/http
 
 # Single server tests 
-run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst
+run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0
 
 run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth
 
 run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-no-auth
 
-run-tests-single-vst: run-tests-single-vst-with-auth run-tests-single-vst-no-auth
+run-tests-single-vst-1.0: run-tests-single-vst-1.0-with-auth run-tests-single-vst-1.0-no-auth
+
+run-tests-single-vst-1.1: run-tests-single-vst-1.1-with-auth run-tests-single-vst-1.1-no-auth
 
 run-tests-single-json-no-auth:
 	@echo "Single server, HTTP+JSON, no authentication"
@@ -116,9 +118,13 @@ run-tests-single-vpack-no-auth:
 	@echo "Single server, HTTP+Velocypack, no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-single-vst-no-auth:
-	@echo "Single server, Velocystream, no authentication"
-	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONNECTION="vst" __run_tests
+run-tests-single-vst-1.0-no-auth:
+	@echo "Single server, Velocystream 1.0, no authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-single-vst-1.1-no-auth:
+	@echo "Single server, Velocystream 1.1, no authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 run-tests-single-json-with-auth:
 	@echo "Single server, HTTP+JSON, with authentication"
@@ -128,16 +134,24 @@ run-tests-single-vpack-with-auth:
 	@echo "Single server, HTTP+Velocypack, with authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-single-vst-with-auth:
-	@echo "Single server, Velocystream, with authentication"
-	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONNECTION="vst" __run_tests
+run-tests-single-vst-1.0-with-auth:
+	@echo "Single server, Velocystream 1.0, with authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-single-vst-1.1-with-auth:
+	@echo "Single server, Velocystream 1.1, with authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # Cluster mode tests
-run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack
+run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack run-tests-cluster-vst-1.0
 
 run-tests-cluster-json: run-tests-cluster-json-no-auth run-tests-cluster-json-with-auth run-tests-cluster-json-ssl
 
 run-tests-cluster-vpack: run-tests-cluster-vpack-no-auth run-tests-cluster-vpack-with-auth run-tests-cluster-vpack-ssl
+
+run-tests-cluster-vst-1.0: run-tests-cluster-vst-1.0-no-auth run-tests-cluster-vst-1.0-with-auth run-tests-cluster-vst-1.0-ssl
+
+run-tests-cluster-vst-1.1: run-tests-cluster-vst-1.1-no-auth run-tests-cluster-vst-1.1-with-auth run-tests-cluster-vst-1.1-ssl
 
 run-tests-cluster-json-no-auth: $(GOBUILDDIR)
 	@echo "Cluster server, JSON, no authentication"
@@ -147,9 +161,13 @@ run-tests-cluster-vpack-no-auth: $(GOBUILDDIR)
 	@echo "Cluster server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-cluster-vst-no-auth: $(GOBUILDDIR)
-	@echo "Cluster server, Velocystream, no authentication"
-	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONNECTION="vst" __run_tests
+run-tests-cluster-vst-1.0-no-auth: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream 1.0, no authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-cluster-vst-1.1-no-auth: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream 1.1, no authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 run-tests-cluster-json-with-auth: $(GOBUILDDIR)
 	@echo "Cluster server, with authentication"
@@ -159,9 +177,13 @@ run-tests-cluster-vpack-with-auth: $(GOBUILDDIR)
 	@echo "Cluster server, Velocypack, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-cluster-vst-with-auth: $(GOBUILDDIR)
-	@echo "Cluster server, Velocystream, with authentication"
-	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONNECTION="vst" __run_tests
+run-tests-cluster-vst-1.0-with-auth: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream 1.0, with authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-cluster-vst-1.1-with-auth: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream 1.1, with authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 run-tests-cluster-json-ssl: $(GOBUILDDIR)
 	@echo "Cluster server, SSL, with authentication"
@@ -171,9 +193,13 @@ run-tests-cluster-vpack-ssl: $(GOBUILDDIR)
 	@echo "Cluster server, Velocypack, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-cluster-vst-ssl: $(GOBUILDDIR)
-	@echo "Cluster server, Velocystream, SSL, with authentication"
-	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" __run_tests
+run-tests-cluster-vst-1.0-ssl: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream 1.0, SSL, with authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-cluster-vst-1.1-ssl: $(GOBUILDDIR)
+	@echo "Cluster server, Velocystream 1.1, SSL, with authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # Internal test tasks
 __run_tests: $(GOBUILDDIR) __test_prepare __test_go_test __test_cleanup
@@ -187,6 +213,7 @@ __test_go_test:
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
+		-e TEST_CVERSION=$(TEST_CVERSION) \
 		-e TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \

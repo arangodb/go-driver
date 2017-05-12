@@ -37,6 +37,7 @@ import (
 
 // Connection is a single socket connection to a server.
 type Connection struct {
+	version       Version
 	lastMessageID uint64
 	maxChunkSize  uint32
 	msgStore      messageStore
@@ -51,11 +52,12 @@ const (
 )
 
 var (
-	vstProtocolHeader = []byte("VST/1.0\r\n\r\n")
+	vstProtocolHeader1_0 = []byte("VST/1.0\r\n\r\n")
+	vstProtocolHeader1_1 = []byte("VST/1.1\r\n\r\n")
 )
 
 // dial opens a new connection to the server on the given address.
-func dial(addr string, tlsConfig *tls.Config) (*Connection, error) {
+func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, error) {
 	var conn net.Conn
 	var err error
 	if tlsConfig != nil {
@@ -74,12 +76,22 @@ func dial(addr string, tlsConfig *tls.Config) (*Connection, error) {
 	}
 
 	// Send protocol header
-	if _, err := conn.Write(vstProtocolHeader); err != nil {
-		return nil, driver.WithStack(err)
+	switch version {
+	case Version1_0:
+		if _, err := conn.Write(vstProtocolHeader1_0); err != nil {
+			return nil, driver.WithStack(err)
+		}
+	case Version1_1:
+		if _, err := conn.Write(vstProtocolHeader1_1); err != nil {
+			return nil, driver.WithStack(err)
+		}
+	default:
+		return nil, driver.WithStack(fmt.Errorf("Unknown protocol version %d", int(version)))
 	}
 
 	// prepare connection
 	c := &Connection{
+		version:      version,
 		maxChunkSize: defaultMaxChunkSize,
 		conn:         conn,
 	}
@@ -168,7 +180,15 @@ func (c *Connection) sendChunk(deadline time.Time, chunk chunk) error {
 	defer c.writeMutex.Unlock()
 
 	c.conn.SetWriteDeadline(deadline)
-	_, err := chunk.WriteTo(c.conn)
+	var err error
+	switch c.version {
+	case Version1_0:
+		_, err = chunk.WriteToVST1_0(c.conn)
+	case Version1_1:
+		_, err = chunk.WriteToVST1_1(c.conn)
+	default:
+		err = driver.WithStack(fmt.Errorf("Unknown protocol version %d", int(c.version)))
+	}
 	c.updateLastActivity()
 	if err != nil {
 		return driver.WithStack(err)
@@ -183,7 +203,16 @@ func (c *Connection) readChunkLoop() {
 			// Closing, we're done
 			return
 		}
-		chunk, err := readChunk(c.conn)
+		var chunk chunk
+		var err error
+		switch c.version {
+		case Version1_0:
+			chunk, err = readChunkVST1_0(c.conn)
+		case Version1_1:
+			chunk, err = readChunkVST1_1(c.conn)
+		default:
+			err = driver.WithStack(fmt.Errorf("Unknown protocol version %d", int(c.version)))
+		}
 		c.updateLastActivity()
 		if err != nil {
 			if !c.closing {
