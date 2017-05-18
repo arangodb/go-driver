@@ -129,7 +129,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
 	if waitUntilReady {
-		timeout := time.Minute
+		timeout := 3*time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if up := waitUntilServerAvailable(ctx, c, t); !up {
@@ -210,7 +210,7 @@ func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
-	timeout := time.Minute
+	timeout := 3*time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	if up := waitUntilServerAvailable(ctx, c, t); !up {
