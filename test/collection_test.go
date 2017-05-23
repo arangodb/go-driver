@@ -252,30 +252,40 @@ func TestCollectionSetProperties(t *testing.T) {
 		}
 	}
 
-	// Set JournalSize
-	journalSize := int64(1048576 * 17)
-	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
-		t.Fatalf("Failed to set properties: %s", describe(err))
-	}
-	if p, err := col.Properties(nil); err != nil {
-		t.Errorf("Failed to fetch collection properties: %s", describe(err))
-	} else {
-		if p.JournalSize != journalSize {
-			t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
-		}
+	// Query engine info (on rocksdb, JournalSize is always 0)
+	info, err := db.EngineInfo(nil)
+	if err != nil {
+		t.Fatalf("Failed to get engine info: %s", describe(err))
 	}
 
-	// Set JournalSize again
-	journalSize = int64(1048576 * 21)
-	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
-		t.Fatalf("Failed to set properties: %s", describe(err))
-	}
-	if p, err := col.Properties(nil); err != nil {
-		t.Errorf("Failed to fetch collection properties: %s", describe(err))
-	} else {
-		if p.JournalSize != journalSize {
-			t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
+	if info.Type == driver.EngineTypeMMFiles {
+		// Set JournalSize
+		journalSize := int64(1048576 * 17)
+		if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
+			t.Fatalf("Failed to set properties: %s", describe(err))
 		}
+		if p, err := col.Properties(nil); err != nil {
+			t.Errorf("Failed to fetch collection properties: %s", describe(err))
+		} else {
+			if p.JournalSize != journalSize {
+				t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
+			}
+		}
+
+		// Set JournalSize again
+		journalSize = int64(1048576 * 21)
+		if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{JournalSize: journalSize}); err != nil {
+			t.Fatalf("Failed to set properties: %s", describe(err))
+		}
+		if p, err := col.Properties(nil); err != nil {
+			t.Errorf("Failed to fetch collection properties: %s", describe(err))
+		} else {
+			if p.JournalSize != journalSize {
+				t.Errorf("Expected JournalSize %v, got %v", journalSize, p.JournalSize)
+			}
+		}
+	} else {
+		t.Skipf("JournalSize tests are being skipped on engine type '%s'", info.Type)
 	}
 }
 
