@@ -58,6 +58,34 @@ func (d *database) Name() string {
 	return d.name
 }
 
+// EngineInfo returns information about the database engine being used.
+// Note: When your cluster has multiple endpoints (cluster), you will get information
+// from the server that is currently being used.
+// If you want to know exactly which server the information is from, use a client
+// with only a single endpoint and avoid automatic synchronization of endpoints.
+func (d *database) EngineInfo(ctx context.Context) (EngineInfo, error) {
+	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/engine"))
+	if err != nil {
+		return EngineInfo{}, WithStack(err)
+	}
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return EngineInfo{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200, 404); err != nil {
+		return EngineInfo{}, WithStack(err)
+	}
+	if resp.StatusCode() == 404 {
+		// On version 3.1, this endpoint is not yet supported
+		return EngineInfo{Type: EngineTypeMMFiles}, nil
+	}
+	var data EngineInfo
+	if err := resp.ParseBody("", &data); err != nil {
+		return EngineInfo{}, WithStack(err)
+	}
+	return data, nil
+}
+
 // Remove removes the entire database.
 // If the database does not exist, a NotFoundError is returned.
 func (d *database) Remove(ctx context.Context) error {

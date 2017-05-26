@@ -29,6 +29,13 @@ type Database interface {
 	// Name returns the name of the database.
 	Name() string
 
+	// EngineInfo returns information about the database engine being used.
+	// Note: When your cluster has multiple endpoints (cluster), you will get information
+	// from the server that is currently being used.
+	// If you want to know exactly which server the information is from, use a client
+	// with only a single endpoint and avoid automatic synchronization of endpoints.
+	EngineInfo(ctx context.Context) (EngineInfo, error)
+
 	// Remove removes the entire database.
 	// If the database does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
@@ -47,4 +54,21 @@ type Database interface {
 	// When the query is valid, nil returned, otherwise an error is returned.
 	// The query is not executed.
 	ValidateQuery(ctx context.Context, query string) error
+}
+
+// EngineType indicates type of database engine being used.
+type EngineType string
+
+const (
+	EngineTypeMMFiles = EngineType("mmfiles")
+	EngineTypeRocksDB = EngineType("rocksdb")
+)
+
+func (t EngineType) String() string {
+	return string(t)
+}
+
+// EngineInfo contains information about the database engine being used.
+type EngineInfo struct {
+	Type EngineType `json:"name"`
 }
