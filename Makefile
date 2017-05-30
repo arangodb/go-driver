@@ -233,7 +233,7 @@ endif
 __test_cleanup:
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
 ifeq ("$(TEST_MODE)", "single")
-	#@docker rm -f -v $(DBCONTAINER) &> /dev/null
+	@docker rm -f -v $(DBCONTAINER) &> /dev/null
 else
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 endif
