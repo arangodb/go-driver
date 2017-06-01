@@ -199,7 +199,7 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 	case "application/x-velocypack":
 		httpResp = &httpVPackResponse{resp: resp, rawResponse: body}
 	default:
-		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
+		return nil, driver.WithStack(fmt.Errorf("Unsupported HTTP response content type: %s, status: %d, body: %s", ct, resp.StatusCode, string(body)))
 	}
 	if ctx != nil {
 		if v := ctx.Value(keyResponse); v != nil {
