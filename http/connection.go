@@ -199,6 +199,14 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 	case "application/x-velocypack":
 		httpResp = &httpVPackResponse{resp: resp, rawResponse: body}
 	default:
+		if resp.StatusCode == http.StatusUnauthorized {
+			// When unauthorized the server sometimes return a `text/plain` response.
+			return nil, driver.WithStack(driver.ArangoError{
+				HasError:     true,
+				Code:         resp.StatusCode,
+				ErrorMessage: string(body),
+			})
+		}
 		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
 	}
 	if ctx != nil {
