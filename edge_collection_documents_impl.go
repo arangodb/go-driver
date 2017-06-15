@@ -243,7 +243,7 @@ func (c *edgeCollection) UpdateDocuments(ctx context.Context, keys []string, upd
 	updateCount := updatesVal.Len()
 	if keys != nil {
 		if len(keys) != updateCount {
-			return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %s", updateCount, len(keys))})
+			return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %d", updateCount, len(keys))})
 		}
 		for _, key := range keys {
 			if err := validateKey(key); err != nil {
@@ -362,7 +362,7 @@ func (c *edgeCollection) ReplaceDocuments(ctx context.Context, keys []string, do
 	documentCount := documentsVal.Len()
 	if keys != nil {
 		if len(keys) != documentCount {
-			return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %s", documentCount, len(keys))})
+			return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %d", documentCount, len(keys))})
 		}
 		for _, key := range keys {
 			if err := validateKey(key); err != nil {
