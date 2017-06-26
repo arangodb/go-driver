@@ -4,6 +4,7 @@ ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 
 GOBUILDDIR := $(SCRIPTDIR)/.gobuild
 GOVERSION := 1.8-alpine
+TMPDIR := $(GOBUILDDIR)
 
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
@@ -41,6 +42,15 @@ else ifeq ("$(TEST_AUTH)", "rootpw")
 	TEST_AUTHENTICATION := basic:root:rootpw
 	TAGS := -tags auth
 	TESTS := $(REPOPATH)/test
+else ifeq ("$(TEST_AUTH)", "jwt")
+	ARANGOENV := -e ARANGO_ROOT_PASSWORD=rootpw 
+	TEST_AUTHENTICATION := jwt:root:rootpw
+	TAGS := -tags auth
+	TESTS := $(REPOPATH)/test
+	JWTSECRET := testing
+	JWTSECRETFILE := $(TMPDIR)/$(TESTCONTAINER)-jwtsecret
+	ARANGOVOL := -v "$(JWTSECRETFILE):/jwtsecret"
+	ARANGOARGS := --server.jwt-secret=/jwtsecret
 endif
 
 ifeq ("$(TEST_MODE)", "single")
@@ -53,6 +63,10 @@ else
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
 	TEST_AUTHENTICATION := basic:root:
+endif
+ifeq ("$(TEST_AUTH)", "jwt")
+	CLUSTERENV := JWTSECRET=testing
+	TEST_AUTHENTICATION := jwt:root:
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
@@ -147,6 +161,10 @@ run-tests-single-vst-1.1-with-auth:
 	@echo "Single server, Velocystream 1.1, with authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
+run-tests-single-vst-1.1-jwt-auth:
+	@echo "Single server, Velocystream 1.1, JWT authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
 # Cluster mode tests
 run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack run-tests-cluster-vst-1.0
 
@@ -228,11 +246,14 @@ __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 else
+ifdef SWTSECRET 
+	echo "$JWTSECRET" > "${JWTSECRETFILE}"
+endif
 ifeq ("$(TEST_MODE)", "single")
 	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
 	docker run -d --name $(DBCONTAINER) \
-		$(ARANGOENV) \
-		$(ARANGODB) --log.level requests=debug --log.use-microtime true
+		$(ARANGOENV) $(ARANGOVOL) \
+		$(ARANGODB) --log.level requests=debug --log.use-microtime true $(ARANGOARGS)
 else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
