@@ -91,6 +91,11 @@ ifdef TEST_ENDPOINTS_OVERRIDE
 	TEST_ENDPOINTS := $(TEST_ENDPOINTS_OVERRIDE)
 endif
 
+ifdef ENABLE_VST11
+	VST11_SINGLE_TESTS := run-tests-single-vst-1.1
+	VST11_CLUSTER_TESTS := run-tests-cluster-vst-1.1
+endif
+
 .PHONY: all build clean run-tests
 
 all: build
@@ -119,7 +124,7 @@ run-tests-http: $(GOBUILDDIR)
 		go test $(TESTOPTIONS) $(REPOPATH)/http
 
 # Single server tests 
-run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0
+run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
 
 run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth
 
@@ -127,7 +132,7 @@ run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-
 
 run-tests-single-vst-1.0: run-tests-single-vst-1.0-with-auth run-tests-single-vst-1.0-no-auth
 
-run-tests-single-vst-1.1: run-tests-single-vst-1.1-with-auth run-tests-single-vst-1.1-no-auth
+run-tests-single-vst-1.1: run-tests-single-vst-1.1-with-auth run-tests-single-vst-1.1-jwt-auth run-tests-single-vst-1.1-no-auth
 
 run-tests-single-json-no-auth:
 	@echo "Single server, HTTP+JSON, no authentication"
@@ -166,7 +171,7 @@ run-tests-single-vst-1.1-jwt-auth:
 	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # Cluster mode tests
-run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack run-tests-cluster-vst-1.0
+run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack run-tests-cluster-vst-1.0 $(VST11_CLUSTER_TESTS)
 
 run-tests-cluster-json: run-tests-cluster-json-no-auth run-tests-cluster-json-with-auth run-tests-cluster-json-ssl
 
