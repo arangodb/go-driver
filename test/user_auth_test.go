@@ -125,8 +125,8 @@ func TestGrantUser(t *testing.T) {
 	}
 
 	// Try to access the db, should fail now
-	if _, err := authClient.Database(nil, "grant_user_test"); err == nil {
-		t.Error("Expected failure, got success")
+	if _, err := authClient.Database(nil, "grant_user_test"); !driver.IsUnauthorized(err) {
+		t.Errorf("Expected UnauthorizedError, got %s %#v", describe(err), err)
 	}
 }
 

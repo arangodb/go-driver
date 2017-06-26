@@ -6,7 +6,7 @@ GOBUILDDIR := $(SCRIPTDIR)/.gobuild
 GOVERSION := 1.8-alpine
 
 ifndef ARANGODB
-	ARANGODB := neunhoef/arangodb:3.2.devel
+	ARANGODB := arangodb/arangodb:latest
 endif
 
 TESTOPTIONS := 
@@ -70,6 +70,11 @@ endif
 ifeq ("$(TEST_BENCHMARK)", "true")
 	TAGS := -bench=. -run=notests -cpu=1,2,4
 	TESTS := $(REPOPATH)/test
+endif
+
+ifdef TEST_ENDPOINTS_OVERRIDE
+	TEST_NET := host 
+	TEST_ENDPOINTS := $(TEST_ENDPOINTS_OVERRIDE)
 endif
 
 .PHONY: all build clean run-tests
@@ -220,6 +225,9 @@ __test_go_test:
 		go test $(TAGS) $(TESTOPTIONS) $(TESTS)
 
 __test_prepare:
+ifdef TEST_ENDPOINTS_OVERRIDE
+	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+else
 ifeq ("$(TEST_MODE)", "single")
 	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
 	docker run -d --name $(DBCONTAINER) \
@@ -229,13 +237,16 @@ else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
 endif
+endif
 
 __test_cleanup:
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
+ifndef TEST_ENDPOINTS_OVERRIDE
 ifeq ("$(TEST_MODE)", "single")
 	@docker rm -f -v $(DBCONTAINER) &> /dev/null
 else
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+endif
 endif
 	@sleep 3
 
