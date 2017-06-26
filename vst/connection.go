@@ -42,7 +42,7 @@ const (
 	keyResponse    = "arangodb-response"
 )
 
-// ConnectionConfig provides all configuration options for a HTTP connection.
+// ConnectionConfig provides all configuration options for a Velocypack connection.
 type ConnectionConfig struct {
 	// Endpoints holds 1 or more URL's used to connect to the database.
 	// In case of a connection to an ArangoDB cluster, you must provide the URL's of all coordinators.
@@ -54,6 +54,9 @@ type ConnectionConfig struct {
 	// If Transport is not of type `*http.Transport`, the `TLSConfig` property is not used.
 	// Otherwise a `TLSConfig` property other than `nil` will overwrite the `TLSClientConfig`
 	// property of `Transport`.
+	// Use the Version field in Transport to switch between Velocypack 1.0 / 1.1.
+	// Note that Velocypack 1.1 requires ArangoDB 3.2 or higher.
+	// Note that Velocypack 1.0 does not support JWT authentication.
 	Transport protocol.TransportConfig
 	// Cluster configuration settings
 	cluster.ConnectionConfig
@@ -233,10 +236,9 @@ func (c *vstConnection) SetAuthentication(auth driver.Authentication) (driver.Co
 		password := auth.Get("password")
 		vstAuth = newBasicAuthentication(userName, password)
 	case driver.AuthenticationTypeJWT:
-		return nil, driver.WithStack(fmt.Errorf("JWT Authentication is currently not supported using Velocystream"))
-		/*userName := auth.Get("username")
+		userName := auth.Get("username")
 		password := auth.Get("password")
-		vstAuth = newJWTAuthentication(userName, password)*/
+		vstAuth = newJWTAuthentication(userName, password)
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported authentication type %d", int(auth.Type())))
 	}
