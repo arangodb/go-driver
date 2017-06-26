@@ -215,6 +215,11 @@ func (c *authenticatedConnection) SetAuthentication(auth driver.Authentication) 
 	return result, nil
 }
 
+// Protocols returns all protocols used by this connection.
+func (c *authenticatedConnection) Protocols() driver.ProtocolSet {
+	return c.conn.Protocols()
+}
+
 // prepare calls Authentication.Prepare if needed.
 func (c *authenticatedConnection) prepare(ctx context.Context) error {
 	c.prepareMutex.Lock()

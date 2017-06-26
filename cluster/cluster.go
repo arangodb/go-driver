@@ -68,7 +68,7 @@ func NewConnection(config ConnectionConfig, connectionBuilder ServerConnectionBu
 }
 
 const (
-	defaultTimeout = 9*time.Minute
+	defaultTimeout = 9 * time.Minute
 	keyEndpoint    = "arangodb-endpoint"
 )
 
@@ -255,6 +255,22 @@ func (c *clusterConnection) SetAuthentication(auth driver.Authentication) (drive
 	c.servers = newServerConnections
 
 	return c, nil
+}
+
+// Protocols returns all protocols used by this connection.
+func (c *clusterConnection) Protocols() driver.ProtocolSet {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	var result driver.ProtocolSet
+	for _, s := range c.servers {
+		for _, p := range s.Protocols() {
+			if !result.Contains(p) {
+				result = append(result, p)
+			}
+		}
+	}
+	return result
 }
 
 // getCurrentServer returns the currently used server.

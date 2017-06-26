@@ -248,3 +248,15 @@ func (c *vstConnection) SetAuthentication(auth driver.Authentication) (driver.Co
 
 	return c, nil
 }
+
+// Protocols returns all protocols used by this connection.
+func (c *vstConnection) Protocols() driver.ProtocolSet {
+	switch c.transport.Version {
+	case protocol.Version1_0:
+		return driver.ProtocolSet{driver.ProtocolVST1_0}
+	case protocol.Version1_1:
+		return driver.ProtocolSet{driver.ProtocolVST1_1}
+	default:
+		return driver.ProtocolSet{ /*unknown*/ }
+	}
+}

@@ -132,7 +132,9 @@ func (c *Transport) getConnection(ctx context.Context) (*Connection, error) {
 	// No connections available, make a new one
 	conn, err := c.createConnection()
 	if err != nil {
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 		return nil, driver.WithStack(err)
 	}
 

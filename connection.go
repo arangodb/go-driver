@@ -49,6 +49,9 @@ type Connection interface {
 
 	// Configure the authentication used for this connection.
 	SetAuthentication(Authentication) (Connection, error)
+
+	// Protocols returns all protocols used by this connection.
+	Protocols() ProtocolSet
 }
 
 // Request represents the input to a request on the server.

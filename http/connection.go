@@ -279,3 +279,8 @@ func (c *httpConnection) SetAuthentication(auth driver.Authentication) (driver.C
 	}
 	return result, nil
 }
+
+// Protocols returns all protocols used by this connection.
+func (c *httpConnection) Protocols() driver.ProtocolSet {
+	return driver.ProtocolSet{driver.ProtocolHTTP}
+}
