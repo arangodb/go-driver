@@ -23,19 +23,19 @@
 package test
 
 type UserDoc struct {
-	Name string `arangodb:"name"`
-	Age  int    `arangodb:"age"`
+	Name string `arangodb:"name" json:"name"`
+	Age  int    `arangodb:"age" json:"age"`
 }
 
 type UserDocWithKey struct {
-	Key  string `arangodb:"_key"`
-	Name string `arangodb:"name"`
-	Age  int    `arangodb:"age"`
+	Key  string `arangodb:"_key" json:"_key"`
+	Name string `arangodb:"name" json:"name"`
+	Age  int    `arangodb:"age" json:"age"`
 }
 
 type Account struct {
-	ID   string   `arangodb:"id"`
-	User *UserDoc `arangodb:"user"`
+	ID   string   `arangodb:"id" json:"id"`
+	User *UserDoc `arangodb:"user" json:"user"`
 }
 
 type Book struct {
@@ -43,26 +43,26 @@ type Book struct {
 }
 
 type RouteEdge struct {
-	From     string `arangodb:"_from,omitempty"`
-	To       string `arangodb:"_to,omitempty"`
-	Distance int    `arangodb:"distance,omitempty"`
+	From     string `arangodb:"_from,omitempty" json:"_from,omitempty"`
+	To       string `arangodb:"_to,omitempty" json:"_to,omitempty"`
+	Distance int    `arangodb:"distance,omitempty" json:"distance,omitempty"`
 }
 
 type RouteEdgeWithKey struct {
-	Key      string `arangodb:"_key"`
-	From     string `arangodb:"_from,omitempty"`
-	To       string `arangodb:"_to,omitempty"`
-	Distance int    `arangodb:"distance,omitempty"`
+	Key      string `arangodb:"_key" json:"_key"`
+	From     string `arangodb:"_from,omitempty" json:"_from,omitempty"`
+	To       string `arangodb:"_to,omitempty" json:"_to,omitempty"`
+	Distance int    `arangodb:"distance,omitempty" json:"distance,omitempty"`
 }
 
 type RelationEdge struct {
-	From string `arangodb:"_from,omitempty"`
-	To   string `arangodb:"_to,omitempty"`
-	Type string `arangodb:"type,omitempty"`
+	From string `arangodb:"_from,omitempty" json:"_from,omitempty"`
+	To   string `arangodb:"_to,omitempty" json:"_to,omitempty"`
+	Type string `arangodb:"type,omitempty" json:"type,omitempty"`
 }
 
 type AccountEdge struct {
-	From string   `arangodb:"_from,omitempty"`
-	To   string   `arangodb:"_to,omitempty"`
-	User *UserDoc `arangodb:"user"`
+	From string   `arangodb:"_from,omitempty" json:"_from,omitempty"`
+	To   string   `arangodb:"_to,omitempty" json:"_to,omitempty"`
+	User *UserDoc `arangodb:"user" json:"user"`
 }

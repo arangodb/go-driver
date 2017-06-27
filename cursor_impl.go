@@ -53,10 +53,10 @@ type cursor struct {
 }
 
 type cursorData struct {
-	Count   int64        `arangodb:"count,omitempty"`   // the total number of result documents available (only available if the query was executed with the count attribute set)
-	ID      string       `arangodb:"id"`                // id of temporary cursor created on the server (optional, see above)
-	Result  []*RawObject `arangodb:"result,omitempty"`  // an array of result documents (might be empty if query has no results)
-	HasMore bool         `arangodb:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
+	Count   int64        `arangodb:"count,omitempty" json:"count,omitempty"`   // the total number of result documents available (only available if the query was executed with the count attribute set)
+	ID      string       `arangodb:"id" json:"id"`                // id of temporary cursor created on the server (optional, see above)
+	Result  []*RawObject `arangodb:"result,omitempty" json:"result,omitempty"`  // an array of result documents (might be empty if query has no results)
+	HasMore bool         `arangodb:"hasMore,omitempty" json:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
 }
 
 // relPath creates the relative path to this cursor (`_db/<db-name>/_api/cursor`)

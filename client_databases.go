@@ -49,17 +49,17 @@ type CreateDatabaseOptions struct {
 	// List of users to initially create for the new database. User information will not be changed for users that already exist.
 	// If users is not specified or does not contain any users, a default user root will be created with an empty string password.
 	// This ensures that the new database will be accessible after it is created.
-	Users []CreateDatabaseUserOptions `arangodb:"users,omitempty"`
+	Users []CreateDatabaseUserOptions `arangodb:"users,omitempty" json:"users,omitempty"`
 }
 
 // CreateDatabaseUserOptions contains options for creating a single user for a database.
 type CreateDatabaseUserOptions struct {
 	// Loginname of the user to be created
-	UserName string `arangodb:"user,omitempty"`
+	UserName string `arangodb:"user,omitempty" json:"user,omitempty"`
 	// The user password as a string. If not specified, it will default to an empty string.
-	Password string `arangodb:"passwd,omitempty"`
+	Password string `arangodb:"passwd,omitempty" json:"passwd,omitempty"`
 	// A flag indicating whether the user account should be activated or not. The default value is true. If set to false, the user won't be able to log into the database.
-	Active *bool `arangodb:"active,omitempty"`
+	Active *bool `arangodb:"active,omitempty" json:"active,omitempty"`
 	// A JSON object with extra user information. The data contained in extra will be stored for the user but not be interpreted further by ArangoDB.
-	Extra interface{} `arangodb:"extra,omitempty"`
+	Extra interface{} `arangodb:"extra,omitempty" json:"extra,omitempty"`
 }

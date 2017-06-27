@@ -63,9 +63,9 @@ type CreateGraphOptions struct {
 // EdgeDefinition contains all information needed to define a single edge in a graph.
 type EdgeDefinition struct {
 	// The name of the edge collection to be used.
-	Collection string `arangodb:"collection"`
+	Collection string `arangodb:"collection" json:"collection"`
 	// To contains the names of one or more edge collections that can contain target vertices.
-	To []string `arangodb:"to"`
+	To []string `arangodb:"to" json:"to"`
 	// From contains the names of one or more vertex collections that can contain source vertices.
-	From []string `arangodb:"from"`
+	From []string `arangodb:"from" json:"from"`
 }

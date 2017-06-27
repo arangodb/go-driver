@@ -34,8 +34,8 @@ import (
 )
 
 type Book struct {
-	Title   string `arangodb:"title"`
-	NoPages int    `arangodb:"no_pages"`
+	Title   string `arangodb:"title" json:"title"`
+	NoPages int    `arangodb:"no_pages" json:"no_pages"`
 }
 
 func Example_createDocument() {

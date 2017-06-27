@@ -29,8 +29,8 @@ import (
 
 type getGraphResponse struct {
 	Graph struct {
-		EdgeDefinitions []EdgeDefinition `arangodb:"edgeDefinitions,omitempty"`
-	} `arangodb:"graph"`
+		EdgeDefinitions []EdgeDefinition `arangodb:"edgeDefinitions,omitempty" json:"edgeDefinitions,omitempty"`
+	} `arangodb:"graph" json:"graph"`
 }
 
 // EdgeCollection opens a connection to an existing edge-collection within the graph.

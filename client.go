@@ -68,14 +68,14 @@ type ClientConfig struct {
 // VersionInfo describes the version of a database server.
 type VersionInfo struct {
 	// This will always contain "arango"
-	Server string `arangodb:"server,omitempty"`
+	Server string `arangodb:"server,omitempty" json:"server,omitempty"`
 	//  The server version string. The string has the format "major.minor.sub".
 	// Major and minor will be numeric, and sub may contain a number or a textual version.
-	Version Version `arangodb:"version,omitempty"`
+	Version Version `arangodb:"version,omitempty" json:"version,omitempty"`
 	// Type of license of the server
-	License string `arangodb:"license,omitempty"`
+	License string `arangodb:"license,omitempty" json:"license,omitempty"`
 	// Optional additional details. This is returned only if the context is configured using WithDetails.
-	Details map[string]interface{} `arangodb:"details,omitempty"`
+	Details map[string]interface{} `arangodb:"details,omitempty" json:"details,omitempty"`
 }
 
 // String creates a string representation of the given VersionInfo.

@@ -70,5 +70,5 @@ func (t EngineType) String() string {
 
 // EngineInfo contains information about the database engine being used.
 type EngineInfo struct {
-	Type EngineType `arangodb:"name"`
+	Type EngineType `arangodb:"name" json:"name"`
 }

@@ -81,13 +81,13 @@ type jwtAuthentication struct {
 }
 
 type jwtOpenRequest struct {
-	UserName string `arangodb:"username"`
-	Password string `arangodb:"password"`
+	UserName string `arangodb:"username" json:"username"`
+	Password string `arangodb:"password" json:"password"`
 }
 
 type jwtOpenResponse struct {
-	Token              string `arangodb:"jwt"`
-	MustChangePassword bool   `arangodb:"must_change_password,omitempty"`
+	Token              string `arangodb:"jwt" json:"jwt"`
+	MustChangePassword bool   `arangodb:"must_change_password,omitempty" json:"must_change_password,omitempty"`
 }
 
 // Prepare is called before the first request of the given connection is made.

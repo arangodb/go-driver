@@ -70,7 +70,7 @@ func (c *client) DatabaseExists(ctx context.Context, name string) (bool, error) 
 }
 
 type getDatabaseResponse struct {
-	Result []string `arangodb:"result,omitempty"`
+	Result []string `arangodb:"result,omitempty" json:"result,omitempty"`
 }
 
 // Databases returns a list of all databases found by the client.
@@ -124,7 +124,7 @@ func listDatabases(ctx context.Context, conn Connection, path string) ([]Databas
 func (c *client) CreateDatabase(ctx context.Context, name string, options *CreateDatabaseOptions) (Database, error) {
 	input := struct {
 		CreateDatabaseOptions
-		Name string `arangodb:"name"`
+		Name string `arangodb:"name" json:"name"`
 	}{
 		Name: name,
 	}

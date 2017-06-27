@@ -28,7 +28,7 @@ import (
 )
 
 type listVertexCollectionResponse struct {
-	Collections []string `arangodb:"collections,omitempty"`
+	Collections []string `arangodb:"collections,omitempty" json:"collections,omitempty"`
 }
 
 // VertexCollection opens a connection to an existing edge-collection within the graph.
@@ -123,7 +123,7 @@ func (g *graph) CreateVertexCollection(ctx context.Context, collection string) (
 		return nil, WithStack(err)
 	}
 	input := struct {
-		Collection string `arangodb:"collection,omitempty"`
+		Collection string `arangodb:"collection,omitempty" json:"collection,omitempty"`
 	}{
 		Collection: collection,
 	}

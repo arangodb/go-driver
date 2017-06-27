@@ -28,8 +28,8 @@ import (
 )
 
 type Sample struct {
-	Title string `arangodb:"a"`
-	Age   int    `arangodb:"b,omitempty"`
+	Title string `arangodb:"a" json:"a"`
+	Age   int    `arangodb:"b,omitempty" json:"b,omitempty"`
 }
 
 func TestSetBodyImportArrayStructs(t *testing.T) {

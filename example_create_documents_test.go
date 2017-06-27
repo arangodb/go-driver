@@ -36,8 +36,8 @@ import (
 )
 
 type User struct {
-	Name string `arangodb:"name"`
-	Age  int    `arangodb:"age"`
+	Name string `arangodb:"name" json:"name"`
+	Age  int    `arangodb:"age" json:"age"`
 }
 
 func Example_createDocuments() {
