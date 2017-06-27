@@ -23,19 +23,19 @@
 package test
 
 type UserDoc struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
+	Name string `arangodb:"name"`
+	Age  int    `arangodb:"age"`
 }
 
 type UserDocWithKey struct {
-	Key  string `json:"_key"`
-	Name string `json:"name"`
-	Age  int    `json:"age"`
+	Key  string `arangodb:"_key"`
+	Name string `arangodb:"name"`
+	Age  int    `arangodb:"age"`
 }
 
 type Account struct {
-	ID   string   `json:"id"`
-	User *UserDoc `json:"user"`
+	ID   string   `arangodb:"id"`
+	User *UserDoc `arangodb:"user"`
 }
 
 type Book struct {
@@ -43,26 +43,26 @@ type Book struct {
 }
 
 type RouteEdge struct {
-	From     string `json:"_from,omitempty"`
-	To       string `json:"_to,omitempty"`
-	Distance int    `json:"distance,omitempty"`
+	From     string `arangodb:"_from,omitempty"`
+	To       string `arangodb:"_to,omitempty"`
+	Distance int    `arangodb:"distance,omitempty"`
 }
 
 type RouteEdgeWithKey struct {
-	Key      string `json:"_key"`
-	From     string `json:"_from,omitempty"`
-	To       string `json:"_to,omitempty"`
-	Distance int    `json:"distance,omitempty"`
+	Key      string `arangodb:"_key"`
+	From     string `arangodb:"_from,omitempty"`
+	To       string `arangodb:"_to,omitempty"`
+	Distance int    `arangodb:"distance,omitempty"`
 }
 
 type RelationEdge struct {
-	From string `json:"_from,omitempty"`
-	To   string `json:"_to,omitempty"`
-	Type string `json:"type,omitempty"`
+	From string `arangodb:"_from,omitempty"`
+	To   string `arangodb:"_to,omitempty"`
+	Type string `arangodb:"type,omitempty"`
 }
 
 type AccountEdge struct {
-	From string   `json:"_from,omitempty"`
-	To   string   `json:"_to,omitempty"`
-	User *UserDoc `json:"user"`
+	From string   `arangodb:"_from,omitempty"`
+	To   string   `arangodb:"_to,omitempty"`
+	User *UserDoc `arangodb:"user"`
 }

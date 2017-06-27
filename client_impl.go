@@ -122,7 +122,7 @@ func (c *client) autoSynchronizeEndpoints(interval time.Duration) {
 }
 
 type roleResponse struct {
-	Role string `json:"role,omitempty"`
+	Role string `arangodb:"role,omitempty"`
 }
 
 // role returns the role of the server that answers the request.
@@ -147,11 +147,11 @@ func (c *client) role(ctx context.Context) (string, error) {
 }
 
 type clusterEndpointsResponse struct {
-	Endpoints []clusterEndpoint `json:"endpoints,omitempty"`
+	Endpoints []clusterEndpoint `arangodb:"endpoints,omitempty"`
 }
 
 type clusterEndpoint struct {
-	Endpoint string `json:"endpoint,omitempty"`
+	Endpoint string `arangodb:"endpoint,omitempty"`
 }
 
 // clusterEndpoints returns the endpoints of a cluster.

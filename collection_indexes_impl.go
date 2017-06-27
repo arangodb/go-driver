@@ -28,17 +28,17 @@ import (
 )
 
 type indexData struct {
-	ID        string   `json:"id,omitempty"`
-	Type      string   `json:"type"`
-	Fields    []string `json:"fields,omitempty"`
-	Unique    *bool    `json:"unique,omitempty"`
-	Sparse    *bool    `json:"sparse,omitempty"`
-	GeoJSON   *bool    `json:"geoJson,omitempty"`
-	MinLength int      `json:"minLength,omitempty"`
+	ID        string   `arangodb:"id,omitempty"`
+	Type      string   `arangodb:"type"`
+	Fields    []string `arangodb:"fields,omitempty"`
+	Unique    *bool    `arangodb:"unique,omitempty"`
+	Sparse    *bool    `arangodb:"sparse,omitempty"`
+	GeoJSON   *bool    `arangodb:"geoJson,omitempty"`
+	MinLength int      `arangodb:"minLength,omitempty"`
 }
 
 type indexListResponse struct {
-	Indexes []indexData `json:"indexes,omitempty"`
+	Indexes []indexData `arangodb:"indexes,omitempty"`
 }
 
 // Index opens a connection to an existing index within the collection.

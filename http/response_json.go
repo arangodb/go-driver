@@ -159,7 +159,7 @@ func decodeObjectFields(objValue reflect.Value, body map[string]*json.RawMessage
 			}
 		} else {
 			// Decode individual field
-			jsonName := strings.Split(f.Tag.Get("json"), ",")[0]
+			jsonName := strings.Split(f.Tag.Get("arangodb"), ",")[0]
 			if jsonName == "" {
 				jsonName = f.Name
 			} else if jsonName == "-" {

@@ -117,23 +117,23 @@ type CollectionDocuments interface {
 type ImportDocumentOptions struct {
 	// FromPrefix is an optional prefix for the values in _from attributes. If specified, the value is automatically
 	// prepended to each _from input value. This allows specifying just the keys for _from.
-	FromPrefix string `json:"fromPrefix,omitempty"`
+	FromPrefix string `arangodb:"fromPrefix,omitempty"`
 	// ToPrefix is an optional prefix for the values in _to attributes. If specified, the value is automatically
 	// prepended to each _to input value. This allows specifying just the keys for _to.
-	ToPrefix string `json:"toPrefix,omitempty"`
+	ToPrefix string `arangodb:"toPrefix,omitempty"`
 	// Overwrite is a flag that if set, then all data in the collection will be removed prior to the import.
 	// Note that any existing index definitions will be preseved.
-	Overwrite bool `json:"overwrite,omitempty"`
+	Overwrite bool `arangodb:"overwrite,omitempty"`
 	// OnDuplicate controls what action is carried out in case of a unique key constraint violation.
 	// Possible values are:
 	// - ImportOnDuplicateError
 	// - ImportOnDuplicateUpdate
 	// - ImportOnDuplicateReplace
 	// - ImportOnDuplicateIgnore
-	OnDuplicate ImportOnDuplicate `json:"onDuplicate,omitempty"`
+	OnDuplicate ImportOnDuplicate `arangodb:"onDuplicate,omitempty"`
 	// Complete is a flag that if set, will make the whole import fail if any error occurs.
 	// Otherwise the import will continue even if some documents cannot be imported.
-	Complete bool `json:"complete,omitempty"`
+	Complete bool `arangodb:"complete,omitempty"`
 }
 
 // ImportOnDuplicate is a type to control what action is carried out in case of a unique key constraint violation.
@@ -155,13 +155,13 @@ const (
 // ImportDocumentStatistics holds statistics of an import action.
 type ImportDocumentStatistics struct {
 	// Created holds the number of documents imported.
-	Created int64 `json:"created,omitempty"`
+	Created int64 `arangodb:"created,omitempty"`
 	// Errors holds the number of documents that were not imported due to an error.
-	Errors int64 `json:"errors,omitempty"`
+	Errors int64 `arangodb:"errors,omitempty"`
 	// Empty holds the number of empty lines found in the input (will only contain a value greater zero for types documents or auto).
-	Empty int64 `json:"empty,omitempty"`
+	Empty int64 `arangodb:"empty,omitempty"`
 	// Updated holds the number of updated/replaced documents (in case onDuplicate was set to either update or replace).
-	Updated int64 `json:"updated,omitempty"`
+	Updated int64 `arangodb:"updated,omitempty"`
 	// Ignored holds the number of failed but ignored insert operations (in case onDuplicate was set to ignore).
-	Ignored int64 `json:"ignored,omitempty"`
+	Ignored int64 `arangodb:"ignored,omitempty"`
 }
