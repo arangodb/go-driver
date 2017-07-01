@@ -47,10 +47,10 @@ type user struct {
 }
 
 type userData struct {
-	Name           string     `json:"user,omitempty"`
-	Active         bool       `json:"active,omitempty"`
-	Extra          *RawObject `json:"extra,omitempty"`
-	ChangePassword bool       `json:"changePassword,omitempty"`
+	Name           string     `arangodb:"user,omitempty" json:"user,omitempty"`
+	Active         bool       `arangodb:"active,omitempty" json:"active,omitempty"`
+	Extra          *RawObject `arangodb:"extra,omitempty" json:"extra,omitempty"`
+	ChangePassword bool       `arangodb:"changePassword,omitempty" json:"changePassword,omitempty"`
 }
 
 // relPath creates the relative path to this index (`_api/user/<name>`)
@@ -153,7 +153,7 @@ func (u *user) Replace(ctx context.Context, options UserOptions) error {
 }
 
 type userAccessibleDatabasesResponse struct {
-	Result map[string]string `json:"result"`
+	Result map[string]string `arangodb:"result" json:"result"`
 }
 
 // AccessibleDatabases returns a list of all databases that can be accessed by this user.
@@ -208,7 +208,7 @@ func (u *user) grant(ctx context.Context, db Database, access string) error {
 		return WithStack(err)
 	}
 	input := struct {
-		Grant string `json:"grant"`
+		Grant string `arangodb:"grant" json:"grant"`
 	}{
 		Grant: access,
 	}

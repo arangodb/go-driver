@@ -74,7 +74,7 @@ func (c *client) UserExists(ctx context.Context, name string) (bool, error) {
 }
 
 type listUsersResponse struct {
-	Result []userData `json:"result,omitempty"`
+	Result []userData `arangodb:"result,omitempty" json:"result,omitempty"`
 }
 
 // Users returns a list of all users found by the client.
@@ -110,7 +110,7 @@ func (c *client) Users(ctx context.Context) ([]User, error) {
 func (c *client) CreateUser(ctx context.Context, name string, options *UserOptions) (User, error) {
 	input := struct {
 		UserOptions
-		Name string `json:"user"`
+		Name string `arangodb:"user" json:"user"`
 	}{
 		Name: name,
 	}

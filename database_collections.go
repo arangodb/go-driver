@@ -44,48 +44,48 @@ type DatabaseCollections interface {
 // CreateCollectionOptions contains options that customize the creating of a collection.
 type CreateCollectionOptions struct {
 	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MiB). (The default is a configuration parameter)
-	JournalSize int `json:"journalSize,omitempty"`
+	JournalSize int `arangodb:"journalSize,omitempty" json:"journalSize,omitempty"`
 	// ReplicationFactor in a cluster (default is 1), this attribute determines how many copies of each shard are kept on different DBServers.
 	// The value 1 means that only one copy (no synchronous replication) is kept.
 	// A value of k means that k-1 replicas are kept. Any two copies reside on different DBServers.
 	// Replication between them is synchronous, that is, every write operation to the "leader" copy will be replicated to all "follower" replicas,
 	// before the write operation is reported successful. If a server fails, this is detected automatically
 	// and one of the servers holding copies take over, usually without an error being reported.
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor int `arangodb:"replicationFactor,omitempty" json:"replicationFactor,omitempty"`
 	// If true then the data is synchronized to disk before returning from a document create, update, replace or removal operation. (default: false)
-	WaitForSync bool `json:"waitForSync,omitempty"`
+	WaitForSync bool `arangodb:"waitForSync,omitempty" json:"waitForSync,omitempty"`
 	// Whether or not the collection will be compacted (default is true)
-	DoCompact *bool `json:"doCompact,omitempty"`
+	DoCompact *bool `arangodb:"doCompact,omitempty" json:"doCompact,omitempty"`
 	// If true then the collection data is kept in-memory only and not made persistent.
 	// Unloading the collection will cause the collection data to be discarded. Stopping or re-starting the server will also
 	// cause full loss of data in the collection. Setting this option will make the resulting collection be slightly faster
 	// than regular collections because ArangoDB does not enforce any synchronization to disk and does not calculate any
 	// CRC checksums for datafiles (as there are no datafiles). This option should therefore be used for cache-type collections only,
 	// and not for data that cannot be re-created otherwise. (The default is false)
-	IsVolatile bool `json:"isVolatile,omitempty"`
+	IsVolatile bool `arangodb:"isVolatile,omitempty" json:"isVolatile,omitempty"`
 	// In a cluster, this attribute determines which document attributes are used to
 	// determine the target shard for documents. Documents are sent to shards based on the values of their shard key attributes.
 	// The values of all shard key attributes in a document are hashed, and the hash value is used to determine the target shard.
 	// Note: Values of shard key attributes cannot be changed once set. This option is meaningless in a single server setup.
 	// The default is []string{"_key"}.
-	ShardKeys []string `json:"shardKeys,omitempty"`
+	ShardKeys []string `arangodb:"shardKeys,omitempty" json:"shardKeys,omitempty"`
 	// In a cluster, this value determines the number of shards to create for the collection. In a single server setup, this option is meaningless. (default is 1)
-	NumberOfShards int `json:"numberOfShards,omitempty"`
+	NumberOfShards int `arangodb:"numberOfShards,omitempty" json:"numberOfShards,omitempty"`
 	// If true, create a system collection. In this case collection-name should start with an underscore.
 	// End users should normally create non-system collections only. API implementors may be required to create system
 	// collections in very special occasions, but normally a regular collection will do. (The default is false)
-	IsSystem bool `json:"isSystem,omitempty"`
+	IsSystem bool `arangodb:"isSystem,omitempty" json:"isSystem,omitempty"`
 	// The type of the collection to create. (default is CollectionTypeDocument)
-	Type CollectionType `json:"type,omitempty"`
+	Type CollectionType `arangodb:"type,omitempty" json:"type,omitempty"`
 	// The number of buckets into which indexes using a hash table are split. The default is 16 and this number has to be a power
 	// of 2 and less than or equal to 1024. For very large collections one should increase this to avoid long pauses when the hash
 	// table has to be initially built or resized, since buckets are resized individually and can be initially built in parallel.
 	// For example, 64 might be a sensible value for a collection with 100 000 000 documents.
 	// Currently, only the edge index respects this value, but other index types might follow in future ArangoDB versions.
 	// Changes are applied when the collection is loaded the next time.
-	IndexBuckets int `json:"indexBuckets,omitempty"`
+	IndexBuckets int `arangodb:"indexBuckets,omitempty" json:"indexBuckets,omitempty"`
 	// Specifies how keys in the collection are created.
-	KeyOptions *CollectionKeyOptions `json:"keyOptions,omitempty"`
+	KeyOptions *CollectionKeyOptions `arangodb:"keyOptions,omitempty" json:"keyOptions,omitempty"`
 }
 
 // CollectionType is the type of a collection.
@@ -103,13 +103,13 @@ type CollectionKeyOptions struct {
 	// If set to true, then it is allowed to supply own key values in the _key attribute of a document.
 	// If set to false, then the key generator will solely be responsible for generating keys and supplying own
 	// key values in the _key attribute of documents is considered an error.
-	AllowUserKeys bool `json:"allowUserKeys,omitempty"`
+	AllowUserKeys bool `arangodb:"allowUserKeys,omitempty" json:"allowUserKeys,omitempty"`
 	// Specifies the type of the key generator. The currently available generators are traditional and autoincrement.
-	Type KeyGeneratorType `json:"type,omitempty"`
+	Type KeyGeneratorType `arangodb:"type,omitempty" json:"type,omitempty"`
 	// increment value for autoincrement key generator. Not used for other key generator types.
-	Increment int `json:"increment,omitempty"`
+	Increment int `arangodb:"increment,omitempty" json:"increment,omitempty"`
 	// Initial offset value for autoincrement key generator. Not used for other key generator types.
-	Offset int `json:"offset,omitempty"`
+	Offset int `arangodb:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // KeyGeneratorType is a type of key generated, used in `CollectionKeyOptions`.

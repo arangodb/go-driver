@@ -26,6 +26,6 @@ package driver
 // You can use this in your own edge document structures completely use your own.
 // If you use your own, make sure to include a `_from` and `_to` field.
 type EdgeDocument struct {
-	From DocumentID `json:"_from,omitempty"`
-	To   DocumentID `json:"_to,omitempty"`
+	From DocumentID `arangodb:"_from,omitempty" json:"_from,omitempty"`
+	To   DocumentID `arangodb:"_to,omitempty" json:"_to,omitempty"`
 }

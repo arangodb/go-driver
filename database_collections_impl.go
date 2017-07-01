@@ -70,7 +70,7 @@ func (d *database) CollectionExists(ctx context.Context, name string) (bool, err
 }
 
 type getCollectionResponse struct {
-	Result []CollectionInfo `json:"result,omitempty"`
+	Result []CollectionInfo `arangodb:"result,omitempty" json:"result,omitempty"`
 }
 
 // Collections returns a list of all collections in the database.
@@ -106,7 +106,7 @@ func (d *database) Collections(ctx context.Context) ([]Collection, error) {
 func (d *database) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
 	input := struct {
 		CreateCollectionOptions
-		Name string `json:"name"`
+		Name string `arangodb:"name" json:"name"`
 	}{
 		Name: name,
 	}

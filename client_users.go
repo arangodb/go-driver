@@ -44,9 +44,9 @@ type ClientUsers interface {
 // UserOptions contains options for creating a new user, updating or replacing a user.
 type UserOptions struct {
 	// The user password as a string. If not specified, it will default to an empty string.
-	Password string `json:"passwd,omitempty"`
+	Password string `arangodb:"passwd,omitempty" json:"passwd,omitempty"`
 	// A flag indicating whether the user account should be activated or not. The default value is true. If set to false, the user won't be able to log into the database.
-	Active *bool `json:"active,omitempty"`
+	Active *bool `arangodb:"active,omitempty" json:"active,omitempty"`
 	// A JSON object with extra user information. The data contained in extra will be stored for the user but not be interpreted further by ArangoDB.
-	Extra interface{} `json:"extra,omitempty"`
+	Extra interface{} `arangodb:"extra,omitempty" json:"extra,omitempty"`
 }

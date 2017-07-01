@@ -93,7 +93,7 @@ func (c *collection) Count(ctx context.Context) (int64, error) {
 		return 0, WithStack(err)
 	}
 	var data struct {
-		Count int64 `json:"count,omitempty"`
+		Count int64 `arangodb:"count,omitempty" json:"count,omitempty"`
 	}
 	if err := resp.ParseBody("", &data); err != nil {
 		return 0, WithStack(err)
@@ -137,7 +137,7 @@ func (c *collection) Revision(ctx context.Context) (string, error) {
 		return "", WithStack(err)
 	}
 	var data struct {
-		Revision string `json:"revision,omitempty"`
+		Revision string `arangodb:"revision,omitempty" json:"revision,omitempty"`
 	}
 	if err := resp.ParseBody("", &data); err != nil {
 		return "", WithStack(err)
@@ -191,7 +191,7 @@ func (c *collection) Load(ctx context.Context) error {
 		return WithStack(err)
 	}
 	opts := struct {
-		Count bool `json:"count"`
+		Count bool `arangodb:"count" json:"count"`
 	}{
 		Count: false,
 	}
