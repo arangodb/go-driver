@@ -95,6 +95,11 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 // TestGrantUser creates a user & database and granting the user access to the database.
 func TestGrantUser(t *testing.T) {
 	c := createClientFromEnv(t, true)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
 	u := ensureUser(nil, c, "grant_user1", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_test", nil, t)
 
@@ -127,6 +132,23 @@ func TestGrantUser(t *testing.T) {
 	// Try to access the db, should fail now
 	if _, err := authClient.Database(nil, "grant_user_test"); !driver.IsUnauthorized(err) {
 		t.Errorf("Expected UnauthorizedError, got %s %#v", describe(err), err)
+	}
+
+	if isv32p {
+		// Now grant read-only access
+		if err := u.GrantReadOnlyAccess(nil, db); err != nil {
+			t.Fatalf("GrantAccess failed: %s", describe(err))
+		}
+		// Try to access the db, should succeed
+		if _, err := authClient.Database(nil, "grant_user_test"); err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+		// Try to create another collection, should fail
+		if _, err := authDb.CreateCollection(nil, "some_other_collection", nil); !driver.IsUnauthorized(err) {
+			t.Errorf("Expected UnauthorizedError, got %s %#v", describe(err), err)
+		}
+	} else {
+		t.Logf("GrantReadOnlyAccess is not supported on versions below 3.2 (got version %s)", version.Version)
 	}
 }
 

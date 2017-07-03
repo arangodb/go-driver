@@ -192,6 +192,15 @@ func (u *user) GrantReadWriteAccess(ctx context.Context, db Database) error {
 	return nil
 }
 
+// GrantReadOnlyAccess grants this user read only access to the given database.
+// This function requires ArangoDB 3.2 and up.
+func (u *user) GrantReadOnlyAccess(ctx context.Context, db Database) error {
+	if err := u.grant(ctx, db, "ro"); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // RevokeAccess revokes this user access to the given database.
 func (u *user) RevokeAccess(ctx context.Context, db Database) error {
 	if err := u.grant(ctx, db, "none"); err != nil {

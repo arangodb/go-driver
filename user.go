@@ -56,6 +56,10 @@ type User interface {
 	// GrantReadWriteAccess grants this user read/write access to the given database.
 	GrantReadWriteAccess(ctx context.Context, db Database) error
 
+	// GrantReadOnlyAccess grants this user read only access to the given database.
+	// This function requires ArangoDB 3.2 and up.
+	GrantReadOnlyAccess(ctx context.Context, db Database) error
+
 	// RevokeAccess revokes this user access to the given database.
 	RevokeAccess(ctx context.Context, db Database) error
 }
