@@ -37,7 +37,7 @@ func NewClient(config ClientConfig) (Client, error) {
 	conn := config.Connection
 	if config.Authentication != nil {
 		var err error
-		conn, err = newAuthenticatedConnection(conn, config.Authentication)
+		conn, err = conn.SetAuthentication(config.Authentication)
 		if err != nil {
 			return nil, WithStack(err)
 		}

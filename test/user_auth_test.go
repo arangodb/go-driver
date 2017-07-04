@@ -33,7 +33,14 @@ import (
 
 // TestUpdateUserPasswordMyself creates a user and tries to update the password of the authenticated user.
 func TestUpdateUserPasswordMyself(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	var conn driver.Connection
+	c := createClientFromEnv(t, true, &conn)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
+	isVST1_0 := conn.Protocols().Contains(driver.ProtocolVST1_0)
 	ensureUser(nil, c, "user@TestUpdateUserPasswordMyself", &driver.UserOptions{Password: "foo"}, t)
 
 	authClient, err := driver.NewClient(driver.ClientConfig{
@@ -44,18 +51,29 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
 
-	u, err := authClient.User(nil, "user@TestUpdateUserPasswordMyself")
-	if err != nil {
-		t.Fatalf("Expected success, got %s", describe(err))
-	}
-	if err := u.Update(context.TODO(), driver.UserOptions{Password: "something"}); err != nil {
-		t.Errorf("Expected success, got %s", describe(err))
+	if isVST1_0 && !isv32p {
+		t.Skip("Cannot update my own password using VST in 3.1")
+	} else {
+		u, err := authClient.User(nil, "user@TestUpdateUserPasswordMyself")
+		if err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+		if err := u.Update(context.TODO(), driver.UserOptions{Password: "something"}); err != nil {
+			t.Errorf("Expected success, got %s", describe(err))
+		}
 	}
 }
 
 // TestUpdateUserPasswordOtherUser creates a user and tries to update the password of another user.
 func TestUpdateUserPasswordOtherUser(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	var conn driver.Connection
+	c := createClientFromEnv(t, true, &conn)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
+	isVST1_0 := conn.Protocols().Contains(driver.ProtocolVST1_0)
 	u1 := ensureUser(nil, c, "user1", &driver.UserOptions{Password: "foo"}, t)
 	ensureUser(nil, c, "user2", nil, t)
 	systemDb, err := c.Database(nil, "_system")
@@ -71,24 +89,28 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
 
-	// Right now user1 has no right to access user2
-	if _, err := authClient.User(nil, "user2"); !driver.IsForbidden(err) {
-		t.Fatalf("Expected ForbiddenError, got %s", describe(err))
-	}
+	if isVST1_0 && !isv32p {
+		t.Skip("Cannot update other password using VST in 3.1")
+	} else {
+		// Right now user1 has no right to access user2
+		if _, err := authClient.User(nil, "user2"); !driver.IsForbidden(err) {
+			t.Fatalf("Expected ForbiddenError, got %s", describe(err))
+		}
 
-	// Grant user1 access to _system db, then it should be able to access user2
-	if err := u1.GrantReadWriteAccess(nil, systemDb); err != nil {
-		t.Fatalf("Expected success, got %s", describe(err))
-	}
+		// Grant user1 access to _system db, then it should be able to access user2
+		if err := u1.GrantReadWriteAccess(nil, systemDb); err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
 
-	// Now change the password of another user.
-	// With user1 having rights for _system, this must succeed now
-	u2, err := authClient.User(nil, "user2")
-	if err != nil {
-		t.Fatalf("Expected success, got %s", describe(err))
-	}
-	if err := u2.Update(context.TODO(), driver.UserOptions{Password: "something"}); err != nil {
-		t.Errorf("Expected success, got %s", describe(err))
+		// Now change the password of another user.
+		// With user1 having rights for _system, this must succeed now
+		u2, err := authClient.User(nil, "user2")
+		if err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+		if err := u2.Update(context.TODO(), driver.UserOptions{Password: "something"}); err != nil {
+			t.Errorf("Expected success, got %s", describe(err))
+		}
 	}
 }
 
