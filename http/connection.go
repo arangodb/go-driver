@@ -207,7 +207,7 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 				ErrorMessage: string(body),
 			})
 		}
-		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
+		return nil, driver.WithStack(fmt.Errorf("Unsupported content type '%s' with status %d", ct, resp.StatusCode))
 	}
 	if ctx != nil {
 		if v := ctx.Value(keyResponse); v != nil {
