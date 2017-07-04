@@ -46,6 +46,12 @@ type Connection interface {
 
 	// UpdateEndpoints reconfigures the connection to use the given endpoints.
 	UpdateEndpoints(endpoints []string) error
+
+	// Configure the authentication used for this connection.
+	SetAuthentication(Authentication) (Connection, error)
+
+	// Protocols returns all protocols used by this connection.
+	Protocols() ProtocolSet
 }
 
 // Request represents the input to a request on the server.

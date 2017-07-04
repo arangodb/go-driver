@@ -68,7 +68,7 @@ func NewConnection(config ConnectionConfig, connectionBuilder ServerConnectionBu
 }
 
 const (
-	defaultTimeout = 9*time.Minute
+	defaultTimeout = 9 * time.Minute
 	keyEndpoint    = "arangodb-endpoint"
 )
 
@@ -79,6 +79,7 @@ type clusterConnection struct {
 	current           int
 	mutex             sync.RWMutex
 	defaultTimeout    time.Duration
+	auth              driver.Authentication
 }
 
 // NewRequest creates a new request with given method and path.
@@ -215,6 +216,12 @@ func (c *clusterConnection) UpdateEndpoints(endpoints []string) error {
 		if err != nil {
 			return driver.WithStack(err)
 		}
+		if c.auth != nil {
+			conn, err = conn.SetAuthentication(c.auth)
+			if err != nil {
+				return driver.WithStack(err)
+			}
+		}
 		servers = append(servers, conn)
 	}
 
@@ -226,6 +233,44 @@ func (c *clusterConnection) UpdateEndpoints(endpoints []string) error {
 	c.current = 0
 
 	return nil
+}
+
+// Configure the authentication used for this connection.
+func (c *clusterConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Configure underlying servers
+	newServerConnections := make([]driver.Connection, len(c.servers))
+	for i, s := range c.servers {
+		authConn, err := s.SetAuthentication(auth)
+		if err != nil {
+			return nil, driver.WithStack(err)
+		}
+		newServerConnections[i] = authConn
+	}
+
+	// Save authentication
+	c.auth = auth
+	c.servers = newServerConnections
+
+	return c, nil
+}
+
+// Protocols returns all protocols used by this connection.
+func (c *clusterConnection) Protocols() driver.ProtocolSet {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	var result driver.ProtocolSet
+	for _, s := range c.servers {
+		for _, p := range s.Protocols() {
+			if !result.Contains(p) {
+				result = append(result, p)
+			}
+		}
+	}
+	return result
 }
 
 // getCurrentServer returns the currently used server.

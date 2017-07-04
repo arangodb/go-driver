@@ -20,22 +20,20 @@
 // Author Ewout Prangsma
 //
 
-package http
+package vst
 
 import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptrace"
 	"net/url"
 	"strings"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/cluster"
 	"github.com/arangodb/go-driver/util"
+	"github.com/arangodb/go-driver/vst/protocol"
 	velocypack "github.com/arangodb/go-velocypack"
 )
 
@@ -44,7 +42,7 @@ const (
 	keyResponse    = "arangodb-response"
 )
 
-// ConnectionConfig provides all configuration options for a HTTP connection.
+// ConnectionConfig provides all configuration options for a Velocypack connection.
 type ConnectionConfig struct {
 	// Endpoints holds 1 or more URL's used to connect to the database.
 	// In case of a connection to an ArangoDB cluster, you must provide the URL's of all coordinators.
@@ -56,17 +54,22 @@ type ConnectionConfig struct {
 	// If Transport is not of type `*http.Transport`, the `TLSConfig` property is not used.
 	// Otherwise a `TLSConfig` property other than `nil` will overwrite the `TLSClientConfig`
 	// property of `Transport`.
-	Transport http.RoundTripper
+	// Use the Version field in Transport to switch between Velocypack 1.0 / 1.1.
+	// Note that Velocypack 1.1 requires ArangoDB 3.2 or higher.
+	// Note that Velocypack 1.0 does not support JWT authentication.
+	Transport protocol.TransportConfig
 	// Cluster configuration settings
 	cluster.ConnectionConfig
-	// ContentType specified type of content encoding to use.
-	ContentType driver.ContentType
 }
 
-// NewConnection creates a new HTTP connection based on the given configuration settings.
+type messageTransport interface {
+	Send(ctx context.Context, messageParts ...[]byte) (<-chan protocol.Message, error)
+}
+
+// NewConnection creates a new Velocystream connection based on the given configuration settings.
 func NewConnection(config ConnectionConfig) (driver.Connection, error) {
 	c, err := cluster.NewConnection(config.ConnectionConfig, func(endpoint string) (driver.Connection, error) {
-		conn, err := newHTTPConnection(endpoint, config)
+		conn, err := newVSTConnection(endpoint, config)
 		if err != nil {
 			return nil, driver.WithStack(err)
 		}
@@ -78,100 +81,90 @@ func NewConnection(config ConnectionConfig) (driver.Connection, error) {
 	return c, nil
 }
 
-// newHTTPConnection creates a new HTTP connection for a single endpoint and the remainder of the given configuration settings.
-func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connection, error) {
+// newVSTConnection creates a new Velocystream connection for a single endpoint and the remainder of the given configuration settings.
+func newVSTConnection(endpoint string, config ConnectionConfig) (driver.Connection, error) {
 	endpoint = util.FixupEndpointURLScheme(endpoint)
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
-	var httpTransport *http.Transport
-	if config.Transport != nil {
-		httpTransport, _ = config.Transport.(*http.Transport)
-	} else {
-		httpTransport = &http.Transport{}
-		config.Transport = httpTransport
+	hostAddr := u.Host
+	tlsConfig := config.TLSConfig
+	switch strings.ToLower(u.Scheme) {
+	case "http":
+		tlsConfig = nil
+	case "https":
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{}
+		}
 	}
-	if config.TLSConfig != nil && httpTransport != nil {
-		httpTransport.TLSClientConfig = config.TLSConfig
-	}
-	c := &httpConnection{
-		endpoint:    *u,
-		contentType: config.ContentType,
-		client: &http.Client{
-			Transport: config.Transport,
-		},
+	c := &vstConnection{
+		endpoint:  *u,
+		transport: protocol.NewTransport(hostAddr, tlsConfig, config.Transport),
 	}
 	return c, nil
 }
 
-// httpConnection implements an HTTP + JSON connection to an arangodb server.
-type httpConnection struct {
-	endpoint    url.URL
-	contentType driver.ContentType
-	client      *http.Client
+// vstConnection implements an Velocystream connection to an arangodb server.
+type vstConnection struct {
+	endpoint  url.URL
+	transport *protocol.Transport
 }
 
 // String returns the endpoint as string
-func (c *httpConnection) String() string {
+func (c *vstConnection) String() string {
 	return c.endpoint.String()
 }
 
 // NewRequest creates a new request with given method and path.
-func (c *httpConnection) NewRequest(method, path string) (driver.Request, error) {
+func (c *vstConnection) NewRequest(method, path string) (driver.Request, error) {
 	switch method {
 	case "GET", "POST", "DELETE", "HEAD", "PATCH", "PUT", "OPTIONS":
 	// Ok
 	default:
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
-	ct := c.contentType
-	if ct != driver.ContentTypeJSON && strings.Contains(path, "_api/gharial") {
-		// Currently (3.1.18) calls to this API do not work well with vpack.
-		ct = driver.ContentTypeJSON
+	r := &vstRequest{
+		method: method,
+		path:   path,
 	}
-	switch ct {
-	case driver.ContentTypeJSON:
-		r := &httpJSONRequest{
-			method: method,
-			path:   path,
-		}
-		return r, nil
-	case driver.ContentTypeVelocypack:
-		r := &httpVPackRequest{
-			method: method,
-			path:   path,
-		}
-		return r, nil
-	default:
-		return nil, driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
-	}
+	return r, nil
 }
 
 // Do performs a given request, returning its response.
-func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
-	httpReq, ok := req.(httpRequest)
+func (c *vstConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
+	resp, err := c.do(ctx, req, c.transport)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	return resp, nil
+}
+
+// Do performs a given request, returning its response.
+func (c *vstConnection) do(ctx context.Context, req driver.Request, transport messageTransport) (driver.Response, error) {
+	vstReq, ok := req.(*vstRequest)
 	if !ok {
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest"})
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a *vstRequest"})
 	}
-	r, err := httpReq.createHTTPRequest(c.endpoint)
-	rctx := ctx
-	if rctx == nil {
-		rctx = context.Background()
-	}
-	rctx = httptrace.WithClientTrace(rctx, &httptrace.ClientTrace{
-		WroteRequest: func(info httptrace.WroteRequestInfo) {
-			httpReq.WroteRequest(info)
-		},
-	})
-	r = r.WithContext(rctx)
+	msgParts, err := vstReq.createMessageParts()
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
-	resp, err := c.client.Do(r)
+	resp, err := transport.Send(ctx, msgParts...)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
+	// All data was send now
+	vstReq.WroteRequest()
+
+	// Wait for response
+	msg, ok := <-resp
+	if !ok {
+		// Message was cancelled / timeout
+		return nil, driver.WithStack(context.DeadlineExceeded)
+	}
+
+	//fmt.Printf("Received msg: %d\n", msg.ID)
 	var rawResponse *[]byte
 	if ctx != nil {
 		if v := ctx.Value(keyRawResponse); v != nil {
@@ -181,48 +174,25 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		}
 	}
 
-	// Read response body
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	vstResp, err := newResponse(msg, c.endpoint.String(), rawResponse)
 	if err != nil {
+		fmt.Printf("Cannot decode msg %d: %#v\n", msg.ID, err)
 		return nil, driver.WithStack(err)
-	}
-	if rawResponse != nil {
-		*rawResponse = body
-	}
-
-	ct := resp.Header.Get("Content-Type")
-	var httpResp driver.Response
-	switch strings.Split(ct, ";")[0] {
-	case "application/json":
-		httpResp = &httpJSONResponse{resp: resp, rawResponse: body}
-	case "application/x-velocypack":
-		httpResp = &httpVPackResponse{resp: resp, rawResponse: body}
-	default:
-		if resp.StatusCode == http.StatusUnauthorized {
-			// When unauthorized the server sometimes return a `text/plain` response.
-			return nil, driver.WithStack(driver.ArangoError{
-				HasError:     true,
-				Code:         resp.StatusCode,
-				ErrorMessage: string(body),
-			})
-		}
-		return nil, driver.WithStack(fmt.Errorf("Unsupported content type: %s", ct))
 	}
 	if ctx != nil {
 		if v := ctx.Value(keyResponse); v != nil {
 			if respPtr, ok := v.(*driver.Response); ok {
-				*respPtr = httpResp
+				*respPtr = vstResp
 			}
 		}
 	}
-	return httpResp, nil
+	return vstResp, nil
 }
 
 // Unmarshal unmarshals the given raw object into the given result interface.
-func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) error {
-	ct := c.contentType
-	if ct == driver.ContentTypeVelocypack && len(data) >= 2 {
+func (c *vstConnection) Unmarshal(data driver.RawObject, result interface{}) error {
+	ct := driver.ContentTypeVelocypack
+	if len(data) >= 2 {
 		// Poor mans auto detection of json
 		l := len(data)
 		if (data[0] == '{' && data[l-1] == '}') || (data[0] == '[' && data[l-1] == ']') {
@@ -240,47 +210,55 @@ func (c *httpConnection) Unmarshal(data driver.RawObject, result interface{}) er
 			return driver.WithStack(err)
 		}
 	default:
-		return driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
+		return driver.WithStack(fmt.Errorf("Unsupported content type %d", int(ct)))
 	}
 	return nil
 }
 
 // Endpoints returns the endpoints used by this connection.
-func (c *httpConnection) Endpoints() []string {
+func (c *vstConnection) Endpoints() []string {
 	return []string{c.endpoint.String()}
 }
 
 // UpdateEndpoints reconfigures the connection to use the given endpoints.
-func (c *httpConnection) UpdateEndpoints(endpoints []string) error {
+func (c *vstConnection) UpdateEndpoints(endpoints []string) error {
 	// Do nothing here.
 	// The real updating is done in cluster Connection.
 	return nil
 }
 
 // Configure the authentication used for this connection.
-func (c *httpConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
-	var httpAuth httpAuthentication
+func (c *vstConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
+	var vstAuth vstAuthentication
 	switch auth.Type() {
 	case driver.AuthenticationTypeBasic:
 		userName := auth.Get("username")
 		password := auth.Get("password")
-		httpAuth = newBasicAuthentication(userName, password)
+		vstAuth = newBasicAuthentication(userName, password)
 	case driver.AuthenticationTypeJWT:
 		userName := auth.Get("username")
 		password := auth.Get("password")
-		httpAuth = newJWTAuthentication(userName, password)
+		vstAuth = newJWTAuthentication(userName, password)
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported authentication type %d", int(auth.Type())))
 	}
 
-	result, err := newAuthenticatedConnection(c, httpAuth)
-	if err != nil {
-		return nil, driver.WithStack(err)
-	}
-	return result, nil
+	// Set authentication callback
+	c.transport.SetOnConnectionCreated(vstAuth.PrepareFunc(c))
+	// Close all existing connections
+	c.transport.CloseAllConnections()
+
+	return c, nil
 }
 
 // Protocols returns all protocols used by this connection.
-func (c *httpConnection) Protocols() driver.ProtocolSet {
-	return driver.ProtocolSet{driver.ProtocolHTTP}
+func (c *vstConnection) Protocols() driver.ProtocolSet {
+	switch c.transport.Version {
+	case protocol.Version1_0:
+		return driver.ProtocolSet{driver.ProtocolVST1_0}
+	case protocol.Version1_1:
+		return driver.ProtocolSet{driver.ProtocolVST1_1}
+	default:
+		return driver.ProtocolSet{ /*unknown*/ }
+	}
 }

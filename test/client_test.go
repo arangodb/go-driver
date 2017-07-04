@@ -34,6 +34,8 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
+	"github.com/arangodb/go-driver/vst"
+	"github.com/arangodb/go-driver/vst/protocol"
 )
 
 var (
@@ -103,16 +105,48 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 
 // createConnectionFromEnv initializes a Connection from information specified in environment variables.
 func createConnectionFromEnv(t testEnv) driver.Connection {
-	config := http.ConnectionConfig{
-		Endpoints:   getEndpointsFromEnv(t),
-		TLSConfig:   &tls.Config{InsecureSkipVerify: true},
-		ContentType: getContentTypeFromEnv(t),
+	connSpec := os.Getenv("TEST_CONNECTION")
+	connVer := os.Getenv("TEST_CVERSION")
+	switch connSpec {
+	case "vst":
+		var version protocol.Version
+		switch connVer {
+		case "1.0", "":
+			version = protocol.Version1_0
+		case "1.1":
+			version = protocol.Version1_1
+		default:
+			t.Fatalf("Unknown connection version '%s'", connVer)
+		}
+		config := vst.ConnectionConfig{
+			Endpoints: getEndpointsFromEnv(t),
+			TLSConfig: &tls.Config{InsecureSkipVerify: true},
+			Transport: protocol.TransportConfig{
+				Version: version,
+			},
+		}
+		conn, err := vst.NewConnection(config)
+		if err != nil {
+			t.Fatalf("Failed to create new vst connection: %s", describe(err))
+		}
+		return conn
+
+	case "http", "":
+		config := http.ConnectionConfig{
+			Endpoints:   getEndpointsFromEnv(t),
+			TLSConfig:   &tls.Config{InsecureSkipVerify: true},
+			ContentType: getContentTypeFromEnv(t),
+		}
+		conn, err := http.NewConnection(config)
+		if err != nil {
+			t.Fatalf("Failed to create new http connection: %s", describe(err))
+		}
+		return conn
+
+	default:
+		t.Fatalf("Unknown connection type: '%s'", connSpec)
+		return nil
 	}
-	conn, err := http.NewConnection(config)
-	if err != nil {
-		t.Fatalf("Failed to create new http connection: %s", describe(err))
-	}
-	return conn
 }
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
