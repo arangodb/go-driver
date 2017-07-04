@@ -59,6 +59,11 @@ func (c *vertexCollection) Name() string {
 	return c.name
 }
 
+// Database returns the database containing the collection.
+func (c *vertexCollection) Database() Database {
+	return c.g.db
+}
+
 // rawCollection returns a standard document implementation of Collection
 // for this vertex collection.
 func (c *vertexCollection) rawCollection() Collection {

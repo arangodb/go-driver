@@ -53,13 +53,52 @@ type User interface {
 	// AccessibleDatabases returns a list of all databases that can be accessed by this user.
 	AccessibleDatabases(ctx context.Context) ([]Database, error)
 
+	// GrantDatabaseReadWriteAccess grants this user read/write access to the given database.
+	GrantDatabaseReadWriteAccess(ctx context.Context, db Database) error
+
+	// GrantDatabaseReadOnlyAccess grants this user read only access to the given database.
+	// This function requires ArangoDB 3.2 and up.
+	GrantDatabaseReadOnlyAccess(ctx context.Context, db Database) error
+
+	// RevokeDatabaseAccess revokes this user access to the given database.
+	RevokeDatabaseAccess(ctx context.Context, db Database) error
+
+	// GetDatabaseAccess gets the access rights for this user to the given database.
+	GetDatabaseAccess(ctx context.Context, db Database) (Grant, error)
+
+	// GrantCollectionReadWriteAccess grants this user read/write access to the given collection.
+	// This function requires ArangoDB 3.2 and up.
+	GrantCollectionReadWriteAccess(ctx context.Context, col Collection) error
+
+	// GrantCollectionReadOnlyAccess grants this user read only access to the given collection.
+	// This function requires ArangoDB 3.2 and up.
+	GrantCollectionReadOnlyAccess(ctx context.Context, col Collection) error
+
+	// RevokeCollectionAccess revokes this user access to the given collection.
+	// This function requires ArangoDB 3.2 and up.
+	RevokeCollectionAccess(ctx context.Context, col Collection) error
+
+	// GetCollectionAccess gets the access rights for this user to the given collection.
+	GetCollectionAccess(ctx context.Context, col Collection) (Grant, error)
+
 	// GrantReadWriteAccess grants this user read/write access to the given database.
+	//
+	// Deprecated: use GrantDatabaseReadWriteAccess instead.
 	GrantReadWriteAccess(ctx context.Context, db Database) error
 
-	// GrantReadOnlyAccess grants this user read only access to the given database.
-	// This function requires ArangoDB 3.2 and up.
-	GrantReadOnlyAccess(ctx context.Context, db Database) error
-
 	// RevokeAccess revokes this user access to the given database.
+	// Deprecated: use RevokeDatabaseAccess instead.
 	RevokeAccess(ctx context.Context, db Database) error
 }
+
+// Grant specifies access rights for an object
+type Grant string
+
+const (
+	// GrantReadWrite indicates read/write access to an object
+	GrantReadWrite Grant = "rw"
+	// GrantReadOnly indicates read-only access to an object
+	GrantReadOnly Grant = "ro"
+	// GrantNone indicates no access to an object
+	GrantNone Grant = "none"
+)

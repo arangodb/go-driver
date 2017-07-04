@@ -184,35 +184,149 @@ func (u *user) AccessibleDatabases(ctx context.Context) ([]Database, error) {
 	return result, nil
 }
 
-// GrantReadWriteAccess grants this user read/write access to the given database.
-func (u *user) GrantReadWriteAccess(ctx context.Context, db Database) error {
-	if err := u.grant(ctx, db, "rw"); err != nil {
+// GrantDatabaseReadWriteAccess grants this user read/write access to the given database.
+func (u *user) GrantDatabaseReadWriteAccess(ctx context.Context, db Database) error {
+	if err := u.grantDatabase(ctx, db, "rw"); err != nil {
 		return WithStack(err)
 	}
 	return nil
 }
 
-// GrantReadOnlyAccess grants this user read only access to the given database.
+// GrantDatabaseReadOnlyAccess grants this user read only access to the given database.
 // This function requires ArangoDB 3.2 and up.
-func (u *user) GrantReadOnlyAccess(ctx context.Context, db Database) error {
-	if err := u.grant(ctx, db, "ro"); err != nil {
+func (u *user) GrantDatabaseReadOnlyAccess(ctx context.Context, db Database) error {
+	if err := u.grantDatabase(ctx, db, "ro"); err != nil {
 		return WithStack(err)
 	}
 	return nil
+}
+
+// RevokeDatabaseAccess revokes this user access to the given database.
+func (u *user) RevokeDatabaseAccess(ctx context.Context, db Database) error {
+	if err := u.grantDatabase(ctx, db, "none"); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+type getAccessResponse struct {
+	Result string `json:"result"`
+}
+
+// GetDatabaseAccess gets the access rights for this user to the given database.
+func (u *user) GetDatabaseAccess(ctx context.Context, db Database) (Grant, error) {
+	escapedDbName := pathEscape(db.Name())
+	req, err := u.conn.NewRequest("GET", path.Join(u.relPath(), "database", escapedDbName))
+	if err != nil {
+		return GrantNone, WithStack(err)
+	}
+	resp, err := u.conn.Do(ctx, req)
+	if err != nil {
+		return GrantNone, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return GrantNone, WithStack(err)
+	}
+
+	var data getAccessResponse
+	if err := resp.ParseBody("", &data); err != nil {
+		return GrantNone, WithStack(err)
+	}
+	return Grant(data.Result), nil
+}
+
+// GrantCollectionReadWriteAccess grants this user read/write access to the given collection.
+// This function requires ArangoDB 3.2 and up.
+func (u *user) GrantCollectionReadWriteAccess(ctx context.Context, col Collection) error {
+	if err := u.grantCollection(ctx, col, "rw"); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// GrantCollectionReadOnlyAccess grants this user read only access to the given collection.
+// This function requires ArangoDB 3.2 and up.
+func (u *user) GrantCollectionReadOnlyAccess(ctx context.Context, col Collection) error {
+	if err := u.grantCollection(ctx, col, "ro"); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// RevokeCollectionAccess revokes this user access to the given collection.
+// This function requires ArangoDB 3.2 and up.
+func (u *user) RevokeCollectionAccess(ctx context.Context, col Collection) error {
+	if err := u.grantCollection(ctx, col, "none"); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// GetCollectionAccess gets the access rights for this user to the given collection.
+func (u *user) GetCollectionAccess(ctx context.Context, col Collection) (Grant, error) {
+	escapedDbName := pathEscape(col.Database().Name())
+	escapedColName := pathEscape(col.Name())
+	req, err := u.conn.NewRequest("GET", path.Join(u.relPath(), "database", escapedDbName, escapedColName))
+	if err != nil {
+		return GrantNone, WithStack(err)
+	}
+	resp, err := u.conn.Do(ctx, req)
+	if err != nil {
+		return GrantNone, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return GrantNone, WithStack(err)
+	}
+
+	var data getAccessResponse
+	if err := resp.ParseBody("", &data); err != nil {
+		return GrantNone, WithStack(err)
+	}
+	return Grant(data.Result), nil
+}
+
+// GrantReadWriteAccess grants this user read/write access to the given database.
+// Obsolete
+func (u *user) GrantReadWriteAccess(ctx context.Context, db Database) error {
+	return u.GrantDatabaseReadWriteAccess(ctx, db)
 }
 
 // RevokeAccess revokes this user access to the given database.
+// Obsolete
 func (u *user) RevokeAccess(ctx context.Context, db Database) error {
-	if err := u.grant(ctx, db, "none"); err != nil {
+	return u.RevokeDatabaseAccess(ctx, db)
+}
+
+// grantDatabase grants or revokes access to a database for this user.
+func (u *user) grantDatabase(ctx context.Context, db Database, access string) error {
+	escapedDbName := pathEscape(db.Name())
+	req, err := u.conn.NewRequest("PUT", path.Join(u.relPath(), "database", escapedDbName))
+	if err != nil {
+		return WithStack(err)
+	}
+	input := struct {
+		Grant string `json:"grant"`
+	}{
+		Grant: access,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	resp, err := u.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
 		return WithStack(err)
 	}
 	return nil
 }
 
-// grant grants or revokes access to a database for this user.
-func (u *user) grant(ctx context.Context, db Database, access string) error {
-	escapedDbName := pathEscape(db.Name())
-	req, err := u.conn.NewRequest("PUT", path.Join(u.relPath(), "database", escapedDbName))
+// grantCollection grants or revokes access to a collection for this user.
+func (u *user) grantCollection(ctx context.Context, col Collection, access string) error {
+	escapedDbName := pathEscape(col.Database().Name())
+	escapedColName := pathEscape(col.Name())
+	req, err := u.conn.NewRequest("PUT", path.Join(u.relPath(), "database", escapedDbName, escapedColName))
 	if err != nil {
 		return WithStack(err)
 	}

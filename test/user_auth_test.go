@@ -77,7 +77,7 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	}
 
 	// Grant user1 access to _system db, then it should be able to access user2
-	if err := u1.GrantReadWriteAccess(nil, systemDb); err != nil {
+	if err := u1.GrantDatabaseReadWriteAccess(nil, systemDb); err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
 
@@ -92,8 +92,8 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	}
 }
 
-// TestGrantUser creates a user & database and granting the user access to the database.
-func TestGrantUser(t *testing.T) {
+// TestGrantUserDatabase creates a user & database and granting the user access to the database.
+func TestGrantUserDatabase(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	version, err := c.Version(nil)
 	if err != nil {
@@ -103,8 +103,15 @@ func TestGrantUser(t *testing.T) {
 	u := ensureUser(nil, c, "grant_user1", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_test", nil, t)
 
-	if err := u.GrantReadWriteAccess(nil, db); err != nil {
-		t.Fatalf("GrantAccess failed: %s", describe(err))
+	// Grant read/write access
+	if err := u.GrantDatabaseReadWriteAccess(nil, db); err != nil {
+		t.Fatalf("GrantDatabaseReadWriteAccess failed: %s", describe(err))
+	}
+	// Read back access
+	if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+		t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+	} else if grant != driver.GrantReadWrite {
+		t.Errorf("Database access invalid, expected 'rw', got '%s'", grant)
 	}
 
 	authClient, err := driver.NewClient(driver.ClientConfig{
@@ -125,8 +132,14 @@ func TestGrantUser(t *testing.T) {
 	}
 
 	// Now revoke access
-	if err := u.RevokeAccess(nil, db); err != nil {
-		t.Fatalf("RevokeAccess failed: %s", describe(err))
+	if err := u.RevokeDatabaseAccess(nil, db); err != nil {
+		t.Fatalf("RevokeDatabaseAccess failed: %s", describe(err))
+	}
+	// Read back access
+	if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+		t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+	} else if grant != driver.GrantNone {
+		t.Errorf("Database access invalid, expected 'none', got '%s'", grant)
 	}
 
 	// Try to access the db, should fail now
@@ -136,19 +149,25 @@ func TestGrantUser(t *testing.T) {
 
 	if isv32p {
 		// Now grant read-only access
-		if err := u.GrantReadOnlyAccess(nil, db); err != nil {
-			t.Fatalf("GrantAccess failed: %s", describe(err))
+		if err := u.GrantDatabaseReadOnlyAccess(nil, db); err != nil {
+			t.Fatalf("GrantDatabaseReadOnlyAccess failed: %s", describe(err))
+		}
+		// Read back access
+		if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+			t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+		} else if grant != driver.GrantReadOnly {
+			t.Errorf("Database access invalid, expected 'ro', got '%s'", grant)
 		}
 		// Try to access the db, should succeed
 		if _, err := authClient.Database(nil, "grant_user_test"); err != nil {
-			t.Fatalf("Expected success, got %s", describe(err))
+			t.Errorf("Expected success, got %s", describe(err))
 		}
 		// Try to create another collection, should fail
 		if _, err := authDb.CreateCollection(nil, "some_other_collection", nil); !driver.IsUnauthorized(err) {
 			t.Errorf("Expected UnauthorizedError, got %s %#v", describe(err), err)
 		}
 	} else {
-		t.Logf("GrantReadOnlyAccess is not supported on versions below 3.2 (got version %s)", version.Version)
+		t.Logf("GrantDatabaseReadOnlyAccess is not supported on versions below 3.2 (got version %s)", version.Version)
 	}
 }
 
@@ -198,8 +217,8 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	expectListNotContains("expect-none", list, db1.Name(), db2.Name())
 
 	// Allow db1
-	if err := u.GrantReadWriteAccess(nil, db1); err != nil {
-		t.Fatalf("GrantAccess failed: %s", describe(err))
+	if err := u.GrantDatabaseReadWriteAccess(nil, db1); err != nil {
+		t.Fatalf("GrantDatabaseReadWriteAccess failed: %s", describe(err))
 	}
 
 	list, err = u.AccessibleDatabases(nil)
@@ -210,11 +229,11 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	expectListNotContains("expect-db1", list, db2.Name())
 
 	// allow db2, revoke db1
-	if err := u.GrantReadWriteAccess(nil, db2); err != nil {
-		t.Fatalf("GrantAccess failed: %s", describe(err))
+	if err := u.GrantDatabaseReadWriteAccess(nil, db2); err != nil {
+		t.Fatalf("GrantDatabaseReadWriteAccess failed: %s", describe(err))
 	}
-	if err := u.RevokeAccess(nil, db1); err != nil {
-		t.Fatalf("RevokeAccess failed: %s", describe(err))
+	if err := u.RevokeDatabaseAccess(nil, db1); err != nil {
+		t.Fatalf("RevokeDatabaseAccess failed: %s", describe(err))
 	}
 
 	if isv32p {
@@ -226,8 +245,8 @@ func TestUserAccessibleDatabases(t *testing.T) {
 		expectListNotContains("expect-db2", list, db1.Name())
 
 		// revoke db2
-		if err := u.RevokeAccess(nil, db2); err != nil {
-			t.Fatalf("RevokeAccess failed: %s", describe(err))
+		if err := u.RevokeDatabaseAccess(nil, db2); err != nil {
+			t.Fatalf("RevokeDatabaseAccess failed: %s", describe(err))
 		}
 
 		list, err = u.AccessibleDatabases(nil)
@@ -236,6 +255,22 @@ func TestUserAccessibleDatabases(t *testing.T) {
 		}
 		expectListContains("expect-none2", list)
 		expectListNotContains("expect-none2", list, db1.Name(), db2.Name())
+
+		// grant read-only access to db1, db2
+		if err := u.GrantDatabaseReadOnlyAccess(nil, db1); err != nil {
+			t.Fatalf("GrantDatabaseReadOnlyAccess failed: %s", describe(err))
+		}
+		if err := u.GrantDatabaseReadOnlyAccess(nil, db2); err != nil {
+			t.Fatalf("GrantDatabaseReadOnlyAccess failed: %s", describe(err))
+		}
+
+		list, err = u.AccessibleDatabases(nil)
+		if err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+		expectListContains("expect-db1-db2", list, db1.Name(), db2.Name())
+		expectListNotContains("expect-db1-db2", list)
+
 	} else {
 		t.Logf("Last part of test fails on version < 3.2 (got version %s)", version.Version)
 	}
