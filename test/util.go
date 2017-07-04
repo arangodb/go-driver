@@ -58,11 +58,17 @@ func describe(err error) string {
 		return "nil"
 	}
 	cause := driver.Cause(err)
-	c, _ := json.Marshal(cause)
-	if cause.Error() != err.Error() {
-		return fmt.Sprintf("%v caused by %v", err, string(c))
+	var msg string
+	if re, ok := cause.(*driver.ResponseError); ok {
+		msg = re.Error()
 	} else {
-		return fmt.Sprintf("%v", string(c))
+		c, _ := json.Marshal(cause)
+		msg = string(c)
+	}
+	if cause.Error() != err.Error() {
+		return fmt.Sprintf("%v caused by %v", err, msg)
+	} else {
+		return fmt.Sprintf("%v", msg)
 	}
 }
 
