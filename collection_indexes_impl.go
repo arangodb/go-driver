@@ -28,13 +28,14 @@ import (
 )
 
 type indexData struct {
-	ID        string   `json:"id,omitempty"`
-	Type      string   `json:"type"`
-	Fields    []string `json:"fields,omitempty"`
-	Unique    *bool    `json:"unique,omitempty"`
-	Sparse    *bool    `json:"sparse,omitempty"`
-	GeoJSON   *bool    `json:"geoJson,omitempty"`
-	MinLength int      `json:"minLength,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	Type        string   `json:"type"`
+	Fields      []string `json:"fields,omitempty"`
+	Unique      *bool    `json:"unique,omitempty"`
+	Deduplicate *bool    `json:"deduplicate,omitempty"`
+	Sparse      *bool    `json:"sparse,omitempty"`
+	GeoJSON     *bool    `json:"geoJson,omitempty"`
+	MinLength   int      `json:"minLength,omitempty"`
 }
 
 type indexListResponse struct {
@@ -166,9 +167,13 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 		Type:   "hash",
 		Fields: fields,
 	}
+	off := false
 	if options != nil {
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
+		if options.NoDeduplicate {
+			input.Deduplicate = &off
+		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -204,9 +209,13 @@ func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, o
 		Type:   "skiplist",
 		Fields: fields,
 	}
+	off := false
 	if options != nil {
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
+		if options.NoDeduplicate {
+			input.Deduplicate = &off
+		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
