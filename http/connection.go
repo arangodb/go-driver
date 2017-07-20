@@ -207,7 +207,16 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 				ErrorMessage: string(body),
 			})
 		}
-		return nil, driver.WithStack(fmt.Errorf("Unsupported content type '%s' with status %d", ct, resp.StatusCode))
+		// Handle empty 'text/plain' body as empty JSON object
+		if len(body) == 0 {
+			body = []byte("{}")
+			if rawResponse != nil {
+				*rawResponse = body
+			}
+			httpResp = &httpJSONResponse{resp: resp, rawResponse: body}
+		} else {
+			return nil, driver.WithStack(fmt.Errorf("Unsupported content type '%s' with status %d and content '%s'", ct, resp.StatusCode, string(body)))
+		}
 	}
 	if ctx != nil {
 		if v := ctx.Value(keyResponse); v != nil {

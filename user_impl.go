@@ -253,7 +253,7 @@ func (u *user) GetDatabaseAccess(ctx context.Context, db Database) (Grant, error
 // rules for a database), the user's access falls back to no-access.
 // Pass a `nil` database to set the default access this user has to any new database.
 // This function requires ArangoDB 3.2 and up.
-func (u *user) RemoveDatabaseAccess(ctx context.Context, db Database, access Grant) error {
+func (u *user) RemoveDatabaseAccess(ctx context.Context, db Database) error {
 	dbName, _, err := getDatabaseAndCollectionName(db)
 	if err != nil {
 		return WithStack(err)

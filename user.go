@@ -69,7 +69,7 @@ type User interface {
 	// rules for a database), the user's access falls back to no-access.
 	// Pass a `nil` database to set the default access this user has to any new database.
 	// This function requires ArangoDB 3.2 and up.
-	RemoveDatabaseAccess(ctx context.Context, db Database, access Grant) error
+	RemoveDatabaseAccess(ctx context.Context, db Database) error
 
 	// SetCollectionAccess sets the access this user has to a collection.
 	// If you pass a `Collection`, it will set access for that collection.
