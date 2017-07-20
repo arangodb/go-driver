@@ -50,7 +50,7 @@ type User interface {
 	// If the user does not exist, a NotFoundError is returned.
 	Replace(ctx context.Context, options UserOptions) error
 
-	// AccessibleDatabases returns a list of all databases that can be accessed by this user.
+	// AccessibleDatabases returns a list of all databases that can be accessed (read/write or read-only) by this user.
 	AccessibleDatabases(ctx context.Context) ([]Database, error)
 
 	// SetDatabaseAccess sets the access this user has to the given database.
