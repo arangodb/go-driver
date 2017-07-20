@@ -53,33 +53,43 @@ type User interface {
 	// AccessibleDatabases returns a list of all databases that can be accessed by this user.
 	AccessibleDatabases(ctx context.Context) ([]Database, error)
 
-	// GrantDatabaseReadWriteAccess grants this user read/write access to the given database.
-	GrantDatabaseReadWriteAccess(ctx context.Context, db Database) error
-
-	// GrantDatabaseReadOnlyAccess grants this user read only access to the given database.
-	// This function requires ArangoDB 3.2 and up.
-	GrantDatabaseReadOnlyAccess(ctx context.Context, db Database) error
-
-	// RevokeDatabaseAccess revokes this user access to the given database.
-	RevokeDatabaseAccess(ctx context.Context, db Database) error
+	// SetDatabaseAccess sets the access this user has to the given database.
+	// Pass a `nil` database to set the default access this user has to any new database.
+	// This function requires ArangoDB 3.2 and up for access value `GrantReadOnly`.
+	SetDatabaseAccess(ctx context.Context, db Database, access Grant) error
 
 	// GetDatabaseAccess gets the access rights for this user to the given database.
+	// Pass a `nil` database to get the default access this user has to any new database.
+	// This function requires ArangoDB 3.2 and up.
 	GetDatabaseAccess(ctx context.Context, db Database) (Grant, error)
 
-	// GrantCollectionReadWriteAccess grants this user read/write access to the given collection.
+	// RemoveDatabaseAccess removes the access this user has to the given database.
+	// As a result the users access falls back to its default access.
+	// If you remove default access (db==`nil`) for a user (and there are no specific access
+	// rules for a database), the user's access falls back to no-access.
+	// Pass a `nil` database to set the default access this user has to any new database.
 	// This function requires ArangoDB 3.2 and up.
-	GrantCollectionReadWriteAccess(ctx context.Context, col Collection) error
+	RemoveDatabaseAccess(ctx context.Context, db Database, access Grant) error
 
-	// GrantCollectionReadOnlyAccess grants this user read only access to the given collection.
+	// SetCollectionAccess sets the access this user has to a collection.
+	// If you pass a `Collection`, it will set access for that collection.
+	// If you pass a `Database`, it will set the default collection access for that database.
+	// If you pass `nil`, it will set the default collection access for the default database.
 	// This function requires ArangoDB 3.2 and up.
-	GrantCollectionReadOnlyAccess(ctx context.Context, col Collection) error
-
-	// RevokeCollectionAccess revokes this user access to the given collection.
-	// This function requires ArangoDB 3.2 and up.
-	RevokeCollectionAccess(ctx context.Context, col Collection) error
+	SetCollectionAccess(ctx context.Context, col AccessTarget, access Grant) error
 
 	// GetCollectionAccess gets the access rights for this user to the given collection.
-	GetCollectionAccess(ctx context.Context, col Collection) (Grant, error)
+	// If you pass a `Collection`, it will get access for that collection.
+	// If you pass a `Database`, it will get the default collection access for that database.
+	// If you pass `nil`, it will get the default collection access for the default database.
+	GetCollectionAccess(ctx context.Context, col AccessTarget) (Grant, error)
+
+	// RemoveCollectionAccess removes the access this user has to a collection.
+	// If you pass a `Collection`, it will removes access for that collection.
+	// If you pass a `Database`, it will removes the default collection access for that database.
+	// If you pass `nil`, it will removes the default collection access for the default database.
+	// This function requires ArangoDB 3.2 and up.
+	RemoveCollectionAccess(ctx context.Context, col AccessTarget) error
 
 	// GrantReadWriteAccess grants this user read/write access to the given database.
 	//
@@ -87,7 +97,8 @@ type User interface {
 	GrantReadWriteAccess(ctx context.Context, db Database) error
 
 	// RevokeAccess revokes this user access to the given database.
-	// Deprecated: use RevokeDatabaseAccess instead.
+	//
+	// Deprecated: use `SetDatabaseAccess(ctx, db, GrantNone)` instead.
 	RevokeAccess(ctx context.Context, db Database) error
 }
 
@@ -102,3 +113,10 @@ const (
 	// GrantNone indicates no access to an object
 	GrantNone Grant = "none"
 )
+
+// AccessTarget is implemented by Database & Collection and it used to
+// get/set/remove collection permissions.
+type AccessTarget interface {
+	// Name returns the name of the database/collection.
+	Name() string
+}
