@@ -88,6 +88,10 @@ type EnsureHashIndexOptions struct {
 	Unique bool
 	// If true, then create a sparse index.
 	Sparse bool
+	// If true, de-duplication of array-values, before being added to the index, will be turned off.
+	// This flag requires ArangoDB 3.2.
+	// Note: this setting is only relevant for indexes with array fields (e.g. "fieldName[*]")
+	NoDeduplicate bool
 }
 
 // EnsurePersistentIndexOptions contains specific options for creating a persistent index.
@@ -104,4 +108,8 @@ type EnsureSkipListIndexOptions struct {
 	Unique bool
 	// If true, then create a sparse index.
 	Sparse bool
+	// If true, de-duplication of array-values, before being added to the index, will be turned off.
+	// This flag requires ArangoDB 3.2.
+	// Note: this setting is only relevant for indexes with array fields (e.g. "fieldName[*]")
+	NoDeduplicate bool
 }

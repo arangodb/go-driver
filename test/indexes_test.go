@@ -25,6 +25,8 @@ package test
 import (
 	"context"
 	"testing"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 // TestCreateFullTextIndex creates a collection with a full text index.
@@ -66,5 +68,119 @@ func TestIndexes(t *testing.T) {
 	} else if stats.Figures.Indexes.Count != 3 {
 		// 3 because 1 system index + 2 created above
 		t.Errorf("Expected 3 indexes, got %d", stats.Figures.Indexes.Count)
+	}
+}
+
+// TestIndexesDeduplicateHash tests no-deduplicate on hash index.
+func TestIndexesDeduplicateHash(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
+	if !isv32p {
+		t.Skip("Test requires 3.2")
+	} else {
+		db := ensureDatabase(nil, c, "index_test", nil, t)
+
+		{
+			// Create some indexes with de-duplication off
+			col := ensureCollection(nil, db, "indexes_hash_deduplicate_false_test", nil, t)
+			if _, _, err := col.EnsureHashIndex(nil, []string{"tags[*]"}, &driver.EnsureHashIndexOptions{
+				Unique:        true,
+				Sparse:        false,
+				NoDeduplicate: true,
+			}); err != nil {
+				t.Fatalf("Failed to create new index: %s", describe(err))
+			}
+
+			doc := struct {
+				Tags []string `json:"tags"`
+			}{
+				Tags: []string{"a", "a", "b"},
+			}
+			if _, err := col.CreateDocument(nil, doc); !driver.IsConflict(err) {
+				t.Errorf("Expected Conflict error, got %s", describe(err))
+			}
+		}
+
+		{
+			// Create some indexes with de-duplication on
+			col := ensureCollection(nil, db, "indexes_hash_deduplicate_true_test", nil, t)
+			if _, _, err := col.EnsureHashIndex(nil, []string{"tags"}, &driver.EnsureHashIndexOptions{
+				Unique:        true,
+				Sparse:        false,
+				NoDeduplicate: false,
+			}); err != nil {
+				t.Fatalf("Failed to create new index: %s", describe(err))
+			}
+
+			doc := struct {
+				Tags []string `json:"tags"`
+			}{
+				Tags: []string{"a", "a", "b"},
+			}
+			if _, err := col.CreateDocument(nil, doc); err != nil {
+				t.Errorf("Expected success, got %s", describe(err))
+			}
+		}
+	}
+}
+
+// TestIndexesDeduplicateSkipList tests no-deduplicate on skiplist index.
+func TestIndexesDeduplicateSkipList(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
+	if !isv32p {
+		t.Skip("Test requires 3.2")
+	} else {
+		db := ensureDatabase(nil, c, "index_test", nil, t)
+
+		{
+			// Create some indexes with de-duplication off
+			col := ensureCollection(nil, db, "indexes_skiplist_deduplicate_false_test", nil, t)
+			if _, _, err := col.EnsureSkipListIndex(nil, []string{"tags[*]"}, &driver.EnsureSkipListIndexOptions{
+				Unique:        true,
+				Sparse:        false,
+				NoDeduplicate: true,
+			}); err != nil {
+				t.Fatalf("Failed to create new index: %s", describe(err))
+			}
+
+			doc := struct {
+				Tags []string `json:"tags"`
+			}{
+				Tags: []string{"a", "a", "b"},
+			}
+			if _, err := col.CreateDocument(nil, doc); !driver.IsConflict(err) {
+				t.Errorf("Expected Conflict error, got %s", describe(err))
+			}
+		}
+
+		{
+			// Create some indexes with de-duplication on
+			col := ensureCollection(nil, db, "indexes_skiplist_deduplicate_true_test", nil, t)
+			if _, _, err := col.EnsureSkipListIndex(nil, []string{"tags"}, &driver.EnsureSkipListIndexOptions{
+				Unique:        true,
+				Sparse:        false,
+				NoDeduplicate: false,
+			}); err != nil {
+				t.Fatalf("Failed to create new index: %s", describe(err))
+			}
+
+			doc := struct {
+				Tags []string `json:"tags"`
+			}{
+				Tags: []string{"a", "a", "b"},
+			}
+			if _, err := col.CreateDocument(nil, doc); err != nil {
+				t.Errorf("Expected success, got %s", describe(err))
+			}
+		}
 	}
 }
