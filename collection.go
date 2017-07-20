@@ -32,6 +32,9 @@ type Collection interface {
 	// Name returns the name of the collection.
 	Name() string
 
+	// Database returns the database containing the collection.
+	Database() Database
+
 	// Status fetches the current status of the collection.
 	Status(ctx context.Context) (CollectionStatus, error)
 

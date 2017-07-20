@@ -98,7 +98,7 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 		}
 
 		// Grant user1 access to _system db, then it should be able to access user2
-		if err := u1.GrantReadWriteAccess(nil, systemDb); err != nil {
+		if err := u1.SetDatabaseAccess(nil, systemDb, driver.GrantReadWrite); err != nil {
 			t.Fatalf("Expected success, got %s", describe(err))
 		}
 
@@ -114,14 +114,28 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	}
 }
 
-// TestGrantUser creates a user & database and granting the user access to the database.
-func TestGrantUser(t *testing.T) {
+// TestGrantUserDatabase creates a user & database and granting the user access to the database.
+func TestGrantUserDatabase(t *testing.T) {
 	c := createClientFromEnv(t, true)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
 	u := ensureUser(nil, c, "grant_user1", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_test", nil, t)
 
-	if err := u.GrantReadWriteAccess(nil, db); err != nil {
-		t.Fatalf("GrantAccess failed: %s", describe(err))
+	// Grant read/write access
+	if err := u.SetDatabaseAccess(nil, db, driver.GrantReadWrite); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+	if isv32p {
+		// Read back access
+		if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+			t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+		} else if grant != driver.GrantReadWrite {
+			t.Errorf("Database access invalid, expected 'rw', got '%s'", grant)
+		}
 	}
 
 	authClient, err := driver.NewClient(driver.ClientConfig{
@@ -142,13 +156,277 @@ func TestGrantUser(t *testing.T) {
 	}
 
 	// Now revoke access
-	if err := u.RevokeAccess(nil, db); err != nil {
-		t.Fatalf("RevokeAccess failed: %s", describe(err))
+	if err := u.SetDatabaseAccess(nil, db, driver.GrantNone); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+	if isv32p {
+		// Read back access
+		if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+			t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+		} else if grant != driver.GrantNone {
+			t.Errorf("Database access invalid, expected 'none', got '%s'", grant)
+		}
 	}
 
 	// Try to access the db, should fail now
 	if _, err := authClient.Database(nil, "grant_user_test"); !driver.IsUnauthorized(err) {
 		t.Errorf("Expected UnauthorizedError, got %s %#v", describe(err), err)
+	}
+
+	if isv32p {
+		// Now grant read-only access
+		if err := u.SetDatabaseAccess(nil, db, driver.GrantReadOnly); err != nil {
+			t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+		}
+		// Read back access
+		if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+			t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+		} else if grant != driver.GrantReadOnly {
+			t.Errorf("Database access invalid, expected 'ro', got '%s'", grant)
+		}
+		// Try to access the db, should succeed
+		if _, err := authClient.Database(nil, "grant_user_test"); err != nil {
+			t.Errorf("Expected success, got %s", describe(err))
+		}
+		// Try to create another collection, should fail
+		if _, err := authDb.CreateCollection(nil, "some_other_collection", nil); !driver.IsForbidden(err) {
+			t.Errorf("Expected UnauthorizedError, got %s %#v", describe(err), err)
+		}
+	} else {
+		t.Logf("SetDatabaseAccess(ReadOnly) is not supported on versions below 3.2 (got version %s)", version.Version)
+	}
+}
+
+// TestGrantUserDefaultDatabase creates a user & database and granting the user access to the "default" database.
+func TestGrantUserDefaultDatabase(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
+	if !isv32p {
+		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
+	}
+	u := ensureUser(nil, c, "grant_user_def", &driver.UserOptions{Password: "foo"}, t)
+	db := ensureDatabase(nil, c, "grant_user_def_test", nil, t)
+	// Grant read/write access to default database
+	if err := u.SetDatabaseAccess(nil, nil, driver.GrantReadWrite); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+	// Read back default database access
+	if grant, err := u.GetDatabaseAccess(nil, nil); err != nil {
+		t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+	} else if grant != driver.GrantReadWrite {
+		t.Errorf("Collection access invalid, expected 'rw', got '%s'", grant)
+	}
+
+	authClient, err := driver.NewClient(driver.ClientConfig{
+		Connection:     createConnectionFromEnv(t),
+		Authentication: driver.BasicAuthentication(u.Name(), "foo"),
+	})
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+
+	// Try to create a collection in the db, should succeed
+	authDb, err := authClient.Database(nil, db.Name())
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+
+	authCol, err := authDb.CreateCollection(nil, "books_def_db", nil)
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+
+	// Remove explicit grant for db
+	if err := u.RemoveDatabaseAccess(nil, db); err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+	// Remove explicit grant for col
+	if err := u.RemoveCollectionAccess(nil, authCol); err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+
+	// Try to create document in collection, should fail because there are no collection grants for this user and/or collection.
+	if _, err := authCol.CreateDocument(nil, Book{Title: "I cannot write"}); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got %s", describe(err))
+	}
+
+	// Grant read-only access to default database
+	if err := u.SetDatabaseAccess(nil, nil, driver.GrantReadOnly); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+	// Try to create collection, should fail
+	if _, err := authDb.CreateCollection(nil, "books_def_ro_db", nil); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got %s", describe(err))
+	}
+
+	// Grant no access to default database
+	if err := u.SetDatabaseAccess(nil, nil, driver.GrantNone); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+	// Try to create collection, should fail
+	if _, err := authDb.CreateCollection(nil, "books_def_none_db", nil); !driver.IsUnauthorized(err) {
+		t.Errorf("Expected failure, got %s", describe(err))
+	}
+
+	// Remove default database access, should fallback to "no-access" then
+	if err := u.RemoveDatabaseAccess(nil, nil); err != nil {
+		t.Fatalf("RemoveDatabaseAccess failed: %s", describe(err))
+	}
+	// Try to create collection, should fail
+	if _, err := authDb.CreateCollection(nil, "books_def_star_db", nil); !driver.IsUnauthorized(err) {
+		t.Errorf("Expected failure, got %s", describe(err))
+	}
+}
+
+// TestGrantUserCollection creates a user & database & collection and granting the user access to the collection.
+func TestGrantUserCollection(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	isv32p := version.Version.CompareTo("3.2") >= 0
+	if !isv32p {
+		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
+	}
+	u := ensureUser(nil, c, "grant_user_col", &driver.UserOptions{Password: "foo"}, t)
+	db := ensureDatabase(nil, c, "grant_user_col_test", nil, t)
+	// Grant read/write access to database
+	if err := u.SetDatabaseAccess(nil, db, driver.GrantReadWrite); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+	col := ensureCollection(nil, db, "grant_col_test", nil, t)
+	// Grant read/write access to collection
+	if err := u.SetCollectionAccess(nil, col, driver.GrantReadWrite); err != nil {
+		t.Fatalf("SetCollectionAccess failed: %s", describe(err))
+	}
+	// Read back collection access
+	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
+		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
+	} else if grant != driver.GrantReadWrite {
+		t.Errorf("Collection access invalid, expected 'rw', got '%s'", grant)
+	}
+
+	authClient, err := driver.NewClient(driver.ClientConfig{
+		Connection:     createConnectionFromEnv(t),
+		Authentication: driver.BasicAuthentication("grant_user_col", "foo"),
+	})
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+
+	// Try to create a document in the col
+	authDb, err := authClient.Database(nil, db.Name())
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+	authCol, err := authDb.Collection(nil, col.Name())
+	if err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
+	}
+	meta1, err := authCol.CreateDocument(nil, Book{Title: "I can write"})
+	if err != nil {
+		t.Errorf("CreateDocument failed: %s", describe(err))
+	}
+
+	// Now set collection access to Read-only
+	if err := u.SetCollectionAccess(nil, col, driver.GrantReadOnly); err != nil {
+		t.Fatalf("SetCollectionAccess failed: %s", describe(err))
+	}
+	// Read back collection access
+	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
+		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
+	} else if grant != driver.GrantReadOnly {
+		t.Errorf("Collection access invalid, expected 'ro', got '%s'", grant)
+	}
+	// Try to create another document, should fail
+	if _, err := authCol.CreateDocument(nil, Book{Title: "I should not be able to write"}); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got: %s", describe(err))
+	}
+	// Try to read back first document, should succeed
+	var doc Book
+	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); err != nil {
+		t.Errorf("Expected success, got %s", describe(err))
+	}
+
+	// Now set collection access to None
+	if err := u.SetCollectionAccess(nil, col, driver.GrantNone); err != nil {
+		t.Fatalf("SetCollectionAccess failed: %s", describe(err))
+	}
+	// Read back collection access
+	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
+		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
+	} else if grant != driver.GrantNone {
+		t.Errorf("Collection access invalid, expected 'none', got '%s'", grant)
+	}
+	// Try to create another document, should fail
+	if _, err := authCol.CreateDocument(nil, Book{Title: "I should not be able to write"}); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got: %s", describe(err))
+	}
+	// Try to read back first document, should fail
+	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got %s", describe(err))
+	}
+
+	// Now remove explicit collection access
+	if err := u.RemoveCollectionAccess(nil, col); err != nil {
+		t.Fatalf("RemoveCollectionAccess failed: %s", describe(err))
+	}
+	// Read back collection access
+	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
+		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
+	} else if grant != driver.GrantNone {
+		t.Errorf("Collection access invalid, expected 'none', got '%s'", grant)
+	}
+	// Try to create another document, should fail
+	if _, err := authCol.CreateDocument(nil, Book{Title: "I should not be able to write"}); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got: %s", describe(err))
+	}
+	// Try to read back first document, should fail
+	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got %s", describe(err))
+	}
+
+	// Set default collection access to read-only
+	if err := u.SetCollectionAccess(nil, db, driver.GrantReadOnly); err != nil {
+		t.Fatalf("SetCollectionAccess failed: %s", describe(err))
+	}
+	// Read back collection access
+	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
+		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
+	} else if grant != driver.GrantReadOnly {
+		t.Errorf("Collection access invalid, expected 'ro', got '%s'", grant)
+	}
+	// Try to create another document, should fail
+	if _, err := authCol.CreateDocument(nil, Book{Title: "I should not be able to write"}); !driver.IsForbidden(err) {
+		t.Errorf("Expected failure, got: %s", describe(err))
+	}
+	// Try to read back first document, should succeed
+	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); err != nil {
+		t.Errorf("Expected success, got %s", describe(err))
+	}
+
+	// Set default collection access to read-write
+	if err := u.SetCollectionAccess(nil, db, driver.GrantReadWrite); err != nil {
+		t.Fatalf("SetCollectionAccess failed: %s", describe(err))
+	}
+	// Read back collection access
+	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
+		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
+	} else if grant != driver.GrantReadWrite {
+		t.Errorf("Collection access invalid, expected 'rw', got '%s'", grant)
+	}
+	// Try to create another document, should succeed
+	if _, err := authCol.CreateDocument(nil, Book{Title: "I should again be able to write"}); err != nil {
+		t.Errorf("Expected success, got: %s", describe(err))
+	}
+	// Try to read back first document, should succeed
+	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); err != nil {
+		t.Errorf("Expected success, got %s", describe(err))
 	}
 }
 
@@ -198,8 +476,8 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	expectListNotContains("expect-none", list, db1.Name(), db2.Name())
 
 	// Allow db1
-	if err := u.GrantReadWriteAccess(nil, db1); err != nil {
-		t.Fatalf("GrantAccess failed: %s", describe(err))
+	if err := u.SetDatabaseAccess(nil, db1, driver.GrantReadWrite); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
 	}
 
 	list, err = u.AccessibleDatabases(nil)
@@ -210,11 +488,11 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	expectListNotContains("expect-db1", list, db2.Name())
 
 	// allow db2, revoke db1
-	if err := u.GrantReadWriteAccess(nil, db2); err != nil {
-		t.Fatalf("GrantAccess failed: %s", describe(err))
+	if err := u.SetDatabaseAccess(nil, db2, driver.GrantReadWrite); err != nil {
+		t.Fatalf("SetDatabaseAccess(RW) failed: %s", describe(err))
 	}
-	if err := u.RevokeAccess(nil, db1); err != nil {
-		t.Fatalf("RevokeAccess failed: %s", describe(err))
+	if err := u.SetDatabaseAccess(nil, db1, driver.GrantNone); err != nil {
+		t.Fatalf("SetDatabaseAccess(None) failed: %s", describe(err))
 	}
 
 	if isv32p {
@@ -226,8 +504,8 @@ func TestUserAccessibleDatabases(t *testing.T) {
 		expectListNotContains("expect-db2", list, db1.Name())
 
 		// revoke db2
-		if err := u.RevokeAccess(nil, db2); err != nil {
-			t.Fatalf("RevokeAccess failed: %s", describe(err))
+		if err := u.SetDatabaseAccess(nil, db2, driver.GrantNone); err != nil {
+			t.Fatalf("SetDatabaseAccess(None) failed: %s", describe(err))
 		}
 
 		list, err = u.AccessibleDatabases(nil)
@@ -236,6 +514,22 @@ func TestUserAccessibleDatabases(t *testing.T) {
 		}
 		expectListContains("expect-none2", list)
 		expectListNotContains("expect-none2", list, db1.Name(), db2.Name())
+
+		// grant read-only access to db1, db2
+		if err := u.SetDatabaseAccess(nil, db1, driver.GrantReadOnly); err != nil {
+			t.Fatalf("SetDatabaseAccess(RO) failed: %s", describe(err))
+		}
+		if err := u.SetDatabaseAccess(nil, db2, driver.GrantReadOnly); err != nil {
+			t.Fatalf("SetDatabaseAccess(RO) failed: %s", describe(err))
+		}
+
+		list, err = u.AccessibleDatabases(nil)
+		if err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+		expectListContains("expect-db1-db2", list, db1.Name(), db2.Name())
+		expectListNotContains("expect-db1-db2", list)
+
 	} else {
 		t.Logf("Last part of test fails on version < 3.2 (got version %s)", version.Version)
 	}

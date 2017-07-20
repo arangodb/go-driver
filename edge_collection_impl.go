@@ -59,6 +59,11 @@ func (c *edgeCollection) Name() string {
 	return c.name
 }
 
+// Database returns the database containing the collection.
+func (c *edgeCollection) Database() Database {
+	return c.g.db
+}
+
 // rawCollection returns a standard document implementation of Collection
 // for this edge collection.
 func (c *edgeCollection) rawCollection() Collection {

@@ -50,12 +50,73 @@ type User interface {
 	// If the user does not exist, a NotFoundError is returned.
 	Replace(ctx context.Context, options UserOptions) error
 
-	// AccessibleDatabases returns a list of all databases that can be accessed by this user.
+	// AccessibleDatabases returns a list of all databases that can be accessed (read/write or read-only) by this user.
 	AccessibleDatabases(ctx context.Context) ([]Database, error)
 
+	// SetDatabaseAccess sets the access this user has to the given database.
+	// Pass a `nil` database to set the default access this user has to any new database.
+	// This function requires ArangoDB 3.2 and up for access value `GrantReadOnly`.
+	SetDatabaseAccess(ctx context.Context, db Database, access Grant) error
+
+	// GetDatabaseAccess gets the access rights for this user to the given database.
+	// Pass a `nil` database to get the default access this user has to any new database.
+	// This function requires ArangoDB 3.2 and up.
+	GetDatabaseAccess(ctx context.Context, db Database) (Grant, error)
+
+	// RemoveDatabaseAccess removes the access this user has to the given database.
+	// As a result the users access falls back to its default access.
+	// If you remove default access (db==`nil`) for a user (and there are no specific access
+	// rules for a database), the user's access falls back to no-access.
+	// Pass a `nil` database to set the default access this user has to any new database.
+	// This function requires ArangoDB 3.2 and up.
+	RemoveDatabaseAccess(ctx context.Context, db Database) error
+
+	// SetCollectionAccess sets the access this user has to a collection.
+	// If you pass a `Collection`, it will set access for that collection.
+	// If you pass a `Database`, it will set the default collection access for that database.
+	// If you pass `nil`, it will set the default collection access for the default database.
+	// This function requires ArangoDB 3.2 and up.
+	SetCollectionAccess(ctx context.Context, col AccessTarget, access Grant) error
+
+	// GetCollectionAccess gets the access rights for this user to the given collection.
+	// If you pass a `Collection`, it will get access for that collection.
+	// If you pass a `Database`, it will get the default collection access for that database.
+	// If you pass `nil`, it will get the default collection access for the default database.
+	GetCollectionAccess(ctx context.Context, col AccessTarget) (Grant, error)
+
+	// RemoveCollectionAccess removes the access this user has to a collection.
+	// If you pass a `Collection`, it will removes access for that collection.
+	// If you pass a `Database`, it will removes the default collection access for that database.
+	// If you pass `nil`, it will removes the default collection access for the default database.
+	// This function requires ArangoDB 3.2 and up.
+	RemoveCollectionAccess(ctx context.Context, col AccessTarget) error
+
 	// GrantReadWriteAccess grants this user read/write access to the given database.
+	//
+	// Deprecated: use GrantDatabaseReadWriteAccess instead.
 	GrantReadWriteAccess(ctx context.Context, db Database) error
 
 	// RevokeAccess revokes this user access to the given database.
+	//
+	// Deprecated: use `SetDatabaseAccess(ctx, db, GrantNone)` instead.
 	RevokeAccess(ctx context.Context, db Database) error
+}
+
+// Grant specifies access rights for an object
+type Grant string
+
+const (
+	// GrantReadWrite indicates read/write access to an object
+	GrantReadWrite Grant = "rw"
+	// GrantReadOnly indicates read-only access to an object
+	GrantReadOnly Grant = "ro"
+	// GrantNone indicates no access to an object
+	GrantNone Grant = "none"
+)
+
+// AccessTarget is implemented by Database & Collection and it used to
+// get/set/remove collection permissions.
+type AccessTarget interface {
+	// Name returns the name of the database/collection.
+	Name() string
 }

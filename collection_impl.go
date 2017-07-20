@@ -59,6 +59,11 @@ func (c *collection) Name() string {
 	return c.name
 }
 
+// Database returns the database containing the collection.
+func (c *collection) Database() Database {
+	return c.db
+}
+
 // Status fetches the current status of the collection.
 func (c *collection) Status(ctx context.Context) (CollectionStatus, error) {
 	req, err := c.conn.NewRequest("GET", c.relPath("collection"))
