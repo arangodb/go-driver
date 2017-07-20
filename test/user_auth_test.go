@@ -129,11 +129,13 @@ func TestGrantUserDatabase(t *testing.T) {
 	if err := u.SetDatabaseAccess(nil, db, driver.GrantReadWrite); err != nil {
 		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
 	}
-	// Read back access
-	if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
-		t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
-	} else if grant != driver.GrantReadWrite {
-		t.Errorf("Database access invalid, expected 'rw', got '%s'", grant)
+	if isv32p {
+		// Read back access
+		if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+			t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+		} else if grant != driver.GrantReadWrite {
+			t.Errorf("Database access invalid, expected 'rw', got '%s'", grant)
+		}
 	}
 
 	authClient, err := driver.NewClient(driver.ClientConfig{
@@ -157,11 +159,13 @@ func TestGrantUserDatabase(t *testing.T) {
 	if err := u.SetDatabaseAccess(nil, db, driver.GrantNone); err != nil {
 		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
 	}
-	// Read back access
-	if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
-		t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
-	} else if grant != driver.GrantNone {
-		t.Errorf("Database access invalid, expected 'none', got '%s'", grant)
+	if isv32p {
+		// Read back access
+		if grant, err := u.GetDatabaseAccess(nil, db); err != nil {
+			t.Fatalf("GetDatabaseAccess failed: %s", describe(err))
+		} else if grant != driver.GrantNone {
+			t.Errorf("Database access invalid, expected 'none', got '%s'", grant)
+		}
 	}
 
 	// Try to access the db, should fail now
