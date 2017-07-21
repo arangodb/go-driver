@@ -5,4 +5,10 @@ services:
 
 language: go
 
-script: make run-tests-http run-tests-single
+env:
+  - TEST_SUITE=run-tests-http
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.1
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:latest
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:latest
+
+script: make $TEST_SUITE
