@@ -395,6 +395,9 @@ func TestGrantUserCollection(t *testing.T) {
 	if err := u.SetCollectionAccess(nil, db, driver.GrantReadOnly); err != nil {
 		t.Fatalf("SetCollectionAccess failed: %s", describe(err))
 	}
+	if err := u.RemoveCollectionAccess(nil, col); err != nil {
+		t.Fatalf("RemoveCollectionAccess failed: %s", describe(err))
+	}
 	// Read back collection access
 	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
 		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
