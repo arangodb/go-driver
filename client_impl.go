@@ -56,6 +56,11 @@ type client struct {
 	conn Connection
 }
 
+// Connection returns the connection used by this client
+func (c *client) Connection() Connection {
+	return c.conn
+}
+
 // Version returns version information from the connected database server.
 func (c *client) Version(ctx context.Context) (VersionInfo, error) {
 	req, err := c.conn.NewRequest("GET", "_api/version")

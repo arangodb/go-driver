@@ -29,6 +29,8 @@ const (
 	AuthenticationTypeBasic AuthenticationType = iota
 	// AuthenticationTypeJWT uses username+password JWT token based authentication
 	AuthenticationTypeJWT
+	// AuthenticationTypeRaw uses a raw value for the Authorization header
+	AuthenticationTypeRaw
 )
 
 // Authentication implements a kind of authentication.
@@ -78,6 +80,34 @@ func (a *userNameAuthentication) Get(property string) string {
 		return a.userName
 	case "password":
 		return a.password
+	default:
+		return ""
+	}
+}
+
+// RawAuthentication creates a raw authentication implementation based on the given value for the Authorization header.
+func RawAuthentication(value string) Authentication {
+	return &rawAuthentication{
+		value: value,
+	}
+}
+
+// rawAuthentication implements Raw authentication.
+type rawAuthentication struct {
+	value string
+}
+
+// Returns the type of authentication
+func (a *rawAuthentication) Type() AuthenticationType {
+	return AuthenticationTypeRaw
+}
+
+// Get returns a configuration property of the authentication.
+// Supported properties depend on type of authentication.
+func (a *rawAuthentication) Get(property string) string {
+	switch property {
+	case "value":
+		return a.value
 	default:
 		return ""
 	}

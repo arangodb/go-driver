@@ -57,6 +57,8 @@ type ConnectionConfig struct {
 	// Otherwise a `TLSConfig` property other than `nil` will overwrite the `TLSClientConfig`
 	// property of `Transport`.
 	Transport http.RoundTripper
+	// FailOnRedirect; if set, redirect will not be followed, instead the status code is returned as error
+	FailOnRedirect bool
 	// Cluster configuration settings
 	cluster.ConnectionConfig
 	// ContentType specified type of content encoding to use.
@@ -95,12 +97,23 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 	if config.TLSConfig != nil && httpTransport != nil {
 		httpTransport.TLSClientConfig = config.TLSConfig
 	}
+	httpClient := &http.Client{
+		Transport: config.Transport,
+	}
+	if config.FailOnRedirect {
+		httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return driver.ArangoError{
+				HasError:     true,
+				Code:         http.StatusFound,
+				ErrorNum:     0,
+				ErrorMessage: "Redirect not allowed",
+			}
+		}
+	}
 	c := &httpConnection{
 		endpoint:    *u,
 		contentType: config.ContentType,
-		client: &http.Client{
-			Transport: config.Transport,
-		},
+		client:      httpClient,
 	}
 	return c, nil
 }
@@ -278,6 +291,9 @@ func (c *httpConnection) SetAuthentication(auth driver.Authentication) (driver.C
 		userName := auth.Get("username")
 		password := auth.Get("password")
 		httpAuth = newJWTAuthentication(userName, password)
+	case driver.AuthenticationTypeRaw:
+		value := auth.Get("value")
+		httpAuth = newRawAuthentication(value)
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported authentication type %d", int(auth.Type())))
 	}

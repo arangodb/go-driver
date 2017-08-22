@@ -58,6 +58,13 @@ func newJWTAuthentication(userName, password string) httpAuthentication {
 	}
 }
 
+// newRawAuthentication creates a Raw authentication implementation based on the given value.
+func newRawAuthentication(value string) httpAuthentication {
+	return &basicAuthentication{
+		authorizationValue: value,
+	}
+}
+
 // basicAuthentication implements HTTP Basic authentication.
 type basicAuthentication struct {
 	authorizationValue string
