@@ -77,6 +77,8 @@ type Request interface {
 	// Written returns true as soon as this request has been written completely to the network.
 	// This does not guarantee that the server has received or processed the request.
 	Written() bool
+	// Clone creates a new request containing the same data as this request
+	Clone() Request
 }
 
 // Response represents the response from the server on a given request.
