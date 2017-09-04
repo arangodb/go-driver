@@ -44,6 +44,7 @@ const (
 	keyImportDetails = "arangodb-importDetails"
 	keyResponse      = "arangodb-response"
 	keyEndpoint      = "arangodb-endpoint"
+	keyIsRestore     = "arangodb-isRestore"
 )
 
 // WithRevision is used to configure a context to make document
@@ -141,6 +142,14 @@ func WithImportDetails(parent context.Context, value *[]string) context.Context 
 	return context.WithValue(contextOrBackground(parent), keyImportDetails, value)
 }
 
+// WithIsRestore is used to configure a context to make insert functions use the "isRestore=<value>"
+// setting.
+// Note: This function is intended for internal (replication) use. It is NOT intended to
+// be used by normal client. This CAN screw up your database.
+func WithIsRestore(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyIsRestore, value)
+}
+
 type contextSettings struct {
 	Silent        bool
 	WaitForSync   bool
@@ -149,6 +158,7 @@ type contextSettings struct {
 	Revision      string
 	Revisions     []string
 	ImportDetails *[]string
+	IsRestore     bool
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -219,6 +229,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if details, ok := v.(*[]string); ok {
 			req.SetQuery("details", "true")
 			result.ImportDetails = details
+		}
+	}
+	// IsRestore
+	if v := ctx.Value(keyIsRestore); v != nil {
+		if isRestore, ok := v.(bool); ok {
+			req.SetQuery("isRestore", strconv.FormatBool(isRestore))
+			result.IsRestore = isRestore
 		}
 	}
 	return result
