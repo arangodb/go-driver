@@ -43,6 +43,24 @@ type vstRequest struct {
 	written bool
 }
 
+// Clone creates a new request containing the same data as this request
+func (r *vstRequest) Clone() driver.Request {
+	clone := *r
+	clone.q = url.Values{}
+	for k, v := range r.q {
+		for _, x := range v {
+			clone.q.Add(k, x)
+		}
+	}
+	if clone.hdr != nil {
+		clone.hdr = make(map[string]string)
+		for k, v := range r.hdr {
+			clone.hdr[k] = v
+		}
+	}
+	return &clone
+}
+
 // SetQuery sets a single query argument of the request.
 // Any existing query argument with the same key is overwritten.
 func (r *vstRequest) SetQuery(key, value string) driver.Request {

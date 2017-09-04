@@ -44,6 +44,9 @@ type Client interface {
 	// This function requires ArangoDB 3.1.15 or up.
 	SynchronizeEndpoints(ctx context.Context) error
 
+	// Connection returns the connection used by this client
+	Connection() Connection
+
 	// Database functions
 	ClientDatabases
 
