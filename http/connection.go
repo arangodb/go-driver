@@ -207,7 +207,7 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 	ct := resp.Header.Get("Content-Type")
 	var httpResp driver.Response
 	switch strings.Split(ct, ";")[0] {
-	case "application/json":
+	case "application/json", "application/x-arango-dump":
 		httpResp = &httpJSONResponse{resp: resp, rawResponse: body}
 	case "application/x-velocypack":
 		httpResp = &httpVPackResponse{resp: resp, rawResponse: body}
