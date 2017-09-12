@@ -267,7 +267,7 @@ func (u *user) RemoveDatabaseAccess(ctx context.Context, db Database) error {
 	if err != nil {
 		return WithStack(err)
 	}
-	if err := resp.CheckStatus(200); err != nil {
+	if err := resp.CheckStatus(200, 202); err != nil {
 		return WithStack(err)
 	}
 	return nil
@@ -357,7 +357,7 @@ func (u *user) RemoveCollectionAccess(ctx context.Context, col AccessTarget) err
 	if err != nil {
 		return WithStack(err)
 	}
-	if err := resp.CheckStatus(200); err != nil {
+	if err := resp.CheckStatus(200, 202); err != nil {
 		return WithStack(err)
 	}
 	return nil
