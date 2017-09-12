@@ -76,7 +76,7 @@ func (r *httpJSONResponseElement) CheckStatus(validStatusCodes ...int) error {
 	}
 	// Invalid status code, try to parse arango error response.
 	var aerr driver.ArangoError
-	if err := r.ParseBody("", &aerr); err == nil {
+	if err := r.ParseBody("", &aerr); err == nil && aerr.HasError {
 		// Found correct arango error.
 		return aerr
 	}
