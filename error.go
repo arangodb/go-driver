@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -39,7 +40,10 @@ type ArangoError struct {
 
 // Error returns the error message of an ArangoError.
 func (ae ArangoError) Error() string {
-	return ae.ErrorMessage
+	if ae.ErrorMessage != "" {
+		return ae.ErrorMessage
+	}
+	return fmt.Sprintf("ArangoError: Code %d, ErrorNum %d", ae.Code, ae.ErrorNum)
 }
 
 // newArangoError creates a new ArangoError with given values.
