@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/http"
 	"sort"
 	"strings"
 	"sync"
@@ -84,8 +85,19 @@ type clusterConnection struct {
 
 // NewRequest creates a new request with given method and path.
 func (c *clusterConnection) NewRequest(method, path string) (driver.Request, error) {
+	c.mutex.RLock()
+	servers := c.servers
+	c.mutex.RUnlock()
+
 	// It is assumed that all servers used the same protocol.
-	return c.servers[0].NewRequest(method, path)
+	if len(servers) > 0 {
+		return servers[0].NewRequest(method, path)
+	}
+	return nil, driver.WithStack(driver.ArangoError{
+		HasError:     true,
+		Code:         http.StatusServiceUnavailable,
+		ErrorMessage: "no servers available",
+	})
 }
 
 // Do performs a given request, returning its response.
@@ -180,10 +192,21 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 
 // Unmarshal unmarshals the given raw object into the given result interface.
 func (c *clusterConnection) Unmarshal(data driver.RawObject, result interface{}) error {
-	if err := c.servers[0].Unmarshal(data, result); err != nil {
-		return driver.WithStack(err)
+	c.mutex.RLock()
+	servers := c.servers
+	c.mutex.RUnlock()
+
+	if len(servers) > 0 {
+		if err := c.servers[0].Unmarshal(data, result); err != nil {
+			return driver.WithStack(err)
+		}
+		return nil
 	}
-	return nil
+	return driver.WithStack(driver.ArangoError{
+		HasError:     true,
+		Code:         http.StatusServiceUnavailable,
+		ErrorMessage: "no servers available",
+	})
 }
 
 // Endpoints returns the endpoints used by this connection.
