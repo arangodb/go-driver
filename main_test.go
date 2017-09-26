@@ -24,6 +24,9 @@ func TestMain(m *testing.M) {
 	c, err := driver.NewClient(driver.ClientConfig{
 		Connection: conn,
 	})
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
 
 	waitUntilServerAvailable(context.Background(), c)
 
@@ -41,6 +44,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client) bool {
 				instanceUp <- true
 				return
 			} else {
+				log.Printf("version err: %v", err)
 				cancel()
 				time.Sleep(time.Second)
 			}
