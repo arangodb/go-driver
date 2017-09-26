@@ -55,6 +55,7 @@ type Database interface {
 	// The query is not executed.
 	ValidateQuery(ctx context.Context, query string) error
 
+	// Transaction performs a javascript transaction. The result of the transaction function is returned.
 	Transaction(ctx context.Context, readCollections, writeCollections []string, action string, options *TransactionOptions) (interface{}, error)
 }
 
