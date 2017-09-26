@@ -15,7 +15,7 @@ func TestDatabaseTransaction(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Remove(e.ctx)
 
-	result, err := db.Transaction(e.ctx, nil, nil, "function () { return 'worked!'; }")
+	result, err := db.Transaction(e.ctx, nil, nil, "function () { return 'worked!'; }", nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, "worked!", result)
@@ -29,7 +29,7 @@ func TestDatabaseTransactionError(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Remove(e.ctx)
 
-	result, err := db.Transaction(e.ctx, nil, nil, "function () { error error; }")
+	result, err := db.Transaction(e.ctx, nil, nil, "function () { error error; }", nil)
 	require.Nil(t, result)
 	require.Error(t, err)
 
