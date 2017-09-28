@@ -54,6 +54,7 @@ func Example_createDocument() {
 	if err != nil {
 		log.Fatalf("Failed to create database: %v", err)
 	}
+	defer db.Remove(nil)
 
 	// Create collection
 	col, err := db.CreateCollection(nil, "books", nil)
