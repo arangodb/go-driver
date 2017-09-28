@@ -19,7 +19,7 @@ type TransactionOptions struct {
 	IntermediateCommitCount interface{}
 
 	// Optional arguments passed to action.
-	Params []string
+	Params []interface{}
 
 	// Maximum total size of operations after which an intermediate commit is
 	// performed automatically. Honored by the RocksDB storage engine only.
@@ -37,7 +37,7 @@ type transactionRequest struct {
 	LockTimeout             interface{}                   `json:"lockTimeout,omitempty"`
 	WaitForSync             bool                          `json:"waitForSync"`
 	IntermediateCommitCount interface{}                   `json:"intermediateCommitCount,omitempty"`
-	Params                  []string                      `json:"params"`
+	Params                  []interface{}                 `json:"params"`
 	IntermediateCommitSize  interface{}                   `json:"intermediateCommitSize,omitempty"`
 	Action                  string                        `json:"action"`
 	Collections             transactionCollectionsRequest `json:"collections"`
