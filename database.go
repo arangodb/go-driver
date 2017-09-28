@@ -56,7 +56,7 @@ type Database interface {
 	ValidateQuery(ctx context.Context, query string) error
 
 	// Transaction performs a javascript transaction. The result of the transaction function is returned.
-	Transaction(ctx context.Context, readCollections, writeCollections []string, action string, options *TransactionOptions) (interface{}, error)
+	Transaction(ctx context.Context, action string, options *TransactionOptions) (interface{}, error)
 }
 
 // EngineType indicates type of database engine being used.

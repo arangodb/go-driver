@@ -30,7 +30,7 @@ func TestDatabaseTransaction(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			result, err := db.Transaction(e.ctx, nil, nil, testCase.action, testCase.options)
+			result, err := db.Transaction(e.ctx, testCase.action, testCase.options)
 			assert.Equal(t, testCase.expectResult, result)
 			assert.Equal(t, testCase.expectError, err)
 		})

@@ -161,27 +161,21 @@ func (d *database) ValidateQuery(ctx context.Context, query string) error {
 	return nil
 }
 
-func (d *database) Transaction(
-	ctx context.Context,
-	readCollections, writeCollections []string,
-	action string,
-	options *TransactionOptions,
-) (interface{}, error) {
+func (d *database) Transaction(ctx context.Context, action string, options *TransactionOptions) (interface{}, error) {
 	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/transaction"))
 	if err != nil {
 		return nil, WithStack(err)
 	}
-	input := transactionRequest{
-		Collections: transactionCollectionsRequest{
-			Read:  readCollections,
-			Write: writeCollections,
-		},
-		Action: action,
-	}
+	input := transactionRequest{Action: action}
 	if options != nil {
 		input.MaxTransactionSize = options.MaxTransactionSize
+		input.LockTimeout = options.LockTimeout
 		input.WaitForSync = options.WaitForSync
+		input.IntermediateCommitCount = options.IntermediateCommitCount
 		input.Params = options.Params
+		input.IntermediateCommitSize = options.IntermediateCommitSize
+		input.Collections.Read = options.ReadCollections
+		input.Collections.Write = options.WriteCollections
 	}
 	if _, err = req.SetBody(input); err != nil {
 		return nil, WithStack(err)
