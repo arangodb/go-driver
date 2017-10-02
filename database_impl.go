@@ -24,7 +24,6 @@ package driver
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"path"
 )
@@ -184,7 +183,7 @@ func (d *database) Transaction(ctx context.Context, action string, options *Tran
 	if err != nil {
 		return nil, WithStack(err)
 	}
-	if err = resp.CheckStatus(http.StatusOK, http.StatusBadRequest); err != nil {
+	if err = resp.CheckStatus(http.StatusOK); err != nil {
 		return nil, WithStack(err)
 	}
 
@@ -193,8 +192,5 @@ func (d *database) Transaction(ctx context.Context, action string, options *Tran
 		return nil, WithStack(err)
 	}
 
-	if output.Error {
-		return nil, fmt.Errorf("%d: %s", output.ErrorNum, output.ErrorMessage)
-	}
 	return output.Result, nil
 }

@@ -8,7 +8,7 @@ type TransactionOptions struct {
 	// An optional numeric value that can be used to set a timeout for waiting on collection
 	// locks. If not specified, a default value will be used.
 	// Setting lockTimeout to 0 will make ArangoDB not time out waiting for a lock.
-	LockTimeout interface{}
+	LockTimeout *int
 
 	// An optional boolean flag that, if set, will force the transaction to write
 	// all data to disk before returning.
@@ -16,14 +16,14 @@ type TransactionOptions struct {
 
 	// Maximum number of operations after which an intermediate commit is performed
 	// automatically. Honored by the RocksDB storage engine only.
-	IntermediateCommitCount interface{}
+	IntermediateCommitCount *int
 
 	// Optional arguments passed to action.
 	Params []interface{}
 
 	// Maximum total size of operations after which an intermediate commit is
 	// performed automatically. Honored by the RocksDB storage engine only.
-	IntermediateCommitSize interface{}
+	IntermediateCommitSize *int
 
 	// Collections that the transaction reads from.
 	ReadCollections []string
@@ -49,9 +49,5 @@ type transactionCollectionsRequest struct {
 }
 
 type transactionResponse struct {
-	Error        bool        `json:"error"`
-	Code         int         `json:"code"`
-	Result       interface{} `json:"result"`
-	ErrorNum     int         `json:"errorNum"`
-	ErrorMessage string      `json:"errorMessage"`
+	Result interface{} `json:"result"`
 }

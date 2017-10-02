@@ -1,7 +1,8 @@
-package driver_test
+package test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -29,5 +30,17 @@ func setUpTestEnvironment(tb testing.TB) *environment {
 		ctx:      context.Background(),
 		client:   client,
 		tearDown: func() {},
+	}
+}
+
+func requireNoError(tb testing.TB, err error) {
+	if err != nil {
+		tb.Fatalf("expected no error, got %v", err)
+	}
+}
+
+func assertEqual(tb testing.TB, expected, actual interface{}) {
+	if !reflect.DeepEqual(expected, actual) {
+		tb.Errorf("expected %v, got %v", expected, actual)
 	}
 }
