@@ -7,7 +7,6 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
-	"github.com/stretchr/testify/require"
 )
 
 type environment struct {
@@ -20,11 +19,11 @@ func setUpTestEnvironment(tb testing.TB) *environment {
 	conn, err := http.NewConnection(http.ConnectionConfig{
 		Endpoints: []string{"http://localhost:8529"},
 	})
-	require.NoError(tb, err)
+	requireNoError(tb, err)
 	client, err := driver.NewClient(driver.ClientConfig{
 		Connection: conn,
 	})
-	require.NoError(tb, err)
+	requireNoError(tb, err)
 
 	return &environment{
 		ctx:      context.Background(),
