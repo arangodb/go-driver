@@ -34,11 +34,11 @@ type TransactionOptions struct {
 
 type transactionRequest struct {
 	MaxTransactionSize      int                           `json:"maxTransactionSize"`
-	LockTimeout             interface{}                   `json:"lockTimeout,omitempty"`
+	LockTimeout             *int                          `json:"lockTimeout,omitempty"`
 	WaitForSync             bool                          `json:"waitForSync"`
-	IntermediateCommitCount interface{}                   `json:"intermediateCommitCount,omitempty"`
+	IntermediateCommitCount *int                          `json:"intermediateCommitCount,omitempty"`
 	Params                  []interface{}                 `json:"params"`
-	IntermediateCommitSize  interface{}                   `json:"intermediateCommitSize,omitempty"`
+	IntermediateCommitSize  *int                          `json:"intermediateCommitSize,omitempty"`
 	Action                  string                        `json:"action"`
 	Collections             transactionCollectionsRequest `json:"collections"`
 }
