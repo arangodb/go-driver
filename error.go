@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 )
@@ -44,6 +45,16 @@ func (ae ArangoError) Error() string {
 		return ae.ErrorMessage
 	}
 	return fmt.Sprintf("ArangoError: Code %d, ErrorNum %d", ae.Code, ae.ErrorNum)
+}
+
+// Timeout returns true when the given error is a timeout error.
+func (ae ArangoError) Timeout() bool {
+	return ae.HasError && (ae.Code == http.StatusRequestTimeout || ae.Code == http.StatusGatewayTimeout)
+}
+
+// Temporary returns true when the given error is a temporary error.
+func (ae ArangoError) Temporary() bool {
+	return ae.HasError && ae.Code == http.StatusServiceUnavailable
 }
 
 // newArangoError creates a new ArangoError with given values.
