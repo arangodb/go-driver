@@ -72,7 +72,7 @@ func TestRemoveVerticesReturnOld(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
-	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2365
+	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	g := ensureGraph(ctx, db, "remove_vertices_returnOld_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
 

@@ -81,7 +81,7 @@ func TestReplaceVertices(t *testing.T) {
 func TestReplaceVerticesReturnOld(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2365
+	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_returnOld_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "pensions", t)
@@ -126,7 +126,7 @@ func TestReplaceVerticesReturnOld(t *testing.T) {
 func TestReplaceVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2365
+	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_returnNew_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
