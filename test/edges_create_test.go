@@ -87,7 +87,7 @@ func TestCreateEdges(t *testing.T) {
 func TestCreateEdgesReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.3", t) // See https://github.com/arangodb/arangodb/issues/2363
+	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "create_edges_returnNew_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
