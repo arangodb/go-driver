@@ -351,3 +351,31 @@ func TestCollectionStatistics(t *testing.T) {
 		}
 	}
 }
+
+// TestCollectionRename creates a collection and renames it
+func TestCollectionRename(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_collection_rename_success"
+	col, err := db.CreateCollection(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	newName := "test_collection_rename_success_after"
+	if err := col.Rename(nil, newName); err != nil {
+		t.Fatalf("Failed to rename: %s", describe(err))
+	}
+
+	// Check collection exist
+	if found, err := db.CollectionExists(nil, name); err != nil {
+		t.Errorf("Exists(old) failed: %s", describe(err))
+	} else if found {
+		t.Error("Rename failed. Old collection still exists")
+	}
+	if found, err := db.CollectionExists(nil, newName); err != nil {
+		t.Errorf("Exists(new) failed: %s", describe(err))
+	} else if !found {
+		t.Error("Rename failed. New collection does not exist")
+	}
+}

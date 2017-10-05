@@ -247,6 +247,32 @@ func (c *collection) Remove(ctx context.Context) error {
 	return nil
 }
 
+// Rename a collection to a given new name.
+func (c *collection) Rename(ctx context.Context, newName string) error {
+	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "rename"))
+	if err != nil {
+		return WithStack(err)
+	}
+	opts := struct {
+		Name string `json:"name"`
+	}{
+		Name: newName,
+	}
+	if _, err := req.SetBody(opts); err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	c.name = newName
+	return nil
+
+}
+
 // Truncate removes all documents from the collection, but leaves the indexes intact.
 func (c *collection) Truncate(ctx context.Context) error {
 	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "truncate"))

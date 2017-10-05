@@ -159,6 +159,14 @@ func (c *vertexCollection) Remove(ctx context.Context) error {
 	return nil
 }
 
+// Rename a collection to a given new name.
+func (c *vertexCollection) Rename(ctx context.Context, newName string) error {
+	if err := c.rawCollection().Rename(ctx, newName); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // Truncate removes all documents from the collection, but leaves the indexes intact.
 func (c *vertexCollection) Truncate(ctx context.Context) error {
 	if err := c.rawCollection().Truncate(ctx); err != nil {

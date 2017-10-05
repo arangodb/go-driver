@@ -65,6 +65,9 @@ type Collection interface {
 	// If the collection does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
 
+	// Rename a collection to a given new name.
+	Rename(ctx context.Context, newName string) error
+
 	// Truncate removes all documents from the collection, but leaves the indexes intact.
 	Truncate(ctx context.Context) error
 
