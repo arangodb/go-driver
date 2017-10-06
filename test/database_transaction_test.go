@@ -2,18 +2,15 @@ package test
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
 )
 
 func TestDatabaseTransaction(t *testing.T) {
-	e := setUpTestEnvironment(t)
-	defer e.tearDown()
-
-	db, err := e.client.CreateDatabase(e.ctx, "test", nil)
-	requireNoError(t, err)
-	defer db.Remove(e.ctx)
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "transaction_test", nil, t)
 
 	testCases := []struct {
 		name         string
@@ -28,10 +25,14 @@ func TestDatabaseTransaction(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			result, err := db.Transaction(e.ctx, testCase.action, testCase.options)
-			assertEqual(t, testCase.expectResult, result)
+			result, err := db.Transaction(nil, testCase.action, testCase.options)
+			if !reflect.DeepEqual(testCase.expectResult, result) {
+				t.Errorf("expected result %v, got %v", testCase.expectResult, result)
+			}
 			if testCase.expectError != nil {
-				assertEqual(t, testCase.expectError.Error(), err.Error())
+				if testCase.expectError.Error() != err.Error() {
+					t.Errorf("expected error %v, got %v", testCase.expectError.Error(), err.Error())
+				}
 			}
 		})
 	}
