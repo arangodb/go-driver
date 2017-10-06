@@ -10,6 +10,7 @@ import (
 
 func TestDatabaseTransaction(t *testing.T) {
 	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(nil, c, "transaction_test", nil, t)
 
 	testCases := []struct {
