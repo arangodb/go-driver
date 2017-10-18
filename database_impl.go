@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"net/http"
 	"path"
 )
 
@@ -157,4 +158,39 @@ func (d *database) ValidateQuery(ctx context.Context, query string) error {
 		return WithStack(err)
 	}
 	return nil
+}
+
+func (d *database) Transaction(ctx context.Context, action string, options *TransactionOptions) (interface{}, error) {
+	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/transaction"))
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	input := transactionRequest{Action: action}
+	if options != nil {
+		input.MaxTransactionSize = options.MaxTransactionSize
+		input.LockTimeout = options.LockTimeout
+		input.WaitForSync = options.WaitForSync
+		input.IntermediateCommitCount = options.IntermediateCommitCount
+		input.Params = options.Params
+		input.IntermediateCommitSize = options.IntermediateCommitSize
+		input.Collections.Read = options.ReadCollections
+		input.Collections.Write = options.WriteCollections
+	}
+	if _, err = req.SetBody(input); err != nil {
+		return nil, WithStack(err)
+	}
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	if err = resp.CheckStatus(http.StatusOK); err != nil {
+		return nil, WithStack(err)
+	}
+
+	output := &transactionResponse{}
+	if err = resp.ParseBody("", output); err != nil {
+		return nil, WithStack(err)
+	}
+
+	return output.Result, nil
 }

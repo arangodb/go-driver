@@ -54,6 +54,9 @@ type Database interface {
 	// When the query is valid, nil returned, otherwise an error is returned.
 	// The query is not executed.
 	ValidateQuery(ctx context.Context, query string) error
+
+	// Transaction performs a javascript transaction. The result of the transaction function is returned.
+	Transaction(ctx context.Context, action string, options *TransactionOptions) (interface{}, error)
 }
 
 // EngineType indicates type of database engine being used.
