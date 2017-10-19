@@ -45,6 +45,7 @@ const (
 	keyResponse      = "arangodb-response"
 	keyEndpoint      = "arangodb-endpoint"
 	keyIsRestore     = "arangodb-isRestore"
+	keyIgnoreRevs    = "arangodb-ignoreRevs"
 )
 
 // WithRevision is used to configure a context to make document
@@ -150,6 +151,17 @@ func WithIsRestore(parent context.Context, value bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyIsRestore, value)
 }
 
+// WithIgnoreRevisions is used to configure a context to make modification
+// functions ignore revisions in the update.
+// Do not use in combination with WithRevision or WithRevisions.
+func WithIgnoreRevisions(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) == 1 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyIgnoreRevs, v)
+}
+
 type contextSettings struct {
 	Silent        bool
 	WaitForSync   bool
@@ -159,6 +171,7 @@ type contextSettings struct {
 	Revisions     []string
 	ImportDetails *[]string
 	IsRestore     bool
+	IgnoreRevs    *bool
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -236,6 +249,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if isRestore, ok := v.(bool); ok {
 			req.SetQuery("isRestore", strconv.FormatBool(isRestore))
 			result.IsRestore = isRestore
+		}
+	}
+	// IgnoreRevs
+	if v := ctx.Value(keyIgnoreRevs); v != nil {
+		if ignoreRevs, ok := v.(bool); ok {
+			req.SetQuery("ignoreRevs", strconv.FormatBool(ignoreRevs))
+			result.IgnoreRevs = &ignoreRevs
 		}
 	}
 	return result
