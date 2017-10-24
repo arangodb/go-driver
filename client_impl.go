@@ -88,11 +88,11 @@ func (c *client) Version(ctx context.Context) (VersionInfo, error) {
 // When this client is connected to a cluster of servers, the connection will be updated to reflect
 // the layout of the cluster.
 func (c *client) SynchronizeEndpoints(ctx context.Context) error {
-	role, err := c.role(ctx)
+	role, mode, err := c.role(ctx)
 	if err != nil {
 		return WithStack(err)
 	}
-	if role == "SINGLE" {
+	if role == "SINGLE" && mode != "resilient" {
 		// Standalone server, do nothing
 		return nil
 	}
@@ -128,27 +128,29 @@ func (c *client) autoSynchronizeEndpoints(interval time.Duration) {
 
 type roleResponse struct {
 	Role string `json:"role,omitempty"`
+	Mode string `json:"mode,omitempty"`
 }
 
 // role returns the role of the server that answers the request.
-func (c *client) role(ctx context.Context) (string, error) {
+// Returns role, mode, error.
+func (c *client) role(ctx context.Context) (string, string, error) {
 	req, err := c.conn.NewRequest("GET", "_admin/server/role")
 	if err != nil {
-		return "", WithStack(err)
+		return "", "", WithStack(err)
 	}
 	applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return "", WithStack(err)
+		return "", "", WithStack(err)
 	}
 	if err := resp.CheckStatus(200); err != nil {
-		return "", WithStack(err)
+		return "", "", WithStack(err)
 	}
 	var data roleResponse
 	if err := resp.ParseBody("", &data); err != nil {
-		return "", WithStack(err)
+		return "", "", WithStack(err)
 	}
-	return data.Role, nil
+	return data.Role, data.Mode, nil
 }
 
 type clusterEndpointsResponse struct {
