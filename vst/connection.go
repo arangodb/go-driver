@@ -38,8 +38,8 @@ import (
 )
 
 const (
-	keyRawResponse = "arangodb-rawResponse"
-	keyResponse    = "arangodb-response"
+	keyRawResponse driver.ContextKey = "arangodb-rawResponse"
+	keyResponse    driver.ContextKey = "arangodb-response"
 )
 
 // ConnectionConfig provides all configuration options for a Velocypack connection.

@@ -30,22 +30,27 @@ import (
 	"github.com/arangodb/go-driver/util"
 )
 
+// ContextKey is an internal type used for holding values in a `context.Context`
+// do not use!.
+type ContextKey string
+
 const (
-	keyRevision      = "arangodb-revision"
-	keyRevisions     = "arangodb-revisions"
-	keyReturnNew     = "arangodb-returnNew"
-	keyReturnOld     = "arangodb-returnOld"
-	keySilent        = "arangodb-silent"
-	keyWaitForSync   = "arangodb-waitForSync"
-	keyDetails       = "arangodb-details"
-	keyKeepNull      = "arangodb-keepNull"
-	keyMergeObjects  = "arangodb-mergeObjects"
-	keyRawResponse   = "arangodb-rawResponse"
-	keyImportDetails = "arangodb-importDetails"
-	keyResponse      = "arangodb-response"
-	keyEndpoint      = "arangodb-endpoint"
-	keyIsRestore     = "arangodb-isRestore"
-	keyIgnoreRevs    = "arangodb-ignoreRevs"
+	keyRevision      ContextKey = "arangodb-revision"
+	keyRevisions     ContextKey = "arangodb-revisions"
+	keyReturnNew     ContextKey = "arangodb-returnNew"
+	keyReturnOld     ContextKey = "arangodb-returnOld"
+	keySilent        ContextKey = "arangodb-silent"
+	keyWaitForSync   ContextKey = "arangodb-waitForSync"
+	keyDetails       ContextKey = "arangodb-details"
+	keyKeepNull      ContextKey = "arangodb-keepNull"
+	keyMergeObjects  ContextKey = "arangodb-mergeObjects"
+	keyRawResponse   ContextKey = "arangodb-rawResponse"
+	keyImportDetails ContextKey = "arangodb-importDetails"
+	keyResponse      ContextKey = "arangodb-response"
+	keyEndpoint      ContextKey = "arangodb-endpoint"
+	keyIsRestore     ContextKey = "arangodb-isRestore"
+	keyIsSystem      ContextKey = "arangodb-isSystem"
+	keyIgnoreRevs    ContextKey = "arangodb-ignoreRevs"
 )
 
 // WithRevision is used to configure a context to make document
@@ -151,6 +156,12 @@ func WithIsRestore(parent context.Context, value bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyIsRestore, value)
 }
 
+// WithIsSystem is used to configure a context to make insert functions use the "isSystem=<value>"
+// setting.
+func WithIsSystem(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyIsSystem, value)
+}
+
 // WithIgnoreRevisions is used to configure a context to make modification
 // functions ignore revisions in the update.
 // Do not use in combination with WithRevision or WithRevisions.
@@ -171,6 +182,7 @@ type contextSettings struct {
 	Revisions     []string
 	ImportDetails *[]string
 	IsRestore     bool
+	IsSystem      bool
 	IgnoreRevs    *bool
 }
 
@@ -249,6 +261,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if isRestore, ok := v.(bool); ok {
 			req.SetQuery("isRestore", strconv.FormatBool(isRestore))
 			result.IsRestore = isRestore
+		}
+	}
+	// IsSystem
+	if v := ctx.Value(keyIsSystem); v != nil {
+		if isSystem, ok := v.(bool); ok {
+			req.SetQuery("isSystem", strconv.FormatBool(isSystem))
+			result.IsSystem = isSystem
 		}
 	}
 	// IgnoreRevs
