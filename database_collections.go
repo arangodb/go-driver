@@ -86,6 +86,8 @@ type CreateCollectionOptions struct {
 	IndexBuckets int `json:"indexBuckets,omitempty"`
 	// Specifies how keys in the collection are created.
 	KeyOptions *CollectionKeyOptions `json:"keyOptions,omitempty"`
+	// This field is used for internal purposes only. DO NOT USE.
+	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
 }
 
 // CollectionType is the type of a collection.
