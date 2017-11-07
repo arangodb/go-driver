@@ -120,6 +120,7 @@ func (d *database) CreateCollection(ctx context.Context, name string, options *C
 	if _, err := req.SetBody(input); err != nil {
 		return nil, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	resp, err := d.conn.Do(ctx, req)
 	if err != nil {
 		return nil, WithStack(err)

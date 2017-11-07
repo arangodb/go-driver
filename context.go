@@ -35,22 +35,23 @@ import (
 type ContextKey string
 
 const (
-	keyRevision      ContextKey = "arangodb-revision"
-	keyRevisions     ContextKey = "arangodb-revisions"
-	keyReturnNew     ContextKey = "arangodb-returnNew"
-	keyReturnOld     ContextKey = "arangodb-returnOld"
-	keySilent        ContextKey = "arangodb-silent"
-	keyWaitForSync   ContextKey = "arangodb-waitForSync"
-	keyDetails       ContextKey = "arangodb-details"
-	keyKeepNull      ContextKey = "arangodb-keepNull"
-	keyMergeObjects  ContextKey = "arangodb-mergeObjects"
-	keyRawResponse   ContextKey = "arangodb-rawResponse"
-	keyImportDetails ContextKey = "arangodb-importDetails"
-	keyResponse      ContextKey = "arangodb-response"
-	keyEndpoint      ContextKey = "arangodb-endpoint"
-	keyIsRestore     ContextKey = "arangodb-isRestore"
-	keyIsSystem      ContextKey = "arangodb-isSystem"
-	keyIgnoreRevs    ContextKey = "arangodb-ignoreRevs"
+	keyRevision                 ContextKey = "arangodb-revision"
+	keyRevisions                ContextKey = "arangodb-revisions"
+	keyReturnNew                ContextKey = "arangodb-returnNew"
+	keyReturnOld                ContextKey = "arangodb-returnOld"
+	keySilent                   ContextKey = "arangodb-silent"
+	keyWaitForSync              ContextKey = "arangodb-waitForSync"
+	keyDetails                  ContextKey = "arangodb-details"
+	keyKeepNull                 ContextKey = "arangodb-keepNull"
+	keyMergeObjects             ContextKey = "arangodb-mergeObjects"
+	keyRawResponse              ContextKey = "arangodb-rawResponse"
+	keyImportDetails            ContextKey = "arangodb-importDetails"
+	keyResponse                 ContextKey = "arangodb-response"
+	keyEndpoint                 ContextKey = "arangodb-endpoint"
+	keyIsRestore                ContextKey = "arangodb-isRestore"
+	keyIsSystem                 ContextKey = "arangodb-isSystem"
+	keyIgnoreRevs               ContextKey = "arangodb-ignoreRevs"
+	keyEnforceReplicationFactor ContextKey = "arangodb-enforceReplicationFactor"
 )
 
 // WithRevision is used to configure a context to make document
@@ -173,17 +174,25 @@ func WithIgnoreRevisions(parent context.Context, value ...bool) context.Context 
 	return context.WithValue(contextOrBackground(parent), keyIgnoreRevs, v)
 }
 
+// WithEnforceReplicationFactor is used to configure a context to make adding collections
+// fail if the replication factor is too high (default or true) or
+// silently accept (false).
+func WithEnforceReplicationFactor(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyEnforceReplicationFactor, value)
+}
+
 type contextSettings struct {
-	Silent        bool
-	WaitForSync   bool
-	ReturnOld     interface{}
-	ReturnNew     interface{}
-	Revision      string
-	Revisions     []string
-	ImportDetails *[]string
-	IsRestore     bool
-	IsSystem      bool
-	IgnoreRevs    *bool
+	Silent                   bool
+	WaitForSync              bool
+	ReturnOld                interface{}
+	ReturnNew                interface{}
+	Revision                 string
+	Revisions                []string
+	ImportDetails            *[]string
+	IsRestore                bool
+	IsSystem                 bool
+	IgnoreRevs               *bool
+	EnforceReplicationFactor *bool
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -275,6 +284,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if ignoreRevs, ok := v.(bool); ok {
 			req.SetQuery("ignoreRevs", strconv.FormatBool(ignoreRevs))
 			result.IgnoreRevs = &ignoreRevs
+		}
+	}
+	// EnforeReplicationFactor
+	if v := ctx.Value(keyEnforceReplicationFactor); v != nil {
+		if enforceReplicationFactor, ok := v.(bool); ok {
+			req.SetQuery("enforceReplicationFactor", strconv.FormatBool(enforceReplicationFactor))
+			result.EnforceReplicationFactor = &enforceReplicationFactor
 		}
 	}
 	return result
