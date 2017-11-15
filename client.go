@@ -52,6 +52,9 @@ type Client interface {
 
 	// User functions
 	ClientUsers
+
+	// Server/cluster administration functions
+	ClientServerAdmin
 }
 
 // ClientConfig contains all settings needed to create a client.
