@@ -27,6 +27,7 @@ package test
 import (
 	"context"
 	"testing"
+        "time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -244,10 +245,14 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 	if err := u.RemoveDatabaseAccess(nil, db); err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+
 	// Remove explicit grant for col
 	if err := u.RemoveCollectionAccess(nil, authCol); err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+
+        // wait for change to propagate (TODO add a check to the coordinators)
+        time.Sleep(time.Second)
 
 	// Try to create document in collection, should fail because there are no collection grants for this user and/or collection.
 	if _, err := authCol.CreateDocument(nil, Book{Title: "I cannot write"}); !driver.IsForbidden(err) {
