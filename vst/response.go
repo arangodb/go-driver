@@ -25,6 +25,7 @@ package vst
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/vst/protocol"
@@ -38,6 +39,8 @@ type vstResponse struct {
 	Type         int
 	ResponseCode int
 	meta         velocypack.Slice
+	metaMutex    sync.Mutex
+	metaMap      map[string]string
 	slice        velocypack.Slice
 	bodyArray    []driver.Response
 }
@@ -148,12 +151,41 @@ func (r *vstResponse) CheckStatus(validStatusCodes ...int) error {
 // Header returns the value of a response header with given key.
 // If no such header is found, an empty string is returned.
 func (r *vstResponse) Header(key string) string {
+	r.metaMutex.Lock()
+	defer r.metaMutex.Unlock()
+
 	if r.meta != nil {
-		key = strings.ToLower(key)
-		if elem, err := r.meta.Get(key); err == nil {
-			if value, err := elem.GetString(); err == nil {
-				return value
+		if r.metaMap == nil {
+			// Read all headers
+			metaMap := make(map[string]string)
+			keyCount, err := r.meta.Length()
+			if err != nil {
+				return ""
 			}
+			for k := velocypack.ValueLength(0); k < keyCount; k++ {
+				key, err := r.meta.KeyAt(k)
+				if err != nil {
+					continue
+				}
+				value, err := r.meta.ValueAt(k)
+				if err != nil {
+					continue
+				}
+				keyStr, err := key.GetString()
+				if err != nil {
+					continue
+				}
+				valueStr, err := value.GetString()
+				if err != nil {
+					continue
+				}
+				metaMap[strings.ToLower(keyStr)] = valueStr
+			}
+			r.metaMap = metaMap
+		}
+		key = strings.ToLower(key)
+		if value, found := r.metaMap[key]; found {
+			return value
 		}
 	}
 	return ""
