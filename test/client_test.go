@@ -163,7 +163,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
 	if waitUntilReady {
-		timeout := 3*time.Minute
+		timeout := 3 * time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if up := waitUntilServerAvailable(ctx, c, t); !up {
@@ -244,7 +244,7 @@ func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
-	timeout := 3*time.Minute
+	timeout := 3 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	if up := waitUntilServerAvailable(ctx, c, t); !up {
@@ -254,5 +254,32 @@ func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
 		t.Errorf("Version failed: %s", describe(err))
 	} else {
 		t.Logf("Got server version %s", info)
+	}
+}
+
+// TestResponseHeader checks the Response.Header function.
+func TestResponseHeader(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	ctx := context.Background()
+	var resp driver.Response
+	if _, err := c.Version(driver.WithResponse(ctx, &resp)); err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+
+	// Check valid key
+	expectedServer := "ArangoDB"
+	if server := resp.Header("server"); server != expectedServer {
+		t.Errorf("Unexpected result from Header('server'), got '%s', expected '%s'", server, expectedServer)
+	}
+	if server := resp.Header("Server"); server != expectedServer {
+		t.Errorf("Unexpected result from Header('Server'), got '%s', expected '%s'", server, expectedServer)
+	}
+	if server := resp.Header("SERVER"); server != expectedServer {
+		t.Errorf("Unexpected result from Header('SERVER'), got '%s', expected '%s'", server, expectedServer)
+	}
+
+	// Check non-existing key
+	if value := resp.Header("keyNotFound"); value != "" {
+		t.Errorf("Unexpected result from Header('keyNotFound'), got '%s', expected ''", value)
 	}
 }

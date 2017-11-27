@@ -36,6 +36,7 @@ type vstResponse struct {
 	Version      int
 	Type         int
 	ResponseCode int
+	meta         velocypack.Slice
 	slice        velocypack.Slice
 	bodyArray    []driver.Response
 }
@@ -48,10 +49,13 @@ func newResponse(msg protocol.Message, endpoint string, rawResponse *[]byte) (*v
 		return nil, driver.WithStack(err)
 	}
 	//panic("hdr: " + hex.EncodeToString(hdr))
+	var hdrLen velocypack.ValueLength
 	if l, err := hdr.Length(); err != nil {
 		return nil, driver.WithStack(err)
 	} else if l < 3 {
 		return nil, driver.WithStack(fmt.Errorf("Expected a header of 3 elements, got %d", l))
+	} else {
+		hdrLen = l
 	}
 
 	resp := &vstResponse{
@@ -80,6 +84,16 @@ func newResponse(msg protocol.Message, endpoint string, rawResponse *[]byte) (*v
 		return nil, driver.WithStack(err)
 	} else {
 		resp.ResponseCode = int(code)
+	}
+	// Decode meta
+	if hdrLen >= 4 {
+		if elem, err := hdr.At(3); err != nil {
+			return nil, driver.WithStack(err)
+		} else if !elem.IsObject() {
+			return nil, driver.WithStack(fmt.Errorf("Expected meta field to be of type Object, got %s", elem.Type()))
+		} else {
+			resp.meta = elem
+		}
 	}
 
 	// Fetch body directly after hdr
@@ -128,6 +142,19 @@ func (r *vstResponse) CheckStatus(validStatusCodes ...int) error {
 		Code:         r.ResponseCode,
 		ErrorMessage: fmt.Sprintf("Unexpected status code %d", r.ResponseCode),
 	}
+}
+
+// Header returns the value of a response header with given key.
+// If no such header is found, an empty string is returned.
+func (r *vstResponse) Header(key string) string {
+	if r.meta != nil {
+		if elem, err := r.meta.Get(key); err == nil {
+			if value, err := elem.GetString(); err == nil {
+				return value
+			}
+		}
+	}
+	return ""
 }
 
 // ParseBody performs protocol specific unmarshalling of the response data into the given result.

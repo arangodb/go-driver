@@ -91,6 +91,10 @@ type Response interface {
 	// If so, nil is returned.
 	// If not, an attempt is made to parse an error response in the body and an error is returned.
 	CheckStatus(validStatusCodes ...int) error
+	// Header returns the value of a response header with given key.
+	// If no such header is found, an empty string is returned.
+	// On nested Response's, this function will always return an empty string.
+	Header(key string) string
 	// ParseBody performs protocol specific unmarshalling of the response data into the given result.
 	// If the given field is non-empty, the contents of that field will be parsed into the given result.
 	// This can only be used for requests that return a single object.
