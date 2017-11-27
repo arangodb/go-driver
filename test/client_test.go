@@ -262,28 +262,37 @@ func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
 func TestResponseHeader(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	ctx := context.Background()
-	var resp driver.Response
 
-	db := ensureDatabase(ctx, c, "_system", nil, t)
-	col := ensureCollection(ctx, db, "response_header_test", nil, t)
-
-	// `ETag` header must contain the `_rev` of the new document in quotes.
-	doc := map[string]string{
-		"Test":   "TestResponseHeader",
-		"Intent": "Check Response.Header",
-	}
-	meta, err := col.CreateDocument(driver.WithResponse(ctx, &resp), doc)
+	version, err := c.Version(nil)
 	if err != nil {
-		t.Fatalf("CreateDocument failed: %s", describe(err))
+		t.Fatalf("Version failed: %s", describe(err))
 	}
-	expectedETag := strconv.Quote(meta.Rev)
-	if x := resp.Header("ETag"); x != expectedETag {
-		t.Errorf("Unexpected result from Header('ETag'), got '%s', expected '%s'", x, expectedETag)
-	}
-	if x := resp.Header("etag"); x != expectedETag {
-		t.Errorf("Unexpected result from Header('etag'), got '%s', expected '%s'", x, expectedETag)
-	}
-	if x := resp.Header("ETAG"); x != expectedETag {
-		t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
+	isv33p := version.Version.CompareTo("3.3") >= 0
+	if !isv33p {
+		t.Skip("This test requires version 3.3")
+	} else {
+		var resp driver.Response
+		db := ensureDatabase(ctx, c, "_system", nil, t)
+		col := ensureCollection(ctx, db, "response_header_test", nil, t)
+
+		// `ETag` header must contain the `_rev` of the new document in quotes.
+		doc := map[string]string{
+			"Test":   "TestResponseHeader",
+			"Intent": "Check Response.Header",
+		}
+		meta, err := col.CreateDocument(driver.WithResponse(ctx, &resp), doc)
+		if err != nil {
+			t.Fatalf("CreateDocument failed: %s", describe(err))
+		}
+		expectedETag := strconv.Quote(meta.Rev)
+		if x := resp.Header("ETag"); x != expectedETag {
+			t.Errorf("Unexpected result from Header('ETag'), got '%s', expected '%s'", x, expectedETag)
+		}
+		if x := resp.Header("etag"); x != expectedETag {
+			t.Errorf("Unexpected result from Header('etag'), got '%s', expected '%s'", x, expectedETag)
+		}
+		if x := resp.Header("ETAG"); x != expectedETag {
+			t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
+		}
 	}
 }
