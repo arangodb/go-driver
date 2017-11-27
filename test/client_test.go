@@ -27,6 +27,7 @@ import (
 	"crypto/tls"
 	httplib "net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -266,8 +267,7 @@ func TestResponseHeader(t *testing.T) {
 	db := ensureDatabase(ctx, c, "_system", nil, t)
 	col := ensureCollection(ctx, db, "response_header_test", nil, t)
 
-	// `ETag` header must contain the `_id` of the new document
-	// `ERev` header must contain the `_rev` of the new document
+	// `ETag` header must contain the `_rev` of the new document in quotes.
 	doc := map[string]string{
 		"Test":   "TestResponseHeader",
 		"Intent": "Check Response.Header",
@@ -276,13 +276,14 @@ func TestResponseHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateDocument failed: %s", describe(err))
 	}
-	if x := resp.Header("ETag"); x != meta.Rev {
-		t.Errorf("Unexpected result from Header('ETag'), got '%s', expected '%s'", x, meta.Rev)
+	expectedETag := strconv.Quote(meta.Rev)
+	if x := resp.Header("ETag"); x != expectedETag {
+		t.Errorf("Unexpected result from Header('ETag'), got '%s', expected '%s'", x, expectedETag)
 	}
-	if x := resp.Header("etag"); x != meta.Rev {
-		t.Errorf("Unexpected result from Header('etag'), got '%s', expected '%s'", x, meta.Rev)
+	if x := resp.Header("etag"); x != expectedETag {
+		t.Errorf("Unexpected result from Header('etag'), got '%s', expected '%s'", x, expectedETag)
 	}
-	if x := resp.Header("ETAG"); x != meta.Rev {
-		t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, meta.Rev)
+	if x := resp.Header("ETAG"); x != expectedETag {
+		t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
 	}
 }
