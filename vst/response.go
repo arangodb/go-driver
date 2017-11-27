@@ -24,6 +24,7 @@ package vst
 
 import (
 	"fmt"
+	"strings"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/vst/protocol"
@@ -148,6 +149,7 @@ func (r *vstResponse) CheckStatus(validStatusCodes ...int) error {
 // If no such header is found, an empty string is returned.
 func (r *vstResponse) Header(key string) string {
 	if r.meta != nil {
+		key = strings.ToLower(key)
 		if elem, err := r.meta.Get(key); err == nil {
 			if value, err := elem.GetString(); err == nil {
 				return value
