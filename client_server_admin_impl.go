@@ -27,9 +27,7 @@ import (
 )
 
 type serverModeResponse struct {
-	Result struct {
-		Mode ServerMode `json:"mode"`
-	} `json:"result"`
+	Mode ServerMode `json:"mode"`
 }
 
 type serverModeRequest struct {
@@ -54,7 +52,7 @@ func (c *client) ServerMode(ctx context.Context) (ServerMode, error) {
 	if err := resp.ParseBody("", &result); err != nil {
 		return "", WithStack(err)
 	}
-	return result.Result.Mode, nil
+	return result.Mode, nil
 }
 
 // SetServerMode changes the current mode in which the server/cluster is operating.
