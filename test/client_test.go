@@ -288,6 +288,9 @@ func TestResponseHeader(t *testing.T) {
 		if x := resp.Header("ETag"); x != expectedETag {
 			t.Errorf("Unexpected result from Header('ETag'), got '%s', expected '%s'", x, expectedETag)
 		}
+		if x := resp.Header("Etag"); x != expectedETag {
+			t.Errorf("Unexpected result from Header('Etag'), got '%s', expected '%s'", x, expectedETag)
+		}
 		if x := resp.Header("etag"); x != expectedETag {
 			t.Errorf("Unexpected result from Header('etag'), got '%s', expected '%s'", x, expectedETag)
 		}
