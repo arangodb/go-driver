@@ -262,24 +262,27 @@ func TestResponseHeader(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	ctx := context.Background()
 	var resp driver.Response
-	if _, err := c.Version(driver.WithResponse(ctx, &resp)); err != nil {
-		t.Fatalf("Version failed: %s", describe(err))
-	}
 
-	// Check valid key
-	expectedServer := "ArangoDB"
-	if server := resp.Header("server"); server != expectedServer {
-		t.Errorf("Unexpected result from Header('server'), got '%s', expected '%s'", server, expectedServer)
-	}
-	if server := resp.Header("Server"); server != expectedServer {
-		t.Errorf("Unexpected result from Header('Server'), got '%s', expected '%s'", server, expectedServer)
-	}
-	if server := resp.Header("SERVER"); server != expectedServer {
-		t.Errorf("Unexpected result from Header('SERVER'), got '%s', expected '%s'", server, expectedServer)
-	}
+	db := ensureDatabase(ctx, c, "_system", nil, t)
+	col := ensureCollection(ctx, db, "response_header_test", nil, t)
 
-	// Check non-existing key
-	if value := resp.Header("keyNotFound"); value != "" {
-		t.Errorf("Unexpected result from Header('keyNotFound'), got '%s', expected ''", value)
+	// `ETag` header must contain the `_id` of the new document
+	// `ERev` header must contain the `_rev` of the new document
+	doc := map[string]string{
+		"Test":   "TestResponseHeader",
+		"Intent": "Check Response.Header",
+	}
+	meta, err := col.CreateDocument(driver.WithResponse(ctx, &resp), doc)
+	if err != nil {
+		t.Fatalf("CreateDocument failed: %s", describe(err))
+	}
+	if x := resp.Header("ETag"); x != meta.Rev {
+		t.Errorf("Unexpected result from Header('ETag'), got '%s', expected '%s'", x, meta.Rev)
+	}
+	if x := resp.Header("etag"); x != meta.Rev {
+		t.Errorf("Unexpected result from Header('etag'), got '%s', expected '%s'", x, meta.Rev)
+	}
+	if x := resp.Header("ETAG"); x != meta.Rev {
+		t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, meta.Rev)
 	}
 }
