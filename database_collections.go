@@ -88,6 +88,10 @@ type CreateCollectionOptions struct {
 	KeyOptions *CollectionKeyOptions `json:"keyOptions,omitempty"`
 	// This field is used for internal purposes only. DO NOT USE.
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
+	// TODO: Document me
+	IsSmart bool `json:"isSmart:omitempty"`
+	// TODO: Document me
+	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
 }
 
 // CollectionType is the type of a collection.
