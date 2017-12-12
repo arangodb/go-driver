@@ -237,6 +237,7 @@ func (c *collection) Remove(ctx context.Context) error {
 	if err != nil {
 		return WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return WithStack(err)
