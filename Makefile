@@ -3,7 +3,7 @@ SCRIPTDIR := $(shell pwd)
 ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 
 GOBUILDDIR := $(SCRIPTDIR)/.gobuild
-GOVERSION := 1.8.3-alpine
+GOVERSION := 1.9.2-alpine
 TMPDIR := $(GOBUILDDIR)
 
 ifndef ARANGODB

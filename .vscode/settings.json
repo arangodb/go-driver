@@ -32,5 +32,6 @@
             "${commentprefix} ",
             ""
         ]
-    }
+    },
+    "go.gopath": "${workspaceRoot}/.gobuild"
 }
