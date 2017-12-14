@@ -189,7 +189,7 @@ func TestClusterMoveShard(t *testing.T) {
 			t.Log("Waiting a bit")
 			time.Sleep(time.Second * 5)
 			if time.Since(start) > time.Minute {
-				t.Errorf("%d shards did not move within 2min", shardsNotOnTargetServerID)
+				t.Errorf("%d shards did not move within 1min", shardsNotOnTargetServerID)
 				break
 			}
 		}

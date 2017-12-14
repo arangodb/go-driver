@@ -113,7 +113,7 @@ func (c *cluster) MoveShard(ctx context.Context, col Collection, shard ShardID, 
 	if err != nil {
 		return WithStack(err)
 	}
-	if err := resp.CheckStatus(200, 202); err != nil {
+	if err := resp.CheckStatus(202); err != nil {
 		return WithStack(err)
 	}
 	if err := resp.ParseBody("", nil); err != nil {

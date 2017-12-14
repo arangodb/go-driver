@@ -79,7 +79,12 @@ const (
 type ServerStatus string
 
 const (
+	// ServerStatusGood indicates server is in good state
 	ServerStatusGood ServerStatus = "GOOD"
+	// ServerStatusBad indicates server has missed 1 heartbeat
+	ServerStatusBad ServerStatus = "BAD"
+	// ServerStatusFailed indicates server has been declared failed by the supervision, this happens after about 15s being bad.
+	ServerStatusFailed ServerStatus = "FAILED"
 )
 
 // DatabaseInventory describes a detailed state of the collections & shards of a specific database within a cluster.
