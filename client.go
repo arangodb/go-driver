@@ -53,6 +53,9 @@ type Client interface {
 	// User functions
 	ClientUsers
 
+	// Cluster functions
+	ClientCluster
+
 	// Server/cluster administration functions
 	ClientServerAdmin
 }
