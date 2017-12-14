@@ -68,3 +68,41 @@ func TestClusterHealth(t *testing.T) {
 		}
 	}
 }
+
+// TestClusterDatabaseInventory tests the Cluster.DatabaseInventory method.
+func TestClusterDatabaseInventory(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	cl, err := c.Cluster(ctx)
+	if driver.IsPreconditionFailed(err) {
+		t.Skip("Not a cluster")
+	} else {
+		db, err := c.Database(ctx, "_system")
+		if err != nil {
+			t.Fatalf("Failed to open _system database: %s", describe(err))
+		}
+		h, err := cl.Health(ctx)
+		if err != nil {
+			t.Fatalf("Health failed: %s", describe(err))
+		}
+		inv, err := cl.DatabaseInventory(ctx, db)
+		if err != nil {
+			t.Fatalf("DatabaseInventory failed: %s", describe(err))
+		}
+		if len(inv.Collections) == 0 {
+			t.Error("Expected multiple collections, got 0")
+		}
+		for _, col := range inv.Collections {
+			if len(col.Parameters.Shards) == 0 {
+				t.Errorf("Expected 1 or more shards in collection %s, got 0", col.Parameters.Name)
+			}
+			for shardID, dbServers := range col.Parameters.Shards {
+				for _, serverID := range dbServers {
+					if _, found := h.Health[serverID]; !found {
+						t.Errorf("Unexpected dbserver ID for shard '%s': %s", shardID, serverID)
+					}
+				}
+			}
+		}
+	}
+}

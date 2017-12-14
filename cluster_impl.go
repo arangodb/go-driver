@@ -22,7 +22,10 @@
 
 package driver
 
-import "context"
+import (
+	"context"
+	"path"
+)
 
 // newCluster creates a new Cluster implementation.
 func newCluster(conn Connection) (Cluster, error) {
@@ -55,6 +58,27 @@ func (c *cluster) Health(ctx context.Context) (ClusterHealth, error) {
 	var result ClusterHealth
 	if err := resp.ParseBody("", &result); err != nil {
 		return ClusterHealth{}, WithStack(err)
+	}
+	return result, nil
+}
+
+// Get the inventory of the cluster containing all collections (with entire details) of a database.
+func (c *cluster) DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error) {
+	req, err := c.conn.NewRequest("GET", path.Join("_db", db.Name(), "_api/replication/clusterInventory"))
+	if err != nil {
+		return DatabaseInventory{}, WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return DatabaseInventory{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return DatabaseInventory{}, WithStack(err)
+	}
+	var result DatabaseInventory
+	if err := resp.ParseBody("", &result); err != nil {
+		return DatabaseInventory{}, WithStack(err)
 	}
 	return result, nil
 }
