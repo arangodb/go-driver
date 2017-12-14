@@ -88,9 +88,12 @@ type CreateCollectionOptions struct {
 	KeyOptions *CollectionKeyOptions `json:"keyOptions,omitempty"`
 	// This field is used for internal purposes only. DO NOT USE.
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
-	// TODO: Document me
+	// Set to create a smart edge or vertex collection.
+	// This requires ArangoDB enterprise.
 	IsSmart bool `json:"isSmart,omitempty"`
-	// TODO: Document me
+	// This field must be set to the attribute that will be used for sharding or smart graphs.
+	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
+	// This requires ArangoDB enterprise.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
 }
 
