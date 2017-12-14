@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -102,6 +103,94 @@ func TestClusterDatabaseInventory(t *testing.T) {
 						t.Errorf("Unexpected dbserver ID for shard '%s': %s", shardID, serverID)
 					}
 				}
+			}
+		}
+	}
+}
+
+// TestClusterMoveShard tests the Cluster.MoveShard method.
+func TestClusterMoveShard(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	cl, err := c.Cluster(ctx)
+	if driver.IsPreconditionFailed(err) {
+		t.Skip("Not a cluster")
+	} else {
+		db, err := c.Database(ctx, "_system")
+		if err != nil {
+			t.Fatalf("Failed to open _system database: %s", describe(err))
+		}
+		col, err := db.CreateCollection(ctx, "test_move_shard", &driver.CreateCollectionOptions{
+			NumberOfShards: 12,
+		})
+		if err != nil {
+			t.Fatalf("CreateCollection failed: %s", describe(err))
+		}
+		h, err := cl.Health(ctx)
+		if err != nil {
+			t.Fatalf("Health failed: %s", describe(err))
+		}
+		inv, err := cl.DatabaseInventory(ctx, db)
+		if err != nil {
+			t.Fatalf("DatabaseInventory failed: %s", describe(err))
+		}
+		if len(inv.Collections) == 0 {
+			t.Error("Expected multiple collections, got 0")
+		}
+		var targetServerID driver.ServerID
+		for id, s := range h.Health {
+			if s.Role == driver.ServerRoleDBServer {
+				targetServerID = id
+				break
+			}
+		}
+		if len(targetServerID) == 0 {
+			t.Fatalf("Failed to find any dbserver")
+		}
+		movedShards := 0
+		for _, colInv := range inv.Collections {
+			if colInv.Parameters.Name == col.Name() {
+				for shardID, dbServers := range colInv.Parameters.Shards {
+					if dbServers[0] != targetServerID {
+						movedShards++
+						if err := cl.MoveShard(ctx, col, shardID, dbServers[0], targetServerID); err != nil {
+							t.Errorf("MoveShard for shard %s in collection %s failed: %s", shardID, col.Name(), describe(err))
+						}
+					}
+				}
+			}
+		}
+		if movedShards == 0 {
+			t.Fatal("Expected to have moved at least 1 shard, all seem to be on target server already")
+		}
+		// Wait until all shards are on the targetServerID
+		start := time.Now()
+		for {
+			shardsNotOnTargetServerID := 0
+			inv, err := cl.DatabaseInventory(ctx, db)
+			if err != nil {
+				t.Errorf("DatabaseInventory failed: %s", describe(err))
+			} else {
+				for _, colInv := range inv.Collections {
+					if colInv.Parameters.Name == col.Name() {
+						for shardID, dbServers := range colInv.Parameters.Shards {
+							if dbServers[0] != targetServerID {
+								shardsNotOnTargetServerID++
+								t.Logf("Shard %s in on %s, wanted %s", shardID, dbServers[0], targetServerID)
+							}
+						}
+					}
+				}
+			}
+			if shardsNotOnTargetServerID == 0 {
+				// We're done
+				break
+			}
+			t.Log("Waiting a bit")
+			time.Sleep(time.Second * 5)
+			if time.Since(start) > time.Minute {
+				t.Errorf("%d shards did not move within 2min", shardsNotOnTargetServerID)
+				break
 			}
 		}
 	}

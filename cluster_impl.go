@@ -86,14 +86,14 @@ func (c *cluster) DatabaseInventory(ctx context.Context, db Database) (DatabaseI
 type moveShardRequest struct {
 	Database   string   `json:"database"`
 	Collection string   `json:"collection"`
-	Shard      int      `json:"shard"`
+	Shard      ShardID  `json:"shard"`
 	FromServer ServerID `json:"fromServer"`
 	ToServer   ServerID `json:"toServer"`
 }
 
 // MoveShard moves a single shard of the given collection from server `fromServer` to
 // server `toServer`.
-func (c *cluster) MoveShard(ctx context.Context, col Collection, shard int, fromServer, toServer ServerID) error {
+func (c *cluster) MoveShard(ctx context.Context, col Collection, shard ShardID, fromServer, toServer ServerID) error {
 	req, err := c.conn.NewRequest("POST", "_admin/cluster/moveShard")
 	if err != nil {
 		return WithStack(err)
@@ -113,7 +113,7 @@ func (c *cluster) MoveShard(ctx context.Context, col Collection, shard int, from
 	if err != nil {
 		return WithStack(err)
 	}
-	if err := resp.CheckStatus(200); err != nil {
+	if err := resp.CheckStatus(200, 202); err != nil {
 		return WithStack(err)
 	}
 	if err := resp.ParseBody("", nil); err != nil {

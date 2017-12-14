@@ -38,7 +38,7 @@ type Cluster interface {
 
 	// MoveShard moves a single shard of the given collection from server `fromServer` to
 	// server `toServer`.
-	MoveShard(ctx context.Context, col Collection, shard int, fromServer, toServer ServerID) error
+	MoveShard(ctx context.Context, col Collection, shard ShardID, fromServer, toServer ServerID) error
 }
 
 // ServerID identifies an arangod server in a cluster.

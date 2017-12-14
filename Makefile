@@ -10,9 +10,11 @@ ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
 endif
 
-TESTOPTIONS := 
+ifndef TESTOPTIONS
+	TESTOPTIONS := 
+endif
 ifdef VERBOSE
-	TESTOPTIONS := -v
+	TESTVERBOSEOPTIONS := -v
 endif
 
 ORGPATH := github.com/arangodb
@@ -245,7 +247,7 @@ __test_go_test:
 		-e TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test $(TAGS) $(TESTOPTIONS) $(TESTS)
+		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
 
 __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
