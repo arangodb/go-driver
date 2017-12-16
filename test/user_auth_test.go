@@ -27,7 +27,7 @@ package test
 import (
 	"context"
 	"testing"
-        "time"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -251,8 +251,8 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
 
-        // wait for change to propagate (TODO add a check to the coordinators)
-        time.Sleep(time.Second)
+	// wait for change to propagate (TODO add a check to the coordinators)
+	time.Sleep(time.Second * 5)
 
 	// Try to create document in collection, should fail because there are no collection grants for this user and/or collection.
 	if _, err := authCol.CreateDocument(nil, Book{Title: "I cannot write"}); !driver.IsForbidden(err) {
