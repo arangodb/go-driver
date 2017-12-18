@@ -155,7 +155,7 @@ func TestClusterMoveShard(t *testing.T) {
 						movedShards++
 						var rawResponse []byte
 						if err := cl.MoveShard(driver.WithRawResponse(ctx, &rawResponse), col, shardID, dbServers[0], targetServerID); err != nil {
-							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s')", shardID, col.Name(), describe(err), string(rawResponse))
+							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
 					}
 				}
