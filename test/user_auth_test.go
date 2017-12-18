@@ -210,7 +210,7 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
 
-	// We skip this test until Christmas so we have
+	// We skip this test until Christmas
 	startTestDate := time.Date(2017, time.December, 24, 0, 0, 0, 0, time.UTC)
 	if time.Now().Before(startTestDate) {
 		t.Skipf("This test is skipped until %s", startTestDate)
@@ -305,6 +305,13 @@ func TestGrantUserCollection(t *testing.T) {
 	if !isv32p {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
+
+	// We skip this test until Christmas
+	startTestDate := time.Date(2017, time.December, 24, 0, 0, 0, 0, time.UTC)
+	if time.Now().Before(startTestDate) {
+		t.Skipf("This test is skipped until %s", startTestDate)
+	}
+
 	u := ensureUser(nil, c, "grant_user_col", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_col_test", nil, t)
 	// Grant read/write access to database
