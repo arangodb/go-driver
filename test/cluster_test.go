@@ -165,6 +165,8 @@ func TestClusterMoveShard(t *testing.T) {
 		}
 		// Wait until all shards are on the targetServerID
 		start := time.Now()
+		maxTestTime := time.Minute
+		lastShardsNotOnTargetServerID := movedShards
 		for {
 			shardsNotOnTargetServerID := 0
 			inv, err := cl.DatabaseInventory(ctx, db)
@@ -186,12 +188,17 @@ func TestClusterMoveShard(t *testing.T) {
 				// We're done
 				break
 			}
-			t.Log("Waiting a bit")
-			time.Sleep(time.Second * 5)
-			if time.Since(start) > time.Minute {
-				t.Errorf("%d shards did not move within 1min", shardsNotOnTargetServerID)
+			if shardsNotOnTargetServerID != lastShardsNotOnTargetServerID {
+				// Something changed, we give a bit more time
+				maxTestTime = maxTestTime + time.Second*15
+				lastShardsNotOnTargetServerID = shardsNotOnTargetServerID
+			}
+			if time.Since(start) > maxTestTime {
+				t.Errorf("%d shards did not move within %s", shardsNotOnTargetServerID, maxTestTime)
 				break
 			}
+			t.Log("Waiting a bit")
+			time.Sleep(time.Second * 5)
 		}
 	}
 }
