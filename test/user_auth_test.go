@@ -27,6 +27,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -208,6 +209,13 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 	if !isv32p {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
+
+	// We skip this test until Christmas
+	startTestDate := time.Date(2017, time.December, 24, 0, 0, 0, 0, time.UTC)
+	if time.Now().Before(startTestDate) {
+		t.Skipf("This test is skipped until %s", startTestDate)
+	}
+
 	u := ensureUser(nil, c, "grant_user_def", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_def_test", nil, t)
 	// Grant read/write access to default database
@@ -244,10 +252,14 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 	if err := u.RemoveDatabaseAccess(nil, db); err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+
 	// Remove explicit grant for col
 	if err := u.RemoveCollectionAccess(nil, authCol); err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+
+	// wait for change to propagate (TODO add a check to the coordinators)
+	time.Sleep(time.Second * 5)
 
 	// Try to create document in collection, should fail because there are no collection grants for this user and/or collection.
 	if _, err := authCol.CreateDocument(nil, Book{Title: "I cannot write"}); !driver.IsForbidden(err) {
@@ -293,6 +305,13 @@ func TestGrantUserCollection(t *testing.T) {
 	if !isv32p {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
+
+	// We skip this test until Christmas
+	startTestDate := time.Date(2017, time.December, 24, 0, 0, 0, 0, time.UTC)
+	if time.Now().Before(startTestDate) {
+		t.Skipf("This test is skipped until %s", startTestDate)
+	}
+
 	u := ensureUser(nil, c, "grant_user_col", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_col_test", nil, t)
 	// Grant read/write access to database

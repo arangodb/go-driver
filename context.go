@@ -52,6 +52,7 @@ const (
 	keyIsSystem                 ContextKey = "arangodb-isSystem"
 	keyIgnoreRevs               ContextKey = "arangodb-ignoreRevs"
 	keyEnforceReplicationFactor ContextKey = "arangodb-enforceReplicationFactor"
+	keyConfigured               ContextKey = "arangodb-configured"
 )
 
 // WithRevision is used to configure a context to make document
@@ -181,6 +182,16 @@ func WithEnforceReplicationFactor(parent context.Context, value bool) context.Co
 	return context.WithValue(contextOrBackground(parent), keyEnforceReplicationFactor, value)
 }
 
+// WithConfigured is used to configure a context to return the configured value of
+// a user grant instead of the effective grant.
+func WithConfigured(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) == 1 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyConfigured, v)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -193,6 +204,7 @@ type contextSettings struct {
 	IsSystem                 bool
 	IgnoreRevs               *bool
 	EnforceReplicationFactor *bool
+	Configured               *bool
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -291,6 +303,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if enforceReplicationFactor, ok := v.(bool); ok {
 			req.SetQuery("enforceReplicationFactor", strconv.FormatBool(enforceReplicationFactor))
 			result.EnforceReplicationFactor = &enforceReplicationFactor
+		}
+	}
+	// Configured
+	if v := ctx.Value(keyConfigured); v != nil {
+		if configured, ok := v.(bool); ok {
+			req.SetQuery("configured", strconv.FormatBool(configured))
+			result.Configured = &configured
 		}
 	}
 	return result

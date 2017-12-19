@@ -24,6 +24,8 @@ package vst
 
 import (
 	"fmt"
+	"strings"
+	"sync"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/vst/protocol"
@@ -36,6 +38,9 @@ type vstResponse struct {
 	Version      int
 	Type         int
 	ResponseCode int
+	meta         velocypack.Slice
+	metaMutex    sync.Mutex
+	metaMap      map[string]string
 	slice        velocypack.Slice
 	bodyArray    []driver.Response
 }
@@ -48,10 +53,13 @@ func newResponse(msg protocol.Message, endpoint string, rawResponse *[]byte) (*v
 		return nil, driver.WithStack(err)
 	}
 	//panic("hdr: " + hex.EncodeToString(hdr))
+	var hdrLen velocypack.ValueLength
 	if l, err := hdr.Length(); err != nil {
 		return nil, driver.WithStack(err)
 	} else if l < 3 {
 		return nil, driver.WithStack(fmt.Errorf("Expected a header of 3 elements, got %d", l))
+	} else {
+		hdrLen = l
 	}
 
 	resp := &vstResponse{
@@ -80,6 +88,16 @@ func newResponse(msg protocol.Message, endpoint string, rawResponse *[]byte) (*v
 		return nil, driver.WithStack(err)
 	} else {
 		resp.ResponseCode = int(code)
+	}
+	// Decode meta
+	if hdrLen >= 4 {
+		if elem, err := hdr.At(3); err != nil {
+			return nil, driver.WithStack(err)
+		} else if !elem.IsObject() {
+			return nil, driver.WithStack(fmt.Errorf("Expected meta field to be of type Object, got %s", elem.Type()))
+		} else {
+			resp.meta = elem
+		}
 	}
 
 	// Fetch body directly after hdr
@@ -130,6 +148,49 @@ func (r *vstResponse) CheckStatus(validStatusCodes ...int) error {
 	}
 }
 
+// Header returns the value of a response header with given key.
+// If no such header is found, an empty string is returned.
+func (r *vstResponse) Header(key string) string {
+	r.metaMutex.Lock()
+	defer r.metaMutex.Unlock()
+
+	if r.meta != nil {
+		if r.metaMap == nil {
+			// Read all headers
+			metaMap := make(map[string]string)
+			keyCount, err := r.meta.Length()
+			if err != nil {
+				return ""
+			}
+			for k := velocypack.ValueLength(0); k < keyCount; k++ {
+				key, err := r.meta.KeyAt(k)
+				if err != nil {
+					continue
+				}
+				value, err := r.meta.ValueAt(k)
+				if err != nil {
+					continue
+				}
+				keyStr, err := key.GetString()
+				if err != nil {
+					continue
+				}
+				valueStr, err := value.GetString()
+				if err != nil {
+					continue
+				}
+				metaMap[strings.ToLower(keyStr)] = valueStr
+			}
+			r.metaMap = metaMap
+		}
+		key = strings.ToLower(key)
+		if value, found := r.metaMap[key]; found {
+			return value
+		}
+	}
+	return ""
+}
+
 // ParseBody performs protocol specific unmarshalling of the response data into the given result.
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
 func (r *vstResponse) ParseBody(field string, result interface{}) error {
@@ -145,8 +206,10 @@ func (r *vstResponse) ParseBody(field string, result interface{}) error {
 			return nil
 		}
 	}
-	if err := velocypack.Unmarshal(slice, result); err != nil {
-		return driver.WithStack(err)
+	if result != nil {
+		if err := velocypack.Unmarshal(slice, result); err != nil {
+			return driver.WithStack(err)
+		}
 	}
 	return nil
 }

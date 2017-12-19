@@ -87,6 +87,12 @@ func (r *vstResponseElement) CheckStatus(validStatusCodes ...int) error {
 	}
 }
 
+// Header returns the value of a response header with given key.
+// If no such header is found, an empty string is returned.
+func (r *vstResponseElement) Header(key string) string {
+	return ""
+}
+
 // ParseBody performs protocol specific unmarshalling of the response data into the given result.
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
 func (r *vstResponseElement) ParseBody(field string, result interface{}) error {
@@ -102,8 +108,10 @@ func (r *vstResponseElement) ParseBody(field string, result interface{}) error {
 			return nil
 		}
 	}
-	if err := velocypack.Unmarshal(slice, result); err != nil {
-		return driver.WithStack(err)
+	if result != nil {
+		if err := velocypack.Unmarshal(slice, result); err != nil {
+			return driver.WithStack(err)
+		}
 	}
 	return nil
 }

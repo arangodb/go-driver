@@ -232,6 +232,7 @@ func (u *user) GetDatabaseAccess(ctx context.Context, db Database) (Grant, error
 	if err != nil {
 		return GrantNone, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	resp, err := u.conn.Do(ctx, req)
 	if err != nil {
 		return GrantNone, WithStack(err)
@@ -322,6 +323,7 @@ func (u *user) GetCollectionAccess(ctx context.Context, col AccessTarget) (Grant
 	if err != nil {
 		return GrantNone, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	resp, err := u.conn.Do(ctx, req)
 	if err != nil {
 		return GrantNone, WithStack(err)

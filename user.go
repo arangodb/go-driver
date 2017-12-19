@@ -61,6 +61,9 @@ type User interface {
 	// GetDatabaseAccess gets the access rights for this user to the given database.
 	// Pass a `nil` database to get the default access this user has to any new database.
 	// This function requires ArangoDB 3.2 and up.
+	// By default this function returns the "effective" grant.
+	// To return the "configured" grant, pass a context configured with `WithConfigured`.
+	// This distinction is only relevant in ArangoDB 3.3 in the context of a readonly database.
 	GetDatabaseAccess(ctx context.Context, db Database) (Grant, error)
 
 	// RemoveDatabaseAccess removes the access this user has to the given database.
@@ -82,6 +85,9 @@ type User interface {
 	// If you pass a `Collection`, it will get access for that collection.
 	// If you pass a `Database`, it will get the default collection access for that database.
 	// If you pass `nil`, it will get the default collection access for the default database.
+	// By default this function returns the "effective" grant.
+	// To return the "configured" grant, pass a context configured with `WithConfigured`.
+	// This distinction is only relevant in ArangoDB 3.3 in the context of a readonly database.
 	GetCollectionAccess(ctx context.Context, col AccessTarget) (Grant, error)
 
 	// RemoveCollectionAccess removes the access this user has to a collection.

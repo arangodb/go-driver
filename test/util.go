@@ -66,9 +66,9 @@ func describe(err error) string {
 		msg = string(c)
 	}
 	if cause.Error() != err.Error() {
-		return fmt.Sprintf("%v caused by %v", err, msg)
+		return fmt.Sprintf("%v caused by %v (%v)", err, cause, msg)
 	} else {
-		return fmt.Sprintf("%v", msg)
+		return fmt.Sprintf("%v (%v)", err, msg)
 	}
 }
 
