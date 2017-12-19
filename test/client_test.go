@@ -174,9 +174,9 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		if err := c.SynchronizeEndpoints(context.Background()); err != nil {
 			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
 		} else {
-			logEndpointsOnce.Do(func() {
-				t.Logf("Found endpoints: %v", conn.Endpoints())
-			})
+			//logEndpointsOnce.Do(func() {
+			t.Logf("Found endpoints: %v", conn.Endpoints())
+			//})
 		}
 	}
 	return c
