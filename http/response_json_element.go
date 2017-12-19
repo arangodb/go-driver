@@ -98,8 +98,10 @@ func (r *httpJSONResponseElement) Header(key string) string {
 // ParseBody performs protocol specific unmarshalling of the response data into the given result.
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
 func (r *httpJSONResponseElement) ParseBody(field string, result interface{}) error {
-	if err := parseBody(r.bodyObject, field, result); err != nil {
-		return driver.WithStack(err)
+	if result != nil {
+		if err := parseBody(r.bodyObject, field, result); err != nil {
+			return driver.WithStack(err)
+		}
 	}
 	return nil
 }

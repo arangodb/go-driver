@@ -99,8 +99,10 @@ func (r *httpVPackResponse) ParseBody(field string, result interface{}) error {
 			return nil
 		}
 	}
-	if err := velocypack.Unmarshal(slice, result); err != nil {
-		return driver.WithStack(err)
+	if result != nil {
+		if err := velocypack.Unmarshal(slice, result); err != nil {
+			return driver.WithStack(err)
+		}
 	}
 	return nil
 }
