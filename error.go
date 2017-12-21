@@ -125,7 +125,7 @@ func IsPreconditionFailed(err error) bool {
 
 // IsNoLeader returns true if the given error is an ArangoError with code 503 error number 1496.
 func IsNoLeader(err error) bool {
-	return IsArangoErrorWithCode(err, 503) || IsArangoErrorWithErrorNum(err, 1496)
+	return IsArangoErrorWithCode(err, 503) && IsArangoErrorWithErrorNum(err, 1496)
 }
 
 // InvalidArgumentError is returned when a go function argument is invalid.
