@@ -141,25 +141,42 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 		serverCtx, cancel := context.WithTimeout(ctx, time.Duration(float64(timeout)/timeoutDivider))
 		resp, err := s.Do(serverCtx, req)
 		cancel()
-		if err == nil {
-			// We're done
-			return resp, nil
+
+		isNoLeaderResponse := false
+		if err == nil && resp.StatusCode() == 503 {
+			// Service unavailable, parse the body, perhaps this is a "no leader"
+			// case where we have to failover.
+			var aerr driver.ArangoError
+			if perr := resp.ParseBody("", &aerr); perr == nil && aerr.HasError {
+				if driver.IsNoLeader(aerr) {
+					isNoLeaderResponse = true
+					// Save error in case we have no more servers
+					err = aerr
+				}
+			}
+
 		}
-		// No success yet
-		if driver.IsCanceled(err) {
-			// Request was cancelled, we return directly.
-			return nil, driver.WithStack(err)
-		}
-		// If we've completely written the request, we return the error,
-		// otherwise we'll failover to a new server.
-		if req.Written() {
-			// Request has been written to network, do not failover
-			if driver.IsArangoError(err) {
-				// ArangoError, so we got an error response from server.
+		if !isNoLeaderResponse {
+			if err == nil {
+				// We're done
+				return resp, nil
+			}
+			// No success yet
+			if driver.IsCanceled(err) {
+				// Request was cancelled, we return directly.
 				return nil, driver.WithStack(err)
 			}
-			// Not an ArangoError, so it must be some kind of timeout, network ... error.
-			return nil, driver.WithStack(&driver.ResponseError{Err: err})
+			// If we've completely written the request, we return the error,
+			// otherwise we'll failover to a new server.
+			if req.Written() {
+				// Request has been written to network, do not failover
+				if driver.IsArangoError(err) {
+					// ArangoError, so we got an error response from server.
+					return nil, driver.WithStack(err)
+				}
+				// Not an ArangoError, so it must be some kind of timeout, network ... error.
+				return nil, driver.WithStack(&driver.ResponseError{Err: err})
+			}
 		}
 
 		// Failed, try next server

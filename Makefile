@@ -9,6 +9,9 @@ TMPDIR := $(GOBUILDDIR)
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
 endif
+ifndef STARTER
+	STARTER := arangodb/arangodb-starter:latest
+endif
 
 ifndef TESTOPTIONS
 	TESTOPTIONS := 
@@ -95,6 +98,7 @@ endif
 
 ifdef ENABLE_VST11
 	VST11_SINGLE_TESTS := run-tests-single-vst-1.1
+	VST11_RESILIENTSINGLE_TESTS := run-tests-resilientsingle-vst-1.1
 	VST11_CLUSTER_TESTS := run-tests-cluster-vst-1.1
 endif
 
@@ -113,7 +117,7 @@ $(GOBUILDDIR):
 	@rm -f $(REPODIR) && ln -s ../../../.. $(REPODIR)
 	GOPATH=$(GOBUILDDIR) go get github.com/arangodb/go-velocypack
 
-run-tests: run-tests-http run-tests-single run-tests-cluster
+run-tests: run-tests-http run-tests-single run-tests-resilientsingle run-tests-cluster
 
 # Tests of HTTP package 
 run-tests-http: $(GOBUILDDIR)
@@ -171,6 +175,53 @@ run-tests-single-vst-1.1-with-auth:
 run-tests-single-vst-1.1-jwt-auth:
 	@echo "Single server, Velocystream 1.1, JWT authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
+# ResilientSingle server tests 
+run-tests-resilientsingle: run-tests-resilientsingle-json run-tests-resilientsingle-vpack run-tests-resilientsingle-vst-1.0 $(VST11_RESILIENTSINGLE_TESTS)
+
+run-tests-resilientsingle-json: run-tests-resilientsingle-json-with-auth run-tests-resilientsingle-json-no-auth
+
+run-tests-resilientsingle-vpack: run-tests-resilientsingle-vpack-with-auth run-tests-resilientsingle-vpack-no-auth
+
+run-tests-resilientsingle-vst-1.0: run-tests-resilientsingle-vst-1.0-with-auth run-tests-resilientsingle-vst-1.0-no-auth
+
+run-tests-resilientsingle-vst-1.1: run-tests-resilientsingle-vst-1.1-with-auth run-tests-resilientsingle-vst-1.1-jwt-auth run-tests-resilientsingle-vst-1.1-no-auth
+
+run-tests-resilientsingle-json-no-auth:
+	@echo "Resilient Single server, HTTP+JSON, no authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="none" TEST_CONTENT_TYPE="json" __run_tests
+
+run-tests-resilientsingle-vpack-no-auth:
+	@echo "Resilient Single server, HTTP+Velocypack, no authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" __run_tests
+
+run-tests-resilientsingle-vst-1.0-no-auth:
+	@echo "Resilient Single server, Velocystream 1.0, no authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-resilientsingle-vst-1.1-no-auth:
+	@echo "Resilient Single server, Velocystream 1.1, no authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
+run-tests-resilientsingle-json-with-auth:
+	@echo "Resilient Single server, HTTP+JSON, with authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
+
+run-tests-resilientsingle-vpack-with-auth:
+	@echo "Resilient Single server, HTTP+Velocypack, with authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
+
+run-tests-resilientsingle-vst-1.0-with-auth:
+	@echo "Resilient Single server, Velocystream 1.0, with authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-resilientsingle-vst-1.1-with-auth:
+	@echo "Resilient Single server, Velocystream 1.1, with authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
+run-tests-resilientsingle-vst-1.1-jwt-auth:
+	@echo "Resilient Single server, Velocystream 1.1, JWT authentication"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # Cluster mode tests
 run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack run-tests-cluster-vst-1.0 $(VST11_CLUSTER_TESTS)
@@ -263,7 +314,7 @@ ifeq ("$(TEST_MODE)", "single")
 		$(ARANGODB) --log.level requests=debug --log.use-microtime true $(ARANGOARGS)
 else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
 endif
 endif
 
@@ -273,7 +324,7 @@ ifndef TEST_ENDPOINTS_OVERRIDE
 ifeq ("$(TEST_MODE)", "single")
 	@docker rm -f -v $(DBCONTAINER) &> /dev/null
 else
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) $(ROOTDIR)/test/cluster.sh cleanup
 endif
 endif
 	@sleep 3

@@ -46,6 +46,9 @@ if [ "$CMD" == "start" ]; then
     # Start starters 
     # arangodb/arangodb-starter 0.7.0 or higher is needed.
     docker run -d --name=${STARTERCONTAINER} --net=container:${NAMESPACE} \
-        -v ${STARTERVOLUME}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS arangodb/arangodb-starter:0.10 \
-        --starter.port=7000 --starter.address=127.0.0.1 --docker.image=${ARANGODB} --starter.local $STARTERARGS 
+        -v ${STARTERVOLUME}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS \
+        ${STARTER} \
+        --starter.port=7000 --starter.address=127.0.0.1 \
+        --docker.image=${ARANGODB} \
+        --starter.local --starter.mode=${STARTERMODE} $STARTERARGS 
 fi
