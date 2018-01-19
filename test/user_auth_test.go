@@ -210,8 +210,8 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
 
-	// We skip this test until Christmas
-	startTestDate := time.Date(2017, time.December, 24, 0, 0, 0, 0, time.UTC)
+	// We skip this test until Feb-1
+	startTestDate := time.Date(2018, time.February, 1, 0, 0, 0, 0, time.UTC)
 	if time.Now().Before(startTestDate) {
 		t.Skipf("This test is skipped until %s", startTestDate)
 	}
@@ -306,8 +306,8 @@ func TestGrantUserCollection(t *testing.T) {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
 
-	// We skip this test until Christmas
-	startTestDate := time.Date(2017, time.December, 24, 0, 0, 0, 0, time.UTC)
+	// We skip this test until Feb-1
+	startTestDate := time.Date(2018, time.February, 1, 0, 0, 0, 0, time.UTC)
 	if time.Now().Before(startTestDate) {
 		t.Skipf("This test is skipped until %s", startTestDate)
 	}
