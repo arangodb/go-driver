@@ -11,7 +11,7 @@ Reporting Bugs
 --------------
 
 When reporting bugs, please use our issue tracker on GitHub.  Please make sure
-to include the version number of ArangoDB in your bug report, along with the
+to include the version number of ArangoDB and the commit hash of the go-driver in your bug report, along with the
 platform you are using (e.g. `Linux OpenSuSE x86_64`).  Please also include the
 ArangoDB startup mode (daemon, console, supervisor mode), type of connection used
 towards ArangoDB plus any special configuration.
@@ -19,7 +19,6 @@ This will help us reproducing and finding bugs.
 
 Please also take the time to check there are no similar/identical issues open
 yet.
-
 
 Contributing features, documentation, tests
 -------------------------------------------
@@ -43,7 +42,7 @@ Contributing features, documentation, tests
   request from your fork to the ArangoDB repository. Please make sure to select
   the appropriate branches there. This will most likely be **master**.
 
-* You must use the Apache License for your changes and have signed our 
+* You must use the Apache License for your changes and have signed our
   [CLA](https://www.arangodb.com/documents/cla.pdf). We cannot accept pull requests
   from contributors that didn't sign the CLA.
 
