@@ -125,7 +125,7 @@ func TestLoadUnloadCollection(t *testing.T) {
 	deadline := time.Now().Add(time.Second * 15)
 	for {
 		if status, err := col.Status(nil); err != nil {
-			t.Errorf("Status failed: %s", describe(err))
+			t.Fatalf("Status failed: %s", describe(err))
 		} else if status != driver.CollectionStatusUnloaded {
 			if time.Now().After(deadline) {
 				t.Errorf("Expected status unloaded, got %v", status)
@@ -147,7 +147,7 @@ func TestLoadUnloadCollection(t *testing.T) {
 	deadline = time.Now().Add(time.Second * 15)
 	for {
 		if status, err := col.Status(nil); err != nil {
-			t.Errorf("Status failed: %s", describe(err))
+			t.Fatalf("Status failed: %s", describe(err))
 		} else if status != driver.CollectionStatusLoaded {
 			if time.Now().After(deadline) {
 				t.Errorf("Expected status loaded, got %v", status)
