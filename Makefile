@@ -304,7 +304,7 @@ __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 else
-ifdef SWTSECRET 
+ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
 endif
 ifeq ("$(TEST_MODE)", "single")
