@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -121,10 +122,20 @@ func TestLoadUnloadCollection(t *testing.T) {
 	}
 
 	// Collection must be unloaded
-	if status, err := col.Status(nil); err != nil {
-		t.Errorf("Status failed: %s", describe(err))
-	} else if status != driver.CollectionStatusUnloaded {
-		t.Errorf("Expected status unloaded, got %v", status)
+	deadline := time.Now().Add(time.Second * 15)
+	for {
+		if status, err := col.Status(nil); err != nil {
+			t.Fatalf("Status failed: %s", describe(err))
+		} else if status != driver.CollectionStatusUnloaded {
+			if time.Now().After(deadline) {
+				t.Errorf("Expected status unloaded, got %v", status)
+				break
+			} else {
+				time.Sleep(time.Millisecond * 10)
+			}
+		} else {
+			break
+		}
 	}
 
 	// Load the collection now
@@ -133,10 +144,20 @@ func TestLoadUnloadCollection(t *testing.T) {
 	}
 
 	// Collection must be loaded
-	if status, err := col.Status(nil); err != nil {
-		t.Errorf("Status failed: %s", describe(err))
-	} else if status != driver.CollectionStatusLoaded {
-		t.Errorf("Expected status loaded, got %v", status)
+	deadline = time.Now().Add(time.Second * 15)
+	for {
+		if status, err := col.Status(nil); err != nil {
+			t.Fatalf("Status failed: %s", describe(err))
+		} else if status != driver.CollectionStatusLoaded {
+			if time.Now().After(deadline) {
+				t.Errorf("Expected status loaded, got %v", status)
+				break
+			} else {
+				time.Sleep(time.Millisecond * 10)
+			}
+		} else {
+			break
+		}
 	}
 }
 
