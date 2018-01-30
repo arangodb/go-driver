@@ -124,6 +124,9 @@ type SetCollectionPropertiesOptions struct {
 	WaitForSync *bool `json:"waitForSync,omitempty"`
 	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MB). Note that when changing the journalSize value, it will only have an effect for additional journals or datafiles that are created. Already existing journals or datafiles will not be affected.
 	JournalSize int64 `json:"journalSize,omitempty"`
+	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
+	// Only available in cluster setup.
+	ReplicationFactor int `json:"replicationFactor,omitempty"`
 }
 
 // CollectionStatus indicates the status of a collection.
