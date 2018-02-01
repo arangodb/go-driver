@@ -308,6 +308,40 @@ func TestCollectionSetProperties(t *testing.T) {
 	} else {
 		t.Skipf("JournalSize tests are being skipped on engine type '%s'", info.Type)
 	}
+
+	// Test replication factor
+	if _, err := c.Cluster(nil); err == nil {
+		// Set ReplicationFactor to 2
+		replFact := 2
+		ctx := driver.WithEnforceReplicationFactor(context.Background(), false)
+		if err := col.SetProperties(ctx, driver.SetCollectionPropertiesOptions{ReplicationFactor: replFact}); err != nil {
+			t.Fatalf("Failed to set properties: %s", describe(err))
+		}
+		if p, err := col.Properties(nil); err != nil {
+			t.Errorf("Failed to fetch collection properties: %s", describe(err))
+		} else {
+			if p.ReplicationFactor != replFact {
+				t.Errorf("Expected ReplicationFactor %d, got %d", replFact, p.ReplicationFactor)
+			}
+		}
+
+		// Set ReplicationFactor back 1
+		replFact = 1
+		if err := col.SetProperties(ctx, driver.SetCollectionPropertiesOptions{ReplicationFactor: replFact}); err != nil {
+			t.Fatalf("Failed to set properties: %s", describe(err))
+		}
+		if p, err := col.Properties(nil); err != nil {
+			t.Errorf("Failed to fetch collection properties: %s", describe(err))
+		} else {
+			if p.ReplicationFactor != replFact {
+				t.Errorf("Expected ReplicationFactor %d, got %d", replFact, p.ReplicationFactor)
+			}
+		}
+	} else if driver.IsPreconditionFailed(err) {
+		t.Logf("ReplicationFactor tests skipped because we're not running in a cluster")
+	} else {
+		t.Errorf("Cluster failed: %s", describe(err))
+	}
 }
 
 // TestCollectionRevision creates a collection, checks revision after adding documents.
