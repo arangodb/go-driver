@@ -47,7 +47,7 @@ func (c *client) Version(ctx context.Context) (VersionInfo, error) {
 	return data, nil
 }
 
-// ServerRoleInfo contains information on the role played by a single ArangoDB server.
+// roleResponse contains the response body of the `/admin/server/role` api.
 type roleResponse struct {
 	// Role of the server within a cluster
 	Role string `json:"role,omitempty"`
