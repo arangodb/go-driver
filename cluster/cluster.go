@@ -35,6 +35,10 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+const (
+	keyFollowLeaderRedirect driver.ContextKey = "arangodb-followLeaderRedirect"
+)
+
 // ConnectionConfig provides all configuration options for a cluster connection.
 type ConnectionConfig struct {
 	// DefaultTimeout is the timeout used by requests that have no timeout set in the given context.
@@ -102,8 +106,15 @@ func (c *clusterConnection) NewRequest(method, path string) (driver.Request, err
 
 // Do performs a given request, returning its response.
 func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
+	followLeaderRedirect := true
 	if ctx == nil {
 		ctx = context.Background()
+	} else {
+		if v := ctx.Value(keyFollowLeaderRedirect); v != nil {
+			if on, ok := v.(bool); ok {
+				followLeaderRedirect = on
+			}
+		}
 	}
 	// Timeout management.
 	// We take the given timeout and divide it in 3 so we allow for other servers
@@ -156,7 +167,7 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 			}
 
 		}
-		if !isNoLeaderResponse {
+		if !isNoLeaderResponse || !followLeaderRedirect {
 			if err == nil {
 				// We're done
 				return resp, nil

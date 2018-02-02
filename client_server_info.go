@@ -42,8 +42,10 @@ type ServerRole string
 const (
 	// ServerRoleSingle indicates that the server is a single-server instance
 	ServerRoleSingle ServerRole = "Single"
-	// ServerRoleSingleResilient indicates that the server is a single-server instance of a resilient pair
-	ServerRoleSingleResilient ServerRole = "SingleResilient"
+	// ServerRoleSingleActive indicates that the server is a the leader of a single-server resilient pair
+	ServerRoleSingleActive ServerRole = "SingleActive"
+	// ServerRoleSinglePassive indicates that the server is a a follower of a single-server resilient pair
+	ServerRoleSinglePassive ServerRole = "SinglePassive"
 	// ServerRoleDBServer indicates that the server is a dbserver within a cluster
 	ServerRoleDBServer ServerRole = "DBServer"
 	// ServerRoleCoordinator indicates that the server is a coordinator within a cluster

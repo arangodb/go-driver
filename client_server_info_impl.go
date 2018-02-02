@@ -54,26 +54,31 @@ type roleResponse struct {
 	Mode string `json:"mode,omitempty"`
 }
 
-// AsServerRole converts the response into a ServerRole
-func (r roleResponse) AsServerRole() ServerRole {
+// asServerRole converts the response into a ServerRole
+func (r roleResponse) asServerRole(ctx context.Context, c *client) (ServerRole, error) {
 	switch r.Role {
 	case "SINGLE":
 		switch r.Mode {
 		case "resilient":
-			return ServerRoleSingleResilient
+			if err := c.echo(ctx); IsNoLeader(err) {
+				return ServerRoleSinglePassive, nil
+			} else if err != nil {
+				return ServerRoleUndefined, WithStack(err)
+			}
+			return ServerRoleSingleActive, nil
 		default:
-			return ServerRoleSingle
+			return ServerRoleSingle, nil
 		}
 	case "PRIMARY":
-		return ServerRoleDBServer
+		return ServerRoleDBServer, nil
 	case "COORDINATOR":
-		return ServerRoleCoordinator
+		return ServerRoleCoordinator, nil
 	case "AGENT":
-		return ServerRoleAgent
+		return ServerRoleAgent, nil
 	case "UNDEFINED":
-		return ServerRoleUndefined
+		return ServerRoleUndefined, nil
 	default:
-		return ServerRoleUndefined
+		return ServerRoleUndefined, nil
 	}
 }
 
@@ -95,5 +100,26 @@ func (c *client) ServerRole(ctx context.Context) (ServerRole, error) {
 	if err := resp.ParseBody("", &data); err != nil {
 		return ServerRoleUndefined, WithStack(err)
 	}
-	return data.AsServerRole(), nil
+	role, err := data.asServerRole(ctx, c)
+	if err != nil {
+		return ServerRoleUndefined, WithStack(err)
+	}
+	return role, nil
+}
+
+// clusterEndpoints returns the endpoints of a cluster.
+func (c *client) echo(ctx context.Context) error {
+	req, err := c.conn.NewRequest("GET", "_admin/echo")
+	if err != nil {
+		return WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
 }
