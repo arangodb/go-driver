@@ -61,38 +61,17 @@ func (c *client) Connection() Connection {
 	return c.conn
 }
 
-// Version returns version information from the connected database server.
-func (c *client) Version(ctx context.Context) (VersionInfo, error) {
-	req, err := c.conn.NewRequest("GET", "_api/version")
-	if err != nil {
-		return VersionInfo{}, WithStack(err)
-	}
-	applyContextSettings(ctx, req)
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return VersionInfo{}, WithStack(err)
-	}
-	if err := resp.CheckStatus(200); err != nil {
-		return VersionInfo{}, WithStack(err)
-	}
-	var data VersionInfo
-	if err := resp.ParseBody("", &data); err != nil {
-		return VersionInfo{}, WithStack(err)
-	}
-	return data, nil
-}
-
 // SynchronizeEndpoints fetches all endpoints from an ArangoDB cluster and updates the
 // connection to use those endpoints.
 // When this client is connected to a single server, nothing happens.
 // When this client is connected to a cluster of servers, the connection will be updated to reflect
 // the layout of the cluster.
 func (c *client) SynchronizeEndpoints(ctx context.Context) error {
-	role, mode, err := c.role(ctx)
+	role, err := c.ServerRole(ctx)
 	if err != nil {
 		return WithStack(err)
 	}
-	if role == "SINGLE" && mode != "resilient" {
+	if role == ServerRoleSingle {
 		// Standalone server, do nothing
 		return nil
 	}
@@ -124,33 +103,6 @@ func (c *client) autoSynchronizeEndpoints(interval time.Duration) {
 		// Wait a bit
 		time.Sleep(interval)
 	}
-}
-
-type roleResponse struct {
-	Role string `json:"role,omitempty"`
-	Mode string `json:"mode,omitempty"`
-}
-
-// role returns the role of the server that answers the request.
-// Returns role, mode, error.
-func (c *client) role(ctx context.Context) (string, string, error) {
-	req, err := c.conn.NewRequest("GET", "_admin/server/role")
-	if err != nil {
-		return "", "", WithStack(err)
-	}
-	applyContextSettings(ctx, req)
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return "", "", WithStack(err)
-	}
-	if err := resp.CheckStatus(200); err != nil {
-		return "", "", WithStack(err)
-	}
-	var data roleResponse
-	if err := resp.ParseBody("", &data); err != nil {
-		return "", "", WithStack(err)
-	}
-	return data.Role, data.Mode, nil
 }
 
 type clusterEndpointsResponse struct {

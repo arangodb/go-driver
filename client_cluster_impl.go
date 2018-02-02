@@ -30,11 +30,11 @@ import (
 // To use this interface, an ArangoDB cluster is required.
 // If this method is a called without a cluster, a PreconditionFailed error is returned.
 func (c *client) Cluster(ctx context.Context) (Cluster, error) {
-	role, _, err := c.role(ctx)
+	role, err := c.ServerRole(ctx)
 	if err != nil {
 		return nil, WithStack(err)
 	}
-	if role == "SINGLE" {
+	if role == ServerRoleSingle {
 		// Standalone server, this is wrong
 		return nil, WithStack(newArangoError(412, 0, "Cluster expected, found SINGLE server"))
 	}

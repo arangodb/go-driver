@@ -32,10 +32,6 @@ import (
 
 // Client provides access to a single arangodb database server, or an entire cluster of arangodb servers.
 type Client interface {
-	// Version returns version information from the connected database server.
-	// Use WithDetails to configure a context that will include additional details in the return VersionInfo.
-	Version(ctx context.Context) (VersionInfo, error)
-
 	// SynchronizeEndpoints fetches all endpoints from an ArangoDB cluster and updates the
 	// connection to use those endpoints.
 	// When this client is connected to a single server, nothing happens.
@@ -55,6 +51,9 @@ type Client interface {
 
 	// Cluster functions
 	ClientCluster
+
+	// Individual server information functions
+	ClientServerInfo
 
 	// Server/cluster administration functions
 	ClientServerAdmin

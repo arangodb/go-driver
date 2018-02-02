@@ -66,15 +66,6 @@ type ServerHealth struct {
 	HostID              string       `json:"Host,omitempty"`
 }
 
-// ServerRole is the role of an arangod server
-type ServerRole string
-
-const (
-	ServerRoleDBServer    ServerRole = "DBServer"
-	ServerRoleCoordinator ServerRole = "Coordinator"
-	ServerRoleAgent       ServerRole = "Agent"
-)
-
 // ServerStatus describes the health status of a server
 type ServerStatus string
 
