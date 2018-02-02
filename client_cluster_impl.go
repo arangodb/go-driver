@@ -34,7 +34,7 @@ func (c *client) Cluster(ctx context.Context) (Cluster, error) {
 	if err != nil {
 		return nil, WithStack(err)
 	}
-	if role == ServerRoleSingle {
+	if role == ServerRoleSingle || role == ServerRoleSingleResilient {
 		// Standalone server, this is wrong
 		return nil, WithStack(newArangoError(412, 0, "Cluster expected, found SINGLE server"))
 	}
