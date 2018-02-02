@@ -54,6 +54,7 @@ const (
 	keyEnforceReplicationFactor ContextKey = "arangodb-enforceReplicationFactor"
 	keyConfigured               ContextKey = "arangodb-configured"
 	keyFollowLeaderRedirect     ContextKey = "arangodb-followLeaderRedirect"
+	keyDBServerID               ContextKey = "arangodb-dbserverID"
 )
 
 // WithRevision is used to configure a context to make document
@@ -200,6 +201,11 @@ func WithFollowLeaderRedirect(parent context.Context, value bool) context.Contex
 	return context.WithValue(contextOrBackground(parent), keyFollowLeaderRedirect, value)
 }
 
+// WithDBServerID is used to configure a context that includes an ID of a specific DBServer.
+func WithDBServerID(parent context.Context, id string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyDBServerID, id)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -214,6 +220,7 @@ type contextSettings struct {
 	EnforceReplicationFactor *bool
 	Configured               *bool
 	FollowLeaderRedirect     *bool
+	DBServerID               string
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -325,6 +332,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 	if v := ctx.Value(keyFollowLeaderRedirect); v != nil {
 		if followLeaderRedirect, ok := v.(bool); ok {
 			result.FollowLeaderRedirect = &followLeaderRedirect
+		}
+	}
+	// DBServerID
+	if v := ctx.Value(keyDBServerID); v != nil {
+		if id, ok := v.(string); ok {
+			req.SetQuery("DBserver", id)
+			result.DBServerID = id
 		}
 	}
 	return result
