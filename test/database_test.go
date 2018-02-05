@@ -113,11 +113,11 @@ func TestDatabaseInfo(t *testing.T) {
 	}
 
 	name := "info_test"
-	d, err := c.CreateDatabase(nil, name, nil)
+	d, err := c.CreateDatabase(ctx, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
 	}
-	info, err = db.Info(ctx)
+	info, err = d.Info(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get %s database info: %s", name, describe(err))
 	}

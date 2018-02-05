@@ -65,7 +65,6 @@ func (d *database) Info(ctx context.Context) (DatabaseInfo, error) {
 	if err != nil {
 		return DatabaseInfo{}, WithStack(err)
 	}
-	applyContextSettings(ctx, req)
 	resp, err := d.conn.Do(ctx, req)
 	if err != nil {
 		return DatabaseInfo{}, WithStack(err)
@@ -74,7 +73,7 @@ func (d *database) Info(ctx context.Context) (DatabaseInfo, error) {
 		return DatabaseInfo{}, WithStack(err)
 	}
 	var data DatabaseInfo
-	if err := resp.ParseBody("", &data); err != nil {
+	if err := resp.ParseBody("result", &data); err != nil {
 		return DatabaseInfo{}, WithStack(err)
 	}
 	return data, nil
