@@ -53,6 +53,7 @@ const (
 	keyIgnoreRevs               ContextKey = "arangodb-ignoreRevs"
 	keyEnforceReplicationFactor ContextKey = "arangodb-enforceReplicationFactor"
 	keyConfigured               ContextKey = "arangodb-configured"
+	keyFollowLeaderRedirect     ContextKey = "arangodb-followLeaderRedirect"
 )
 
 // WithRevision is used to configure a context to make document
@@ -192,6 +193,13 @@ func WithConfigured(parent context.Context, value ...bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyConfigured, v)
 }
 
+// WithFollowLeaderRedirect is used to configure a context to return turn on/off
+// following redirection responses from the server when the request is answered by a follower.
+// Default behavior is "on".
+func WithFollowLeaderRedirect(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyFollowLeaderRedirect, value)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -205,6 +213,7 @@ type contextSettings struct {
 	IgnoreRevs               *bool
 	EnforceReplicationFactor *bool
 	Configured               *bool
+	FollowLeaderRedirect     *bool
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -310,6 +319,12 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if configured, ok := v.(bool); ok {
 			req.SetQuery("configured", strconv.FormatBool(configured))
 			result.Configured = &configured
+		}
+	}
+	// FollowLeaderRedirect
+	if v := ctx.Value(keyFollowLeaderRedirect); v != nil {
+		if followLeaderRedirect, ok := v.(bool); ok {
+			result.FollowLeaderRedirect = &followLeaderRedirect
 		}
 	}
 	return result
