@@ -59,6 +59,27 @@ func (d *database) Name() string {
 	return d.name
 }
 
+// Info fetches information about the database.
+func (d *database) Info(ctx context.Context) (DatabaseInfo, error) {
+	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/database/current"))
+	if err != nil {
+		return DatabaseInfo{}, WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return DatabaseInfo{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return DatabaseInfo{}, WithStack(err)
+	}
+	var data DatabaseInfo
+	if err := resp.ParseBody("result", &data); err != nil {
+		return DatabaseInfo{}, WithStack(err)
+	}
+	return data, nil
+}
+
 // EngineInfo returns information about the database engine being used.
 // Note: When your cluster has multiple endpoints (cluster), you will get information
 // from the server that is currently being used.

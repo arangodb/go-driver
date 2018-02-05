@@ -90,3 +90,49 @@ func TestRemoveDatabase(t *testing.T) {
 		t.Errorf("DatabaseExists('%s') return true, expected false", name)
 	}
 }
+
+// TestDatabaseInfo tests Database.Info.
+func TestDatabaseInfo(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+
+	// Test system DB
+	db := ensureDatabase(ctx, c, "_system", nil, t)
+	info, err := db.Info(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get _system database info: %s", describe(err))
+	}
+	if info.Name != "_system" {
+		t.Errorf("Invalid Name. Got '%s', expected '_system'", info.Name)
+	}
+	if !info.IsSystem {
+		t.Error("Invalid IsSystem. Got false, expected true")
+	}
+	if info.ID == "" {
+		t.Error("Empty ID")
+	}
+
+	name := "info_test"
+	d, err := c.CreateDatabase(ctx, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
+	}
+	info, err = d.Info(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get %s database info: %s", name, describe(err))
+	}
+	if info.Name != name {
+		t.Errorf("Invalid Name. Got '%s', expected '%s'", info.Name, name)
+	}
+	if info.IsSystem {
+		t.Error("Invalid IsSystem. Got true, expected false")
+	}
+	if info.ID == "" {
+		t.Error("Empty ID")
+	}
+
+	// Cleanup: Remove database
+	if err := d.Remove(context.Background()); err != nil {
+		t.Fatalf("Failed to remove database: %s", describe(err))
+	}
+}
