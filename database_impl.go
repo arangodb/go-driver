@@ -65,6 +65,7 @@ func (d *database) Info(ctx context.Context) (DatabaseInfo, error) {
 	if err != nil {
 		return DatabaseInfo{}, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	resp, err := d.conn.Do(ctx, req)
 	if err != nil {
 		return DatabaseInfo{}, WithStack(err)
