@@ -29,6 +29,9 @@ type Database interface {
 	// Name returns the name of the database.
 	Name() string
 
+	// Info fetches information about the database.
+	Info(ctx context.Context) (DatabaseInfo, error)
+
 	// EngineInfo returns information about the database engine being used.
 	// Note: When your cluster has multiple endpoints (cluster), you will get information
 	// from the server that is currently being used.
@@ -57,6 +60,18 @@ type Database interface {
 
 	// Transaction performs a javascript transaction. The result of the transaction function is returned.
 	Transaction(ctx context.Context, action string, options *TransactionOptions) (interface{}, error)
+}
+
+// DatabaseInfo contains information about a database
+type DatabaseInfo struct {
+	// The identifier of the database.
+	ID string `json:"id,omitempty"`
+	// The name of the database.
+	Name string `json:"name,omitempty"`
+	// The filesystem path of the database.
+	Path string `json:"path,omitempty"`
+	// If true then the database is the _system database.
+	IsSystem bool `json:"isSystem,omitempty"`
 }
 
 // EngineType indicates type of database engine being used.
