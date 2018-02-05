@@ -57,6 +57,9 @@ type Client interface {
 
 	// Server/cluster administration functions
 	ClientServerAdmin
+
+	// Replication functions
+	ClientReplication
 }
 
 // ClientConfig contains all settings needed to create a client.
