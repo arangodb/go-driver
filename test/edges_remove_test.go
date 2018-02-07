@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -117,18 +116,14 @@ func TestRemoveEdgesReturnOld(t *testing.T) {
 	}
 	oldDocs := make([]RouteEdge, len(docs))
 	ctx = driver.WithReturnOld(ctx, oldDocs)
-	if _, _, err := ec.RemoveDocuments(ctx, metas.Keys()); err != nil {
+	_, errs, err = ec.RemoveDocuments(ctx, metas.Keys())
+	if err != nil {
 		t.Fatalf("Failed to remove documents: %s", describe(err))
 	}
-	// Check old documents
-	for i, doc := range docs {
-		if !reflect.DeepEqual(doc, oldDocs[i]) {
-			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, oldDocs[i])
-		}
-		// Should not longer exist
-		var readDoc RouteEdge
-		if _, err := ec.ReadDocument(ctx, metas[i].Key, &readDoc); !driver.IsNotFound(err) {
-			t.Fatalf("Expected NotFoundError at %d, got  %s", i, describe(err))
+	// Check errors
+	for i, err := range errs {
+		if !driver.IsInvalidArgument(err) {
+			t.Fatalf("Expected InvalidArgumentError at %d, got  %s", i, describe(err))
 		}
 	}
 }

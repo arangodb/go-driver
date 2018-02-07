@@ -148,9 +148,6 @@ func (c *edgeCollection) CreateDocuments(ctx context.Context, documents interfac
 	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
-		if doc.Kind() != reflect.Ptr {
-			doc = doc.Addr()
-		}
 		ctx, err := withDocumentAt(ctx, i)
 		if err != nil {
 			return nil, nil, WithStack(err)
@@ -259,9 +256,6 @@ func (c *edgeCollection) UpdateDocuments(ctx context.Context, keys []string, upd
 	silent := false
 	for i := 0; i < updateCount; i++ {
 		update := updatesVal.Index(i)
-		if update.Kind() != reflect.Ptr {
-			update = update.Addr()
-		}
 		ctx, err := withDocumentAt(ctx, i)
 		if err != nil {
 			return nil, nil, WithStack(err)
@@ -381,9 +375,6 @@ func (c *edgeCollection) ReplaceDocuments(ctx context.Context, keys []string, do
 	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
-		if doc.Kind() != reflect.Ptr {
-			doc = doc.Addr()
-		}
 		ctx, err := withDocumentAt(ctx, i)
 		if err != nil {
 			return nil, nil, WithStack(err)
@@ -435,6 +426,9 @@ func (c *edgeCollection) removeDocument(ctx context.Context, key string) (Docume
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	cs := applyContextSettings(ctx, req)
+	if cs.ReturnOld != nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "ReturnOld is not support when removing edges"})
+	}
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
