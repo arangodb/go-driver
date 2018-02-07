@@ -425,6 +425,9 @@ func (c *vertexCollection) removeDocument(ctx context.Context, key string) (Docu
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	cs := applyContextSettings(ctx, req)
+	if cs.ReturnOld != nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "ReturnOld is not support when removing vertices"})
+	}
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)

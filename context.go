@@ -385,12 +385,12 @@ func withDocumentAt(ctx context.Context, index int) (context.Context, error) {
 	// ReturnOld
 	if v := ctx.Value(keyReturnOld); v != nil {
 		val := reflect.ValueOf(v)
-		ctx = WithReturnOld(ctx, val.Index(index).Interface())
+		ctx = WithReturnOld(ctx, val.Index(index).Addr().Interface())
 	}
 	// ReturnNew
 	if v := ctx.Value(keyReturnNew); v != nil {
 		val := reflect.ValueOf(v)
-		ctx = WithReturnNew(ctx, val.Index(index).Interface())
+		ctx = WithReturnNew(ctx, val.Index(index).Addr().Interface())
 	}
 
 	return ctx, nil

@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -62,7 +61,7 @@ func TestRemoveEdge(t *testing.T) {
 	}
 }
 
-// TestRemoveEdgeReturnOld creates a document, removes it checks the ReturnOld value.
+// TestRemoveEdgeReturnOld creates a document, removes it with ReturnOld, which is an invalid argument.
 func TestRemoveEdgeReturnOld(t *testing.T) {
 	var ctx context.Context
 	c := createClientFromEnv(t, true)
@@ -87,17 +86,8 @@ func TestRemoveEdgeReturnOld(t *testing.T) {
 	}
 	var old RouteEdge
 	ctx = driver.WithReturnOld(ctx, &old)
-	if _, err := ec.RemoveDocument(ctx, meta.Key); err != nil {
-		t.Fatalf("Failed to remove document '%s': %s", meta.Key, describe(err))
-	}
-	// Check old document
-	if !reflect.DeepEqual(doc, old) {
-		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, old)
-	}
-	// Should not longer exist
-	var readDoc RouteEdge
-	if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
-		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
+	if _, err := ec.RemoveDocument(ctx, meta.Key); !driver.IsInvalidArgument(err) {
+		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
 

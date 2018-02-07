@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -81,17 +80,8 @@ func TestRemoveVertexReturnOld(t *testing.T) {
 	}
 	var old Book
 	ctx = driver.WithReturnOld(ctx, &old)
-	if _, err := vc.RemoveDocument(ctx, meta.Key); err != nil {
-		t.Fatalf("Failed to remove document '%s': %s", meta.Key, describe(err))
-	}
-	// Check old document
-	if !reflect.DeepEqual(doc, old) {
-		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, old)
-	}
-	// Should not longer exist
-	var readDoc Book
-	if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
-		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
+	if _, err := vc.RemoveDocument(ctx, meta.Key); !driver.IsInvalidArgument(err) {
+		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
 
