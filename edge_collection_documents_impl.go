@@ -148,6 +148,9 @@ func (c *edgeCollection) CreateDocuments(ctx context.Context, documents interfac
 	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
+		if !doc.Kind() != reflect.Ptr {
+			doc = doc.Addr()
+		}
 		ctx, err := withDocumentAt(ctx, i)
 		if err != nil {
 			return nil, nil, WithStack(err)
@@ -256,6 +259,9 @@ func (c *edgeCollection) UpdateDocuments(ctx context.Context, keys []string, upd
 	silent := false
 	for i := 0; i < updateCount; i++ {
 		update := updatesVal.Index(i)
+		if !update.Kind() != reflect.Ptr {
+			update = update.Addr()
+		}
 		ctx, err := withDocumentAt(ctx, i)
 		if err != nil {
 			return nil, nil, WithStack(err)
@@ -375,6 +381,9 @@ func (c *edgeCollection) ReplaceDocuments(ctx context.Context, keys []string, do
 	silent := false
 	for i := 0; i < documentCount; i++ {
 		doc := documentsVal.Index(i)
+		if !doc.Kind() != reflect.Ptr {
+			doc = doc.Addr()
+		}
 		ctx, err := withDocumentAt(ctx, i)
 		if err != nil {
 			return nil, nil, WithStack(err)
