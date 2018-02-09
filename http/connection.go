@@ -56,6 +56,11 @@ type ConnectionConfig struct {
 	// If Transport is not of type `*http.Transport`, the `TLSConfig` property is not used.
 	// Otherwise a `TLSConfig` property other than `nil` will overwrite the `TLSClientConfig`
 	// property of `Transport`.
+	//
+	// When using a custom `http.Transport`, make sure to set the `MaxIdleConnsPerHost` field at least as
+	// high as the maximum number of concurrent requests you will make to your database.
+	// A lower number will cause the golang runtime to create additional connections and close them
+	// directly after use, resulting in a large number of connections in `TIME_WAIT` state.
 	Transport http.RoundTripper
 	// FailOnRedirect; if set, redirect will not be followed, instead the status code is returned as error
 	FailOnRedirect bool
