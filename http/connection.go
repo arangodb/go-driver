@@ -40,6 +40,8 @@ import (
 )
 
 const (
+	DefaultMaxIdleConnsPerHost = 64
+
 	keyRawResponse driver.ContextKey = "arangodb-rawResponse"
 	keyResponse    driver.ContextKey = "arangodb-response"
 )
@@ -99,8 +101,23 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 		httpTransport = &http.Transport{}
 		config.Transport = httpTransport
 	}
-	if config.TLSConfig != nil && httpTransport != nil {
-		httpTransport.TLSClientConfig = config.TLSConfig
+	if httpTransport != nil {
+		if httpTransport.MaxIdleConnsPerHost == 0 {
+			// Raise the default number of idle connections per host since in a database application
+			// it is very likely that you want more than 2 concurrent connections to a host.
+			// We raise it to avoid the extra concurrent connections being closed directly
+			// after use, resulting in a lot of connection in `TIME_WAIT` state.
+			httpTransport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
+		}
+		defaultMaxIdleConns := 3 * DefaultMaxIdleConnsPerHost
+		if httpTransport.MaxIdleConns > 0 && httpTransport.MaxIdleConns < defaultMaxIdleConns {
+			// For a cluster scenario we assume the use of 3 coordinators (don't know the exact number here)
+			// and derive the maximum total number of idle connections from that.
+			httpTransport.MaxIdleConns = defaultMaxIdleConns
+		}
+		if config.TLSConfig != nil {
+			httpTransport.TLSClientConfig = config.TLSConfig
+		}
 	}
 	httpClient := &http.Client{
 		Transport: config.Transport,
