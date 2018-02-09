@@ -28,10 +28,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
 	"strings"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/cluster"
@@ -40,6 +42,8 @@ import (
 )
 
 const (
+	DefaultMaxIdleConnsPerHost = 64
+
 	keyRawResponse driver.ContextKey = "arangodb-rawResponse"
 	keyResponse    driver.ContextKey = "arangodb-response"
 )
@@ -56,6 +60,11 @@ type ConnectionConfig struct {
 	// If Transport is not of type `*http.Transport`, the `TLSConfig` property is not used.
 	// Otherwise a `TLSConfig` property other than `nil` will overwrite the `TLSClientConfig`
 	// property of `Transport`.
+	//
+	// When using a custom `http.Transport`, make sure to set the `MaxIdleConnsPerHost` field at least as
+	// high as the maximum number of concurrent requests you will make to your database.
+	// A lower number will cause the golang runtime to create additional connections and close them
+	// directly after use, resulting in a large number of connections in `TIME_WAIT` state.
 	Transport http.RoundTripper
 	// FailOnRedirect; if set, redirect will not be followed, instead the status code is returned as error
 	FailOnRedirect bool
@@ -91,11 +100,38 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 	if config.Transport != nil {
 		httpTransport, _ = config.Transport.(*http.Transport)
 	} else {
-		httpTransport = &http.Transport{}
+		httpTransport = &http.Transport{
+			// Copy default values from http.DefaultTransport
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
 		config.Transport = httpTransport
 	}
-	if config.TLSConfig != nil && httpTransport != nil {
-		httpTransport.TLSClientConfig = config.TLSConfig
+	if httpTransport != nil {
+		if httpTransport.MaxIdleConnsPerHost == 0 {
+			// Raise the default number of idle connections per host since in a database application
+			// it is very likely that you want more than 2 concurrent connections to a host.
+			// We raise it to avoid the extra concurrent connections being closed directly
+			// after use, resulting in a lot of connection in `TIME_WAIT` state.
+			httpTransport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
+		}
+		defaultMaxIdleConns := 3 * DefaultMaxIdleConnsPerHost
+		if httpTransport.MaxIdleConns > 0 && httpTransport.MaxIdleConns < defaultMaxIdleConns {
+			// For a cluster scenario we assume the use of 3 coordinators (don't know the exact number here)
+			// and derive the maximum total number of idle connections from that.
+			httpTransport.MaxIdleConns = defaultMaxIdleConns
+		}
+		if config.TLSConfig != nil {
+			httpTransport.TLSClientConfig = config.TLSConfig
+		}
 	}
 	httpClient := &http.Client{
 		Transport: config.Transport,
