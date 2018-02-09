@@ -28,10 +28,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
 	"strings"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/cluster"
@@ -98,7 +100,19 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 	if config.Transport != nil {
 		httpTransport, _ = config.Transport.(*http.Transport)
 	} else {
-		httpTransport = &http.Transport{}
+		httpTransport = &http.Transport{
+			// Copy default values from http.DefaultTransport
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
 		config.Transport = httpTransport
 	}
 	if httpTransport != nil {
