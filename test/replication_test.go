@@ -25,34 +25,44 @@ package test
 import (
 	"context"
 	"testing"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 // TestReplicationDatabaseInventory tests the Replication.DatabaseInventory method.
 func TestReplicationDatabaseInventory(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	rep := c.Replication()
-	db, err := c.Database(ctx, "_system")
-	if err != nil {
-		t.Fatalf("Failed to open _system database: %s", describe(err))
-	}
-	inv, err := rep.DatabaseInventory(ctx, db)
-	if err != nil {
-		t.Fatalf("DatabaseInventory failed: %s", describe(err))
-	}
-	if len(inv.Collections) == 0 {
-		t.Error("Expected multiple collections, got 0")
-	}
-	foundSystemCol := false
-	for _, col := range inv.Collections {
-		if col.Parameters.Name == "" {
-			t.Error("Expected non-empty name")
+	if _, err := c.Cluster(ctx); err == nil {
+		// Cluster, not supported for this test
+		t.Skip("Skipping in cluster")
+	} else if !driver.IsPreconditionFailed(err) {
+		t.Errorf("Failed to query cluster: %s", describe(err))
+	} else {
+		// Single server (what we need)
+		rep := c.Replication()
+		db, err := c.Database(ctx, "_system")
+		if err != nil {
+			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		if col.Parameters.IsSystem {
-			foundSystemCol = true
+		inv, err := rep.DatabaseInventory(ctx, db)
+		if err != nil {
+			t.Fatalf("DatabaseInventory failed: %s", describe(err))
 		}
-	}
-	if !foundSystemCol {
-		t.Error("Expected multiple system collections, found none")
+		if len(inv.Collections) == 0 {
+			t.Error("Expected multiple collections, got 0")
+		}
+		foundSystemCol := false
+		for _, col := range inv.Collections {
+			if col.Parameters.Name == "" {
+				t.Error("Expected non-empty name")
+			}
+			if col.Parameters.IsSystem {
+				foundSystemCol = true
+			}
+		}
+		if !foundSystemCol {
+			t.Error("Expected multiple system collections, found none")
+		}
 	}
 }
