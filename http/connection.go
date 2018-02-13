@@ -65,6 +65,7 @@ type ConnectionConfig struct {
 	// high as the maximum number of concurrent requests you will make to your database.
 	// A lower number will cause the golang runtime to create additional connections and close them
 	// directly after use, resulting in a large number of connections in `TIME_WAIT` state.
+	// When this value is not set, the driver will set it to 64 automatically.
 	Transport http.RoundTripper
 	// FailOnRedirect; if set, redirect will not be followed, instead the status code is returned as error
 	FailOnRedirect bool
