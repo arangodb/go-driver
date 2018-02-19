@@ -68,7 +68,7 @@ if err != nil {
 }
 
 // Open "books" collection
-col, err := db.Collection(nil, "books", nil)
+col, err := db.Collection(nil, "books")
 if err != nil {
     // Handle error
 }
