@@ -34,6 +34,9 @@ type ClientServerAdmin interface {
 	// This call needs a client that uses JWT authentication.
 	// This call needs ArangoDB 3.3 and up.
 	SetServerMode(ctx context.Context, mode ServerMode) error
+
+	// Shutdown a specific server, optionally removing it from its cluster.
+	Shutdown(ctx context.Context, removeFromCluster bool) error
 }
 
 type ServerMode string

@@ -39,6 +39,12 @@ type Cluster interface {
 	// MoveShard moves a single shard of the given collection from server `fromServer` to
 	// server `toServer`.
 	MoveShard(ctx context.Context, col Collection, shard ShardID, fromServer, toServer ServerID) error
+
+	// CleanOutServer triggers activities to clean out a DBServer.
+	CleanOutServer(ctx context.Context, serverID string) error
+
+	// IsCleanedOut checks if the dbserver with given ID has been cleaned out.
+	IsCleanedOut(ctx context.Context, serverID string) (bool, error)
 }
 
 // ServerID identifies an arangod server in a cluster.
