@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -45,7 +46,14 @@ func TestReplicationDatabaseInventory(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		inv, err := rep.DatabaseInventory(ctx, db)
+
+		batch, err := rep.CreateBatch(ctx, 1337, db, time.Duration(60.0))
+		if err != nil {
+			t.Fatalf("CreateBatch failed: %s", describe(err))
+		}
+		defer rep.DeleteBatch(ctx, db, batch.ID)
+
+		inv, err := rep.DatabaseInventory(ctx, db, batch.ID)
 		if err != nil {
 			t.Fatalf("DatabaseInventory failed: %s", describe(err))
 		}

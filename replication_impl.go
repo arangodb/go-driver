@@ -24,16 +24,65 @@ package driver
 
 import (
 	"context"
+	"time"
 	"path"
+	"strconv"
 )
 
+// CreateBatch creates a "batch" to prevent WAL file removal and to take a snapshot
+func (c *client) CreateBatch(ctx context.Context, serverID int64, db Database, ttl time.Duration) (BatchMetadata, error) {
+	req, err := c.conn.NewRequest("POST", path.Join("_db", db.Name(), "_api/replication/batch"))
+	if err != nil {
+		return BatchMetadata{}, WithStack(err)
+	}
+	input := struct {
+		TTL int64 `json:"ttl"`
+	}{
+		TTL: int64(ttl.Seconds()),
+	}
+	req = req.SetQuery("serverId", strconv.FormatInt(serverID, 10))
+	req, err = req.SetBody(input)
+	if err != nil {
+		return BatchMetadata{}, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return BatchMetadata{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return BatchMetadata{}, WithStack(err)
+	}
+	var result BatchMetadata
+	if err := resp.ParseBody("", &result); err != nil {
+		return BatchMetadata{}, WithStack(err)
+	}
+	return result, nil
+}
+
+// DeleteBatch deletes an existing dump batch
+func (c *client) DeleteBatch(ctx context.Context, db Database, batchID string) error {
+	req, err := c.conn.NewRequest("DELETE", path.Join("_db", db.Name(), "_api/replication/batch", batchID))
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(204); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // Get the inventory of a server containing all collections (with entire details) of a database.
-func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error) {
+func (c *client) DatabaseInventory(ctx context.Context, db Database, batchID string) (DatabaseInventory, error) {
 	req, err := c.conn.NewRequest("GET", path.Join("_db", db.Name(), "_api/replication/inventory"))
 	if err != nil {
 		return DatabaseInventory{}, WithStack(err)
 	}
 	applyContextSettings(ctx, req)
+	req = req.SetQuery("batchId", batchID)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return DatabaseInventory{}, WithStack(err)

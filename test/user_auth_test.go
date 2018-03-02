@@ -210,12 +210,6 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
 
-	// We skip this test until Feb-1
-	startTestDate := time.Date(2018, time.February, 1, 0, 0, 0, 0, time.UTC)
-	if time.Now().Before(startTestDate) {
-		t.Skipf("This test is skipped until %s", startTestDate)
-	}
-
 	u := ensureUser(nil, c, "grant_user_def", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_def_test", nil, t)
 	// Grant read/write access to default database
@@ -258,6 +252,11 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
 
+	// Grant read-only access to default database
+	if err := u.SetDatabaseAccess(nil, nil, driver.GrantReadOnly); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+
 	// wait for change to propagate (TODO add a check to the coordinators)
 	time.Sleep(time.Second * 5)
 
@@ -266,10 +265,6 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 		t.Errorf("Expected failure, got %s", describe(err))
 	}
 
-	// Grant read-only access to default database
-	if err := u.SetDatabaseAccess(nil, nil, driver.GrantReadOnly); err != nil {
-		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
-	}
 	// Try to create collection, should fail
 	if _, err := authDb.CreateCollection(nil, "books_def_ro_db", nil); !driver.IsForbidden(err) {
 		t.Errorf("Expected failure, got %s", describe(err))
@@ -304,12 +299,6 @@ func TestGrantUserCollection(t *testing.T) {
 	isv32p := version.Version.CompareTo("3.2") >= 0
 	if !isv32p {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
-	}
-
-	// We skip this test until Feb-1
-	startTestDate := time.Date(2018, time.February, 1, 0, 0, 0, 0, time.UTC)
-	if time.Now().Before(startTestDate) {
-		t.Skipf("This test is skipped until %s", startTestDate)
 	}
 
 	u := ensureUser(nil, c, "grant_user_col", &driver.UserOptions{Password: "foo"}, t)
@@ -398,12 +387,26 @@ func TestGrantUserCollection(t *testing.T) {
 	// Read back collection access
 	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
 		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
-	} else if grant != driver.GrantNone {
-		t.Errorf("Collection access invalid, expected 'none', got '%s'", grant)
+	} else if grant != driver.GrantReadWrite {
+		t.Errorf("Collection access invalid, expected 'rw', got '%s'", grant)
+	}
+	// Grant read-only access to database
+	if err := u.SetDatabaseAccess(nil, db, driver.GrantReadOnly); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
+	}
+	// Read back collection access
+	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
+		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
+	} else if grant != driver.GrantReadOnly {
+		t.Errorf("Collection access invalid, expected 'ro', got '%s'", grant)
 	}
 	// Try to create another document, should fail
 	if _, err := authCol.CreateDocument(nil, Book{Title: "I should not be able to write"}); !driver.IsForbidden(err) {
 		t.Errorf("Expected failure, got: %s", describe(err))
+	}
+	// Grant no access to collection
+	if err := u.SetCollectionAccess(nil, col, driver.GrantNone); err != nil {
+		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
 	}
 	// Try to read back first document, should fail
 	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); !driver.IsForbidden(err) {
