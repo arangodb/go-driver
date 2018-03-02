@@ -24,7 +24,6 @@ package driver
 
 import (
 	"context"
-	"time"
 )
 
 type Tick string
@@ -37,11 +36,11 @@ type BatchMetadata struct {
 // Replication provides access to replication related operations.
 type Replication interface {
 	// CreateBatch creates a "batch" to prevent WAL file removal and to take a snapshot
-	CreateBatch(ctx context.Context, serverID int64, db Database, ttl time.Duration) (BatchMetadata, error)
+	CreateBatch(ctx context.Context, serverID int64, db Database) (BatchMetadata, error)
 	// DeleteBatch deletes an existing dump batch
 	DeleteBatch(ctx context.Context, db Database, batchID string) error
 	// Get the inventory of the server containing all collections (with entire details) of a database.
 	// When this function is called on a coordinator is a cluster, an ID of a DBServer must be provided
 	// using a context that is prepare with `WithDBServerID`.
-	DatabaseInventory(ctx context.Context, db Database, batchID string) (DatabaseInventory, error)
+	DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error)
 }

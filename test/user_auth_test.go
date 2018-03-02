@@ -296,11 +296,12 @@ func TestGrantUserCollection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
 	}
+	// 3.3.4 changes behaviour to better support LDAP 
 	isv32p := version.Version.CompareTo("3.2") >= 0
+	isv334 := version.Version.CompareTo("3.3.4") >= 0
 	if !isv32p {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
-
 	u := ensureUser(nil, c, "grant_user_col", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_col_test", nil, t)
 	// Grant read/write access to database
@@ -379,26 +380,33 @@ func TestGrantUserCollection(t *testing.T) {
 	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); !driver.IsForbidden(err) {
 		t.Errorf("Expected failure, got %s", describe(err))
 	}
-
 	// Now remove explicit collection access
 	if err := u.RemoveCollectionAccess(nil, col); err != nil {
 		t.Fatalf("RemoveCollectionAccess failed: %s", describe(err))
 	}
+	expected := driver.GrantNone
+	if isv334 {
+		expected = driver.GrantReadWrite
+	}
 	// Read back collection access
 	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
 		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
-	} else if grant != driver.GrantReadWrite {
-		t.Errorf("Collection access invalid, expected 'rw', got '%s'", grant)
+	} else if grant != expected {
+		t.Errorf("Collection access invalid, expected '%s', got '%s'", expected, grant)
 	}
 	// Grant read-only access to database
 	if err := u.SetDatabaseAccess(nil, db, driver.GrantReadOnly); err != nil {
 		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
 	}
+	expected = driver.GrantNone
+	if isv334 {
+		expected = driver.GrantReadOnly
+	}
 	// Read back collection access
 	if grant, err := u.GetCollectionAccess(nil, col); err != nil {
 		t.Fatalf("GetCollectionAccess failed: %s", describe(err))
-	} else if grant != driver.GrantReadOnly {
-		t.Errorf("Collection access invalid, expected 'ro', got '%s'", grant)
+	} else if grant != expected {
+		t.Errorf("Collection access invalid, expected '%s', got '%s'", expected, grant)
 	}
 	// Try to create another document, should fail
 	if _, err := authCol.CreateDocument(nil, Book{Title: "I should not be able to write"}); !driver.IsForbidden(err) {

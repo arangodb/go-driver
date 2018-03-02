@@ -55,6 +55,7 @@ const (
 	keyConfigured               ContextKey = "arangodb-configured"
 	keyFollowLeaderRedirect     ContextKey = "arangodb-followLeaderRedirect"
 	keyDBServerID               ContextKey = "arangodb-dbserverID"
+	keyBatchID                  ContextKey = "arangodb-batchID"
 )
 
 // WithRevision is used to configure a context to make document
@@ -206,6 +207,11 @@ func WithDBServerID(parent context.Context, id string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyDBServerID, id)
 }
 
+// WithBatchID is used to configure a context that includes an ID of a Batch.
+func WithBatchID(parent context.Context, id string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyBatchID, id)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -221,6 +227,7 @@ type contextSettings struct {
 	Configured               *bool
 	FollowLeaderRedirect     *bool
 	DBServerID               string
+	BatchID									 string
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -339,6 +346,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if id, ok := v.(string); ok {
 			req.SetQuery("DBserver", id)
 			result.DBServerID = id
+		}
+	}
+	// BatchID
+	if v := ctx.Value(keyBatchID); v != nil {
+		if id, ok := v.(string); ok {
+			req.SetQuery("batchId", id)
+			result.BatchID = id
 		}
 	}
 	return result

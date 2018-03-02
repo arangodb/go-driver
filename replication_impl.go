@@ -24,24 +24,23 @@ package driver
 
 import (
 	"context"
-	"time"
 	"path"
 	"strconv"
 )
 
+type batch_params struct {
+	ttl float64 `json:"ttl"`
+}
+
 // CreateBatch creates a "batch" to prevent WAL file removal and to take a snapshot
-func (c *client) CreateBatch(ctx context.Context, serverID int64, db Database, ttl time.Duration) (BatchMetadata, error) {
+func (c *client) CreateBatch(ctx context.Context, serverID int64, db Database) (BatchMetadata, error) {
 	req, err := c.conn.NewRequest("POST", path.Join("_db", db.Name(), "_api/replication/batch"))
 	if err != nil {
 		return BatchMetadata{}, WithStack(err)
 	}
-	input := struct {
-		TTL int64 `json:"ttl"`
-	}{
-		TTL: int64(ttl.Seconds()),
-	}
 	req = req.SetQuery("serverId", strconv.FormatInt(serverID, 10))
-	req, err = req.SetBody(input)
+	params := batch_params{ttl: 60.0} // just use a default ttl value
+	req, err = req.SetBody(params) 
 	if err != nil {
 		return BatchMetadata{}, WithStack(err)
 	}
@@ -76,13 +75,12 @@ func (c *client) DeleteBatch(ctx context.Context, db Database, batchID string) e
 }
 
 // Get the inventory of a server containing all collections (with entire details) of a database.
-func (c *client) DatabaseInventory(ctx context.Context, db Database, batchID string) (DatabaseInventory, error) {
+func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error) {
 	req, err := c.conn.NewRequest("GET", path.Join("_db", db.Name(), "_api/replication/inventory"))
 	if err != nil {
 		return DatabaseInventory{}, WithStack(err)
 	}
 	applyContextSettings(ctx, req)
-	req = req.SetQuery("batchId", batchID)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return DatabaseInventory{}, WithStack(err)
