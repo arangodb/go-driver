@@ -46,16 +46,23 @@ func TestReplicationDatabaseInventory(t *testing.T) {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
 
-		// TODO remove the batchID requirement from rocksdb
-		batch, err := rep.CreateBatch(ctx, 1337, db)
+		version, err := c.Version(nil)
 		if err != nil {
-			t.Fatalf("CreateBatch failed: %s", describe(err))
+			t.Fatalf("Version failed: %s", describe(err))
 		}
-		defer rep.DeleteBatch(ctx, db, batch.ID)
 
-		ctx2 := driver.WithBatchID(ctx, batch.ID)
+		ctx_inv := ctx 
+		if version.Version.CompareTo("3.2") >= 0 {
+			// RocksDB requires batchID
+			batch, err := rep.CreateBatch(ctx, 1337, db)
+			if err != nil {
+				t.Fatalf("CreateBatch failed: %s", describe(err))
+			}
+			ctx_inv = driver.WithBatchID(ctx, batch.ID)
+			defer rep.DeleteBatch(ctx, db, batch.ID)
+		}
 
-		inv, err := rep.DatabaseInventory(ctx2, db)
+		inv, err := rep.DatabaseInventory(ctx_inv, db)
 		if err != nil {
 			t.Fatalf("DatabaseInventory failed: %s", describe(err))
 		}
