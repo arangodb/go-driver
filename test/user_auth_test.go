@@ -296,12 +296,13 @@ func TestGrantUserCollection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
 	}
-	// 3.3.4 changes behaviour to better support LDAP 
+	// 3.3.4 changes behaviour to better support LDAP
 	isv32p := version.Version.CompareTo("3.2") >= 0
 	isv334 := version.Version.CompareTo("3.3.4") >= 0
 	if !isv32p {
 		t.Skipf("This test requires 3.2 or higher, got %s", version.Version)
 	}
+
 	u := ensureUser(nil, c, "grant_user_col", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_col_test", nil, t)
 	// Grant read/write access to database

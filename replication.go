@@ -30,7 +30,7 @@ type Tick string
 
 type BatchMetadata struct {
 	ID       string `json:"id"`
-	LastTick Tick `json:"lastTick,omitempty"`
+	LastTick Tick   `json:"lastTick,omitempty"`
 }
 
 // Replication provides access to replication related operations.

@@ -227,7 +227,7 @@ type contextSettings struct {
 	Configured               *bool
 	FollowLeaderRedirect     *bool
 	DBServerID               string
-	BatchID									 string
+	BatchID                  string
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.

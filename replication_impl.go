@@ -40,7 +40,7 @@ func (c *client) CreateBatch(ctx context.Context, serverID int64, db Database) (
 	}
 	req = req.SetQuery("serverId", strconv.FormatInt(serverID, 10))
 	params := batch_params{ttl: 60.0} // just use a default ttl value
-	req, err = req.SetBody(params) 
+	req, err = req.SetBody(params)
 	if err != nil {
 		return BatchMetadata{}, WithStack(err)
 	}
