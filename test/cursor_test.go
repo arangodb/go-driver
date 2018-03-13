@@ -300,7 +300,7 @@ func TestCreateStreamCursor(t *testing.T) {
 	// contrary to normal cursors which are executed right
 	// away this will block until all read cursors are resolved
 	go func() {
-		query = "FOR doc IN 1..10 INSERT {name:'Peter', age:0} INTO cursor_stream_test"
+		query = "FOR doc IN 1..5 LET y = SLEEP(0.01) INSERT {name:'Peter', age:0} INTO cursor_stream_test"
 		cursor, err := db.Query(ctx2, query, nil) // should not return immediately
 		if err == nil {
 			// Close upon exit of the function
