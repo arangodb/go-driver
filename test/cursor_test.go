@@ -261,7 +261,7 @@ func TestCreateStreamCursor(t *testing.T) {
 		}
 	}
 
-	const expectedResults int = 10 * 5000
+	const expectedResults int = 10 * 10000
 	query := "FOR doc IN cursor_stream_test RETURN doc"
 	ctx2 := driver.WithQueryStream(ctx, true)
 	var cursors []driver.Cursor
@@ -339,24 +339,19 @@ func TestCreateStreamCursor(t *testing.T) {
 	for {
 		done := <-out
 		if done {
-			t.Logf("Write done")
 			writeDone = true
 		} else {
-			t.Logf("Read done")
 			readDone = true
 		}
 		// On MMFiles the read-cursors have to finish first
 		if writeDone && !readDone && info.Type == driver.EngineTypeMMFiles {
-			//t.Error("Write cursor was able to complete before read cursors")
-			t.Logf("Write cursor was able to complete before read cursors")
+			t.Error("Write cursor was able to complete before read cursors")
 		}
 
 		if writeDone && readDone {
 			break
 		}
 	}
-
-	t.Logf("Read count: %d", readCount)
 
 	if readCount != expectedResults {
 		t.Errorf("Expected to read %d documents, instead got %d", expectedResults, readCount)
