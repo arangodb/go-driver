@@ -28,11 +28,14 @@ import (
 )
 
 const (
-	keyQueryCount       = "arangodb-query-count"
-	keyQueryBatchSize   = "arangodb-query-batchSize"
-	keyQueryCache       = "arangodb-query-cache"
-	keyQueryMemoryLimit = "arangodb-query-memoryLimit"
-	keyQueryTTL         = "arangodb-query-ttl"
+	keyQueryCount          = "arangodb-query-count"
+	keyQueryBatchSize      = "arangodb-query-batchSize"
+	keyQueryCache          = "arangodb-query-cache"
+	keyQueryMemoryLimit    = "arangodb-query-memoryLimit"
+	keyQueryTTL            = "arangodb-query-ttl"
+	keyQueryOptSatSyncWait = "arangodb-query-opt-satSyncWait"
+	keyQueryOptFullCount   = "arangodb-query-opt-fullCount"
+	keyQueryOptStream      = "arangodb-query-opt-stream"
 )
 
 // WithQueryCount is used to configure a context that will set the Count of a query request,
@@ -68,6 +71,22 @@ func WithQueryMemoryLimit(parent context.Context, value int64) context.Context {
 // WithQueryTTL is used to configure a context that will set the TTL of a query request,
 func WithQueryTTL(parent context.Context, value time.Duration) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryTTL, value)
+}
+
+// WithSatelliteSyncWait sets the satelliteSyncWait query value on the query cursor request
+func WithQuerySatelliteSyncWait(parent context.Context, value time.Duration) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryOptSatSyncWait, value)
+}
+
+// WithFullCount is used to configure whether the query returns the full count of results
+// before the last LIMIT statement
+func WithQueryFullCount(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryOptFullCount, value)
+}
+
+// WithStream is used to configure whether this becomes a streaming query
+func WithQueryStream(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryOptStream, value)
 }
 
 type queryRequest struct {
@@ -113,6 +132,11 @@ type queryRequest struct {
 		FullCount bool `json:"fullCount,omitempty"`
 		// Limits the maximum number of plans that are created by the AQL query optimizer.
 		MaxPlans int `json:"maxPlans,omitempty"`
+		// Specify true and the query will be executed in a streaming fashion. The query result is not stored on
+		// the server, but calculated on the fly. Beware: long-running queries will need to hold the collection
+		// locks for as long as the query cursor exists. When set to false a query will be executed right away in
+		// its entirety.
+		Stream bool `json:"stream,omitempty"`
 	} `json:"options,omitempty"`
 }
 
@@ -144,6 +168,21 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryTTL); rawValue != nil {
 		if value, ok := rawValue.(time.Duration); ok {
 			q.TTL = value.Seconds()
+		}
+	}
+	if rawValue := ctx.Value(keyQueryOptSatSyncWait); rawValue != nil {
+		if value, ok := rawValue.(time.Duration); ok {
+			q.Options.SatelliteSyncWait = value.Seconds()
+		}
+	}
+	if rawValue := ctx.Value(keyQueryOptFullCount); rawValue != nil {
+		if value, ok := rawValue.(bool); ok {
+			q.Options.FullCount = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryOptStream); rawValue != nil {
+		if value, ok := rawValue.(bool); ok {
+			q.Options.Stream = value
 		}
 	}
 }

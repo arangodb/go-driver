@@ -27,6 +27,27 @@ import (
 	"io"
 )
 
+// Statistics returned with the query cursor
+type QueryStatistics interface {
+	// the total number of data-modification operations successfully executed.
+	WritesExecuted() int64
+	// The total number of data-modification operations that were unsuccessful
+	WritesIgnored() int64
+	// The total number of documents iterated over when scanning a collection without an index.
+	ScannedFull() int64
+	// The total number of documents iterated over when scanning a collection using an index.
+	ScannedIndex() int64
+	// the total number of documents that were removed after executing a filter condition in a FilterNode
+	Filtered() int64
+	// Returns the numer of results before the last LIMIT in the query was applied.
+	// A valid return value is only available when the has been created with a context that was
+	// prepared with `WithFullCount`. Additionally this will also not return a valid value if
+	// the context was prepared with `WithStream`.
+	FullCount() int64
+	// query execution time (wall-clock time). value will be set from the outside
+	ExecutionTime() float64
+}
+
 // Cursor is returned from a query, used to iterate over a list of documents.
 // Note that a Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
 type Cursor interface {
@@ -44,6 +65,11 @@ type Cursor interface {
 
 	// Count returns the total number of result documents available.
 	// A valid return value is only available when the cursor has been created with a context that was
-	// prepare with `WithQueryCount`.
+	// prepared with `WithQueryCount` and not with `WithStream`.
 	Count() int64
+
+	// Return execution statistics for this cursor. This might not
+	// be valid if the cursor has been created with a context that was
+	// prepared with `WithStream`
+	Statistics() QueryStatistics
 }

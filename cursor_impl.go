@@ -52,11 +52,32 @@ type cursor struct {
 	closeMutex  sync.Mutex
 }
 
+type cursorStats struct {
+	// The total number of data-modification operations successfully executed.
+	WritesExecutedInt int64 `json:"writesExecuted,omitempty"`
+	// The total number of data-modification operations that were unsuccessful
+	WritesIgnoredInt int64 `json:"writesIgnored,omitempty"`
+	// The total number of documents iterated over when scanning a collection without an index.
+	ScannedFullInt int64 `json:"scannedFull,omitempty"`
+	// The total number of documents iterated over when scanning a collection using an index.
+	ScannedIndexInt int64 `json:"scannedIndex,omitempty"`
+	// The total number of documents that were removed after executing a filter condition in a FilterNode
+	FilteredInt int64 `json:"filtered,omitempty"`
+	// The total number of documents that matched the search condition if the query's final LIMIT statement were not present.
+	FullCountInt int64 `json:"fullCount,omitempty"`
+	// Query execution time (wall-clock time). value will be set from the outside
+	ExecutionTimeInt float64 `json:"executionTime,omitempty"`
+}
+
 type cursorData struct {
 	Count   int64        `json:"count,omitempty"`   // the total number of result documents available (only available if the query was executed with the count attribute set)
 	ID      string       `json:"id"`                // id of temporary cursor created on the server (optional, see above)
 	Result  []*RawObject `json:"result,omitempty"`  // an array of result documents (might be empty if query has no results)
 	HasMore bool         `json:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
+	Extra   struct {
+		Stats cursorStats `json:"stats,omitempty"`
+		// TODO profile, warnings etc
+	} `json:"extra,omitempty"`
 }
 
 // relPath creates the relative path to this cursor (`_db/<db-name>/_api/cursor`)
@@ -152,4 +173,49 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 		return DocumentMeta{}, WithStack(err)
 	}
 	return meta, nil
+}
+
+// Return execution statistics for this cursor. This might not
+// be valid if the cursor has been created with a context that was
+// prepared with `WithStream`
+func (c *cursor) Statistics() QueryStatistics {
+	return c.cursorData.Extra.Stats
+}
+
+// the total number of data-modification operations successfully executed.
+func (cs cursorStats) WritesExecuted() int64 {
+	return cs.WritesExecutedInt
+}
+
+// The total number of data-modification operations that were unsuccessful
+func (cs cursorStats) WritesIgnored() int64 {
+	return cs.WritesIgnoredInt
+}
+
+// The total number of documents iterated over when scanning a collection without an index.
+func (cs cursorStats) ScannedFull() int64 {
+	return cs.ScannedFullInt
+}
+
+// The total number of documents iterated over when scanning a collection using an index.
+func (cs cursorStats) ScannedIndex() int64 {
+	return cs.ScannedIndexInt
+}
+
+// the total number of documents that were removed after executing a filter condition in a FilterNode
+func (cs cursorStats) Filtered() int64 {
+	return cs.FilteredInt
+}
+
+// Returns the numer of results before the last LIMIT in the query was applied.
+// A valid return value is only available when the has been created with a context that was
+// prepared with `WithFullCount`. Additionally this will also not return a valid value if
+// the context was prepared with `WithStream`.
+func (cs cursorStats) FullCount() int64 {
+	return cs.FullCountInt
+}
+
+// query execution time (wall-clock time). value will be set from the outside
+func (cs cursorStats) ExecutionTime() float64 {
+	return cs.ExecutionTimeInt
 }
