@@ -48,7 +48,7 @@ type Batch interface {
 // Replication provides access to replication related operations.
 type Replication interface {
 	// CreateBatch creates a "batch" to prevent removal of state required for replication
-	CreateBatch(ctx context.Context, serverID int64, db Database, ttl time.Duration) (Batch, error)
+	CreateBatch(ctx context.Context, db Database, serverID int64, ttl time.Duration) (Batch, error)
 	// Get the inventory of the server containing all collections (with entire details) of a database.
 	// When this function is called on a coordinator is a cluster, an ID of a DBServer must be provided
 	// using a context that is prepare with `WithDBServerID`.

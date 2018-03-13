@@ -43,7 +43,7 @@ type batchMetadata struct {
 }
 
 // CreateBatch creates a "batch" to prevent WAL file removal and to take a snapshot
-func (c *client) CreateBatch(ctx context.Context, serverID int64, db Database, ttl time.Duration) (Batch, error) {
+func (c *client) CreateBatch(ctx context.Context, db Database, serverID int64, ttl time.Duration) (Batch, error) {
 	req, err := c.conn.NewRequest("POST", path.Join("_db", db.Name(), "_api/replication/batch"))
 	if err != nil {
 		return nil, WithStack(err)
@@ -94,17 +94,19 @@ func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseIn
 	return result, nil
 }
 
+// id of this batch
 func (b batchMetadata) BatchID() string {
 	return b.ID
 }
 
+// Last tick reported by this batch
 func (b batchMetadata) Tick() Tick {
 	return b.LastTick
 }
 
 // Extend the lifetime of an existing batch on the server
 func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
-	if b.closed != 0 {
+	if !atomic.CompareAndSwapInt32(&b.closed, 0, 0) {
 		return nil
 	}
 
