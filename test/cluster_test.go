@@ -37,10 +37,9 @@ func TestClusterHealth(t *testing.T) {
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
 		t.Skip("Not a cluster")
+	} else if err != nil {
+		t.Fatalf("Health failed: %s", describe(err))
 	} else {
-		if err != nil {
-			t.Fatalf("Health failed: %s", describe(err))
-		}
 		h, err := cl.Health(ctx)
 		if err != nil {
 			t.Fatalf("Health failed: %s", describe(err))

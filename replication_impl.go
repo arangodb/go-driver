@@ -26,52 +26,51 @@ import (
 	"context"
 	"path"
 	"strconv"
+	"sync/atomic"
+	"time"
 )
 
-type batch_params struct {
-	ttl float64 `json:"ttl"`
+type batchMetadata struct {
+	// Id of the batch
+	ID string `json:"id"`
+	// tick reported by the server
+	LastTick Tick `json:"lastTick,omitempty"`
+
+	cl       *client
+	serverID int64
+	database string
+	closed   int32
 }
 
 // CreateBatch creates a "batch" to prevent WAL file removal and to take a snapshot
-func (c *client) CreateBatch(ctx context.Context, serverID int64, db Database) (BatchMetadata, error) {
+func (c *client) CreateBatch(ctx context.Context, serverID int64, db Database, ttl time.Duration) (Batch, error) {
 	req, err := c.conn.NewRequest("POST", path.Join("_db", db.Name(), "_api/replication/batch"))
 	if err != nil {
-		return BatchMetadata{}, WithStack(err)
+		return nil, WithStack(err)
 	}
 	req = req.SetQuery("serverId", strconv.FormatInt(serverID, 10))
-	params := batch_params{ttl: 60.0} // just use a default ttl value
+	params := struct {
+		TTL float64 `json:"ttl"`
+	}{TTL: ttl.Seconds()} // just use a default ttl value
 	req, err = req.SetBody(params)
 	if err != nil {
-		return BatchMetadata{}, WithStack(err)
+		return nil, WithStack(err)
 	}
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return BatchMetadata{}, WithStack(err)
+		return nil, WithStack(err)
 	}
 	if err := resp.CheckStatus(200); err != nil {
-		return BatchMetadata{}, WithStack(err)
+		return nil, WithStack(err)
 	}
-	var result BatchMetadata
-	if err := resp.ParseBody("", &result); err != nil {
-		return BatchMetadata{}, WithStack(err)
+	var batch batchMetadata
+	if err := resp.ParseBody("", &batch); err != nil {
+		return nil, WithStack(err)
 	}
-	return result, nil
-}
-
-// DeleteBatch deletes an existing dump batch
-func (c *client) DeleteBatch(ctx context.Context, db Database, batchID string) error {
-	req, err := c.conn.NewRequest("DELETE", path.Join("_db", db.Name(), "_api/replication/batch", batchID))
-	if err != nil {
-		return WithStack(err)
-	}
-	resp, err := c.conn.Do(ctx, req)
-	if err != nil {
-		return WithStack(err)
-	}
-	if err := resp.CheckStatus(204); err != nil {
-		return WithStack(err)
-	}
-	return nil
+	batch.cl = c
+	batch.serverID = serverID
+	batch.database = db.Name()
+	return &batch, nil
 }
 
 // Get the inventory of a server containing all collections (with entire details) of a database.
@@ -93,4 +92,62 @@ func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseIn
 		return DatabaseInventory{}, WithStack(err)
 	}
 	return result, nil
+}
+
+func (b batchMetadata) BatchID() string {
+	return b.ID
+}
+
+func (b batchMetadata) Tick() Tick {
+	return b.LastTick
+}
+
+// Extend the lifetime of an existing batch on the server
+func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
+	if b.closed != 0 {
+		return nil
+	}
+
+	req, err := b.cl.conn.NewRequest("PUT", path.Join("_db", b.database, "_api/replication/batch", b.ID))
+	if err != nil {
+		return WithStack(err)
+	}
+	req = req.SetQuery("serverId", strconv.FormatInt(b.serverID, 10))
+	input := struct {
+		TTL int64 `json:"ttl"`
+	}{
+		TTL: int64(ttl.Seconds()),
+	}
+	req, err = req.SetBody(input)
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := b.cl.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(204); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// DeleteBatch deletes an existing dump batch
+func (b *batchMetadata) Delete(ctx context.Context) error {
+	if !atomic.CompareAndSwapInt32(&b.closed, 0, 1) {
+		return nil
+	}
+
+	req, err := b.cl.conn.NewRequest("DELETE", path.Join("_db", b.database, "_api/replication/batch", b.ID))
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := b.cl.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(204); err != nil {
+		return WithStack(err)
+	}
+	return nil
 }

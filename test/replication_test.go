@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -51,18 +52,18 @@ func TestReplicationDatabaseInventory(t *testing.T) {
 			t.Fatalf("Version failed: %s", describe(err))
 		}
 
-		ctx_inv := ctx 
+		ctx2 := ctx
 		if version.Version.CompareTo("3.2") >= 0 {
 			// RocksDB requires batchID
-			batch, err := rep.CreateBatch(ctx, 1337, db)
+			batch, err := rep.CreateBatch(ctx, 1337, db, time.Duration(60.0))
 			if err != nil {
 				t.Fatalf("CreateBatch failed: %s", describe(err))
 			}
-			ctx_inv = driver.WithBatchID(ctx, batch.ID)
-			defer rep.DeleteBatch(ctx, db, batch.ID)
+			ctx2 = driver.WithBatchID(ctx, batch.BatchID())
+			defer batch.Delete(ctx)
 		}
 
-		inv, err := rep.DatabaseInventory(ctx_inv, db)
+		inv, err := rep.DatabaseInventory(ctx2, db)
 		if err != nil {
 			t.Fatalf("DatabaseInventory failed: %s", describe(err))
 		}
