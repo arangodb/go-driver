@@ -208,6 +208,7 @@ func WithDBServerID(parent context.Context, id string) context.Context {
 }
 
 // WithBatchID is used to configure a context that includes an ID of a Batch.
+// This is used in replication functions.
 func WithBatchID(parent context.Context, id string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyBatchID, id)
 }
