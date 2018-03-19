@@ -27,6 +27,7 @@ import (
 	"path"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // newCursor creates a new Cursor implementation.
@@ -76,8 +77,7 @@ type cursorData struct {
 	HasMore bool         `json:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
 	Extra   struct {
 		Stats cursorStats `json:"stats,omitempty"`
-		// TODO profile, warnings etc
-	} `json:"extra,omitempty"`
+	} `json:"extra"`
 }
 
 // relPath creates the relative path to this cursor (`_db/<db-name>/_api/cursor`)
@@ -216,6 +216,6 @@ func (cs cursorStats) FullCount() int64 {
 }
 
 // query execution time (wall-clock time). value will be set from the outside
-func (cs cursorStats) ExecutionTime() float64 {
-	return cs.ExecutionTimeInt
+func (cs cursorStats) ExecutionTime() time.Duration {
+	return time.Duration(cs.ExecutionTimeInt) * time.Second
 }

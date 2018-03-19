@@ -73,20 +73,32 @@ func WithQueryTTL(parent context.Context, value time.Duration) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryTTL, value)
 }
 
-// WithSatelliteSyncWait sets the satelliteSyncWait query value on the query cursor request
+// WithQuerySatelliteSyncWait sets the satelliteSyncWait query value on the query cursor request
 func WithQuerySatelliteSyncWait(parent context.Context, value time.Duration) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryOptSatSyncWait, value)
 }
 
-// WithFullCount is used to configure whether the query returns the full count of results
+// WithQueryFullCount is used to configure whether the query returns the full count of results
 // before the last LIMIT statement
-func WithQueryFullCount(parent context.Context, value bool) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyQueryOptFullCount, value)
+func WithQueryFullCount(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) > 0 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyQueryOptFullCount, v)
 }
 
-// WithStream is used to configure whether this becomes a streaming query
-func WithQueryStream(parent context.Context, value bool) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyQueryOptStream, value)
+// WithQueryStream is used to configure whether this becomes a stream query.
+// A stream query is not executed right away, but continually evaluated
+// when the client is requesting more results. Should the cursor expire
+// the query transaction is canceled. This means for writing queries clients
+// have to read the query-cursor until the HasMore() method returns false.
+func WithQueryStream(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) > 0 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyQueryOptStream, v)
 }
 
 type queryRequest struct {

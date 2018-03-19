@@ -25,6 +25,7 @@ package driver
 import (
 	"context"
 	"io"
+	"time"
 )
 
 // Statistics returned with the query cursor
@@ -44,8 +45,8 @@ type QueryStatistics interface {
 	// prepared with `WithFullCount`. Additionally this will also not return a valid value if
 	// the context was prepared with `WithStream`.
 	FullCount() int64
-	// query execution time (wall-clock time). value will be set from the outside
-	ExecutionTime() float64
+	// Execution time of the query (wall-clock time). value will be set from the outside
+	ExecutionTime() time.Duration
 }
 
 // Cursor is returned from a query, used to iterate over a list of documents.
@@ -65,11 +66,11 @@ type Cursor interface {
 
 	// Count returns the total number of result documents available.
 	// A valid return value is only available when the cursor has been created with a context that was
-	// prepared with `WithQueryCount` and not with `WithStream`.
+	// prepared with `WithQueryCount` and not with `WithQueryStream`.
 	Count() int64
 
-	// Return execution statistics for this cursor. This might not
-	// be valid if the cursor has been created with a context that was
-	// prepared with `WithStream`
+	// Statistics returns the query execution statistics for this cursor.
+	// This might not be valid if the cursor has been created with a context that was
+	// prepared with `WithQueryStream`
 	Statistics() QueryStatistics
 }
