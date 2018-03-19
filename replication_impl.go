@@ -24,17 +24,19 @@ package driver
 
 import (
 	"context"
+	"errors"
 	"path"
 	"strconv"
 	"sync/atomic"
 	"time"
 )
 
+// Content of the create batch resp
 type batchMetadata struct {
 	// Id of the batch
 	ID string `json:"id"`
-	// tick reported by the server
-	LastTick Tick `json:"lastTick,omitempty"`
+	// Last Tick reported by the server
+	LastTickInt Tick `json:"lastTick,omitempty"`
 
 	cl       *client
 	serverID int64
@@ -94,20 +96,20 @@ func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseIn
 	return result, nil
 }
 
-// id of this batch
+// BatchID reported by the server
 func (b batchMetadata) BatchID() string {
 	return b.ID
 }
 
 // Last tick reported by this batch
-func (b batchMetadata) Tick() Tick {
-	return b.LastTick
+func (b batchMetadata) LastTick() Tick {
+	return b.LastTickInt
 }
 
 // Extend the lifetime of an existing batch on the server
 func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 0) {
-		return nil
+		return errors.New("Batch already closed")
 	}
 
 	req, err := b.cl.conn.NewRequest("PUT", path.Join("_db", b.database, "_api/replication/batch", b.ID))
@@ -134,10 +136,10 @@ func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 	return nil
 }
 
-// DeleteBatch deletes an existing dump batch
+// Delete an existing dump batch
 func (b *batchMetadata) Delete(ctx context.Context) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 1) {
-		return nil
+		return errors.New("Batch already closed")
 	}
 
 	req, err := b.cl.conn.NewRequest("DELETE", path.Join("_db", b.database, "_api/replication/batch", b.ID))

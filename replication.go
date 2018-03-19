@@ -38,7 +38,7 @@ type Batch interface {
 	// id of this batch
 	BatchID() string
 	// Last tick reported by this batch
-	Tick() Tick
+	LastTick() Tick
 	// Extend the lifetime of an existing batch on the server
 	Extend(ctx context.Context, ttl time.Duration) error
 	// DeleteBatch deletes an existing batch on the server

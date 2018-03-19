@@ -54,8 +54,9 @@ func TestReplicationDatabaseInventory(t *testing.T) {
 
 		ctx2 := ctx
 		if version.Version.CompareTo("3.2") >= 0 {
+			var serverID int64 = 1337 // Random test value
 			// RocksDB requires batchID
-			batch, err := rep.CreateBatch(ctx, db, 1337, time.Duration(60.0))
+			batch, err := rep.CreateBatch(ctx, db, serverID, time.Second*60)
 			if err != nil {
 				t.Fatalf("CreateBatch failed: %s", describe(err))
 			}
