@@ -109,7 +109,7 @@ func (b batchMetadata) LastTick() Tick {
 // Extend the lifetime of an existing batch on the server
 func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 0) {
-		return errors.New("Batch already closed")
+		return WithStack(errors.New("Batch already closed"))
 	}
 
 	req, err := b.cl.conn.NewRequest("PUT", path.Join("_db", b.database, "_api/replication/batch", b.ID))
@@ -139,7 +139,7 @@ func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 // Delete an existing dump batch
 func (b *batchMetadata) Delete(ctx context.Context) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 1) {
-		return errors.New("Batch already closed")
+		return WithStack(errors.New("Batch already closed"))
 	}
 
 	req, err := b.cl.conn.NewRequest("DELETE", path.Join("_db", b.database, "_api/replication/batch", b.ID))
