@@ -79,3 +79,22 @@ func (c *client) SetServerMode(ctx context.Context, mode ServerMode) error {
 	}
 	return nil
 }
+
+// Shutdown a specific server, optionally removing it from its cluster.
+func (c *client) Shutdown(ctx context.Context, removeFromCluster bool) error {
+	req, err := c.conn.NewRequest("DELETE", "_admin/shutdown")
+	if err != nil {
+		return WithStack(err)
+	}
+	if removeFromCluster {
+		req.SetQuery("remove_from_cluster", "1")
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
