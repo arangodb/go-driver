@@ -118,3 +118,73 @@ func (c *cluster) MoveShard(ctx context.Context, col Collection, shard ShardID, 
 	}
 	return nil
 }
+
+type cleanOutServerRequest struct {
+	Server string `json:"server"`
+}
+
+// CleanOutServer triggers activities to clean out a DBServers.
+func (c *cluster) CleanOutServer(ctx context.Context, serverID string) error {
+	req, err := c.conn.NewRequest("POST", "_admin/cluster/cleanOutServer")
+	if err != nil {
+		return WithStack(err)
+	}
+	input := cleanOutServerRequest{
+		Server: serverID,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200, 202); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// IsCleanedOut checks if the dbserver with given ID has been cleaned out.
+func (c *cluster) IsCleanedOut(ctx context.Context, serverID string) (bool, error) {
+	r, err := c.NumberOfServers(ctx)
+	if err != nil {
+		return false, WithStack(err)
+	}
+	for _, id := range r.CleanedServerIDs {
+		if id == serverID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// NumberOfServersResponse holds the data returned from a NumberOfServer request.
+type NumberOfServersResponse struct {
+	NoCoordinators   int      `json:"numberOfCoordinators,omitempty"`
+	NoDBServers      int      `json:"numberOfDBServers,omitempty"`
+	CleanedServerIDs []string `json:"cleanedServers,omitempty"`
+}
+
+// NumberOfServers returns the number of coordinator & dbservers in a clusters and the
+// ID's of cleaned out servers.
+func (c *cluster) NumberOfServers(ctx context.Context) (NumberOfServersResponse, error) {
+	req, err := c.conn.NewRequest("GET", "_admin/cluster/numberOfServers")
+	if err != nil {
+		return NumberOfServersResponse{}, WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return NumberOfServersResponse{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return NumberOfServersResponse{}, WithStack(err)
+	}
+	var result NumberOfServersResponse
+	if err := resp.ParseBody("", &result); err != nil {
+		return NumberOfServersResponse{}, WithStack(err)
+	}
+	return result, nil
+}
