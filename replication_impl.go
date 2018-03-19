@@ -101,7 +101,7 @@ func (b batchMetadata) BatchID() string {
 	return b.ID
 }
 
-// Last tick reported by this batch
+// LastTick reported by the server for this batch
 func (b batchMetadata) LastTick() Tick {
 	return b.LastTickInt
 }
