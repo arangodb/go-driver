@@ -24,10 +24,31 @@ package driver
 
 import (
 	"context"
+	"time"
 )
+
+// Tick is represent a place in either the Write-Ahead Log,
+// journals and datafiles value reported by the server
+type Tick string
+
+// Batch represents state on the server used during
+// certain replication operations to keep state required
+// by the client (such as Write-Ahead Log, inventory and data-files)
+type Batch interface {
+	// id of this batch
+	BatchID() string
+	// LastTick reported by the server for this batch
+	LastTick() Tick
+	// Extend the lifetime of an existing batch on the server
+	Extend(ctx context.Context, ttl time.Duration) error
+	// DeleteBatch deletes an existing batch on the server
+	Delete(ctx context.Context) error
+}
 
 // Replication provides access to replication related operations.
 type Replication interface {
+	// CreateBatch creates a "batch" to prevent removal of state required for replication
+	CreateBatch(ctx context.Context, db Database, serverID int64, ttl time.Duration) (Batch, error)
 	// Get the inventory of the server containing all collections (with entire details) of a database.
 	// When this function is called on a coordinator is a cluster, an ID of a DBServer must be provided
 	// using a context that is prepare with `WithDBServerID`.

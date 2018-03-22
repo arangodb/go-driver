@@ -193,11 +193,10 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) b
 				cancel()
 				instanceUp <- true
 				return
-			} else {
-				cancel()
-				//t.Logf("Version failed: %s %#v", describe(err), err)
-				time.Sleep(time.Second)
 			}
+			cancel()
+			//t.Logf("Version failed: %s %#v", describe(err), err)
+			time.Sleep(time.Second)
 		}
 	}()
 	select {
