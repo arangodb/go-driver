@@ -67,6 +67,9 @@ type ConnectionConfig struct {
 	// directly after use, resulting in a large number of connections in `TIME_WAIT` state.
 	// When this value is not set, the driver will set it to 64 automatically.
 	Transport http.RoundTripper
+	// DontFollowRedirect; if set, redirect will not be followed, response from the initial request will be returned without an error
+	// DontFollowRedirect takes precendance over FailOnRedirect.
+	DontFollowRedirect bool
 	// FailOnRedirect; if set, redirect will not be followed, instead the status code is returned as error
 	FailOnRedirect bool
 	// Cluster configuration settings
@@ -137,7 +140,11 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 	httpClient := &http.Client{
 		Transport: config.Transport,
 	}
-	if config.FailOnRedirect {
+	if config.DontFollowRedirect {
+		httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // Do not wrap, standard library will not understand
+		}
+	} else if config.FailOnRedirect {
 		httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return driver.ArangoError{
 				HasError:     true,
