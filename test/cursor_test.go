@@ -228,3 +228,132 @@ func TestCreateCursor(t *testing.T) {
 		}
 	}
 }
+
+// Test stream query cursors. The goroutines are technically only
+// relevant for the MMFiles engine, but don't hurt on rocksdb either
+func TestCreateStreamCursor(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+	if version.Version.CompareTo("3.4") < 0 {
+		t.Skip("This test requires version 3.4")
+		return
+	}
+
+	db := ensureDatabase(ctx, c, "cursor_stream_test", nil, t)
+	col := ensureCollection(ctx, db, "cursor_stream_test", nil, t)
+
+	// Query engine info (on rocksdb, JournalSize is always 0)
+	info, err := db.EngineInfo(nil)
+	if err != nil {
+		t.Fatalf("Failed to get engine info: %s", describe(err))
+	}
+
+	// This might take a few seconds
+	for i := 0; i < 10000; i++ {
+		user := UserDoc{Name: "John", Age: i}
+		if _, err := col.CreateDocument(ctx, user); err != nil {
+			t.Fatalf("Expected success, got %s", describe(err))
+		}
+	}
+
+	const expectedResults int = 10 * 10000
+	query := "FOR doc IN cursor_stream_test RETURN doc"
+	ctx2 := driver.WithQueryStream(ctx, true)
+	var cursors []driver.Cursor
+
+	// create a bunch of read-only cursors
+	for i := 0; i < 10; i++ {
+		cursor, err := db.Query(ctx2, query, nil)
+		if err == nil {
+			// Close upon exit of the function
+			defer cursor.Close()
+		}
+		if err != nil {
+			t.Errorf("Expected success in query %d (%s), got '%s'", i, query, describe(err))
+			continue
+		}
+		count := cursor.Count()
+		if count != 0 {
+			t.Errorf("Expected count of 0, got %d in query %d (%s)", count, i, query)
+		}
+		stats := cursor.Statistics()
+		count = stats.FullCount()
+		if count != 0 {
+			t.Errorf("Expected fullCount of 0, got %d in query %d (%s)", count, i, query)
+		}
+		if !cursor.HasMore() {
+			t.Errorf("Expected cursor %d to have more documents", i)
+		}
+
+		cursors = append(cursors, cursor)
+	}
+
+	out := make(chan bool)
+	defer close(out)
+
+	// start a write query on the same collection inbetween
+	// contrary to normal cursors which are executed right
+	// away this will block until all read cursors are resolved
+	go func() {
+		query = "FOR doc IN 1..5 LET y = SLEEP(0.01) INSERT {name:'Peter', age:0} INTO cursor_stream_test"
+		cursor, err := db.Query(ctx2, query, nil) // should not return immediately
+		if err == nil {
+			// Close upon exit of the function
+			defer cursor.Close()
+		}
+		if err != nil {
+			t.Errorf("Expected success in write-query %s, got '%s'", query, describe(err))
+		}
+
+		for cursor.HasMore() {
+			var data interface{}
+			if _, err := cursor.ReadDocument(ctx2, &data); err != nil {
+				t.Errorf("Failed to read document, err: %s", describe(err))
+			}
+		}
+		out <- true // signal write done
+	}()
+
+	readCount := 0
+	go func() {
+		// read all cursors until the end, server closes them automatically
+		for i, cursor := range cursors {
+			for cursor.HasMore() {
+				var user UserDoc
+				if _, err := cursor.ReadDocument(ctx2, &user); err != nil {
+					t.Errorf("Failed to result document %d: %s", i, describe(err))
+				}
+				readCount++
+			}
+		}
+		out <- false // signal read done
+	}()
+
+	writeDone := false
+	readDone := false
+	for {
+		done := <-out
+		if done {
+			writeDone = true
+		} else {
+			readDone = true
+		}
+		// On MMFiles the read-cursors have to finish first
+		if writeDone && !readDone && info.Type == driver.EngineTypeMMFiles {
+			t.Error("Write cursor was able to complete before read cursors")
+		}
+
+		if writeDone && readDone {
+			break
+		}
+	}
+
+	if readCount != expectedResults {
+		t.Errorf("Expected to read %d documents, instead got %d", expectedResults, readCount)
+	}
+}
