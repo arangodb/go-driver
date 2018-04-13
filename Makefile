@@ -107,7 +107,7 @@ endif
 all: build
 
 build: $(GOBUILDDIR) $(SOURCES)
-	GOPATH=$(GOBUILDDIR) go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst
+	GOPATH=$(GOBUILDDIR) go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency
 
 clean:
 	rm -Rf $(GOBUILDDIR)
