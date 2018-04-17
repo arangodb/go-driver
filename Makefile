@@ -107,7 +107,7 @@ endif
 all: build
 
 build: $(GOBUILDDIR) $(SOURCES)
-	GOPATH=$(GOBUILDDIR) go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency
+	GOPATH=$(GOBUILDDIR) go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency $(REPOPATH)/jwt
 
 clean:
 	rm -Rf $(GOBUILDDIR)
@@ -116,6 +116,7 @@ $(GOBUILDDIR):
 	@mkdir -p $(ORGDIR)
 	@rm -f $(REPODIR) && ln -s ../../../.. $(REPODIR)
 	GOPATH=$(GOBUILDDIR) go get github.com/arangodb/go-velocypack
+	GOPATH=$(GOBUILDDIR) go get github.com/dgrijalva/jwt-go
 
 run-tests: run-tests-http run-tests-single run-tests-resilientsingle run-tests-cluster
 
