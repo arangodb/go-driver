@@ -107,6 +107,32 @@ func (c *client) ServerRole(ctx context.Context) (ServerRole, error) {
 	return role, nil
 }
 
+type idResponse struct {
+	ID string `json:"id,omitempty"`
+}
+
+// Gets the ID of this server in the cluster.
+// An error is returned when calling this to a server that is not part of a cluster.
+func (c *client) ServerID(ctx context.Context) (string, error) {
+	req, err := c.conn.NewRequest("GET", "_admin/server/id")
+	if err != nil {
+		return "", WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return "", WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return "", WithStack(err)
+	}
+	var data idResponse
+	if err := resp.ParseBody("", &data); err != nil {
+		return "", WithStack(err)
+	}
+	return data.ID, nil
+}
+
 // clusterEndpoints returns the endpoints of a cluster.
 func (c *client) echo(ctx context.Context) error {
 	req, err := c.conn.NewRequest("GET", "_admin/echo")
