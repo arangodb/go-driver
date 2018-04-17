@@ -44,6 +44,11 @@ type Agency interface {
 	// to the given old value.
 	WriteKeyIfEqualTo(ctx context.Context, key []string, newValue, oldValue interface{}, ttl time.Duration) error
 
+	// RemoveKey removes the given key.
+	// If you pass a condition (only 1 allowed), this condition has to be true,
+	// otherwise the remove will fail with a ConditionFailed error.
+	RemoveKey(ctx context.Context, key []string, condition ...WriteCondition) error
+
 	// RemoveKeyIfEqualTo removes the given key only if the existing value for that key equals
 	// to the given old value.
 	RemoveKeyIfEqualTo(ctx context.Context, key []string, oldValue interface{}) error

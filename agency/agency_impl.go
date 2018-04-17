@@ -42,7 +42,7 @@ type agency struct {
 }
 
 // NewAgency creates an Agency accessor for the given connection.
-// The connection must contain the endpoints of all agents, and only agents.
+// The connection must contain the endpoints of one or more agents, and only agents.
 func NewAgency(conn driver.Connection) (Agency, error) {
 	return &agency{
 		conn: conn,
@@ -153,7 +153,7 @@ func (c *agency) WriteKey(ctx context.Context, key []string, value interface{}, 
 	default:
 		return driver.WithStack(fmt.Errorf("too many conditions"))
 	}
-	if err := c.write(ctx, key, value, cond, ttl); err != nil {
+	if err := c.write(ctx, "set", key, value, cond, ttl); err != nil {
 		return driver.WithStack(err)
 	}
 	return nil
@@ -163,7 +163,7 @@ func (c *agency) WriteKey(ctx context.Context, key []string, value interface{}, 
 func (c *agency) WriteKeyIfEmpty(ctx context.Context, key []string, value interface{}, ttl time.Duration) error {
 	var cond WriteCondition
 	cond = cond.IfEmpty(key)
-	if err := c.write(ctx, key, value, cond, ttl); err != nil {
+	if err := c.write(ctx, "set", key, value, cond, ttl); err != nil {
 		return driver.WithStack(err)
 	}
 	return nil
@@ -174,14 +174,14 @@ func (c *agency) WriteKeyIfEmpty(ctx context.Context, key []string, value interf
 func (c *agency) WriteKeyIfEqualTo(ctx context.Context, key []string, newValue, oldValue interface{}, ttl time.Duration) error {
 	var cond WriteCondition
 	cond = cond.IfEqualTo(key, oldValue)
-	if err := c.write(ctx, key, newValue, cond, ttl); err != nil {
+	if err := c.write(ctx, "set", key, newValue, cond, ttl); err != nil {
 		return driver.WithStack(err)
 	}
 	return nil
 }
 
 // write writes the given value with the given key only if the given condition is fullfilled.
-func (c *agency) write(ctx context.Context, key []string, value interface{}, condition WriteCondition, ttl time.Duration) error {
+func (c *agency) write(ctx context.Context, operation string, key []string, value interface{}, condition WriteCondition, ttl time.Duration) error {
 	conn := c.conn
 	req, err := conn.NewRequest("POST", "_api/agency/write")
 	if err != nil {
@@ -194,7 +194,7 @@ func (c *agency) write(ctx context.Context, key []string, value interface{}, con
 			// Update
 			map[string]interface{}{
 				fullKey: writeUpdate{
-					Operation: "set",
+					Operation: operation,
 					New:       value,
 					TTL:       int64(ttl.Seconds()),
 				},
@@ -228,70 +228,40 @@ func (c *agency) write(ctx context.Context, key []string, value interface{}, con
 	// If results[0] == 0, condition failed, otherwise success
 	if result.Results[0] == 0 {
 		// Condition failed
-		return driver.WithStack(ConditionFailedError)
+		return driver.WithStack(preconditionFailedError)
 	}
 
 	// Success
 	return nil
 }
 
+// RemoveKey removes the given key.
+// If you pass a condition (only 1 allowed), this condition has to be true,
+// otherwise the remove will fail with a ConditionFailed error.
+func (c *agency) RemoveKey(ctx context.Context, key []string, condition ...WriteCondition) error {
+	var cond WriteCondition
+	switch len(condition) {
+	case 0:
+	// No condition, do nothing
+	case 1:
+		cond = condition[0]
+	default:
+		return driver.WithStack(fmt.Errorf("too many conditions"))
+	}
+	if err := c.write(ctx, "delete", key, nil, cond, 0); err != nil {
+		return driver.WithStack(err)
+	}
+	return nil
+}
+
 // RemoveKeyIfEqualTo removes the given key only if the existing value for that key equals
 // to the given old value.
 func (c *agency) RemoveKeyIfEqualTo(ctx context.Context, key []string, oldValue interface{}) error {
-	conn := c.conn
-	req, err := conn.NewRequest("POST", "_api/agency/write")
-	if err != nil {
+	var cond WriteCondition
+	cond = cond.IfEqualTo(key, oldValue)
+	if err := c.write(ctx, "delete", key, nil, cond, 0); err != nil {
 		return driver.WithStack(err)
 	}
-
-	condition := writeCondition{
-		Old: oldValue,
-	}
-	fullKey := createFullKey(key)
-	writeTxs := writeTransactions{
-		writeTransaction{
-			// Update
-			map[string]interface{}{
-				fullKey: writeUpdate{
-					Operation: "delete",
-				},
-			},
-			// Condition
-			map[string]interface{}{
-				fullKey: condition,
-			},
-		},
-	}
-
-	req, err = req.SetBody(writeTxs)
-	if err != nil {
-		return driver.WithStack(err)
-	}
-	resp, err := conn.Do(ctx, req)
-	if err != nil {
-		return driver.WithStack(err)
-	}
-
-	var result writeResult
-	if err := resp.CheckStatus(200, 201, 202); err != nil {
-		return driver.WithStack(err)
-	}
-	if err := resp.ParseBody("", &result); err != nil {
-		return driver.WithStack(err)
-	}
-
-	// "results" should be 1 long
-	if len(result.Results) != 1 {
-		return driver.WithStack(fmt.Errorf("Expected results of 1 long, got %d", len(result.Results)))
-	}
-
-	// If results[0] == 0, condition failed, otherwise success
-	if result.Results[0] == 0 {
-		// Condition failed
-		return driver.WithStack(ConditionFailedError)
-	}
-
-	// Success
 	return nil
 }
 
