@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"crypto/tls"
+	"os"
 	"reflect"
 	"testing"
 
@@ -56,6 +57,10 @@ func getAgencyEndpoints(ctx context.Context, c driver.Client) ([]string, error) 
 
 // getAgencyConnection queries the cluster and creates an agency accessor using an agency.AgencyConnection for the entire agency.
 func getAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agency.Agency, error) {
+	if os.Getenv("TEST_CONNECTION") == "vst" {
+		// These tests assume an HTTP connetion, so we skip under this condition
+		return nil, driver.ArangoError{HasError: true, Code: 412}
+	}
 	endpoints, err := getAgencyEndpoints(ctx, c)
 	if err != nil {
 		return nil, err
@@ -77,6 +82,10 @@ func getAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agenc
 
 // getIndividualAgencyConnections queries the cluster and creates an agency accessor using a single http.Connection for each agent.
 func getIndividualAgencyConnections(ctx context.Context, t testEnv, c driver.Client) ([]agency.Agency, error) {
+	if os.Getenv("TEST_CONNECTION") == "vst" {
+		// These tests assume an HTTP connetion, so we skip under this condition
+		return nil, driver.ArangoError{HasError: true, Code: 412}
+	}
 	endpoints, err := getAgencyEndpoints(ctx, c)
 	if err != nil {
 		return nil, err
