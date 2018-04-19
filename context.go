@@ -359,16 +359,6 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 	return result
 }
 
-// okStatus returns one of the given status codes depending on the WaitForSync field value.
-// If WaitForSync==true, statusWithWaitForSync is returned, otherwise statusWithoutWaitForSync is returned.
-func (cs contextSettings) okStatus(statusWithWaitForSync, statusWithoutWaitForSync int) int {
-	if cs.WaitForSync {
-		return statusWithWaitForSync
-	} else {
-		return statusWithoutWaitForSync
-	}
-}
-
 // contextOrBackground returns the given context if it is not nil.
 // Returns context.Background() otherwise.
 func contextOrBackground(ctx context.Context) context.Context {
