@@ -452,3 +452,54 @@ func TestUpdateDocumentsUpdateLenDiff(t *testing.T) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
+
+// TestUpdateDocumentsInWaitForSyncCollection creates documents in a collection with waitForSync enabled,
+// updates them and then checks the updates have succeeded.
+func TestUpdateDocumentsInWaitForSyncCollection(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "TestUpdateDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
+		WaitForSync: true,
+	}, t)
+	docs := []UserDoc{
+		UserDoc{
+			"Piere",
+			23,
+		},
+		UserDoc{
+			"Otto",
+			43,
+		},
+	}
+	metas, errs, err := col.CreateDocuments(ctx, docs)
+	if err != nil {
+		t.Fatalf("Failed to create new documents: %s", describe(err))
+	} else if err := errs.FirstNonNil(); err != nil {
+		t.Fatalf("Expected no errors, got first: %s", describe(err))
+	}
+	// Update documents
+	updates := []map[string]interface{}{
+		map[string]interface{}{
+			"name": "Updated1",
+		},
+		map[string]interface{}{
+			"name": "Updated2",
+		},
+	}
+	if _, _, err := col.UpdateDocuments(ctx, metas.Keys(), updates); err != nil {
+		t.Fatalf("Failed to update documents: %s", describe(err))
+	}
+	// Read updated documents
+	for i, meta := range metas {
+		var readDoc UserDoc
+		if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+			t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+		}
+		doc := docs[i]
+		doc.Name = fmt.Sprintf("Updated%d", i+1)
+		if !reflect.DeepEqual(doc, readDoc) {
+			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, readDoc)
+		}
+	}
+}

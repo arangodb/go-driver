@@ -156,3 +156,35 @@ func TestCreateDocumentNil(t *testing.T) {
 		t.Fatalf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
+
+// TestCreateDocumentInWaitForSyncCollection creates a document in a collection with waitForSync enabled,
+// and then checks that it exists.
+func TestCreateDocumentInWaitForSyncCollection(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "document_test", nil, t)
+	col := ensureCollection(nil, db, "TestCreateDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
+		WaitForSync: true,
+	}, t)
+	doc := UserDoc{
+		"Jan",
+		40,
+	}
+	meta, err := col.CreateDocument(nil, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+	// Document must exists now
+	if found, err := col.DocumentExists(nil, meta.Key); err != nil {
+		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
+	} else if !found {
+		t.Errorf("DocumentExists returned false for '%s', expected true", meta.Key)
+	}
+	// Read document
+	var readDoc UserDoc
+	if _, err := col.ReadDocument(nil, meta.Key, &readDoc); err != nil {
+		t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+	}
+	if !reflect.DeepEqual(doc, readDoc) {
+		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+}
