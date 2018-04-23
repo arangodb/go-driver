@@ -82,7 +82,7 @@ func TestConcurrentCreateSmallDocuments(t *testing.T) {
 
 	noCreators := getIntFromEnv("NOCREATORS", 25)
 	noReaders := getIntFromEnv("NOREADERS", 50)
-	noDocuments := getIntFromEnv("NODOCUMENTS", 10000) // per creator
+	noDocuments := getIntFromEnv("NODOCUMENTS", 1000) // per creator
 
 	wgCreators := sync.WaitGroup{}
 	// Run N concurrent creators
@@ -158,7 +158,7 @@ func TestConcurrentCreateBigDocuments(t *testing.T) {
 
 	noCreators := getIntFromEnv("NOCREATORS", 25)
 	noReaders := getIntFromEnv("NOREADERS", 50)
-	noDocuments := getIntFromEnv("NODOCUMENTS", 1000) // per creator
+	noDocuments := getIntFromEnv("NODOCUMENTS", 100) // per creator
 
 	wgCreators := sync.WaitGroup{}
 	// Run N concurrent creators
