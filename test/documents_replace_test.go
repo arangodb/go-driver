@@ -329,3 +329,54 @@ func TestReplaceDocumentsUpdateLenDiff(t *testing.T) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
+
+// TestReplaceDocumentsInWaitForSyncCollection creates documents into a collection with waitForSync enabled,
+// replaces them and then checks the replacements have succeeded.
+func TestReplaceDocumentsInWaitForSyncCollection(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "TestReplaceDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
+		WaitForSync: true,
+	}, t)
+	docs := []UserDoc{
+		UserDoc{
+			"Piere",
+			23,
+		},
+		UserDoc{
+			"Pioter",
+			45,
+		},
+	}
+	metas, errs, err := col.CreateDocuments(ctx, docs)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	} else if err := errs.FirstNonNil(); err != nil {
+		t.Fatalf("Expected no errors, got first: %s", describe(err))
+	}
+	// Replacement docs
+	replacements := []Account{
+		Account{
+			ID:   "foo",
+			User: &UserDoc{},
+		},
+		Account{
+			ID:   "foo2",
+			User: &UserDoc{},
+		},
+	}
+	if _, _, err := col.ReplaceDocuments(ctx, metas.Keys(), replacements); err != nil {
+		t.Fatalf("Failed to replace documents: %s", describe(err))
+	}
+	// Read replaced documents
+	for i, meta := range metas {
+		var readDoc Account
+		if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+			t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+		}
+		if !reflect.DeepEqual(replacements[i], readDoc) {
+			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, replacements[i], readDoc)
+		}
+	}
+}

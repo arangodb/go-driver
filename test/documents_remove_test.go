@@ -227,3 +227,36 @@ func TestRemoveDocumentsKeyEmpty(t *testing.T) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
+
+// TestRemoveDocumentsInWaitForSyncCollection creates documents in a collection with waitForSync enabled,
+// removes them and then checks the removal has succeeded.
+func TestRemoveDocumentsInWaitForSyncCollection(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "TestRemoveDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
+		WaitForSync: true,
+	}, t)
+	docs := []UserDoc{
+		UserDoc{
+			"Piere",
+			23,
+		},
+	}
+	metas, errs, err := col.CreateDocuments(ctx, docs)
+	if err != nil {
+		t.Fatalf("Failed to create new documents: %s", describe(err))
+	} else if err := errs.FirstNonNil(); err != nil {
+		t.Fatalf("Expected no errors, got first: %s", describe(err))
+	}
+	if _, _, err := col.RemoveDocuments(ctx, metas.Keys()); err != nil {
+		t.Fatalf("Failed to remove documents: %s", describe(err))
+	}
+	// Should not longer exist
+	for i, meta := range metas {
+		var readDoc Account
+		if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
+			t.Fatalf("Expected NotFoundError at %d, got  %s", i, describe(err))
+		}
+	}
+}

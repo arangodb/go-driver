@@ -296,3 +296,38 @@ func TestUpdateDocumentUpdateNil(t *testing.T) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
 }
+
+// TestUpdateDocumentInWaitForSyncCollection creates a document in a collection with waitForSync enabled,
+// updates it and then checks the update has succeeded.
+func TestUpdateDocumentInWaitForSyncCollection(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "TestUpdateDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
+		WaitForSync: true,
+	}, t)
+	doc := UserDoc{
+		"Piere",
+		23,
+	}
+	meta, err := col.CreateDocument(ctx, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+	// Update document
+	update := map[string]interface{}{
+		"name": "Updated",
+	}
+	if _, err := col.UpdateDocument(ctx, meta.Key, update); err != nil {
+		t.Fatalf("Failed to update document '%s': %s", meta.Key, describe(err))
+	}
+	// Read updated document
+	var readDoc UserDoc
+	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+		t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+	}
+	doc.Name = "Updated"
+	if !reflect.DeepEqual(doc, readDoc) {
+		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+}

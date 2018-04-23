@@ -559,3 +559,47 @@ func TestImportDocumentsOverwriteNo(t *testing.T) {
 		}
 	}
 }
+
+// TestImportDocumentsWithKeysInWaitForSyncCollection imports documents into a collection with waitForSync enabled
+// and then checks that it exists.
+func TestImportDocumentsWithKeysInWaitForSyncCollection(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "document_test", nil, t)
+	col := ensureCollection(nil, db, "TestImportDocumentsWithKeysInWaitForSyncCollection", &driver.CreateCollectionOptions{
+		WaitForSync: true,
+	}, t)
+	docs := []UserDocWithKey{
+		UserDocWithKey{
+			"jan",
+			"Jan",
+			40,
+		},
+		UserDocWithKey{
+			"foo",
+			"Foo",
+			41,
+		},
+		UserDocWithKey{
+			"frank",
+			"Frank",
+			42,
+		},
+	}
+
+	var raw []byte
+	ctx := driver.WithRawResponse(nil, &raw)
+	stats, err := col.ImportDocuments(ctx, docs, nil)
+	if err != nil {
+		t.Fatalf("Failed to import documents: %s %#v", describe(err), err)
+	} else {
+		if stats.Created != int64(len(docs)) {
+			t.Errorf("Expected %d created documents, got %d (json %s)", len(docs), stats.Created, formatRawResponse(raw))
+		}
+		if stats.Errors != 0 {
+			t.Errorf("Expected %d error documents, got %d (json %s)", 0, stats.Errors, formatRawResponse(raw))
+		}
+		if stats.Empty != 0 {
+			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
+		}
+	}
+}
