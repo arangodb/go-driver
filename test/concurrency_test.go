@@ -80,18 +80,22 @@ func TestConcurrentCreateSmallDocuments(t *testing.T) {
 		}
 	}
 
+	noCreators := getIntFromEnv("NOCREATORS", 25)
+	noReaders := getIntFromEnv("NOREADERS", 50)
+	noDocuments := getIntFromEnv("NODOCUMENTS", 10000) // per creator
+
 	wgCreators := sync.WaitGroup{}
-	// Run 25 concurrent creators
-	for i := 0; i < 25; i++ {
+	// Run N concurrent creators
+	for i := 0; i < noCreators; i++ {
 		wgCreators.Add(1)
 		go func() {
 			defer wgCreators.Done()
-			creator(10000, 50)
+			creator(noDocuments, noCreators)
 		}()
 	}
 	wgReaders := sync.WaitGroup{}
-	// Run 50 readers
-	for i := 0; i < 50; i++ {
+	// Run M readers
+	for i := 0; i < noReaders; i++ {
 		wgReaders.Add(1)
 		go func() {
 			defer wgReaders.Done()
@@ -152,18 +156,22 @@ func TestConcurrentCreateBigDocuments(t *testing.T) {
 		}
 	}
 
+	noCreators := getIntFromEnv("NOCREATORS", 25)
+	noReaders := getIntFromEnv("NOREADERS", 50)
+	noDocuments := getIntFromEnv("NODOCUMENTS", 1000) // per creator
+
 	wgCreators := sync.WaitGroup{}
-	// Run 25 concurrent creators
-	for i := 0; i < 25; i++ {
+	// Run N concurrent creators
+	for i := 0; i < noCreators; i++ {
 		wgCreators.Add(1)
 		go func() {
 			defer wgCreators.Done()
-			creator(1000, 50)
+			creator(noDocuments, noCreators)
 		}()
 	}
 	wgReaders := sync.WaitGroup{}
-	// Run 50 readers
-	for i := 0; i < 50; i++ {
+	// Run M readers
+	for i := 0; i < noReaders; i++ {
 		wgReaders.Add(1)
 		go func() {
 			defer wgReaders.Done()

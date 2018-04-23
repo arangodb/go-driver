@@ -26,6 +26,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -80,4 +83,17 @@ func formatRawResponse(raw []byte) string {
 		return string(raw)
 	}
 	return hex.EncodeToString(raw)
+}
+
+// getIntFromEnv looks for an environment variable with given key.
+// If found, it parses the value to an int, if success that value is returned.
+// In all other cases, the given default value is returned.
+func getIntFromEnv(envKey string, defaultValue int) int {
+	v := strings.TrimSpace(os.Getenv(envKey))
+	if v != "" {
+		if result, err := strconv.Atoi(v); err == nil {
+			return result
+		}
+	}
+	return defaultValue
 }
