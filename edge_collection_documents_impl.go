@@ -103,7 +103,7 @@ func (c *edgeCollection) createDocument(ctx context.Context, document interface{
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
@@ -318,7 +318,7 @@ func (c *edgeCollection) replaceDocument(ctx context.Context, key string, docume
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
@@ -433,7 +433,7 @@ func (c *edgeCollection) removeDocument(ctx context.Context, key string) (Docume
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(200, 202)); err != nil {
+	if err := resp.CheckStatus(200, 202); err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {

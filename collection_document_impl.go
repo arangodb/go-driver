@@ -103,7 +103,7 @@ func (c *collection) CreateDocument(ctx context.Context, document interface{}) (
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
 	if cs.Silent {
@@ -155,7 +155,7 @@ func (c *collection) CreateDocuments(ctx context.Context, documents interface{})
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
@@ -196,7 +196,7 @@ func (c *collection) UpdateDocument(ctx context.Context, key string, update inte
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
 	if cs.Silent {
@@ -264,7 +264,7 @@ func (c *collection) UpdateDocuments(ctx context.Context, keys []string, updates
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
@@ -305,7 +305,7 @@ func (c *collection) ReplaceDocument(ctx context.Context, key string, document i
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
 	if cs.Silent {
@@ -373,7 +373,7 @@ func (c *collection) ReplaceDocuments(ctx context.Context, keys []string, docume
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
@@ -407,7 +407,7 @@ func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMe
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(200, 202)); err != nil {
+	if err := resp.CheckStatus(200, 202); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
 	if cs.Silent {
@@ -456,7 +456,7 @@ func (c *collection) RemoveDocuments(ctx context.Context, keys []string) (Docume
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(200, 202); err != nil {
 		return nil, nil, WithStack(err)
 	}
 	if cs.Silent {
