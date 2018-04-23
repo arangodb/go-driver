@@ -103,6 +103,12 @@ func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, err
 	return c, nil
 }
 
+// load returns an indication of the amount of work this connection has.
+// 0 means no work at all, >0 means some work.
+func (c *Connection) load() int {
+	return c.msgStore.Size()
+}
+
 // Close the connection to the server
 func (c *Connection) Close() error {
 	if !c.closing {

@@ -32,6 +32,14 @@ type messageStore struct {
 	messages map[uint64]*Message
 }
 
+// Size returns the number of messages in this store.
+func (s *messageStore) Size() int {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	return len(s.messages)
+}
+
 // Get returns the message with given id, or nil if not found
 func (s *messageStore) Get(id uint64) *Message {
 	s.mutex.RLock()
