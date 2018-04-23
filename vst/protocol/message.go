@@ -22,16 +22,41 @@
 
 package protocol
 
-import "sort"
+import (
+	"sort"
+	"sync/atomic"
+)
 
 // Message is what is send back to the client in response to a request.
 type Message struct {
 	ID   uint64
 	Data []byte
 
-	chunks         []chunk
-	numberOfChunks uint32
-	response       chan Message
+	chunks             []chunk
+	numberOfChunks     uint32
+	responseChanClosed int32
+	responseChan       chan Message
+}
+
+// closes the response channel if needed.
+func (m *Message) closeResponseChan() {
+	if atomic.CompareAndSwapInt32(&m.responseChanClosed, 0, 1) {
+		if ch := m.responseChan; ch != nil {
+			m.responseChan = nil
+			close(ch)
+		}
+	}
+}
+
+// notifyListener pushes itself onto its response channel and closes the response channel afterwards.
+func (m *Message) notifyListener() {
+	if atomic.CompareAndSwapInt32(&m.responseChanClosed, 0, 1) {
+		if ch := m.responseChan; ch != nil {
+			m.responseChan = nil
+			ch <- *m
+			close(ch)
+		}
+	}
 }
 
 // addChunk adds the given chunks to the list of chunks of the message.

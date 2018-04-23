@@ -66,8 +66,8 @@ func (s *messageStore) Add(id uint64) *Message {
 	}
 
 	m := &Message{
-		ID:       id,
-		response: make(chan Message),
+		ID:           id,
+		responseChan: make(chan Message),
 	}
 	s.messages[id] = m
 	return m
