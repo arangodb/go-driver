@@ -20,7 +20,7 @@
 // Author Ewout Prangsma
 //
 
-// +build !"go1.8"
+// +build !go1.8
 
 package driver
 
