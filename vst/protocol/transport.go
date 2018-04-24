@@ -100,13 +100,16 @@ func (c *Transport) CloseIdleConnections() (closed, remaining int) {
 	c.connMutex.Lock()
 	defer c.connMutex.Unlock()
 
-	for i, conn := range c.connections {
+	for i := 0; i < len(c.connections); {
+		conn := c.connections[i]
 		if conn.IsClosed() || conn.IsIdle(c.IdleConnTimeout) {
 			// Remove connection from list
 			c.connections = append(c.connections[:i], c.connections[i+1:]...)
 			// Close connection
 			go conn.Close()
 			closed++
+		} else {
+			i++
 		}
 	}
 
@@ -150,6 +153,7 @@ func (c *Transport) getConnection(ctx context.Context) (*Connection, error) {
 	// Invoke callback
 	if cb := c.onConnectionCreated; cb != nil {
 		if err := cb(ctx, conn); err != nil {
+			conn.Close()
 			return nil, driver.WithStack(err)
 		}
 	}
