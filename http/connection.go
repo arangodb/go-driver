@@ -43,6 +43,7 @@ import (
 
 const (
 	DefaultMaxIdleConnsPerHost = 64
+	DefaultConnLimit           = 32
 
 	keyRawResponse driver.ContextKey = "arangodb-rawResponse"
 	keyResponse    driver.ContextKey = "arangodb-response"
@@ -76,6 +77,10 @@ type ConnectionConfig struct {
 	cluster.ConnectionConfig
 	// ContentType specified type of content encoding to use.
 	ContentType driver.ContentType
+	// ConnLimit is the upper limit to the number of connections to a single server.
+	// The default is 32 (DefaultConnLimit).
+	// Set this value to -1 if you do not want any upper limit.
+	ConnLimit int
 }
 
 // NewConnection creates a new HTTP connection based on the given configuration settings.
@@ -95,6 +100,9 @@ func NewConnection(config ConnectionConfig) (driver.Connection, error) {
 
 // newHTTPConnection creates a new HTTP connection for a single endpoint and the remainder of the given configuration settings.
 func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connection, error) {
+	if config.ConnLimit == 0 {
+		config.ConnLimit = DefaultConnLimit
+	}
 	endpoint = util.FixupEndpointURLScheme(endpoint)
 	u, err := url.Parse(endpoint)
 	if err != nil {
@@ -154,10 +162,19 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 			}
 		}
 	}
+	var connPool chan int
+	if config.ConnLimit > 0 {
+		connPool = make(chan int, config.ConnLimit)
+		// Fill with available tokens
+		for i := 0; i < config.ConnLimit; i++ {
+			connPool <- i
+		}
+	}
 	c := &httpConnection{
 		endpoint:    *u,
 		contentType: config.ContentType,
 		client:      httpClient,
+		connPool:    connPool,
 	}
 	return c, nil
 }
@@ -167,6 +184,7 @@ type httpConnection struct {
 	endpoint    url.URL
 	contentType driver.ContentType
 	client      *http.Client
+	connPool    chan int
 }
 
 // String returns the endpoint as string
@@ -225,6 +243,22 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
+
+	// Block on too many concurrent connections
+	if c.connPool != nil {
+		select {
+		case t := <-c.connPool:
+			// Ok, we're allowed to continue
+			defer func() {
+				// Give back token
+				c.connPool <- t
+			}()
+		case <-rctx.Done():
+			// Context cancelled or expired
+			return nil, driver.WithStack(rctx.Err())
+		}
+	}
+
 	resp, err := c.client.Do(r)
 	if err != nil {
 		return nil, driver.WithStack(err)

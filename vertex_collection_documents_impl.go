@@ -102,7 +102,7 @@ func (c *vertexCollection) createDocument(ctx context.Context, document interfac
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
@@ -317,7 +317,7 @@ func (c *vertexCollection) replaceDocument(ctx context.Context, key string, docu
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(201, 202)); err != nil {
+	if err := resp.CheckStatus(201, 202); err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {
@@ -432,7 +432,7 @@ func (c *vertexCollection) removeDocument(ctx context.Context, key string) (Docu
 	if err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
-	if err := resp.CheckStatus(cs.okStatus(200, 202)); err != nil {
+	if err := resp.CheckStatus(200, 202); err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
 	}
 	if cs.Silent {

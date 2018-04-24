@@ -20,7 +20,7 @@
 // Author Ewout Prangsma
 //
 
-// +build "go1.8"
+// +build go1.8
 
 package driver
 
@@ -33,5 +33,6 @@ func pathEscape(s string) string {
 
 // pathUnescape unescapes the given value for use in a URL path.
 func pathUnescape(s string) string {
-	return url.PathUnescape(s)
+	r, _ := url.PathUnescape(s)
+	return r
 }
