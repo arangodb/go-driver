@@ -25,10 +25,15 @@ package agency
 import (
 	"context"
 	"time"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 // Agency provides API implemented by the ArangoDB agency.
 type Agency interface {
+	// Connection returns the connection used by this api.
+	Connection() driver.Connection
+
 	// ReadKey reads the value of a given key in the agency.
 	ReadKey(ctx context.Context, key []string, value interface{}) error
 

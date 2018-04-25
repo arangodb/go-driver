@@ -49,6 +49,11 @@ func NewAgency(conn driver.Connection) (Agency, error) {
 	}, nil
 }
 
+// Connection returns the connection used by this api.
+func (c *agency) Connection() driver.Connection {
+	return c.conn
+}
+
 // ReadKey reads the value of a given key in the agency.
 func (c *agency) ReadKey(ctx context.Context, key []string, value interface{}) error {
 	conn := c.conn
