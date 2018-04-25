@@ -24,7 +24,6 @@ package protocol
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 
 	driver "github.com/arangodb/go-driver"
@@ -45,7 +44,7 @@ func readChunkVST1_0(r io.Reader) (chunk, error) {
 
 	if (1 == (chunkX & 0x1)) && ((chunkX >> 1) > 1) {
 		// First chunk, numberOfChunks>1 -> read messageLength
-		fmt.Println("Reading maxHdr")
+		//fmt.Println("Reading maxHdr")
 		if err := readBytes(hdr[minChunkHeaderSize:], r); err != nil {
 			return chunk{}, driver.WithStack(err)
 		}

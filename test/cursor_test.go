@@ -232,7 +232,8 @@ func TestCreateCursor(t *testing.T) {
 // Test stream query cursors. The goroutines are technically only
 // relevant for the MMFiles engine, but don't hurt on rocksdb either
 func TestCreateStreamCursor(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 	c := createClientFromEnv(t, true)
 
 	version, err := c.Version(nil)
@@ -293,12 +294,10 @@ func TestCreateStreamCursor(t *testing.T) {
 		cursors = append(cursors, cursor)
 	}
 
-	out := make(chan bool)
-	defer close(out)
-
 	// start a write query on the same collection inbetween
 	// contrary to normal cursors which are executed right
 	// away this will block until all read cursors are resolved
+	testReady := make(chan bool)
 	go func() {
 		query = "FOR doc IN 1..5 LET y = SLEEP(0.01) INSERT {name:'Peter', age:0} INTO cursor_stream_test"
 		cursor, err := db.Query(ctx2, query, nil) // should not return immediately
@@ -316,7 +315,7 @@ func TestCreateStreamCursor(t *testing.T) {
 				t.Errorf("Failed to read document, err: %s", describe(err))
 			}
 		}
-		out <- true // signal write done
+		testReady <- true // signal write done
 	}()
 
 	readCount := 0
@@ -331,17 +330,22 @@ func TestCreateStreamCursor(t *testing.T) {
 				readCount++
 			}
 		}
-		out <- false // signal read done
+		testReady <- false // signal read done
 	}()
 
 	writeDone := false
 	readDone := false
+	deadline := time.Now().Add(time.Second * 30)
 	for {
-		done := <-out
-		if done {
-			writeDone = true
-		} else {
-			readDone = true
+		select {
+		case <-time.After(time.Until(deadline)):
+			t.Fatal("Timeout")
+		case v := <-testReady:
+			if v {
+				writeDone = true
+			} else {
+				readDone = true
+			}
 		}
 		// On MMFiles the read-cursors have to finish first
 		if writeDone && !readDone && info.Type == driver.EngineTypeMMFiles {
@@ -349,6 +353,7 @@ func TestCreateStreamCursor(t *testing.T) {
 		}
 
 		if writeDone && readDone {
+			close(testReady)
 			break
 		}
 	}
