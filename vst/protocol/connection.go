@@ -117,10 +117,7 @@ func (c *Connection) Close() error {
 			return driver.WithStack(err)
 		}
 		c.msgStore.ForEach(func(m *Message) {
-			if m.response != nil {
-				close(m.response)
-				m.response = nil
-			}
+			m.closeResponseChan()
 		})
 	}
 	return nil
@@ -146,6 +143,7 @@ func (c *Connection) Send(ctx context.Context, messageParts ...[]byte) (<-chan M
 	}
 	// Prepare for receiving a response
 	m := c.msgStore.Add(msgID)
+	responseChan := m.responseChan
 
 	//panic(fmt.Sprintf("chunks: %d, messageParts: %d, first: %s", len(chunks), len(messageParts), hex.EncodeToString(messageParts[0])))
 
@@ -174,7 +172,7 @@ func (c *Connection) Send(ctx context.Context, messageParts ...[]byte) (<-chan M
 		if err != nil {
 			return nil, driver.WithStack(err)
 		}
-		return m.response, nil
+		return responseChan, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
@@ -258,10 +256,7 @@ func (c *Connection) processChunk(chunk chunk) {
 		//fmt.Println("Chunk: " + hex.EncodeToString(chunk.Data) + "\nMessage: " + hex.EncodeToString(m.Data))
 
 		// Notify listener
-		if m.response != nil {
-			m.response <- *m
-			close(m.response)
-		}
+		m.notifyListener()
 	}
 }
 
