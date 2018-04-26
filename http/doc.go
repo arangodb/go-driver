@@ -21,13 +21,15 @@
 //
 
 /*
-Package jwt provides a helper function used to access ArangoDB
-servers using a JWT secret.
+Package http implements driver.Connection using an HTTP connection.
 
-Authenticating with a JWT secret results in "super-user" access
-to the database.
+This connection uses HTTP or HTTPS to connect to the ArangoDB database and
+encodes its content as JSON or Velocypack, depending on the value
+of the `ContentType` fields in the `http.ConnectionConfig`.
 
-To use a JWT secret to access your database, use code like this:
+Creating an Insecure Connection
+
+To create an HTTP connection, use code like this.
 
 	// Create an HTTP connection to the database
 	conn, err := http.NewConnection(http.ConnectionConfig{
@@ -37,21 +39,31 @@ To use a JWT secret to access your database, use code like this:
 		// Handle error
 	}
 
-	// Prepare authentication
-	hdr, err := CreateArangodJwtAuthorizationHeader("yourJWTSecret", "yourUniqueServerID")
-	if err != nil {
-		// Handle error
-	}
-	auth := driver.RawAuthentication(hdr)
+The resulting connection is used to create a client which you will use
+for normal database requests.
 
 	// Create a client
 	c, err := driver.NewClient(driver.ClientConfig{
-		Connection:     conn,
-		Authentication: auth,
+		Connection: conn,
+	})
+	if err != nil {
+		// Handle error
+	}
+
+Creating a Secure Connection
+
+To create a secure HTTPS connection, use code like this.
+
+	// Create an HTTPS connection to the database
+	conn, err := http.NewConnection(http.ConnectionConfig{
+		Endpoints: []string{"https://localhost:8529"},
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: trueWhenUsingNonPublicCertificates,
+		},
 	})
 	if err != nil {
 		// Handle error
 	}
 
 */
-package jwt
+package http
