@@ -23,7 +23,7 @@
 /*
 Package http implements driver.Connection using an HTTP connection.
 
-This connection uses HTTP or HTTPS to connect to the ArangoDB databaseand
+This connection uses HTTP or HTTPS to connect to the ArangoDB database and
 encodes its content as JSON or Velocypack, depending on the value
 of the `ContentType` fields in the `http.ConnectionConfig`.
 
@@ -52,7 +52,7 @@ for normal database requests.
 
 Creating a Secure Connection
 
-To create an secure HTTPS connection, use code like this.
+To create a secure HTTPS connection, use code like this.
 
 	// Create an HTTPS connection to the database
 	conn, err := http.NewConnection(http.ConnectionConfig{

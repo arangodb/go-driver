@@ -51,7 +51,7 @@ for normal database requests.
 
 Creating a Secure Connection
 
-To create an secure VST connection, use code like this.
+To create a secure VST connection, use code like this.
 
 	// Create a VST over TLS connection to the database
 	conn, err := vst.NewConnection(vst.ConnectionConfig{
