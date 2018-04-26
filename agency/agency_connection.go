@@ -143,11 +143,13 @@ func (c *agencyConnection) doOnce(ctx context.Context, req driver.Request) (driv
 			epReq := req.Clone()
 			result, err := epConn.Do(ctx, epReq)
 			if err == nil {
-				// Success
-				results <- result
-				// Cancel all other requests
-				cancel()
-				return
+				if err = isSuccess(result); err == nil {
+					// Success
+					results <- result
+					// Cancel all other requests
+					cancel()
+					return
+				}
 			}
 			// Check error
 			if statusCode, ok := isArangoError(err); ok {
@@ -159,6 +161,10 @@ func (c *agencyConnection) doOnce(ctx context.Context, req driver.Request) (driv
 					cancel()
 					return
 				}
+			}
+			// No permanent error. Are we the only endpoint?
+			if len(connections) == 1 {
+				errors <- driver.WithStack(err)
 			}
 			// No permanent error, try next agent
 		}(epConn)
@@ -178,6 +184,20 @@ func (c *agencyConnection) doOnce(ctx context.Context, req driver.Request) (driv
 		return nil, true, driver.WithStack(err)
 	}
 	return nil, false, driver.WithStack(fmt.Errorf("All %d servers responded with temporary failure", len(connections)))
+}
+
+func isSuccess(resp driver.Response) error {
+	if resp == nil {
+		return driver.WithStack(fmt.Errorf("Response is nil"))
+	}
+	statusCode := resp.StatusCode()
+	if statusCode >= 200 && statusCode < 300 {
+		return nil
+	}
+	return driver.ArangoError{
+		HasError: true,
+		Code:     statusCode,
+	}
 }
 
 // isArangoError checks if the given error is (or is caused by) an ArangoError.
@@ -224,7 +244,7 @@ func (c *agencyConnection) UpdateEndpoints(endpoints []string) error {
 	for i, ep := range endpoints {
 		config := c.config
 		config.Endpoints = []string{ep}
-		config.FailOnRedirect = true
+		config.DontFollowRedirect = true
 		httpConn, err := http.NewConnection(config)
 		if err != nil {
 			return driver.WithStack(err)
