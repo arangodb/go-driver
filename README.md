@@ -330,6 +330,15 @@ if err != nil {
 fmt.Printf("Created document with key '%s', revision '%s'\n", meta.Key, meta.Rev)
 ```
 
+If you want to set the &#95;key, override the json marshaller.
+
+```go
+
+type Keyed struct {
+    Key string `json:"_key"`
+}
+```
+
 ## Removing a document 
 
 ```go
