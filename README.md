@@ -8,7 +8,7 @@ API and implementation is considered stable, more protocols (Velocystream) are b
 
 This project contains the official Go driver for the [ArangoDB database](https://arangodb.com).
 
-- [Getting Started](GettingStarted/README.md)
-- [Example Requests](ExampleRequests/README.md)
-- [Connection Management](ConnectionManagement/README.md)
+- [Getting Started](docs/Drivers/GO/GettingStarted/README.md)
+- [Example Requests](docs/Drivers/GO/ExampleRequests/README.md)
+- [Connection Management](docs/Drivers/GO/ConnectionManagement/README.md)
 - [Reference](https://godoc.org/github.com/arangodb/go-driver)
