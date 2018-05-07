@@ -1,4 +1,4 @@
-# Example requests 
+# ArangoDB GO Driver - Example requests 
 
 ## Connecting to ArangoDB
 
