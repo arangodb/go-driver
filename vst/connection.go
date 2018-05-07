@@ -142,6 +142,9 @@ func (c *vstConnection) Do(ctx context.Context, req driver.Request) (driver.Resp
 
 // Do performs a given request, returning its response.
 func (c *vstConnection) do(ctx context.Context, req driver.Request, transport messageTransport) (driver.Response, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	vstReq, ok := req.(*vstRequest)
 	if !ok {
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a *vstRequest"})
@@ -158,10 +161,16 @@ func (c *vstConnection) do(ctx context.Context, req driver.Request, transport me
 	vstReq.WroteRequest()
 
 	// Wait for response
-	msg, ok := <-resp
-	if !ok {
-		// Message was cancelled / timeout
-		return nil, driver.WithStack(context.DeadlineExceeded)
+	var msg protocol.Message
+	select {
+	case msg, ok = <-resp:
+		if !ok {
+			// Message was canceled / timeout
+			return nil, driver.WithStack(context.DeadlineExceeded)
+		}
+	case <-ctx.Done():
+		// Context canceled while waiting here
+		return nil, driver.WithStack(ctx.Err())
 	}
 
 	//fmt.Printf("Received msg: %d\n", msg.ID)
