@@ -1,4 +1,4 @@
-# ArangoDB GO Driver.
+# ArangoDB GO Driver
 
 This project contains the official Go driver for the [ArangoDB database](https://arangodb.com).
 
