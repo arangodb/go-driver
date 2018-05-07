@@ -6,7 +6,6 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 [![Build Status](https://travis-ci.org/arangodb/go-driver.svg?branch=master)](https://travis-ci.org/arangodb/go-driver)
 [![GoDoc](https://godoc.org/github.com/arangodb/g-driver?status.svg)](http://godoc.org/github.com/arangodb/go-driver)
 
-API and implementation is considered stable.
 
 - [Getting Started](docs/Drivers/GO/GettingStarted/README.md)
 - [Example Requests](docs/Drivers/GO/ExampleRequests/README.md)
