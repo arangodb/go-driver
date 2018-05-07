@@ -1,8 +1,6 @@
 # ArangoDB GO Driver
 
-This project contains the official Go driver for the [ArangoDB database](https://arangodb.com).
-
-API and implementation is considered stable.
+The official [ArangoDB](https://arangodb.com) GO Driver
 
 - [Getting Started](GettingStarted/README.md)
 - [Example Requests](ExampleRequests/README.md)
