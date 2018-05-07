@@ -261,6 +261,7 @@ func TestCreateStreamCursor(t *testing.T) {
 			t.Fatalf("Expected success, got %s", describe(err))
 		}
 	}
+	t.Log("Completed inserting 10k docs")
 
 	const expectedResults int = 10 * 10000
 	query := "FOR doc IN cursor_stream_test RETURN doc"
@@ -270,14 +271,10 @@ func TestCreateStreamCursor(t *testing.T) {
 	// create a bunch of read-only cursors
 	for i := 0; i < 10; i++ {
 		cursor, err := db.Query(ctx2, query, nil)
-		if err == nil {
-			// Close upon exit of the function
-			defer cursor.Close()
-		}
 		if err != nil {
-			t.Errorf("Expected success in query %d (%s), got '%s'", i, query, describe(err))
-			continue
+			t.Fatalf("Expected success in query %d (%s), got '%s'", i, query, describe(err))
 		}
+		defer cursor.Close()
 		count := cursor.Count()
 		if count != 0 {
 			t.Errorf("Expected count of 0, got %d in query %d (%s)", count, i, query)
@@ -294,6 +291,8 @@ func TestCreateStreamCursor(t *testing.T) {
 		cursors = append(cursors, cursor)
 	}
 
+	t.Logf("Created %d cursors", len(cursors))
+
 	// start a write query on the same collection inbetween
 	// contrary to normal cursors which are executed right
 	// away this will block until all read cursors are resolved
@@ -301,18 +300,15 @@ func TestCreateStreamCursor(t *testing.T) {
 	go func() {
 		query = "FOR doc IN 1..5 LET y = SLEEP(0.01) INSERT {name:'Peter', age:0} INTO cursor_stream_test"
 		cursor, err := db.Query(ctx2, query, nil) // should not return immediately
-		if err == nil {
-			// Close upon exit of the function
-			defer cursor.Close()
-		}
 		if err != nil {
-			t.Errorf("Expected success in write-query %s, got '%s'", query, describe(err))
+			t.Fatalf("Expected success in write-query %s, got '%s'", query, describe(err))
 		}
+		defer cursor.Close()
 
 		for cursor.HasMore() {
 			var data interface{}
 			if _, err := cursor.ReadDocument(ctx2, &data); err != nil {
-				t.Errorf("Failed to read document, err: %s", describe(err))
+				t.Fatalf("Failed to read document, err: %s", describe(err))
 			}
 		}
 		testReady <- true // signal write done
@@ -325,7 +321,7 @@ func TestCreateStreamCursor(t *testing.T) {
 			for cursor.HasMore() {
 				var user UserDoc
 				if _, err := cursor.ReadDocument(ctx2, &user); err != nil {
-					t.Errorf("Failed to result document %d: %s", i, describe(err))
+					t.Fatalf("Failed to result document %d: %s", i, describe(err))
 				}
 				readCount++
 			}
@@ -335,10 +331,9 @@ func TestCreateStreamCursor(t *testing.T) {
 
 	writeDone := false
 	readDone := false
-	deadline := time.Now().Add(time.Second * 30)
 	for {
 		select {
-		case <-time.After(time.Until(deadline)):
+		case <-ctx.Done():
 			t.Fatal("Timeout")
 		case v := <-testReady:
 			if v {
