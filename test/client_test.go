@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"crypto/tls"
+	"log"
 	httplib "net/http"
 	"os"
 	"strconv"
@@ -33,6 +34,8 @@ import (
 	"testing"
 	"time"
 
+	_ "net/http/pprof"
+
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/vst"
@@ -40,7 +43,8 @@ import (
 )
 
 var (
-	logEndpointsOnce sync.Once
+	logEndpointsOnce   sync.Once
+	runPProfServerOnce sync.Once
 )
 
 // skipBelowVersion skips the test if the current server version is less than
@@ -152,6 +156,16 @@ func createConnectionFromEnv(t testEnv) driver.Connection {
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
 func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.Connection) driver.Client {
+	runPProfServerOnce.Do(func() {
+		if os.Getenv("TEST_PPROF") != "" {
+			go func() {
+				// Start pprof server on port 6060
+				// To use it in the test, run a command like:
+				// docker exec -it go-driver-test sh -c "apk add -U curl && curl http://localhost:6060/debug/pprof/goroutine?debug=1"
+				log.Println(httplib.ListenAndServe("localhost:6060", nil))
+			}()
+		}
+	})
 	conn := createConnectionFromEnv(t)
 	if len(connection) == 1 {
 		*connection[0] = conn
