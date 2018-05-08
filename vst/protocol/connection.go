@@ -45,6 +45,7 @@ type Connection struct {
 	writeMutex    sync.Mutex
 	closing       bool
 	lastActivity  time.Time
+	configured    int32 // Set to 1 after the configuration callback has finished without errors.
 }
 
 const (
@@ -126,6 +127,11 @@ func (c *Connection) Close() error {
 // IsClosed returns true when the connection is closed, false otherwise.
 func (c *Connection) IsClosed() bool {
 	return c.closing
+}
+
+// IsConfigured returns true when the configuration callback has finished on this connection, without errors.
+func (c *Connection) IsConfigured() bool {
+	return atomic.LoadInt32(&c.configured) == 1
 }
 
 // Send sends a message (consisting of given parts) to the server and returns

@@ -26,6 +26,7 @@ import (
 	"context"
 	"crypto/tls"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
@@ -158,6 +159,9 @@ func (c *Transport) getConnection(ctx context.Context) (*Connection, error) {
 		}
 	}
 
+	// Mark the connection as ready
+	atomic.StoreInt32(&conn.configured, 1)
+
 	return conn, nil
 }
 
@@ -174,12 +178,13 @@ func (c *Transport) getAvailableConnection() *Connection {
 	for _, conn := range c.connections {
 		if !conn.IsClosed() {
 			activeConnCount++
-			connLoad := conn.load()
-			if bestConn == nil || connLoad < bestConnLoad {
-				bestConn = conn
-				bestConnLoad = connLoad
+			if conn.IsConfigured() {
+				connLoad := conn.load()
+				if bestConn == nil || connLoad < bestConnLoad {
+					bestConn = conn
+					bestConnLoad = connLoad
+				}
 			}
-
 		}
 	}
 
