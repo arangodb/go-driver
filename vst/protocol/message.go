@@ -24,6 +24,7 @@ package protocol
 
 import (
 	"sort"
+	"sync"
 	"sync/atomic"
 )
 
@@ -32,6 +33,7 @@ type Message struct {
 	ID   uint64
 	Data []byte
 
+	chunksMutex        sync.Mutex
 	chunks             []chunk
 	numberOfChunks     uint32
 	responseChanClosed int32
@@ -62,6 +64,9 @@ func (m *Message) notifyListener() {
 // addChunk adds the given chunks to the list of chunks of the message.
 // If the given chunk is the first chunk, the expected number of chunks is recorded.
 func (m *Message) addChunk(c chunk) {
+	m.chunksMutex.Lock()
+	defer m.chunksMutex.Unlock()
+
 	m.chunks = append(m.chunks, c)
 	if c.IsFirst() {
 		m.numberOfChunks = c.NumberOfChunks()
@@ -73,6 +78,9 @@ func (m *Message) addChunk(c chunk) {
 // is returned.
 // If all chunks are available, the Data field is build and set and true is returned.
 func (m *Message) assemble() bool {
+	m.chunksMutex.Lock()
+	defer m.chunksMutex.Unlock()
+
 	if m.Data != nil {
 		// Already assembled
 		return true
