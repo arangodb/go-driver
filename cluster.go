@@ -45,6 +45,11 @@ type Cluster interface {
 
 	// IsCleanedOut checks if the dbserver with given ID has been cleaned out.
 	IsCleanedOut(ctx context.Context, serverID string) (bool, error)
+
+	// RemoveServer is a low-level option to remove a server from a cluster.
+	// This function is suitable for servers of type coordinator or dbserver.
+	// The use of `ClientServerAdmin.Shutdown` is highly recommended above this function.
+	RemoveServer(ctx context.Context, serverID ServerID) error
 }
 
 // ServerID identifies an arangod server in a cluster.
