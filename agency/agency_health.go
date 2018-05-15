@@ -34,7 +34,8 @@ import (
 )
 
 const (
-	maxAgentResponseTime = time.Second * 10
+	maxAgentResponseTime                   = time.Second * 10
+	keyAllowNoLeader     driver.ContextKey = "arangodb-agency-allow-no-leader"
 )
 
 // agentStatus is a helper structure used in AreAgentsHealthy.
@@ -42,6 +43,21 @@ type agentStatus struct {
 	IsLeader       bool
 	LeaderEndpoint string
 	IsResponding   bool
+}
+
+// WithAllowNoLeader is used to configure a context to make AreAgentsHealthy
+// accept the situation where it finds 0 leaders.
+func WithAllowNoLeader(parent context.Context) context.Context {
+	if parent == nil {
+		parent = context.Background()
+	}
+	return context.WithValue(parent, keyAllowNoLeader, true)
+}
+
+// hasAllowNoLeader returns true when the given context was
+// prepared with WithAllowNoLeader.
+func hasAllowNoLeader(ctx context.Context) bool {
+	return ctx != nil && ctx.Value(keyAllowNoLeader) != nil
 }
 
 // AreAgentsHealthy performs a health check on all given agents.
@@ -101,7 +117,7 @@ func AreAgentsHealthy(ctx context.Context, clients []driver.Connection) error {
 			}
 		}
 	}
-	if noLeaders != 1 {
+	if noLeaders != 1 && !hasAllowNoLeader(ctx) {
 		return driver.WithStack(fmt.Errorf("Unexpected number of agency leaders: %d", noLeaders))
 	}
 	return nil
