@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"path"
 	"reflect"
 	"sync"
@@ -169,7 +170,11 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 	resultPtr := c.Result[index]
 	if resultPtr == nil {
 		// Got NULL result
-		e := reflect.ValueOf(result).Elem()
+		rv := reflect.ValueOf(result)
+		if rv.Kind() != reflect.Ptr || rv.IsNil() {
+			return DocumentMeta{}, WithStack(&json.InvalidUnmarshalError{Type: reflect.TypeOf(result)})
+		}
+		e := rv.Elem()
 		e.Set(reflect.Zero(e.Type()))
 	} else {
 		if err := c.conn.Unmarshal(*resultPtr, &meta); err != nil {
