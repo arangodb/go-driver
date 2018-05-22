@@ -88,6 +88,7 @@ func readBytes(dst []byte, r io.Reader) error {
 	offset := 0
 	remaining := len(dst)
 	if remaining == 0 {
+		// Nothing left to read
 		return nil
 	}
 	for {
