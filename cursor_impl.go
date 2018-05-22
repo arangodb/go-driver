@@ -25,6 +25,7 @@ package driver
 import (
 	"context"
 	"path"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -165,12 +166,19 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 	}
 	c.resultIndex++
 	var meta DocumentMeta
-	if err := c.conn.Unmarshal(*c.Result[index], &meta); err != nil {
-		// If a cursor returns something other than a document, this will fail.
-		// Just ignore it.
-	}
-	if err := c.conn.Unmarshal(*c.Result[index], result); err != nil {
-		return DocumentMeta{}, WithStack(err)
+	resultPtr := c.Result[index]
+	if resultPtr == nil {
+		// Got NULL result
+		e := reflect.ValueOf(result).Elem()
+		e.Set(reflect.Zero(e.Type()))
+	} else {
+		if err := c.conn.Unmarshal(*resultPtr, &meta); err != nil {
+			// If a cursor returns something other than a document, this will fail.
+			// Just ignore it.
+		}
+		if err := c.conn.Unmarshal(*resultPtr, result); err != nil {
+			return DocumentMeta{}, WithStack(err)
+		}
 	}
 	return meta, nil
 }
