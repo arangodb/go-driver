@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -64,7 +63,9 @@ func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, err
 	var conn net.Conn
 	var err error
 	if tlsConfig != nil {
-		conn, err = tls.Dial("tcp", addr, tlsConfig)
+		tlsConfigCopy := *tlsConfig
+		tlsConfigCopy.MaxVersion = tls.VersionTLS10
+		conn, err = tls.Dial("tcp", addr, &tlsConfigCopy)
 	} else {
 		conn, err = net.Dial("tcp", addr)
 	}
@@ -235,11 +236,7 @@ func (c *Connection) readChunkLoop() {
 					c.Close()
 				} else {
 					recentErrors++
-					var nestedNetErr error
-					if n, ok := err.(*net.OpError); ok {
-						nestedNetErr = n.Err
-					}
-					fmt.Printf("readChunkLoop error: %#v %#v %#v %s (goodChunks=%d)\n", err, nestedNetErr, reflect.TypeOf(nestedNetErr).Name(), nestedNetErr, goodChunks)
+					fmt.Printf("readChunkLoop error: %#v (goodChunks=%d)\n", err, goodChunks)
 					if recentErrors > maxRecentErrors {
 						// When we get to many errors in a row, close this connection
 						c.Close()
