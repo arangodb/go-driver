@@ -63,7 +63,7 @@ func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, err
 	var conn net.Conn
 	var err error
 	if tlsConfig != nil {
-		if tlsConfig.MaxVersion == 0 {
+		if tlsConfig.MaxVersion == 0 || tlsConfig.MaxVersion > tls.VersionTLS10 {
 			tlsConfigCopy := *tlsConfig
 			tlsConfigCopy.MaxVersion = tls.VersionTLS10
 			tlsConfig = &tlsConfigCopy
