@@ -257,35 +257,69 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
 	}
 
-	// wait for change to propagate (TODO add a check to the coordinators)
-	time.Sleep(time.Second * 5)
+	// wait for change to propagate
+	{
+		deadline := time.Now().Add(time.Minute)
+		for {
+			// Try to create document in collection, should fail because there are no collection grants for this user and/or collection.
+			if _, err := authCol.CreateDocument(nil, Book{Title: "I cannot write"}); err == nil {
+				if time.Now().Before(deadline) {
+					t.Logf("Expected failure, got %s, trying again...", describe(err))
+					time.Sleep(time.Second * 2)
+					continue
+				}
+				t.Errorf("Expected failure, got %s", describe(err))
+			}
 
-	// Try to create document in collection, should fail because there are no collection grants for this user and/or collection.
-	if _, err := authCol.CreateDocument(nil, Book{Title: "I cannot write"}); !driver.IsForbidden(err) {
-		t.Errorf("Expected failure, got %s", describe(err))
-	}
-
-	// Try to create collection, should fail
-	if _, err := authDb.CreateCollection(nil, "books_def_ro_db", nil); !driver.IsForbidden(err) {
-		t.Errorf("Expected failure, got %s", describe(err))
+			// Try to create collection, should fail
+			if _, err := authDb.CreateCollection(nil, "books_def_ro_db", nil); err == nil {
+				t.Errorf("Expected failure, got %s", describe(err))
+			}
+			break
+		}
 	}
 
 	// Grant no access to default database
 	if err := u.SetDatabaseAccess(nil, nil, driver.GrantNone); err != nil {
 		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
 	}
-	// Try to create collection, should fail
-	if _, err := authDb.CreateCollection(nil, "books_def_none_db", nil); !driver.IsUnauthorized(err) {
-		t.Errorf("Expected failure, got %s", describe(err))
+
+	// wait for change to propagate
+	{
+		deadline := time.Now().Add(time.Minute)
+		for {
+			// Try to create collection, should fail
+			if _, err := authDb.CreateCollection(nil, "books_def_none_db", nil); err == nil {
+				if time.Now().Before(deadline) {
+					t.Logf("Expected failure, got %s, trying again...", describe(err))
+					time.Sleep(time.Second * 2)
+					continue
+				}
+				t.Errorf("Expected failure, got %s", describe(err))
+			}
+			break
+		}
 	}
 
 	// Remove default database access, should fallback to "no-access" then
 	if err := u.RemoveDatabaseAccess(nil, nil); err != nil {
 		t.Fatalf("RemoveDatabaseAccess failed: %s", describe(err))
 	}
-	// Try to create collection, should fail
-	if _, err := authDb.CreateCollection(nil, "books_def_star_db", nil); !driver.IsUnauthorized(err) {
-		t.Errorf("Expected failure, got %s", describe(err))
+	// wait for change to propagate
+	{
+		deadline := time.Now().Add(time.Minute)
+		for {
+			// Try to create collection, should fail
+			if _, err := authDb.CreateCollection(nil, "books_def_star_db", nil); err == nil {
+				if time.Now().Before(deadline) {
+					t.Logf("Expected failure, got %s, trying again...", describe(err))
+					time.Sleep(time.Second * 2)
+					continue
+				}
+				t.Errorf("Expected failure, got %s", describe(err))
+			}
+			break
+		}
 	}
 }
 
