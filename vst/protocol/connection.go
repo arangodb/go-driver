@@ -209,6 +209,7 @@ func (c *Connection) sendChunk(deadline time.Time, chunk chunk) error {
 // readChunkLoop reads chunks from the connection until it is closed.
 func (c *Connection) readChunkLoop() {
 	recentErrors := 0
+	goodChunks := 0
 	for {
 		if c.IsClosed() {
 			// Closing, we're done
@@ -233,7 +234,11 @@ func (c *Connection) readChunkLoop() {
 					c.Close()
 				} else {
 					recentErrors++
-					fmt.Printf("readChunkLoop error: %#v\n", err)
+					var nestedNetErr error
+					if n, ok := err.(*net.OpError); ok {
+						nestedNetErr = n.Err
+					}
+					fmt.Printf("readChunkLoop error: %#v %#v (goodChunks=%d)\n", err, nestedNetErr, goodChunks)
 					if recentErrors > maxRecentErrors {
 						// When we get to many errors in a row, close this connection
 						c.Close()
@@ -246,6 +251,7 @@ func (c *Connection) readChunkLoop() {
 		} else {
 			// Process chunk
 			recentErrors = 0
+			goodChunks++
 			go c.processChunk(chunk)
 		}
 	}
