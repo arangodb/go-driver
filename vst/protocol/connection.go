@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -238,7 +239,7 @@ func (c *Connection) readChunkLoop() {
 					if n, ok := err.(*net.OpError); ok {
 						nestedNetErr = n.Err
 					}
-					fmt.Printf("readChunkLoop error: %#v %#v (goodChunks=%d)\n", err, nestedNetErr, goodChunks)
+					fmt.Printf("readChunkLoop error: %#v %#v %#v (goodChunks=%d)\n", err, nestedNetErr, reflect.TypeOf(nestedNetErr), goodChunks)
 					if recentErrors > maxRecentErrors {
 						// When we get to many errors in a row, close this connection
 						c.Close()
