@@ -60,18 +60,8 @@ var (
 
 // dial opens a new connection to the server on the given address.
 func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, error) {
-	var conn net.Conn
-	var err error
-	if tlsConfig != nil {
-		if tlsConfig.MaxVersion == 0 || tlsConfig.MaxVersion > tls.VersionTLS10 {
-			tlsConfigCopy := *tlsConfig
-			tlsConfigCopy.MaxVersion = tls.VersionTLS10
-			tlsConfig = &tlsConfigCopy
-		}
-		conn, err = tls.Dial("tcp", addr, tlsConfig)
-	} else {
-		conn, err = net.Dial("tcp", addr)
-	}
+	// Create TCP connection
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -80,6 +70,14 @@ func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, err
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
 		tcpConn.SetKeepAlive(true)
 		tcpConn.SetNoDelay(true)
+	}
+
+	// Add TLS if needed
+	if tlsConfig != nil {
+		tlsConfig = tlsConfig.Clone()
+		tlsConfig.MaxVersion = tls.VersionTLS10
+		tlsConn := tls.Client(conn, tlsConfig)
+		conn = tlsConn
 	}
 
 	// Send protocol header
