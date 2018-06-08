@@ -74,8 +74,6 @@ func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, err
 
 	// Add TLS if needed
 	if tlsConfig != nil {
-		tlsConfig = tlsConfig.Clone()
-		tlsConfig.MaxVersion = tls.VersionTLS10
 		tlsConn := tls.Client(conn, tlsConfig)
 		conn = tlsConn
 	}
