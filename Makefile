@@ -58,13 +58,9 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 	ARANGOARGS := --server.jwt-secret=/jwtsecret
 endif
 
-ifeq ("$(TEST_MODE)", "single")
-	TEST_NET := container:$(DBCONTAINER)
-	TEST_ENDPOINTS := http://localhost:8529
-else 
-	TEST_NET := container:$(TESTCONTAINER)-ns
-	TEST_ENDPOINTS := http://localhost:7001
-	TESTS := $(REPOPATH)/test
+TEST_NET := container:$(TESTCONTAINER)-ns
+TEST_ENDPOINTS := http://localhost:7001
+TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
 	TEST_AUTHENTICATION := basic:root:
@@ -76,7 +72,6 @@ endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
 	TEST_ENDPOINTS = https://localhost:7001
-endif
 endif
 
 ifeq ("$(TEST_CONNECTION)", "vst")
@@ -133,13 +128,13 @@ run-tests-http: $(GOBUILDDIR)
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
 
-run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth
+run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth run-tests-single-json-ssl
 
-run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-no-auth
+run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-no-auth run-tests-single-vpack-ssl
 
-run-tests-single-vst-1.0: run-tests-single-vst-1.0-with-auth run-tests-single-vst-1.0-no-auth
+run-tests-single-vst-1.0: run-tests-single-vst-1.0-with-auth run-tests-single-vst-1.0-no-auth run-tests-single-vst-1.0-ssl
 
-run-tests-single-vst-1.1: run-tests-single-vst-1.1-with-auth run-tests-single-vst-1.1-jwt-auth run-tests-single-vst-1.1-no-auth
+run-tests-single-vst-1.1: run-tests-single-vst-1.1-with-auth run-tests-single-vst-1.1-jwt-auth run-tests-single-vst-1.1-no-auth run-tests-single-vst-1.1-ssl run-tests-single-vst-1.1-jwt-ssl
 
 run-tests-single-json-no-auth:
 	@echo "Single server, HTTP+JSON, no authentication"
@@ -176,6 +171,26 @@ run-tests-single-vst-1.1-with-auth:
 run-tests-single-vst-1.1-jwt-auth:
 	@echo "Single server, Velocystream 1.1, JWT authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
+run-tests-single-json-ssl:
+	@echo "Single server, HTTP+JSON, with authentication, SSL"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONTENT_TYPE="json" __run_tests
+
+run-tests-single-vpack-ssl:
+	@echo "Single server, HTTP+Velocypack, with authentication, SSL"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONTENT_TYPE="vpack" __run_tests
+
+run-tests-single-vst-1.0-ssl:
+	@echo "Single server, Velocystream 1.0, with authentication, SSL"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
+
+run-tests-single-vst-1.1-ssl:
+	@echo "Single server, Velocystream 1.1, with authentication, SSL"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
+run-tests-single-vst-1.1-jwt-ssl:
+	@echo "Single server, Velocystream 1.1, JWT authentication, SSL"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # ResilientSingle server tests 
 run-tests-resilientsingle: run-tests-resilientsingle-json run-tests-resilientsingle-vpack run-tests-resilientsingle-vst-1.0 $(VST11_RESILIENTSINGLE_TESTS)
@@ -310,25 +325,14 @@ else
 ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
 endif
-ifeq ("$(TEST_MODE)", "single")
-	@-docker rm -f -v $(DBCONTAINER) $(TESTCONTAINER) &> /dev/null
-	docker run -d --name $(DBCONTAINER) \
-		$(ARANGOENV) $(ARANGOVOL) \
-		$(ARANGODB) --log.level requests=debug --log.use-microtime true $(ARANGOARGS)
-else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
-endif
 endif
 
 __test_cleanup:
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
 ifndef TEST_ENDPOINTS_OVERRIDE
-ifeq ("$(TEST_MODE)", "single")
-	@docker rm -f -v $(DBCONTAINER) &> /dev/null
-else
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) $(ROOTDIR)/test/cluster.sh cleanup
-endif
 endif
 	@sleep 3
 
