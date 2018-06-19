@@ -43,33 +43,89 @@ func (c *edgeCollection) DocumentExists(ctx context.Context, key string) (bool, 
 // The document data is stored into result, the document meta data is returned.
 // If no document exists with given key, a NotFoundError is returned.
 func (c *edgeCollection) ReadDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, error) {
-	if err := validateKey(key); err != nil {
+	meta, _, err := c.readDocument(ctx, key, result)
+	if err != nil {
 		return DocumentMeta{}, WithStack(err)
+	}
+	return meta, nil
+}
+
+func (c *edgeCollection) readDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, contextSettings, error) {
+	if err := validateKey(key); err != nil {
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	escapedKey := pathEscape(key)
 	req, err := c.conn.NewRequest("GET", path.Join(c.relPath(), escapedKey))
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
+	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	if err := resp.CheckStatus(200); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	// Parse metadata
 	var meta DocumentMeta
 	if err := resp.ParseBody("edge", &meta); err != nil {
-		return DocumentMeta{}, WithStack(err)
+		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
 	// Parse result
 	if result != nil {
 		if err := resp.ParseBody("edge", result); err != nil {
-			return meta, WithStack(err)
+			return meta, contextSettings{}, WithStack(err)
 		}
 	}
-	return meta, nil
+	return meta, cs, nil
+}
+
+// ReadDocuments reads multiple documents with given keys from the collection.
+// The documents data is stored into elements of the given results slice,
+// the documents meta data is returned.
+// If no document exists with a given key, a NotFoundError is returned at its errors index.
+func (c *edgeCollection) ReadDocuments(ctx context.Context, keys []string, results interface{}) (DocumentMetaSlice, ErrorSlice, error) {
+	resultsVal := reflect.ValueOf(results)
+	switch resultsVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("results data must be of kind Array, got %s", resultsVal.Kind())})
+	}
+	if keys == nil {
+		return nil, nil, WithStack(InvalidArgumentError{Message: "keys nil"})
+	}
+	resultCount := resultsVal.Len()
+	if len(keys) != resultCount {
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %d", resultCount, len(keys))})
+	}
+	for _, key := range keys {
+		if err := validateKey(key); err != nil {
+			return nil, nil, WithStack(err)
+		}
+	}
+	metas := make(DocumentMetaSlice, resultCount)
+	errs := make(ErrorSlice, resultCount)
+	silent := false
+	for i := 0; i < resultCount; i++ {
+		result := resultsVal.Index(i).Addr()
+		ctx, err := withDocumentAt(ctx, i)
+		if err != nil {
+			return nil, nil, WithStack(err)
+		}
+		key := keys[i]
+		meta, cs, err := c.readDocument(ctx, key, result.Interface())
+		if cs.Silent {
+			silent = true
+		} else {
+			metas[i], errs[i] = meta, err
+		}
+	}
+	if silent {
+		return nil, nil, nil
+	}
+	return metas, errs, nil
 }
 
 // CreateDocument creates a single document in the collection.

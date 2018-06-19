@@ -80,6 +80,55 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	return meta, nil
 }
 
+// ReadDocuments reads multiple documents with given keys from the collection.
+// The documents data is stored into elements of the given results slice,
+// the documents meta data is returned.
+// If no document exists with a given key, a NotFoundError is returned at its errors index.
+func (c *collection) ReadDocuments(ctx context.Context, keys []string, results interface{}) (DocumentMetaSlice, ErrorSlice, error) {
+	resultsVal := reflect.ValueOf(results)
+	switch resultsVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("results data must be of kind Array, got %s", resultsVal.Kind())})
+	}
+	if keys == nil {
+		return nil, nil, WithStack(InvalidArgumentError{Message: "keys nil"})
+	}
+	resultCount := resultsVal.Len()
+	if len(keys) != resultCount {
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %d", resultCount, len(keys))})
+	}
+	for _, key := range keys {
+		if err := validateKey(key); err != nil {
+			return nil, nil, WithStack(err)
+		}
+	}
+	req, err := c.conn.NewRequest("PUT", c.relPath("document"))
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	req = req.SetQuery("onlyget", "1")
+	cs := applyContextSettings(ctx, req)
+	if _, err := req.SetBodyArray(keys, nil); err != nil {
+		return nil, nil, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return nil, nil, WithStack(err)
+	}
+	// Parse response array
+	metas, errs, err := parseResponseArray(resp, resultCount, cs, results)
+	if err != nil {
+		return nil, nil, WithStack(err)
+	}
+	return metas, errs, nil
+
+}
+
 // CreateDocument creates a single document in the collection.
 // The document data is loaded from the given document, the document meta data is returned.
 // If the document data already contains a `_key` field, this will be used as key of the new document,
@@ -163,7 +212,7 @@ func (c *collection) CreateDocuments(ctx context.Context, documents interface{})
 		return nil, nil, nil
 	}
 	// Parse response array
-	metas, errs, err := parseResponseArray(resp, documentCount, cs)
+	metas, errs, err := parseResponseArray(resp, documentCount, cs, nil)
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
@@ -272,7 +321,7 @@ func (c *collection) UpdateDocuments(ctx context.Context, keys []string, updates
 		return nil, nil, nil
 	}
 	// Parse response array
-	metas, errs, err := parseResponseArray(resp, updateCount, cs)
+	metas, errs, err := parseResponseArray(resp, updateCount, cs, nil)
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
@@ -381,7 +430,7 @@ func (c *collection) ReplaceDocuments(ctx context.Context, keys []string, docume
 		return nil, nil, nil
 	}
 	// Parse response array
-	metas, errs, err := parseResponseArray(resp, documentCount, cs)
+	metas, errs, err := parseResponseArray(resp, documentCount, cs, nil)
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
@@ -464,7 +513,7 @@ func (c *collection) RemoveDocuments(ctx context.Context, keys []string) (Docume
 		return nil, nil, nil
 	}
 	// Parse response array
-	metas, errs, err := parseResponseArray(resp, keyCount, cs)
+	metas, errs, err := parseResponseArray(resp, keyCount, cs, nil)
 	if err != nil {
 		return nil, nil, WithStack(err)
 	}
@@ -572,7 +621,7 @@ func createMergeArray(keys, revs []string) ([]map[string]interface{}, error) {
 }
 
 // parseResponseArray parses an array response in the given response
-func parseResponseArray(resp Response, count int, cs contextSettings) (DocumentMetaSlice, ErrorSlice, error) {
+func parseResponseArray(resp Response, count int, cs contextSettings, results interface{}) (DocumentMetaSlice, ErrorSlice, error) {
 	resps, err := resp.ParseArrayBody()
 	if err != nil {
 		return nil, nil, WithStack(err)
@@ -581,6 +630,7 @@ func parseResponseArray(resp Response, count int, cs contextSettings) (DocumentM
 	errs := make(ErrorSlice, count)
 	returnOldVal := reflect.ValueOf(cs.ReturnOld)
 	returnNewVal := reflect.ValueOf(cs.ReturnNew)
+	resultsVal := reflect.ValueOf(results)
 	for i := 0; i < count; i++ {
 		resp := resps[i]
 		var meta DocumentMeta
@@ -604,6 +654,13 @@ func parseResponseArray(resp Response, count int, cs contextSettings) (DocumentM
 					if err := resp.ParseBody("new", returnNewEntryVal.Interface()); err != nil {
 						errs[i] = err
 					}
+				}
+			}
+			if results != nil {
+				// Parse compare result document
+				resultsEntryVal := resultsVal.Index(i).Addr()
+				if err := resp.ParseBody("", resultsEntryVal.Interface()); err != nil {
+					errs[i] = err
 				}
 			}
 		}

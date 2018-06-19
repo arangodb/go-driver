@@ -34,6 +34,12 @@ type CollectionDocuments interface {
 	// If no document exists with given key, a NotFoundError is returned.
 	ReadDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, error)
 
+	// ReadDocuments reads multiple documents with given keys from the collection.
+	// The documents data is stored into elements of the given results slice,
+	// the documents meta data is returned.
+	// If no document exists with a given key, a NotFoundError is returned at its errors index.
+	ReadDocuments(ctx context.Context, keys []string, results interface{}) (DocumentMetaSlice, ErrorSlice, error)
+
 	// CreateDocument creates a single document in the collection.
 	// The document data is loaded from the given document, the document meta data is returned.
 	// If the document data already contains a `_key` field, this will be used as key of the new document,
