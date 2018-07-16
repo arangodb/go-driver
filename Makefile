@@ -113,6 +113,17 @@ $(GOBUILDDIR):
 	GOPATH=$(GOBUILDDIR) go get github.com/arangodb/go-velocypack
 	GOPATH=$(GOBUILDDIR) go get github.com/dgrijalva/jwt-go
 
+.PHONY: changelog
+changelog:
+	@docker run --rm \
+		-e CHANGELOG_GITHUB_TOKEN=$(shell cat ~/.arangodb/github-token) \
+		-v "$(ROOTDIR)":/usr/local/src/your-app \
+		ferrarimarco/github-changelog-generator \
+		--user arangodb \
+		--project go-driver \
+		--no-author \
+		--unreleased-label "Master"
+
 run-tests: run-tests-http run-tests-single run-tests-resilientsingle run-tests-cluster
 
 # Tests of HTTP package 
