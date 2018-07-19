@@ -23,6 +23,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -273,8 +274,7 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 	}
 
 	// Read response body
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := readBody(resp)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -317,6 +317,29 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		}
 	}
 	return httpResp, nil
+}
+
+// readBody reads the body of the given response into a byte slice.
+func readBody(resp *http.Response) ([]byte, error) {
+	defer resp.Body.Close()
+	contentLength := resp.ContentLength
+	if contentLength < 0 {
+		// Don't know the content length, do it the slowest way
+		result, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, driver.WithStack(err)
+		}
+		return result, nil
+	}
+	buf := &bytes.Buffer{}
+	if int64(int(contentLength)) == contentLength {
+		// contentLength is an int64. If we can safely cast to int, use Grow.
+		buf.Grow(int(contentLength))
+	}
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		return nil, driver.WithStack(err)
+	}
+	return buf.Bytes(), nil
 }
 
 // Unmarshal unmarshals the given raw object into the given result interface.
