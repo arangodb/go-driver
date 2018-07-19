@@ -183,7 +183,7 @@ func (c *vstConnection) do(ctx context.Context, req driver.Request, transport me
 		}
 	}
 
-	vstResp, err := newResponse(msg, c.endpoint.String(), rawResponse)
+	vstResp, err := newResponse(msg.Data, c.endpoint.String(), rawResponse)
 	if err != nil {
 		fmt.Printf("Cannot decode msg %d: %#v\n", msg.ID, err)
 		return nil, driver.WithStack(err)

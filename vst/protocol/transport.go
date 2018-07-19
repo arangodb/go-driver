@@ -228,7 +228,7 @@ func (c *Transport) createConnection() (*Connection, error) {
 func (c *Transport) cleanup() {
 	for {
 		time.Sleep(c.IdleConnTimeout / 10)
-		remaining, _ := c.CloseIdleConnections()
+		_, remaining := c.CloseIdleConnections()
 		if remaining == 0 {
 			return
 		}

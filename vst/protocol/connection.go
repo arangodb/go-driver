@@ -230,7 +230,7 @@ func (c *Connection) readChunkLoop() {
 		if err != nil {
 			if !c.IsClosed() {
 				// Handle error
-				if err == io.EOF {
+				if driver.Cause(err) == io.EOF {
 					// Connection closed
 					c.Close()
 				} else {
@@ -286,5 +286,5 @@ func (c *Connection) updateLastActivity() {
 
 // IsIdle returns true when the last activity was more than the given timeout ago.
 func (c *Connection) IsIdle(idleTimeout time.Duration) bool {
-	return time.Since(c.lastActivity) > idleTimeout
+	return time.Since(c.lastActivity) > idleTimeout && c.msgStore.Size() == 0
 }
