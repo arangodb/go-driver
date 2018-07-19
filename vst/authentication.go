@@ -141,7 +141,7 @@ func (a *vstAuthenticationImpl) PrepareFunc(vstConn *vstConnection) func(ctx con
 
 		// Wait for response
 		m := <-respChan
-		resp, err := newResponse(m, "", nil)
+		resp, err := newResponse(m.Data, "", nil)
 		if err != nil {
 			return driver.WithStack(err)
 		}

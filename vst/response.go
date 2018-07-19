@@ -28,7 +28,6 @@ import (
 	"sync"
 
 	driver "github.com/arangodb/go-driver"
-	"github.com/arangodb/go-driver/vst/protocol"
 	velocypack "github.com/arangodb/go-velocypack"
 )
 
@@ -46,9 +45,9 @@ type vstResponse struct {
 }
 
 // newResponse builds a vstResponse from given message.
-func newResponse(msg protocol.Message, endpoint string, rawResponse *[]byte) (*vstResponse, error) {
+func newResponse(msgData []byte, endpoint string, rawResponse *[]byte) (*vstResponse, error) {
 	// Decode header
-	hdr := velocypack.Slice(msg.Data)
+	hdr := velocypack.Slice(msgData)
 	if err := hdr.AssertType(velocypack.Array); err != nil {
 		return nil, driver.WithStack(err)
 	}
