@@ -37,6 +37,7 @@
 
 **Merged pull requests:**
 
+- Properly closing idle VST connections [\#139](https://github.com/arangodb/go-driver/pull/139)
 - Added Collection.ReadDocuments [\#133](https://github.com/arangodb/go-driver/pull/133)
 - Added support for fetching job ID in CleanoutServer [\#131](https://github.com/arangodb/go-driver/pull/131)
 - Exclude high load test on VST+3.2 [\#129](https://github.com/arangodb/go-driver/pull/129)
