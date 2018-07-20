@@ -49,7 +49,7 @@ type CreateGraphOptions struct {
 	// EdgeDefinitions is an array of edge definitions for the graph.
 	EdgeDefinitions []EdgeDefinition
 	// IsSmart defines if the created graph should be smart.
-	// This only has effect in Enterprise version.
+	// This only has effect in Enterprise Edition.
 	IsSmart bool
 	// SmartGraphAttribute is the attribute name that is used to smartly shard the vertices of a graph.
 	// Every vertex in this Graph has to have this attribute.
