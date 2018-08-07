@@ -131,7 +131,7 @@ type queryRequest struct {
 		// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute, telling the optimizer to include or exclude specific rules.
 		// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +. There is also a pseudo-rule all, which will match all optimizer rules.
 		OptimizerRules string `json:"optimizer.rules,omitempty"`
-		// This enterprise parameter allows to configure how long a DBServer will have time to bring the satellite collections
+		// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
 		// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
 		SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
 		// if set to true and the query contains a LIMIT clause, then the result will have an extra attribute with the sub-attributes
