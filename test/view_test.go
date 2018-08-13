@@ -156,7 +156,7 @@ func TestGetArangoSearchView(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
-	ensureCollection(ctx, db, "someCol", nil, t)
+	col := ensureCollection(ctx, db, "someCol", nil, t)
 	name := "test_get_asview"
 	opts := &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
@@ -186,6 +186,15 @@ func TestGetArangoSearchView(t *testing.T) {
 	}
 	if len(p.Links) != 1 {
 		t.Errorf("Expected 1 link, got %d", len(p.Links))
+	}
+	// Check indexes on collection
+	indexes, err := col.Indexes(ctx)
+	if err != nil {
+		t.Fatalf("Indexes() failed: %s", describe(err))
+	}
+	if len(indexes) != 1 {
+		// 1 is always added by the system
+		t.Errorf("Expected 1 index, got %d", len(indexes))
 	}
 }
 
