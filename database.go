@@ -47,7 +47,7 @@ type Database interface {
 	DatabaseCollections
 
 	// View functions
-	//DatabaseViews
+	DatabaseViews
 
 	// Graph functions
 	DatabaseGraphs
