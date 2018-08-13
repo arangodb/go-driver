@@ -77,8 +77,7 @@ func (v *view) ArangoSearchView() (ArangoSearchView, error) {
 	if v.viewType != ViewTypeArangoSearch {
 		return nil, WithStack(newArangoError(http.StatusConflict, 0, fmt.Sprintf("Type must be '%s', got '%s'", ViewTypeArangoSearch, v.viewType)))
 	}
-	result := viewArangoSearch{view: *v}
-	return &result, nil
+	return &viewArangoSearch{view: *v}, nil
 }
 
 // Database returns the database containing the view.

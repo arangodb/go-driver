@@ -46,8 +46,17 @@ type ArangoSearchViewProperties struct {
 	// Links contains the properties for how individual collections
 	// are indexed in thie view.
 	// The key of the map are collection names.
-	Links map[string]ArangoSearchElementProperties `json:"links,omitempty"`
+	Links ArangoSearchLinks `json:"links,omitempty"`
 }
+
+// ArangoSearchLinks is a strongly typed map containing links between a
+// collection and a view.
+// The keys in the map are collection names.
+type ArangoSearchLinks map[string]ArangoSearchElementProperties
+
+// ArangoSearchFields is a strongly typed map containing properties per field.
+// The keys in the map are field names.
+type ArangoSearchFields map[string]ArangoSearchElementProperties
 
 // ArangoSearchElementProperties contains properties that specify how an element
 // is indexed in an ArangoSearch view.
@@ -64,7 +73,7 @@ type ArangoSearchElementProperties struct {
 	StoreValues ArangoSearchStoreValues `json:"storeValues,omitempty"`
 	// Fields contains the properties for individual fields of the element.
 	// The key of the map are field names.
-	Fields map[string]ArangoSearchElementProperties `json:"fields,omitempty"`
+	Fields ArangoSearchFields `json:"fields,omitempty"`
 }
 
 // ArangoSearchStoreValues is the type of the StoreValues option of an ArangoSearch element.

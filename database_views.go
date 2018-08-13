@@ -40,7 +40,7 @@ type DatabaseViews interface {
 	// CreateArangoSearchView creates a new view of type ArangoSearch,
 	// with given name and options, and opens a connection to it.
 	// If a view with given name already exists within the database, a ConflictError is returned.
-	CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (View, error)
+	CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (ArangoSearchView, error)
 }
 
 // ViewType is the type of a view.
