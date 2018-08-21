@@ -71,6 +71,48 @@ func TestIndexes(t *testing.T) {
 	}
 }
 
+// TestMultipleIndexes creates a collection with a full text index.
+func TestMultipleIndexes(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "index_test", nil, t)
+	col := ensureCollection(nil, db, "multiple_indexes_test", nil, t)
+
+	// Create some indexes of same type & fields, but different options
+	if _, _, err := col.EnsureFullTextIndex(nil, []string{"name"}, &driver.EnsureFullTextIndexOptions{MinLength: 2}); err != nil {
+		t.Fatalf("Failed to create new index (1): %s", describe(err))
+	}
+	if _, _, err := col.EnsureFullTextIndex(nil, []string{"name"}, &driver.EnsureFullTextIndexOptions{MinLength: 7}); err != nil {
+		t.Fatalf("Failed to create new index (2): %s", describe(err))
+	}
+
+	// Get list of indexes
+	if idxs, err := col.Indexes(context.Background()); err != nil {
+		t.Fatalf("Failed to get indexes: %s", describe(err))
+	} else {
+		if len(idxs) != 3 {
+			// We made 2 indexes, 1 is always added by the system
+			t.Errorf("Expected 3 indexes, got %d", len(idxs))
+		}
+
+		// Try opening the indexes 1 by 1
+		for _, x := range idxs {
+			if idx, err := col.Index(nil, x.Name()); err != nil {
+				t.Errorf("Failed to open index '%s': %s", x.Name(), describe(err))
+			} else if idx.Name() != x.Name() {
+				t.Errorf("Got different index name. Expected '%s', got '%s'", x.Name(), idx.Name())
+			}
+		}
+	}
+
+	// Check index count
+	if stats, err := col.Statistics(nil); err != nil {
+		t.Fatalf("Statistics failed: %s", describe(err))
+	} else if stats.Figures.Indexes.Count != 3 {
+		// 3 because 1 system index + 2 created above
+		t.Errorf("Expected 3 indexes, got %d", stats.Figures.Indexes.Count)
+	}
+}
+
 // TestIndexesDeduplicateHash tests no-deduplicate on hash index.
 func TestIndexesDeduplicateHash(t *testing.T) {
 	c := createClientFromEnv(t, true)
