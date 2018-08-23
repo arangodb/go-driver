@@ -181,35 +181,39 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		timeout := 3 * time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		if up := waitUntilServerAvailable(ctx, c, t); !up {
+		synchronizedEndpoints := true
+		if up := waitUntilServerAvailable(ctx, c, synchronizedEndpoints, t); !up {
 			t.Fatalf("Connection is not available in %s", timeout)
 		}
-		// Synchronize endpoints
-		if err := c.SynchronizeEndpoints(context.Background()); err != nil {
-			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
-		} else {
-			logEndpointsOnce.Do(func() {
-				t.Logf("Found endpoints: %v", conn.Endpoints())
-			})
-		}
+		logEndpointsOnce.Do(func() {
+			t.Logf("Found endpoints: %v", conn.Endpoints())
+		})
 	}
 	return c
 }
 
 // waitUntilServerAvailable keeps waiting until the server/cluster that the client is addressing is available.
-func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) bool {
+func waitUntilServerAvailable(ctx context.Context, c driver.Client, synchronizedEndpoints bool, t testEnv) bool {
 	instanceUp := make(chan bool)
+	testOnce := func() error {
+		verCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+		if _, err := c.Version(verCtx); err != nil {
+			return driver.WithStack(err)
+		}
+		if synchronizedEndpoints {
+			if err := c.SynchronizeEndpoints(ctx); err != nil {
+				return driver.WithStack(err)
+			}
+		}
+		return nil
+	}
 	go func() {
 		for {
-			verCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-			if _, err := c.Version(verCtx); err == nil {
-				//t.Logf("Found version %s", v.Version)
-				cancel()
+			if err := testOnce(); err == nil {
 				instanceUp <- true
 				return
 			}
-			cancel()
-			//t.Logf("Version failed: %s %#v", describe(err), err)
 			time.Sleep(time.Second)
 		}
 	}()
@@ -261,7 +265,8 @@ func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
 	timeout := 3 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	if up := waitUntilServerAvailable(ctx, c, t); !up {
+	synchronizedEndpoints := false
+	if up := waitUntilServerAvailable(ctx, c, synchronizedEndpoints, t); !up {
 		t.Fatalf("Connection is not available in %s", timeout)
 	}
 	if info, err := c.Version(driver.WithDetails(ctx)); err != nil {
