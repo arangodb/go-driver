@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	httplib "net/http"
 	"os"
@@ -199,11 +200,11 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, synchronized
 		verCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 		defer cancel()
 		if _, err := c.Version(verCtx); err != nil {
-			return driver.WithStack(err)
+			return driver.WithStack(fmt.Errorf("Version failed: %s", err))
 		}
 		if synchronizedEndpoints {
-			if err := c.SynchronizeEndpoints(ctx); err != nil {
-				return driver.WithStack(err)
+			if err := c.SynchronizeEndpoints(verCtx); err != nil {
+				return driver.WithStack(fmt.Errorf("SynchronizeEndpoints failed: %s", err))
 			}
 		}
 		return nil

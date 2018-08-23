@@ -26,6 +26,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -55,6 +56,16 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 	if isVST1_0 && !isv32p {
 		t.Skip("Cannot update my own password using VST in 3.1")
 	} else {
+		for {
+			if err := authClient.SynchronizeEndpoints(context.Background()); err == nil {
+				break
+			} else {
+				fmt.Printf("SynchronizeEndpoints failed: %s\n", err)
+			}
+			time.Sleep(time.Second)
+		}
+		t.Logf("authClient uses: %v", authClient.Connection().Endpoints())
+		//waitUntilServerAvailable(context.Background(), authClient, true, t)
 		u, err := authClient.User(nil, "user@TestUpdateUserPasswordMyself")
 		if err != nil {
 			t.Fatalf("Expected success, got %s", describe(err))
@@ -94,6 +105,7 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 		t.Skip("Cannot update other password using VST in 3.1")
 	} else {
 		// Right now user1 has no right to access user2
+		waitUntilServerAvailable(context.Background(), authClient, true, t)
 		if _, err := authClient.User(nil, "user2"); !driver.IsForbidden(err) {
 			t.Fatalf("Expected ForbiddenError, got %s", describe(err))
 		}
