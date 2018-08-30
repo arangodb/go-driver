@@ -41,33 +41,6 @@ type ArangoSearchView interface {
 
 // ArangoSearchViewProperties contains properties an an ArangoSearch view.
 type ArangoSearchViewProperties struct {
-	// Locale specifies the default locale used for queries on analyzed string values.
-	// Defaults to "C". TODO What is that?
-	Locale Locale `json:"locale,omitempty"`
-	// Commit behavior related properties
-	Commit *ArangoSearchCommitProperties `json:"commit,omitempty"`
-	// Links contains the properties for how individual collections
-	// are indexed in thie view.
-	// The key of the map are collection names.
-	Links ArangoSearchLinks `json:"links,omitempty"`
-}
-
-// ArangoSearchCommitProperties contains properties related to the commit
-// behavior of an ArangoSearch view.
-type ArangoSearchCommitProperties struct {
-	// Consolidate specifies boundaries for various consolitation policies.
-	Consolidate *ArangoSearchConsolidationProperties `json:"consolidate,omitempty"`
-	// CommitInterval specifies the minimum number of milliseconds that must be waited
-	// between committing index data changes and making them visible to queries.
-	// Defaults to 60000.
-	// Use 0 to disable.
-	// For the case where there are a lot of inserts/updates, a lower value,
-	// until commit, will cause the index not to account for them and memory usage
-	// would continue to grow.
-	// For the case where there are a few inserts/updates, a higher value will
-	// impact performance and waste disk space for each commit call without
-	// any added benefits.
-	CommitInterval int64 `json:"commitIntervalMsec,omitempty"`
 	// CleanupIntervalStep specifies the minimum number of commits to wait between
 	// removing unused files in the data directory.
 	// Defaults to 10.
@@ -79,29 +52,39 @@ type ArangoSearchCommitProperties struct {
 	// (i.e. few inserts/deletes), a higher value will impact performance
 	// without any added benefits.
 	CleanupIntervalStep int64 `json:"cleanupIntervalStep,omitempty"`
+	// ConsolidationInterval specifies the minimum number of milliseconds that must be waited
+	// between committing index data changes and making them visible to queries.
+	// Defaults to 60000.
+	// Use 0 to disable.
+	// For the case where there are a lot of inserts/updates, a lower value,
+	// until commit, will cause the index not to account for them and memory usage
+	// would continue to grow.
+	// For the case where there are a few inserts/updates, a higher value will
+	// impact performance and waste disk space for each commit call without
+	// any added benefits.
+	ConsolidationInterval int64 `json:"consolidationIntervalMsec,omitempty"`
+	// ConsolidationPolicy specifies thresholds for consolidation.
+	ConsolidationPolicy *ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
+
+	/*
+		// Locale specifies the default locale used for queries on analyzed string values.
+		// Defaults to "C". TODO What is that?
+		Locale Locale `json:"locale,omitempty"`
+	*/
+	// Links contains the properties for how individual collections
+	// are indexed in thie view.
+	// The key of the map are collection names.
+	Links ArangoSearchLinks `json:"links,omitempty"`
 }
 
 // Locale is a strongly typed specifier of a locale.
 // TODO specify semantics.
 type Locale string
 
-// ArangoSearchConsolidationProperties holds values specifying when to
-// consolidate view data.
-type ArangoSearchConsolidationProperties struct {
-	// Count specifies consilidation boundaries based on the number of documents.
-	Count *ArangoSearchConsolidationThreshold `json:"count,omitempty"`
-	// Bytes specifies consilidation boundaries based on the size of the data.
-	Bytes *ArangoSearchConsolidationThreshold `json:"bytes,omitempty"`
-	// BytesAccumulated specifies consilidation boundaries based on the size of the data. ???? TODO
-	BytesAccumulated *ArangoSearchConsolidationThreshold `json:"bytes_accum,omitempty"`
-	// Fill specifies consilidation boundaries based on ????? TODO
-	Fill *ArangoSearchConsolidationThreshold `json:"fill,omitempty"`
-}
-
-// ArangoSearchConsolidationThreshold holds threshold values specifying when to
+// ArangoSearchConsolidationPolicy holds threshold values specifying when to
 // consolidate view data.
 // Semantics of the values depend on where they are used.
-type ArangoSearchConsolidationThreshold struct {
+type ArangoSearchConsolidationPolicy struct {
 	// Threshold is a percentage (0..1)
 	Threshold float64 `json:"threshold,omitempty"`
 	// SegmentThreshold is an absolute value.
