@@ -178,6 +178,59 @@ func TestCreateDuplicateArangoSearchView(t *testing.T) {
 	}
 }
 
+// TestCreateArangoSearchViewThenRemoveCollection creates an arangosearch view
+// with a link to an existing collection and the removes that collection.
+func TestCreateArangoSearchViewThenRemoveCollection(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4", t)
+	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	col := ensureCollection(ctx, db, "someViewTmpCol", nil, t)
+	name := "test_create_view_then_rem_col"
+	opts := &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"someViewTmpCol": driver.ArangoSearchElementProperties{},
+		},
+	}
+	v, err := db.CreateArangoSearchView(ctx, name, opts)
+	if err != nil {
+		t.Fatalf("Failed to create view '%s': %s", name, describe(err))
+	}
+	// View must exist now
+	if found, err := db.ViewExists(ctx, name); err != nil {
+		t.Errorf("ViewExists('%s') failed: %s", name, describe(err))
+	} else if !found {
+		t.Errorf("ViewExists('%s') return false, expected true", name)
+	}
+	// Check v.Name
+	if actualName := v.Name(); actualName != name {
+		t.Errorf("Name() failed. Got '%s', expected '%s'", actualName, name)
+	}
+	// Check v properties
+	p, err := v.Properties(ctx)
+	if err != nil {
+		t.Fatalf("Properties failed: %s", describe(err))
+	}
+	if len(p.Links) != 1 {
+		t.Errorf("Expected 1 link, got %d", len(p.Links))
+	}
+
+	// Now delete the collection
+	if err := col.Remove(ctx); err != nil {
+		t.Fatalf("Failed to remove collection '%s': %s", col.Name(), describe(err))
+	}
+
+	// Re-check v properties
+	p, err = v.Properties(ctx)
+	if err != nil {
+		t.Fatalf("Properties failed: %s", describe(err))
+	}
+	if len(p.Links) != 0 {
+		// TODO is the really the correct expected behavior.
+		t.Errorf("Expected 0 links, got %d", len(p.Links))
+	}
+}
+
 // TestGetArangoSearchView creates an arangosearch view and then gets it again.
 func TestGetArangoSearchView(t *testing.T) {
 	ctx := context.Background()
