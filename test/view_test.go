@@ -334,6 +334,8 @@ func TestRenameArangoSearchView(t *testing.T) {
 	}
 }
 
+// TestUseArangoSearchView tries to create a view and actually use it in
+// an AQL query.
 func TestUseArangoSearchView(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
@@ -373,21 +375,43 @@ func TestUseArangoSearchView(t *testing.T) {
 		t.Fatalf("Expected no errors, got first: %s", describe(err))
 	}
 
-	// now access it via AQL
-	cur, err := db.Query(ctx, "FOR doc IN some_view SEARCH doc.name == \"John\"", nil)
-	if err != nil {
-		t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
-	} else if cur.Count() != 1 || !cur.HasMore() {
-		t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
+	// now access it via AQL with waitForSync
+	{
+		cur, err := db.Query(driver.WithQueryCount(ctx), `FOR doc IN some_view SEARCH doc.name == "John" OPTIONS {waitForSync:true} RETURN doc`, nil)
+		if err != nil {
+			t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
+		} else if cur.Count() != 1 || !cur.HasMore() {
+			t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
+		}
+
+		var doc UserDoc
+		_, err = cur.ReadDocument(ctx, &doc)
+		if err != nil {
+			t.Fatalf("Failed to read document: %s", describe(err))
+		}
+
+		if doc.Name != "John" {
+			t.Fatalf("Expected result `John`, found `%s`", doc.Name)
+		}
 	}
 
-	var doc UserDoc
-	_, err = cur.ReadDocument(ctx, &doc)
-	if err != nil {
-		t.Fatalf("Failed to read document: %s", describe(err))
-	}
+	// now access it via AQL without waitForSync
+	{
+		cur, err := db.Query(driver.WithQueryCount(ctx), `FOR doc IN some_view SEARCH doc.name == "John" RETURN doc`, nil)
+		if err != nil {
+			t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
+		} else if cur.Count() != 1 || !cur.HasMore() {
+			t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
+		}
 
-	if doc.Name != "John" {
-		t.Fatalf("Expected result `John`, found `%s`", doc.Name)
+		var doc UserDoc
+		_, err = cur.ReadDocument(ctx, &doc)
+		if err != nil {
+			t.Fatalf("Failed to read document: %s", describe(err))
+		}
+
+		if doc.Name != "John" {
+			t.Fatalf("Expected result `John`, found `%s`", doc.Name)
+		}
 	}
 }
