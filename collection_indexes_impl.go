@@ -38,8 +38,13 @@ type indexData struct {
 	MinLength   int      `json:"minLength,omitempty"`
 }
 
+type genericIndexData struct {
+	ID   string `json:"id,omitempty"`
+	Type string `json:"type"`
+}
+
 type indexListResponse struct {
-	Indexes []indexData `json:"indexes,omitempty"`
+	Indexes []genericIndexData `json:"indexes,omitempty"`
 }
 
 // Index opens a connection to an existing index within the collection.
@@ -106,11 +111,13 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 	}
 	result := make([]Index, 0, len(data.Indexes))
 	for _, x := range data.Indexes {
-		idx, err := newIndex(x.ID, c)
-		if err != nil {
-			return nil, WithStack(err)
+		if x.Type != "arangosearch" {
+			idx, err := newIndex(x.ID, c)
+			if err != nil {
+				return nil, WithStack(err)
+			}
+			result = append(result, idx)
 		}
-		result = append(result, idx)
 	}
 	return result, nil
 }
