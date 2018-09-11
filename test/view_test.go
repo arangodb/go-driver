@@ -123,6 +123,10 @@ func TestCreateArangoSearchViewInvalidLinks(t *testing.T) {
 	} else if found {
 		t.Errorf("ViewExists('%s') return true, expected false", name)
 	}
+	// Try to open view, must fail as well
+	if v, err := db.View(ctx, name); !driver.IsNotFound(err) {
+		t.Errorf("Expected NotFound error from View('%s'), got %s instead (%#v)", name, describe(err), v)
+	}
 }
 
 // TestCreateEmptyArangoSearchView creates an arangosearch view without any links.
