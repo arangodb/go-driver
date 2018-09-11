@@ -218,6 +218,8 @@ type InventoryView struct {
 	IsSystem bool     `json:"isSystem,omitempty"`
 	PlanID   string   `json:"planId,omitempty"`
 	Type     ViewType `json:"type,omitempty"`
+	// Include all properties from an arangosearch view.
+	ArangoSearchViewProperties
 }
 
 // stringSliceEqualsIgnoreOrder returns true when the given lists contain the same elements.
