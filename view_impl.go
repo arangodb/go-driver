@@ -102,29 +102,3 @@ func (v *view) Remove(ctx context.Context) error {
 	}
 	return nil
 }
-
-// Rename changes the name of a view.
-// If the view does not exist, a NotFoundError is returned.
-// If a view with the given new name already exists, a ConflictError is returned.
-func (v *view) Rename(ctx context.Context, newName string) error {
-	req, err := v.conn.NewRequest("PUT", path.Join(v.relPath(), "rename"))
-	if err != nil {
-		return WithStack(err)
-	}
-	input := viewInfo{
-		Name: newName,
-	}
-	if _, err := req.SetBody(input); err != nil {
-		return WithStack(err)
-	}
-	applyContextSettings(ctx, req)
-	resp, err := v.conn.Do(ctx, req)
-	if err != nil {
-		return WithStack(err)
-	}
-	if err := resp.CheckStatus(200); err != nil {
-		return WithStack(err)
-	}
-	v.name = newName
-	return nil
-}

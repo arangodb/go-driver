@@ -45,9 +45,4 @@ type View interface {
 	// Remove removes the entire view.
 	// If the view does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
-
-	// Rename changes the name of a view.
-	// If the view does not exist, a NotFoundError is returned.
-	// If a view with the given new name already exists, a ConflictError is returned.
-	Rename(ctx context.Context, newName string) error
 }

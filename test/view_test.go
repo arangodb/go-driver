@@ -351,46 +351,6 @@ func TestRemoveArangoSearchView(t *testing.T) {
 	}
 }
 
-// TestRenameArangoSearchView creates an arangosearch view and then rename it.
-func TestRenameArangoSearchView(t *testing.T) {
-	ctx := context.Background()
-	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.4", t)
-	db := ensureDatabase(nil, c, "view_test", nil, t)
-	name := "test_rename_asview"
-	v, err := db.CreateArangoSearchView(ctx, name, nil)
-	if err != nil {
-		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
-	}
-	// View must exist now
-	if found, err := db.ViewExists(ctx, name); err != nil {
-		t.Errorf("ViewExists('%s') failed: %s", name, describe(err))
-	} else if !found {
-		t.Errorf("ViewExists('%s') return false, expected true", name)
-	}
-	// Now rename it
-	newName := name + "_new"
-	if err := v.Rename(ctx, newName); err != nil {
-		t.Fatalf("Failed to remove view '%s': %s", name, describe(err))
-	}
-	// Name() must return the new name
-	if actualName := v.Name(); actualName != newName {
-		t.Errorf("Name() failed. Got '%s', expected '%s'", actualName, newName)
-	}
-	// View with old name must not exist now
-	if found, err := db.ViewExists(ctx, name); err != nil {
-		t.Errorf("ViewExists('%s') failed: %s", name, describe(err))
-	} else if found {
-		t.Errorf("ViewExists('%s') return true, expected false", name)
-	}
-	// View with new name must exist now
-	if found, err := db.ViewExists(ctx, newName); err != nil {
-		t.Errorf("ViewExists('%s') failed: %s", newName, describe(err))
-	} else if !found {
-		t.Errorf("ViewExists('%s') return false, expected true", newName)
-	}
-}
-
 // TestUseArangoSearchView tries to create a view and actually use it in
 // an AQL query.
 func TestUseArangoSearchView(t *testing.T) {
