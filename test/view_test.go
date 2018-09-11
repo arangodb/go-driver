@@ -101,6 +101,30 @@ func TestCreateArangoSearchView(t *testing.T) {
 	}
 }
 
+// TestCreateArangoSearchViewInvalidLinks attempts to create an arangosearch view with invalid links and then checks that it does not exists.
+func TestCreateArangoSearchViewInvalidLinks(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4", t)
+	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	name := "test_create_asview"
+	opts := &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"some_nonexistent_col": driver.ArangoSearchElementProperties{},
+		},
+	}
+	_, err := db.CreateArangoSearchView(ctx, name, opts)
+	if err == nil {
+		t.Fatalf("Creating view did not fail")
+	}
+	// View must not exist now
+	if found, err := db.ViewExists(ctx, name); err != nil {
+		t.Errorf("ViewExists('%s') failed: %s", name, describe(err))
+	} else if found {
+		t.Errorf("ViewExists('%s') return true, expected false", name)
+	}
+}
+
 // TestCreateEmptyArangoSearchView creates an arangosearch view without any links.
 func TestCreateEmptyArangoSearchView(t *testing.T) {
 	ctx := context.Background()
@@ -307,5 +331,63 @@ func TestRenameArangoSearchView(t *testing.T) {
 		t.Errorf("ViewExists('%s') failed: %s", newName, describe(err))
 	} else if !found {
 		t.Errorf("ViewExists('%s') return false, expected true", newName)
+	}
+}
+
+func TestUseArangoSearchView(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4", t)
+	db := ensureDatabase(nil, c, "view_test", nil, t)
+	col := ensureCollection(ctx, db, "some_collection", nil, t)
+
+	ensureArangoSearchView(ctx, db, "some_view", &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"some_collection": driver.ArangoSearchElementProperties{
+				Fields: driver.ArangoSearchFields{
+					"name": driver.ArangoSearchElementProperties{},
+				},
+			},
+		},
+	}, t)
+
+	docs := []UserDoc{
+		UserDoc{
+			"John",
+			23,
+		},
+		UserDoc{
+			"Alice",
+			43,
+		},
+		UserDoc{
+			"Helmut",
+			56,
+		},
+	}
+
+	_, errs, err := col.CreateDocuments(ctx, docs)
+	if err != nil {
+		t.Fatalf("Failed to create new documents: %s", describe(err))
+	} else if err := errs.FirstNonNil(); err != nil {
+		t.Fatalf("Expected no errors, got first: %s", describe(err))
+	}
+
+	// now access it via AQL
+	cur, err := db.Query(ctx, "FOR doc IN some_view SEARCH doc.name == \"John\"", nil)
+	if err != nil {
+		t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
+	} else if cur.Count() != 1 || !cur.HasMore() {
+		t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
+	}
+
+	var doc UserDoc
+	_, err = cur.ReadDocument(ctx, &doc)
+	if err != nil {
+		t.Fatalf("Failed to read document: %s", describe(err))
+	}
+
+	if doc.Name != "John" {
+		t.Fatalf("Expected result `John`, found `%s`", doc.Name)
 	}
 }
