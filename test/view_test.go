@@ -107,7 +107,7 @@ func TestCreateArangoSearchViewInvalidLinks(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
-	name := "test_create_asview"
+	name := "test_create_inv_view"
 	opts := &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
 			"some_nonexistent_col": driver.ArangoSearchElementProperties{},
