@@ -111,13 +111,11 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 	}
 	result := make([]Index, 0, len(data.Indexes))
 	for _, x := range data.Indexes {
-		if x.Type != "arangosearch" {
-			idx, err := newIndex(x.ID, c)
-			if err != nil {
-				return nil, WithStack(err)
-			}
-			result = append(result, idx)
+		idx, err := newIndex(x.ID, c)
+		if err != nil {
+			return nil, WithStack(err)
 		}
+		result = append(result, idx)
 	}
 	return result, nil
 }

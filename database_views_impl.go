@@ -119,15 +119,15 @@ func (d *database) Views(ctx context.Context) ([]View, error) {
 // If a view with given name already exists within the database, a ConflictError is returned.
 func (d *database) CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (ArangoSearchView, error) {
 	input := struct {
-		Name       string                     `json:"name"`
-		Type       ViewType                   `json:"type"`
-		Properties ArangoSearchViewProperties `json:"properties"`
+		Name                       string   `json:"name"`
+		Type                       ViewType `json:"type"`
+		ArangoSearchViewProperties          // `json:"properties"`
 	}{
 		Name: name,
 		Type: ViewTypeArangoSearch,
 	}
 	if options != nil {
-		input.Properties = *options
+		input.ArangoSearchViewProperties = *options
 	}
 	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/view"))
 	if err != nil {
@@ -151,15 +151,6 @@ func (d *database) CreateArangoSearchView(ctx context.Context, name string, opti
 	result, err := view.ArangoSearchView()
 	if err != nil {
 		return nil, WithStack(err)
-	}
-
-	// Currently the POST call does not accept the properties field.
-	// Before this code can be merged, the POST must accept it and the following
-	// code must be removed!!!!
-	if options != nil {
-		if err := result.SetProperties(ctx, *options); err != nil {
-			return nil, WithStack(err)
-		}
 	}
 
 	return result, nil
