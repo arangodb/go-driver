@@ -49,6 +49,27 @@ func ensureArangoSearchView(ctx context.Context, db driver.Database, name string
 	return result
 }
 
+func ensureArangoSearchLink(ctx context.Context, db driver.Database, view driver.ArangoSearchView, colName string, t testEnv) bool {
+	addprop := driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			colName: driver.ArangoSearchElementProperties{},
+		},
+	}
+	err := view.SetProperties(ctx, addprop)
+	if err != nil {
+		t.Fatalf("Could not create link, view: %s, collection: %s, error: %s", view.Name(), colName, describe(err))
+	}
+	props, err := view.Properties(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get view properties: %s", describe(err))
+	}
+	links := props.Links
+	if _, exists := links[colName]; !exists {
+		return false
+	}
+	return true
+}
+
 // assertArangoSearchView is a helper to check if an arangosearch view exists and fail if it does not.
 func assertArangoSearchView(ctx context.Context, db driver.Database, name string, t *testing.T) driver.ArangoSearchView {
 	v, err := db.View(ctx, name)
@@ -228,6 +249,22 @@ func TestCreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 	if len(p.Links) != 0 {
 		// TODO is the really the correct expected behavior.
 		t.Errorf("Expected 0 links, got %d", len(p.Links))
+	}
+}
+
+func TestAddCollectionMultipleViews(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4", t)
+	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	ensureCollection(ctx, db, "some_collection", nil, t)
+	v1 := ensureArangoSearchView(ctx, db, "view1", nil, t)
+	if !ensureArangoSearchLink(ctx, db, v1, "some_collection", t) {
+		t.Fatal("Link does not exists")
+	}
+	v2 := ensureArangoSearchView(ctx, db, "view2", nil, t)
+	if !ensureArangoSearchLink(ctx, db, v2, "some_collection", t) {
+		t.Fatal("Link does not exists")
 	}
 }
 
