@@ -29,7 +29,7 @@ import (
 )
 
 // newIndex creates a new Index implementation.
-func newIndex(id string, col *collection) (Index, error) {
+func newIndex(id string, kind IndexType, col *collection) (Index, error) {
 	if id == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
@@ -42,6 +42,7 @@ func newIndex(id string, col *collection) (Index, error) {
 	}
 	return &index{
 		id:   id,
+		kind: kind,
 		col:  col,
 		db:   col.db,
 		conn: col.conn,
@@ -50,6 +51,7 @@ func newIndex(id string, col *collection) (Index, error) {
 
 type index struct {
 	id   string
+	kind IndexType
 	db   *database
 	col  *collection
 	conn Connection
@@ -64,6 +66,10 @@ func (i *index) relPath() string {
 func (i *index) Name() string {
 	parts := strings.Split(i.id, "/")
 	return parts[1]
+}
+
+func (i *index) Type() IndexType {
+	return i.kind
 }
 
 // Remove removes the entire index.

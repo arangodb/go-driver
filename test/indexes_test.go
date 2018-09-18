@@ -36,10 +36,19 @@ func TestIndexes(t *testing.T) {
 	col := ensureCollection(nil, db, "indexes_test", nil, t)
 
 	// Create some indexes
-	if _, _, err := col.EnsureFullTextIndex(nil, []string{"name"}, nil); err != nil {
+	if idx, _, err := col.EnsureFullTextIndex(nil, []string{"name"}, nil); err == nil {
+		if kind := idx.Type(); kind != driver.FullTextIndex {
+			t.Errorf("Expected FullTextIndex, found `%s`", kind)
+		}
+	} else {
 		t.Fatalf("Failed to create new index: %s", describe(err))
 	}
-	if _, _, err := col.EnsureHashIndex(nil, []string{"age", "gender"}, nil); err != nil {
+
+	if idx, _, err := col.EnsureHashIndex(nil, []string{"age", "gender"}, nil); err == nil {
+		if kind := idx.Type(); kind != driver.HashIndex {
+			t.Errorf("Expected HashIndex, found `%s`", kind)
+		}
+	} else {
 		t.Fatalf("Failed to create new index: %s", describe(err))
 	}
 

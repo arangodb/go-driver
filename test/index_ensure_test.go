@@ -50,6 +50,9 @@ func TestEnsureFullTextIndex(t *testing.T) {
 		if !created {
 			t.Error("Expected created to be true, got false")
 		}
+		if kind := idx.Type(); kind != driver.FullTextIndex {
+			t.Errorf("Expected FullTextIndex, found `%s`", kind)
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -101,6 +104,9 @@ func TestEnsureGeoIndex(t *testing.T) {
 		}
 		if !created {
 			t.Error("Expected created to be true, got false")
+		}
+		if kind := idx.Type(); kind != driver.GeoIndex {
+			t.Errorf("Expected GeoIndex, found `%s`", kind)
 		}
 
 		// Index must exists now
@@ -156,6 +162,9 @@ func TestEnsureHashIndex(t *testing.T) {
 		if !created {
 			t.Error("Expected created to be true, got false")
 		}
+		if kind := idx.Type(); kind != driver.HashIndex {
+			t.Errorf("Expected HashIndex, found `%s`", kind)
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -210,6 +219,9 @@ func TestEnsurePersistentIndex(t *testing.T) {
 		if !created {
 			t.Error("Expected created to be true, got false")
 		}
+		if kind := idx.Type(); kind != driver.PersistentIndex {
+			t.Errorf("Expected PersistentIndex, found `%s`", kind)
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -263,6 +275,9 @@ func TestEnsureSkipListIndex(t *testing.T) {
 		}
 		if !created {
 			t.Error("Expected created to be true, got false")
+		}
+		if kind := idx.Type(); kind != driver.SkipListIndex {
+			t.Errorf("Expected SkipListIndex, found `%s`", kind)
 		}
 
 		// Index must exists now
