@@ -28,14 +28,14 @@ import (
 )
 
 type indexData struct {
-	ID          string    `json:"id,omitempty"`
-	Type        IndexType `json:"type"`
-	Fields      []string  `json:"fields,omitempty"`
-	Unique      *bool     `json:"unique,omitempty"`
-	Deduplicate *bool     `json:"deduplicate,omitempty"`
-	Sparse      *bool     `json:"sparse,omitempty"`
-	GeoJSON     *bool     `json:"geoJson,omitempty"`
-	MinLength   int       `json:"minLength,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	Type        string   `json:"type"`
+	Fields      []string `json:"fields,omitempty"`
+	Unique      *bool    `json:"unique,omitempty"`
+	Deduplicate *bool    `json:"deduplicate,omitempty"`
+	Sparse      *bool    `json:"sparse,omitempty"`
+	GeoJSON     *bool    `json:"geoJson,omitempty"`
+	MinLength   int      `json:"minLength,omitempty"`
 }
 
 type indexListResponse struct {
@@ -121,7 +121,7 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   FullTextIndex,
+		Type:   string(FullTextIndex),
 		Fields: fields,
 	}
 	if options != nil {
@@ -146,7 +146,7 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   GeoIndex,
+		Type:   string(GeoIndex),
 		Fields: fields,
 	}
 	if options != nil {
@@ -164,7 +164,7 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   HashIndex,
+		Type:   string(HashIndex),
 		Fields: fields,
 	}
 	off := false
@@ -187,7 +187,7 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   PersistentIndex,
+		Type:   string(PersistentIndex),
 		Fields: fields,
 	}
 	if options != nil {
@@ -206,7 +206,7 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   SkipListIndex,
+		Type:   string(SkipListIndex),
 		Fields: fields,
 	}
 	off := false

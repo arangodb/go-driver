@@ -28,8 +28,28 @@ import (
 	"strings"
 )
 
+func indexStringToType(indexString string) (IndexType, error) {
+	switch indexString {
+	case string(FullTextIndex):
+		return FullTextIndex, nil
+	case string(HashIndex):
+		return HashIndex, nil
+	case string(SkipListIndex):
+		return SkipListIndex, nil
+	case string(PrimaryIndex):
+		return PrimaryIndex, nil
+	case string(PersistentIndex):
+		return PersistentIndex, nil
+	case string(GeoIndex), "geo1", "geo2":
+		return GeoIndex, nil
+
+	default:
+		return "", WithStack(InvalidArgumentError{Message: "unknown index type"})
+	}
+}
+
 // newIndex creates a new Index implementation.
-func newIndex(id string, kind IndexType, col *collection) (Index, error) {
+func newIndex(id string, indexString string, col *collection) (Index, error) {
 	if id == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
@@ -40,21 +60,25 @@ func newIndex(id string, kind IndexType, col *collection) (Index, error) {
 	if col == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "col is nil"})
 	}
+	indexType, err := indexStringToType(indexString)
+	if err != nil {
+		return nil, WithStack(err)
+	}
 	return &index{
-		id:   id,
-		kind: kind,
-		col:  col,
-		db:   col.db,
-		conn: col.conn,
+		id:        id,
+		indexType: indexType,
+		col:       col,
+		db:        col.db,
+		conn:      col.conn,
 	}, nil
 }
 
 type index struct {
-	id   string
-	kind IndexType
-	db   *database
-	col  *collection
-	conn Connection
+	id        string
+	indexType IndexType
+	db        *database
+	col       *collection
+	conn      Connection
 }
 
 // relPath creates the relative path to this index (`_db/<db-name>/_api/index`)
@@ -68,8 +92,9 @@ func (i *index) Name() string {
 	return parts[1]
 }
 
+// Type returns the type of the index
 func (i *index) Type() IndexType {
-	return i.kind
+	return i.indexType
 }
 
 // Remove removes the entire index.

@@ -29,12 +29,12 @@ type IndexType string
 
 // Symbolic constants for index types
 const (
-	PrimaryIndex    = "primary"
-	FullTextIndex   = "fulltext"
-	HashIndex       = "hash"
-	SkipListIndex   = "skiplist"
-	PersistentIndex = "persistent"
-	GeoIndex        = "geo"
+	PrimaryIndex    = IndexType("primary")
+	FullTextIndex   = IndexType("fulltext")
+	HashIndex       = IndexType("hash")
+	SkipListIndex   = IndexType("skiplist")
+	PersistentIndex = IndexType("persistent")
+	GeoIndex        = IndexType("geo")
 )
 
 // Index provides access to a single index in a single collection.
