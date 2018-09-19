@@ -28,8 +28,9 @@ import (
 	"strings"
 )
 
-func indexStringToType(indexString string) (IndexType, error) {
-	switch indexString {
+// indexStringToType converts a string representation of an index to IndexType
+func indexStringToType(indexTypeString string) (IndexType, error) {
+	switch indexTypeString {
 	case string(FullTextIndex):
 		return FullTextIndex, nil
 	case string(HashIndex):
@@ -49,7 +50,7 @@ func indexStringToType(indexString string) (IndexType, error) {
 }
 
 // newIndex creates a new Index implementation.
-func newIndex(id string, indexString string, col *collection) (Index, error) {
+func newIndex(id string, indexTypeString string, col *collection) (Index, error) {
 	if id == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
@@ -60,7 +61,7 @@ func newIndex(id string, indexString string, col *collection) (Index, error) {
 	if col == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "col is nil"})
 	}
-	indexType, err := indexStringToType(indexString)
+	indexType, err := indexStringToType(indexTypeString)
 	if err != nil {
 		return nil, WithStack(err)
 	}
