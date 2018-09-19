@@ -24,10 +24,26 @@ package driver
 
 import "context"
 
+// IndexType represents a index type as string
+type IndexType string
+
+// Symbolic constants for index types
+const (
+	PrimaryIndex    = IndexType("primary")
+	FullTextIndex   = IndexType("fulltext")
+	HashIndex       = IndexType("hash")
+	SkipListIndex   = IndexType("skiplist")
+	PersistentIndex = IndexType("persistent")
+	GeoIndex        = IndexType("geo")
+)
+
 // Index provides access to a single index in a single collection.
 type Index interface {
 	// Name returns the name of the index.
 	Name() string
+
+	// Type returns the type of the index
+	Type() IndexType
 
 	// Remove removes the entire index.
 	// If the index does not exist, a NotFoundError is returned.
