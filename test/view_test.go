@@ -30,7 +30,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-// ensureArangoSearchView is a helper to check if an arangosearch view exists and create if if needed.
+// ensureArangoSearchView is a helper to check if an arangosearch view exists and create it if needed.
 // It will fail the test when an error occurs.
 func ensureArangoSearchView(ctx context.Context, db driver.Database, name string, options *driver.ArangoSearchViewProperties, t testEnv) driver.ArangoSearchView {
 	v, err := db.View(ctx, name)
@@ -49,7 +49,9 @@ func ensureArangoSearchView(ctx context.Context, db driver.Database, name string
 	return result
 }
 
-func ensureArangoSearchLink(ctx context.Context, db driver.Database, view driver.ArangoSearchView, colName string, t testEnv) bool {
+// tryCreateArangoSearchLink is a helper that adds a link to a view and collection.
+// It will fail the test when an error occurs and returns wether the link is actually there or not.
+func tryCreateArangoSearchLink(ctx context.Context, db driver.Database, view driver.ArangoSearchView, colName string, t testEnv) bool {
 	addprop := driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
 			colName: driver.ArangoSearchElementProperties{},
@@ -259,11 +261,11 @@ func TestAddCollectionMultipleViews(t *testing.T) {
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	ensureCollection(ctx, db, "some_collection", nil, t)
 	v1 := ensureArangoSearchView(ctx, db, "view1", nil, t)
-	if !ensureArangoSearchLink(ctx, db, v1, "some_collection", t) {
+	if !tryCreateArangoSearchLink(ctx, db, v1, "some_collection", t) {
 		t.Fatal("Link does not exists")
 	}
 	v2 := ensureArangoSearchView(ctx, db, "view2", nil, t)
-	if !ensureArangoSearchLink(ctx, db, v2, "some_collection", t) {
+	if !tryCreateArangoSearchLink(ctx, db, v2, "some_collection", t) {
 		t.Fatal("Link does not exists")
 	}
 }
