@@ -29,6 +29,23 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+// TestDefaultIndexes creates a collection without any custom index.
+func TestDefaultIndexes(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "index_test", nil, t)
+	col := ensureCollection(nil, db, "def_indexes_test", nil, t)
+
+	// Get list of indexes
+	if idxs, err := col.Indexes(context.Background()); err != nil {
+		t.Fatalf("Failed to get indexes: %s", describe(err))
+	} else {
+		if len(idxs) != 1 {
+			// 1 is always added by the system
+			t.Errorf("Expected 1 index, got %d", len(idxs))
+		}
+	}
+}
+
 // TestCreateFullTextIndex creates a collection with a full text index.
 func TestIndexes(t *testing.T) {
 	c := createClientFromEnv(t, true)
