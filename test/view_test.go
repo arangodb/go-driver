@@ -49,18 +49,7 @@ func ensureArangoSearchView(ctx context.Context, db driver.Database, name string
 	return result
 }
 
-// tryCreateArangoSearchLink is a helper that adds a link to a view and collection.
-// It will fail the test when an error occurs and returns wether the link is actually there or not.
-func tryCreateArangoSearchLink(ctx context.Context, db driver.Database, view driver.ArangoSearchView, colName string, t testEnv) bool {
-	addprop := driver.ArangoSearchViewProperties{
-		Links: driver.ArangoSearchLinks{
-			colName: driver.ArangoSearchElementProperties{},
-		},
-	}
-	err := view.SetProperties(ctx, addprop)
-	if err != nil {
-		t.Fatalf("Could not create link, view: %s, collection: %s, error: %s", view.Name(), colName, describe(err))
-	}
+func checkLinkExists(ctx context.Context, view driver.ArangoSearchView, colName string, t testEnv) bool {
 	props, err := view.Properties(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get view properties: %s", describe(err))
@@ -70,6 +59,20 @@ func tryCreateArangoSearchLink(ctx context.Context, db driver.Database, view dri
 		return false
 	}
 	return true
+}
+
+// tryAddArangoSearchLink is a helper that adds a link to a view and collection.
+// It will fail the test when an error occurs and returns wether the link is actually there or not.
+func tryAddArangoSearchLink(ctx context.Context, db driver.Database, view driver.ArangoSearchView, colName string, t testEnv) bool {
+	addprop := driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			colName: driver.ArangoSearchElementProperties{},
+		},
+	}
+	if err := view.SetProperties(ctx, addprop); err != nil {
+		t.Fatalf("Could not create link, view: %s, collection: %s, error: %s", view.Name(), colName, describe(err))
+	}
+	return checkLinkExists(ctx, view, colName, t)
 }
 
 // assertArangoSearchView is a helper to check if an arangosearch view exists and fail if it does not.
@@ -254,19 +257,44 @@ func TestCreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 	}
 }
 
+// TestAddCollectionMultipleViews creates a collection and two view. adds the collection to both views
+// and checks if the links exist. The links are set via modifying properties.
 func TestAddCollectionMultipleViews(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.4", t)
-	db := ensureDatabase(ctx, c, "view_test", nil, t)
-	ensureCollection(ctx, db, "some_collection", nil, t)
-	v1 := ensureArangoSearchView(ctx, db, "view1", nil, t)
-	if !tryCreateArangoSearchLink(ctx, db, v1, "some_collection", t) {
-		t.Fatal("Link does not exists")
+	db := ensureDatabase(ctx, c, "col_in_multi_view_test", nil, t)
+	ensureCollection(ctx, db, "col_in_multi_view", nil, t)
+	v1 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view1", nil, t)
+	if !tryAddArangoSearchLink(ctx, db, v1, "col_in_multi_view", t) {
+		t.Error("Link does not exists")
 	}
-	v2 := ensureArangoSearchView(ctx, db, "view2", nil, t)
-	if !tryCreateArangoSearchLink(ctx, db, v2, "some_collection", t) {
-		t.Fatal("Link does not exists")
+	v2 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view2", nil, t)
+	if !tryAddArangoSearchLink(ctx, db, v2, "col_in_multi_view", t) {
+		t.Error("Link does not exists")
+	}
+}
+
+// TestAddCollectionMultipleViews creates a collection and two view. adds the collection to both views
+// and checks if the links exist. The links are set when creating the view.
+func TestAddCollectionMultipleViewsViaCreate(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4", t)
+	db := ensureDatabase(ctx, c, "col_in_multi_view_create_test", nil, t)
+	ensureCollection(ctx, db, "col_in_multi_view_create", nil, t)
+	opts := &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"col_in_multi_view_create": driver.ArangoSearchElementProperties{},
+		},
+	}
+	v1 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view1", opts, t)
+	if !checkLinkExists(ctx, v1, "col_in_multi_view_create", t) {
+		t.Error("Link does not exists")
+	}
+	v2 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view2", opts, t)
+	if !checkLinkExists(ctx, v2, "col_in_multi_view_create", t) {
+		t.Error("Link does not exists")
 	}
 }
 
