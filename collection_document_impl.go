@@ -59,6 +59,7 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
+	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -72,7 +73,7 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 		return DocumentMeta{}, WithStack(err)
 	}
 	// load context response values
-	loadContextResponseValues(applyContextSettings(ctx, req), resp)
+	loadContextResponseValues(cs, resp)
 	// Parse result
 	if result != nil {
 		if err := resp.ParseBody("", result); err != nil {

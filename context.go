@@ -141,8 +141,8 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 // WithAllowDirtyReads is used in an active failover scenario to allow reads from the follower.
 // You can pass a reference to a boolean that will set according to wether a potentially dirty read
 // happened or not. nil is allowed.
-func WithAllowDirtyReads(parent context.Context, value *bool) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, value)
+func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, wasDirtyRead)
 }
 
 // WithRawResponse is used to configure a context that will make all functions store the raw response into a
