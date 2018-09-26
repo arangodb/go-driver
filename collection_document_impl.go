@@ -71,6 +71,8 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	if err := resp.ParseBody("", &meta); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
+	// load context response values
+	loadContextResponseValues(applyContextSettings(ctx, req), resp)
 	// Parse result
 	if result != nil {
 		if err := resp.ParseBody("", result); err != nil {
@@ -120,6 +122,8 @@ func (c *collection) ReadDocuments(ctx context.Context, keys []string, results i
 	if err := resp.CheckStatus(200); err != nil {
 		return nil, nil, WithStack(err)
 	}
+	// load context response values
+	loadContextResponseValues(cs, resp)
 	// Parse response array
 	metas, errs, err := parseResponseArray(resp, resultCount, cs, results)
 	if err != nil {

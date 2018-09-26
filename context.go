@@ -57,6 +57,7 @@ const (
 	keyDBServerID               ContextKey = "arangodb-dbserverID"
 	keyBatchID                  ContextKey = "arangodb-batchID"
 	keyJobIDResponse            ContextKey = "arangodb-jobIDResponse"
+	keyAllowDirtyReads          ContextKey = "arangodb-allowDirtyReads"
 )
 
 // WithRevision is used to configure a context to make document
@@ -135,6 +136,13 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 		v = value[0]
 	}
 	return context.WithValue(contextOrBackground(parent), keyWaitForSync, v)
+}
+
+// WithAllowDirtyReads is used in an active failover scenario to allow reads from the follower.
+// You can pass a reference to a boolean that will set according to wether a potentially dirty read
+// happened or not. nil is allowed.
+func WithAllowDirtyReads(parent context.Context, value *bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, value)
 }
 
 // WithRawResponse is used to configure a context that will make all functions store the raw response into a
@@ -231,6 +239,7 @@ type contextSettings struct {
 	ImportDetails            *[]string
 	IsRestore                bool
 	IsSystem                 bool
+	AllowDirtyReads          *bool
 	IgnoreRevs               *bool
 	EnforceReplicationFactor *bool
 	Configured               *bool
@@ -238,6 +247,19 @@ type contextSettings struct {
 	DBServerID               string
 	BatchID                  string
 	JobIDResponse            *string
+}
+
+// loadContextResponseValue loads generic values from the response and puts it into variables specified
+// via context values.
+func loadContextResponseValues(cs contextSettings, resp Response) {
+	// Parse potential dirty read
+	if cs.AllowDirtyReads != nil {
+		if dirtyRead := resp.Header("X-Arango-Potential-Dirty-Read"); dirtyRead != "" {
+			*cs.AllowDirtyReads = (dirtyRead == "true")
+		} else {
+			*cs.AllowDirtyReads = false
+		}
+	}
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -277,6 +299,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if waitForSync, ok := v.(bool); ok {
 			req.SetQuery("waitForSync", strconv.FormatBool(waitForSync))
 			result.WaitForSync = waitForSync
+		}
+	}
+	// AllowDirtyReads
+	if v := ctx.Value(keyAllowDirtyReads); v != nil {
+		if allowDirtyReads, ok := v.(*bool); ok {
+			req.SetHeader("x-arango-allow-dirty-read", "true")
+			result.AllowDirtyReads = allowDirtyReads
 		}
 	}
 	// ReturnOld

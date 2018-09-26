@@ -49,6 +49,7 @@ func ensureArangoSearchView(ctx context.Context, db driver.Database, name string
 	return result
 }
 
+// checkLinkExists tests if a given collection is linked to the given arangosearch view
 func checkLinkExists(ctx context.Context, view driver.ArangoSearchView, colName string, t testEnv) bool {
 	props, err := view.Properties(ctx)
 	if err != nil {
