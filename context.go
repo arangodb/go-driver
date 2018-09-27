@@ -141,6 +141,7 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 // WithAllowDirtyReads is used in an active failover scenario to allow reads from the follower.
 // You can pass a reference to a boolean that will set according to wether a potentially dirty read
 // happened or not. nil is allowed.
+// This is valid for document reads, aql queries, gharial vertex and edge reads.
 func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, wasDirtyRead)
 }
@@ -239,7 +240,8 @@ type contextSettings struct {
 	ImportDetails            *[]string
 	IsRestore                bool
 	IsSystem                 bool
-	AllowDirtyReads          *bool
+	AllowDirtyReads          bool
+	DirtyReadFlag            *bool
 	IgnoreRevs               *bool
 	EnforceReplicationFactor *bool
 	Configured               *bool
@@ -253,11 +255,11 @@ type contextSettings struct {
 // via context values.
 func loadContextResponseValues(cs contextSettings, resp Response) {
 	// Parse potential dirty read
-	if cs.AllowDirtyReads != nil {
+	if cs.AllowDirtyReads && cs.DirtyReadFlag != nil {
 		if dirtyRead := resp.Header("X-Arango-Potential-Dirty-Read"); dirtyRead != "" {
-			*cs.AllowDirtyReads = (dirtyRead == "true")
+			*cs.DirtyReadFlag = (dirtyRead == "true")
 		} else {
-			*cs.AllowDirtyReads = false
+			*cs.DirtyReadFlag = false
 		}
 	}
 }
@@ -303,9 +305,10 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 	}
 	// AllowDirtyReads
 	if v := ctx.Value(keyAllowDirtyReads); v != nil {
-		if allowDirtyReads, ok := v.(*bool); ok {
-			req.SetHeader("x-arango-allow-dirty-read", "true")
-			result.AllowDirtyReads = allowDirtyReads
+		req.SetHeader("x-arango-allow-dirty-read", "true")
+		result.AllowDirtyReads = true
+		if dirtyReadFlag, ok := v.(*bool); ok {
+			result.DirtyReadFlag = dirtyReadFlag
 		}
 	}
 	// ReturnOld

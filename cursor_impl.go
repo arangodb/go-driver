@@ -33,26 +33,28 @@ import (
 )
 
 // newCursor creates a new Cursor implementation.
-func newCursor(data cursorData, endpoint string, db *database) (Cursor, error) {
+func newCursor(data cursorData, endpoint string, db *database, allowDirtyReads bool) (Cursor, error) {
 	if db == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "db is nil"})
 	}
 	return &cursor{
-		cursorData: data,
-		endpoint:   endpoint,
-		db:         db,
-		conn:       db.conn,
+		cursorData:      data,
+		endpoint:        endpoint,
+		db:              db,
+		conn:            db.conn,
+		allowDirtyReads: allowDirtyReads,
 	}, nil
 }
 
 type cursor struct {
 	cursorData
-	endpoint    string
-	resultIndex int
-	db          *database
-	conn        Connection
-	closed      int32
-	closeMutex  sync.Mutex
+	endpoint        string
+	resultIndex     int
+	db              *database
+	conn            Connection
+	closed          int32
+	closeMutex      sync.Mutex
+	allowDirtyReads bool
 }
 
 type cursorStats struct {
@@ -139,12 +141,23 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 	// Force use of initial endpoint
 	ctx = WithEndpoint(ctx, c.endpoint)
 
+	// Concerns: the `wasDirtyRead` flag is updated only when a new batch is fetched.
+	// From a user perspective this results in strange and inconsistent behaviour. Fetching a batch is an implementation detail.
+	// Maybe we should not support updating this flag here or set it actively in every call, regardless of fetching a new batch.
+	//
+	// if dirty reads have been set before and the current context does not
+	// allow dirty reads, we have to allow it here.
+	if c.allowDirtyReads && ctx.Value(keyAllowDirtyReads) == nil {
+		ctx = WithAllowDirtyReads(ctx, nil)
+	}
+
 	if c.resultIndex >= len(c.Result) && c.cursorData.HasMore {
 		// Fetch next batch
 		req, err := c.conn.NewRequest("PUT", path.Join(c.relPath(), c.cursorData.ID))
 		if err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
+		cs := applyContextSettings(ctx, req)
 		resp, err := c.conn.Do(ctx, req)
 		if err != nil {
 			return DocumentMeta{}, WithStack(err)
@@ -152,6 +165,7 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 		if err := resp.CheckStatus(200); err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
+		loadContextResponseValues(cs, resp)
 		var data cursorData
 		if err := resp.ParseBody("", &data); err != nil {
 			return DocumentMeta{}, WithStack(err)

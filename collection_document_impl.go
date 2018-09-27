@@ -59,6 +59,8 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
+	// This line introduces a lot of side effects. In particular If-Match headers are now set (which is a bugfix)
+	// and invalid query parameters like waitForSync (which is potentially breaking change)
 	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
