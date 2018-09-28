@@ -268,7 +268,7 @@ func loadContextResponseValues(cs contextSettings, resp Response) {
 // specified value, if required and reference is not nil.
 func setDirtyReadFlagIfRequired(ctx context.Context, wasDirty bool) {
 	if v := ctx.Value(keyAllowDirtyReads); v != nil {
-		if ref, ok := v.(*bool); ok {
+		if ref, ok := v.(*bool); ok && ref != nil {
 			*ref = wasDirty
 		}
 	}
