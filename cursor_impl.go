@@ -48,13 +48,14 @@ func newCursor(data cursorData, endpoint string, db *database, allowDirtyReads b
 
 type cursor struct {
 	cursorData
-	endpoint        string
-	resultIndex     int
-	db              *database
-	conn            Connection
-	closed          int32
-	closeMutex      sync.Mutex
-	allowDirtyReads bool
+	endpoint         string
+	resultIndex      int
+	db               *database
+	conn             Connection
+	closed           int32
+	closeMutex       sync.Mutex
+	allowDirtyReads  bool
+	lastReadWasDirty bool
 }
 
 type cursorStats struct {
@@ -141,24 +142,22 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 	// Force use of initial endpoint
 	ctx = WithEndpoint(ctx, c.endpoint)
 
-	// Concerns: the `wasDirtyRead` flag is updated only when a new batch is fetched.
-	// From a user perspective this results in strange and inconsistent behaviour. Fetching a batch is an implementation detail.
-	// Maybe we should not support updating this flag here or set it actively in every call, regardless of fetching a new batch.
-	//
-	// if dirty reads have been set before and the current context does not
-	// allow dirty reads, we have to allow it here.
-	if c.allowDirtyReads && ctx.Value(keyAllowDirtyReads) == nil {
-		ctx = WithAllowDirtyReads(ctx, nil)
-	}
-
 	if c.resultIndex >= len(c.Result) && c.cursorData.HasMore {
+		// This is required since we are interested if this was a dirty read
+		// but we do not want to trash the users bool reference.
+		var wasDirtyRead bool
+		fetchctx := ctx
+		if c.allowDirtyReads {
+			fetchctx = WithAllowDirtyReads(ctx, &wasDirtyRead)
+		}
+
 		// Fetch next batch
 		req, err := c.conn.NewRequest("PUT", path.Join(c.relPath(), c.cursorData.ID))
 		if err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
-		cs := applyContextSettings(ctx, req)
-		resp, err := c.conn.Do(ctx, req)
+		cs := applyContextSettings(fetchctx, req)
+		resp, err := c.conn.Do(fetchctx, req)
 		if err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
@@ -172,6 +171,12 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 		}
 		c.cursorData = data
 		c.resultIndex = 0
+		c.lastReadWasDirty = wasDirtyRead
+	}
+	// ReadDocument should act as if it would actually do a read
+	// hence update the bool reference
+	if c.allowDirtyReads {
+		setDirtyReadFlagIfRequired(ctx, c.lastReadWasDirty)
 	}
 
 	index := c.resultIndex
