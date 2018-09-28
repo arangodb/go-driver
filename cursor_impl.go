@@ -33,26 +33,29 @@ import (
 )
 
 // newCursor creates a new Cursor implementation.
-func newCursor(data cursorData, endpoint string, db *database) (Cursor, error) {
+func newCursor(data cursorData, endpoint string, db *database, allowDirtyReads bool) (Cursor, error) {
 	if db == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "db is nil"})
 	}
 	return &cursor{
-		cursorData: data,
-		endpoint:   endpoint,
-		db:         db,
-		conn:       db.conn,
+		cursorData:      data,
+		endpoint:        endpoint,
+		db:              db,
+		conn:            db.conn,
+		allowDirtyReads: allowDirtyReads,
 	}, nil
 }
 
 type cursor struct {
 	cursorData
-	endpoint    string
-	resultIndex int
-	db          *database
-	conn        Connection
-	closed      int32
-	closeMutex  sync.Mutex
+	endpoint         string
+	resultIndex      int
+	db               *database
+	conn             Connection
+	closed           int32
+	closeMutex       sync.Mutex
+	allowDirtyReads  bool
+	lastReadWasDirty bool
 }
 
 type cursorStats struct {
@@ -140,24 +143,40 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 	ctx = WithEndpoint(ctx, c.endpoint)
 
 	if c.resultIndex >= len(c.Result) && c.cursorData.HasMore {
+		// This is required since we are interested if this was a dirty read
+		// but we do not want to trash the users bool reference.
+		var wasDirtyRead bool
+		fetchctx := ctx
+		if c.allowDirtyReads {
+			fetchctx = WithAllowDirtyReads(ctx, &wasDirtyRead)
+		}
+
 		// Fetch next batch
 		req, err := c.conn.NewRequest("PUT", path.Join(c.relPath(), c.cursorData.ID))
 		if err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
-		resp, err := c.conn.Do(ctx, req)
+		cs := applyContextSettings(fetchctx, req)
+		resp, err := c.conn.Do(fetchctx, req)
 		if err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
 		if err := resp.CheckStatus(200); err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
+		loadContextResponseValues(cs, resp)
 		var data cursorData
 		if err := resp.ParseBody("", &data); err != nil {
 			return DocumentMeta{}, WithStack(err)
 		}
 		c.cursorData = data
 		c.resultIndex = 0
+		c.lastReadWasDirty = wasDirtyRead
+	}
+	// ReadDocument should act as if it would actually do a read
+	// hence update the bool reference
+	if c.allowDirtyReads {
+		setDirtyReadFlagIfRequired(ctx, c.lastReadWasDirty)
 	}
 
 	index := c.resultIndex

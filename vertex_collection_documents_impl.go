@@ -66,6 +66,9 @@ func (c *vertexCollection) readDocument(ctx context.Context, key string, result 
 	if err := resp.CheckStatus(200); err != nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
+	// Concerns: ReadDocuments reads multiple documents via multiple calls to readDocument (this function).
+	// Currently with AllowDirtyReads the wasDirtyFlag is only set according to the last read request.
+	loadContextResponseValues(cs, resp)
 	// Parse metadata
 	var meta DocumentMeta
 	if err := resp.ParseBody("vertex", &meta); err != nil {

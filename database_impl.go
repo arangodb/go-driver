@@ -139,6 +139,7 @@ func (d *database) Query(ctx context.Context, query string, bindVars map[string]
 	if _, err := req.SetBody(input); err != nil {
 		return nil, WithStack(err)
 	}
+	cs := applyContextSettings(ctx, req)
 	resp, err := d.conn.Do(ctx, req)
 	if err != nil {
 		return nil, WithStack(err)
@@ -150,7 +151,7 @@ func (d *database) Query(ctx context.Context, query string, bindVars map[string]
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	col, err := newCursor(data, resp.Endpoint(), d)
+	col, err := newCursor(data, resp.Endpoint(), d, cs.AllowDirtyReads)
 	if err != nil {
 		return nil, WithStack(err)
 	}

@@ -57,6 +57,7 @@ const (
 	keyDBServerID               ContextKey = "arangodb-dbserverID"
 	keyBatchID                  ContextKey = "arangodb-batchID"
 	keyJobIDResponse            ContextKey = "arangodb-jobIDResponse"
+	keyAllowDirtyReads          ContextKey = "arangodb-allowDirtyReads"
 )
 
 // WithRevision is used to configure a context to make document
@@ -135,6 +136,14 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 		v = value[0]
 	}
 	return context.WithValue(contextOrBackground(parent), keyWaitForSync, v)
+}
+
+// WithAllowDirtyReads is used in an active failover deployment to allow reads from the follower.
+// You can pass a reference to a boolean that will set according to wether a potentially dirty read
+// happened or not. nil is allowed.
+// This is valid for document reads, aql queries, gharial vertex and edge reads.
+func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, wasDirtyRead)
 }
 
 // WithRawResponse is used to configure a context that will make all functions store the raw response into a
@@ -231,6 +240,8 @@ type contextSettings struct {
 	ImportDetails            *[]string
 	IsRestore                bool
 	IsSystem                 bool
+	AllowDirtyReads          bool
+	DirtyReadFlag            *bool
 	IgnoreRevs               *bool
 	EnforceReplicationFactor *bool
 	Configured               *bool
@@ -238,6 +249,29 @@ type contextSettings struct {
 	DBServerID               string
 	BatchID                  string
 	JobIDResponse            *string
+}
+
+// loadContextResponseValue loads generic values from the response and puts it into variables specified
+// via context values.
+func loadContextResponseValues(cs contextSettings, resp Response) {
+	// Parse potential dirty read
+	if cs.DirtyReadFlag != nil {
+		if dirtyRead := resp.Header("X-Arango-Potential-Dirty-Read"); dirtyRead != "" {
+			*cs.DirtyReadFlag = true // The documentation does not say anything about the actual value (dirtyRead == "true")
+		} else {
+			*cs.DirtyReadFlag = false
+		}
+	}
+}
+
+// setDirtyReadFlagIfRequired is a helper function that sets the bool reference for allowDirtyReads to the
+// specified value, if required and reference is not nil.
+func setDirtyReadFlagIfRequired(ctx context.Context, wasDirty bool) {
+	if v := ctx.Value(keyAllowDirtyReads); v != nil {
+		if ref, ok := v.(*bool); ok && ref != nil {
+			*ref = wasDirty
+		}
+	}
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.
@@ -277,6 +311,14 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if waitForSync, ok := v.(bool); ok {
 			req.SetQuery("waitForSync", strconv.FormatBool(waitForSync))
 			result.WaitForSync = waitForSync
+		}
+	}
+	// AllowDirtyReads
+	if v := ctx.Value(keyAllowDirtyReads); v != nil {
+		req.SetHeader("x-arango-allow-dirty-read", "true")
+		result.AllowDirtyReads = true
+		if dirtyReadFlag, ok := v.(*bool); ok {
+			result.DirtyReadFlag = dirtyReadFlag
 		}
 	}
 	// ReturnOld
