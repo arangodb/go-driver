@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma @
-//
 
 // +build !auth
 
@@ -78,7 +76,6 @@ func Example_createGraph() {
 	options.OrphanVertexCollections = []string{"myCollection4", "myCollection5"}
 	options.EdgeDefinitions = []driver.EdgeDefinition{edgeDefinition}
 
-	// TODO: what is context? can it be nil?
 	// now it's possible to create a graph
 	graph, err := db.CreateGraph(nil, "myGraph", &options)
 	if err != nil {
@@ -120,7 +117,4 @@ func Example_createGraph() {
 
 	// delete graph
 	graph.Remove(nil)
-
-	// Output:
-	// Hello World
 }
