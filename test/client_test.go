@@ -185,7 +185,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 			t.Fatalf("Connection is not available in %s", timeout)
 		}
 		// Synchronize endpoints
-		if err := c.SynchronizeEndpoints(context.Background()); err != nil {
+		if !waitUntilEndpointSynchronized(ctx, c, t) {
 			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
 		} else {
 			logEndpointsOnce.Do(func() {
@@ -210,6 +210,33 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) b
 			}
 			cancel()
 			//t.Logf("Version failed: %s %#v", describe(err), err)
+			time.Sleep(time.Second)
+		}
+	}()
+	select {
+	case up := <-instanceUp:
+		return up
+	case <-ctx.Done():
+		return false
+	}
+}
+
+// waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.
+func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, t testEnv) bool {
+	instanceUp := make(chan bool)
+	go func() {
+		for {
+			callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+			if err := c.SynchronizeEndpoints(callCtx); err != nil {
+				if !driver.IsNoLeaderOrOngoing(err) {
+					t.Errorf("Failed to synchronize endpoints: %s", describe(err))
+				}
+			} else {
+				cancel()
+				instanceUp <- true
+				return
+			}
+			cancel()
 			time.Sleep(time.Second)
 		}
 	}()
