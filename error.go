@@ -128,6 +128,11 @@ func IsNoLeader(err error) bool {
 	return IsArangoErrorWithCode(err, 503) && IsArangoErrorWithErrorNum(err, 1496)
 }
 
+// IsNoLeaderOrOngoing return true if the given error is an ArangoError with code 503 and error number 1496 or 1495
+func IsNoLeaderOrOngoing(err error) bool {
+	return IsArangoErrorWithCode(err, 503) && (IsArangoErrorWithErrorNum(err, 1495) || IsArangoErrorWithErrorNum(err, 1496))
+}
+
 // InvalidArgumentError is returned when a go function argument is invalid.
 type InvalidArgumentError struct {
 	Message string
