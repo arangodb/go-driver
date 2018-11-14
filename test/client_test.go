@@ -188,9 +188,9 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		if !waitUntilEndpointSynchronized(ctx, c, t) {
 			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
 		} else {
-			logEndpointsOnce.Do(func() {
-				t.Logf("Found endpoints: %v", conn.Endpoints())
-			})
+			//logEndpointsOnce.Do(func() {
+			t.Logf("Found endpoints: %v", conn.Endpoints())
+			//})
 		}
 	}
 	return c
@@ -223,17 +223,23 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) b
 
 // waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.
 func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, t testEnv) bool {
-	instanceUp := make(chan bool)
+	endpointsSynced := make(chan bool)
 	go func() {
 		for {
 			callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 			if err := c.SynchronizeEndpoints(callCtx); err != nil {
 				if !driver.IsNoLeaderOrOngoing(err) {
 					t.Errorf("Failed to synchronize endpoints: %s", describe(err))
+					cancel()
+					endpointsSynced <- false
+					return
 				}
+				t.Logf("Retry. Failed to synchronize endpoints: %s", describe(err))
+
 			} else {
 				cancel()
-				instanceUp <- true
+				endpointsSynced <- true
+				t.Logf("(waitUntilEndpointSynchronized) Found endpoints: %v", c.Connection().Endpoints())
 				return
 			}
 			cancel()
@@ -241,9 +247,10 @@ func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, t testE
 		}
 	}()
 	select {
-	case up := <-instanceUp:
+	case up := <-endpointsSynced:
 		return up
 	case <-ctx.Done():
+		t.Fatalf("Could not synchronize endpoints in time")
 		return false
 	}
 }
