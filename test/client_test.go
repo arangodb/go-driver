@@ -188,9 +188,9 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		if !waitUntilEndpointSynchronized(ctx, c, t) {
 			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
 		} else {
-			//logEndpointsOnce.Do(func() {
-			t.Logf("Found endpoints: %v", conn.Endpoints())
-			//})
+			logEndpointsOnce.Do(func() {
+				t.Logf("Found endpoints: %v", conn.Endpoints())
+			})
 		}
 	}
 	return c
@@ -239,8 +239,7 @@ func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, t testE
 			} else {
 				cancel()
 				endpointsSynced <- true
-				t.Logf("(waitUntilEndpointSynchronized) Found endpoints: %v", c.Connection().Endpoints())
-
+				//t.Logf("(waitUntilEndpointSynchronized) Found endpoints: %v", c.Connection().Endpoints())
 				return
 			}
 			cancel()
