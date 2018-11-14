@@ -240,6 +240,7 @@ func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, t testE
 				cancel()
 				endpointsSynced <- true
 				t.Logf("(waitUntilEndpointSynchronized) Found endpoints: %v", c.Connection().Endpoints())
+
 				return
 			}
 			cancel()

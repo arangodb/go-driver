@@ -152,6 +152,8 @@ func TestGrantUserDatabase(t *testing.T) {
 
 	authDb := waitForDatabaseAccess(authClient, "grant_user_test", t)
 
+	authDb := waitForDatabaseAccess(authClient, "grant_user_test", t)
+
 	// Try to create a collection in the db
 	if _, err := authDb.CreateCollection(nil, "some_collection", nil); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
@@ -377,6 +379,8 @@ func TestGrantUserCollection(t *testing.T) {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
 	ensureSynchronizedEndpoints(authClient, t)
+
+	authDb := waitForDatabaseAccess(authClient, "grant_user_col_test", t)
 
 	authDb := waitForDatabaseAccess(authClient, "grant_user_col_test", t)
 
@@ -633,6 +637,7 @@ func waitForDatabaseAccess(authClient driver.Client, dbname string, t *testing.T
 		return nil
 	}
 }
+<<<<<<< HEAD
 
 func ensureSynchronizedEndpoints(authClient driver.Client, t *testing.T) {
 	ctx, _ := context.WithTimeout(context.Background(), time.Minute*2)
@@ -640,3 +645,5 @@ func ensureSynchronizedEndpoints(authClient driver.Client, t *testing.T) {
 		t.Fatalf("Failed to synchronize endpoint")
 	}
 }
+=======
+>>>>>>> origin/master
