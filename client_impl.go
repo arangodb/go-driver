@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"path"
 	"time"
 
 	"github.com/arangodb/go-driver/util"
@@ -67,6 +68,19 @@ func (c *client) Connection() Connection {
 // When this client is connected to a cluster of servers, the connection will be updated to reflect
 // the layout of the cluster.
 func (c *client) SynchronizeEndpoints(ctx context.Context) error {
+	return c.SynchronizeEndpoints2(ctx, "")
+}
+
+// SynchronizeEndpoints2 fetches all endpoints from an ArangoDB cluster and updates the
+// connection to use those endpoints.
+// When this client is connected to a single server, nothing happens.
+// When this client is connected to a cluster of servers, the connection will be updated to reflect
+// the layout of the cluster.
+// Compared to SynchronizeEndpoints, this function expects a database name as additional parameter.
+// This database name is used to call `_db/<dbname>/_api/cluster/endpoints`. SynchronizeEndpoints uses
+// the default database, i.e. `_system`. In the case the user does not have access to `_system`,
+// SynchronizeEndpoints does not work with earlier versions of arangodb.
+func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error {
 	role, err := c.ServerRole(ctx)
 	if err != nil {
 		return WithStack(err)
@@ -77,7 +91,7 @@ func (c *client) SynchronizeEndpoints(ctx context.Context) error {
 	}
 
 	// Cluster mode, fetch endpoints
-	cep, err := c.clusterEndpoints(ctx)
+	cep, err := c.clusterEndpoints(ctx, dbname)
 	if err != nil {
 		return WithStack(err)
 	}
@@ -114,8 +128,14 @@ type clusterEndpoint struct {
 }
 
 // clusterEndpoints returns the endpoints of a cluster.
-func (c *client) clusterEndpoints(ctx context.Context) (clusterEndpointsResponse, error) {
-	req, err := c.conn.NewRequest("GET", "_api/cluster/endpoints")
+func (c *client) clusterEndpoints(ctx context.Context, dbname string) (clusterEndpointsResponse, error) {
+	var url string
+	if dbname == "" {
+		url = "_api/cluster/endpoints"
+	} else {
+		url = path.Join("_db", pathEscape(dbname), "_api/cluster/endpoints")
+	}
+	req, err := c.conn.NewRequest("GET", url)
 	if err != nil {
 		return clusterEndpointsResponse{}, WithStack(err)
 	}
