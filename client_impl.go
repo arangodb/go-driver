@@ -84,7 +84,12 @@ func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error
 	// Cluster mode, fetch endpoints
 	cep, err := c.clusterEndpoints(ctx, dbname)
 	if err != nil {
-		return WithStack(err)
+		// ignore Forbidden: automatic failover is not enabled errors
+		if !IsArangoErrorWithErrorNum(err, 403, 11) {
+			return WithStack(err)
+		}
+
+		return nil
 	}
 	var endpoints []string
 	for _, ep := range cep.Endpoints {
