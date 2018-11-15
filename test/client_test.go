@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	httplib "net/http"
 	"os"
@@ -181,11 +182,11 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		timeout := 3 * time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		if up := waitUntilServerAvailable(ctx, c, t); !up {
-			t.Fatalf("Connection is not available in %s", timeout)
+		if up := waitUntilServerAvailable(ctx, c, t); up != nil {
+			t.Fatalf("Connection is not available in %s: %s", timeout, describe(up))
 		}
 		// Synchronize endpoints
-		if !waitUntilEndpointSynchronized(ctx, c, t) {
+		if err := waitUntilEndpointSynchronized(ctx, c, "", t); err != nil {
 			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
 		} else {
 			logEndpointsOnce.Do(func() {
@@ -197,61 +198,68 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 }
 
 // waitUntilServerAvailable keeps waiting until the server/cluster that the client is addressing is available.
-func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) bool {
-	instanceUp := make(chan bool)
+func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) error {
+	instanceUp := make(chan error)
 	go func() {
 		for {
 			verCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 			if _, err := c.Version(verCtx); err == nil {
+
+				// check if leader challenge is ongoing
+				if _, err := c.ServerRole(verCtx); err != nil {
+					if !driver.IsNoLeaderOrOngoing(err) {
+						cancel()
+						instanceUp <- err
+						return
+					}
+					//t.Logf("Retry. Waiting for leader: %s", describe(err))
+					continue
+				}
+
 				//t.Logf("Found version %s", v.Version)
 				cancel()
-				instanceUp <- true
+				instanceUp <- nil
 				return
 			}
 			cancel()
 			//t.Logf("Version failed: %s %#v", describe(err), err)
-			time.Sleep(time.Second)
+			time.Sleep(time.Second * 2)
 		}
 	}()
 	select {
 	case up := <-instanceUp:
 		return up
 	case <-ctx.Done():
-		return false
+		return nil
 	}
 }
 
 // waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.
-func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, t testEnv) bool {
-	endpointsSynced := make(chan bool)
+func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname string, t testEnv) error {
+	endpointsSynced := make(chan error)
 	go func() {
 		for {
 			callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-			if err := c.SynchronizeEndpoints(callCtx); err != nil {
-				if !driver.IsNoLeaderOrOngoing(err) {
-					t.Errorf("Failed to synchronize endpoints: %s", describe(err))
-					cancel()
-					endpointsSynced <- false
-					return
-				}
-				t.Logf("Retry. Failed to synchronize endpoints: %s", describe(err))
-
+			if err := c.SynchronizeEndpoints2(callCtx, dbname); err != nil {
+				//t.Logf("SynchonizedEnpoints failed: %s", describe(err))
 			} else {
 				cancel()
-				endpointsSynced <- true
-				//t.Logf("(waitUntilEndpointSynchronized) Found endpoints: %v", c.Connection().Endpoints())
+				endpointsSynced <- nil
 				return
 			}
 			cancel()
-			time.Sleep(time.Second)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Second):
+			}
 		}
 	}()
 	select {
 	case up := <-endpointsSynced:
 		return up
 	case <-ctx.Done():
-		t.Fatalf("Could not synchronize endpoints in time")
-		return false
+		return fmt.Errorf("Timeout while synchronizing endpoints")
 	}
 }
 
@@ -295,8 +303,8 @@ func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
 	timeout := 3 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	if up := waitUntilServerAvailable(ctx, c, t); !up {
-		t.Fatalf("Connection is not available in %s", timeout)
+	if up := waitUntilServerAvailable(ctx, c, t); up != nil {
+		t.Fatalf("Connection is not available in %s: %s", timeout, describe(up))
 	}
 	if info, err := c.Version(driver.WithDetails(ctx)); err != nil {
 		t.Errorf("Version failed: %s", describe(err))
