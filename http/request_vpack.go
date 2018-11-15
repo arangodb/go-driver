@@ -47,6 +47,11 @@ type httpVPackRequest struct {
 	written bool
 }
 
+// Path returns the Request path
+func (r *httpVPackRequest) Path() string {
+	return r.path
+}
+
 // Clone creates a new request containing the same data as this request
 func (r *httpVPackRequest) Clone() driver.Request {
 	clone := *r

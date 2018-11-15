@@ -51,6 +51,7 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+	ensureSynchronizedEndpoints(authClient, "", t)
 
 	if isVST1_0 && !isv32p {
 		t.Skip("Cannot update my own password using VST in 3.1")
@@ -89,6 +90,7 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+	ensureSynchronizedEndpoints(authClient, "", t)
 
 	if isVST1_0 && !isv32p {
 		t.Skip("Cannot update other password using VST in 3.1")

@@ -79,6 +79,8 @@ type Request interface {
 	Written() bool
 	// Clone creates a new request containing the same data as this request
 	Clone() Request
+	// Path returns the Request path
+	Path() string
 }
 
 // Response represents the response from the server on a given request.

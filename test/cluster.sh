@@ -50,7 +50,7 @@ if [ "$CMD" == "start" ]; then
         ${STARTER} \
         --starter.port=7000 --starter.address=127.0.0.1 \
         --docker.image=${ARANGODB} \
-        --starter.local --starter.mode=${STARTERMODE} --all.log.output=+ $STARTERARGS 
+        --starter.local --starter.mode=${STARTERMODE} --all.log.output=+ $STARTERARGS --all.log.level trace
 
     # Wait for the setup to become ready
     sleep 5
