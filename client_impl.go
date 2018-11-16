@@ -81,19 +81,15 @@ func (c *client) SynchronizeEndpoints(ctx context.Context) error {
 // the default database, i.e. `_system`. In the case the user does not have access to `_system`,
 // SynchronizeEndpoints does not work with earlier versions of arangodb.
 func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error {
-	role, err := c.ServerRole(ctx)
-	if err != nil {
-		return WithStack(err)
-	}
-	if role == ServerRoleSingle {
-		// Standalone server, do nothing
-		return nil
-	}
-
 	// Cluster mode, fetch endpoints
 	cep, err := c.clusterEndpoints(ctx, dbname)
 	if err != nil {
-		return WithStack(err)
+		// ignore Forbidden: automatic failover is not enabled errors
+		if !IsArangoErrorWithErrorNum(err, 403, 0, 11) { // 3.2 returns no error code, thus check for 0
+			return WithStack(err)
+		}
+
+		return nil
 	}
 	var endpoints []string
 	for _, ep := range cep.Endpoints {

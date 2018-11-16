@@ -51,6 +51,7 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+	ensureSynchronizedEndpoints(authClient, "", t)
 
 	if isVST1_0 && !isv32p {
 		t.Skip("Cannot update my own password using VST in 3.1")
@@ -89,6 +90,7 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+	ensureSynchronizedEndpoints(authClient, "", t)
 
 	if isVST1_0 && !isv32p {
 		t.Skip("Cannot update other password using VST in 3.1")
@@ -146,7 +148,7 @@ func TestGrantUserDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
-
+	ensureSynchronizedEndpoints(authClient, "grant_user_test", t)
 	authDb := waitForDatabaseAccess(authClient, "grant_user_test", t)
 
 	// Try to create a collection in the db
@@ -228,6 +230,7 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
+	ensureSynchronizedEndpoints(authClient, "grant_user_def_test", t)
 
 	// Try to create a collection in the db, should succeed
 	authDb := waitForDatabaseAccess(authClient, "grant_user_def_test", t)
@@ -372,7 +375,7 @@ func TestGrantUserCollection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
 	}
-
+	ensureSynchronizedEndpoints(authClient, "grant_user_col_test", t)
 	authDb := waitForDatabaseAccess(authClient, "grant_user_col_test", t)
 
 	// Try to create a document in the col
@@ -626,5 +629,12 @@ func waitForDatabaseAccess(authClient driver.Client, dbname string, t *testing.T
 		}
 		t.Fatalf("Failed to select database, got %s", describe(err))
 		return nil
+	}
+}
+
+func ensureSynchronizedEndpoints(authClient driver.Client, dbname string, t *testing.T) {
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
+	if err := waitUntilEndpointSynchronized(ctx, authClient, dbname, t); err != nil {
+		t.Fatalf("Failed to synchronize endpoint: %s", describe(err))
 	}
 }

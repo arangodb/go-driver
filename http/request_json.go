@@ -47,6 +47,16 @@ type httpJSONRequest struct {
 	written bool
 }
 
+// Path returns the Request path
+func (r *httpJSONRequest) Path() string {
+	return r.path
+}
+
+// Method returns the Request method
+func (r *httpJSONRequest) Method() string {
+	return r.method
+}
+
 // Clone creates a new request containing the same data as this request
 func (r *httpJSONRequest) Clone() driver.Request {
 	clone := *r

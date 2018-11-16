@@ -40,6 +40,17 @@ type Client interface {
 	// This function requires ArangoDB 3.1.15 or up.
 	SynchronizeEndpoints(ctx context.Context) error
 
+	// SynchronizeEndpoints2 fetches all endpoints from an ArangoDB cluster and updates the
+	// connection to use those endpoints.
+	// When this client is connected to a single server, nothing happens.
+	// When this client is connected to a cluster of servers, the connection will be updated to reflect
+	// the layout of the cluster.
+	// Compared to SynchronizeEndpoints, this function expects a database name as additional parameter.
+	// This database name is used to call `_db/<dbname>/_api/cluster/endpoints`. SynchronizeEndpoints uses
+	// the default database, i.e. `_system`. In the case the user does not have access to `_system`,
+	// SynchronizeEndpoints does not work with earlier versions of arangodb.
+	SynchronizeEndpoints2(ctx context.Context, dbname string) error
+
 	// Connection returns the connection used by this client
 	Connection() Connection
 
