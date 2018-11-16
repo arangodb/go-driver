@@ -179,7 +179,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
 	if waitUntilReady {
-		timeout := 3 * time.Minute
+		timeout := time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		if up := waitUntilServerAvailable(ctx, c, t); up != nil {
@@ -241,7 +241,7 @@ func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname 
 		for {
 			callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 			if err := c.SynchronizeEndpoints2(callCtx, dbname); err != nil {
-				//t.Logf("SynchonizedEnpoints failed: %s", describe(err))
+				t.Logf("SynchonizedEnpoints failed: %s", describe(err))
 			} else {
 				cancel()
 				endpointsSynced <- nil
