@@ -81,6 +81,8 @@ type Request interface {
 	Clone() Request
 	// Path returns the Request path
 	Path() string
+	// Method returns the Request method
+	Method() string
 }
 
 // Response represents the response from the server on a given request.

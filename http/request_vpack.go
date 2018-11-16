@@ -52,6 +52,11 @@ func (r *httpVPackRequest) Path() string {
 	return r.path
 }
 
+// Method returns the Request method
+func (r *httpVPackRequest) Method() string {
+	return r.method
+}
+
 // Clone creates a new request containing the same data as this request
 func (r *httpVPackRequest) Clone() driver.Request {
 	clone := *r
