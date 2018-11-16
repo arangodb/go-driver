@@ -85,7 +85,7 @@ func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error
 	cep, err := c.clusterEndpoints(ctx, dbname)
 	if err != nil {
 		// ignore Forbidden: automatic failover is not enabled errors
-		if !IsArangoErrorWithErrorNum(err, 403, 11) {
+		if !IsArangoErrorWithErrorNum(err, 403, 0, 11) { // 3.2 returns no error code, thus check for 0
 			return WithStack(err)
 		}
 
