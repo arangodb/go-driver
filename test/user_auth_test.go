@@ -56,12 +56,30 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 	if isVST1_0 && !isv32p {
 		t.Skip("Cannot update my own password using VST in 3.1")
 	} else {
-		u, err := authClient.User(nil, "user@TestUpdateUserPasswordMyself")
-		if err != nil {
-			t.Fatalf("Expected success, got %s", describe(err))
-		}
-		if err := u.Update(context.TODO(), driver.UserOptions{Password: "something"}); err != nil {
-			t.Errorf("Expected success, got %s", describe(err))
+
+		// wait for change to propagate
+		{
+			deadline := time.Now().Add(time.Minute)
+			for {
+				u, err := authClient.User(nil, "user@TestUpdateUserPasswordMyself")
+				if err != nil {
+					if time.Now().Before(deadline) {
+						t.Logf("Expected success, got %s, trying again...", describe(err))
+						time.Sleep(time.Second * 2)
+						continue
+					}
+					t.Fatalf("Expected success, got %s", describe(err))
+				}
+				if err := u.Update(context.TODO(), driver.UserOptions{Password: "something"}); err != nil {
+					if time.Now().Before(deadline) {
+						t.Logf("Expected success, got %s, trying again...", describe(err))
+						time.Sleep(time.Second * 2)
+						continue
+					}
+					t.Errorf("Expected success, got %s", describe(err))
+				}
+				break
+			}
 		}
 	}
 }
@@ -637,4 +655,5 @@ func ensureSynchronizedEndpoints(authClient driver.Client, dbname string, t *tes
 	if err := waitUntilEndpointSynchronized(ctx, authClient, dbname, t); err != nil {
 		t.Fatalf("Failed to synchronize endpoint: %s", describe(err))
 	}
+	t.Logf("Endpoints synchronized: %v", authClient.Connection().Endpoints())
 }

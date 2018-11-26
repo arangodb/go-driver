@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"time"
 
@@ -84,12 +85,7 @@ func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error
 	// Cluster mode, fetch endpoints
 	cep, err := c.clusterEndpoints(ctx, dbname)
 	if err != nil {
-		// ignore Forbidden: automatic failover is not enabled errors
-		if !IsArangoErrorWithErrorNum(err, 403, 0, 11) { // 3.2 returns no error code, thus check for 0
-			return WithStack(err)
-		}
-
-		return nil
+		return WithStack(err)
 	}
 	var endpoints []string
 	for _, ep := range cep.Endpoints {
@@ -131,6 +127,13 @@ func (c *client) clusterEndpoints(ctx context.Context, dbname string) (clusterEn
 	} else {
 		url = path.Join("_db", pathEscape(dbname), "_api/cluster/endpoints")
 	}
+	fmt.Printf("clusterEndpoints: %s\n", url)
+
+	var newEndpoint string
+	for {
+
+	}
+
 	req, err := c.conn.NewRequest("GET", url)
 	if err != nil {
 		return clusterEndpointsResponse{}, WithStack(err)
