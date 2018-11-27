@@ -37,8 +37,17 @@ type ClientServerAdmin interface {
 
 	// Shutdown a specific server, optionally removing it from its cluster.
 	Shutdown(ctx context.Context, removeFromCluster bool) error
+
+	// SetAdvertisedEndpoint updates the endpoint specific advertised endpoint
+	// Only useful when combined with WithEndpoint
+	SetAdvertisedEndpoint(ctx context.Context, endpoint string) error
+
+	// AdvertisedEndpoint returns the endpoint specific advertised endpoint
+	// Only useful when combined with WithEndpoint
+	AdvertisedEndpoint(ctx context.Context) (string, error)
 }
 
+// ServerMode represents the server mode
 type ServerMode string
 
 const (

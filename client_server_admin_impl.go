@@ -34,6 +34,10 @@ type serverModeRequest struct {
 	Mode ServerMode `json:"mode"`
 }
 
+type clusterAdvertisedEndpointRequest struct {
+	Endpoint string `json:"endpoint"`
+}
+
 // ServerMode returns the current mode in which the server/cluster is operating.
 // This call needs ArangoDB 3.3 and up.
 func (c *client) ServerMode(ctx context.Context) (ServerMode, error) {
@@ -97,4 +101,47 @@ func (c *client) Shutdown(ctx context.Context, removeFromCluster bool) error {
 		return WithStack(err)
 	}
 	return nil
+}
+
+// SetAdvertisedEndpoint updates the endpoint specific advertised endpoint
+func (c *client) SetAdvertisedEndpoint(ctx context.Context, endpoint string) error {
+	req, err := c.conn.NewRequest("PUT", "_admin/cluster/advertised-endpoint")
+	if err != nil {
+		return WithStack(err)
+	}
+	body := clusterAdvertisedEndpointRequest{
+		Endpoint: endpoint,
+	}
+	_, err = req.SetBody(&body)
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// AdvertisedEndpoint returns the endpoint specific advertised endpoint
+func (c *client) AdvertisedEndpoint(ctx context.Context) (string, error) {
+	req, err := c.conn.NewRequest("GET", "_admin/cluster/advertised-endpoint")
+	if err != nil {
+		return "", WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return "", WithStack(err)
+	}
+	var body clusterAdvertisedEndpointRequest
+	if err := resp.ParseBody("", &body); err != nil {
+		return "", WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return "", WithStack(err)
+	}
+	return body.Endpoint, nil
 }
