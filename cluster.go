@@ -66,6 +66,7 @@ type ClusterHealth struct {
 
 // ServerHealth contains health information of a single server in a cluster.
 type ServerHealth struct {
+	AdvertisedEndpoint  string       `json:"AdvertisedEndpoint"`
 	Endpoint            string       `json:"Endpoint"`
 	LastHeartbeatAcked  time.Time    `json:"LastHeartbeatAcked"`
 	LastHeartbeatSent   time.Time    `json:"LastHeartbeatSent"`
