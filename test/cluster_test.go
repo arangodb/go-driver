@@ -52,14 +52,12 @@ func TestClusterHealth(t *testing.T) {
 		coordinators := 0
 		for _, sh := range h.Health {
 
-			if sh.Role == driver.ServerRoleDBServer || sh.Role == driver.ServerRoleCoordinator {
-				if v, err := c.Version(nil); err == nil {
-					if v.Version.CompareTo(sh.Version) != 0 {
-						t.Errorf("Server version differs from `_api/version`, got `%s` and `%s`", v.Version, sh.Version)
-					}
-				} else {
-					t.Errorf("Version failed: %s", describe(err))
+			if v, err := c.Version(nil); err == nil {
+				if v.Version.CompareTo(sh.Version) != 0 {
+					t.Logf("Server version differs from `_api/version`, got `%s` and `%s`", v.Version, sh.Version)
 				}
+			} else {
+				t.Errorf("Version failed: %s", describe(err))
 			}
 
 			switch sh.Role {
