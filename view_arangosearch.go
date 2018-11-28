@@ -64,7 +64,7 @@ type ArangoSearchViewProperties struct {
 	// any added benefits.
 	ConsolidationInterval *int64 `json:"consolidationIntervalMsec,omitempty"`
 	// ConsolidationPolicy specifies thresholds for consolidation.
-	ConsolidationPolicy *ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
+	ConsolidationPolicy ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
 
 	// WriteBufferIdel specifies the maximum number of writers (segments) cached in the pool.
 	// 0 value turns off caching, default value is 64.
@@ -86,33 +86,32 @@ type ArangoSearchViewProperties struct {
 	Links ArangoSearchLinks `json:"links,omitempty"`
 }
 
-// ArangoSearchConsolidationType strings for consolidation types
-type ArangoSearchConsolidationType string
+// ArangoSearchConsolidationPolicyType strings for consolidation types
+type ArangoSearchConsolidationPolicyType string
 
 const (
-	// ArangoSearchConsolidationTypeTier consolidate based on segment byte size and live document count as dictated by the customization attributes.
-	ArangoSearchConsolidationTypeTier ArangoSearchConsolidationType = "tier"
-	// ArangoSearchConsolidationTypeBytesAccum consolidate if and only if ({threshold} range [0.0, 1.0])
+	// ArangoSearchConsolidationPolicyTypeTier consolidate based on segment byte size and live document count as dictated by the customization attributes.
+	ArangoSearchConsolidationPolicyTypeTier ArangoSearchConsolidationPolicyType = "tier"
+	// ArangoSearchConsolidationPolicyTypeBytesAccum consolidate if and only if ({threshold} range [0.0, 1.0])
 	// {threshold} > (segment_bytes + sum_of_merge_candidate_segment_bytes) / all_segment_bytes,
 	// i.e. the sum of all candidate segment's byte size is less than the total segment byte size multiplied by the {threshold}.
-	ArangoSearchConsolidationTypeBytesAccum ArangoSearchConsolidationType = "bytes_accum"
+	ArangoSearchConsolidationPolicyTypeBytesAccum ArangoSearchConsolidationPolicyType = "bytes_accum"
 )
 
 // ArangoSearchConsolidationPolicy holds threshold values specifying when to
 // consolidate view data.
 // Semantics of the values depend on where they are used.
-type ArangoSearchConsolidationPolicy struct {
-	// Type segment candidates for the "consolidation" operation are selected based upon several possible configurable formulas as defined by their types.
-	// See ArangoSearchConsolidationType constants.
-	Type ArangoSearchConsolidationType `json:"type"`
+type ArangoSearchConsolidationPolicy interface {
+	// Type returns the type of the ConsolidationPolicy. This interface can then be casted to the corresponding ArangoSearchConsolidationPolicy* struct.
+	Type() ArangoSearchConsolidationPolicyType
+}
 
-	// Relevant for `type == "bytes_accum"`
-
+type ArangoSearchConsolidationPolicyBytesAccum struct {
 	// Threshold, see ArangoSearchConsolidationTypeBytesAccum
 	Threshold *float64 `json:"threshold,omitempty"`
+}
 
-	// Relevant for `type == "tier"`
-
+type ArangoSearchConsolidationPolicyTier struct {
 	// MinSegments specifies the minimum number of segments that will be evaluated as candidates for consolidation.
 	MinSegments *int64 `json:"minSegments,omitempty"`
 	// MaxSegments specifies the maximum number of segments that will be evaluated as candidates for consolidation.
