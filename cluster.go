@@ -75,6 +75,8 @@ type ServerHealth struct {
 	Status              ServerStatus `json:"Status"`
 	CanBeDeleted        bool         `json:"CanBeDeleted"`
 	HostID              string       `json:"Host,omitempty"`
+	Version             Version      `json:"Version,omitempty"`
+	Engine              EngineType   `json:"Engine,omitempty"`
 }
 
 // ServerStatus describes the health status of a server

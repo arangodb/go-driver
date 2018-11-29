@@ -51,6 +51,15 @@ func TestClusterHealth(t *testing.T) {
 		dbservers := 0
 		coordinators := 0
 		for _, sh := range h.Health {
+
+			if v, err := c.Version(nil); err == nil {
+				if v.Version.CompareTo(sh.Version) != 0 {
+					t.Logf("Server version differs from `_api/version`, got `%s` and `%s`", v.Version, sh.Version)
+				}
+			} else {
+				t.Errorf("Version failed: %s", describe(err))
+			}
+
 			switch sh.Role {
 			case driver.ServerRoleAgent:
 				agents++
