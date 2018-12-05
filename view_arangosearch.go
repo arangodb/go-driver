@@ -101,16 +101,21 @@ const (
 // ArangoSearchConsolidationPolicy holds threshold values specifying when to
 // consolidate view data.
 // Semantics of the values depend on where they are used.
-type ArangoSearchConsolidationPolicy interface {
+type ArangoSearchConsolidationPolicy struct {
 	// Type returns the type of the ConsolidationPolicy. This interface can then be casted to the corresponding ArangoSearchConsolidationPolicy* struct.
-	Type() ArangoSearchConsolidationPolicyType
+	Type ArangoSearchConsolidationPolicyType
+
+	ArangoSearchConsolidationPolicyBytesAccum
+	ArangoSearchConsolidationPolicyTier
 }
 
+// ArangoSearchConsolidationPolicyBytesAccum contains fields used for ArangoSearchConsolidationPolicyTypeBytesAccum
 type ArangoSearchConsolidationPolicyBytesAccum struct {
 	// Threshold, see ArangoSearchConsolidationTypeBytesAccum
 	Threshold *float64 `json:"threshold,omitempty"`
 }
 
+// ArangoSearchConsolidationPolicyTier contains fields used for ArangoSearchConsolidationPolicyTypeTier
 type ArangoSearchConsolidationPolicyTier struct {
 	// MinSegments specifies the minimum number of segments that will be evaluated as candidates for consolidation.
 	MinSegments *int64 `json:"minSegments,omitempty"`

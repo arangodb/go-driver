@@ -24,8 +24,6 @@ package driver
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"path"
 )
 
@@ -73,73 +71,4 @@ func (v *viewArangoSearch) SetProperties(ctx context.Context, options ArangoSear
 		return WithStack(err)
 	}
 	return nil
-}
-
-func (cp *ArangoSearchConsolidationPolicyBytesAccum) Type() ArangoSearchConsolidationPolicyType {
-	return ArangoSearchConsolidationPolicyTypeBytesAccum
-}
-
-func (cp *ArangoSearchConsolidationPolicyTier) Type() ArangoSearchConsolidationPolicyType {
-	return ArangoSearchConsolidationPolicyTypeTier
-}
-
-func (cp ArangoSearchConsolidationPolicyBytesAccum) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		ArangoSearchConsolidationPolicyBytesAccum
-		Type ArangoSearchConsolidationPolicyType
-	}{
-		ArangoSearchConsolidationPolicyBytesAccum: ArangoSearchConsolidationPolicyBytesAccum(cp),
-		Type: ArangoSearchConsolidationPolicyTypeBytesAccum,
-	})
-}
-
-func (cp ArangoSearchConsolidationPolicyTier) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		ArangoSearchConsolidationPolicyTier
-		Type ArangoSearchConsolidationPolicyType
-	}{
-		ArangoSearchConsolidationPolicyTier: ArangoSearchConsolidationPolicyTier(cp),
-		Type: ArangoSearchConsolidationPolicyTypeTier,
-	})
-}
-
-func (p *ArangoSearchViewProperties) UnmarshalJSON(raw []byte) error {
-	type FakeProperties struct {
-		CleanupIntervalStep   *int64            `json:"cleanupIntervalStep,omitempty"`
-		ConsolidationInterval *int64            `json:"consolidationIntervalMsec,omitempty"`
-		WriteBufferIdel       *int64            `json:"writebufferIdle,omitempty"`
-		WriteBufferActive     *int64            `json:"writebufferActive,omitempty"`
-		WriteBufferSizeMax    *int64            `json:"writebufferSizeMax,omitempty"`
-		Links                 ArangoSearchLinks `json:"links,omitempty"`
-		ConsolidationPolicy   json.RawMessage   `json:"consolidationPolicy"`
-	}
-
-	var dec FakeProperties
-	if err := json.Unmarshal(raw, &dec); err != nil {
-		return err
-	}
-
-	p.CleanupIntervalStep = dec.CleanupIntervalStep
-	p.ConsolidationInterval = dec.CleanupIntervalStep
-	p.WriteBufferIdel = dec.WriteBufferIdel
-	p.WriteBufferActive = dec.WriteBufferActive
-	p.WriteBufferSizeMax = dec.WriteBufferSizeMax
-	p.Links = dec.Links
-
-	var typeStruct struct {
-		Type ArangoSearchConsolidationPolicyType `json:"type"`
-	}
-	if err := json.Unmarshal(dec.ConsolidationPolicy, &typeStruct); err != nil {
-		return err
-	}
-
-	switch typeStruct.Type {
-	case ArangoSearchConsolidationPolicyTypeBytesAccum:
-		p.ConsolidationPolicy = &ArangoSearchConsolidationPolicyBytesAccum{}
-	case ArangoSearchConsolidationPolicyTypeTier:
-		p.ConsolidationPolicy = &ArangoSearchConsolidationPolicyTier{}
-	default:
-		return fmt.Errorf("Unknown ConsolidationPolicyType: %s", string(typeStruct.Type))
-	}
-	return json.Unmarshal(dec.ConsolidationPolicy, &p.ConsolidationPolicy)
 }
