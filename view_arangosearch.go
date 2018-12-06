@@ -64,7 +64,7 @@ type ArangoSearchViewProperties struct {
 	// any added benefits.
 	ConsolidationInterval *int64 `json:"consolidationIntervalMsec,omitempty"`
 	// ConsolidationPolicy specifies thresholds for consolidation.
-	ConsolidationPolicy ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
+	ConsolidationPolicy *ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
 
 	// WriteBufferIdel specifies the maximum number of writers (segments) cached in the pool.
 	// 0 value turns off caching, default value is 64.
