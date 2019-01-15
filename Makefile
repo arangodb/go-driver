@@ -325,6 +325,7 @@ __test_go_test:
 		-e TEST_CVERSION=$(TEST_CVERSION) \
 		-e TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \
 		-e TEST_PPROF=$(TEST_PPROF) \
+		-e TEST_MODE=$(TEST_MODE) \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)

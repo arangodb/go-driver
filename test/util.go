@@ -97,3 +97,13 @@ func getIntFromEnv(envKey string, defaultValue int) int {
 	}
 	return defaultValue
 }
+
+const (
+	testModeCluster         = "cluster"
+	testModeResilientSingle = "resilientsingle"
+	testModeSingle          = "single"
+)
+
+func getTestMode() string {
+	return strings.TrimSpace(os.Getenv("TEST_MODE"))
+}
