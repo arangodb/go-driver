@@ -34,6 +34,10 @@ import (
 
 // TestUpdateUserPasswordMyself creates a user and tries to update the password of the authenticated user.
 func TestUpdateUserPasswordMyself(t *testing.T) {
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
 	var conn driver.Connection
 	c := createClientFromEnv(t, true, &conn)
 	version, err := c.Version(nil)
@@ -68,6 +72,10 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 
 // TestUpdateUserPasswordOtherUser creates a user and tries to update the password of another user.
 func TestUpdateUserPasswordOtherUser(t *testing.T) {
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
 	var conn driver.Connection
 	c := createClientFromEnv(t, true, &conn)
 	version, err := c.Version(nil)
@@ -119,6 +127,10 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 
 // TestGrantUserDatabase creates a user & database and granting the user access to the database.
 func TestGrantUserDatabase(t *testing.T) {
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
 	c := createClientFromEnv(t, true)
 	version, err := c.Version(nil)
 	if err != nil {
@@ -200,6 +212,10 @@ func TestGrantUserDatabase(t *testing.T) {
 
 // TestGrantUserDefaultDatabase creates a user & database and granting the user access to the "default" database.
 func TestGrantUserDefaultDatabase(t *testing.T) {
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
 	c := createClientFromEnv(t, true)
 	version, err := c.Version(nil)
 	if err != nil {
@@ -323,6 +339,10 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 
 // TestGrantUserCollection creates a user & database & collection and granting the user access to the collection.
 func TestGrantUserCollection(t *testing.T) {
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
 	c := createClientFromEnv(t, true)
 	version, err := c.Version(nil)
 	if err != nil {
@@ -511,6 +531,10 @@ func TestGrantUserCollection(t *testing.T) {
 
 // TestUserAccessibleDatabases creates a user & databases and checks the list of accessible databases.
 func TestUserAccessibleDatabases(t *testing.T) {
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
 	c := createClientFromEnv(t, true)
 	version, err := c.Version(nil)
 	if err != nil {
