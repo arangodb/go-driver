@@ -103,7 +103,7 @@ const (
 // Semantics of the values depend on where they are used.
 type ArangoSearchConsolidationPolicy struct {
 	// Type returns the type of the ConsolidationPolicy. This interface can then be casted to the corresponding ArangoSearchConsolidationPolicy* struct.
-	Type ArangoSearchConsolidationPolicyType
+	Type ArangoSearchConsolidationPolicyType `json:"type,omitempty"`
 
 	ArangoSearchConsolidationPolicyBytesAccum
 	ArangoSearchConsolidationPolicyTier
