@@ -194,6 +194,11 @@ type InventoryCollectionParameters struct {
 	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
 }
 
+// IsSatellite returns true if the collection is a satellite collection
+func (icp *InventoryCollectionParameters) IsSatellite() bool {
+	return icp.ReplicationFactor == ReplicationFactorSatellite
+}
+
 // ShardID is an internal identifier of a specific shard
 type ShardID string
 
