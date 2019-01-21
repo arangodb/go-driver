@@ -159,10 +159,6 @@ func (i InventoryCollection) IndexByFieldsAndType(fields []string, indexType str
 	return InventoryIndex{}, false
 }
 
-// ReplicationFactor represents the replication factor of a collection
-// Has special value ReplicationFactorSatellite for satellite collections
-type ReplicationFactor int
-
 const (
 	// ReplicationFactorSatellite represents a satellite collection's replication factor
 	ReplicationFactorSatellite int = -1

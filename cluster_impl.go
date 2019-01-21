@@ -224,6 +224,10 @@ func (c *cluster) RemoveServer(ctx context.Context, serverID ServerID) error {
 	return nil
 }
 
+// replicationFactor represents the replication factor of a collection
+// Has special value ReplicationFactorSatellite for satellite collections
+type replicationFactor int
+
 type inventoryCollectionParametersInternal struct {
 	Deleted             bool             `json:"deleted,omitempty"`
 	DoCompact           bool             `json:"doCompact,omitempty"`
@@ -244,7 +248,7 @@ type inventoryCollectionParametersInternal struct {
 	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
 	Path                 string                 `json:"path,omitempty"`
 	PlanID               string                 `json:"planId,omitempty"`
-	ReplicationFactor    ReplicationFactor      `json:"replicationFactor,omitempty"`
+	ReplicationFactor    replicationFactor      `json:"replicationFactor,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
 	Status               CollectionStatus       `json:"status,omitempty"`
@@ -270,7 +274,7 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		NumberOfShards:       p.NumberOfShards,
 		Path:                 p.Path,
 		PlanID:               p.PlanID,
-		ReplicationFactor:    ReplicationFactor(p.ReplicationFactor),
+		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
 		ShardKeys:            p.ShardKeys,
 		Shards:               p.Shards,
 		Status:               p.Status,
@@ -332,7 +336,7 @@ const (
 )
 
 // MarshalJSON marshals InventoryCollectionParameters to arangodb json representation
-func (r ReplicationFactor) MarshalJSON() ([]byte, error) {
+func (r replicationFactor) MarshalJSON() ([]byte, error) {
 	var replicationFactor interface{}
 
 	if int(r) == ReplicationFactorSatellite {
@@ -345,25 +349,25 @@ func (r ReplicationFactor) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON marshals InventoryCollectionParameters to arangodb json representation
-func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
-	var replicationFactor interface{}
+func (r *replicationFactor) UnmarshalJSON(d []byte) error {
+	var internal interface{}
 
-	if err := json.Unmarshal(d, &replicationFactor); err != nil {
+	if err := json.Unmarshal(d, &internal); err != nil {
 		return err
 	}
 
-	if i, ok := replicationFactor.(int); ok {
-		*r = ReplicationFactor(i)
+	if i, ok := internal.(float64); ok {
+		*r = replicationFactor(i)
 		return nil
-	} else if str, ok := replicationFactor.(string); ok {
+	} else if str, ok := internal.(string); ok {
 		if ok && str == replicationFactorSatelliteString {
-			*r = ReplicationFactor(ReplicationFactorSatellite)
+			*r = replicationFactor(ReplicationFactorSatellite)
 			return nil
 		}
 	}
 
 	return &json.UnmarshalTypeError{
 		Value: string(d),
-		Type:  reflect.TypeOf(r),
+		Type:  reflect.TypeOf(r).Elem(),
 	}
 }
