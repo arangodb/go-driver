@@ -165,7 +165,7 @@ type ReplicationFactor int
 
 const (
 	// ReplicationFactorSatellite represents a satellite collection's replication factor
-	ReplicationFactorSatellite ReplicationFactor = -1
+	ReplicationFactorSatellite int = -1
 )
 
 // InventoryCollectionParameters contains all configuration parameters of a collection in a database inventory.
@@ -189,7 +189,7 @@ type InventoryCollectionParameters struct {
 	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
 	Path                 string                 `json:"path,omitempty"`
 	PlanID               string                 `json:"planId,omitempty"`
-	ReplicationFactor    ReplicationFactor      `json:"replicationFactor,omitempty"`
+	ReplicationFactor    int                    `json:"replicationFactor,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
 	Status               CollectionStatus       `json:"status,omitempty"`

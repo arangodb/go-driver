@@ -224,6 +224,109 @@ func (c *cluster) RemoveServer(ctx context.Context, serverID ServerID) error {
 	return nil
 }
 
+type inventoryCollectionParametersInternal struct {
+	Deleted             bool             `json:"deleted,omitempty"`
+	DoCompact           bool             `json:"doCompact,omitempty"`
+	ID                  string           `json:"id,omitempty"`
+	IndexBuckets        int              `json:"indexBuckets,omitempty"`
+	Indexes             []InventoryIndex `json:"indexes,omitempty"`
+	IsSmart             bool             `json:"isSmart,omitempty"`
+	SmartGraphAttribute string           `json:"smartGraphAttribute,omitempty"`
+	IsSystem            bool             `json:"isSystem,omitempty"`
+	IsVolatile          bool             `json:"isVolatile,omitempty"`
+	JournalSize         int64            `json:"journalSize,omitempty"`
+	KeyOptions          struct {
+		Type          string `json:"type,omitempty"`
+		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
+		LastValue     int64  `json:"lastValue,omitempty"`
+	} `json:"keyOptions"`
+	Name                 string                 `json:"name,omitempty"`
+	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
+	Path                 string                 `json:"path,omitempty"`
+	PlanID               string                 `json:"planId,omitempty"`
+	ReplicationFactor    ReplicationFactor      `json:"replicationFactor,omitempty"`
+	ShardKeys            []string               `json:"shardKeys,omitempty"`
+	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
+	Status               CollectionStatus       `json:"status,omitempty"`
+	Type                 CollectionType         `json:"type,omitempty"`
+	WaitForSync          bool                   `json:"waitForSync,omitempty"`
+	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
+}
+
+func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParametersInternal {
+	return inventoryCollectionParametersInternal{
+		Deleted:              p.Deleted,
+		DoCompact:            p.DoCompact,
+		ID:                   p.ID,
+		IndexBuckets:         p.IndexBuckets,
+		Indexes:              p.Indexes,
+		IsSmart:              p.IsSmart,
+		SmartGraphAttribute:  p.SmartGraphAttribute,
+		IsSystem:             p.IsSystem,
+		IsVolatile:           p.IsVolatile,
+		JournalSize:          p.JournalSize,
+		KeyOptions:           p.KeyOptions,
+		Name:                 p.Name,
+		NumberOfShards:       p.NumberOfShards,
+		Path:                 p.Path,
+		PlanID:               p.PlanID,
+		ReplicationFactor:    ReplicationFactor(p.ReplicationFactor),
+		ShardKeys:            p.ShardKeys,
+		Shards:               p.Shards,
+		Status:               p.Status,
+		Type:                 p.Type,
+		WaitForSync:          p.WaitForSync,
+		DistributeShardsLike: p.DistributeShardsLike,
+	}
+}
+
+func (p *InventoryCollectionParameters) fromInternal(i inventoryCollectionParametersInternal) {
+	*p = i.asExternal()
+}
+
+func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollectionParameters {
+	return InventoryCollectionParameters{
+		Deleted:              p.Deleted,
+		DoCompact:            p.DoCompact,
+		ID:                   p.ID,
+		IndexBuckets:         p.IndexBuckets,
+		Indexes:              p.Indexes,
+		IsSmart:              p.IsSmart,
+		SmartGraphAttribute:  p.SmartGraphAttribute,
+		IsSystem:             p.IsSystem,
+		IsVolatile:           p.IsVolatile,
+		JournalSize:          p.JournalSize,
+		KeyOptions:           p.KeyOptions,
+		Name:                 p.Name,
+		NumberOfShards:       p.NumberOfShards,
+		Path:                 p.Path,
+		PlanID:               p.PlanID,
+		ReplicationFactor:    int(p.ReplicationFactor),
+		ShardKeys:            p.ShardKeys,
+		Shards:               p.Shards,
+		Status:               p.Status,
+		Type:                 p.Type,
+		WaitForSync:          p.WaitForSync,
+		DistributeShardsLike: p.DistributeShardsLike,
+	}
+}
+
+// MarshalJSON converts InventoryCollectionParameters into json
+func (p *InventoryCollectionParameters) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.asInternal())
+}
+
+// UnmarshalJSON loads InventoryCollectionParameters from json
+func (p *InventoryCollectionParameters) UnmarshalJSON(d []byte) error {
+	var internal inventoryCollectionParametersInternal
+	if err := json.Unmarshal(d, &internal); err != nil {
+		return err
+	}
+
+	p.fromInternal(internal)
+	return nil
+}
+
 const (
 	replicationFactorSatelliteString string = "satellite"
 )
@@ -232,7 +335,7 @@ const (
 func (r ReplicationFactor) MarshalJSON() ([]byte, error) {
 	var replicationFactor interface{}
 
-	if r == ReplicationFactorSatellite {
+	if int(r) == ReplicationFactorSatellite {
 		replicationFactor = replicationFactorSatelliteString
 	} else {
 		replicationFactor = r
@@ -254,7 +357,7 @@ func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
 		return nil
 	} else if str, ok := replicationFactor.(string); ok {
 		if ok && str == replicationFactorSatelliteString {
-			*r = ReplicationFactorSatellite
+			*r = ReplicationFactor(ReplicationFactorSatellite)
 			return nil
 		}
 	}
