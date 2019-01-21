@@ -159,6 +159,15 @@ func (i InventoryCollection) IndexByFieldsAndType(fields []string, indexType str
 	return InventoryIndex{}, false
 }
 
+// ReplicationFactor represents the replication factor of a collection
+// Has special value ReplicationFactorSatellite for satellite collections
+type ReplicationFactor int
+
+const (
+	// ReplicationFactorSatellite represents a satellite collection's replication factor
+	ReplicationFactorSatellite ReplicationFactor = -1
+)
+
 // InventoryCollectionParameters contains all configuration parameters of a collection in a database inventory.
 type InventoryCollectionParameters struct {
 	Deleted             bool             `json:"deleted,omitempty"`
@@ -180,7 +189,7 @@ type InventoryCollectionParameters struct {
 	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
 	Path                 string                 `json:"path,omitempty"`
 	PlanID               string                 `json:"planId,omitempty"`
-	ReplicationFactor    int                    `json:"replicationFactor,omitempty"`
+	ReplicationFactor    ReplicationFactor      `json:"replicationFactor,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
 	Status               CollectionStatus       `json:"status,omitempty"`

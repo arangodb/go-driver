@@ -24,7 +24,9 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"path"
+	"reflect"
 )
 
 // newCluster creates a new Cluster implementation.
@@ -220,4 +222,45 @@ func (c *cluster) RemoveServer(ctx context.Context, serverID ServerID) error {
 		return WithStack(err)
 	}
 	return nil
+}
+
+const (
+	replicationFactorSatelliteString string = "satellite"
+)
+
+// MarshalJSON marshals InventoryCollectionParameters to arangodb json representation
+func (r ReplicationFactor) MarshalJSON() ([]byte, error) {
+	var replicationFactor interface{}
+
+	if r == ReplicationFactorSatellite {
+		replicationFactor = replicationFactorSatelliteString
+	} else {
+		replicationFactor = r
+	}
+
+	return json.Marshal(&replicationFactor)
+}
+
+// UnmarshalJSON marshals InventoryCollectionParameters to arangodb json representation
+func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
+	var replicationFactor interface{}
+
+	if err := json.Unmarshal(d, &replicationFactor); err != nil {
+		return err
+	}
+
+	if i, ok := replicationFactor.(int); ok {
+		*r = ReplicationFactor(i)
+		return nil
+	} else if str, ok := replicationFactor.(string); ok {
+		if ok && str == replicationFactorSatelliteString {
+			*r = ReplicationFactorSatellite
+			return nil
+		}
+	}
+
+	return &json.UnmarshalTypeError{
+		Value: string(d),
+		Type:  reflect.TypeOf(r),
+	}
 }
