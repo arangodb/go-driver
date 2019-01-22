@@ -342,10 +342,10 @@ func (r replicationFactor) MarshalJSON() ([]byte, error) {
 	if int(r) == ReplicationFactorSatellite {
 		replicationFactor = replicationFactorSatelliteString
 	} else {
-		replicationFactor = r
+		replicationFactor = int(r)
 	}
 
-	return json.Marshal(&replicationFactor)
+	return json.Marshal(replicationFactor)
 }
 
 // UnmarshalJSON marshals InventoryCollectionParameters to arangodb json representation

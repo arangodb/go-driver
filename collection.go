@@ -118,6 +118,16 @@ type CollectionProperties struct {
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
 }
 
+const (
+	// ReplicationFactorSatellite represents a satellite collection's replication factor
+	ReplicationFactorSatellite int = -1
+)
+
+// IsSatellite returns true if the collection is a satellite collection
+func (p *CollectionProperties) IsSatellite() bool {
+	return p.ReplicationFactor == ReplicationFactorSatellite
+}
+
 // SetCollectionPropertiesOptions contains data for Collection.SetProperties.
 type SetCollectionPropertiesOptions struct {
 	// If true then creating or changing a document will wait until the data has been synchronized to disk.

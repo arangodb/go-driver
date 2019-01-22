@@ -73,6 +73,44 @@ func TestCreateCollection(t *testing.T) {
 	}
 }
 
+// TestCreateSatelliteCollection create a satellite collection
+func TestCreateSatelliteCollection(t *testing.T) {
+	skipNoEnterprise(t)
+	c := createClientFromEnv(t, true)
+	_, err := c.Cluster(nil)
+	if driver.IsPreconditionFailed(err) {
+		t.Skipf("Not a cluster")
+	} else if err != nil {
+		t.Fatalf("Failed to get cluster: %s", describe(err))
+	}
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_create_collection_satellite"
+	options := driver.CreateCollectionOptions{
+		ReplicationFactor: driver.ReplicationFactorSatellite,
+	}
+	if _, err := db.CreateCollection(nil, name, &options); err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+	// Collection must exist now
+	if found, err := db.CollectionExists(nil, name); err != nil {
+		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
+	} else if !found {
+		t.Errorf("CollectionExists('%s') return false, expected true", name)
+	}
+	// Check if the collection is a satellite collection
+	if col, err := db.Collection(nil, name); err != nil {
+		t.Errorf("Collection('%s') failed: %s", name, describe(err))
+	} else {
+		if prop, err := col.Properties(nil); err != nil {
+			t.Errorf("Properties() failed: %s", describe(err))
+		} else {
+			if !prop.IsSatellite() {
+				t.Errorf("Collection %s is not satellite", name)
+			}
+		}
+	}
+}
+
 // TestRemoveCollection creates a collection and then removes it.
 func TestRemoveCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)

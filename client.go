@@ -100,6 +100,10 @@ type VersionInfo struct {
 	Details map[string]interface{} `json:"details,omitempty"`
 }
 
+func (v *VersionInfo) IsEnterprise() bool {
+	return v.License == "enterprise"
+}
+
 // String creates a string representation of the given VersionInfo.
 func (v VersionInfo) String() string {
 	result := fmt.Sprintf("%s, version %s, license %s", v.Server, v.Version, v.License)
