@@ -159,6 +159,11 @@ func (i InventoryCollection) IndexByFieldsAndType(fields []string, indexType str
 	return InventoryIndex{}, false
 }
 
+const (
+	// ReplicationFactorSatellite represents a satellite collection's replication factor
+	ReplicationFactorSatellite int = -1
+)
+
 // InventoryCollectionParameters contains all configuration parameters of a collection in a database inventory.
 type InventoryCollectionParameters struct {
 	Deleted             bool             `json:"deleted,omitempty"`
@@ -187,6 +192,11 @@ type InventoryCollectionParameters struct {
 	Type                 CollectionType         `json:"type,omitempty"`
 	WaitForSync          bool                   `json:"waitForSync,omitempty"`
 	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
+}
+
+// IsSatellite returns true if the collection is a satellite collection
+func (icp *InventoryCollectionParameters) IsSatellite() bool {
+	return icp.ReplicationFactor == ReplicationFactorSatellite
 }
 
 // ShardID is an internal identifier of a specific shard
