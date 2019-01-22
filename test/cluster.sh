@@ -39,6 +39,9 @@ if [ "$CMD" == "start" ]; then
     if [ "$SSL" == "auto" ]; then 
         STARTERARGS="$STARTERARGS --ssl.auto-key"
     fi
+    if [ -n "$ARANGO_LICENSE_KEY" ]; then
+        DOCKERARGS="$DOCKERARGS -e ARANGO_LICENSE_KEY=$ARANGO_LICENSE_KEY"
+    fi
 
     # Start network namespace
     docker run -d --name=${NAMESPACE} alpine:3.4 sleep 365d

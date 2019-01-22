@@ -177,7 +177,7 @@ func (c *collection) SetProperties(ctx context.Context, options SetCollectionPro
 	if err != nil {
 		return WithStack(err)
 	}
-	if _, err := req.SetBody(options); err != nil {
+	if _, err := req.SetBody(options.asInternal()); err != nil {
 		return WithStack(err)
 	}
 	resp, err := c.conn.Do(ctx, req)

@@ -382,6 +382,40 @@ func TestCollectionSetProperties(t *testing.T) {
 	}
 }
 
+func TestCollectionSetPropertiesSatellite(t *testing.T) {
+	skipNoEnterprise(t)
+	c := createClientFromEnv(t, true)
+
+	// Test replication factor
+	if _, err := c.Cluster(nil); err == nil {
+
+		db := ensureDatabase(nil, c, "collection_test_satellite", nil, t)
+		name := "test_collection_set_properties_sat"
+		col, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{ReplicationFactor: driver.ReplicationFactorSatellite})
+		if err != nil {
+			t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+		}
+
+		// Set ReplicationFactor to satellite (noop)
+		replFact := driver.ReplicationFactorSatellite
+		ctx := driver.WithEnforceReplicationFactor(context.Background(), false)
+		if err := col.SetProperties(ctx, driver.SetCollectionPropertiesOptions{ReplicationFactor: replFact}); err != nil {
+			t.Fatalf("Failed to set properties: %s", describe(err))
+		}
+		if p, err := col.Properties(nil); err != nil {
+			t.Errorf("Failed to fetch collection properties: %s", describe(err))
+		} else {
+			if p.ReplicationFactor != replFact {
+				t.Errorf("Expected ReplicationFactor %d, got %d", replFact, p.ReplicationFactor)
+			}
+		}
+	} else if driver.IsPreconditionFailed(err) {
+		t.Logf("ReplicationFactor tests skipped because we're not running in a cluster")
+	} else {
+		t.Errorf("Cluster failed: %s", describe(err))
+	}
+}
+
 // TestCollectionRevision creates a collection, checks revision after adding documents.
 func TestCollectionRevision(t *testing.T) {
 	c := createClientFromEnv(t, true)
