@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"path"
 )
 
@@ -163,11 +164,11 @@ func (c *collection) Properties(ctx context.Context) (CollectionProperties, erro
 	if err := resp.CheckStatus(200); err != nil {
 		return CollectionProperties{}, WithStack(err)
 	}
-	var data CollectionProperties
+	var data collectionPropertiesInternal
 	if err := resp.ParseBody("", &data); err != nil {
 		return CollectionProperties{}, WithStack(err)
 	}
-	return data, nil
+	return data.asExternal(), nil
 }
 
 // SetProperties changes properties of the collection.
@@ -176,7 +177,7 @@ func (c *collection) SetProperties(ctx context.Context, options SetCollectionPro
 	if err != nil {
 		return WithStack(err)
 	}
-	if _, err := req.SetBody(options); err != nil {
+	if _, err := req.SetBody(options.asInternal()); err != nil {
 		return WithStack(err)
 	}
 	resp, err := c.conn.Do(ctx, req)
@@ -261,5 +262,108 @@ func (c *collection) Truncate(ctx context.Context) error {
 	if err := resp.CheckStatus(200); err != nil {
 		return WithStack(err)
 	}
+	return nil
+}
+
+type collectionPropertiesInternal struct {
+	CollectionInfo
+	WaitForSync bool  `json:"waitForSync,omitempty"`
+	DoCompact   bool  `json:"doCompact,omitempty"`
+	JournalSize int64 `json:"journalSize,omitempty"`
+	KeyOptions  struct {
+		Type          KeyGeneratorType `json:"type,omitempty"`
+		AllowUserKeys bool             `json:"allowUserKeys,omitempty"`
+	} `json:"keyOptions,omitempty"`
+	NumberOfShards    int               `json:"numberOfShards,omitempty"`
+	ShardKeys         []string          `json:"shardKeys,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+}
+
+func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
+	return CollectionProperties{
+		CollectionInfo:    p.CollectionInfo,
+		WaitForSync:       p.WaitForSync,
+		DoCompact:         p.DoCompact,
+		JournalSize:       p.JournalSize,
+		KeyOptions:        p.KeyOptions,
+		NumberOfShards:    p.NumberOfShards,
+		ShardKeys:         p.ShardKeys,
+		ReplicationFactor: int(p.ReplicationFactor),
+	}
+}
+
+func (p *CollectionProperties) asInternal() collectionPropertiesInternal {
+	return collectionPropertiesInternal{
+		CollectionInfo:    p.CollectionInfo,
+		WaitForSync:       p.WaitForSync,
+		DoCompact:         p.DoCompact,
+		JournalSize:       p.JournalSize,
+		KeyOptions:        p.KeyOptions,
+		NumberOfShards:    p.NumberOfShards,
+		ShardKeys:         p.ShardKeys,
+		ReplicationFactor: replicationFactor(p.ReplicationFactor),
+	}
+}
+
+func (p *CollectionProperties) fromInternal(i *collectionPropertiesInternal) {
+	p.CollectionInfo = i.CollectionInfo
+	p.WaitForSync = i.WaitForSync
+	p.DoCompact = i.DoCompact
+	p.JournalSize = i.JournalSize
+	p.KeyOptions = i.KeyOptions
+	p.NumberOfShards = i.NumberOfShards
+	p.ShardKeys = i.ShardKeys
+	p.ReplicationFactor = int(i.ReplicationFactor)
+}
+
+// MarshalJSON converts CollectionProperties into json
+func (p *CollectionProperties) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.asInternal())
+}
+
+// UnmarshalJSON loads CollectionProperties from json
+func (p *CollectionProperties) UnmarshalJSON(d []byte) error {
+	var internal collectionPropertiesInternal
+	if err := json.Unmarshal(d, &internal); err != nil {
+		return err
+	}
+
+	p.fromInternal(&internal)
+	return nil
+}
+
+type setCollectionPropertiesOptionsInternal struct {
+	WaitForSync       *bool             `json:"waitForSync,omitempty"`
+	JournalSize       int64             `json:"journalSize,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+}
+
+func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOptionsInternal {
+	return setCollectionPropertiesOptionsInternal{
+		WaitForSync:       p.WaitForSync,
+		JournalSize:       p.JournalSize,
+		ReplicationFactor: replicationFactor(p.ReplicationFactor),
+	}
+}
+
+func (p *SetCollectionPropertiesOptions) fromInternal(i *setCollectionPropertiesOptionsInternal) {
+	p.WaitForSync = i.WaitForSync
+	p.JournalSize = i.JournalSize
+	p.ReplicationFactor = int(i.ReplicationFactor)
+}
+
+// MarshalJSON converts SetCollectionPropertiesOptions into json
+func (p *SetCollectionPropertiesOptions) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.asInternal())
+}
+
+// UnmarshalJSON loads SetCollectionPropertiesOptions from json
+func (p *SetCollectionPropertiesOptions) UnmarshalJSON(d []byte) error {
+	var internal setCollectionPropertiesOptionsInternal
+	if err := json.Unmarshal(d, &internal); err != nil {
+		return err
+	}
+
+	p.fromInternal(&internal)
 	return nil
 }

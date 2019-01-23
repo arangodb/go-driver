@@ -101,17 +101,32 @@ func (d *database) Collections(ctx context.Context) ([]Collection, error) {
 	return result, nil
 }
 
+type createCollectionOptionsInternal struct {
+	JournalSize          int                   `json:"journalSize,omitempty"`
+	ReplicationFactor    replicationFactor     `json:"replicationFactor,omitempty"`
+	WaitForSync          bool                  `json:"waitForSync,omitempty"`
+	DoCompact            *bool                 `json:"doCompact,omitempty"`
+	IsVolatile           bool                  `json:"isVolatile,omitempty"`
+	ShardKeys            []string              `json:"shardKeys,omitempty"`
+	NumberOfShards       int                   `json:"numberOfShards,omitempty"`
+	IsSystem             bool                  `json:"isSystem,omitempty"`
+	Type                 CollectionType        `json:"type,omitempty"`
+	IndexBuckets         int                   `json:"indexBuckets,omitempty"`
+	KeyOptions           *CollectionKeyOptions `json:"keyOptions,omitempty"`
+	DistributeShardsLike string                `json:"distributeShardsLike,omitempty"`
+	IsSmart              bool                  `json:"isSmart,omitempty"`
+	SmartGraphAttribute  string                `json:"smartGraphAttribute,omitempty"`
+	Name                 string                `json:"name"`
+}
+
 // CreateCollection creates a new collection with given name and options, and opens a connection to it.
 // If a collection with given name already exists within the database, a DuplicateError is returned.
 func (d *database) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
-	input := struct {
-		CreateCollectionOptions
-		Name string `json:"name"`
-	}{
+	input := createCollectionOptionsInternal{
 		Name: name,
 	}
 	if options != nil {
-		input.CreateCollectionOptions = *options
+		input.fromExternal(options)
 	}
 	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/collection"))
 	if err != nil {
@@ -134,3 +149,55 @@ func (d *database) CreateCollection(ctx context.Context, name string, options *C
 	}
 	return col, nil
 }
+
+// func (p *CreateCollectionOptions) asInternal() createCollectionOptionsInternal {
+// 	return createCollectionOptionsInternal{
+// 		JournalSize:          p.JournalSize,
+// 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
+// 		WaitForSync:          p.WaitForSync,
+// 		DoCompact:            p.DoCompact,
+// 		IsVolatile:           p.IsVolatile,
+// 		ShardKeys:            p.ShardKeys,
+// 		NumberOfShards:       p.NumberOfShards,
+// 		IsSystem:             p.IsSystem,
+// 		Type:                 p.Type,
+// 		IndexBuckets:         p.IndexBuckets,
+// 		KeyOptions:           p.KeyOptions,
+// 		DistributeShardsLike: p.DistributeShardsLike,
+// 		IsSmart:              p.IsSmart,
+// 		SmartGraphAttribute:  p.SmartGraphAttribute,
+// 	}
+// }
+
+func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOptions) {
+	p.JournalSize = i.JournalSize
+	p.ReplicationFactor = replicationFactor(i.ReplicationFactor)
+	p.WaitForSync = i.WaitForSync
+	p.DoCompact = i.DoCompact
+	p.IsVolatile = i.IsVolatile
+	p.ShardKeys = i.ShardKeys
+	p.NumberOfShards = i.NumberOfShards
+	p.IsSystem = i.IsSystem
+	p.Type = i.Type
+	p.IndexBuckets = i.IndexBuckets
+	p.KeyOptions = i.KeyOptions
+	p.DistributeShardsLike = i.DistributeShardsLike
+	p.IsSmart = i.IsSmart
+	p.SmartGraphAttribute = i.SmartGraphAttribute
+}
+
+// // MarshalJSON converts CreateCollectionOptions into json
+// func (p *CreateCollectionOptions) MarshalJSON() ([]byte, error) {
+// 	return json.Marshal(p.asInternal())
+// }
+
+// // UnmarshalJSON loads CreateCollectionOptions from json
+// func (p *CreateCollectionOptions) UnmarshalJSON(d []byte) error {
+// 	var internal createCollectionOptionsInternal
+// 	if err := json.Unmarshal(d, &internal); err != nil {
+// 		return err
+// 	}
+
+// 	p.fromInternal(&internal)
+// 	return nil
+// }
