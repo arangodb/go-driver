@@ -252,3 +252,47 @@ func TestIndexesDeduplicateSkipList(t *testing.T) {
 		}
 	}
 }
+
+// TestMultipleIndexes creates a collection with a full text index.
+func TestUniqueAttributeIndex(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "index_test", nil, t)
+	col := ensureCollection(nil, db, "unique_attribute_index", nil, t)
+
+	idx, _, err := col.EnsureSkipListIndex(nil, []string{"age"}, &driver.EnsureSkipListIndexOptions{Unique: true})
+	if err != nil {
+		t.Fatalf("Failed to create new index (1): %s", describe(err))
+	}
+	if !idx.IsUnique() {
+		t.Errorf("Index is not unique (1)")
+	}
+
+	idx, _, err = col.EnsureHashIndex(nil, []string{"name"}, &driver.EnsureHashIndexOptions{Unique: true})
+	if err != nil {
+		t.Fatalf("Failed to create new index (2): %s", describe(err))
+	}
+	if !idx.IsUnique() {
+		t.Errorf("Index is not unique (2)")
+	}
+
+	// Get list of indexes
+	if idxs, err := col.Indexes(context.Background()); err != nil {
+		t.Fatalf("Failed to get indexes: %s", describe(err))
+	} else {
+		if len(idxs) != 3 {
+			// We made 2 indexes, 1 is always added by the system
+			t.Errorf("Expected 3 indexes, got %d", len(idxs))
+		}
+
+		// Try opening the indexes 1 by 1
+		for _, x := range idxs {
+			if idx, err := col.Index(nil, x.Name()); err != nil {
+				t.Errorf("Failed to open index '%s': %s", x.Name(), describe(err))
+			} else if idx.Name() != x.Name() {
+				t.Errorf("Got different index name. Expected '%s', got '%s'", x.Name(), idx.Name())
+			} else if !idx.IsUnique() {
+				t.Errorf("Index not unique: %s", x.Name())
+			}
+		}
+	}
+}

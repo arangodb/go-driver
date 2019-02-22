@@ -33,7 +33,7 @@ type genericIndexData struct {
 }
 
 type indexListResponse struct {
-	Indexes []genericIndexData `json:"indexes,omitempty"`
+	Indexes []indexData `json:"indexes,omitempty"`
 }
 
 // Index opens a connection to an existing index within the collection.
