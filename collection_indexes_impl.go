@@ -27,6 +27,17 @@ import (
 	"path"
 )
 
+type indexData struct {
+	ID          string   `json:"id,omitempty"`
+	Type        string   `json:"type"`
+	Fields      []string `json:"fields,omitempty"`
+	Unique      *bool    `json:"unique,omitempty"`
+	Deduplicate *bool    `json:"deduplicate,omitempty"`
+	Sparse      *bool    `json:"sparse,omitempty"`
+	GeoJSON     *bool    `json:"geoJson,omitempty"`
+	MinLength   int      `json:"minLength,omitempty"`
+}
+
 type genericIndexData struct {
 	ID   string `json:"id,omitempty"`
 	Type string `json:"type"`
@@ -115,11 +126,11 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, bool, error) {
 	input := indexData{
-		typestr: string(FullTextIndex),
-		fields:  fields,
+		Type:   string(FullTextIndex),
+		Fields: fields,
 	}
 	if options != nil {
-		input.minLength = options.MinLength
+		input.MinLength = options.MinLength
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -140,11 +151,11 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, bool, error) {
 	input := indexData{
-		typestr: string(GeoIndex),
-		fields:  fields,
+		Type:   string(GeoIndex),
+		Fields: fields,
 	}
 	if options != nil {
-		input.geoJSON = &options.GeoJSON
+		input.GeoJSON = &options.GeoJSON
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -158,15 +169,15 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, bool, error) {
 	input := indexData{
-		typestr: string(HashIndex),
-		fields:  fields,
+		Type:   string(HashIndex),
+		Fields: fields,
 	}
 	off := false
 	if options != nil {
-		input.unique = &options.Unique
-		input.sparse = &options.Sparse
+		input.Unique = &options.Unique
+		input.Sparse = &options.Sparse
 		if options.NoDeduplicate {
-			input.deduplicate = &off
+			input.Deduplicate = &off
 		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
@@ -181,12 +192,12 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, bool, error) {
 	input := indexData{
-		typestr: string(PersistentIndex),
-		fields:  fields,
+		Type:   string(PersistentIndex),
+		Fields: fields,
 	}
 	if options != nil {
-		input.unique = &options.Unique
-		input.sparse = &options.Sparse
+		input.Unique = &options.Unique
+		input.Sparse = &options.Sparse
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -200,15 +211,15 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error) {
 	input := indexData{
-		typestr: string(SkipListIndex),
-		fields:  fields,
+		Type:   string(SkipListIndex),
+		Fields: fields,
 	}
 	off := false
 	if options != nil {
-		input.unique = &options.Unique
-		input.sparse = &options.Sparse
+		input.Unique = &options.Unique
+		input.Sparse = &options.Sparse
 		if options.NoDeduplicate {
-			input.deduplicate = &off
+			input.Deduplicate = &off
 		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)

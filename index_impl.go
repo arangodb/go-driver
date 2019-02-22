@@ -51,17 +51,17 @@ func indexStringToType(indexTypeString string) (IndexType, error) {
 
 // newIndex creates a new Index implementation.
 func newIndex(data indexData, col *collection) (Index, error) {
-	if data.id == "" {
+	if data.ID == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
-	parts := strings.Split(data.id, "/")
+	parts := strings.Split(data.ID, "/")
 	if len(parts) != 2 {
 		return nil, WithStack(InvalidArgumentError{Message: "id must be `collection/name`"})
 	}
 	if col == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "col is nil"})
 	}
-	indexType, err := indexStringToType(data.typestr)
+	indexType, err := indexStringToType(data.Type)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -72,17 +72,6 @@ func newIndex(data indexData, col *collection) (Index, error) {
 		db:        col.db,
 		conn:      col.conn,
 	}, nil
-}
-
-type indexData struct {
-	id          string   `json:"id,omitempty"`
-	typestr     string   `json:"type"`
-	fields      []string `json:"fields,omitempty"`
-	unique      *bool    `json:"unique,omitempty"`
-	deduplicate *bool    `json:"deduplicate,omitempty"`
-	sparse      *bool    `json:"sparse,omitempty"`
-	geoJSON     *bool    `json:"geoJson,omitempty"`
-	minLength   int      `json:"minLength,omitempty"`
 }
 
 type index struct {
@@ -100,7 +89,7 @@ func (i *index) relPath() string {
 
 // Name returns the name of the index.
 func (i *index) Name() string {
-	parts := strings.Split(i.data.id, "/")
+	parts := strings.Split(i.data.ID, "/")
 	return parts[1]
 }
 
@@ -112,7 +101,7 @@ func (i *index) Type() IndexType {
 // Remove removes the entire index.
 // If the index does not exist, a NotFoundError is returned.
 func (i *index) Remove(ctx context.Context) error {
-	req, err := i.conn.NewRequest("DELETE", path.Join(i.relPath(), i.data.id))
+	req, err := i.conn.NewRequest("DELETE", path.Join(i.relPath(), i.data.ID))
 	if err != nil {
 		return WithStack(err)
 	}
@@ -128,7 +117,7 @@ func (i *index) Remove(ctx context.Context) error {
 
 // Fields returns the fields covered by this index
 func (i *index) Fields() []string {
-	return i.data.fields
+	return i.data.Fields
 }
 
 func boolOrFalse(ptr *bool) bool {
@@ -141,25 +130,25 @@ func boolOrFalse(ptr *bool) bool {
 
 // IsUnique returns the Unique attribute if the index supports this attribute, false otherwise.
 func (i *index) IsUnique() bool {
-	return boolOrFalse(i.data.unique)
+	return boolOrFalse(i.data.Unique)
 }
 
 // IsSparse returns the Sparse attribute if the index supports this attribute, false otherwise.
 func (i *index) IsSparse() bool {
-	return boolOrFalse(i.data.unique)
+	return boolOrFalse(i.data.Sparse)
 }
 
 // IsDeduplicate returns the Deduplicate attribute if the index supports this attribute, false otherwise.
 func (i *index) IsDeduplicate() bool {
-	return boolOrFalse(i.data.deduplicate)
+	return boolOrFalse(i.data.Deduplicate)
 }
 
 // IsGeoJSON returns the GeoJSON attribute if the index is a GeoIndex, false otherwise.
 func (i *index) IsGeoJSON() bool {
-	return boolOrFalse(i.data.geoJSON)
+	return boolOrFalse(i.data.GeoJSON)
 }
 
 // MinLength returns the MinLength attribute if the index is a full-text index, 0 otherwise.
 func (i *index) MinLength() int {
-	return i.data.minLength
+	return i.data.MinLength
 }
