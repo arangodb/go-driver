@@ -48,4 +48,22 @@ type Index interface {
 	// Remove removes the entire index.
 	// If the index does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+
+	// Fields returns the fields covered by this index
+	Fields() []string
+
+	// IsUnique returns the Unique attribute if the index supports this attribute, false otherwise.
+	IsUnique() bool
+
+	// IsSparse returns the Sparse attribute if the index supports this attribute, false otherwise.
+	IsSparse() bool
+
+	// IsDeduplicate returns the Deduplicate attribute if the index supports this attribute, false otherwise.
+	IsDeduplicate() bool
+
+	// IsGeoJSON returns the GeoJSON attribute if the index is a GeoIndex, false otherwise.
+	IsGeoJSON() bool
+
+	// MinLength returns the MinLength attribute if the index is a full-text index, 0 otherwise.
+	MinLength() int
 }

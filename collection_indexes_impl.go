@@ -27,17 +27,6 @@ import (
 	"path"
 )
 
-type indexData struct {
-	ID          string   `json:"id,omitempty"`
-	Type        string   `json:"type"`
-	Fields      []string `json:"fields,omitempty"`
-	Unique      *bool    `json:"unique,omitempty"`
-	Deduplicate *bool    `json:"deduplicate,omitempty"`
-	Sparse      *bool    `json:"sparse,omitempty"`
-	GeoJSON     *bool    `json:"geoJson,omitempty"`
-	MinLength   int      `json:"minLength,omitempty"`
-}
-
 type genericIndexData struct {
 	ID   string `json:"id,omitempty"`
 	Type string `json:"type"`
@@ -65,7 +54,7 @@ func (c *collection) Index(ctx context.Context, name string) (Index, error) {
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, c)
+	idx, err := newIndex(data, c)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -111,7 +100,7 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 	}
 	result := make([]Index, 0, len(data.Indexes))
 	for _, x := range data.Indexes {
-		idx, err := newIndex(x.ID, x.Type, c)
+		idx, err := newIndex(x, c)
 		if err != nil {
 			return nil, WithStack(err)
 		}
@@ -126,11 +115,11 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   string(FullTextIndex),
-		Fields: fields,
+		typestr: string(FullTextIndex),
+		fields:  fields,
 	}
 	if options != nil {
-		input.MinLength = options.MinLength
+		input.minLength = options.MinLength
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -151,11 +140,11 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   string(GeoIndex),
-		Fields: fields,
+		typestr: string(GeoIndex),
+		fields:  fields,
 	}
 	if options != nil {
-		input.GeoJSON = &options.GeoJSON
+		input.geoJSON = &options.GeoJSON
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -169,15 +158,15 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   string(HashIndex),
-		Fields: fields,
+		typestr: string(HashIndex),
+		fields:  fields,
 	}
 	off := false
 	if options != nil {
-		input.Unique = &options.Unique
-		input.Sparse = &options.Sparse
+		input.unique = &options.Unique
+		input.sparse = &options.Sparse
 		if options.NoDeduplicate {
-			input.Deduplicate = &off
+			input.deduplicate = &off
 		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
@@ -192,12 +181,12 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   string(PersistentIndex),
-		Fields: fields,
+		typestr: string(PersistentIndex),
+		fields:  fields,
 	}
 	if options != nil {
-		input.Unique = &options.Unique
-		input.Sparse = &options.Sparse
+		input.unique = &options.Unique
+		input.sparse = &options.Sparse
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -211,15 +200,15 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error) {
 	input := indexData{
-		Type:   string(SkipListIndex),
-		Fields: fields,
+		typestr: string(SkipListIndex),
+		fields:  fields,
 	}
 	off := false
 	if options != nil {
-		input.Unique = &options.Unique
-		input.Sparse = &options.Sparse
+		input.unique = &options.Unique
+		input.sparse = &options.Sparse
 		if options.NoDeduplicate {
-			input.Deduplicate = &off
+			input.deduplicate = &off
 		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
@@ -253,7 +242,7 @@ func (c *collection) ensureIndex(ctx context.Context, options indexData) (Index,
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, false, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, c)
+	idx, err := newIndex(data, c)
 	if err != nil {
 		return nil, false, WithStack(err)
 	}
