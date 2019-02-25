@@ -167,6 +167,7 @@ type InventoryCollection struct {
 	Indexes     []InventoryIndex              `json:"indexes,omitempty"`
 	PlanVersion int64                         `json:"planVersion,omitempty"`
 	IsReady     bool                          `json:"isReady,omitempty"`
+	AllInSync   bool                          `json:"allInSync,omitempty"`
 }
 
 // IndexByFieldsAndType returns the InventoryIndex with given fields & type.
