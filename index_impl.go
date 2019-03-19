@@ -43,6 +43,8 @@ func indexStringToType(indexTypeString string) (IndexType, error) {
 		return PersistentIndex, nil
 	case string(GeoIndex), "geo1", "geo2":
 		return GeoIndex, nil
+	case string(EdgeIndex):
+		return EdgeIndex, nil
 
 	default:
 		return "", WithStack(InvalidArgumentError{Message: "unknown index type"})
