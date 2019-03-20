@@ -46,6 +46,36 @@ func TestDefaultIndexes(t *testing.T) {
 	}
 }
 
+// TestDefaultEdgeIndexes creates a edge collection without any custom index.
+func TestDefaultEdgeIndexes(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "index_test", nil, t)
+	col := ensureCollection(nil, db, "def_indexes_edge_test", &driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge}, t)
+
+	// Get list of indexes
+	if idxs, err := col.Indexes(context.Background()); err != nil {
+		t.Fatalf("Failed to get indexes: %s", describe(err))
+	} else {
+		if len(idxs) != 2 {
+			// 2 is always added by the system
+			t.Errorf("Expected 2 index, got %d", len(idxs))
+		}
+
+		// ensure edge type returned
+		var existed bool
+		for _, idx := range idxs {
+			if idx.Type() == driver.EdgeIndex {
+				existed = true
+				break
+			}
+		}
+
+		if !existed {
+			t.Errorf("Expected `%s` index presents, got no", driver.EdgeIndex)
+		}
+	}
+}
+
 // TestCreateFullTextIndex creates a collection with a full text index.
 func TestIndexes(t *testing.T) {
 	c := createClientFromEnv(t, true)
