@@ -35,6 +35,7 @@ const (
 	SkipListIndex   = IndexType("skiplist")
 	PersistentIndex = IndexType("persistent")
 	GeoIndex        = IndexType("geo")
+	EdgeIndex       = IndexType("edge")
 )
 
 // Index provides access to a single index in a single collection.
