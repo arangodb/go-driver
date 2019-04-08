@@ -119,7 +119,7 @@ func TestClusterDatabaseInventory(t *testing.T) {
 	}
 }
 
-// TestClusterDatabaseInventory tests the Cluster.DatabaseInventory method with satellite collections
+// TestClusterDatabaseInventorySatellite tests the Cluster.DatabaseInventory method with satellite collections
 func TestClusterDatabaseInventorySatellite(t *testing.T) {
 	skipNoEnterprise(t)
 	name := "satellite_collection_dbinv"
@@ -166,6 +166,46 @@ func TestClusterDatabaseInventorySatellite(t *testing.T) {
 
 		if !foundSatellite {
 			t.Errorf("No satellite collection.")
+		}
+	}
+}
+
+// TestClusterDatabaseInventorySmartJoin tests the Cluster.DatabaseInventory method with smart joins
+func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
+	skipNoEnterprise(t)
+	name := "smart_join_collection_dbinv"
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4.5", t)
+	cl, err := c.Cluster(ctx)
+	if driver.IsPreconditionFailed(err) {
+		t.Skip("Not a cluster")
+	} else {
+		db, err := c.Database(ctx, "_system")
+		if err != nil {
+			t.Fatalf("Failed to open _system database: %s", describe(err))
+		}
+		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+			ShardKeys:          []string{"_key:"},
+			SmartJoinAttribute: "smart",
+			NumberOfShards:     2,
+		}, t)
+		inv, err := cl.DatabaseInventory(ctx, db)
+		if err != nil {
+			t.Fatalf("DatabaseInventory failed: %s", describe(err))
+		}
+		if len(inv.Collections) == 0 {
+			t.Error("Expected multiple collections, got 0")
+		}
+		foundSmartJoin := false
+		for _, col := range inv.Collections {
+			if col.Parameters.Name == name && col.Parameters.SmartJoinAttribute == "smart" {
+				foundSmartJoin = true
+			}
+		}
+
+		if !foundSmartJoin {
+			t.Errorf("No smart join attribute.")
 		}
 	}
 }

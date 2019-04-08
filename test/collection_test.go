@@ -31,6 +31,15 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+func skipNoCluster(c driver.Client, t *testing.T) {
+	_, err := c.Cluster(nil)
+	if driver.IsPreconditionFailed(err) {
+		t.Skipf("Not a cluster")
+	} else if err != nil {
+		t.Fatalf("Failed to get cluster: %s", describe(err))
+	}
+}
+
 // ensureCollection is a helper to check if a collection exists and create if if needed.
 // It will fail the test when an error occurs.
 func ensureCollection(ctx context.Context, db driver.Database, name string, options *driver.CreateCollectionOptions, t testEnv) driver.Collection {
@@ -77,12 +86,7 @@ func TestCreateCollection(t *testing.T) {
 func TestCreateSatelliteCollection(t *testing.T) {
 	skipNoEnterprise(t)
 	c := createClientFromEnv(t, true)
-	_, err := c.Cluster(nil)
-	if driver.IsPreconditionFailed(err) {
-		t.Skipf("Not a cluster")
-	} else if err != nil {
-		t.Fatalf("Failed to get cluster: %s", describe(err))
-	}
+	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_create_collection_satellite"
 	options := driver.CreateCollectionOptions{
@@ -106,6 +110,42 @@ func TestCreateSatelliteCollection(t *testing.T) {
 		} else {
 			if !prop.IsSatellite() {
 				t.Errorf("Collection %s is not satellite", name)
+			}
+		}
+	}
+}
+
+// TestCreateSmartJoinCollection create a collection with smart join attribute
+func TestCreateSmartJoinCollection(t *testing.T) {
+	skipNoEnterprise(t)
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4.5", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_create_collection_smart_join"
+	options := driver.CreateCollectionOptions{
+		ShardKeys:          []string{"_key:"},
+		SmartJoinAttribute: "smart",
+		NumberOfShards:     2,
+	}
+	if _, err := db.CreateCollection(nil, name, &options); err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+	// Collection must exist now
+	if found, err := db.CollectionExists(nil, name); err != nil {
+		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
+	} else if !found {
+		t.Errorf("CollectionExists('%s') return false, expected true", name)
+	}
+	// Check if the collection has a smart join attribute
+	if col, err := db.Collection(nil, name); err != nil {
+		t.Errorf("Collection('%s') failed: %s", name, describe(err))
+	} else {
+		if prop, err := col.Properties(nil); err != nil {
+			t.Errorf("Properties() failed: %s", describe(err))
+		} else {
+			if prop.SmartJoinAttribute != "smart" {
+				t.Errorf("Collection does not have the correct smart join attribute value, expected `smart`, found `%s`", prop.SmartJoinAttribute)
 			}
 		}
 	}

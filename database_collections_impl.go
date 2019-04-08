@@ -117,6 +117,7 @@ type createCollectionOptionsInternal struct {
 	IsSmart              bool                  `json:"isSmart,omitempty"`
 	SmartGraphAttribute  string                `json:"smartGraphAttribute,omitempty"`
 	Name                 string                `json:"name"`
+	SmartJoinAttribute   string                `json:"smartJoinAttribute,omitempty"`
 }
 
 // CreateCollection creates a new collection with given name and options, and opens a connection to it.
@@ -184,6 +185,7 @@ func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOption
 	p.DistributeShardsLike = i.DistributeShardsLike
 	p.IsSmart = i.IsSmart
 	p.SmartGraphAttribute = i.SmartGraphAttribute
+	p.SmartJoinAttribute = i.SmartJoinAttribute
 }
 
 // // MarshalJSON converts CreateCollectionOptions into json

@@ -116,6 +116,10 @@ type CollectionProperties struct {
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	// SmartJoinAttribute
+	// See documentation for smart joins.
+	// This requires ArangoDB Enterprise Edition.
+	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
 }
 
 const (
