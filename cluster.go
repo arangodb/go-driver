@@ -209,6 +209,7 @@ type InventoryCollectionParameters struct {
 	Type                 CollectionType         `json:"type,omitempty"`
 	WaitForSync          bool                   `json:"waitForSync,omitempty"`
 	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
+	SmartJoinAttribute   string                 `json:"smartJoinAttribute,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a satellite collection

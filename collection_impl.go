@@ -274,34 +274,37 @@ type collectionPropertiesInternal struct {
 		Type          KeyGeneratorType `json:"type,omitempty"`
 		AllowUserKeys bool             `json:"allowUserKeys,omitempty"`
 	} `json:"keyOptions,omitempty"`
-	NumberOfShards    int               `json:"numberOfShards,omitempty"`
-	ShardKeys         []string          `json:"shardKeys,omitempty"`
-	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+	NumberOfShards     int               `json:"numberOfShards,omitempty"`
+	ShardKeys          []string          `json:"shardKeys,omitempty"`
+	ReplicationFactor  replicationFactor `json:"replicationFactor,omitempty"`
+	SmartJoinAttribute string            `json:"smartJoinAttribute,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 	return CollectionProperties{
-		CollectionInfo:    p.CollectionInfo,
-		WaitForSync:       p.WaitForSync,
-		DoCompact:         p.DoCompact,
-		JournalSize:       p.JournalSize,
-		KeyOptions:        p.KeyOptions,
-		NumberOfShards:    p.NumberOfShards,
-		ShardKeys:         p.ShardKeys,
-		ReplicationFactor: int(p.ReplicationFactor),
+		CollectionInfo:     p.CollectionInfo,
+		WaitForSync:        p.WaitForSync,
+		DoCompact:          p.DoCompact,
+		JournalSize:        p.JournalSize,
+		KeyOptions:         p.KeyOptions,
+		NumberOfShards:     p.NumberOfShards,
+		ShardKeys:          p.ShardKeys,
+		ReplicationFactor:  int(p.ReplicationFactor),
+		SmartJoinAttribute: p.SmartJoinAttribute,
 	}
 }
 
 func (p *CollectionProperties) asInternal() collectionPropertiesInternal {
 	return collectionPropertiesInternal{
-		CollectionInfo:    p.CollectionInfo,
-		WaitForSync:       p.WaitForSync,
-		DoCompact:         p.DoCompact,
-		JournalSize:       p.JournalSize,
-		KeyOptions:        p.KeyOptions,
-		NumberOfShards:    p.NumberOfShards,
-		ShardKeys:         p.ShardKeys,
-		ReplicationFactor: replicationFactor(p.ReplicationFactor),
+		CollectionInfo:     p.CollectionInfo,
+		WaitForSync:        p.WaitForSync,
+		DoCompact:          p.DoCompact,
+		JournalSize:        p.JournalSize,
+		KeyOptions:         p.KeyOptions,
+		NumberOfShards:     p.NumberOfShards,
+		ShardKeys:          p.ShardKeys,
+		ReplicationFactor:  replicationFactor(p.ReplicationFactor),
+		SmartJoinAttribute: p.SmartJoinAttribute,
 	}
 }
 
@@ -314,6 +317,7 @@ func (p *CollectionProperties) fromInternal(i *collectionPropertiesInternal) {
 	p.NumberOfShards = i.NumberOfShards
 	p.ShardKeys = i.ShardKeys
 	p.ReplicationFactor = int(i.ReplicationFactor)
+	p.SmartJoinAttribute = i.SmartJoinAttribute
 }
 
 // MarshalJSON converts CollectionProperties into json

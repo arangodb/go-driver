@@ -255,6 +255,7 @@ type inventoryCollectionParametersInternal struct {
 	Type                 CollectionType         `json:"type,omitempty"`
 	WaitForSync          bool                   `json:"waitForSync,omitempty"`
 	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
+	SmartJoinAttribute   string                 `json:"smartJoinAttribute,omitempty"`
 }
 
 func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParametersInternal {
@@ -281,6 +282,7 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		Type:                 p.Type,
 		WaitForSync:          p.WaitForSync,
 		DistributeShardsLike: p.DistributeShardsLike,
+		SmartJoinAttribute:   p.SmartJoinAttribute,
 	}
 }
 
@@ -312,6 +314,7 @@ func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollection
 		Type:                 p.Type,
 		WaitForSync:          p.WaitForSync,
 		DistributeShardsLike: p.DistributeShardsLike,
+		SmartJoinAttribute:   p.SmartJoinAttribute,
 	}
 }
 

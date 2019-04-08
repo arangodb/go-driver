@@ -95,6 +95,12 @@ type CreateCollectionOptions struct {
 	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
 	// This requires ArangoDB Enterprise Edition.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
+	// SmartJoinAttribute
+	// In the specific case that the two collections have the same number of shards, the data of the two collections can
+	// be co-located on the same server for the same shard key values. In this case the extra hop via the coordinator will not be necessary.
+	// See documentation for smart joins.
+	// This requires ArangoDB Enterprise Edition.
+	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
 }
 
 // CollectionType is the type of a collection.
