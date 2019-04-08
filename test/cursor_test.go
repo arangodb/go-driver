@@ -37,11 +37,14 @@ type queryTest struct {
 	ExpectSuccess     bool
 	ExpectedDocuments []interface{}
 	DocumentType      reflect.Type
+	HasFullCount      bool
+	ExpectedFullCount int64
 }
 
 type queryTestContext struct {
-	Context     context.Context
-	ExpectCount bool
+	Context         context.Context
+	ExpectCount     bool
+	ExpectFullCount bool
 }
 
 // TestCreateCursor creates several cursors.
@@ -146,23 +149,32 @@ func TestCreateCursor(t *testing.T) {
 			DocumentType:      reflect.TypeOf("foo"),
 			ExpectSuccess:     true,
 		},
+		queryTest{
+			Query:             "FOR d IN books SORT d.Title LIMIT 1, 1 RETURN d",
+			ExpectSuccess:     true,
+			ExpectedDocuments: []interface{}{collectionData["books"][1]},
+			DocumentType:      reflect.TypeOf(Book{}),
+			HasFullCount:      true,
+			ExpectedFullCount: 20,
+		},
 	}
 
 	// Setup context alternatives
 	contexts := []queryTestContext{
-		queryTestContext{nil, false},
-		queryTestContext{context.Background(), false},
-		queryTestContext{driver.WithQueryCount(nil), true},
-		queryTestContext{driver.WithQueryCount(nil, true), true},
-		queryTestContext{driver.WithQueryCount(nil, false), false},
-		queryTestContext{driver.WithQueryBatchSize(nil, 1), false},
-		queryTestContext{driver.WithQueryCache(nil), false},
-		queryTestContext{driver.WithQueryCache(nil, true), false},
-		queryTestContext{driver.WithQueryCache(nil, false), false},
-		queryTestContext{driver.WithQueryMemoryLimit(nil, 60000), false},
-		queryTestContext{driver.WithQueryTTL(nil, time.Minute), false},
-		queryTestContext{driver.WithQueryBatchSize(driver.WithQueryCount(nil), 1), true},
-		queryTestContext{driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2))), true},
+		queryTestContext{Context: nil},
+		queryTestContext{Context: context.Background()},
+		queryTestContext{Context: driver.WithQueryCount(nil), ExpectCount: true},
+		queryTestContext{Context: driver.WithQueryCount(nil, true), ExpectCount: true},
+		queryTestContext{Context: driver.WithQueryCount(nil, false)},
+		queryTestContext{Context: driver.WithQueryBatchSize(nil, 1)},
+		queryTestContext{Context: driver.WithQueryCache(nil)},
+		queryTestContext{Context: driver.WithQueryCache(nil, true)},
+		queryTestContext{Context: driver.WithQueryCache(nil, false)},
+		queryTestContext{Context: driver.WithQueryMemoryLimit(nil, 60000)},
+		queryTestContext{Context: driver.WithQueryTTL(nil, time.Minute)},
+		queryTestContext{Context: driver.WithQueryBatchSize(driver.WithQueryCount(nil), 1), ExpectCount: true},
+		queryTestContext{Context: driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2))), ExpectCount: true},
+		queryTestContext{Context: driver.WithQueryFullCount(nil, true), ExpectFullCount: true},
 	}
 
 	// Run tests for every context alternative
@@ -187,6 +199,12 @@ func TestCreateCursor(t *testing.T) {
 				} else {
 					if count != 0 {
 						t.Errorf("Expected count of 0, got %d in query %d (%s)", count, i, test.Query)
+					}
+				}
+				if qctx.ExpectFullCount && test.HasFullCount {
+					stat := cursor.Statistics()
+					if stat.FullCount() != test.ExpectedFullCount {
+						t.Errorf("Expected full count of %d, got %d in query %d (%s)", test.ExpectedFullCount, stat.FullCount(), i, test.Query)
 					}
 				}
 				var result []interface{}
