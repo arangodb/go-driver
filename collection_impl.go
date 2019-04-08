@@ -278,6 +278,7 @@ type collectionPropertiesInternal struct {
 	ShardKeys          []string          `json:"shardKeys,omitempty"`
 	ReplicationFactor  replicationFactor `json:"replicationFactor,omitempty"`
 	SmartJoinAttribute string            `json:"smartJoinAttribute,omitempty"`
+	ShardingStrategy   ShardingStrategy  `json:"shardingStrategy,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
@@ -291,6 +292,7 @@ func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 		ShardKeys:          p.ShardKeys,
 		ReplicationFactor:  int(p.ReplicationFactor),
 		SmartJoinAttribute: p.SmartJoinAttribute,
+		ShardingStrategy:   p.ShardingStrategy,
 	}
 }
 
@@ -305,6 +307,7 @@ func (p *CollectionProperties) asInternal() collectionPropertiesInternal {
 		ShardKeys:          p.ShardKeys,
 		ReplicationFactor:  replicationFactor(p.ReplicationFactor),
 		SmartJoinAttribute: p.SmartJoinAttribute,
+		ShardingStrategy:   p.ShardingStrategy,
 	}
 }
 
@@ -318,6 +321,7 @@ func (p *CollectionProperties) fromInternal(i *collectionPropertiesInternal) {
 	p.ShardKeys = i.ShardKeys
 	p.ReplicationFactor = int(i.ReplicationFactor)
 	p.SmartJoinAttribute = i.SmartJoinAttribute
+	p.ShardingStrategy = i.ShardingStrategy
 }
 
 // MarshalJSON converts CollectionProperties into json

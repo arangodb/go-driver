@@ -101,6 +101,9 @@ type CreateCollectionOptions struct {
 	// See documentation for smart joins.
 	// This requires ArangoDB Enterprise Edition.
 	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
+	// This attribute specifies the name of the sharding strategy to use for the collection.
+	// Must be one of ShardingStrategy* values.
+	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
 }
 
 // CollectionType is the type of a collection.
@@ -133,4 +136,15 @@ type KeyGeneratorType string
 const (
 	KeyGeneratorTraditional   = KeyGeneratorType("traditional")
 	KeyGeneratorAutoIncrement = KeyGeneratorType("autoincrement")
+)
+
+// ShardingStrategy describes the sharding strategy of a collection
+type ShardingStrategy string
+
+const (
+	ShardingStrategyCommunityCompat           ShardingStrategy = "community-compat"
+	ShardingStrategyEnterpriseCompat          ShardingStrategy = "enterprise-compat"
+	ShardingStrategyEnterpriseSmartEdgeCompat ShardingStrategy = "enterprise-smart-edge-compat"
+	ShardingStrategyHash                      ShardingStrategy = "hash"
+	ShardingStrategyEnterpriseHashSmartEdge   ShardingStrategy = "enterprise-hash-smart-edge"
 )

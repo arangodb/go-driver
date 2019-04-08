@@ -151,6 +151,40 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 	}
 }
 
+// TestCreateCollectionWithShardingStrategy create a collection with non default sharding strategy
+func TestCreateCollectionWithShardingStrategy(t *testing.T) {
+	skipNoEnterprise(t)
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	name := "test_create_collection_sharding_strategy"
+	options := driver.CreateCollectionOptions{
+		ShardingStrategy: driver.ShardingStrategyCommunityCompat,
+	}
+	if _, err := db.CreateCollection(nil, name, &options); err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+	// Collection must exist now
+	if found, err := db.CollectionExists(nil, name); err != nil {
+		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
+	} else if !found {
+		t.Errorf("CollectionExists('%s') return false, expected true", name)
+	}
+	// Check if the collection has a smart join attribute
+	if col, err := db.Collection(nil, name); err != nil {
+		t.Errorf("Collection('%s') failed: %s", name, describe(err))
+	} else {
+		if prop, err := col.Properties(nil); err != nil {
+			t.Errorf("Properties() failed: %s", describe(err))
+		} else {
+			if prop.ShardingStrategy != driver.ShardingStrategyCommunityCompat {
+				t.Errorf("Collection does not have the correct sharding strategy value, expected `%s`, found `%s`", driver.ShardingStrategyCommunityCompat, prop.ShardingStrategy)
+			}
+		}
+	}
+}
+
 // TestRemoveCollection creates a collection and then removes it.
 func TestRemoveCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)

@@ -210,6 +210,42 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 	}
 }
 
+// TestClusterDatabaseInventoryShardingStrategy tests the Cluster.DatabaseInventory method with sharding strategy
+func TestClusterDatabaseInventoryShardingStrategy(t *testing.T) {
+	skipNoEnterprise(t)
+	name := "shard_strat_collection_dbinv"
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.4", t)
+	cl, err := c.Cluster(ctx)
+	if driver.IsPreconditionFailed(err) {
+		t.Skip("Not a cluster")
+	} else {
+		db, err := c.Database(ctx, "_system")
+		if err != nil {
+			t.Fatalf("Failed to open _system database: %s", describe(err))
+		}
+		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+			ShardingStrategy: driver.ShardingStrategyCommunityCompat,
+		}, t)
+		inv, err := cl.DatabaseInventory(ctx, db)
+		if err != nil {
+			t.Fatalf("DatabaseInventory failed: %s", describe(err))
+		}
+		if len(inv.Collections) == 0 {
+			t.Error("Expected multiple collections, got 0")
+		}
+		for _, col := range inv.Collections {
+			if col.Parameters.Name == name {
+				if col.Parameters.ShardingStrategy != driver.ShardingStrategyCommunityCompat {
+					t.Errorf("Invalid sharding strategy, expected `%s`, found `%s`.", driver.ShardingStrategyCommunityCompat, col.Parameters.ShardingStrategy)
+				}
+				break
+			}
+		}
+	}
+}
+
 // TestClusterMoveShard tests the Cluster.MoveShard method.
 func TestClusterMoveShard(t *testing.T) {
 	ctx := context.Background()
