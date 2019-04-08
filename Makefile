@@ -132,6 +132,7 @@ run-tests-http: $(GOBUILDDIR)
 		--rm \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
+		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TESTOPTIONS) $(REPOPATH)/http
