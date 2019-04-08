@@ -3,7 +3,7 @@ SCRIPTDIR := $(shell pwd)
 ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 
 GOBUILDDIR := $(SCRIPTDIR)/.gobuild
-GOVERSION := 1.10.1-alpine
+GOVERSION := 1.12.2-alpine
 TMPDIR := $(GOBUILDDIR)
 
 ifndef ARANGODB
@@ -318,7 +318,6 @@ __test_go_test:
 		--net=$(TEST_NET) \
 		-v $(ROOTDIR):/usr/code \
 		-e GOPATH=/usr/code/.gobuild \
-		-e GOCACHE=off \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
@@ -326,6 +325,7 @@ __test_go_test:
 		-e TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \
 		-e TEST_PPROF=$(TEST_PPROF) \
 		-e TEST_MODE=$(TEST_MODE) \
+		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)

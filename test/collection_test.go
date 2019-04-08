@@ -119,7 +119,7 @@ func TestCreateSatelliteCollection(t *testing.T) {
 func TestCreateSmartJoinCollection(t *testing.T) {
 	skipNoEnterprise(t)
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.5", t)
+	skipBelowVersion(c, "3.4.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_create_collection_smart_join"
