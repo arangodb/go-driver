@@ -120,7 +120,6 @@ run-tests-http:
 	@docker run \
 		--rm \
 		-v $(ROOTDIR):/usr/code \
-		-e GOPATH=/usr/code/.gobuild \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
@@ -307,7 +306,6 @@ __test_go_test:
 		--name=$(TESTCONTAINER) \
 		--net=$(TEST_NET) \
 		-v $(ROOTDIR):/usr/code \
-		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
@@ -351,7 +349,6 @@ run-tests-cluster-failover:
 		--net=container:$(TESTCONTAINER)-ns \
 		--privileged \
 		-v $(ROOTDIR):/usr/code \
-		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
 		-e TEST_AUTHENTICATION=basic:root: \
 		-w /usr/code/ \
