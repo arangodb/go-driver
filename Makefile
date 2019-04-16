@@ -2,7 +2,7 @@ PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
 ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 
-GOVERSION := 1.12.2-alpine
+GOVERSION := 1.12.4-stretch
 TMPDIR := $(SCRIPTDIR)/.tmp
 
 ifndef ARANGODB
@@ -124,7 +124,7 @@ run-tests-http:
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		/bin/sh -c 'apk add -U git && go test $(TESTOPTIONS) $(REPOPATH)/http'
+		go test $(TESTOPTIONS) $(REPOPATH)/http
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
@@ -318,7 +318,7 @@ __test_go_test:
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		/bin/sh -c 'apk add -U git && go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)'
+		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
 		
 
 __test_prepare:
@@ -356,7 +356,7 @@ run-tests-cluster-failover:
 		-e TEST_AUTHENTICATION=basic:root: \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		/bin/sh -c 'apk add -U git iptables && go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test'
+		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 
 run-tests-cluster-cleanup:
