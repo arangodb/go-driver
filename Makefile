@@ -102,6 +102,9 @@ all: build
 build: $(SOURCES)
 	go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency $(REPOPATH)/jwt
 
+clean: 
+	@rm -rf ${TMPDIR}
+
 .PHONY: changelog
 changelog:
 	@docker run --rm \
@@ -327,6 +330,7 @@ ifdef JWTSECRET
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
 endif
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@mkdir -p ${TMPDIR} 
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR=${TMPDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
 endif
 
