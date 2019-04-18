@@ -2,9 +2,8 @@ PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
 ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
 
-GOBUILDDIR := $(SCRIPTDIR)/.gobuild
-GOVERSION := 1.12.2-alpine
-TMPDIR := $(GOBUILDDIR)
+GOVERSION := 1.12.4-stretch
+TMPDIR := $(SCRIPTDIR)/.tmp
 
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
@@ -21,7 +20,6 @@ ifdef VERBOSE
 endif
 
 ORGPATH := github.com/arangodb
-ORGDIR := $(GOBUILDDIR)/src/$(ORGPATH)
 REPONAME := $(PROJECT)
 REPODIR := $(ORGDIR)/$(REPONAME)
 REPOPATH := $(ORGPATH)/$(REPONAME)
@@ -101,17 +99,11 @@ endif
 
 all: build
 
-build: $(GOBUILDDIR) $(SOURCES)
-	GOPATH=$(GOBUILDDIR) go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency $(REPOPATH)/jwt
+build: $(SOURCES)
+	go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency $(REPOPATH)/jwt
 
-clean:
-	rm -Rf $(GOBUILDDIR)
-
-$(GOBUILDDIR):
-	@mkdir -p $(ORGDIR)
-	@rm -f $(REPODIR) && ln -s ../../../.. $(REPODIR)
-	GOPATH=$(GOBUILDDIR) go get github.com/arangodb/go-velocypack
-	GOPATH=$(GOBUILDDIR) go get github.com/dgrijalva/jwt-go
+clean: 
+	@rm -rf ${TMPDIR}
 
 .PHONY: changelog
 changelog:
@@ -127,11 +119,10 @@ changelog:
 run-tests: run-tests-http run-tests-single run-tests-resilientsingle run-tests-cluster
 
 # Tests of HTTP package 
-run-tests-http: $(GOBUILDDIR)
+run-tests-http:
 	@docker run \
 		--rm \
 		-v $(ROOTDIR):/usr/code \
-		-e GOPATH=/usr/code/.gobuild \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
@@ -262,63 +253,62 @@ run-tests-cluster-vst-1.0: run-tests-cluster-vst-1.0-no-auth run-tests-cluster-v
 
 run-tests-cluster-vst-1.1: run-tests-cluster-vst-1.1-no-auth run-tests-cluster-vst-1.1-with-auth run-tests-cluster-vst-1.1-ssl
 
-run-tests-cluster-json-no-auth: $(GOBUILDDIR)
+run-tests-cluster-json-no-auth: 
 	@echo "Cluster server, JSON, no authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="json" __run_tests
 
-run-tests-cluster-vpack-no-auth: $(GOBUILDDIR)
+run-tests-cluster-vpack-no-auth:
 	@echo "Cluster server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-cluster-vst-1.0-no-auth: $(GOBUILDDIR)
+run-tests-cluster-vst-1.0-no-auth: 
 	@echo "Cluster server, Velocystream 1.0, no authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
 
-run-tests-cluster-vst-1.1-no-auth: $(GOBUILDDIR)
+run-tests-cluster-vst-1.1-no-auth:
 	@echo "Cluster server, Velocystream 1.1, no authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
-run-tests-cluster-json-with-auth: $(GOBUILDDIR)
+run-tests-cluster-json-with-auth:
 	@echo "Cluster server, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
 
-run-tests-cluster-vpack-with-auth: $(GOBUILDDIR)
+run-tests-cluster-vpack-with-auth:
 	@echo "Cluster server, Velocypack, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-cluster-vst-1.0-with-auth: $(GOBUILDDIR)
+run-tests-cluster-vst-1.0-with-auth: 
 	@echo "Cluster server, Velocystream 1.0, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
 
-run-tests-cluster-vst-1.1-with-auth: $(GOBUILDDIR)
+run-tests-cluster-vst-1.1-with-auth: 
 	@echo "Cluster server, Velocystream 1.1, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
-run-tests-cluster-json-ssl: $(GOBUILDDIR)
+run-tests-cluster-json-ssl: 
 	@echo "Cluster server, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONTENT_TYPE="json" __run_tests
 
-run-tests-cluster-vpack-ssl: $(GOBUILDDIR)
+run-tests-cluster-vpack-ssl: 
 	@echo "Cluster server, Velocypack, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONTENT_TYPE="vpack" __run_tests
 
-run-tests-cluster-vst-1.0-ssl: $(GOBUILDDIR)
+run-tests-cluster-vst-1.0-ssl:
 	@echo "Cluster server, Velocystream 1.0, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.0" __run_tests
 
-run-tests-cluster-vst-1.1-ssl: $(GOBUILDDIR)
+run-tests-cluster-vst-1.1-ssl: 
 	@echo "Cluster server, Velocystream 1.1, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # Internal test tasks
-__run_tests: $(GOBUILDDIR) __test_prepare __test_go_test __test_cleanup
+__run_tests: __test_prepare __test_go_test __test_cleanup
 
 __test_go_test:
 	docker run \
 		--name=$(TESTCONTAINER) \
 		--net=$(TEST_NET) \
 		-v $(ROOTDIR):/usr/code \
-		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
@@ -330,6 +320,7 @@ __test_go_test:
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+		
 
 __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
@@ -339,7 +330,8 @@ ifdef JWTSECRET
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
 endif
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR=${GOBUILDDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
+	@mkdir -p ${TMPDIR} 
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR=${TMPDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
 endif
 
 __test_cleanup:
@@ -350,23 +342,22 @@ endif
 	@sleep 3
 
 
-run-tests-cluster-failover: $(GOBUILDDIR)
+run-tests-cluster-failover: 
 	# Note that we use 127.0.0.1:7001.. as endpoints, so we force using IPv4
 	# This is essential since we only block IPv4 ports in the test.
 	@echo "Cluster server, failover, no authentication"
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh start
-	GOPATH=$(GOBUILDDIR) go get github.com/coreos/go-iptables/iptables
+	go get github.com/coreos/go-iptables/iptables
 	docker run \
 		--rm \
 		--net=container:$(TESTCONTAINER)-ns \
 		--privileged \
 		-v $(ROOTDIR):/usr/code \
-		-e GOPATH=/usr/code/.gobuild \
 		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
 		-e TEST_AUTHENTICATION=basic:root: \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		/bin/sh -c 'apk add -U iptables && go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test'
+		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
 
 run-tests-cluster-cleanup:

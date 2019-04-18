@@ -11,4 +11,4 @@ env:
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:latest
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:latest
 
-script: make $TEST_SUITE
+script: VERBOSE=1 make $TEST_SUITE
