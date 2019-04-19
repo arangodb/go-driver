@@ -1,9 +1,9 @@
 PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
-ROOTDIR := $(shell cd $(SCRIPTDIR) && pwd)
+ROOTDIR := $(shell cd "${SCRIPTDIR}" && pwd)
 
 GOVERSION := 1.12.4-stretch
-TMPDIR := $(SCRIPTDIR)/.tmp
+TMPDIR := ${SCRIPTDIR}/.tmp
 
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
@@ -51,7 +51,7 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 	TAGS := -tags auth
 	TESTS := $(REPOPATH)/test
 	JWTSECRET := testing
-	JWTSECRETFILE := $(TMPDIR)/$(TESTCONTAINER)-jwtsecret
+	JWTSECRETFILE := "${TMPDIR}/${TESTCONTAINER}-jwtsecret"
 	ARANGOVOL := -v "$(JWTSECRETFILE):/jwtsecret"
 	ARANGOARGS := --server.jwt-secret=/jwtsecret
 endif
@@ -103,13 +103,13 @@ build: $(SOURCES)
 	go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency $(REPOPATH)/jwt
 
 clean: 
-	@rm -rf ${TMPDIR}
+	@rm -rf "${TMPDIR}"
 
 .PHONY: changelog
 changelog:
 	@docker run --rm \
 		-e CHANGELOG_GITHUB_TOKEN=$(shell cat ~/.arangodb/github-token) \
-		-v "$(ROOTDIR)":/usr/local/src/your-app \
+		-v "${ROOTDIR}":/usr/local/src/your-app \
 		ferrarimarco/github-changelog-generator \
 		--user arangodb \
 		--project go-driver \
@@ -122,7 +122,7 @@ run-tests: run-tests-http run-tests-single run-tests-resilientsingle run-tests-c
 run-tests-http:
 	@docker run \
 		--rm \
-		-v $(ROOTDIR):/usr/code \
+		-v "${ROOTDIR}":/usr/code \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
@@ -308,7 +308,7 @@ __test_go_test:
 	docker run \
 		--name=$(TESTCONTAINER) \
 		--net=$(TEST_NET) \
-		-v $(ROOTDIR):/usr/code \
+		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
@@ -330,14 +330,15 @@ ifdef JWTSECRET
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
 endif
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
-	@mkdir -p ${TMPDIR} 
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR=${TMPDIR} $(CLUSTERENV) $(ROOTDIR)/test/cluster.sh start
+	@mkdir -p "${TMPDIR}"
+	@echo "${TMPDIR}"
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
 endif
 
 __test_cleanup:
 	@docker rm -f -v $(TESTCONTAINER) &> /dev/null
 ifndef TEST_ENDPOINTS_OVERRIDE
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) $(ROOTDIR)/test/cluster.sh cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) "${ROOTDIR}/test/cluster.sh" cleanup
 endif
 	@sleep 3
 
@@ -346,22 +347,22 @@ run-tests-cluster-failover:
 	# Note that we use 127.0.0.1:7001.. as endpoints, so we force using IPv4
 	# This is essential since we only block IPv4 ports in the test.
 	@echo "Cluster server, failover, no authentication"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" start
 	go get github.com/coreos/go-iptables/iptables
 	docker run \
 		--rm \
 		--net=container:$(TESTCONTAINER)-ns \
 		--privileged \
-		-v $(ROOTDIR):/usr/code \
+		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
 		-e TEST_AUTHENTICATION=basic:root: \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" cleanup
 
 run-tests-cluster-cleanup:
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) $(ROOTDIR)/test/cluster.sh cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" cleanup
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 
