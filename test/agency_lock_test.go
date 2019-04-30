@@ -36,7 +36,7 @@ func TestAgencyLock(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
-		t.Skip("Not a cluster")
+		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
 		t.Fatalf("Cluster failed: %s", describe(err))
 	} else {

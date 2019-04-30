@@ -59,7 +59,7 @@ func getAgencyEndpoints(ctx context.Context, c driver.Client) ([]string, error) 
 func getAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agency.Agency, error) {
 	if os.Getenv("TEST_CONNECTION") == "vst" {
 		// These tests assume an HTTP connetion, so we skip under this condition
-		return nil, driver.ArangoError{HasError: true, Code: 412}
+		return nil, driver.ArangoError{HasError: true, Code: 412, ErrorMessage: "Using vst is not supported in agency tests"}
 	}
 	endpoints, err := getAgencyEndpoints(ctx, c)
 	if err != nil {
@@ -71,7 +71,7 @@ func getAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agenc
 	})
 	if auth := createAuthenticationFromEnv(t); auth != nil {
 		// This requires a JWT token, which we not always have in this test, so we skip under this condition
-		return nil, driver.ArangoError{HasError: true, Code: 412}
+		return nil, driver.ArangoError{HasError: true, Code: 412, ErrorMessage: "Authentication required but not supported in agency tests"}
 	}
 	result, err := agency.NewAgency(conn)
 	if err != nil {
@@ -114,7 +114,7 @@ func TestAgencyRead(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
-		t.Skip("Not a cluster")
+		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
 		t.Fatalf("Cluster failed: %s", describe(err))
 	} else {
@@ -133,7 +133,7 @@ func TestAgencyWrite(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
-		t.Skip("Not a cluster")
+		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
 		t.Fatalf("Cluster failed: %s", describe(err))
 	} else {
@@ -162,7 +162,7 @@ func TestAgencyWriteIfEmpty(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
-		t.Skip("Not a cluster")
+		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
 		t.Fatalf("Cluster failed: %s", describe(err))
 	} else {
@@ -194,7 +194,7 @@ func TestAgencyWriteIfEqualTo(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
-		t.Skip("Not a cluster")
+		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
 		t.Fatalf("Cluster failed: %s", describe(err))
 	} else {
@@ -235,7 +235,7 @@ func TestAgencyRemove(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
-		t.Skip("Not a cluster")
+		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
 		t.Fatalf("Cluster failed: %s", describe(err))
 	} else {
@@ -261,7 +261,7 @@ func TestAgencyRemoveIfEqualTo(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
-		t.Skip("Not a cluster")
+		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
 		t.Fatalf("Cluster failed: %s", describe(err))
 	} else {
