@@ -359,9 +359,12 @@ func TestCollectionSetProperties(t *testing.T) {
 		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
 	}
 
-	// Set WaitForSync to false
+	// Set WaitForSync to false and CacheEnabled to true
 	waitForSync := false
-	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{WaitForSync: &waitForSync}); err != nil {
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+		WaitForSync:  &waitForSync,
+		CacheEnabled: true,
+	}); err != nil {
 		t.Fatalf("Failed to set properties: %s", describe(err))
 	}
 	if p, err := col.Properties(nil); err != nil {
@@ -369,6 +372,9 @@ func TestCollectionSetProperties(t *testing.T) {
 	} else {
 		if p.WaitForSync != waitForSync {
 			t.Errorf("Expected WaitForSync %v, got %v", waitForSync, p.WaitForSync)
+		}
+		if p.CacheEnabled != true {
+			t.Error("Expected CacheEnabled to be true")
 		}
 	}
 
