@@ -123,6 +123,8 @@ type CollectionProperties struct {
 	// This attribute specifies the name of the sharding strategy to use for the collection.
 	// Can not be changed after creation.
 	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
+	// CacheEnabled enables in-memory caching of documents and primary index entries when using RocksDB. Check SetCollectionPropertiesOptions.CacheEnabled for more details.
+	CacheEnabled bool `json:"cacheEnabled,omitempty"`
 }
 
 const (
@@ -144,6 +146,8 @@ type SetCollectionPropertiesOptions struct {
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	// CacheEnabled enables in-memory caching of documents and primary index entries when using RocksDB. This can potentially speed up point-lookups significantly, especially if collection have a subset of frequently accessed documents.
+	CacheEnabled bool `json:"cacheEnabled,omitempty"`
 }
 
 // CollectionStatus indicates the status of a collection.
