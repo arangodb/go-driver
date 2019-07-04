@@ -342,6 +342,87 @@ func TestClusterMoveShard(t *testing.T) {
 	}
 }
 
+func TestClusterResignLeadership(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	cl, err := c.Cluster(ctx)
+	if driver.IsPreconditionFailed(err) {
+		t.Skip("Not a cluster")
+	} else {
+		db, err := c.Database(ctx, "_system")
+		if err != nil {
+			t.Fatalf("Failed to open _system database: %s", describe(err))
+		}
+		col, err := db.CreateCollection(ctx, "test_resign_leadership", &driver.CreateCollectionOptions{
+			NumberOfShards:    12,
+			ReplicationFactor: 2,
+		})
+		if err != nil {
+			t.Fatalf("CreateCollection failed: %s", describe(err))
+		}
+		inv, err := cl.DatabaseInventory(ctx, db)
+		if err != nil {
+			t.Fatalf("DatabaseInventory failed: %s", describe(err))
+		}
+		if len(inv.Collections) == 0 {
+			t.Error("Expected multiple collections, got 0")
+		}
+		var targetServerID driver.ServerID
+	collectionLoop:
+		for _, colInv := range inv.Collections {
+			if colInv.Parameters.Name == col.Name() {
+				for _, dbServers := range colInv.Parameters.Shards {
+					targetServerID = dbServers[0]
+
+					if err := cl.ResignServer(context.Background(), string(targetServerID)); err != nil {
+						t.Errorf("ResignLeadership for %s failed: %s", targetServerID, describe(err))
+					}
+
+					break collectionLoop
+				}
+			}
+		}
+
+		// Wait until targetServerID is no longer leader
+		start := time.Now()
+		maxTestTime := time.Minute
+		lastLeaderForShardsNum := 0
+		for {
+			leaderForShardsNum := 0
+			inv, err := cl.DatabaseInventory(ctx, db)
+			if err != nil {
+				t.Errorf("DatabaseInventory failed: %s", describe(err))
+			} else {
+				for _, colInv := range inv.Collections {
+					if colInv.Parameters.Name == col.Name() {
+						for shardID, dbServers := range colInv.Parameters.Shards {
+							if dbServers[0] == targetServerID {
+								leaderForShardsNum++
+								t.Logf("%s is still leader for %s", targetServerID, shardID)
+							}
+						}
+					}
+				}
+			}
+			if leaderForShardsNum == 0 {
+				// We're done
+				break
+			}
+			if leaderForShardsNum != lastLeaderForShardsNum {
+				// Something changed, we give a bit more time
+				maxTestTime = maxTestTime + time.Second*15
+				lastLeaderForShardsNum = leaderForShardsNum
+			}
+			if time.Since(start) > maxTestTime {
+				t.Errorf("%s did not resign within %s", targetServerID, maxTestTime)
+				break
+			}
+			t.Log("Waiting a bit")
+			time.Sleep(time.Second * 5)
+		}
+	}
+}
+
 // TestClusterMoveShardWithViews tests the Cluster.MoveShard method with collection
 // that are being used in views.
 func TestClusterMoveShardWithViews(t *testing.T) {
