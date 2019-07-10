@@ -24,17 +24,36 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
 
 func skipIfNoBackup(t *testing.T) {
-	if _, set := os.LookupEnv("TEST_ENABLE_BACKUP"); !set {
+	if v := os.Getenv("TEST_ENABLE_BACKUP"); v == "" {
 		t.Skip("Backup Tests not enabled")
 	}
+}
+
+func getTransfereConfigFromEnv(t *testing.T) (repo string, config map[string]json.RawMessage) {
+
+	repoenv := os.Getenv("TEST_BACKUP_REMOTE_REPO")
+	confenv := os.Getenv("TEST_BACKUP_REMOTE_CONFIG")
+
+	if repoenv == "" || confenv == "" {
+		t.Skipf("TEST_BACKUP_REMOTE_REPO and TEST_BACKUP_REMOTE_CONFIG must be set for remote transfere tests")
+	}
+
+	var confMap map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(confenv), &confMap); err != nil {
+		t.Fatalf("Failed to unmarshal remote config: %s %s", describe(err), confenv)
+	}
+
+	return repoenv, confMap
 }
 
 func ensureBackup(ctx context.Context, b driver.ClientBackup, t *testing.T) driver.BackupID {
@@ -284,5 +303,124 @@ func TestBackupRestore(t *testing.T) {
 		t.Errorf("Failed to lookup document: %s", describe(err))
 	} else if ok {
 		t.Errorf("Document should not be there: %s", meta2.Key)
+	}
+}
+
+func TestBackupUploadNonExisting(t *testing.T) {
+	skipIfNoBackup(t)
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	b := c.Backup()
+	repo, conf := getTransfereConfigFromEnv(t)
+
+	var raw []byte
+	ctx = driver.WithRawResponse(ctx, &raw)
+
+	jobID, err := b.Upload(ctx, "not_there", repo, conf)
+	if err != nil {
+		t.Errorf("Starting upload failed: %s", describe(err))
+	}
+
+	t.Logf("Response: %s", string(raw))
+	t.Logf("JobID: %s", jobID)
+
+	for {
+		progress, err := b.Progress(ctx, jobID)
+		if err != nil {
+			t.Errorf("Progress failed: %s", describe(err))
+		}
+
+		// Wait for completion
+		completedCount := 0
+		for dbserver, status := range progress.DBServers {
+			switch status.Status {
+			case driver.TransferCompleted:
+				t.Fatalf("Upload should not complete: %s", dbserver)
+			case driver.TransferFailed:
+				completedCount++
+			}
+			t.Logf("Status on %s: %s", dbserver, status.Status)
+		}
+
+		if completedCount == len(progress.DBServers) {
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatalf("Upload failed: %s", describe(ctx.Err()))
+		case <-time.After(1 * time.Second):
+			break
+		}
+	}
+}
+
+func TestBackupUpload(t *testing.T) {
+	skipIfNoBackup(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	c := createClientFromEnv(t, true)
+	b := c.Backup()
+	id := ensureBackup(ctx, b, t)
+	repo, conf := getTransfereConfigFromEnv(t)
+
+	jobID, err := b.Upload(ctx, id, repo, conf)
+	if err != nil {
+		t.Fatalf("Failed to start upload: %s", describe(err))
+	}
+
+	for {
+		progress, err := b.Progress(ctx, jobID)
+		if err != nil {
+			t.Errorf("Progress failed: %s", describe(err))
+		}
+
+		// Wait for completion
+		completedCount := 0
+		for dbserver, status := range progress.DBServers {
+			switch status.Status {
+			case driver.TransferCompleted:
+				completedCount++
+				break
+			case driver.TransferFailed:
+				t.Fatalf("Upload on %s failed: %s (%d)", dbserver, status.ErrorMessage, status.Error)
+			}
+		}
+
+		if completedCount == len(progress.DBServers) {
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatalf("Upload failed: %s", describe(ctx.Err()))
+		case <-time.After(1 * time.Second):
+			break
+		}
+	}
+}
+
+func TestBackupUploadAbort(t *testing.T) {
+	skipIfNoBackup(t)
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	b := c.Backup()
+	id := ensureBackup(ctx, b, t)
+	repo, conf := getTransfereConfigFromEnv(t)
+
+	jobID, err := b.Upload(ctx, id, repo, conf)
+	if err != nil {
+		t.Fatalf("Failed to start upload: %s", describe(err))
+	}
+
+	if err := b.Abort(ctx, jobID); err != nil {
+		t.Fatalf("Failed to abort upload: %s", describe(err))
+	}
+
+	if progress, err := b.Progress(ctx, jobID); err != nil {
+		t.Errorf("Unexpected error: %s", describe(err))
+	} else if !progress.Cancelled {
+		t.Errorf("Transfer not cancelled")
 	}
 }

@@ -48,7 +48,7 @@ type BackupCreateOptions struct {
 	Force bool   `json:"force,omitempty"`
 }
 
-// BackupTransferStatus represents all possible states a Transfer job can be in
+// BackupTransferStatus represents all possible states a transfer job can be in
 type BackupTransferStatus string
 
 const (
@@ -58,8 +58,8 @@ const (
 	TransferFailed       BackupTransferStatus = "FAILED"
 )
 
-// BackupTransferProgress provides progress information of a backup Transfer job
-type BackupTransferProgress struct {
+// BackupTransferReport provides progress information of a backup transfer job for a single dbserver
+type BackupTransferReport struct {
 	Status       BackupTransferStatus `json:"Status,omitempty"`
 	Error        int                  `json:"Error,omitempty"`
 	ErrorMessage string               `json:"ErrorMessage,omitempty"`
@@ -70,12 +70,21 @@ type BackupTransferProgress struct {
 	} `json:"Progress,omitempty"`
 }
 
+// BackupTransferProgressReport provides progress information for a backup transfer job
+type BackupTransferProgressReport struct {
+	BackupID  BackupID                        `json:"BackupID,omitempty"`
+	Cancelled bool                            `json:"Cancelled,omitempty"`
+	Timestamp string                          `json:"Timestamp,omitempty"`
+	DBServers map[string]BackupTransferReport `json:"DBServers,omitempty"`
+}
+
 // BackupTransferJobID represents a Transfer (upload/download) job
 type BackupTransferJobID string
 
 // BackupID identifies a backup
 type BackupID string
 
+// ClientAdminBackup provides access to the Backup API via the Client interface
 type ClientAdminBackup interface {
 	Backup() ClientBackup
 }
@@ -99,15 +108,15 @@ type ClientBackup interface {
 
 	// Upload triggers an upload to the remote repository of backup with id using the given config
 	// and returns the job id.
-	Upload(id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error)
+	Upload(ctx context.Context, id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error)
 
 	// Download triggers an download to the remote repository of backup with id using the given config
 	// and returns the job id.
-	Download(id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error)
+	Download(ctx context.Context, id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error)
 
 	// Progress returns the progress state of the given Transfer job
-	Progress(job BackupTransferJobID) (map[string]BackupTransferProgress, error)
+	Progress(ctx context.Context, job BackupTransferJobID) (BackupTransferProgressReport, error)
 
 	// Abort aborts the Transfer job if possible
-	Abort(job BackupTransferJobID) error
+	Abort(ctx context.Context, job BackupTransferJobID) error
 }

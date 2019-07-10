@@ -24,7 +24,6 @@ package driver
 
 import (
 	"context"
-	"fmt"
 )
 
 type clientBackup struct {
@@ -151,22 +150,131 @@ func (c *clientBackup) List(ctx context.Context, opt *BackupListOptions) (map[Ba
 
 // Upload triggers an upload to the remote repository of backup with id using the given config
 // and returns the job id.
-func (c *clientBackup) Upload(id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error) {
-	return "", fmt.Errorf("Not implemented")
+func (c *clientBackup) Upload(ctx context.Context, id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error) {
+	req, err := c.conn.NewRequest("POST", "_admin/backup/upload")
+	if err != nil {
+		return "", WithStack(err)
+	}
+	body := struct {
+		ID         BackupID    `json:"id,omitempty"`
+		RemoteRepo string      `json:"remoteRepository,omitempty"`
+		Config     interface{} `json:"config,omitempty"`
+	}{
+		ID:         id,
+		RemoteRepo: remoteRepository,
+		Config:     config,
+	}
+	req, err = req.SetBody(body)
+	if err != nil {
+		return "", WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return "", WithStack(err)
+	}
+	// This should be 202 Accepted
+	if err := resp.CheckStatus(200); err != nil {
+		return "", WithStack(err)
+	}
+	var result struct {
+		UploadID BackupTransferJobID `json:"uploadId,omitempty"`
+	}
+	if err := resp.ParseBody("result", &result); err != nil {
+		return "", WithStack(err)
+	}
+	return result.UploadID, nil
 }
 
 // Download triggers an download to the remote repository of backup with id using the given config
 // and returns the job id.
-func (c *clientBackup) Download(id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error) {
-	return "", fmt.Errorf("Not implemented")
+func (c *clientBackup) Download(ctx context.Context, id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error) {
+	req, err := c.conn.NewRequest("POST", "_admin/backup/download")
+	if err != nil {
+		return "", WithStack(err)
+	}
+	body := struct {
+		ID         BackupID    `json:"id,omitempty"`
+		RemoteRepo string      `json:"remoteRepository,omitempty"`
+		Config     interface{} `json:"config,omitempty"`
+	}{
+		ID:         id,
+		RemoteRepo: remoteRepository,
+		Config:     config,
+	}
+
+	req, err = req.SetBody(body)
+	if err != nil {
+		return "", WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return "", WithStack(err)
+	}
+	// This should be 202 Accepted
+	if err := resp.CheckStatus(200); err != nil {
+		return "", WithStack(err)
+	}
+	var result struct {
+		DownloadID BackupTransferJobID `json:"downloadId,omitempty"`
+	}
+	if err := resp.ParseBody("result", &result); err != nil {
+		return "", WithStack(err)
+	}
+	return result.DownloadID, nil
 }
 
 // Progress returns the progress state of the given Transfer job
-func (c *clientBackup) Progress(job BackupTransferJobID) (map[string]BackupTransferProgress, error) {
-	return nil, fmt.Errorf("Not implemented")
+func (c *clientBackup) Progress(ctx context.Context, job BackupTransferJobID) (result BackupTransferProgressReport, error error) {
+	req, err := c.conn.NewRequest("POST", "_admin/backup/upload")
+	if err != nil {
+		return BackupTransferProgressReport{}, WithStack(err)
+	}
+	body := struct {
+		ID BackupTransferJobID `json:"uploadId,omitempty"`
+	}{
+		ID: job,
+	}
+	req, err = req.SetBody(body)
+	if err != nil {
+		return BackupTransferProgressReport{}, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return BackupTransferProgressReport{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return BackupTransferProgressReport{}, WithStack(err)
+	}
+	if err := resp.ParseBody("result", &result); err != nil {
+		return BackupTransferProgressReport{}, WithStack(err)
+	}
+	return result, nil
 }
 
 // Abort aborts the Transfer job if possible
-func (c *clientBackup) Abort(job BackupTransferJobID) error {
-	return fmt.Errorf("Not implemented")
+func (c *clientBackup) Abort(ctx context.Context, job BackupTransferJobID) error {
+	req, err := c.conn.NewRequest("POST", "_admin/backup/upload")
+	if err != nil {
+		return WithStack(err)
+	}
+	body := struct {
+		ID    BackupTransferJobID `json:"uploadId,omitempty"`
+		Abort bool                `json:"abort,omitempty"`
+	}{
+		ID:    job,
+		Abort: true,
+	}
+	req, err = req.SetBody(body)
+	if err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	// This should be 202 Accepted
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
 }
