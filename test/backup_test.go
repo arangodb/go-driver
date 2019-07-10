@@ -308,21 +308,16 @@ func TestBackupRestore(t *testing.T) {
 
 func TestBackupUploadNonExisting(t *testing.T) {
 	skipIfNoBackup(t)
+	skipNoEnterprise(t)
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	b := c.Backup()
 	repo, conf := getTransfereConfigFromEnv(t)
 
-	var raw []byte
-	ctx = driver.WithRawResponse(ctx, &raw)
-
 	jobID, err := b.Upload(ctx, "not_there", repo, conf)
 	if err != nil {
 		t.Errorf("Starting upload failed: %s", describe(err))
 	}
-
-	t.Logf("Response: %s", string(raw))
-	t.Logf("JobID: %s", jobID)
 
 	for {
 		progress, err := b.Progress(ctx, jobID)
@@ -349,26 +344,14 @@ func TestBackupUploadNonExisting(t *testing.T) {
 		select {
 		case <-ctx.Done():
 			t.Fatalf("Upload failed: %s", describe(ctx.Err()))
-		case <-time.After(1 * time.Second):
+		case <-time.After(5 * time.Second):
 			break
 		}
 	}
 }
 
-func TestBackupUpload(t *testing.T) {
-	skipIfNoBackup(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	c := createClientFromEnv(t, true)
-	b := c.Backup()
-	id := ensureBackup(ctx, b, t)
-	repo, conf := getTransfereConfigFromEnv(t)
-
-	jobID, err := b.Upload(ctx, id, repo, conf)
-	if err != nil {
-		t.Fatalf("Failed to start upload: %s", describe(err))
-	}
+func waitForTransfereJobCompletion(ctx context.Context, jobID driver.BackupTransferJobID, b driver.ClientBackup, t *testing.T) {
+	t.Logf("Waiting for completion of %s", jobID)
 
 	for {
 		progress, err := b.Progress(ctx, jobID)
@@ -384,8 +367,10 @@ func TestBackupUpload(t *testing.T) {
 				completedCount++
 				break
 			case driver.TransferFailed:
-				t.Fatalf("Upload on %s failed: %s (%d)", dbserver, status.ErrorMessage, status.Error)
+				t.Fatalf("Job %s on %s failed: %s (%d)", jobID, dbserver, status.ErrorMessage, status.Error)
 			}
+
+			t.Logf("Status on %s: %s", dbserver, status.Status)
 		}
 
 		if completedCount == len(progress.DBServers) {
@@ -394,15 +379,43 @@ func TestBackupUpload(t *testing.T) {
 
 		select {
 		case <-ctx.Done():
-			t.Fatalf("Upload failed: %s", describe(ctx.Err()))
-		case <-time.After(1 * time.Second):
+			t.Fatalf("Job %s failed: %s", jobID, describe(ctx.Err()))
+		case <-time.After(8 * time.Second):
 			break
 		}
 	}
 }
 
+func uploadBackupWaitForCompletion(ctx context.Context, id driver.BackupID, b driver.ClientBackup, t *testing.T) {
+	repo, conf := getTransfereConfigFromEnv(t)
+
+	jobID, err := b.Upload(ctx, id, repo, conf)
+	if err != nil {
+		t.Fatalf("Failed to trigger upload: %s", describe(err))
+	}
+
+	defer func() {
+		b.Abort(ctx, jobID)
+	}()
+
+	waitForTransfereJobCompletion(ctx, jobID, b, t)
+}
+
+func TestBackupUpload(t *testing.T) {
+	skipIfNoBackup(t)
+	skipNoEnterprise(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	c := createClientFromEnv(t, true)
+	b := c.Backup()
+	id := ensureBackup(ctx, b, t)
+	uploadBackupWaitForCompletion(ctx, id, b, t)
+}
+
 func TestBackupUploadAbort(t *testing.T) {
 	skipIfNoBackup(t)
+	skipNoEnterprise(t)
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	b := c.Backup()
@@ -422,5 +435,86 @@ func TestBackupUploadAbort(t *testing.T) {
 		t.Errorf("Unexpected error: %s", describe(err))
 	} else if !progress.Cancelled {
 		t.Errorf("Transfer not cancelled")
+	}
+}
+
+func TestBackupCompleteCycle(t *testing.T) {
+	skipIfNoBackup(t)
+	skipNoEnterprise(t)
+	repo, conf := getTransfereConfigFromEnv(t)
+
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	b := c.Backup()
+
+	dbname := "backup"
+	colname := "col"
+
+	db := ensureDatabase(ctx, c, dbname, nil, t)
+	col := ensureCollection(ctx, db, colname, nil, t)
+
+	// Write a document
+	book1 := Book{
+		Title: "Hello World",
+	}
+
+	meta1, err := col.CreateDocument(ctx, book1)
+	if err != nil {
+		t.Fatalf("Failed to create document %s", describe(err))
+	}
+
+	id, err := b.Create(ctx, nil)
+	if err != nil {
+		t.Fatalf("Failed to create backup: %s", describe(err))
+	}
+
+	// start upload
+	uploadID, err := b.Upload(ctx, id, repo, conf)
+	if err != nil {
+		t.Fatalf("Failed to start upload: %s", describe(err))
+	}
+
+	// Insert another document
+	book2 := Book{
+		Title: "How to Backups",
+	}
+
+	meta2, err := col.CreateDocument(ctx, book2)
+	if err != nil {
+		t.Fatalf("Failed to create document %s", describe(err))
+	}
+
+	// Wait for upload to be completed
+	waitForTransfereJobCompletion(ctx, uploadID, b, t)
+
+	// delete the backup
+	if err := b.Delete(ctx, id); err != nil {
+		t.Fatalf("Failed to delete backup: %s", describe(err))
+	}
+
+	// Trigger a download
+	downloadID, err := b.Download(ctx, id, repo, conf)
+	if err != nil {
+		t.Fatalf("Failed to trigger download: %s", describe(err))
+	}
+
+	// Wait for download to be completed
+	waitForTransfereJobCompletion(ctx, downloadID, b, t)
+
+	// Now restore
+	if err := b.Restore(ctx, id, nil); err != nil {
+		t.Fatalf("Failed to restore backup: %s", describe(err))
+	}
+
+	if ok, err := col.DocumentExists(ctx, meta1.Key); err != nil {
+		t.Errorf("Failed to lookup document: %s", describe(err))
+	} else if !ok {
+		t.Errorf("Document missing: %s", meta1.Key)
+	}
+
+	if ok, err := col.DocumentExists(ctx, meta2.Key); err != nil {
+		t.Errorf("Failed to lookup document: %s", describe(err))
+	} else if ok {
+		t.Errorf("Document should not be there: %s", meta2.Key)
 	}
 }

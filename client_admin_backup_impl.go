@@ -114,7 +114,7 @@ func (c *clientBackup) Restore(ctx context.Context, id BackupID, opt *BackupRest
 		return WithStack(err)
 	}
 	// THIS SHOULD BE 202 ACCEPTED and not OK, because it is not completed when returns (at least for single server)
-	if err := resp.CheckStatus(202); err != nil {
+	if err := resp.CheckStatus(200); err != nil {
 		return WithStack(err)
 	}
 	return nil
