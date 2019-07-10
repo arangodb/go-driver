@@ -53,7 +53,7 @@ func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (Ba
 		return "", WithStack(err)
 	}
 	// THIS SHOULD BE 201
-	if err := resp.CheckStatus(200); err != nil {
+	if err := resp.CheckStatus(201); err != nil {
 		return "", WithStack(err)
 	}
 	var result struct {
@@ -172,8 +172,7 @@ func (c *clientBackup) Upload(ctx context.Context, id BackupID, remoteRepository
 	if err != nil {
 		return "", WithStack(err)
 	}
-	// This should be 202 Accepted
-	if err := resp.CheckStatus(200); err != nil {
+	if err := resp.CheckStatus(202); err != nil {
 		return "", WithStack(err)
 	}
 	var result struct {
@@ -210,8 +209,7 @@ func (c *clientBackup) Download(ctx context.Context, id BackupID, remoteReposito
 	if err != nil {
 		return "", WithStack(err)
 	}
-	// This should be 202 Accepted
-	if err := resp.CheckStatus(200); err != nil {
+	if err := resp.CheckStatus(202); err != nil {
 		return "", WithStack(err)
 	}
 	var result struct {
@@ -272,8 +270,7 @@ func (c *clientBackup) Abort(ctx context.Context, job BackupTransferJobID) error
 	if err != nil {
 		return WithStack(err)
 	}
-	// This should be 202 Accepted
-	if err := resp.CheckStatus(200); err != nil {
+	if err := resp.CheckStatus(202); err != nil {
 		return WithStack(err)
 	}
 	return nil
