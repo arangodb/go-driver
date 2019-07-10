@@ -71,6 +71,9 @@ type Client interface {
 
 	// Replication functions
 	ClientReplication
+
+	// Backup functions
+	ClientAdminBackup
 }
 
 // ClientConfig contains all settings needed to create a client.

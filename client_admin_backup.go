@@ -1,0 +1,113 @@
+//
+// DISCLAIMER
+//
+// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
+// Author Lars Maier
+//
+
+package driver
+
+import "context"
+
+// BackupMeta provides meta data of a backup
+type BackupMeta struct {
+	ID      BackupID `json:"id,omitempty"`
+	Version string   `json:"version,omitempty"`
+}
+
+// BackupRestoreOptions provides options for Restore
+type BackupRestoreOptions struct {
+	// do not version check when doing a restore (expert only)
+	IgnoreVersion bool `json:"ignoreVersion,omitempty"`
+}
+
+// BackupListOptions provides options for List
+type BackupListOptions struct {
+	// Only receive meta data about a specific id
+	ID BackupID `json:"id,omitempty"`
+}
+
+// BackupCreateOptions provides options for Create
+type BackupCreateOptions struct {
+	Label string `json:"label,omitempty"`
+	Force bool   `json:"force,omitempty"`
+}
+
+// BackupTransferStatus represents all possible states a Transfer job can be in
+type BackupTransferStatus string
+
+const (
+	TransferAcknowledged BackupTransferStatus = "ACK"
+	TransferStarted      BackupTransferStatus = "STARTED"
+	TransferCompleted    BackupTransferStatus = "COMPLETED"
+	TransferFailed       BackupTransferStatus = "FAILED"
+)
+
+// BackupTransferProgress provides progress information of a backup Transfer job
+type BackupTransferProgress struct {
+	Status       BackupTransferStatus `json:"Status,omitempty"`
+	Error        int                  `json:"Error,omitempty"`
+	ErrorMessage string               `json:"ErrorMessage,omitempty"`
+	Progress     struct {
+		Total     int    `json:"Total,omitempty"`
+		Done      int    `json:"Done,omitempty"`
+		Timestamp string `json:"Timestamp,omitempty"`
+	} `json:"Progress,omitempty"`
+}
+
+// BackupTransferJobID represents a Transfer (upload/download) job
+type BackupTransferJobID string
+
+// BackupID identifies a backup
+type BackupID string
+
+type ClientAdminBackup interface {
+	Backup() ClientBackup
+}
+
+// ClientBackup provides access to server/cluster backup functions of an arangodb database server
+// or an entire cluster of arangodb servers.
+type ClientBackup interface {
+	// Create creates a new backup and returns its id
+	Create(ctx context.Context, opt *BackupCreateOptions) (BackupID, error)
+
+	// Delete deletes the backup with given id
+	Delete(ctx context.Context, id BackupID) error
+
+	// Restore restores the backup with given id
+	Restore(ctx context.Context, id BackupID, opt *BackupRestoreOptions) error
+
+	// List returns meta data about some/all backups available
+	List(ctx context.Context, opt *BackupListOptions) (map[BackupID]BackupMeta, error)
+
+	// only enterprise version
+
+	// Upload triggers an upload to the remote repository of backup with id using the given config
+	// and returns the job id.
+	Upload(id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error)
+
+	// Download triggers an download to the remote repository of backup with id using the given config
+	// and returns the job id.
+	Download(id BackupID, remoteRepository string, config interface{}) (BackupTransferJobID, error)
+
+	// Progress returns the progress state of the given Transfer job
+	Progress(job BackupTransferJobID) (map[string]BackupTransferProgress, error)
+
+	// Abort aborts the Transfer job if possible
+	Abort(job BackupTransferJobID) error
+}

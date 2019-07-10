@@ -42,6 +42,9 @@ if [ "$CMD" == "start" ]; then
     if [ -n "$ARANGO_LICENSE_KEY" ]; then
         DOCKERARGS="$DOCKERARGS -e ARANGO_LICENSE_KEY=$ARANGO_LICENSE_KEY"
     fi
+    if [ -n "$ENABLE_BACKUP" ]; then
+        STARTERARGS="$STARTERARGS --all.backup.api-enabled=true"
+    fi
 
     # Start network namespace
     docker run -d --name=${NAMESPACE} alpine:3.4 sleep 365d
