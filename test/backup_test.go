@@ -370,7 +370,7 @@ func waitForTransfereJobCompletion(ctx context.Context, jobID driver.BackupTrans
 				t.Fatalf("Job %s on %s failed: %s (%d)", jobID, dbserver, status.ErrorMessage, status.Error)
 			}
 
-			t.Logf("Status on %s: %s", dbserver, status.Status)
+			t.Logf("Status on %s: %s (%d / %d)", dbserver, status.Status, status.Progress.Done, status.Progress.Total)
 		}
 
 		if completedCount == len(progress.DBServers) {
