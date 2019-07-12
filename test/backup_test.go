@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -446,6 +447,7 @@ func uploadBackupWaitForCompletion(ctx context.Context, id driver.BackupID, b dr
 func TestBackupUpload(t *testing.T) {
 	skipIfNoBackup(t)
 	skipNoEnterprise(t)
+	getTransfereConfigFromEnv(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -458,11 +460,11 @@ func TestBackupUpload(t *testing.T) {
 func TestBackupUploadAbort(t *testing.T) {
 	skipIfNoBackup(t)
 	skipNoEnterprise(t)
+	repo, conf := getTransfereConfigFromEnv(t)
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
-	repo, conf := getTransfereConfigFromEnv(t)
 
 	jobID, err := b.Upload(ctx, id, repo, conf)
 	if err != nil {
@@ -559,4 +561,128 @@ func TestBackupCompleteCycle(t *testing.T) {
 	} else if ok {
 		t.Errorf("Document should not be there: %s", meta2.Key)
 	}
+}
+
+type backupResult struct {
+	ID    driver.BackupID
+	Error error
+}
+
+func TestBackupCreateManyBackupsFast(t *testing.T) {
+	skipIfNoBackup(t)
+
+	numTries := 5
+
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	b := c.Backup()
+
+	idchan := make(chan backupResult)
+	defer close(idchan)
+	var wg sync.WaitGroup
+
+	oneWasSuccessful := false
+
+	for i := 0; i < numTries; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if id, err := b.Create(ctx, nil); err == nil {
+				idchan <- backupResult{ID: id}
+
+			} else {
+				idchan <- backupResult{Error: err}
+			}
+		}()
+	}
+
+	foundSet := make(map[driver.BackupID]struct{})
+	for i := 0; i < numTries; i++ {
+		res := <-idchan
+		if res.Error != nil {
+			t.Logf("Creating Backup failed: %s", describe(res.Error))
+			continue
+		}
+		oneWasSuccessful = true
+		if _, ok := foundSet[res.ID]; ok {
+			t.Errorf("Duplicate id: %s", res.ID)
+		} else {
+			t.Logf("Created backup %s", res.ID)
+			foundSet[res.ID] = struct{}{}
+		}
+	}
+
+	if !oneWasSuccessful {
+		t.Fatalf("All concurrent create requests failed!")
+	}
+
+	wg.Wait()
+
+	list, err := b.List(ctx, nil)
+	if err != nil {
+		t.Fatalf("Failed to obtain list of backups: %s", describe(err))
+	}
+
+	for id := range foundSet {
+		if _, ok := list[id]; !ok {
+			t.Errorf("Backup %s not contained in list", id)
+		}
+	}
+}
+
+func TestBackupCreateRestoreParallel(t *testing.T) {
+	skipIfNoBackup(t)
+
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	b := c.Backup()
+	id := ensureBackup(ctx, b, t)
+
+	errchan := make(chan error)
+	defer close(errchan)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if _, err := b.Create(ctx, nil); err == nil {
+			errchan <- nil
+		} else {
+			errchan <- err
+			t.Logf("Create failed: %s", describe(err))
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := b.Restore(ctx, id, nil); err == nil {
+			errchan <- nil
+		} else {
+			errchan <- err
+			t.Logf("Restore failed: %s", describe(err))
+		}
+	}()
+
+	errCount := 0
+	for i := 0; i < 2; i++ {
+		err := <-errchan
+		if err != nil {
+			errCount++
+		}
+	}
+
+	wg.Wait()
+
+	if errCount >= 2 {
+		t.Fatalf("Both operation failed!")
+	}
+}
+
+func ensureRemoteBackup(ctx context.Context, b driver.ClientBackup, t *testing.T) driver.BackupID {
+	id := ensureBackup(ctx, b, t)
+	uploadBackupWaitForCompletion(ctx, id, b, t)
+	if err := b.Delete(ctx, id); err != nil {
+		t.Fatalf("Failed to remove backup: %s", err)
+	}
+	return id
 }
