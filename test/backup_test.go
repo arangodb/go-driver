@@ -251,11 +251,46 @@ func TestBackupDeleteNonExisting(t *testing.T) {
 	}
 }
 
+func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) {
+
+	serverWasDown := false
+
+	for {
+		vctx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
+		if _, err := c.Version(vctx); err != nil {
+			if driver.IsTimeout(err) {
+				serverWasDown = true
+			}
+		} else {
+			if serverWasDown {
+				cancel()
+				return
+			}
+		}
+
+		cancel()
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(1 * time.Second):
+			break
+		}
+	}
+
+}
+
 func TestBackupRestore(t *testing.T) {
 	skipIfNoBackup(t)
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	b := c.Backup()
+
+	isSingle := false
+	if role, err := c.ServerRole(ctx); err != nil {
+		t.Fatalf("Failed to obtain server role: %s", describe(err))
+	} else {
+		isSingle = role == driver.ServerRoleSingle
+	}
 
 	dbname := "backup"
 	colname := "col"
@@ -293,6 +328,12 @@ func TestBackupRestore(t *testing.T) {
 		t.Fatalf("Failed to restore backup: %s", describe(err))
 	}
 
+	if isSingle {
+		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		waitForServerRestart(waitctx, c, t)
+	}
+
 	if ok, err := col.DocumentExists(ctx, meta1.Key); err != nil {
 		t.Errorf("Failed to lookup document: %s", describe(err))
 	} else if !ok {
@@ -309,7 +350,8 @@ func TestBackupRestore(t *testing.T) {
 func TestBackupUploadNonExisting(t *testing.T) {
 	skipIfNoBackup(t)
 	skipNoEnterprise(t)
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
 	c := createClientFromEnv(t, true)
 	b := c.Backup()
 	repo, conf := getTransfereConfigFromEnv(t)
@@ -322,7 +364,7 @@ func TestBackupUploadNonExisting(t *testing.T) {
 	for {
 		progress, err := b.Progress(ctx, jobID)
 		if err != nil {
-			t.Errorf("Progress failed: %s", describe(err))
+			t.Fatalf("Progress failed: %s", describe(err))
 		}
 
 		// Wait for completion
