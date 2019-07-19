@@ -475,10 +475,33 @@ func TestBackupUploadAbort(t *testing.T) {
 		t.Fatalf("Failed to abort upload: %s", describe(err))
 	}
 
-	if progress, err := b.Progress(ctx, jobID); err != nil {
-		t.Errorf("Unexpected error: %s", describe(err))
-	} else if !progress.Cancelled {
-		t.Errorf("Transfer not cancelled")
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	for {
+
+		if progress, err := b.Progress(ctx2, jobID); err != nil {
+			t.Errorf("Unexpected error: %s", describe(err))
+		} else if progress.Cancelled {
+
+			cancelledCount := 0
+
+			for _, detail := range progress.DBServers {
+				if detail.Status == driver.TransferCancelled {
+					cancelledCount++
+				}
+			}
+
+			if cancelledCount == len(progress.DBServers) {
+				break
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatalf("Progress was not cancelled: %s", ctx.Err())
+		case <-time.After(time.Second):
+			break
+		}
 	}
 }
 
@@ -496,6 +519,13 @@ func TestBackupCompleteCycle(t *testing.T) {
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
 	col := ensureCollection(ctx, db, colname, nil, t)
+
+	isSingle := false
+	if role, err := c.ServerRole(ctx); err != nil {
+		t.Fatalf("Failed to obtain server role: %s", describe(err))
+	} else {
+		isSingle = role == driver.ServerRoleSingle
+	}
 
 	// Write a document
 	book1 := Book{
@@ -548,6 +578,12 @@ func TestBackupCompleteCycle(t *testing.T) {
 	// Now restore
 	if err := b.Restore(ctx, id, nil); err != nil {
 		t.Fatalf("Failed to restore backup: %s", describe(err))
+	}
+
+	if isSingle {
+		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		waitForServerRestart(waitctx, c, t)
 	}
 
 	if ok, err := col.DocumentExists(ctx, meta1.Key); err != nil {

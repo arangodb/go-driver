@@ -56,6 +56,7 @@ const (
 	TransferStarted      BackupTransferStatus = "STARTED"
 	TransferCompleted    BackupTransferStatus = "COMPLETED"
 	TransferFailed       BackupTransferStatus = "FAILED"
+	TransferCancelled    BackupTransferStatus = "CANCELLED"
 )
 
 // BackupTransferReport provides progress information of a backup transfer job for a single dbserver
