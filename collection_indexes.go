@@ -66,6 +66,10 @@ type CollectionIndexes interface {
 	// Fields is a slice of attribute paths.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error)
+
+	// EnsureTTLIndex creates a TLL collection, if it does not already exist.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureTTLIndex(ctx context.Context, field string, expireAfter int, options *EnsureTTLIndexOptions) (Index, bool, error)
 }
 
 // EnsureFullTextIndexOptions contains specific options for creating a full text index.
@@ -113,3 +117,7 @@ type EnsureSkipListIndexOptions struct {
 	// Note: this setting is only relevant for indexes with array fields (e.g. "fieldName[*]")
 	NoDeduplicate bool
 }
+
+// EnsureTTLIndexOptions provides specific options for creating a TTL index
+// Currently there are not options
+type EnsureTTLIndexOptions struct{}
