@@ -479,7 +479,7 @@ func TestBackupUploadAbort(t *testing.T) {
 	defer cancel()
 	for {
 
-		if progress, err := b.Progress(ctx2, jobID); err != nil {
+		if progress, err := b.Progress(ctx, jobID); err != nil {
 			t.Errorf("Unexpected error: %s", describe(err))
 		} else if progress.Cancelled {
 
