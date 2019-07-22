@@ -52,6 +52,10 @@ type CreateCollectionOptions struct {
 	// before the write operation is reported successful. If a server fails, this is detected automatically
 	// and one of the servers holding copies take over, usually without an error being reported.
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	// MinReplicationFactor contains how many copies must be available before a collection can be written.
+	// It is required that 1 <= MinReplicationFactor <= ReplicationFactor.
+	// Default is 1. Not available for satellite collections.
+	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// If true then the data is synchronized to disk before returning from a document create, update, replace or removal operation. (default: false)
 	WaitForSync bool `json:"waitForSync,omitempty"`
 	// Whether or not the collection will be compacted (default is true)

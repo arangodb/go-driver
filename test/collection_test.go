@@ -552,3 +552,150 @@ func TestCollectionStatistics(t *testing.T) {
 		}
 	}
 }
+
+// TestCollectionMinReplFactCreate creates a collection with minReplicationFactor != 1
+func TestCollectionMinReplFactCreate(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
+	name := "test_min_repl_create"
+	minRepl := 2
+	options := driver.CreateCollectionOptions{
+		ReplicationFactor:    minRepl,
+		MinReplicationFactor: minRepl,
+	}
+	if _, err := db.CreateCollection(nil, name, &options); err != nil {
+		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
+	}
+
+	// Collection must exist now
+	if found, err := db.CollectionExists(nil, name); err != nil {
+		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
+	} else if !found {
+		t.Errorf("CollectionExists('%s') return false, expected true", name)
+	}
+	// Check if the collection has a minReplicationFactor
+	if col, err := db.Collection(nil, name); err != nil {
+		t.Errorf("Collection('%s') failed: %s", name, describe(err))
+	} else {
+		if prop, err := col.Properties(nil); err != nil {
+			t.Errorf("Properties() failed: %s", describe(err))
+		} else {
+			if prop.MinReplicationFactor != minRepl {
+				t.Errorf("Collection does not have the correct min replication factor value, expected `%d`, found `%d`", minRepl, prop.MinReplicationFactor)
+			}
+		}
+	}
+}
+
+// TestCollectionMinReplFactInvalid creates a collection with minReplicationFactor > replicationFactor
+func TestCollectionMinReplFactInvalid(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
+	name := "test_min_repl_create_invalid"
+	minRepl := 2
+	options := driver.CreateCollectionOptions{
+		ReplicationFactor:    minRepl,
+		MinReplicationFactor: minRepl + 1,
+	}
+	if _, err := db.CreateCollection(nil, name, &options); err == nil {
+		t.Fatalf("CreateCollection('%s') did not fail", name)
+	}
+	// Collection must not exist now
+	if found, err := db.CollectionExists(nil, name); err != nil {
+		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
+	} else if found {
+		t.Errorf("Collection %s should not exist", name)
+	}
+}
+
+// TestCollectionMinReplFactClusterInv tests if minReplicationFactor is forwarded to ClusterInfo
+func TestCollectionMinReplFactClusterInv(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
+	name := "test_min_repl_cluster_invent"
+	minRepl := 2
+	ensureCollection(nil, db, name, &driver.CreateCollectionOptions{
+		ReplicationFactor:    minRepl,
+		MinReplicationFactor: minRepl,
+	}, t)
+
+	cc, err := c.Cluster(nil)
+	if err != nil {
+		t.Fatalf("Failed to get Cluster: %s", describe(err))
+	}
+
+	inv, err := cc.DatabaseInventory(nil, db)
+	if err != nil {
+		t.Fatalf("Failed to get Database Inventory: %s", describe(err))
+	}
+
+	col, found := inv.CollectionByName(name)
+	if !found {
+		t.Fatalf("Failed to get find collection: %s", describe(err))
+	}
+
+	if col.Parameters.MinReplicationFactor != minRepl {
+		t.Errorf("Collection does not have the correct min replication factor value, expected `%d`, found `%d`", minRepl, col.Parameters.MinReplicationFactor)
+	}
+}
+
+// TestCollectionMinReplFactSetProp updates the minimal replication factor using SetProperties
+func TestCollectionMinReplFactSetProp(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
+	name := "test_min_repl_set_prop"
+	minRepl := 2
+	col := ensureCollection(nil, db, name, &driver.CreateCollectionOptions{
+		ReplicationFactor:    minRepl,
+		MinReplicationFactor: minRepl,
+	}, t)
+
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+		MinReplicationFactor: 1,
+	}); err != nil {
+		t.Fatalf("Failed to update properties: %s", describe(err))
+	}
+
+	if prop, err := col.Properties(nil); err != nil {
+		t.Fatalf("Failed to get properties: %s", describe(err))
+	} else {
+		if prop.MinReplicationFactor != 1 {
+			t.Fatalf("MinReplicationFactor not updated, expected %d, found %d", 1, prop.MinReplicationFactor)
+		}
+	}
+}
+
+// TestCollectionMinReplFactSetPropInvalid updates the minimal replication factor to an invalid value using SetProperties
+func TestCollectionMinReplFactSetPropInvalid(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
+	name := "test_min_repl_set_prop_inv"
+	minRepl := 2
+	col := ensureCollection(nil, db, name, &driver.CreateCollectionOptions{
+		ReplicationFactor:    minRepl,
+		MinReplicationFactor: minRepl,
+	}, t)
+
+	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+		MinReplicationFactor: minRepl + 1,
+	}); err == nil {
+		t.Errorf("SetProperties did not fail")
+	}
+
+	if prop, err := col.Properties(nil); err != nil {
+		t.Fatalf("Failed to get properties: %s", describe(err))
+	} else {
+		if prop.MinReplicationFactor != minRepl {
+			t.Fatalf("MinReplicationFactor not updated, expected %d, found %d", minRepl, prop.MinReplicationFactor)
+		}
+	}
+}

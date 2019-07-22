@@ -203,6 +203,7 @@ type InventoryCollectionParameters struct {
 	Path                 string                 `json:"path,omitempty"`
 	PlanID               string                 `json:"planId,omitempty"`
 	ReplicationFactor    int                    `json:"replicationFactor,omitempty"`
+	MinReplicationFactor int                    `json:"minReplicationFactor,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
 	Status               CollectionStatus       `json:"status,omitempty"`
