@@ -557,6 +557,7 @@ func TestCollectionStatistics(t *testing.T) {
 func TestCollectionMinReplFactCreate(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
 	name := "test_min_repl_create"
 	minRepl := 2
