@@ -45,7 +45,8 @@ func indexStringToType(indexTypeString string) (IndexType, error) {
 		return GeoIndex, nil
 	case string(EdgeIndex):
 		return EdgeIndex, nil
-
+	case string(TTLIndex):
+		return TTLIndex, nil
 	default:
 		return "", WithStack(InvalidArgumentError{Message: "unknown index type"})
 	}

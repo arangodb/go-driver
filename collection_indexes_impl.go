@@ -36,6 +36,7 @@ type indexData struct {
 	Sparse      *bool    `json:"sparse,omitempty"`
 	GeoJSON     *bool    `json:"geoJson,omitempty"`
 	MinLength   int      `json:"minLength,omitempty"`
+	ExpireAfter int      `json:"expireAfter,omitempty"`
 }
 
 type genericIndexData struct {
@@ -221,6 +222,21 @@ func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, o
 		if options.NoDeduplicate {
 			input.Deduplicate = &off
 		}
+	}
+	idx, created, err := c.ensureIndex(ctx, input)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return idx, created, nil
+}
+
+// EnsureTTLIndex creates a TLL collection, if it does not already exist.
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureTTLIndex(ctx context.Context, field string, expireAfter int, options *EnsureTTLIndexOptions) (Index, bool, error) {
+	input := indexData{
+		Type:        string(TTLIndex),
+		Fields:      []string{field},
+		ExpireAfter: expireAfter,
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {

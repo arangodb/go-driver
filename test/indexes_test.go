@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -280,5 +281,59 @@ func TestIndexesDeduplicateSkipList(t *testing.T) {
 				t.Errorf("Expected success, got %s", describe(err))
 			}
 		}
+	}
+}
+
+// TestIndexesTTL tests TTL index.
+func TestIndexesTTL(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+
+	db := ensureDatabase(nil, c, "index_test", nil, t)
+
+	// Create some indexes with de-duplication off
+	col := ensureCollection(nil, db, "indexes_ttl_test", nil, t)
+	if _, _, err := col.EnsureTTLIndex(nil, "createdAt", 10, nil); err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+
+	doc := struct {
+		CreatedAt int64 `json:"createdAt,omitempty"`
+	}{
+		CreatedAt: time.Now().Add(10 * time.Second).Unix(),
+	}
+	meta, err := col.CreateDocument(nil, doc)
+	if err != nil {
+		t.Errorf("Expected success, got %s", describe(err))
+	}
+
+	wasThere := false
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	for {
+		if found, err := col.DocumentExists(ctx, meta.Key); err != nil {
+			t.Fatalf("Failed to test if document exists: %s", describe(err))
+		} else {
+			if found {
+				if !wasThere {
+					t.Log("Found document")
+				}
+				wasThere = true
+			} else {
+				break
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatalf("Timeout while waiting for document to be deleted: %s", ctx.Err())
+		case <-time.After(time.Second):
+			break
+		}
+	}
+
+	if !wasThere {
+		t.Fatalf("Document never existed")
 	}
 }

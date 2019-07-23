@@ -114,3 +114,13 @@ func (c *vertexCollection) EnsureSkipListIndex(ctx context.Context, fields []str
 	}
 	return result, created, nil
 }
+
+// EnsureTTLIndex creates a TLL collection, if it does not already exist.
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *vertexCollection) EnsureTTLIndex(ctx context.Context, field string, expireAfter int, options *EnsureTTLIndexOptions) (Index, bool, error) {
+	result, created, err := c.rawCollection().EnsureTTLIndex(ctx, field, expireAfter, options)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return result, created, nil
+}

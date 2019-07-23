@@ -309,3 +309,50 @@ func TestEnsureSkipListIndex(t *testing.T) {
 		}
 	}
 }
+
+// TestEnsureTTLIndex creates a collection with a ttl index.
+func TestEnsureTTLIndex(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "index_test", nil, t)
+	skipBelowVersion(c, "3.5", t)
+
+	col := ensureCollection(nil, db, "ttl_index_test", nil, t)
+	idx, created, err := col.EnsureTTLIndex(nil, "createdAt", 3600, nil)
+	if err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+	if !created {
+		t.Error("Expected created to be true, got false")
+	}
+	if idxType := idx.Type(); idxType != driver.TTLIndex {
+		t.Errorf("Expected TTLIndex, found `%s`", idxType)
+	}
+
+	// Index must exists now
+	if found, err := col.IndexExists(nil, idx.Name()); err != nil {
+		t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
+	} else if !found {
+		t.Errorf("Index '%s' does not exist, expected it to exist", idx.Name())
+	}
+
+	// Ensure again, created must be false now
+	_, created, err = col.EnsureTTLIndex(nil, "createdAt", 3600, nil)
+	if err != nil {
+		t.Fatalf("Failed to re-create index: %s", describe(err))
+	}
+	if created {
+		t.Error("Expected created to be false, got true")
+	}
+
+	// Remove index
+	if err := idx.Remove(nil); err != nil {
+		t.Fatalf("Failed to remove index '%s': %s", idx.Name(), describe(err))
+	}
+
+	// Index must not exists now
+	if found, err := col.IndexExists(nil, idx.Name()); err != nil {
+		t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
+	} else if found {
+		t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
+	}
+}
