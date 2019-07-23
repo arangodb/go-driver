@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -335,5 +336,145 @@ func TestIndexesTTL(t *testing.T) {
 
 	if !wasThere {
 		t.Fatalf("Document never existed")
+	}
+}
+
+/*
+
+
+	EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, bool, error)
+
+	// EnsureGeoIndex creates a hash index in the collection, if it does not already exist.
+	// Fields is a slice with one or two attribute paths. If it is a slice with one attribute path location,
+	// then a geo-spatial index on all documents is created using location as path to the coordinates.
+	// The value of the attribute must be a slice with at least two double values. The slice must contain the latitude (first value)
+	// and the longitude (second value). All documents, which do not have the attribute path or with value that are not suitable, are ignored.
+	// If it is a slice with two attribute paths latitude and longitude, then a geo-spatial index on all documents is created
+	// using latitude and longitude as paths the latitude and the longitude. The value of the attribute latitude and of the
+	// attribute longitude must a double. All documents, which do not have the attribute paths or which values are not suitable, are ignored.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, bool, error)
+
+	// EnsureHashIndex creates a hash index in the collection, if it does not already exist.
+	// Fields is a slice of attribute paths.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, bool, error)
+
+	// EnsurePersistentIndex creates a persistent index in the collection, if it does not already exist.
+	// Fields is a slice of attribute paths.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, bool, error)
+
+	// EnsureSkipListIndex creates a skiplist index in the collection, if it does not already exist.
+	// Fields is a slice of attribute paths.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error)
+
+	// EnsureTTLIndex creates a TLL collection, if it does not already exist.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	EnsureTTLIndex(ctx context.Context, field string, expireAfter int, options *EnsureTTLIndexOptions) (Index, bool, error)
+
+*/
+
+func TestNamedIndexes(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+
+	testCases := []struct {
+		Name           string
+		CreateCallback func(col driver.Collection, name string) (driver.Index, error)
+	}{
+		{
+			Name: "FullText",
+			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+				idx, _, err := col.EnsureFullTextIndex(nil, []string{"text"}, &driver.EnsureFullTextIndexOptions{
+					Name: name,
+				})
+				return idx, err
+			},
+		},
+		{
+			Name: "Geo",
+			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+				idx, _, err := col.EnsureGeoIndex(nil, []string{"geo"}, &driver.EnsureGeoIndexOptions{
+					Name: name,
+				})
+				return idx, err
+			},
+		},
+		{
+			Name: "Hash",
+			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+				idx, _, err := col.EnsureHashIndex(nil, []string{"name"}, &driver.EnsureHashIndexOptions{
+					Name: name,
+				})
+				return idx, err
+			},
+		},
+		{
+			Name: "Persistent",
+			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+				idx, _, err := col.EnsurePersistentIndex(nil, []string{"pername"}, &driver.EnsurePersistentIndexOptions{
+					Name: name,
+				})
+				return idx, err
+			},
+		},
+		{
+			Name: "skipList",
+			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+				idx, _, err := col.EnsureSkipListIndex(nil, []string{"pername"}, &driver.EnsureSkipListIndexOptions{
+					Name: name,
+				})
+				return idx, err
+			},
+		},
+		{
+			Name: "TTL",
+			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+				idx, _, err := col.EnsureTTLIndex(nil, "createdAt", 3600, &driver.EnsureTTLIndexOptions{
+					Name: name,
+				})
+				return idx, err
+			},
+		},
+	}
+
+	db := ensureDatabase(nil, c, "named_index_test", nil, t)
+	col := ensureCollection(nil, db, "named_index_test_col", nil, t)
+
+	for _, testCase := range testCases {
+		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
+			// Check if index name is forwarded through out all APIs
+			idx, err := testCase.CreateCallback(col, testCase.Name)
+			if err != nil {
+				t.Fatalf("Failed to create index: %s", describe(err))
+			}
+
+			if idx.UserName() != testCase.Name {
+				t.Errorf("Expected user name: %s, found: %s", testCase.Name, idx.UserName())
+			}
+
+			// Now get the index list
+			idxlist, err := col.Indexes(nil)
+			if err != nil {
+				t.Fatalf("Failed to get index list: %s", describe(err))
+			}
+
+			found := false
+			for _, i := range idxlist {
+				if i.ID() == idx.ID() {
+					found = true
+					if i.UserName() != testCase.Name {
+						t.Errorf("Expected user name: %s, found: %s", testCase.Name, i.UserName())
+					}
+					break
+				}
+			}
+
+			if !found {
+				t.Fatal("Index not found in list")
+			}
+		})
 	}
 }
