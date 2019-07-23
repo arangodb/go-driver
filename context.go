@@ -58,6 +58,7 @@ const (
 	keyBatchID                  ContextKey = "arangodb-batchID"
 	keyJobIDResponse            ContextKey = "arangodb-jobIDResponse"
 	keyAllowDirtyReads          ContextKey = "arangodb-allowDirtyReads"
+	keyTransactionID            ContextKey = "arangodb-transactionID"
 )
 
 // WithRevision is used to configure a context to make document
@@ -230,6 +231,11 @@ func WithJobIDResponse(parent context.Context, jobID *string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyJobIDResponse, jobID)
 }
 
+// WithTransactionID is used to bind a request to a specific transaction
+func WithTransactionID(parent context.Context, tid TransactionID) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyTransactionID, tid)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -320,6 +326,10 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if dirtyReadFlag, ok := v.(*bool); ok {
 			result.DirtyReadFlag = dirtyReadFlag
 		}
+	}
+	// TransactionID
+	if v := ctx.Value(keyTransactionID); v != nil {
+		req.SetHeader("x-arango-trx-id", string(v.(TransactionID)))
 	}
 	// ReturnOld
 	if v := ctx.Value(keyReturnOld); v != nil {
