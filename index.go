@@ -41,8 +41,14 @@ const (
 
 // Index provides access to a single index in a single collection.
 type Index interface {
-	// Name returns the name of the index.
+	// Name returns the collection specific ID of the index.
 	Name() string
+
+	// ID returns the ID of the index.
+	ID() string
+
+	// UserName returns the user provided name of the index or empty string if non is provided.
+	UserName() string
 
 	// Type returns the type of the index
 	Type() IndexType
