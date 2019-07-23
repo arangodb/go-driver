@@ -376,74 +376,74 @@ func TestIndexesTTL(t *testing.T) {
 
 */
 
+var namedIndexTestCases = []struct {
+	Name           string
+	CreateCallback func(col driver.Collection, name string) (driver.Index, error)
+}{
+	{
+		Name: "FullText",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureFullTextIndex(nil, []string{"text"}, &driver.EnsureFullTextIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "Geo",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureGeoIndex(nil, []string{"geo"}, &driver.EnsureGeoIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "Hash",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureHashIndex(nil, []string{"name"}, &driver.EnsureHashIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "Persistent",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsurePersistentIndex(nil, []string{"pername"}, &driver.EnsurePersistentIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "skipList",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureSkipListIndex(nil, []string{"pername"}, &driver.EnsureSkipListIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "TTL",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureTTLIndex(nil, "createdAt", 3600, &driver.EnsureTTLIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+}
+
 func TestNamedIndexes(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.5", t)
 
-	testCases := []struct {
-		Name           string
-		CreateCallback func(col driver.Collection, name string) (driver.Index, error)
-	}{
-		{
-			Name: "FullText",
-			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
-				idx, _, err := col.EnsureFullTextIndex(nil, []string{"text"}, &driver.EnsureFullTextIndexOptions{
-					Name: name,
-				})
-				return idx, err
-			},
-		},
-		{
-			Name: "Geo",
-			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
-				idx, _, err := col.EnsureGeoIndex(nil, []string{"geo"}, &driver.EnsureGeoIndexOptions{
-					Name: name,
-				})
-				return idx, err
-			},
-		},
-		{
-			Name: "Hash",
-			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
-				idx, _, err := col.EnsureHashIndex(nil, []string{"name"}, &driver.EnsureHashIndexOptions{
-					Name: name,
-				})
-				return idx, err
-			},
-		},
-		{
-			Name: "Persistent",
-			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
-				idx, _, err := col.EnsurePersistentIndex(nil, []string{"pername"}, &driver.EnsurePersistentIndexOptions{
-					Name: name,
-				})
-				return idx, err
-			},
-		},
-		{
-			Name: "skipList",
-			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
-				idx, _, err := col.EnsureSkipListIndex(nil, []string{"pername"}, &driver.EnsureSkipListIndexOptions{
-					Name: name,
-				})
-				return idx, err
-			},
-		},
-		{
-			Name: "TTL",
-			CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
-				idx, _, err := col.EnsureTTLIndex(nil, "createdAt", 3600, &driver.EnsureTTLIndexOptions{
-					Name: name,
-				})
-				return idx, err
-			},
-		},
-	}
-
 	db := ensureDatabase(nil, c, "named_index_test", nil, t)
 	col := ensureCollection(nil, db, "named_index_test_col", nil, t)
 
-	for _, testCase := range testCases {
+	for _, testCase := range namedIndexTestCases {
 		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
 			// Check if index name is forwarded through out all APIs
 			idx, err := testCase.CreateCallback(col, testCase.Name)
@@ -474,6 +474,64 @@ func TestNamedIndexes(t *testing.T) {
 
 			if !found {
 				t.Fatal("Index not found in list")
+			}
+
+			// Try to access index by id
+			idx2, err := col.Index(nil, idx.Name())
+			if err != nil {
+				t.Fatalf("Failed to get index by name: %s", describe(err))
+			}
+
+			if idx2.UserName() != testCase.Name {
+				t.Errorf("Expected user name: %s, found: %s", testCase.Name, idx2.UserName())
+			}
+		})
+	}
+}
+
+func TestNamedIndexesClusterInventory(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	colname := "named_index_test_col_inv"
+	db := ensureDatabase(nil, c, "named_index_test_inv", nil, t)
+	col := ensureCollection(nil, db, colname, nil, t)
+
+	cc, err := c.Cluster(nil)
+	if err != nil {
+		t.Fatalf("Failed to obtain cluster client: %s", describe(err))
+	}
+
+	for _, testCase := range namedIndexTestCases {
+		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
+			// Check if index name is forwarded through out all APIs
+			idx, err := testCase.CreateCallback(col, testCase.Name)
+			if err != nil {
+				t.Fatalf("Failed to create index: %s", describe(err))
+			}
+
+			inv, err := cc.DatabaseInventory(nil, db)
+			if err != nil {
+				t.Fatalf("Failed to obtain cluster inventory: %s", describe(err))
+			}
+
+			invcol, found := inv.CollectionByName(colname)
+			if !found {
+				t.Fatalf("Collection not in inventory!")
+			}
+
+			found = false
+			for _, i := range invcol.Indexes {
+				if i.ID == idx.Name() {
+					found = true
+					if i.Name != testCase.Name {
+						t.Errorf("Expected user name: %s, found: %s", testCase.Name, i.Name)
+					}
+				}
+			}
+
+			if !found {
+				t.Errorf("Index with id %s not found", idx.ID())
 			}
 		})
 	}
