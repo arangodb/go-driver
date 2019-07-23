@@ -249,6 +249,7 @@ type inventoryCollectionParametersInternal struct {
 	Path                 string                 `json:"path,omitempty"`
 	PlanID               string                 `json:"planId,omitempty"`
 	ReplicationFactor    replicationFactor      `json:"replicationFactor,omitempty"`
+	MinReplicationFactor int                    `json:"minReplicationFactor,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
 	Status               CollectionStatus       `json:"status,omitempty"`
@@ -277,6 +278,7 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		Path:                 p.Path,
 		PlanID:               p.PlanID,
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
+		MinReplicationFactor: p.MinReplicationFactor,
 		ShardKeys:            p.ShardKeys,
 		Shards:               p.Shards,
 		Status:               p.Status,
@@ -310,6 +312,7 @@ func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollection
 		Path:                 p.Path,
 		PlanID:               p.PlanID,
 		ReplicationFactor:    int(p.ReplicationFactor),
+		MinReplicationFactor: p.MinReplicationFactor,
 		ShardKeys:            p.ShardKeys,
 		Shards:               p.Shards,
 		Status:               p.Status,
