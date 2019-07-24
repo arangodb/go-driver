@@ -339,43 +339,6 @@ func TestIndexesTTL(t *testing.T) {
 	}
 }
 
-/*
-
-
-	EnsureFullTextIndex(ctx context.Context, fields []string, options *EnsureFullTextIndexOptions) (Index, bool, error)
-
-	// EnsureGeoIndex creates a hash index in the collection, if it does not already exist.
-	// Fields is a slice with one or two attribute paths. If it is a slice with one attribute path location,
-	// then a geo-spatial index on all documents is created using location as path to the coordinates.
-	// The value of the attribute must be a slice with at least two double values. The slice must contain the latitude (first value)
-	// and the longitude (second value). All documents, which do not have the attribute path or with value that are not suitable, are ignored.
-	// If it is a slice with two attribute paths latitude and longitude, then a geo-spatial index on all documents is created
-	// using latitude and longitude as paths the latitude and the longitude. The value of the attribute latitude and of the
-	// attribute longitude must a double. All documents, which do not have the attribute paths or which values are not suitable, are ignored.
-	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
-	EnsureGeoIndex(ctx context.Context, fields []string, options *EnsureGeoIndexOptions) (Index, bool, error)
-
-	// EnsureHashIndex creates a hash index in the collection, if it does not already exist.
-	// Fields is a slice of attribute paths.
-	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
-	EnsureHashIndex(ctx context.Context, fields []string, options *EnsureHashIndexOptions) (Index, bool, error)
-
-	// EnsurePersistentIndex creates a persistent index in the collection, if it does not already exist.
-	// Fields is a slice of attribute paths.
-	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
-	EnsurePersistentIndex(ctx context.Context, fields []string, options *EnsurePersistentIndexOptions) (Index, bool, error)
-
-	// EnsureSkipListIndex creates a skiplist index in the collection, if it does not already exist.
-	// Fields is a slice of attribute paths.
-	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
-	EnsureSkipListIndex(ctx context.Context, fields []string, options *EnsureSkipListIndexOptions) (Index, bool, error)
-
-	// EnsureTTLIndex creates a TLL collection, if it does not already exist.
-	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
-	EnsureTTLIndex(ctx context.Context, field string, expireAfter int, options *EnsureTTLIndexOptions) (Index, bool, error)
-
-*/
-
 var namedIndexTestCases = []struct {
 	Name           string
 	CreateCallback func(col driver.Collection, name string) (driver.Index, error)
