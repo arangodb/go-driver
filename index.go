@@ -41,13 +41,15 @@ const (
 
 // Index provides access to a single index in a single collection.
 type Index interface {
-	// Name returns the collection specific ID of the index.
+	// Name returns the collection specific ID of the index. This value should be used for all functions
+	// the require a index _name_.
 	Name() string
 
-	// ID returns the ID of the index.
+	// ID returns the ID of the index. Effectivly this is `<collection-name>/<index.Name()>`.
 	ID() string
 
-	// UserName returns the user provided name of the index or empty string if non is provided.
+	// UserName returns the user provided name of the index or empty string if non is provided. This _name_
+	// is used in querys to provides hints for the optimizer about preferred indexes.
 	UserName() string
 
 	// Type returns the type of the index
