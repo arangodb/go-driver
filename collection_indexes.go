@@ -79,6 +79,8 @@ type EnsureFullTextIndexOptions struct {
 	MinLength int
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
 	InBackground bool
+	// Name optional user defined name used for hints in AQL queries
+	Name string
 }
 
 // EnsureGeoIndexOptions contains specific options for creating a geo index.
@@ -88,6 +90,8 @@ type EnsureGeoIndexOptions struct {
 	GeoJSON bool
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
 	InBackground bool
+	// Name optional user defined name used for hints in AQL queries
+	Name string
 }
 
 // EnsureHashIndexOptions contains specific options for creating a hash index.
@@ -102,6 +106,8 @@ type EnsureHashIndexOptions struct {
 	NoDeduplicate bool
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
 	InBackground bool
+	// Name optional user defined name used for hints in AQL queries
+	Name string
 }
 
 // EnsurePersistentIndexOptions contains specific options for creating a persistent index.
@@ -112,6 +118,8 @@ type EnsurePersistentIndexOptions struct {
 	Sparse bool
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
 	InBackground bool
+	// Name optional user defined name used for hints in AQL queries
+	Name string
 }
 
 // EnsureSkipListIndexOptions contains specific options for creating a skip-list index.
@@ -126,10 +134,14 @@ type EnsureSkipListIndexOptions struct {
 	NoDeduplicate bool
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
 	InBackground bool
+	// Name optional user defined name used for hints in AQL queries
+	Name string
 }
 
 // EnsureTTLIndexOptions provides specific options for creating a TTL index
 type EnsureTTLIndexOptions struct {
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
 	InBackground bool
+	// Name optional user defined name used for hints in AQL queries
+	Name string
 }
