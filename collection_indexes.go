@@ -77,6 +77,8 @@ type EnsureFullTextIndexOptions struct {
 	// MinLength is the minimum character length of words to index. Will default to a server-defined
 	// value if unspecified (0). It is thus recommended to set this value explicitly when creating the index.
 	MinLength int
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
 }
@@ -86,6 +88,8 @@ type EnsureGeoIndexOptions struct {
 	// If a geo-spatial index on a location is constructed and GeoJSON is true, then the order within the array
 	// is longitude followed by latitude. This corresponds to the format described in http://geojson.org/geojson-spec.html#positions
 	GeoJSON bool
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
 }
@@ -100,6 +104,8 @@ type EnsureHashIndexOptions struct {
 	// This flag requires ArangoDB 3.2.
 	// Note: this setting is only relevant for indexes with array fields (e.g. "fieldName[*]")
 	NoDeduplicate bool
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
 }
@@ -110,6 +116,8 @@ type EnsurePersistentIndexOptions struct {
 	Unique bool
 	// If true, then create a sparse index.
 	Sparse bool
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
 }
@@ -124,12 +132,16 @@ type EnsureSkipListIndexOptions struct {
 	// This flag requires ArangoDB 3.2.
 	// Note: this setting is only relevant for indexes with array fields (e.g. "fieldName[*]")
 	NoDeduplicate bool
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
 }
 
 // EnsureTTLIndexOptions provides specific options for creating a TTL index
 type EnsureTTLIndexOptions struct {
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
 }

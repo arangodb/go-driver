@@ -28,16 +28,17 @@ import (
 )
 
 type indexData struct {
-	ID          string   `json:"id,omitempty"`
-	Type        string   `json:"type"`
-	Fields      []string `json:"fields,omitempty"`
-	Unique      *bool    `json:"unique,omitempty"`
-	Deduplicate *bool    `json:"deduplicate,omitempty"`
-	Sparse      *bool    `json:"sparse,omitempty"`
-	GeoJSON     *bool    `json:"geoJson,omitempty"`
-	MinLength   int      `json:"minLength,omitempty"`
-	ExpireAfter int      `json:"expireAfter,omitempty"`
-	Name        string   `json:"name,omitempty"`
+	ID           string   `json:"id,omitempty"`
+	Type         string   `json:"type"`
+	Fields       []string `json:"fields,omitempty"`
+	Unique       *bool    `json:"unique,omitempty"`
+	Deduplicate  *bool    `json:"deduplicate,omitempty"`
+	Sparse       *bool    `json:"sparse,omitempty"`
+	GeoJSON      *bool    `json:"geoJson,omitempty"`
+	InBackground *bool    `json:"inBackground,omitempty"`
+	MinLength    int      `json:"minLength,omitempty"`
+	ExpireAfter  int      `json:"expireAfter,omitempty"`
+	Name         string   `json:"name,omitempty"`
 }
 
 type genericIndexData struct {
@@ -133,6 +134,7 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 		Fields: fields,
 	}
 	if options != nil {
+		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.MinLength = options.MinLength
 	}
@@ -159,6 +161,7 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 		Fields: fields,
 	}
 	if options != nil {
+		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.GeoJSON = &options.GeoJSON
 	}
@@ -179,6 +182,7 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 	}
 	off := false
 	if options != nil {
+		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
@@ -202,6 +206,7 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 		Fields: fields,
 	}
 	if options != nil {
+		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
@@ -223,6 +228,7 @@ func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, o
 	}
 	off := false
 	if options != nil {
+		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
@@ -246,6 +252,7 @@ func (c *collection) EnsureTTLIndex(ctx context.Context, field string, expireAft
 		ExpireAfter: expireAfter,
 	}
 	if options != nil {
+		input.InBackground = &options.InBackground
 		input.Name = options.Name
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
