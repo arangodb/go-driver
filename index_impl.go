@@ -53,7 +53,7 @@ func indexStringToType(indexTypeString string) (IndexType, error) {
 }
 
 // newIndex creates a new Index implementation.
-func newIndex(id string, indexTypeString string, col *collection) (Index, error) {
+func newIndex(id string, indexTypeString string, name string, col *collection) (Index, error) {
 	if id == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
@@ -70,6 +70,7 @@ func newIndex(id string, indexTypeString string, col *collection) (Index, error)
 	}
 	return &index{
 		id:        id,
+		name:      name,
 		indexType: indexType,
 		col:       col,
 		db:        col.db,
@@ -79,6 +80,7 @@ func newIndex(id string, indexTypeString string, col *collection) (Index, error)
 
 type index struct {
 	id        string
+	name      string
 	indexType IndexType
 	db        *database
 	col       *collection
@@ -94,6 +96,16 @@ func (i *index) relPath() string {
 func (i *index) Name() string {
 	parts := strings.Split(i.id, "/")
 	return parts[1]
+}
+
+// ID returns the ID of the index.
+func (i *index) ID() string {
+	return i.id
+}
+
+// UserName returns the user provided name of the index or empty string if non is provided.
+func (i *index) UserName() string {
+	return i.name
 }
 
 // Type returns the type of the index

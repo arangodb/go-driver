@@ -232,6 +232,7 @@ type InventoryIndex struct {
 	Deduplicate bool     `json:"deduplicate"`
 	MinLength   int      `json:"minLength,omitempty"`
 	GeoJSON     bool     `json:"geoJson,omitempty"`
+	Name        string   `json:"name,omitempty"`
 }
 
 // FieldsEqual returns true when the given fields list equals the
