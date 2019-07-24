@@ -499,3 +499,64 @@ func TestNamedIndexesClusterInventory(t *testing.T) {
 		})
 	}
 }
+
+func TestTTLIndexesClusterInventory(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	ttl := 3600
+	colname := "ttl_index_test_col_inv"
+	db := ensureDatabase(nil, c, "index_test_inv", nil, t)
+	col := ensureCollection(nil, db, colname, nil, t)
+
+	cc, err := c.Cluster(nil)
+	if err != nil {
+		t.Fatalf("Failed to obtain cluster client: %s", describe(err))
+	}
+
+	idx, _, err := col.EnsureTTLIndex(nil, "createdAt", ttl, nil)
+	if err != nil {
+		t.Fatalf("Failed to create ttl index: %s", describe(err))
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	for {
+
+		var raw []byte
+		rctx := driver.WithRawResponse(ctx, &raw)
+
+		inv, err := cc.DatabaseInventory(rctx, db)
+		if err != nil {
+			t.Fatalf("Failed to obtain cluster inventory: %s", describe(err))
+		}
+
+		invcol, found := inv.CollectionByName(colname)
+		if !found {
+			t.Fatalf("Collection not in inventory!")
+		}
+
+		found = false
+		for _, i := range invcol.Indexes {
+			if i.ID == idx.Name() {
+				found = true
+				if i.ExpireAfter != ttl {
+					t.Errorf("Expected ttl value: %d, found: %d", ttl, i.ExpireAfter)
+				}
+			}
+		}
+
+		if found {
+			break
+		}
+
+		select {
+		case <-time.After(1 * time.Second):
+			break
+		case <-ctx.Done():
+			t.Fatalf("Index not created: %s", describe(ctx.Err()))
+		}
+	}
+
+}

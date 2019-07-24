@@ -233,6 +233,7 @@ type InventoryIndex struct {
 	MinLength   int      `json:"minLength,omitempty"`
 	GeoJSON     bool     `json:"geoJson,omitempty"`
 	Name        string   `json:"name,omitempty"`
+	ExpireAfter int      `json:"expireAfter,omitempty"`
 }
 
 // FieldsEqual returns true when the given fields list equals the
