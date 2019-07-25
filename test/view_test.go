@@ -603,6 +603,24 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 			InAscending: &boolTrue,
 			ErrorCode:   400,
 		},
+		{
+			Name:        "SetBothDesc",
+			InDirection: &directionDesc,
+			InAscending: &boolFalse,
+			ErrorCode:   400,
+		},
+		{
+			Name:        "DirAscAscFalse",
+			InDirection: &directionAsc,
+			InAscending: &boolTrue,
+			ErrorCode:   400,
+		},
+		{
+			Name:        "DirDescAscTrue",
+			InDirection: &directionAsc,
+			InAscending: &boolTrue,
+			ErrorCode:   400,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -651,11 +669,11 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 				ps := p.PrimarySort[0]
 				if ps.Ascending == nil {
 					if testCase.ExpectedAscending != nil {
-						t.Errorf("Expected Ascending to be non nil")
+						t.Errorf("Expected Ascending to be nil")
 					}
 				} else {
 					if testCase.ExpectedAscending == nil {
-						t.Errorf("Expected Ascending to be nil")
+						t.Errorf("Expected Ascending to be non nil")
 					} else if ps.GetAscending() != *testCase.ExpectedAscending {
 						t.Errorf("Expected Ascending to be %t, found %t", *testCase.ExpectedAscending, ps.GetAscending())
 					}
@@ -663,11 +681,11 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 
 				if ps.Direction == nil {
 					if testCase.ExpectedDirection != nil {
-						t.Errorf("Expected Direction to be non nil")
+						t.Errorf("Expected Direction to be nil")
 					}
 				} else {
 					if testCase.ExpectedDirection == nil {
-						t.Errorf("Expected Direction to be nil")
+						t.Errorf("Expected Direction to be non nil")
 					} else if ps.GetDirection() != *testCase.ExpectedDirection {
 						t.Errorf("Expected Direction to be %s, found %s", string(*testCase.ExpectedDirection), string(ps.GetDirection()))
 					}
