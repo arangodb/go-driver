@@ -107,6 +107,24 @@ type ArangoSearchPrimarySortEntry struct {
 	Direction *ArangoSearchSortDirection `json:"direction,omitempty"`
 }
 
+// GetDirection returns the sort direction or empty string if not set
+func (pse ArangoSearchPrimarySortEntry) GetDirection() ArangoSearchSortDirection {
+	if pse.Direction != nil {
+		return *pse.Direction
+	}
+
+	return ArangoSearchSortDirection("")
+}
+
+// GetAscending returns the value of Ascending or false if not set
+func (pse ArangoSearchPrimarySortEntry) GetAscending() bool {
+	if pse.Ascending != nil {
+		return *pse.Ascending
+	}
+
+	return false
+}
+
 // ArangoSearchConsolidationPolicyType strings for consolidation types
 type ArangoSearchConsolidationPolicyType string
 

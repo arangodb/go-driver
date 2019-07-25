@@ -507,7 +507,7 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.5", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
-	col := ensureCollection(ctx, db, "someCol", nil, t)
+	ensureCollection(ctx, db, "someCol", nil, t)
 	commitInterval := int64(100)
 	sortDir := driver.ArangoSearchSortDirectionDesc
 	name := "test_get_asview_35"
@@ -534,10 +534,6 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ArangoSearchView() failed: %s", describe(err))
 	}
-	// Check v.Name
-	if actualName := v.Name(); actualName != name {
-		t.Errorf("Name() failed. Got '%s', expected '%s'", actualName, name)
-	}
 	// Check asv properties
 	p, err := asv.Properties(ctx)
 	if err != nil {
@@ -554,13 +550,129 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 			t.Errorf("Primary Sort field is wrong: %s, expected %s", ps.Field, sortField)
 		}
 	}
-	// Check indexes on collection
-	indexes, err := col.Indexes(ctx)
-	if err != nil {
-		t.Fatalf("Indexes() failed: %s", describe(err))
+}
+
+// TestArangoSearchPrimarySort
+func TestArangoSearchPrimarySort(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	ensureCollection(ctx, db, "primary_col_sort", nil, t)
+
+	boolTrue := true
+	boolFalse := false
+	directionAsc := driver.ArangoSearchSortDirectionAsc
+	directionDesc := driver.ArangoSearchSortDirectionDesc
+
+	testCases := []struct {
+		Name              string
+		InAscending       *bool
+		ExpectedAscending *bool
+		InDirection       *driver.ArangoSearchSortDirection
+		ExpectedDirection *driver.ArangoSearchSortDirection
+		ErrorCode         int
+	}{
+		{
+			Name:      "NoneSet",
+			ErrorCode: 400, // Bad Parameter
+		},
+		{
+			Name:              "AscTrue",
+			InAscending:       &boolTrue,
+			ExpectedAscending: &boolTrue,
+		},
+		{
+			Name:              "AscFalse",
+			InAscending:       &boolFalse,
+			ExpectedAscending: &boolFalse,
+		},
+		{
+			Name:              "DirAsc",
+			InDirection:       &directionAsc,
+			ExpectedAscending: &boolTrue, // WAT!? Setting direction = asc returns asc = true
+		},
+		{
+			Name:              "DirDesc",
+			InDirection:       &directionDesc,
+			ExpectedAscending: &boolFalse,
+		},
+		{
+			Name:        "SetBothAsc",
+			InDirection: &directionAsc,
+			InAscending: &boolTrue,
+			ErrorCode:   400,
+		},
 	}
-	if len(indexes) != 1 {
-		// 1 is always added by the system
-		t.Errorf("Expected 1 index, got %d", len(indexes))
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			// Create the view with given parameters
+			opts := &driver.ArangoSearchViewProperties{
+				Links: driver.ArangoSearchLinks{
+					"primary_col_sort": driver.ArangoSearchElementProperties{},
+				},
+				PrimarySort: []driver.ArangoSearchPrimarySortEntry{{
+					Field:     "foo",
+					Ascending: testCase.InAscending,
+					Direction: testCase.InDirection,
+				}},
+			}
+
+			name := fmt.Sprintf("%s-view", testCase.Name)
+
+			if _, err := db.CreateArangoSearchView(ctx, name, opts); err != nil {
+
+				if !driver.IsArangoErrorWithCode(err, testCase.ErrorCode) {
+					t.Fatalf("Failed to create view '%s': %s", name, describe(err))
+				} else {
+					// end test here
+					return
+				}
+			}
+
+			// Get view
+			v, err := db.View(ctx, name)
+			if err != nil {
+				t.Fatalf("View('%s') failed: %s", name, describe(err))
+			}
+			asv, err := v.ArangoSearchView()
+			if err != nil {
+				t.Fatalf("ArangoSearchView() failed: %s", describe(err))
+			}
+			// Check asv properties
+			p, err := asv.Properties(ctx)
+			if err != nil {
+				t.Fatalf("Properties failed: %s", describe(err))
+			}
+			if len(p.PrimarySort) != 1 {
+				t.Fatalf("Primary sort expected length: %d, found %d", 1, len(p.PrimarySort))
+			} else {
+				ps := p.PrimarySort[0]
+				if ps.Ascending == nil {
+					if testCase.ExpectedAscending != nil {
+						t.Errorf("Expected Ascending to be non nil")
+					}
+				} else {
+					if testCase.ExpectedAscending == nil {
+						t.Errorf("Expected Ascending to be nil")
+					} else if ps.GetAscending() != *testCase.ExpectedAscending {
+						t.Errorf("Expected Ascending to be %t, found %t", *testCase.ExpectedAscending, ps.GetAscending())
+					}
+				}
+
+				if ps.Direction == nil {
+					if testCase.ExpectedDirection != nil {
+						t.Errorf("Expected Direction to be non nil")
+					}
+				} else {
+					if testCase.ExpectedDirection == nil {
+						t.Errorf("Expected Direction to be nil")
+					} else if ps.GetDirection() != *testCase.ExpectedDirection {
+						t.Errorf("Expected Direction to be %s, found %s", string(*testCase.ExpectedDirection), string(ps.GetDirection()))
+					}
+				}
+			}
+		})
 	}
 }
