@@ -66,6 +66,9 @@ type ArangoSearchViewProperties struct {
 	// ConsolidationPolicy specifies thresholds for consolidation.
 	ConsolidationPolicy *ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
 
+	// CommitInterval ArangoSearch waits at least this many milliseconds between committing view data store changes and making documents visible to queries
+	CommitInterval *int64 `json:"commitIntervalMsec,omitempty"`
+
 	// WriteBufferIdel specifies the maximum number of writers (segments) cached in the pool.
 	// 0 value turns off caching, default value is 64.
 	WriteBufferIdel *int64 `json:"writebufferIdle,omitempty"`
@@ -84,6 +87,24 @@ type ArangoSearchViewProperties struct {
 	// are indexed in thie view.
 	// The key of the map are collection names.
 	Links ArangoSearchLinks `json:"links,omitempty"`
+
+	// PrimarySort describes how individual fields are sorted
+	PrimarySort []ArangoSearchPrimarySortEntry `json:"primarySort,omitempty"`
+}
+
+// ArangoSearchSortDirection describes the sorting direction
+type ArangoSearchSortDirection string
+
+const (
+	ArangoSearchSortDirectionAsc  ArangoSearchSortDirection = "ASC"
+	ArangoSearchSortDirectionDesc ArangoSearchSortDirection = "DESC"
+)
+
+// ArangoSearchPrimarySortEntry describes an entry for the primarySort list
+type ArangoSearchPrimarySortEntry struct {
+	Field     string                     `json:"field,omitempty"`
+	Ascending *bool                      `json:"asc,omitempty"`
+	Direction *ArangoSearchSortDirection `json:"direction,omitempty"`
 }
 
 // ArangoSearchConsolidationPolicyType strings for consolidation types

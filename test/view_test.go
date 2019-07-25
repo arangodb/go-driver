@@ -500,3 +500,67 @@ func TestUseArangoSearchView(t *testing.T) {
 		}
 	}
 }
+
+// TestGetArangoSearchView creates an arangosearch view and then gets it again.
+func TestArangoSearchViewProperties35(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	col := ensureCollection(ctx, db, "someCol", nil, t)
+	commitInterval := int64(100)
+	sortDir := driver.ArangoSearchSortDirectionDesc
+	name := "test_get_asview_35"
+	sortField := "foo"
+	opts := &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"someCol": driver.ArangoSearchElementProperties{},
+		},
+		CommitInterval: &commitInterval,
+		PrimarySort: []driver.ArangoSearchPrimarySortEntry{{
+			Field:     sortField,
+			Direction: &sortDir,
+		}},
+	}
+	if _, err := db.CreateArangoSearchView(ctx, name, opts); err != nil {
+		t.Fatalf("Failed to create view '%s': %s", name, describe(err))
+	}
+	// Get view
+	v, err := db.View(ctx, name)
+	if err != nil {
+		t.Fatalf("View('%s') failed: %s", name, describe(err))
+	}
+	asv, err := v.ArangoSearchView()
+	if err != nil {
+		t.Fatalf("ArangoSearchView() failed: %s", describe(err))
+	}
+	// Check v.Name
+	if actualName := v.Name(); actualName != name {
+		t.Errorf("Name() failed. Got '%s', expected '%s'", actualName, name)
+	}
+	// Check asv properties
+	p, err := asv.Properties(ctx)
+	if err != nil {
+		t.Fatalf("Properties failed: %s", describe(err))
+	}
+	if p.CommitInterval == nil || *p.CommitInterval != commitInterval {
+		t.Error("CommitInterval was not set properly")
+	}
+	if len(p.PrimarySort) != 1 {
+		t.Fatalf("Primary sort expected length: %d, found %d", 1, len(p.PrimarySort))
+	} else {
+		ps := p.PrimarySort[0]
+		if ps.Field != sortField {
+			t.Errorf("Primary Sort field is wrong: %s, expected %s", ps.Field, sortField)
+		}
+	}
+	// Check indexes on collection
+	indexes, err := col.Indexes(ctx)
+	if err != nil {
+		t.Fatalf("Indexes() failed: %s", describe(err))
+	}
+	if len(indexes) != 1 {
+		// 1 is always added by the system
+		t.Errorf("Expected 1 index, got %d", len(indexes))
+	}
+}
