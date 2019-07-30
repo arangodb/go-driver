@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -34,7 +35,48 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-func skipIfNoBackup(t *testing.T) {
+var backupAPIAvailable *bool
+
+func setBackupAvailable(av bool) {
+	backupAPIAvailable = &av
+}
+
+func skipIfNoBackup(c driver.Client, t *testing.T) {
+	con := c.Connection()
+
+	if backupAPIAvailable == nil {
+
+		t.Log("Checking for backup api")
+
+		req, err := con.NewRequest("POST", "_admin/backup/list")
+		if err != nil {
+			t.Fatalf("Failed to send test request: %s", describe(err))
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer cancel()
+		resp, err := con.Do(ctx, req)
+		if err != nil {
+			if !driver.IsTimeout(err) {
+				t.Fatalf("Test request failed: %s", describe(err))
+			}
+		} else {
+			switch resp.StatusCode() {
+			case 404:
+				t.Skip("Backup API not available")
+			case 200:
+				setBackupAvailable(true)
+				return
+			default:
+				t.Fatalf("Test request failed with unexpected error code: %d", resp.StatusCode())
+			}
+		}
+
+	} else {
+		if *backupAPIAvailable {
+			return
+		}
+	}
+
 	if v := os.Getenv("TEST_ENABLE_BACKUP"); v == "" {
 		t.Skip("Backup Tests not enabled")
 	}
@@ -58,7 +100,7 @@ func getTransfereConfigFromEnv(t *testing.T) (repo string, config map[string]jso
 }
 
 func ensureBackup(ctx context.Context, b driver.ClientBackup, t *testing.T) driver.BackupID {
-	if id, err := b.Create(ctx, nil); err != nil {
+	if id, _, err := b.Create(ctx, nil); err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 		return ""
 	} else {
@@ -77,9 +119,8 @@ func hasBackup(ctx context.Context, id driver.BackupID, b driver.ClientBackup, t
 		if meta, ok := list[id]; ok {
 			if meta.ID == id {
 				return true
-			} else {
-				t.Fatalf("meta.ID is different: %s, expected %s", meta.ID, id)
 			}
+			t.Fatalf("meta.ID is different: %s, expected %s", meta.ID, id)
 		} else {
 			t.Fatalf("List does not contain the backup")
 		}
@@ -89,11 +130,12 @@ func hasBackup(ctx context.Context, id driver.BackupID, b driver.ClientBackup, t
 }
 
 func TestBackupCreate(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	ctx := context.Background()
-	b := createClientFromEnv(t, true).Backup()
+	b := c.Backup()
 
-	id, err := b.Create(ctx, nil)
+	id, _, err := b.Create(ctx, nil)
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
@@ -102,13 +144,14 @@ func TestBackupCreate(t *testing.T) {
 }
 
 func TestBackupCreateWithLabel(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	ctx := context.Background()
-	b := createClientFromEnv(t, true).Backup()
+	b := c.Backup()
 
 	label := "test_label"
 
-	id, err := b.Create(ctx, &driver.BackupCreateOptions{Label: label})
+	id, _, err := b.Create(ctx, &driver.BackupCreateOptions{Label: label})
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
@@ -117,27 +160,53 @@ func TestBackupCreateWithLabel(t *testing.T) {
 	if !strings.HasSuffix(string(id), label) {
 		t.Fatalf("BackupID is not suffixed with label")
 	}
-
-	t.Logf("Created backup %s", id)
 }
 
 func TestBackupCreateWithForce(t *testing.T) {
-	skipIfNoBackup(t)
-	ctx := context.Background()
-	b := createClientFromEnv(t, true).Backup()
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
+	var wg sync.WaitGroup
+	defer func() {
+		wg.Wait()
+	}()
+	b := c.Backup()
+	dbname := "backup_db_test"
+	colname := "backup_query_target"
 
-	id, err := b.Create(ctx, &driver.BackupCreateOptions{Force: true})
+	// First create a long running transaction
+	db := ensureDatabase(nil, c, dbname, nil, t)
+	ensureCollection(nil, db, colname, nil, t)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if _, err := db.Query(nil, fmt.Sprintf("FOR i IN 1..10 INSERT {s:SLEEP(1)} INTO %s", colname), nil); err != nil {
+			t.Fatalf("Failed to run query: %s", describe(err))
+		}
+	}()
+
+	time.Sleep(time.Second)
+
+	_, _, err := b.Create(nil, &driver.BackupCreateOptions{Force: false, Timeout: time.Second})
+	if err == nil {
+		t.Fatalf("Creating backup should fail but did not!")
+	}
+
+	_, resp, err := b.Create(nil, &driver.BackupCreateOptions{Force: true, Timeout: time.Second})
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
 
-	t.Logf("Force created backup %s", id)
+	if !resp.Forced {
+		t.Error("Expected Forced to be set to true, but it is not")
+	}
 }
 
 func TestBackupListWithID(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	ctx := context.Background()
-	b := createClientFromEnv(t, true).Backup()
+	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
 
 	var raw []byte
@@ -163,9 +232,10 @@ func TestBackupListWithID(t *testing.T) {
 }
 
 func TestBackupListWithNonExistingID(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	ctx := context.Background()
-	b := createClientFromEnv(t, true).Backup()
+	b := c.Backup()
 
 	var raw []byte
 	ctx = driver.WithRawResponse(ctx, &raw)
@@ -181,9 +251,9 @@ func TestBackupListWithNonExistingID(t *testing.T) {
 }
 
 func TestBackupList(t *testing.T) {
-	skipIfNoBackup(t)
-	ctx := context.Background()
 	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
+	ctx := context.Background()
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
 
@@ -218,9 +288,9 @@ func TestBackupList(t *testing.T) {
 }
 
 func TestBackupDelete(t *testing.T) {
-	skipIfNoBackup(t)
-	ctx := context.Background()
 	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
+	ctx := context.Background()
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
 
@@ -238,9 +308,9 @@ func TestBackupDelete(t *testing.T) {
 }
 
 func TestBackupDeleteNonExisting(t *testing.T) {
-	skipIfNoBackup(t)
-	ctx := context.Background()
 	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
+	ctx := context.Background()
 	b := c.Backup()
 
 	if err := b.Delete(ctx, "does_not_exist"); err != nil {
@@ -281,9 +351,9 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) {
 }
 
 func TestBackupRestore(t *testing.T) {
-	skipIfNoBackup(t)
-	ctx := context.Background()
 	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
+	ctx := context.Background()
 	b := c.Backup()
 
 	isSingle := false
@@ -309,7 +379,7 @@ func TestBackupRestore(t *testing.T) {
 		t.Fatalf("Failed to create document %s", describe(err))
 	}
 
-	id, err := b.Create(ctx, nil)
+	id, _, err := b.Create(ctx, nil)
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
@@ -349,11 +419,11 @@ func TestBackupRestore(t *testing.T) {
 }
 
 func TestBackupUploadNonExisting(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	c := createClientFromEnv(t, true)
 	b := c.Backup()
 	repo, conf := getTransfereConfigFromEnv(t)
 
@@ -445,24 +515,24 @@ func uploadBackupWaitForCompletion(ctx context.Context, id driver.BackupID, b dr
 }
 
 func TestBackupUpload(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
 	getTransfereConfigFromEnv(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	c := createClientFromEnv(t, true)
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
 	uploadBackupWaitForCompletion(ctx, id, b, t)
 }
 
 func TestBackupUploadAbort(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
 	repo, conf := getTransfereConfigFromEnv(t)
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
 
@@ -506,12 +576,12 @@ func TestBackupUploadAbort(t *testing.T) {
 }
 
 func TestBackupCompleteCycle(t *testing.T) {
-	skipIfNoBackup(t)
 	skipNoEnterprise(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 	repo, conf := getTransfereConfigFromEnv(t)
 
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
 	b := c.Backup()
 
 	dbname := "backup"
@@ -537,7 +607,7 @@ func TestBackupCompleteCycle(t *testing.T) {
 		t.Fatalf("Failed to create document %s", describe(err))
 	}
 
-	id, err := b.Create(ctx, nil)
+	id, _, err := b.Create(ctx, nil)
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
@@ -605,12 +675,12 @@ type backupResult struct {
 }
 
 func TestBackupCreateManyBackupsFast(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 
 	numTries := 5
 
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
 	b := c.Backup()
 
 	idchan := make(chan backupResult)
@@ -623,7 +693,7 @@ func TestBackupCreateManyBackupsFast(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if id, err := b.Create(ctx, nil); err == nil {
+			if id, _, err := b.Create(ctx, nil); err == nil {
 				idchan <- backupResult{ID: id}
 
 			} else {
@@ -667,10 +737,10 @@ func TestBackupCreateManyBackupsFast(t *testing.T) {
 }
 
 func TestBackupCreateRestoreParallel(t *testing.T) {
-	skipIfNoBackup(t)
+	c := createClientFromEnv(t, true)
+	skipIfNoBackup(c, t)
 
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
 
@@ -681,7 +751,7 @@ func TestBackupCreateRestoreParallel(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if _, err := b.Create(ctx, nil); err == nil {
+		if _, _, err := b.Create(ctx, nil); err == nil {
 			errchan <- nil
 		} else {
 			errchan <- err

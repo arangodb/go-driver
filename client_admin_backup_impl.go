@@ -37,32 +37,41 @@ func (c *client) Backup() ClientBackup {
 }
 
 // Create creates a new backup and returns its id
-func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (BackupID, error) {
+func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (BackupID, BackupCreateResponse, error) {
 	req, err := c.conn.NewRequest("POST", "_admin/backup/create")
 	if err != nil {
-		return "", WithStack(err)
+		return "", BackupCreateResponse{}, WithStack(err)
 	}
 	if opt != nil {
-		req, err = req.SetBody(opt)
+		body := struct {
+			Label   string  `json:"label,omitempty"`
+			Force   bool    `json:"forceBackup,omitempty"`
+			Timeout float64 `json:"timeout,omitempty"`
+		}{
+			Label:   opt.Label,
+			Force:   opt.Force,
+			Timeout: opt.Timeout.Seconds(),
+		}
+		req, err = req.SetBody(body)
 		if err != nil {
-			return "", WithStack(err)
+			return "", BackupCreateResponse{}, WithStack(err)
 		}
 	}
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return "", WithStack(err)
+		return "", BackupCreateResponse{}, WithStack(err)
 	}
-	// THIS SHOULD BE 201
 	if err := resp.CheckStatus(201); err != nil {
-		return "", WithStack(err)
+		return "", BackupCreateResponse{}, WithStack(err)
 	}
 	var result struct {
-		ID BackupID `json:"id,omitempty"`
+		ID     BackupID `json:"id,omitempty"`
+		Forced bool     `json:"forced,omitempty"`
 	}
 	if err := resp.ParseBody("result", &result); err != nil {
-		return "", WithStack(err)
+		return "", BackupCreateResponse{}, WithStack(err)
 	}
-	return result.ID, nil
+	return result.ID, BackupCreateResponse{Forced: result.Forced}, nil
 }
 
 // Delete deletes the backup with given id

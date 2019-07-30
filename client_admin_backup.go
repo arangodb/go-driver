@@ -22,7 +22,10 @@
 
 package driver
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // BackupMeta provides meta data of a backup
 type BackupMeta struct {
@@ -44,8 +47,9 @@ type BackupListOptions struct {
 
 // BackupCreateOptions provides options for Create
 type BackupCreateOptions struct {
-	Label string `json:"label,omitempty"`
-	Force bool   `json:"force,omitempty"`
+	Label   string        `json:"label,omitempty"`
+	Force   bool          `json:"forceBackup,omitempty"`
+	Timeout time.Duration `json:"timeout,omitempty"`
 }
 
 // BackupTransferStatus represents all possible states a transfer job can be in
@@ -90,11 +94,16 @@ type ClientAdminBackup interface {
 	Backup() ClientBackup
 }
 
+// BackupCreateResponse contains information about a newly created backup
+type BackupCreateResponse struct {
+	Forced bool
+}
+
 // ClientBackup provides access to server/cluster backup functions of an arangodb database server
 // or an entire cluster of arangodb servers.
 type ClientBackup interface {
 	// Create creates a new backup and returns its id
-	Create(ctx context.Context, opt *BackupCreateOptions) (BackupID, error)
+	Create(ctx context.Context, opt *BackupCreateOptions) (BackupID, BackupCreateResponse, error)
 
 	// Delete deletes the backup with given id
 	Delete(ctx context.Context, id BackupID) error
