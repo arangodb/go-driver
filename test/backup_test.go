@@ -62,7 +62,7 @@ func skipIfNoBackup(c driver.Client, t *testing.T) {
 		} else {
 			switch resp.StatusCode() {
 			case 404:
-				t.Skip("Backup API not available")
+				setBackupAvailable(false)
 			case 200:
 				setBackupAvailable(true)
 				return
@@ -77,9 +77,7 @@ func skipIfNoBackup(c driver.Client, t *testing.T) {
 		}
 	}
 
-	if v := os.Getenv("TEST_ENABLE_BACKUP"); v == "" {
-		t.Skip("Backup Tests not enabled")
-	}
+	t.Skip("Backup API not available")
 }
 
 func getTransfereConfigFromEnv(t *testing.T) (repo string, config map[string]json.RawMessage) {
