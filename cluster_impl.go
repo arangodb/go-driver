@@ -159,6 +159,36 @@ func (c *cluster) CleanOutServer(ctx context.Context, serverID string) error {
 	return nil
 }
 
+// ResignServer triggers activities to let a DBServer resign for all shards.
+func (c *cluster) ResignServer(ctx context.Context, serverID string) error {
+	req, err := c.conn.NewRequest("POST", "_admin/cluster/resignLeadership")
+	if err != nil {
+		return WithStack(err)
+	}
+	input := cleanOutServerRequest{
+		Server: serverID,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200, 202); err != nil {
+		return WithStack(err)
+	}
+	var result cleanOutServerResponse
+	if err := resp.ParseBody("", &result); err != nil {
+		return WithStack(err)
+	}
+	if cs.JobIDResponse != nil {
+		*cs.JobIDResponse = result.JobID
+	}
+	return nil
+}
+
 // IsCleanedOut checks if the dbserver with given ID has been cleaned out.
 func (c *cluster) IsCleanedOut(ctx context.Context, serverID string) (bool, error) {
 	r, err := c.NumberOfServers(ctx)

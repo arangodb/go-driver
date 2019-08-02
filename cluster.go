@@ -43,6 +43,9 @@ type Cluster interface {
 	// CleanOutServer triggers activities to clean out a DBServer.
 	CleanOutServer(ctx context.Context, serverID string) error
 
+	// ResignServer triggers activities to let a DBServer resign for all shards.
+	ResignServer(ctx context.Context, serverID string) error
+
 	// IsCleanedOut checks if the dbserver with given ID has been cleaned out.
 	IsCleanedOut(ctx context.Context, serverID string) (bool, error)
 
