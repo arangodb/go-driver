@@ -339,7 +339,8 @@ endif
 
 __test_cleanup:
 ifdef TESTCONTAINER
-	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@TESTCONTAINERS=$$(docker ps -a -q --filter="name=$(TESTCONTAINER)")
+	@if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); fi
 endif
 ifndef TEST_ENDPOINTS_OVERRIDE
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) "${ROOTDIR}/test/cluster.sh" cleanup
