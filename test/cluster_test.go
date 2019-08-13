@@ -345,6 +345,7 @@ func TestClusterMoveShard(t *testing.T) {
 func TestClusterResignLeadership(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5.1", t)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
 		t.Skip("Not a cluster")
