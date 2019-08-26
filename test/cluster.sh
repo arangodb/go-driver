@@ -10,7 +10,11 @@ STARTERVOLUME=${TESTCONTAINER}-vol
 STARTERCONTAINER=${TESTCONTAINER}-s
 CMD=$1
 DOCKERARGS=
-STARTERARGS=
+
+// Allow to set starter args
+if [ -z "$STARTERARGS" ]; then
+    STARTERARGS=
+fi
 
 # Cleanup
 docker rm -f -v $(docker ps -a | grep ${TESTCONTAINER} | awk '{print $1}') &> /dev/null

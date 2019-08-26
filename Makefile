@@ -319,7 +319,7 @@ __test_go_test:
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS) || (for container in $$(docker ps | grep " $(TESTCONTAINER)-s-" | cut -d ' ' -f 1); do docker ps | grep "^$$container "; echo "Logs -------"; docker logs $$container; done; exit 1)
 		
 
 __test_prepare:
@@ -332,7 +332,7 @@ endif
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@mkdir -p "${TMPDIR}"
 	@echo "${TMPDIR}"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" STARTERARGS="--starter.debug-cluster" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
 endif
 
 __test_cleanup:
