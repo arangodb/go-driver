@@ -122,7 +122,7 @@ func newHTTPConnection(endpoint string, config ConnectionConfig) (driver.Connect
 				DualStack: true,
 			}).DialContext,
 			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
+			IdleConnTimeout:       120 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		}
