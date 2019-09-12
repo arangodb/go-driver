@@ -185,18 +185,18 @@ func TestBackupCreateWithForce(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	_, _, err := b.Create(nil, &driver.BackupCreateOptions{Force: false, Timeout: time.Second})
+	_, _, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: false, Timeout: time.Second})
 	if err == nil {
 		t.Fatalf("Creating backup should fail but did not!")
 	}
 
-	_, resp, err := b.Create(nil, &driver.BackupCreateOptions{Force: true, Timeout: time.Second})
+	_, resp, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: true, Timeout: time.Second})
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
 
-	if !resp.Forced {
-		t.Error("Expected Forced to be set to true, but it is not")
+	if !resp.PotentiallyInconsistent {
+		t.Error("Expected PotentiallyInconsistent to be set to true, but it is not")
 	}
 }
 
@@ -742,6 +742,13 @@ func TestBackupCreateRestoreParallel(t *testing.T) {
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
 
+	isSingle := false
+	if role, err := c.ServerRole(ctx); err != nil {
+		t.Fatalf("Failed to obtain server role: %s", describe(err))
+	} else {
+		isSingle = role == driver.ServerRoleSingle
+	}
+
 	errchan := make(chan error)
 	defer close(errchan)
 	var wg sync.WaitGroup
@@ -761,6 +768,11 @@ func TestBackupCreateRestoreParallel(t *testing.T) {
 		defer wg.Done()
 		if err := b.Restore(ctx, id, nil); err == nil {
 			errchan <- nil
+			if isSingle {
+				waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+				defer cancel()
+				waitForServerRestart(waitctx, c, t)
+			}
 		} else {
 			errchan <- err
 			t.Logf("Restore failed: %s", describe(err))
