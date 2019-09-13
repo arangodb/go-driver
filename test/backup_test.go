@@ -42,6 +42,9 @@ func setBackupAvailable(av bool) {
 }
 
 func skipIfNoBackup(c driver.Client, t *testing.T) {
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
 	con := c.Connection()
 
 	if backupAPIAvailable == nil {
