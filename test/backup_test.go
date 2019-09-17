@@ -83,13 +83,13 @@ func skipIfNoBackup(c driver.Client, t *testing.T) {
 	t.Skip("Backup API not available")
 }
 
-func getTransfereConfigFromEnv(t *testing.T) (repo string, config map[string]json.RawMessage) {
+func getTransferConfigFromEnv(t *testing.T) (repo string, config map[string]json.RawMessage) {
 
 	repoenv := os.Getenv("TEST_BACKUP_REMOTE_REPO")
 	confenv := os.Getenv("TEST_BACKUP_REMOTE_CONFIG")
 
 	if repoenv == "" || confenv == "" {
-		t.Skipf("TEST_BACKUP_REMOTE_REPO and TEST_BACKUP_REMOTE_CONFIG must be set for remote transfere tests")
+		t.Skipf("TEST_BACKUP_REMOTE_REPO and TEST_BACKUP_REMOTE_CONFIG must be set for remote transfer tests")
 	}
 
 	var confMap map[string]json.RawMessage
@@ -426,7 +426,7 @@ func TestBackupUploadNonExisting(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	b := c.Backup()
-	repo, conf := getTransfereConfigFromEnv(t)
+	repo, conf := getTransferConfigFromEnv(t)
 
 	jobID, err := b.Upload(ctx, "not_there", repo, conf)
 	if err != nil {
@@ -464,7 +464,7 @@ func TestBackupUploadNonExisting(t *testing.T) {
 	}
 }
 
-func waitForTransfereJobCompletion(ctx context.Context, jobID driver.BackupTransferJobID, b driver.ClientBackup, t *testing.T) {
+func waitForTransferJobCompletion(ctx context.Context, jobID driver.BackupTransferJobID, b driver.ClientBackup, t *testing.T) {
 	t.Logf("Waiting for completion of %s", jobID)
 
 	for {
@@ -501,7 +501,7 @@ func waitForTransfereJobCompletion(ctx context.Context, jobID driver.BackupTrans
 }
 
 func uploadBackupWaitForCompletion(ctx context.Context, id driver.BackupID, b driver.ClientBackup, t *testing.T) {
-	repo, conf := getTransfereConfigFromEnv(t)
+	repo, conf := getTransferConfigFromEnv(t)
 
 	jobID, err := b.Upload(ctx, id, repo, conf)
 	if err != nil {
@@ -512,14 +512,14 @@ func uploadBackupWaitForCompletion(ctx context.Context, id driver.BackupID, b dr
 		b.Abort(ctx, jobID)
 	}()
 
-	waitForTransfereJobCompletion(ctx, jobID, b, t)
+	waitForTransferJobCompletion(ctx, jobID, b, t)
 }
 
 func TestBackupUpload(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
-	getTransfereConfigFromEnv(t)
+	getTransferConfigFromEnv(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -532,7 +532,7 @@ func TestBackupUploadAbort(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
-	repo, conf := getTransfereConfigFromEnv(t)
+	repo, conf := getTransferConfigFromEnv(t)
 	ctx := context.Background()
 	b := c.Backup()
 	id := ensureBackup(ctx, b, t)
@@ -580,7 +580,7 @@ func TestBackupCompleteCycle(t *testing.T) {
 	skipNoEnterprise(t)
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
-	repo, conf := getTransfereConfigFromEnv(t)
+	repo, conf := getTransferConfigFromEnv(t)
 
 	ctx := context.Background()
 	b := c.Backup()
@@ -630,7 +630,7 @@ func TestBackupCompleteCycle(t *testing.T) {
 	}
 
 	// Wait for upload to be completed
-	waitForTransfereJobCompletion(ctx, uploadID, b, t)
+	waitForTransferJobCompletion(ctx, uploadID, b, t)
 
 	// delete the backup
 	if err := b.Delete(ctx, id); err != nil {
@@ -644,7 +644,7 @@ func TestBackupCompleteCycle(t *testing.T) {
 	}
 
 	// Wait for download to be completed
-	waitForTransfereJobCompletion(ctx, downloadID, b, t)
+	waitForTransferJobCompletion(ctx, downloadID, b, t)
 
 	// Now restore
 	if err := b.Restore(ctx, id, nil); err != nil {
