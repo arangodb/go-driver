@@ -181,19 +181,19 @@ func TestBackupCreateWithForce(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if _, err := db.Query(nil, fmt.Sprintf("FOR i IN 1..10 INSERT {s:SLEEP(1)} INTO %s", colname), nil); err != nil {
+		if _, err := db.Query(nil, fmt.Sprintf("FOR i IN 1..15 INSERT {s:SLEEP(1)} INTO %s", colname), nil); err != nil {
 			t.Fatalf("Failed to run query: %s", describe(err))
 		}
 	}()
 
 	time.Sleep(time.Second)
 
-	_, _, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: false, Timeout: time.Second})
+	_, _, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: false, Timeout: 3 * time.Second})
 	if err == nil {
 		t.Fatalf("Creating backup should fail but did not!")
 	}
 
-	_, resp, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: true, Timeout: time.Second})
+	_, resp, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: true, Timeout: 3 * time.Second})
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
