@@ -47,9 +47,9 @@ type BackupListOptions struct {
 
 // BackupCreateOptions provides options for Create
 type BackupCreateOptions struct {
-	Label   string        `json:"label,omitempty"`
-	Force   bool          `json:"forceBackup,omitempty"`
-	Timeout time.Duration `json:"timeout,omitempty"`
+	Label             string        `json:"label,omitempty"`
+	AllowInconsistent bool          `json:"allowInconsistent,omitempty"`
+	Timeout           time.Duration `json:"timeout,omitempty"`
 }
 
 // BackupTransferStatus represents all possible states a transfer job can be in
@@ -96,7 +96,7 @@ type ClientAdminBackup interface {
 
 // BackupCreateResponse contains information about a newly created backup
 type BackupCreateResponse struct {
-	Forced bool
+	PotentiallyInconsistent bool
 }
 
 // ClientBackup provides access to server/cluster backup functions of an arangodb database server
