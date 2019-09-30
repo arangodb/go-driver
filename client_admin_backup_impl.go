@@ -44,13 +44,13 @@ func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (Ba
 	}
 	if opt != nil {
 		body := struct {
-			Label   string  `json:"label,omitempty"`
-			AllowInconsistent   bool    `json:"allowInconsistent,omitempty"`
-			Timeout float64 `json:"timeout,omitempty"`
+			Label             string  `json:"label,omitempty"`
+			AllowInconsistent bool    `json:"allowInconsistent,omitempty"`
+			Timeout           float64 `json:"timeout,omitempty"`
 		}{
-			Label:   opt.Label,
-			AllowInconsistent:   opt.AllowInconsistent,
-			Timeout: opt.Timeout.Seconds(),
+			Label:             opt.Label,
+			AllowInconsistent: opt.AllowInconsistent,
+			Timeout:           opt.Timeout.Seconds(),
 		}
 		req, err = req.SetBody(body)
 		if err != nil {
@@ -65,13 +65,21 @@ func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (Ba
 		return "", BackupCreateResponse{}, WithStack(err)
 	}
 	var result struct {
-		ID     BackupID `json:"id,omitempty"`
+		ID                      BackupID `json:"id,omitempty"`
 		PotentiallyInconsistent bool     `json:"potentiallyInconsistent,omitempty"`
+		NumberOfFiles           uint     `json:"nrFiles,omitempty"`
+		NumberOfDBServers       uint     `json:"nrDBServers,omitempty"`
+		SizeInBytes             uint     `json:"sizeInBytes,omitempty"`
 	}
 	if err := resp.ParseBody("result", &result); err != nil {
 		return "", BackupCreateResponse{}, WithStack(err)
 	}
-	return result.ID, BackupCreateResponse{PotentiallyInconsistent: result.PotentiallyInconsistent}, nil
+	return result.ID, BackupCreateResponse{
+		PotentiallyInconsistent: result.PotentiallyInconsistent,
+		NumberOfFiles:           result.NumberOfFiles,
+		NumberOfDBServers:       result.NumberOfDBServers,
+		SizeInBytes:             result.SizeInBytes,
+	}, nil
 }
 
 // Delete deletes the backup with given id

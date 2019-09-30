@@ -29,8 +29,12 @@ import (
 
 // BackupMeta provides meta data of a backup
 type BackupMeta struct {
-	ID      BackupID `json:"id,omitempty"`
-	Version string   `json:"version,omitempty"`
+	ID                      BackupID `json:"id,omitempty"`
+	Version                 string   `json:"version,omitempty"`
+	NumberOfFiles           uint     `json:"nrFiles,omitempty"`
+	NumberOfDBServers       uint     `json:"nrDBServers,omitempty"`
+	SizeInBytes             uint     `json:"sizeInBytes,omitempty"`
+	PotentiallyInconsistent bool     `json:"potentiallyInconsistent,omitempty"`
 }
 
 // BackupRestoreOptions provides options for Restore
@@ -96,6 +100,9 @@ type ClientAdminBackup interface {
 
 // BackupCreateResponse contains information about a newly created backup
 type BackupCreateResponse struct {
+	NumberOfFiles           uint
+	NumberOfDBServers       uint
+	SizeInBytes             uint
 	PotentiallyInconsistent bool
 }
 
