@@ -29,13 +29,13 @@ import (
 
 // BackupMeta provides meta data of a backup
 type BackupMeta struct {
-	ID                      BackupID `json:"id,omitempty"`
-	Version                 string   `json:"version,omitempty"`
-	DateTime                string   `json:"datetime,omitempty"`
-	NumberOfFiles           uint     `json:"nrFiles,omitempty"`
-	NumberOfDBServers       uint     `json:"nrDBServers,omitempty"`
-	SizeInBytes             uint64   `json:"sizeInBytes,omitempty"`
-	PotentiallyInconsistent bool     `json:"potentiallyInconsistent,omitempty"`
+	ID                      BackupID  `json:"id,omitempty"`
+	Version                 string    `json:"version,omitempty"`
+	DateTime                time.Time `json:"datetime,omitempty"`
+	NumberOfFiles           uint      `json:"nrFiles,omitempty"`
+	NumberOfDBServers       uint      `json:"nrDBServers,omitempty"`
+	SizeInBytes             uint64    `json:"sizeInBytes,omitempty"`
+	PotentiallyInconsistent bool      `json:"potentiallyInconsistent,omitempty"`
 }
 
 // BackupRestoreOptions provides options for Restore
@@ -105,7 +105,7 @@ type BackupCreateResponse struct {
 	NumberOfDBServers       uint
 	SizeInBytes             uint64
 	PotentiallyInconsistent bool
-	CreationTime            string
+	CreationTime            time.Time
 }
 
 // ClientBackup provides access to server/cluster backup functions of an arangodb database server

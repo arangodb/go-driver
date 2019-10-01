@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"time"
 )
 
 type clientBackup struct {
@@ -65,12 +66,12 @@ func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (Ba
 		return "", BackupCreateResponse{}, WithStack(err)
 	}
 	var result struct {
-		ID                      BackupID `json:"id,omitempty"`
-		PotentiallyInconsistent bool     `json:"potentiallyInconsistent,omitempty"`
-		NumberOfFiles           uint     `json:"nrFiles,omitempty"`
-		NumberOfDBServers       uint     `json:"nrDBServers,omitempty"`
-		SizeInBytes             uint64   `json:"sizeInBytes,omitempty"`
-		CreationTime            string   `json:"datetime,omitempty"`
+		ID                      BackupID  `json:"id,omitempty"`
+		PotentiallyInconsistent bool      `json:"potentiallyInconsistent,omitempty"`
+		NumberOfFiles           uint      `json:"nrFiles,omitempty"`
+		NumberOfDBServers       uint      `json:"nrDBServers,omitempty"`
+		SizeInBytes             uint64    `json:"sizeInBytes,omitempty"`
+		CreationTime            time.Time `json:"datetime,omitempty"`
 	}
 	if err := resp.ParseBody("result", &result); err != nil {
 		return "", BackupCreateResponse{}, WithStack(err)
