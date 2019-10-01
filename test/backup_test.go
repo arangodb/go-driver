@@ -145,6 +145,10 @@ func TestBackupCreate(t *testing.T) {
 		t.Fatalf("some result fields are not set properly: .numberOfFiles = %d, .numberOfDBServers = %d, .sizeInBytes = %d", meta.NumberOfFiles, meta.NumberOfDBServers, meta.SizeInBytes)
 	}
 
+	if meta.CreationTime == "" {
+		t.Fatal("mission creation timestamp")
+	}
+
 	t.Logf("Created backup %s", id)
 }
 
@@ -283,6 +287,9 @@ func TestBackupList(t *testing.T) {
 			}
 			if meta.Version != string(version.Version) {
 				t.Errorf("Different version string in backup: %s, actual version: %s", meta.Version, version.String())
+			}
+			if meta.DateTime == "" {
+				t.Error("Missing datetime")
 			}
 		}
 

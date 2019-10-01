@@ -31,8 +31,9 @@ import (
 type BackupMeta struct {
 	ID                      BackupID `json:"id,omitempty"`
 	Version                 string   `json:"version,omitempty"`
-	NumberOfFiles           uint64   `json:"nrFiles,omitempty"`
-	NumberOfDBServers       uint64   `json:"nrDBServers,omitempty"`
+	DateTime                string   `json:"datetime,omitempty"`
+	NumberOfFiles           uint     `json:"nrFiles,omitempty"`
+	NumberOfDBServers       uint     `json:"nrDBServers,omitempty"`
 	SizeInBytes             uint64   `json:"sizeInBytes,omitempty"`
 	PotentiallyInconsistent bool     `json:"potentiallyInconsistent,omitempty"`
 }
@@ -100,10 +101,11 @@ type ClientAdminBackup interface {
 
 // BackupCreateResponse contains information about a newly created backup
 type BackupCreateResponse struct {
-	NumberOfFiles           uint64
-	NumberOfDBServers       uint64
+	NumberOfFiles           uint
+	NumberOfDBServers       uint
 	SizeInBytes             uint64
 	PotentiallyInconsistent bool
+	CreationTime            string
 }
 
 // ClientBackup provides access to server/cluster backup functions of an arangodb database server
