@@ -67,9 +67,9 @@ func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (Ba
 	var result struct {
 		ID                      BackupID `json:"id,omitempty"`
 		PotentiallyInconsistent bool     `json:"potentiallyInconsistent,omitempty"`
-		NumberOfFiles           uint     `json:"nrFiles,omitempty"`
-		NumberOfDBServers       uint     `json:"nrDBServers,omitempty"`
-		SizeInBytes             uint     `json:"sizeInBytes,omitempty"`
+		NumberOfFiles           uint64   `json:"nrFiles,omitempty"`
+		NumberOfDBServers       uint64   `json:"nrDBServers,omitempty"`
+		SizeInBytes             uint64   `json:"sizeInBytes,omitempty"`
 	}
 	if err := resp.ParseBody("result", &result); err != nil {
 		return "", BackupCreateResponse{}, WithStack(err)

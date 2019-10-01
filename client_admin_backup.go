@@ -31,9 +31,9 @@ import (
 type BackupMeta struct {
 	ID                      BackupID `json:"id,omitempty"`
 	Version                 string   `json:"version,omitempty"`
-	NumberOfFiles           uint     `json:"nrFiles,omitempty"`
-	NumberOfDBServers       uint     `json:"nrDBServers,omitempty"`
-	SizeInBytes             uint     `json:"sizeInBytes,omitempty"`
+	NumberOfFiles           uint64   `json:"nrFiles,omitempty"`
+	NumberOfDBServers       uint64   `json:"nrDBServers,omitempty"`
+	SizeInBytes             uint64   `json:"sizeInBytes,omitempty"`
 	PotentiallyInconsistent bool     `json:"potentiallyInconsistent,omitempty"`
 }
 
@@ -100,9 +100,9 @@ type ClientAdminBackup interface {
 
 // BackupCreateResponse contains information about a newly created backup
 type BackupCreateResponse struct {
-	NumberOfFiles           uint
-	NumberOfDBServers       uint
-	SizeInBytes             uint
+	NumberOfFiles           uint64
+	NumberOfDBServers       uint64
+	SizeInBytes             uint64
 	PotentiallyInconsistent bool
 }
 
