@@ -36,6 +36,8 @@ type BackupMeta struct {
 	NumberOfDBServers       uint      `json:"nrDBServers,omitempty"`
 	SizeInBytes             uint64    `json:"sizeInBytes,omitempty"`
 	PotentiallyInconsistent bool      `json:"potentiallyInconsistent,omitempty"`
+	Available               bool      `json:"available,omitempty"`
+	NumberOfPiecesPresent   uint      `json:"nrPiecesPresent,omitempty"`
 }
 
 // BackupRestoreOptions provides options for Restore

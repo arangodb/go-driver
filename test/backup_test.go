@@ -291,6 +291,9 @@ func TestBackupList(t *testing.T) {
 			if meta.DateTime.IsZero() {
 				t.Error("Missing datetime")
 			}
+			if !meta.Available {
+				t.Error("backup not available")
+			}
 		}
 
 		if !found {
