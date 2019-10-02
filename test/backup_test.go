@@ -101,12 +101,12 @@ func getTransferConfigFromEnv(t *testing.T) (repo string, config map[string]json
 }
 
 func ensureBackup(ctx context.Context, b driver.ClientBackup, t *testing.T) driver.BackupID {
-	if id, _, err := b.Create(ctx, nil); err != nil {
+	id, _, err := b.Create(ctx, nil)
+	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 		return ""
-	} else {
-		return id
 	}
+	return id
 }
 
 func hasBackup(ctx context.Context, id driver.BackupID, b driver.ClientBackup, t *testing.T) bool {
@@ -136,9 +136,17 @@ func TestBackupCreate(t *testing.T) {
 	ctx := context.Background()
 	b := c.Backup()
 
-	id, _, err := b.Create(ctx, nil)
+	id, meta, err := b.Create(ctx, nil)
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
+	}
+
+	if meta.NumberOfFiles == 0 || meta.NumberOfDBServers == 0 || meta.SizeInBytes == 0 {
+		t.Fatalf("some result fields are not set properly: .numberOfFiles = %d, .numberOfDBServers = %d, .sizeInBytes = %d", meta.NumberOfFiles, meta.NumberOfDBServers, meta.SizeInBytes)
+	}
+
+	if meta.CreationTime.IsZero() {
+		t.Fatal("mission creation timestamp")
 	}
 
 	t.Logf("Created backup %s", id)
@@ -163,7 +171,7 @@ func TestBackupCreateWithLabel(t *testing.T) {
 	}
 }
 
-func TestBackupCreateWithForce(t *testing.T) {
+func TestBackupCreateWithAllowInconsistent(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
 	var wg sync.WaitGroup
@@ -279,6 +287,12 @@ func TestBackupList(t *testing.T) {
 			}
 			if meta.Version != string(version.Version) {
 				t.Errorf("Different version string in backup: %s, actual version: %s", meta.Version, version.String())
+			}
+			if meta.DateTime.IsZero() {
+				t.Error("Missing datetime")
+			}
+			if !meta.Available {
+				t.Error("backup not available")
 			}
 		}
 
