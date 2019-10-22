@@ -53,7 +53,7 @@ func TestServerStatisticsWorks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in statistics call: %s", describe(err))
 	}
-	_, err := json.Marshal(stats)
+	_, err = json.Marshal(stats)
 	if err != nil {
 		t.Fatalf("Cannot marshal statistics to JSON: %s", describe(err))
 	}
