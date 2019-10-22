@@ -93,10 +93,10 @@ func TestServerStatisticsTraffic(t *testing.T) {
 		t.Fatalf("Error in statistics call: %s", describe(err))
 	}
 
-	b, _ := json.Marshal(statsBefore)
-	t.Logf("statsBefore: %s", string(b))
-	b, _ = json.Marshal(statsAfter)
-	t.Logf("statsAfter: %s", string(b))
+	//b, _ := json.Marshal(statsBefore)
+	//t.Logf("statsBefore: %s", string(b))
+	//b, _ = json.Marshal(statsAfter)
+	//t.Logf("statsAfter: %s", string(b))
 
   var diff float64
 	diff = statsAfter.Client.BytesReceived.Sum - statsBefore.Client.BytesReceived.Sum
@@ -120,8 +120,9 @@ func TestServerStatisticsTraffic(t *testing.T) {
 	// Now check if user only stats are there and see if they should have increased:
   if statsBefore.ClientUser.BytesReceived.Counts != nil {
 	  t.Logf("New user only statistics API is present, testing...")
-		if os.Getenv("TEST_AUTH") == "jwt" {
-			t.Logf("Authentication is jwt, expecting no user traffic...")
+		auth := os.Getenv("TEST_AUTHENTICATION")
+		if auth == "super:testing" {
+			t.Logf("Authentication %s is jwt superuser, expecting no user traffic...", auth)
 	    // Traffic is superuser, so nothing should be counted in ClientUser
 			diff = statsAfter.ClientUser.BytesReceived.Sum - statsBefore.ClientUser.BytesReceived.Sum
 			if diff > 1.0 {
@@ -141,7 +142,7 @@ func TestServerStatisticsTraffic(t *testing.T) {
 				t.Errorf("Difference in ClientUser.BytesSent.Count is too large (> 0): %d", intdiff)
 			}
 		} else {
-			t.Logf("Authentication is not jwt, expecting to see user traffic...")
+			t.Logf("Authentication %s is not jwt superuser, expecting to see user traffic...", auth)
 			// Traffic is either unauthenticated or with password, so there should
 			// be traffic in ClientUser
 			diff = statsAfter.ClientUser.BytesReceived.Sum - statsBefore.ClientUser.BytesReceived.Sum
