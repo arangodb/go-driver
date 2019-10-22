@@ -57,7 +57,7 @@ func TestServerStatisticsWorks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cannot marshal statistics to JSON: %s", describe(err))
 	}
-  t.Logf("Statistics: %s", string(b))
+  //t.Logf("Statistics: %s", string(b))
 }
 
 // TestServerStatisticsTraffic tests if Client.Statistics increase
