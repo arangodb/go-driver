@@ -1,4 +1,4 @@
-![ArangoDB-Logo](https://docs.arangodb.com/assets/arangodb_logo_2016_inverted.png)
+![ArangoDB-Logo](https://www.arangodb.com/docs/assets/arangodb_logo_2016_inverted.png)
 # ArangoDB GO Driver
 
 This project contains the official Go driver for the [ArangoDB database](https://arangodb.com).
