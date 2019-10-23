@@ -101,7 +101,7 @@ func (c *edgeCollection) ReadDocuments(ctx context.Context, keys []string, resul
 	}
 	resultCount := resultsVal.Len()
 	if len(keys) != resultCount {
-		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %d", resultCount, len(keys))})
+		return nil, nil, WithStack(InvalidArgumentError{Message: fmt.Sprintf("expected %d keys, got %d", len(keys), resultCount)})
 	}
 	for _, key := range keys {
 		if err := validateKey(key); err != nil {
