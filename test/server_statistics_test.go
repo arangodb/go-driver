@@ -343,9 +343,20 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	// However, first coordinator should have counted the user traffic,
 	// note: it was just a single request with nearly no upload but quite
 	// some download:
-	t.Logf("Checking user traffic on coordinator1...")
-	checkTrafficAtLeast(t, &statsBefore1, &statsAfter1, user,
-										  &limits{Received: 0, Sent: 40000,
-														  RecCount: 1, SentCount: 1})
+	auth := os.Getenv("TEST_AUTHENTICATION")
+	if auth != "super:testing" {
+	  t.Logf("Checking user traffic on coordinator1...")
+		checkTrafficAtLeast(t, &statsBefore1, &statsAfter1, user,
+												&limits{Received: 0, Sent: 40000,
+																RecCount: 1, SentCount: 1})
+	} else {
+	  t.Logf("Checking traffic on coordinator1...")
+		checkTrafficAtLeast(t, &statsBefore1, &statsAfter1, all,
+												&limits{Received: 0, Sent: 40000,
+																RecCount: 1, SentCount: 1})
+		checkTrafficAtMost(t, &statsBefore1, &statsAfter1, user,
+												&limits{Received: 0.1, Sent: 0.1,
+																RecCount: 0, SentCount: 0})
+	}
 }
 

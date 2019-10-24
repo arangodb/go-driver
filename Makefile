@@ -281,6 +281,10 @@ run-tests-cluster-json-with-auth:
 	@echo "Cluster server, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
 
+run-tests-cluster-json-jwt-super:
+	@echo "Cluster server, HTTP+JSON, JWT super authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="jwtsuper" TEST_CONTENT_TYPE="json" __run_tests
+
 run-tests-cluster-vpack-with-auth:
 	@echo "Cluster server, Velocypack, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
