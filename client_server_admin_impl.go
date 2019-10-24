@@ -101,21 +101,20 @@ func (c *client) Shutdown(ctx context.Context, removeFromCluster bool) error {
 
 // Statistics queries statistics from a specific server.
 func (c *client) Statistics(ctx context.Context) (ServerStatistics, error) {
-  req, err := c.conn.NewRequest("GET", "_admin/statistics")
-  if err != nil {
-    return ServerStatistics{}, WithStack(err)
-  }
-  resp, err := c.conn.Do(ctx, req)
-  if err != nil {
-    return ServerStatistics{}, WithStack(err)
-  }
-  if err := resp.CheckStatus(200); err != nil {
-    return ServerStatistics{}, WithStack(err)
-  }
-  var data ServerStatistics
-  if err := resp.ParseBody("", &data); err != nil {
-    return ServerStatistics{}, WithStack(err)
-  }
-  return data, nil
+	req, err := c.conn.NewRequest("GET", "_admin/statistics")
+	if err != nil {
+		return ServerStatistics{}, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return ServerStatistics{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return ServerStatistics{}, WithStack(err)
+	}
+	var data ServerStatistics
+	if err := resp.ParseBody("", &data); err != nil {
+		return ServerStatistics{}, WithStack(err)
+	}
+	return data, nil
 }
-
