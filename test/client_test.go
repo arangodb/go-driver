@@ -39,6 +39,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
+	"github.com/arangodb/go-driver/jwt"
 	"github.com/arangodb/go-driver/vst"
 	"github.com/arangodb/go-driver/vst/protocol"
 )
@@ -103,6 +104,15 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 			t.Fatalf("Expected username & password for jwt authentication")
 		}
 		return driver.JWTAuthentication(parts[1], parts[2])
+	case "super":
+		if len(parts) != 2 {
+			t.Fatalf("Expected 'super' and jwt secret")
+		}
+    header, err := jwt.CreateArangodJwtAuthorizationHeader(parts[1], "arangodb")
+		if err != nil {
+			t.Fatalf("Could not create JWT authentication header: %s", describe(err))
+		}
+		return driver.RawAuthentication(header)
 	default:
 		t.Fatalf("Unknown authentication: '%s'", parts[0])
 		return nil

@@ -67,6 +67,10 @@ ifeq ("$(TEST_AUTH)", "jwt")
 	CLUSTERENV := JWTSECRET=testing
 	TEST_AUTHENTICATION := jwt:root:
 endif
+ifeq ("$(TEST_AUTH)", "jwtsuper")
+	CLUSTERENV := JWTSECRET=testing
+	TEST_AUTHENTICATION := super:testing
+endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
 	TEST_ENDPOINTS = https://localhost:7001
@@ -131,7 +135,7 @@ run-tests-http:
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
 
-run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth run-tests-single-json-ssl
+run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth run-tests-single-json-jwt-super run-tests-single-json-ssl
 
 run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-no-auth run-tests-single-vpack-ssl
 
@@ -174,6 +178,10 @@ run-tests-single-vst-1.1-with-auth:
 run-tests-single-vst-1.1-jwt-auth:
 	@echo "Single server, Velocystream 1.1, JWT authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
+run-tests-single-json-jwt-super:
+	@echo "Single server, HTTP+JSON, JWT super authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="jwtsuper" TEST_CONTENT_TYPE="json" __run_tests
 
 run-tests-single-json-ssl:
 	@echo "Single server, HTTP+JSON, with authentication, SSL"
@@ -272,6 +280,10 @@ run-tests-cluster-vst-1.1-no-auth:
 run-tests-cluster-json-with-auth:
 	@echo "Cluster server, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
+
+run-tests-cluster-json-jwt-super:
+	@echo "Cluster server, HTTP+JSON, JWT super authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="jwtsuper" TEST_CONTENT_TYPE="json" __run_tests
 
 run-tests-cluster-vpack-with-auth:
 	@echo "Cluster server, Velocypack, with authentication"

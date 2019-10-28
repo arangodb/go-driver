@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -34,6 +35,9 @@ func TestServerMode(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	ctx := context.Background()
 
+	if os.Getenv("TEST_AUTHENTICATION") == "super:testing" {
+		t.Skip("Skipping read only test because of superuser access.")
+	}
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
