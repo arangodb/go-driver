@@ -280,7 +280,7 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	                   &limits{Received: 400, Sent: 4000,
 								             RecCount: 2, SentCount: 2})
 
-  if statsAfter.ClientUser.BytesReceived.Counts == nil {
+  	if statsAfter.ClientUser.BytesReceived.Counts == nil {
 		t.Skip("Skipping ClientUser tests for statistics, since API is not present.")
 	}
 
