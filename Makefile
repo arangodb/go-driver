@@ -330,6 +330,7 @@ __test_go_test:
 		-e TEST_MODE=$(TEST_MODE) \
 		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
 		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
+		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
@@ -373,6 +374,7 @@ run-tests-cluster-failover:
 		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
 		-e TEST_AUTHENTICATION=basic:root: \
+		-e GODEBUG=tls13=1 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
