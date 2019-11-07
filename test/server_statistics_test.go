@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -84,16 +85,16 @@ const (
 )
 
 type limits struct {
-	Received  float64
-  Sent      float64
-	RecCount  int64
+	Recv      float64
+  Sent        float64
+	RecvCount int64
 	SentCount int64
 }
 
 
 // checkTrafficAtLeast compares stats before and after some operation and
 // checks that at least some amount of traffic has happened.
-func checkTrafficAtLeast(t *testing.T, statsBefore *driver.ServerStatistics, statsAfter *driver.ServerStatistics, which source, lim *limits) {
+func checkTrafficAtLeast(t *testing.T, statsBefore *driver.ServerStatistics, statsAfter *driver.ServerStatistics, which source, lim *limits, label string) {
 	var before *driver.ClientStats
 	var after *driver.ClientStats
 	var name string
@@ -107,30 +108,30 @@ func checkTrafficAtLeast(t *testing.T, statsBefore *driver.ServerStatistics, sta
 		name = "Client"
 	}
 	diff := after.BytesReceived.Sum - before.BytesReceived.Sum
-	if diff < lim.Received {
-		t.Errorf("Difference in %s.BytesReceived.Sum is too small (< %f): %f",
-		         name, lim.Received, diff)
+	if diff < lim.Recv {
+			t.Errorf("%s: Difference in %s.BytesReceived.Sum is too small (< %f): %f",
+		           label, name, lim.Recv, diff)
 	}
 	diff = after.BytesSent.Sum - before.BytesSent.Sum
 	if diff < lim.Sent {
-		t.Errorf("Difference in %s.BytesSent.Sum is too small (< %f): %f",
-		         name, lim.Sent, diff)
+			t.Errorf("%s: Difference in %s.BytesSent.Sum is too small (< %f): %f",
+		           label, name, lim.Sent, diff)
 	}
 	intDiff := after.BytesReceived.Count - before.BytesReceived.Count
-	if intDiff < lim.RecCount {
-		t.Errorf("Difference in %s.BytesReceived.Count is too small (< %d): %d",
-		         name, lim.RecCount, intDiff)
+	if intDiff < lim.RecvCount {
+			t.Errorf("%s: Difference in %s.BytesReceived.Count is too small (< %d): %d",
+		           label, name, lim.RecvCount, intDiff)
 	}
 	intDiff = after.BytesSent.Count - before.BytesSent.Count
 	if intDiff < lim.SentCount {
-		t.Errorf("Difference in %s.BytesSent.Count is too small (< %d): %d",
-		         name, lim.SentCount, intDiff)
+			t.Errorf("%s: Difference in %s.BytesSent.Count is too small (< %d): %d",
+		           label, name, lim.SentCount, intDiff)
 	}
 }
 
 // checkTrafficAtMost compares stats before and after some operation and
 // checks that at most some amount of traffic has happened.
-func checkTrafficAtMost(t *testing.T, statsBefore *driver.ServerStatistics, statsAfter *driver.ServerStatistics, which source, lim *limits) {
+func checkTrafficAtMost(t *testing.T, statsBefore *driver.ServerStatistics, statsAfter *driver.ServerStatistics, which source, lim *limits, label string) {
 	var before *driver.ClientStats
 	var after *driver.ClientStats
 	var name string
@@ -144,24 +145,24 @@ func checkTrafficAtMost(t *testing.T, statsBefore *driver.ServerStatistics, stat
 		name = "Client"
 	}
 	diff := after.BytesReceived.Sum - before.BytesReceived.Sum
-	if diff > lim.Received {
-		t.Errorf("Difference in %s.BytesReceived.Sum is too large (> %f): %f",
-		         name, lim.Received, diff)
+	if diff > lim.Recv {
+			t.Errorf("%s: Difference in %s.BytesReceived.Sum is too large (> %f): %f",
+		           label, name, lim.Recv, diff)
 	}
 	diff = after.BytesSent.Sum - before.BytesSent.Sum
 	if diff > lim.Sent {
-		t.Errorf("Difference in %s.BytesSent.Sum is too large (> %f): %f",
-		         name, lim.Sent, diff)
+			t.Errorf("%s: Difference in %s.BytesSent.Sum is too large (> %f): %f",
+		           label, name, lim.Sent, diff)
 	}
 	intDiff := after.BytesReceived.Count - before.BytesReceived.Count
-	if intDiff > lim.RecCount {
-		t.Errorf("Difference in %s.BytesReceived.Count is too large (> %d): %d",
-		         name, lim.RecCount, intDiff)
+	if intDiff > lim.RecvCount {
+			t.Errorf("%s: Difference in %s.BytesReceived.Count is too large (> %d): %d",
+		           label, name, lim.RecvCount, intDiff)
 	}
 	intDiff = after.BytesSent.Count - before.BytesSent.Count
 	if intDiff > lim.SentCount {
-		t.Errorf("Difference in %s.BytesSent.Count is too large (> %d): %d",
-		         name, lim.SentCount, intDiff)
+			t.Errorf("%s: Difference in %s.BytesSent.Count is too large (> %d): %d",
+		           label, name, lim.SentCount, intDiff)
 	}
 }
 
@@ -188,8 +189,8 @@ func TestServerStatisticsTraffic(t *testing.T) {
 	}
 
 	checkTrafficAtLeast(t, &statsBefore, &statsAfter, all,
-											&limits{Sent: 100000.0, Received: 40000.0,
-															SentCount: 1000, RecCount: 1000});
+											&limits{Sent: 100000.0, Recv: 40000.0,
+															SentCount: 1000, RecvCount: 1000}, "Banana");
 
 	// Now check if user only stats are there and see if they should have increased:
   if statsBefore.ClientUser.BytesReceived.Counts != nil {
@@ -200,15 +201,15 @@ func TestServerStatisticsTraffic(t *testing.T) {
 	    // Traffic is superuser, so nothing should be counted in ClientUser,
 			// not even the statistics calls.
 			checkTrafficAtMost(t, &statsBefore, &statsAfter, user,
-												 &limits{Sent: 0.1, Received: 0.1,
-												         SentCount: 0, RecCount: 0});
+												 &limits{Sent: 0.1, Recv: 0.1,
+												         SentCount: 0, RecvCount: 0}, "Cherry");
 		} else {
 			t.Logf("Authentication %s is not jwt superuser, expecting to see user traffic...", auth)
 			// Traffic is either unauthenticated or with password, so there should
 			// be traffic in ClientUser
 			checkTrafficAtLeast(t, &statsBefore, &statsAfter, user,
-												  &limits{Sent: 100000.0, Received: 40000.0,
-												          SentCount: 1000, RecCount: 1000});
+												  &limits{Sent: 100000.0, Recv: 40000.0,
+												          SentCount: 1000, RecvCount: 1000}, "Apple");
 		}
 	} else {
 		t.Log("Skipping ClientUser tests for statistics, since API is not present.")
@@ -256,6 +257,8 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	ctx1 := driver.WithEndpoint(context.Background(), endpoints[0])
 	ctx2 := driver.WithEndpoint(context.Background(), endpoints[1])
 
+	time.Sleep(time.Second)  // wait for statistics to settle
+
 	statsBefore, err := c.Statistics(ctx2)
 	if err != nil {
 		t.Fatalf("Error in statistics call: %s", describe(err))
@@ -277,8 +280,8 @@ func TestServerStatisticsForwarding(t *testing.T) {
 
 	// No traffic on second coordinator (besides statistics calls):
   checkTrafficAtMost(t, &statsBefore, &statsAfter, all,
-	                   &limits{Received: 400, Sent: 4000,
-								             RecCount: 2, SentCount: 2})
+	                   &limits{Recv: 400, Sent: 4000,
+								             RecvCount: 2, SentCount: 2}, "Pear")
 
   	if statsAfter.ClientUser.BytesReceived.Counts == nil {
 		t.Skip("Skipping ClientUser tests for statistics, since API is not present.")
@@ -342,25 +345,26 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	// the statistics calls):
 	t.Logf("Checking user traffic on coordinator2...")
 	checkTrafficAtMost(t, &statsBefore2, &statsAfter2, user,
-										 &limits{Received: 400, Sent: 4000,
-														 RecCount: 2, SentCount: 2})
+										 &limits{Recv: 400, Sent: 4000,
+														 RecvCount: 2, SentCount: 2}, "Apricot")
 	// However, first coordinator should have counted the user traffic,
 	// note: it was just a single request with nearly no upload but quite
 	// some download:
 	auth := os.Getenv("TEST_AUTHENTICATION")
 	if auth != "super:testing" {
 	  t.Logf("Checking user traffic on coordinator1...")
+		t.Logf("statsBefore1: %v\nstatsAfter1: %v", statsBefore1.ClientUser.BytesSent, statsAfter1.ClientUser.BytesSent)
 		checkTrafficAtLeast(t, &statsBefore1, &statsAfter1, user,
-												&limits{Received: 0, Sent: 40000,
-																RecCount: 1, SentCount: 1})
+												&limits{Recv: 0, Sent: 40000,
+																RecvCount: 1, SentCount: 1}, "Jackfruit")
 	} else {
 	  t.Logf("Checking traffic on coordinator1...")
 		checkTrafficAtLeast(t, &statsBefore1, &statsAfter1, all,
-												&limits{Received: 0, Sent: 40000,
-																RecCount: 1, SentCount: 1})
+												&limits{Recv: 0, Sent: 40000,
+																RecvCount: 1, SentCount: 1}, "Durian")
 		checkTrafficAtMost(t, &statsBefore1, &statsAfter1, user,
-												&limits{Received: 0.1, Sent: 0.1,
-																RecCount: 0, SentCount: 0})
+												&limits{Recv: 0.1, Sent: 0.1,
+																RecvCount: 0, SentCount: 0}, "Mango")
 	}
 }
 
