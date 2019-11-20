@@ -33,6 +33,8 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
+
+	errors "github.com/pkg/errors"
 )
 
 var backupAPIAvailable *bool
@@ -341,15 +343,20 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) {
 
 	serverWasDown := false
 
+	saveDriver := driver.WithStack
+	driver.WithStack = errors.WithStack
+
 	for {
 		vctx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
 		if _, err := c.Version(vctx); err != nil {
-			if driver.IsTimeout(err) {
-				serverWasDown = true
-			}
+			fmt.Printf("Error Response: %v\n", err)
+			fmt.Printf("Error Response: %+v\n", err)
+			serverWasDown = true
 		} else {
 			if serverWasDown {
+				fmt.Print("Leaving successfully\n")
 				cancel()
+				driver.WithStack = saveDriver
 				return
 			}
 		}
@@ -357,8 +364,11 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) {
 		cancel()
 		select {
 		case <-ctx.Done():
+			fmt.Print("Context cancelled\n")
+			driver.WithStack = saveDriver
 			return
 		case <-time.After(1 * time.Second):
+			//fmt.Print("After 1 second\n")
 			break
 		}
 	}
