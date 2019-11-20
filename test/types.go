@@ -42,6 +42,11 @@ type Book struct {
 	Title string
 }
 
+type BookWithAuthor struct {
+	Title  string
+	Author string
+}
+
 type RouteEdge struct {
 	From     string `json:"_from,omitempty"`
 	To       string `json:"_to,omitempty"`
