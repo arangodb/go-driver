@@ -833,6 +833,7 @@ func ensureRemoteBackup(ctx context.Context, b driver.ClientBackup, t *testing.T
 func TestBackupRestoreWithViews(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
+	skipBelowVersion(c, "3.6", t)
 	ctx := context.Background()
 	b := c.Backup()
 
