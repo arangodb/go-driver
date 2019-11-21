@@ -701,11 +701,20 @@ func newBool(v bool) *bool {
 	return &v
 }
 
+func isCluster(t *testing.T, c driver.Client) bool {
+	_, err := c.Cluster(nil)
+	if driver.IsPreconditionFailed(err) {
+		return false
+	} else if err != nil {
+		t.Fatalf("Failed to get cluster: %s", describe(err))
+	}
+	return true
+}
+
 // TestArangoSearchViewProperties353 tests for custom analyzers.
 func TestArangoSearchViewProperties353(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipNoCluster(c, t) // analyzers can only be read in the
 	skipBelowVersion(c, "3.5.3", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	colname := "someCol"
@@ -745,23 +754,32 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, p.Links, colname)
 
-	// get cluster inventory
-	cluster, err := c.Cluster(ctx)
-	require.NoError(t, err)
-	inv, err := cluster.DatabaseInventory(ctx, db)
-	require.NoError(t, err)
-	p2, found := inv.ViewByName(name)
-	require.True(t, found)
+	if isCluster(t, c) {
+		// get cluster inventory
+		cluster, err := c.Cluster(ctx)
+		require.NoError(t, err)
+		inv, err := cluster.DatabaseInventory(ctx, db)
+		require.NoError(t, err)
+		p2, found := inv.ViewByName(name)
+		require.True(t, found)
 
-	require.Contains(t, p2.Links, colname)
-	link := p2.Links[colname]
-	require.Len(t, link.AnalyzerDefinitions, 2)
-	analyzer := &link.AnalyzerDefinitions[1]
-	require.EqualValues(t, analyzer.Name, analyzerName)
-	require.EqualValues(t, analyzer.Type, driver.ArangoSearchAnalyzerTypeNorm)
-	require.Len(t, analyzer.Features, 2)
-	require.EqualValues(t, analyzer.Features[0], driver.ArangoSearchAnalyzerFeaturePosition)
-	require.EqualValues(t, analyzer.Features[1], driver.ArangoSearchAnalyzerFeatureFrequency)
-	require.EqualValues(t, analyzer.Properties.Locale, "en_US.utf-8")
-	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
+		require.Contains(t, p2.Links, colname)
+		link := p2.Links[colname]
+		require.Len(t, link.AnalyzerDefinitions, 2)
+		analyzer := &link.AnalyzerDefinitions[1]
+		require.EqualValues(t, analyzer.Name, analyzerName)
+		require.EqualValues(t, analyzer.Type, driver.ArangoSearchAnalyzerTypeNorm)
+		require.Len(t, analyzer.Features, 2)
+		require.EqualValues(t, analyzer.Features[0], driver.ArangoSearchAnalyzerFeaturePosition)
+		require.EqualValues(t, analyzer.Features[1], driver.ArangoSearchAnalyzerFeatureFrequency)
+		require.EqualValues(t, analyzer.Properties.Locale, "en_US.utf-8")
+		require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
+	}
+
+	// check if the view is available from the analyzers api
+	a, err := db.Analyzer(ctx, analyzerName)
+	require.NoError(t, err)
+	require.NotNil(t, a)
+
+	require.Equal(t, a.Name(), analyzerName)
 }
