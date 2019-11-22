@@ -28,6 +28,8 @@ import (
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
+
+	"github.com/stretchr/testify/require"
 )
 
 // ensureArangoSearchView is a helper to check if an arangosearch view exists and create it if needed.
@@ -693,4 +695,73 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newBool(v bool) *bool {
+	return &v
+}
+
+// TestArangoSearchViewProperties353 tests for custom analyzers.
+func TestArangoSearchViewProperties353(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipNoCluster(c, t) // analyzers can only be read in the
+	skipBelowVersion(c, "3.5.3", t)
+	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	colname := "someCol"
+	ensureCollection(ctx, db, colname, nil, t)
+	name := "test_get_asview_353"
+	analyzerName := "myanalyzer"
+	opts := &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			colname: driver.ArangoSearchElementProperties{
+				AnalyzerDefinitions: []driver.ArangoSearchAnalyzerDefinition{
+					driver.ArangoSearchAnalyzerDefinition{
+						Name: analyzerName,
+						Type: driver.ArangoSearchAnalyzerTypeNorm,
+						Properties: driver.ArangoSearchAnalyzerProperties{
+							Locale: "en_US.utf-8",
+							Case:   driver.ArangoSearchCaseLower,
+						},
+						Features: []driver.ArangoSearchAnalyzerFeature{
+							driver.ArangoSearchAnalyzerFeaturePosition,
+							driver.ArangoSearchAnalyzerFeatureFrequency,
+						},
+					},
+				},
+				IncludeAllFields: newBool(true),
+			},
+		},
+	}
+	_, err := db.CreateArangoSearchView(ctx, name, opts)
+	require.NoError(t, err)
+	// Get view
+	v, err := db.View(ctx, name)
+	require.NoError(t, err)
+	asv, err := v.ArangoSearchView()
+	require.NoError(t, err)
+	// Check asv properties
+	p, err := asv.Properties(ctx)
+	require.NoError(t, err)
+	require.Contains(t, p.Links, colname)
+
+	// get cluster inventory
+	cluster, err := c.Cluster(ctx)
+	require.NoError(t, err)
+	inv, err := cluster.DatabaseInventory(ctx, db)
+	require.NoError(t, err)
+	p2, found := inv.ViewByName(name)
+	require.True(t, found)
+
+	require.Contains(t, p2.Links, colname)
+	link := p2.Links[colname]
+	require.Len(t, link.AnalyzerDefinitions, 2)
+	analyzer := &link.AnalyzerDefinitions[1]
+	require.EqualValues(t, analyzer.Name, analyzerName)
+	require.EqualValues(t, analyzer.Type, driver.ArangoSearchAnalyzerTypeNorm)
+	require.Len(t, analyzer.Features, 2)
+	require.EqualValues(t, analyzer.Features[0], driver.ArangoSearchAnalyzerFeaturePosition)
+	require.EqualValues(t, analyzer.Features[1], driver.ArangoSearchAnalyzerFeatureFrequency)
+	require.EqualValues(t, analyzer.Properties.Locale, "en_US.utf-8")
+	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
 }

@@ -39,6 +39,83 @@ type ArangoSearchView interface {
 	SetProperties(ctx context.Context, options ArangoSearchViewProperties) error
 }
 
+// ArangoSearchAnalyzerType specifies type of an analyzer
+type ArangoSearchAnalyzerType string
+
+const (
+	// ArangoSearchAnalyzerTypeIdentity treat value as atom (no transformation)
+	ArangoSearchAnalyzerTypeIdentity ArangoSearchAnalyzerType = "identity"
+	// ArangoSearchAnalyzerTypeDelimiter split into tokens at user-defined character
+	ArangoSearchAnalyzerTypeDelimiter ArangoSearchAnalyzerType = "delimiter"
+	// ArangoSearchAnalyzerTypeStem apply stemming to the value as a whole
+	ArangoSearchAnalyzerTypeStem ArangoSearchAnalyzerType = "stem"
+	// ArangoSearchAnalyzerTypeNorm apply normalization to the value as a whole
+	ArangoSearchAnalyzerTypeNorm ArangoSearchAnalyzerType = "norm"
+	// ArangoSearchAnalyzerTypeNGram create n-grams from value with user-defined lengths
+	ArangoSearchAnalyzerTypeNGram ArangoSearchAnalyzerType = "ngram"
+	// ArangoSearchAnalyzerTypeText tokenize into words, optionally with stemming, normalization and stop-word filtering
+	ArangoSearchAnalyzerTypeText ArangoSearchAnalyzerType = "text"
+)
+
+// ArangoSearchAnalyzerFeature specifies a feature to an analyzer
+type ArangoSearchAnalyzerFeature string
+
+const (
+	// ArangoSearchAnalyzerFeatureFrequency how often a term is seen, required for PHRASE()
+	ArangoSearchAnalyzerFeatureFrequency ArangoSearchAnalyzerFeature = "frequency"
+	// ArangoSearchAnalyzerFeatureNorm the field normalization factor
+	ArangoSearchAnalyzerFeatureNorm ArangoSearchAnalyzerFeature = "norm"
+	// ArangoSearchAnalyzerFeaturePosition sequentially increasing term position, required for PHRASE(). If present then the frequency feature is also required
+	ArangoSearchAnalyzerFeaturePosition ArangoSearchAnalyzerFeature = "position"
+)
+
+type ArangoSearchCaseType string
+
+const (
+	// ArangoSearchCaseUpper to convert to all lower-case characters
+	ArangoSearchCaseUpper ArangoSearchCaseType = "upper"
+	// ArangoSearchCaseLower to convert to all upper-case characters
+	ArangoSearchCaseLower ArangoSearchCaseType = "lower"
+	// ArangoSearchCaseNone to not change character case (default)
+	ArangoSearchCaseNone ArangoSearchCaseType = "none"
+)
+
+// ArangoSearchAnalyzerProperties specifies options for the analyzer. Which fields are required and
+// respected depends on the analyzer type.
+// more information can be found here: https://www.arangodb.com/docs/stable/arangosearch-analyzers.html#analyzer-properties
+type ArangoSearchAnalyzerProperties struct {
+	// Locale used by Stem, Norm, Text
+	Locale string `json:"locale,omitempty"`
+	// Delimiter used by Delimiter
+	Delimiter string `json:"delimiter,omitempty"`
+	// Accent used by Norm, Text
+	Accent *bool `json:"accent,omitempty"`
+	// Case used by Norm, Text
+	Case ArangoSearchCaseType `json:"case,omitempty"`
+
+	// Min used by NGram
+	Min *int64 `json:"min,omitempty"`
+	// Max used by NGram
+	Max *int64 `json:"max,omitempty"`
+	// PreserveOriginal used by NGram
+	PreserveOriginal *int64 `json:"preserveOriginal,omitempty"`
+
+	// Stemming used by Text
+	Stemming *bool `json:"stemming,omitempty"`
+	// Stopword used by Text
+	Stopwords []string `json:"stopwords,omitempty"`
+	// StopwordsPath used by Text
+	StopwordsPath []string `json:"stopwordsPath,omitempty"`
+}
+
+// ArangoSearchAnalyzerDefinition provides definition of an analyzer
+type ArangoSearchAnalyzerDefinition struct {
+	Name       string                         `json:"name,omitempty"`
+	Type       ArangoSearchAnalyzerType       `json:"type,omitempty"`
+	Properties ArangoSearchAnalyzerProperties `json:"properties,omitempty"`
+	Features   []ArangoSearchAnalyzerFeature  `json:"features,omitempty"`
+}
+
 // ArangoSearchViewProperties contains properties an an ArangoSearch view.
 type ArangoSearchViewProperties struct {
 	// CleanupIntervalStep specifies the minimum number of commits to wait between
@@ -96,7 +173,9 @@ type ArangoSearchViewProperties struct {
 type ArangoSearchSortDirection string
 
 const (
-	ArangoSearchSortDirectionAsc  ArangoSearchSortDirection = "ASC"
+	// ArangoSearchSortDirectionAsc sort ascending
+	ArangoSearchSortDirectionAsc ArangoSearchSortDirection = "ASC"
+	// ArangoSearchSortDirectionDesc sort descending
 	ArangoSearchSortDirectionDesc ArangoSearchSortDirection = "DESC"
 )
 
@@ -184,6 +263,7 @@ type ArangoSearchFields map[string]ArangoSearchElementProperties
 // Note that this structure is recursive. Settings not specified (nil)
 // at a given level will inherit their setting from a lower level.
 type ArangoSearchElementProperties struct {
+	AnalyzerDefinitions []ArangoSearchAnalyzerDefinition `json:"analyzerDefinitions,omitempty"`
 	// The list of analyzers to be used for indexing of string values. Defaults to ["identify"].
 	Analyzers []string `json:"analyzers,omitempty"`
 	// If set to true, all fields of this element will be indexed. Defaults to false.
