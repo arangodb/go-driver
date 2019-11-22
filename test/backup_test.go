@@ -833,7 +833,6 @@ func ensureRemoteBackup(ctx context.Context, b driver.ClientBackup, t *testing.T
 func TestBackupRestoreWithViews(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
-	skipBelowVersion(c, "3.6", t)
 	ctx := context.Background()
 	b := c.Backup()
 
@@ -902,21 +901,46 @@ func TestBackupRestoreWithViews(t *testing.T) {
 		waitForServerRestart(waitctx, c, t)
 	}
 
-	// run query to get document count of view
-	cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
-	if err != nil {
-		t.Fatalf("Failed to create query: %s", describe(err))
-	}
+	t.Run("immediate", func(t *testing.T) {
+		skipBelowVersion(c, "3.6", t)
 
-	defer cursor.Close()
+		// run query to get document count of view
+		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
+		if err != nil {
+			t.Fatalf("Failed to create query: %s", describe(err))
+		}
 
-	var numDocumentsInView int
-	_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
-	if err != nil {
-		t.Fatalf("Failed to get document count: %s", describe(err))
-	}
+		defer cursor.Close()
 
-	if numDocumentsInView != totalNumDocs {
-		t.Errorf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
-	}
+		var numDocumentsInView int
+		_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
+		if err != nil {
+			t.Fatalf("Failed to get document count: %s", describe(err))
+		}
+
+		if numDocumentsInView != totalNumDocs {
+			t.Errorf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
+		}
+	})
+
+	t.Run("waitForSync", func(t *testing.T) {
+		// this is because views are dropped and recreated
+		time.Sleep(5 * time.Second)
+		// run query to get document count of view
+		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s OPTIONS { waitForSync: true } COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
+		if err != nil {
+			t.Fatalf("Failed to create query: %s", describe(err))
+		}
+		defer cursor.Close()
+
+		var numDocumentsInView int
+		_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
+		if err != nil {
+			t.Fatalf("Failed to get document count: %s", describe(err))
+		}
+
+		if numDocumentsInView != totalNumDocs {
+			t.Errorf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
+		}
+	})
 }

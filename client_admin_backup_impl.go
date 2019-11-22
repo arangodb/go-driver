@@ -43,6 +43,7 @@ func (c *clientBackup) Create(ctx context.Context, opt *BackupCreateOptions) (Ba
 	if err != nil {
 		return "", BackupCreateResponse{}, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	if opt != nil {
 		body := struct {
 			Label             string  `json:"label,omitempty"`
@@ -91,6 +92,7 @@ func (c *clientBackup) Delete(ctx context.Context, id BackupID) error {
 	if err != nil {
 		return WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	body := struct {
 		ID BackupID `json:"id,omitempty"`
 	}{
@@ -116,6 +118,7 @@ func (c *clientBackup) Restore(ctx context.Context, id BackupID, opt *BackupRest
 	if err != nil {
 		return WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	body := struct {
 		ID            BackupID `json:"id,omitempty"`
 		IgnoreVersion bool     `json:"ignoreVersion,omitempty"`
@@ -146,6 +149,7 @@ func (c *clientBackup) List(ctx context.Context, opt *BackupListOptions) (map[Ba
 	if err != nil {
 		return nil, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	if opt != nil {
 		req, err = req.SetBody(opt)
 		if err != nil {
@@ -175,6 +179,7 @@ func (c *clientBackup) Upload(ctx context.Context, id BackupID, remoteRepository
 	if err != nil {
 		return "", WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	body := struct {
 		ID         BackupID    `json:"id,omitempty"`
 		RemoteRepo string      `json:"remoteRepository,omitempty"`
@@ -211,6 +216,7 @@ func (c *clientBackup) Download(ctx context.Context, id BackupID, remoteReposito
 	if err != nil {
 		return "", WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	body := struct {
 		ID         BackupID    `json:"id,omitempty"`
 		RemoteRepo string      `json:"remoteRepository,omitempty"`
@@ -247,6 +253,7 @@ func (c *clientBackup) Progress(ctx context.Context, job BackupTransferJobID) (r
 	if err != nil {
 		return BackupTransferProgressReport{}, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	body := struct {
 		ID BackupTransferJobID `json:"uploadId,omitempty"`
 	}{
@@ -275,6 +282,7 @@ func (c *clientBackup) Abort(ctx context.Context, job BackupTransferJobID) error
 	if err != nil {
 		return WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	body := struct {
 		ID    BackupTransferJobID `json:"uploadId,omitempty"`
 		Abort bool                `json:"abort,omitempty"`

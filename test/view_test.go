@@ -705,8 +705,8 @@ func newBool(v bool) *bool {
 func TestArangoSearchViewProperties353(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipNoCluster(c, t) // analyzers can only be read in the
 	skipBelowVersion(c, "3.5.3", t)
+	skipNoCluster(c, t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	colname := "someCol"
 	ensureCollection(ctx, db, colname, nil, t)
@@ -760,8 +760,8 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.EqualValues(t, analyzer.Name, analyzerName)
 	require.EqualValues(t, analyzer.Type, driver.ArangoSearchAnalyzerTypeNorm)
 	require.Len(t, analyzer.Features, 2)
-	require.EqualValues(t, analyzer.Features[0], driver.ArangoSearchAnalyzerFeaturePosition)
-	require.EqualValues(t, analyzer.Features[1], driver.ArangoSearchAnalyzerFeatureFrequency)
+	require.EqualValues(t, analyzer.Features[0], driver.ArangoSearchAnalyzerFeatureFrequency)
+	require.EqualValues(t, analyzer.Features[1], driver.ArangoSearchAnalyzerFeaturePosition)
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US.utf-8")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
 }

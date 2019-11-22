@@ -98,7 +98,7 @@ type ArangoSearchAnalyzerProperties struct {
 	// Max used by NGram
 	Max *int64 `json:"max,omitempty"`
 	// PreserveOriginal used by NGram
-	PreserveOriginal *int64 `json:"preserveOriginal,omitempty"`
+	PreserveOriginal *bool `json:"preserveOriginal,omitempty"`
 
 	// Stemming used by Text
 	Stemming *bool `json:"stemming,omitempty"`
