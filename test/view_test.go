@@ -760,8 +760,8 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.EqualValues(t, analyzer.Name, analyzerName)
 	require.EqualValues(t, analyzer.Type, driver.ArangoSearchAnalyzerTypeNorm)
 	require.Len(t, analyzer.Features, 2)
-	require.EqualValues(t, analyzer.Features[0], driver.ArangoSearchAnalyzerFeatureFrequency)
-	require.EqualValues(t, analyzer.Features[1], driver.ArangoSearchAnalyzerFeaturePosition)
+	require.Contains(t, analyzer.Features, driver.ArangoSearchAnalyzerFeatureFrequency)
+	require.Contains(t, analyzer.Features, driver.ArangoSearchAnalyzerFeaturePosition)
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US.utf-8")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
 }
