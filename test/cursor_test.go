@@ -170,7 +170,7 @@ func TestCreateCursor(t *testing.T) {
 		queryTestContext{Context: driver.WithQueryCache(nil)},
 		queryTestContext{Context: driver.WithQueryCache(nil, true)},
 		queryTestContext{Context: driver.WithQueryCache(nil, false)},
-		queryTestContext{Context: driver.WithQueryMemoryLimit(nil, 60000)},
+		queryTestContext{Context: driver.WithQueryMemoryLimit(nil, 600000)},
 		queryTestContext{Context: driver.WithQueryTTL(nil, time.Minute)},
 		queryTestContext{Context: driver.WithQueryBatchSize(driver.WithQueryCount(nil), 1), ExpectCount: true},
 		queryTestContext{Context: driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2))), ExpectCount: true},
