@@ -24,11 +24,19 @@ package test
 
 import (
 	"context"
+	"fmt"
+	"github.com/dchest/uniuri"
 	"github.com/stretchr/testify/require"
+	"strings"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
+
+// databaseName is helper to create database name in non-colliding way
+func databaseName(parts ... string) string {
+	return fmt.Sprintf("%s_%s", strings.Join(parts, "_"), uniuri.NewLen(8))
+}
 
 // ensureDatabase is a helper to check if a database exists and create it if needed.
 // It will fail the test when an error occurs.
