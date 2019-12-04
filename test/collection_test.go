@@ -867,6 +867,6 @@ func TestCollectionWriteConcernSetPropInvalid(t *testing.T) {
 
 	prop, err = col.Properties(nil)
 	require.Nilf(t, err, "Failed to get properties: %s", describe(err))
-	assert.Equalf(t, minRepl, prop.WriteConcern, "MinReplicationFactor not updated, expected %d, found %d",
+	assert.Equalf(t, defaultWriteConcern, prop.WriteConcern, "MinReplicationFactor not updated, expected %d, found %d",
 		minRepl, prop.WriteConcern)
 }
