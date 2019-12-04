@@ -51,7 +51,7 @@ var (
 
 // skipBelowVersion skips the test if the current server version is less than
 // the given version.
-func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) {
+func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {
 	x, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Failed to get version info: %s", describe(err))
@@ -59,6 +59,7 @@ func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) {
 	if x.Version.CompareTo(version) < 0 {
 		t.Skipf("Skipping below version '%s', got version '%s'", version, x.Version)
 	}
+	return x
 }
 
 // getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS
@@ -108,7 +109,7 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 		if len(parts) != 2 {
 			t.Fatalf("Expected 'super' and jwt secret")
 		}
-    header, err := jwt.CreateArangodJwtAuthorizationHeader(parts[1], "arangodb")
+		header, err := jwt.CreateArangodJwtAuthorizationHeader(parts[1], "arangodb")
 		if err != nil {
 			t.Fatalf("Could not create JWT authentication header: %s", describe(err))
 		}

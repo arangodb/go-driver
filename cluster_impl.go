@@ -274,12 +274,15 @@ type inventoryCollectionParametersInternal struct {
 		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
 		LastValue     int64  `json:"lastValue,omitempty"`
 	} `json:"keyOptions"`
-	Name                 string                 `json:"name,omitempty"`
-	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
-	Path                 string                 `json:"path,omitempty"`
-	PlanID               string                 `json:"planId,omitempty"`
-	ReplicationFactor    replicationFactor      `json:"replicationFactor,omitempty"`
-	MinReplicationFactor int                    `json:"minReplicationFactor,omitempty"`
+	Name              string            `json:"name,omitempty"`
+	NumberOfShards    int               `json:"numberOfShards,omitempty"`
+	Path              string            `json:"path,omitempty"`
+	PlanID            string            `json:"planId,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+	// Deprecated: use 'WriteConcern' instead
+	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	// Available from 3.6 arangod version.
+	WriteConcern         int                    `json:"writeConcern,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
 	Status               CollectionStatus       `json:"status,omitempty"`
@@ -309,6 +312,7 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		PlanID:               p.PlanID,
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
+		WriteConcern:         p.WriteConcern,
 		ShardKeys:            p.ShardKeys,
 		Shards:               p.Shards,
 		Status:               p.Status,
@@ -343,6 +347,7 @@ func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollection
 		PlanID:               p.PlanID,
 		ReplicationFactor:    int(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
+		WriteConcern:         p.WriteConcern,
 		ShardKeys:            p.ShardKeys,
 		Shards:               p.Shards,
 		Status:               p.Status,

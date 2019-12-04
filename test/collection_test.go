@@ -29,6 +29,8 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func skipNoCluster(c driver.Client, t *testing.T) {
@@ -553,10 +555,10 @@ func TestCollectionStatistics(t *testing.T) {
 	}
 }
 
-// TestCollectionMinReplFactCreate creates a collection with minReplicationFactor != 1
-func TestCollectionMinReplFactCreate(t *testing.T) {
+// TestCollectionMinReplFactDeprecatedCreate creates a collection with minReplicationFactor != 1
+func TestCollectionMinReplFactDeprecatedCreate(t *testing.T) {
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.5", t)
+	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
 	name := "test_min_repl_create"
@@ -583,14 +585,21 @@ func TestCollectionMinReplFactCreate(t *testing.T) {
 			t.Errorf("Properties() failed: %s", describe(err))
 		} else {
 			if prop.MinReplicationFactor != minRepl {
-				t.Errorf("Collection does not have the correct min replication factor value, expected `%d`, found `%d`", minRepl, prop.MinReplicationFactor)
+				t.Errorf("Collection does not have the correct min replication factor value, "+
+					"expected `%d`, found `%d`", minRepl, prop.MinReplicationFactor)
+			}
+			if version.Version.CompareTo("3.6") >= 0 {
+				if prop.WriteConcern != minRepl {
+					t.Errorf("Collection does not have the correct WriteConcern value, "+
+						"expected `%d`, found `%d`", minRepl, prop.WriteConcern)
+				}
 			}
 		}
 	}
 }
 
-// TestCollectionMinReplFactInvalid creates a collection with minReplicationFactor > replicationFactor
-func TestCollectionMinReplFactInvalid(t *testing.T) {
+// TestCollectionMinReplFactDeprecatedInvalid creates a collection with minReplicationFactor > replicationFactor
+func TestCollectionMinReplFactDeprecatedInvalid(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
@@ -612,10 +621,10 @@ func TestCollectionMinReplFactInvalid(t *testing.T) {
 	}
 }
 
-// TestCollectionMinReplFactClusterInv tests if minReplicationFactor is forwarded to ClusterInfo
-func TestCollectionMinReplFactClusterInv(t *testing.T) {
+// TestCollectionMinReplFactDeprecatedClusterInv tests if minReplicationFactor is forwarded to ClusterInfo
+func TestCollectionMinReplFactDeprecatedClusterInv(t *testing.T) {
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.5", t)
+	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
 	name := "test_min_repl_cluster_invent"
@@ -641,25 +650,33 @@ func TestCollectionMinReplFactClusterInv(t *testing.T) {
 	}
 
 	if col.Parameters.MinReplicationFactor != minRepl {
-		t.Errorf("Collection does not have the correct min replication factor value, expected `%d`, found `%d`", minRepl, col.Parameters.MinReplicationFactor)
+		t.Errorf("Collection does not have the correct min replication factor value, expected `%d`, found `%d`",
+			minRepl, col.Parameters.MinReplicationFactor)
+	}
+	if version.Version.CompareTo("3.6") >= 0 {
+		if col.Parameters.WriteConcern != minRepl {
+			t.Errorf("Collection does not have the correct WriteConcern value, expected `%d`, found `%d`",
+				minRepl, col.Parameters.WriteConcern)
+		}
 	}
 }
 
-// TestCollectionMinReplFactSetProp updates the minimal replication factor using SetProperties
-func TestCollectionMinReplFactSetProp(t *testing.T) {
+// TestCollectionMinReplFactDeprecatedSetProp updates the minimal replication factor using SetProperties
+func TestCollectionMinReplFactDeprecatedSetProp(t *testing.T) {
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.5", t)
+	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
 	name := "test_min_repl_set_prop"
 	minRepl := 2
+	minReplChanged := 1
 	col := ensureCollection(nil, db, name, &driver.CreateCollectionOptions{
 		ReplicationFactor:    minRepl,
 		MinReplicationFactor: minRepl,
 	}, t)
 
 	if err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
-		MinReplicationFactor: 1,
+		MinReplicationFactor: minReplChanged,
 	}); err != nil {
 		t.Fatalf("Failed to update properties: %s", describe(err))
 	}
@@ -667,16 +684,23 @@ func TestCollectionMinReplFactSetProp(t *testing.T) {
 	if prop, err := col.Properties(nil); err != nil {
 		t.Fatalf("Failed to get properties: %s", describe(err))
 	} else {
-		if prop.MinReplicationFactor != 1 {
-			t.Fatalf("MinReplicationFactor not updated, expected %d, found %d", 1, prop.MinReplicationFactor)
+		if prop.MinReplicationFactor != minReplChanged {
+			t.Fatalf("MinReplicationFactor not updated, expected %d, found %d", minReplChanged,
+				prop.MinReplicationFactor)
+		}
+		if version.Version.CompareTo("3.6") >= 0 {
+			if prop.WriteConcern != minReplChanged {
+				t.Fatalf("WriteConcern not updated, expected %d, found %d", minReplChanged, prop.WriteConcern)
+			}
 		}
 	}
 }
 
-// TestCollectionMinReplFactSetPropInvalid updates the minimal replication factor to an invalid value using SetProperties
-func TestCollectionMinReplFactSetPropInvalid(t *testing.T) {
+// TestCollectionMinReplFactDeprecatedSetPropInvalid updates the minimal replication factor
+// to an invalid value using SetProperties.
+func TestCollectionMinReplFactDeprecatedSetPropInvalid(t *testing.T) {
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.5", t)
+	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
 	name := "test_min_repl_set_prop_inv"
@@ -696,7 +720,153 @@ func TestCollectionMinReplFactSetPropInvalid(t *testing.T) {
 		t.Fatalf("Failed to get properties: %s", describe(err))
 	} else {
 		if prop.MinReplicationFactor != minRepl {
-			t.Fatalf("MinReplicationFactor not updated, expected %d, found %d", minRepl, prop.MinReplicationFactor)
+			t.Fatalf("MinReplicationFactor not updated, expected %d, found %d", minRepl,
+				prop.MinReplicationFactor)
+		}
+		if version.Version.CompareTo("3.6") >= 0 {
+			if prop.WriteConcern != minRepl {
+				t.Fatalf("WriteConcern not updated, expected %d, found %d", minRepl, prop.WriteConcern)
+			}
 		}
 	}
+}
+
+// TestCollectionWriteConcernCreate creates a collection with WriteConcern != 1.
+func TestCollectionWriteConcernCreate(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.6", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
+	name := "test_write_concern_create"
+	minRepl := 2
+	options := driver.CreateCollectionOptions{
+		ReplicationFactor:    minRepl,
+		WriteConcern:         minRepl,
+		MinReplicationFactor: minRepl + 1, // it should be overwritten by WriteConcern
+	}
+
+	_, err := db.CreateCollection(nil, name, &options)
+	require.Nilf(t, err, "Failed to create collection '%s': %s", name, describe(err))
+
+	// Collection must exist now
+	found, err := db.CollectionExists(nil, name)
+	require.Nilf(t, err, "CollectionExists('%s') failed: %s", name, describe(err))
+	require.Equalf(t, true, found, "CollectionExists('%s') return false, expected true", name)
+
+	// Check if the collection has a WriteConcern
+	col, err := db.Collection(nil, name)
+	require.Nilf(t, err, "Collection('%s') failed: %s", name, describe(err))
+
+	prop, err := col.Properties(nil)
+	require.Nilf(t, err, "Properties() failed: %s", describe(err))
+
+	assert.Equalf(t, minRepl, prop.WriteConcern,
+		"Collection does not have the correct WriteConcern value, expected `%d`, found `%d`", minRepl,
+		prop.WriteConcern)
+	assert.Equalf(t, minRepl, prop.MinReplicationFactor,
+		"Collection does not have the correct MinReplicationFactor value, expected `%d`, found `%d`", minRepl,
+		prop.MinReplicationFactor)
+}
+
+// TestCollectionWriteConcernInvalid creates a collection with WriteConcern > replicationFactor
+func TestCollectionWriteConcernInvalid(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.6", t)
+	skipNoCluster(c, t)
+
+	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
+	name := "test_write_concern_invalid"
+	minRepl := 2
+	options := driver.CreateCollectionOptions{
+		ReplicationFactor: minRepl,
+		WriteConcern:      minRepl + 1,
+	}
+
+	_, err := db.CreateCollection(nil, name, &options)
+	require.NotNilf(t, err, "CreateCollection('%s') did not fail", name)
+
+	// Collection must not exist now
+	found, err := db.CollectionExists(nil, name)
+	require.Nilf(t, err, "CollectionExists('%s') failed: %s", name, describe(err))
+	assert.Equalf(t, false, found, "Collection %s should not exist", name)
+}
+
+// TestCollectionWriteConcernClusterInv tests if WriteConcern is forwarded to ClusterInfo
+func TestCollectionWriteConcernClusterInv(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.6", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
+	name := "test_write_concern_cluster_invent"
+	minRepl := 2
+	ensureCollection(nil, db, name, &driver.CreateCollectionOptions{
+		ReplicationFactor: minRepl,
+		WriteConcern:      minRepl,
+	}, t)
+
+	cc, err := c.Cluster(nil)
+	require.Nilf(t, err, "Failed to get Cluster: %s", describe(err))
+
+	inv, err := cc.DatabaseInventory(nil, db)
+	require.Nilf(t, err, "Failed to get Database Inventory: %s", describe(err))
+
+	col, found := inv.CollectionByName(name)
+	require.Equalf(t, true, found, "Failed to get find collection: %s", describe(err))
+
+	assert.Equalf(t, minRepl, col.Parameters.WriteConcern,
+		"Collection does not have the correct WriteConcern value, expected `%d`, found `%d`",
+		minRepl, col.Parameters.WriteConcern)
+}
+
+// TestCollectionWriteConcernSetProp updates the WriteConcern using SetProperties
+func TestCollectionWriteConcernSetProp(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.6", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
+	name := "test_write_concern_set_prop"
+	minRepl := 2
+	writeConcernChanged := 1
+	col := ensureCollection(nil, db, name, &driver.CreateCollectionOptions{
+		ReplicationFactor: minRepl,
+		WriteConcern:      minRepl,
+	}, t)
+
+	err := col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+		WriteConcern: writeConcernChanged,
+	})
+	require.Nilf(t, err, "Failed to update properties: %s", describe(err))
+
+	prop, err := col.Properties(nil)
+	require.Nilf(t, err, "Failed to get properties: %s", describe(err))
+
+	assert.Equal(t, writeConcernChanged, prop.WriteConcern)
+}
+
+// TestCollectionWriteConcernSetPropInvalid updates the writeConcern to an invalid value using SetProperties.
+func TestCollectionWriteConcernSetPropInvalid(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.6", t)
+	skipNoCluster(c, t)
+	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
+	name := "test_write_concern_set_prop_inv"
+	minRepl := 2
+	defaultWriteConcern := 1
+	col := ensureCollection(nil, db, name, &driver.CreateCollectionOptions{
+		ReplicationFactor: minRepl,
+	}, t)
+
+	prop, err := col.Properties(nil)
+	require.Nil(t, err, "failed to get properties")
+	require.Equal(t, defaultWriteConcern, prop.WriteConcern, "default value is not set")
+
+	err = col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+		WriteConcern: minRepl + 1,
+	})
+	require.NotNil(t, err, "SetProperties should fail")
+
+	prop, err = col.Properties(nil)
+	require.Nilf(t, err, "Failed to get properties: %s", describe(err))
+	assert.Equalf(t, minRepl, prop.WriteConcern, "MinReplicationFactor not updated, expected %d, found %d",
+		minRepl, prop.WriteConcern)
 }
