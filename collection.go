@@ -116,10 +116,13 @@ type CollectionProperties struct {
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
-	// MinReplicationFactor contains how many copies must be available before a collection can be written.
-	// It is required that 1 <= MinReplicationFactor <= ReplicationFactor.
-	// Default is 1. Not available for satellite collections.
+	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	// WriteConcern contains how many copies must be available before a collection can be written.
+	// It is required that 1 <= WriteConcern <= ReplicationFactor.
+	// Default is 1. Not available for satellite collections.
+	// Available from 3.6 arangod version.
+	WriteConcern int `json:"writeConcern,omitempty"`
 	// SmartJoinAttribute
 	// See documentation for smart joins.
 	// This requires ArangoDB Enterprise Edition.
@@ -148,8 +151,11 @@ type SetCollectionPropertiesOptions struct {
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
-	// MinReplicationFactor contains how many copies must be available before a collection can be written.
+	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	// WriteConcern contains how many copies must be available before a collection can be written.
+	// Available from 3.6 arangod version.
+	WriteConcern int `json:"writeConcern,omitempty"`
 }
 
 // CollectionStatus indicates the status of a collection.

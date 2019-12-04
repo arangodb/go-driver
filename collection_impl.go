@@ -274,12 +274,15 @@ type collectionPropertiesInternal struct {
 		Type          KeyGeneratorType `json:"type,omitempty"`
 		AllowUserKeys bool             `json:"allowUserKeys,omitempty"`
 	} `json:"keyOptions,omitempty"`
-	NumberOfShards       int               `json:"numberOfShards,omitempty"`
-	ShardKeys            []string          `json:"shardKeys,omitempty"`
-	ReplicationFactor    replicationFactor `json:"replicationFactor,omitempty"`
-	MinReplicationFactor int               `json:"minReplicationFactor,omitempty"`
-	SmartJoinAttribute   string            `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy     ShardingStrategy  `json:"shardingStrategy,omitempty"`
+	NumberOfShards    int               `json:"numberOfShards,omitempty"`
+	ShardKeys         []string          `json:"shardKeys,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+	// Deprecated: use 'WriteConcern' instead
+	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	// Available from 3.6 arangod version.
+	WriteConcern       int              `json:"writeConcern,omitempty"`
+	SmartJoinAttribute string           `json:"smartJoinAttribute,omitempty"`
+	ShardingStrategy   ShardingStrategy `json:"shardingStrategy,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
@@ -293,6 +296,7 @@ func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 		ShardKeys:            p.ShardKeys,
 		ReplicationFactor:    int(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
+		WriteConcern:         p.WriteConcern,
 		SmartJoinAttribute:   p.SmartJoinAttribute,
 		ShardingStrategy:     p.ShardingStrategy,
 	}
@@ -309,6 +313,7 @@ func (p *CollectionProperties) asInternal() collectionPropertiesInternal {
 		ShardKeys:            p.ShardKeys,
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
+		WriteConcern:         p.WriteConcern,
 		SmartJoinAttribute:   p.SmartJoinAttribute,
 		ShardingStrategy:     p.ShardingStrategy,
 	}
@@ -324,6 +329,7 @@ func (p *CollectionProperties) fromInternal(i *collectionPropertiesInternal) {
 	p.ShardKeys = i.ShardKeys
 	p.ReplicationFactor = int(i.ReplicationFactor)
 	p.MinReplicationFactor = i.MinReplicationFactor
+	p.WriteConcern = i.WriteConcern
 	p.SmartJoinAttribute = i.SmartJoinAttribute
 	p.ShardingStrategy = i.ShardingStrategy
 }
@@ -345,10 +351,13 @@ func (p *CollectionProperties) UnmarshalJSON(d []byte) error {
 }
 
 type setCollectionPropertiesOptionsInternal struct {
-	WaitForSync          *bool             `json:"waitForSync,omitempty"`
-	JournalSize          int64             `json:"journalSize,omitempty"`
-	ReplicationFactor    replicationFactor `json:"replicationFactor,omitempty"`
-	MinReplicationFactor int               `json:"minReplicationFactor,omitempty"`
+	WaitForSync       *bool             `json:"waitForSync,omitempty"`
+	JournalSize       int64             `json:"journalSize,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+	// Deprecated: use 'WriteConcern' instead
+	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	// Available from 3.6 arangod version.
+	WriteConcern int `json:"writeConcern,omitempty"`
 }
 
 func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOptionsInternal {
@@ -357,6 +366,7 @@ func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOpt
 		JournalSize:          p.JournalSize,
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
+		WriteConcern:         p.WriteConcern,
 	}
 }
 
@@ -365,6 +375,7 @@ func (p *SetCollectionPropertiesOptions) fromInternal(i *setCollectionProperties
 	p.JournalSize = i.JournalSize
 	p.ReplicationFactor = int(i.ReplicationFactor)
 	p.MinReplicationFactor = i.MinReplicationFactor
+	p.WriteConcern = i.WriteConcern
 }
 
 // MarshalJSON converts SetCollectionPropertiesOptions into json
