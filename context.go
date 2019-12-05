@@ -140,7 +140,7 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 }
 
 // WithAllowDirtyReads is used in an active failover deployment to allow reads from the follower.
-// You can pass a reference to a boolean that will set according to wether a potentially dirty read
+// You can pass a reference to a boolean that will set according to whether a potentially dirty read
 // happened or not. nil is allowed.
 // This is valid for document reads, aql queries, gharial vertex and edge reads.
 func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Context {
