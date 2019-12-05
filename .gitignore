@@ -1,1 +1,8 @@
+#Go packages
 .gobuild
+
+#Temporary tests files
+.tmp
+
+#IDE's files
+.idea
