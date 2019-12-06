@@ -246,10 +246,10 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 
 // waitUntilClusterHealthy keeps waiting until the servers are healthy
 func waitUntilClusterHealthy(c driver.Client) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if _, err := c.Cluster(ctx);err!= nil {
+	if _, err := c.Cluster(ctx); err != nil {
 		if driver.IsPreconditionFailed(err) {
 			// only in cluster mode
 			return nil
@@ -259,7 +259,7 @@ func waitUntilClusterHealthy(c driver.Client) error {
 	}
 
 	return retry(time.Second, time.Minute, func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		cluster, err := c.Cluster(ctx)
