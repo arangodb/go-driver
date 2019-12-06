@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -115,5 +116,36 @@ func skipNoEnterprise(t *testing.T) {
 		t.Errorf("Failed to get version: %s", describe(err))
 	} else if !v.IsEnterprise() {
 		t.Skipf("Enterprise only")
+	}
+}
+
+type interrupt struct {
+
+}
+
+func (i interrupt) Error() string {
+	return "interrupted"
+}
+
+func retry(interval, timeout time.Duration, f func() error) error {
+	timeoutT := time.NewTimer(timeout)
+	defer timeoutT.Stop()
+
+	intervalT := time.NewTicker(interval)
+	defer intervalT.Stop()
+
+	for {
+		select {
+		case <-timeoutT.C:
+			return fmt.Errorf("function timeouted")
+		case <-intervalT.C:
+			if err := f(); err != nil {
+				if _, ok := err.(interrupt); ok {
+					return nil
+				}
+
+				return err
+			}
+		}
 	}
 }

@@ -244,6 +244,44 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 	}
 }
 
+// waitUntilClusterHealthy keeps waiting until the servers are healthy
+func waitUntilClusterHealthy(c driver.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	if _, err := c.Cluster(ctx);err!= nil {
+		if driver.IsPreconditionFailed(err) {
+			// only in cluster mode
+			return nil
+		}
+
+		return err
+	}
+
+	return retry(time.Second, time.Minute, func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		defer cancel()
+
+		cluster, err := c.Cluster(ctx)
+		if err != nil {
+			return err
+		}
+
+		health, err := cluster.Health(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, h := range health.Health {
+			if h.Status != driver.ServerStatusGood {
+				return nil
+			}
+		}
+
+		return interrupt{}
+	})
+}
+
 // waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.
 func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname string, t testEnv) error {
 	endpointsSynced := make(chan error)
