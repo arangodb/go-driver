@@ -904,6 +904,10 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	t.Run("immediate", func(t *testing.T) {
 		skipBelowVersion(c, "3.6", t)
 
+		if err := waitUntilClusterHealthy(c); err != nil {
+			t.Fatalf("Failed to wait for healthy cluster: %s", describe(err))
+		}
+
 		// run query to get document count of view
 		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
 		if err != nil {
