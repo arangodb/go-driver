@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -46,6 +47,23 @@ func ensureDatabase(ctx context.Context, c driver.Client, name string, options *
 		t.Fatalf("Failed to open database '%s': %s", name, describe(err))
 	}
 	return db
+}
+
+func skipIfEngineTypeRocksDB(t *testing.T, db driver.Database) {
+	skipIfEngineType(t, db, driver.EngineTypeRocksDB)
+}
+
+func skipIfEngineTypeMMFiles(t *testing.T, db driver.Database) {
+	skipIfEngineType(t, db, driver.EngineTypeMMFiles)
+}
+
+func skipIfEngineType(t *testing.T, db driver.Database, engineType driver.EngineType) {
+	info, err := db.EngineInfo(nil)
+	require.NoError(t, err)
+
+	if info.Type == engineType {
+		t.Skipf("test not supported on engine type %s", engineType)
+	}
 }
 
 // TestCreateDatabase creates a database and then checks that it exists.
