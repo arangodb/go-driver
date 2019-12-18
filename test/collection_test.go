@@ -216,6 +216,8 @@ func TestRemoveCollection(t *testing.T) {
 func TestLoadUnloadCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
+	// we are not able to unload RocksDB
+	skipIfEngineTypeRocksDB(t, db)
 	name := "test_load_collection"
 	col, err := db.CreateCollection(nil, name, nil)
 	if err != nil {
