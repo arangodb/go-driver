@@ -25,8 +25,8 @@ if [ "$CMD" == "start" ]; then
     # Create volumes
     docker volume create ${STARTERVOLUME} &> /dev/null
 
-    # Setup args 
-    if [ -n "$JWTSECRET" ]; then 
+    # Setup args
+    if [ -n "$JWTSECRET" ]; then
         if [ -z "$TMPDIR" ]; then 
             echo "TMPDIR environment variable must be set"
             exit 1 

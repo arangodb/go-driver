@@ -292,9 +292,12 @@ func TestClusterMoveShard(t *testing.T) {
 					if dbServers[0] != targetServerID {
 						movedShards++
 						var rawResponse []byte
-						if err := cl.MoveShard(driver.WithRawResponse(ctx, &rawResponse), col, shardID, dbServers[0], targetServerID); err != nil {
+						var jobID string
+						jobCtx := driver.WithJobIDResponse(driver.WithRawResponse(ctx, &rawResponse), &jobID)
+						if err := cl.MoveShard(jobCtx, col, shardID, dbServers[0], targetServerID); err != nil {
 							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
+						defer waitForJob(t, jobID, c)()
 					}
 				}
 			}
@@ -375,9 +378,13 @@ func TestClusterResignLeadership(t *testing.T) {
 				for _, dbServers := range colInv.Parameters.Shards {
 					targetServerID = dbServers[0]
 
-					if err := cl.ResignServer(context.Background(), string(targetServerID)); err != nil {
+					var jobID string
+					jobCtx := driver.WithJobIDResponse(context.Background(), &jobID)
+
+					if err := cl.ResignServer(jobCtx, string(targetServerID)); err != nil {
 						t.Errorf("ResignLeadership for %s failed: %s", targetServerID, describe(err))
 					}
+					defer waitForJob(t, jobID, c)()
 
 					break collectionLoop
 				}
@@ -481,9 +488,12 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 					if dbServers[0] != targetServerID {
 						movedShards++
 						var rawResponse []byte
-						if err := cl.MoveShard(driver.WithRawResponse(ctx, &rawResponse), col, shardID, dbServers[0], targetServerID); err != nil {
+						var jobID string
+						jobCtx := driver.WithJobIDResponse(driver.WithRawResponse(ctx, &rawResponse), &jobID)
+						if err := cl.MoveShard(jobCtx, col, shardID, dbServers[0], targetServerID); err != nil {
 							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
+						defer waitForJob(t, jobID, c)()
 					}
 				}
 			}

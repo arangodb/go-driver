@@ -61,14 +61,17 @@ TEST_ENDPOINTS := http://localhost:7001
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
+	TEST_JWTSECRET := testing
 	TEST_AUTHENTICATION := basic:root:
 endif
 ifeq ("$(TEST_AUTH)", "jwt")
 	CLUSTERENV := JWTSECRET=testing
+	TEST_JWTSECRET := testing
 	TEST_AUTHENTICATION := jwt:root:
 endif
 ifeq ("$(TEST_AUTH)", "jwtsuper")
 	CLUSTERENV := JWTSECRET=testing
+	TEST_JWTSECRET := testing
 	TEST_AUTHENTICATION := super:testing
 endif
 ifeq ("$(TEST_SSL)", "auto")
@@ -323,6 +326,7 @@ __test_go_test:
 		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
+		-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
 		-e TEST_CVERSION=$(TEST_CVERSION) \
 		-e TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \

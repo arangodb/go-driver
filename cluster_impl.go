@@ -110,13 +110,20 @@ func (c *cluster) MoveShard(ctx context.Context, col Collection, shard ShardID, 
 	if _, err := req.SetBody(input); err != nil {
 		return WithStack(err)
 	}
-	applyContextSettings(ctx, req)
+	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return WithStack(err)
 	}
 	if err := resp.CheckStatus(202); err != nil {
 		return WithStack(err)
+	}
+	var result jobIDResponse
+	if err := resp.ParseBody("", &result); err != nil {
+		return WithStack(err)
+	}
+	if cs.JobIDResponse != nil {
+		*cs.JobIDResponse = result.JobID
 	}
 	return nil
 }
@@ -125,7 +132,7 @@ type cleanOutServerRequest struct {
 	Server string `json:"server"`
 }
 
-type cleanOutServerResponse struct {
+type jobIDResponse struct {
 	JobID string `json:"id"`
 }
 
@@ -149,7 +156,7 @@ func (c *cluster) CleanOutServer(ctx context.Context, serverID string) error {
 	if err := resp.CheckStatus(200, 202); err != nil {
 		return WithStack(err)
 	}
-	var result cleanOutServerResponse
+	var result jobIDResponse
 	if err := resp.ParseBody("", &result); err != nil {
 		return WithStack(err)
 	}
@@ -179,7 +186,7 @@ func (c *cluster) ResignServer(ctx context.Context, serverID string) error {
 	if err := resp.CheckStatus(200, 202); err != nil {
 		return WithStack(err)
 	}
-	var result cleanOutServerResponse
+	var result jobIDResponse
 	if err := resp.ParseBody("", &result); err != nil {
 		return WithStack(err)
 	}
