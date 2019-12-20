@@ -25,6 +25,8 @@ package test
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
+	"github.com/arangodb/go-driver/jwt"
 	"os"
 	"reflect"
 	"testing"
@@ -51,6 +53,52 @@ func getAgencyEndpoints(ctx context.Context, c driver.Client) ([]string, error) 
 			ep := util.FixupEndpointURLScheme(entry.Endpoint)
 			result = append(result, ep)
 		}
+	}
+	return result, nil
+}
+
+// getJWTSecretAuth return auth with superjwt
+func getJWTSecretAuth(t testEnv) driver.Authentication {
+	value := os.Getenv("TEST_JWTSECRET")
+	if value == "" {
+		return nil
+	}
+
+	header, err := jwt.CreateArangodJwtAuthorizationHeader(value, "arangodb")
+	if err != nil {
+		t.Fatalf("Could not create JWT authentication header: %s", describe(err))
+	}
+	return driver.RawAuthentication(header)
+}
+
+// getHttpAuthAgencyConnection queries the cluster and creates an agency accessor using an agency.AgencyConnection for the entire agency using HTTP for all protocols.
+func getHttpAuthAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agency.Agency, error) {
+	endpoints, err := getAgencyEndpoints(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	conn, err := agency.NewAgencyConnection(http.ConnectionConfig{
+		Endpoints: endpoints,
+		TLSConfig: &tls.Config{InsecureSkipVerify: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if clusterAuth := createAuthenticationFromEnv(t); clusterAuth != nil {
+		if auth := getJWTSecretAuth(t); auth != nil {
+			conn, err = conn.SetAuthentication(auth)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, fmt.Errorf("auth is required in agency")
+		}
+	}
+
+	result, err := agency.NewAgency(conn)
+	if err != nil {
+		return nil, err
 	}
 	return result, nil
 }
