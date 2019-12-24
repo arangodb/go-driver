@@ -34,6 +34,35 @@ func newInt64(v int64) *int64 {
 	return &v
 }
 
+func newVersion(s driver.Version) *driver.Version {
+	return &s
+}
+
+func newString(s string) *string {
+	return &s
+}
+
+func newArangoSearchNGramStreamType(s driver.ArangoSearchNGramStreamType) *driver.ArangoSearchNGramStreamType {
+	return &s
+}
+
+func fillPropertiesDefaults(t *testing.T, c driver.Client, props *driver.ArangoSearchAnalyzerProperties) {
+	v, err := c.Version(nil)
+	require.NoError(t, err)
+
+	if v.Version.CompareTo("3.6") >= 0 {
+		if props.StreamType == nil {
+			props.StreamType = newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamBinary)
+		}
+		if props.StartMarker == nil {
+			props.StartMarker = newString("")
+		}
+		if props.EndMarker == nil {
+			props.EndMarker = newString("")
+		}
+	}
+}
+
 func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.5", t)
@@ -43,10 +72,13 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 	db := ensureDatabase(ctx, c, dbname, nil, t)
 
 	testCases := []struct {
-		Name       string
-		Definition driver.ArangoSearchAnalyzerDefinition
-		Found      bool
-		HasError   bool
+		Name               string
+		MinVersion         *driver.Version
+		MaxVersion         *driver.Version
+		Definition         driver.ArangoSearchAnalyzerDefinition
+		ExpectedDefinition *driver.ArangoSearchAnalyzerDefinition
+		Found              bool
+		HasError           bool
 	}{
 
 		{
@@ -86,7 +118,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 			},
 		},
 		{
-			Name: "create-my-ngram",
+			Name:       "create-my-ngram-3.5",
+			MinVersion: newVersion("3.5"),
+			MaxVersion: newVersion("3.6"),
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-ngram",
 				Type: driver.ArangoSearchAnalyzerTypeNGram,
@@ -97,10 +131,61 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:       "create-my-ngram-3.6",
+			MinVersion: newVersion("3.6"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-ngram",
+				Type: driver.ArangoSearchAnalyzerTypeNGram,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Min:              newInt64(1),
+					Max:              newInt64(14),
+					PreserveOriginal: newBool(false),
+				},
+			},
+			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-ngram",
+				Type: driver.ArangoSearchAnalyzerTypeNGram,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Min:              newInt64(1),
+					Max:              newInt64(14),
+					PreserveOriginal: newBool(false),
+
+					// Check defaults for 3.6
+					StartMarker: newString(""),
+					EndMarker:   newString(""),
+					StreamType:  newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamBinary),
+				},
+			},
+		},
+		{
+			Name:       "create-my-ngram-3.6-custom",
+			MinVersion: newVersion("3.6"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-ngram-custom",
+				Type: driver.ArangoSearchAnalyzerTypeNGram,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Min:              newInt64(1),
+					Max:              newInt64(14),
+					PreserveOriginal: newBool(false),
+					StartMarker:      newString("^"),
+					EndMarker:        newString("^"),
+					StreamType:       newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamUTF8),
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
+			if testCase.MinVersion != nil {
+				if testCase.MaxVersion == nil {
+					skipBelowVersion(c, *testCase.MinVersion, t)
+				} else {
+					skipBetweenVersion(c, *testCase.MinVersion, *testCase.MaxVersion, t)
+				}
+			}
+
 			existed, a, err := db.EnsureAnalyzer(ctx, testCase.Definition)
 
 			if testCase.HasError {
@@ -111,11 +196,18 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 
 			require.Equal(t, testCase.Found, existed)
 			if a != nil {
-				require.Equal(t, a.Name(), testCase.Definition.Name)
-				require.Equal(t, a.Type(), testCase.Definition.Type)
-				require.Equal(t, a.UniqueName(), dbname+"::"+testCase.Definition.Name)
+				var def driver.ArangoSearchAnalyzerDefinition
+				if testCase.ExpectedDefinition != nil {
+					def = *testCase.ExpectedDefinition
+				} else {
+					def = testCase.Definition
+				}
+
+				require.Equal(t, a.Name(), def.Name)
+				require.Equal(t, a.Type(), def.Type)
+				require.Equal(t, a.UniqueName(), dbname+"::"+def.Name)
 				require.Equal(t, a.Database(), db)
-				require.Equal(t, a.Properties(), testCase.Definition.Properties)
+				require.Equal(t, a.Properties(), def.Properties)
 			}
 		})
 	}
@@ -145,6 +237,7 @@ func TestArangoSearchAnalyzerGet(t *testing.T) {
 		},
 	}
 	ensureAnalyzer(ctx, db, def, t)
+	fillPropertiesDefaults(t, c, &def.Properties)
 
 	a, err := db.Analyzer(ctx, aname)
 
@@ -178,6 +271,7 @@ func TestArangoSearchAnalyzerGetAll(t *testing.T) {
 		},
 	}
 	ensureAnalyzer(ctx, db, def, t)
+	fillPropertiesDefaults(t, c, &def.Properties)
 
 	alist, err := db.Analyzers(ctx)
 	require.NoError(t, err)

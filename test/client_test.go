@@ -49,6 +49,22 @@ var (
 	runPProfServerOnce sync.Once
 )
 
+// skipBetweenVersion skips the test if the current server version is less than
+// the min version or higher/equal max version
+func skipBetweenVersion(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
+	}
+	if x.Version.CompareTo(minVersion) < 0 {
+		t.Skipf("Skipping below version '%s', got version '%s'", minVersion, x.Version)
+	}
+	if x.Version.CompareTo(maxVersion) >= 0 {
+		t.Skipf("Skipping above version '%s', got version '%s'", maxVersion, x.Version)
+	}
+	return x
+}
+
 // skipBelowVersion skips the test if the current server version is less than
 // the given version.
 func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {
