@@ -58,7 +58,7 @@ type CreateDatabaseOptions struct {
 	// This ensures that the new database will be accessible after it is created.
 	Users []CreateDatabaseUserOptions `json:"users,omitempty"`
 
-	// Collection defaults
+	// Options database defaults
 	Options CreateDatabaseDefaultOptions `json:"options,omitempty"`
 }
 
