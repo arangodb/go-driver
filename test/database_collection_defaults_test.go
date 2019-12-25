@@ -23,6 +23,7 @@
 package test
 
 import (
+	"github.com/arangodb/kube-arangodb/.gobuild/pkg/mod/github.com/dchest/uniuri@v0.0.0-20160212164326-8902c56451e9"
 	"strings"
 	"testing"
 
@@ -161,7 +162,7 @@ func TestDatabaseDefaults(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.name, func(t *testing.T) {
 
-			name := databaseName("database_defaults", strings.ReplaceAll(scenario.name, " ", "_"))
+			name := databaseName("database_defaults", strings.ToLower(uniuri.NewLen(5)))
 
 			opt := driver.CreateDatabaseOptions{
 				Options: scenario.db,
