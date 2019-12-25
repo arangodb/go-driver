@@ -742,9 +742,9 @@ func TestCollectionWriteConcernCreate(t *testing.T) {
 	name := "test_write_concern_create"
 	minRepl := 2
 	options := driver.CreateCollectionOptions{
-		ReplicationFactor:    minRepl,
+		ReplicationFactor:    minRepl + 1,
 		WriteConcern:         minRepl,
-		MinReplicationFactor: minRepl + 1, // it should be overwritten by WriteConcern
+		MinReplicationFactor: minRepl,
 	}
 
 	_, err := db.CreateCollection(nil, name, &options)
