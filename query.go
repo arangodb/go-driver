@@ -36,6 +36,7 @@ const (
 	keyQueryOptSatSyncWait = "arangodb-query-opt-satSyncWait"
 	keyQueryOptFullCount   = "arangodb-query-opt-fullCount"
 	keyQueryOptStream      = "arangodb-query-opt-stream"
+	keyQueryOptMaxRuntime  = "arangodb-query-opt-maxRuntime"
 )
 
 // WithQueryCount is used to configure a context that will set the Count of a query request,
@@ -101,6 +102,14 @@ func WithQueryStream(parent context.Context, value ...bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryOptStream, v)
 }
 
+func WithQueryMaxRuntime(parent context.Context, value ...float64) context.Context {
+	v := 0.0
+	if len(value) > 0 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyQueryOptMaxRuntime, v)
+}
+
 type queryRequest struct {
 	// indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
@@ -149,6 +158,9 @@ type queryRequest struct {
 		// locks for as long as the query cursor exists. When set to false a query will be executed right away in
 		// its entirety.
 		Stream bool `json:"stream,omitempty"`
+		// MaxRuntime specify the timeout which can be used to kill a query on the server after the specified
+		// amount in time. The timeout value is specified in seconds. A value of 0 means no timeout will be enforced.
+		MaxRuntime float64 `json:"maxRuntime,omitempty"`
 	} `json:"options,omitempty"`
 }
 
@@ -195,6 +207,11 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryOptStream); rawValue != nil {
 		if value, ok := rawValue.(bool); ok {
 			q.Options.Stream = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryOptMaxRuntime); rawValue != nil {
+		if value, ok := rawValue.(float64); ok {
+			q.Options.MaxRuntime = value
 		}
 	}
 }

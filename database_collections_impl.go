@@ -102,9 +102,11 @@ func (d *database) Collections(ctx context.Context) ([]Collection, error) {
 }
 
 type createCollectionOptionsInternal struct {
-	JournalSize          int                   `json:"journalSize,omitempty"`
-	ReplicationFactor    replicationFactor     `json:"replicationFactor,omitempty"`
+	JournalSize       int               `json:"journalSize,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int                   `json:"minReplicationFactor,omitempty"`
+	WriteConcern         int                   `json:"writeConcern,omitempty"`
 	WaitForSync          bool                  `json:"waitForSync,omitempty"`
 	DoCompact            *bool                 `json:"doCompact,omitempty"`
 	IsVolatile           bool                  `json:"isVolatile,omitempty"`
@@ -176,6 +178,7 @@ func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOption
 	p.JournalSize = i.JournalSize
 	p.ReplicationFactor = replicationFactor(i.ReplicationFactor)
 	p.MinReplicationFactor = i.MinReplicationFactor
+	p.WriteConcern = i.WriteConcern
 	p.WaitForSync = i.WaitForSync
 	p.DoCompact = i.DoCompact
 	p.IsVolatile = i.IsVolatile

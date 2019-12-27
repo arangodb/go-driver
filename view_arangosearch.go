@@ -80,6 +80,15 @@ const (
 	ArangoSearchCaseNone ArangoSearchCaseType = "none"
 )
 
+type ArangoSearchNGramStreamType string
+
+const (
+	// ArangoSearchNGramStreamBinary used by NGram. Default value
+	ArangoSearchNGramStreamBinary ArangoSearchNGramStreamType = "binary"
+	// ArangoSearchNGramStreamUTF8 used by NGram
+	ArangoSearchNGramStreamUTF8 ArangoSearchNGramStreamType = "utf8"
+)
+
 // ArangoSearchAnalyzerProperties specifies options for the analyzer. Which fields are required and
 // respected depends on the analyzer type.
 // more information can be found here: https://www.arangodb.com/docs/stable/arangosearch-analyzers.html#analyzer-properties
@@ -99,6 +108,13 @@ type ArangoSearchAnalyzerProperties struct {
 	Max *int64 `json:"max,omitempty"`
 	// PreserveOriginal used by NGram
 	PreserveOriginal *bool `json:"preserveOriginal,omitempty"`
+
+	// StartMarker used by NGram
+	StartMarker *string `json:"startMarker,omitempty"`
+	// EndMarker used by NGram
+	EndMarker *string `json:"endMarker,omitempty"`
+	// StreamType used by NGram
+	StreamType *ArangoSearchNGramStreamType `json:"streamType,omitempty"`
 
 	// Stemming used by Text
 	Stemming *bool `json:"stemming,omitempty"`
