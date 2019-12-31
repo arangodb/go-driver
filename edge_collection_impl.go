@@ -126,6 +126,14 @@ func (c *edgeCollection) SetProperties(ctx context.Context, options SetCollectio
 	return nil
 }
 
+// Rename the Collection
+func (c *edgeCollection) Rename(ctx context.Context, options SetRenameOptions) error {
+	if err := c.rawCollection().Rename(ctx, options); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // Load the collection into memory.
 func (c *edgeCollection) Load(ctx context.Context) error {
 	if err := c.rawCollection().Load(ctx); err != nil {

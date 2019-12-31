@@ -126,6 +126,14 @@ func (c *vertexCollection) SetProperties(ctx context.Context, options SetCollect
 	return nil
 }
 
+// Rename the collection
+func (c *vertexCollection) Rename(ctx context.Context, options SetRenameOptions) error {
+	if err := c.rawCollection().Rename(ctx, options); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // Load the collection into memory.
 func (c *vertexCollection) Load(ctx context.Context) error {
 	if err := c.rawCollection().Load(ctx); err != nil {

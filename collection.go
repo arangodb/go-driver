@@ -55,6 +55,9 @@ type Collection interface {
 	// SetProperties changes properties of the collection.
 	SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error
 
+	// Rename the collection
+	Rename(ctx context.Context, options SetRenameOptions) error
+
 	// Load the collection into memory.
 	Load(ctx context.Context) error
 
@@ -156,6 +159,11 @@ type SetCollectionPropertiesOptions struct {
 	// WriteConcern contains how many copies must be available before a collection can be written.
 	// Available from 3.6 arangod version.
 	WriteConcern int `json:"writeConcern,omitempty"`
+}
+
+// SetRenameOptions contains data for Collection.Rename
+type SetRenameOptions struct {
+	Name string `json:"name"`
 }
 
 // CollectionStatus indicates the status of a collection.
