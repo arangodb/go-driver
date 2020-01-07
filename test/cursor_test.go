@@ -29,22 +29,57 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
 )
 
-type queryTest struct {
-	Query             string
-	BindVars          map[string]interface{}
-	ExpectSuccess     bool
-	ExpectedDocuments []interface{}
-	DocumentType      reflect.Type
-	HasFullCount      bool
-	ExpectedFullCount int64
-}
+func TestCreateCursorWithMaxRuntime(t *testing.T) {
+	// Arrange
+	collectionName := "cursor_max_retry_test"
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.6", t)
+	db := ensureDatabase(context.Background(), c, "cursor_test", nil, t)
+	ensureCollection(context.Background(), db, collectionName, nil, t)
 
-type queryTestContext struct {
-	Context         context.Context
-	ExpectCount     bool
-	ExpectFullCount bool
+	tests := []struct {
+		Name          string
+		SleepQuery    string
+		MaxRuntime    float64
+		ExpectedError string
+	}{
+		{
+			Name:          "Too long query interrupted",
+			SleepQuery:    "1",
+			MaxRuntime:    0.01,
+			ExpectedError: "query killed (while executing)",
+		},
+		{
+			Name:       "Query passed before max runtime",
+			SleepQuery: "0.01",
+			MaxRuntime: 20.0,
+		},
+		{
+			Name:       "Query passed without max runtime",
+			SleepQuery: "0.01",
+			MaxRuntime: 0.0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			// Act
+			ctx := driver.WithQueryMaxRuntime(nil, test.MaxRuntime)
+			_, err := db.Query(ctx, "LET y = SLEEP("+test.SleepQuery+") INSERT {t:''} INTO "+collectionName, nil)
+
+			// Assert
+			if test.ExpectedError != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), test.ExpectedError)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 // TestCreateCursor creates several cursors.
@@ -55,7 +90,7 @@ func TestCreateCursor(t *testing.T) {
 
 	// Create data set
 	collectionData := map[string][]interface{}{
-		"books": []interface{}{
+		"books": {
 			Book{Title: "Book 01"},
 			Book{Title: "Book 02"},
 			Book{Title: "Book 03"},
@@ -77,7 +112,7 @@ func TestCreateCursor(t *testing.T) {
 			Book{Title: "Book 19"},
 			Book{Title: "Book 20"},
 		},
-		"users": []interface{}{
+		"users": {
 			UserDoc{Name: "John", Age: 13},
 			UserDoc{Name: "Jake", Age: 25},
 			UserDoc{Name: "Clair", Age: 12},
@@ -94,62 +129,74 @@ func TestCreateCursor(t *testing.T) {
 	}
 
 	// Setup tests
-	tests := []queryTest{
-		queryTest{
+	tests := []struct {
+		Query             string
+		BindVars          map[string]interface{}
+		ExpectSuccess     bool
+		ExpectedDocuments []interface{}
+		DocumentType      reflect.Type
+		HasFullCount      bool
+		ExpectedFullCount int64
+	}{
+		{
 			Query:             "FOR d IN books SORT d.Title RETURN d",
 			ExpectSuccess:     true,
 			ExpectedDocuments: collectionData["books"],
 			DocumentType:      reflect.TypeOf(Book{}),
 		},
-		queryTest{
+		{
 			Query:             "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
 			BindVars:          map[string]interface{}{"title": "Book 02"},
 			ExpectSuccess:     true,
 			ExpectedDocuments: []interface{}{collectionData["books"][1]},
 			DocumentType:      reflect.TypeOf(Book{}),
 		},
-		queryTest{
+		{
 			Query:         "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
 			BindVars:      map[string]interface{}{"somethingelse": "Book 02"},
 			ExpectSuccess: false, // Unknown `@title`
 		},
-		queryTest{
+		{
 			Query:             "FOR u IN users FILTER u.age>100 SORT u.name RETURN u",
 			ExpectSuccess:     true,
 			ExpectedDocuments: []interface{}{},
 			DocumentType:      reflect.TypeOf(UserDoc{}),
 		},
-		queryTest{
-			Query:             "FOR u IN users FILTER u.age<@maxAge SORT u.name RETURN u",
-			BindVars:          map[string]interface{}{"maxAge": 20},
-			ExpectSuccess:     true,
-			ExpectedDocuments: []interface{}{collectionData["users"][2], collectionData["users"][0], collectionData["users"][5]},
-			DocumentType:      reflect.TypeOf(UserDoc{}),
+		{
+			Query:         "FOR u IN users FILTER u.age<@maxAge SORT u.name RETURN u",
+			BindVars:      map[string]interface{}{"maxAge": 20},
+			ExpectSuccess: true,
+			ExpectedDocuments: []interface{}{
+				collectionData["users"][2],
+				collectionData["users"][0],
+				collectionData["users"][5],
+			},
+			DocumentType: reflect.TypeOf(UserDoc{}),
 		},
-		queryTest{
+		{
 			Query:         "FOR u IN users FILTER u.age<@maxAge SORT u.name RETURN u",
 			BindVars:      map[string]interface{}{"maxage": 20},
 			ExpectSuccess: false, // `@maxage` versus `@maxAge`
 		},
-		queryTest{
+		{
 			Query:             "FOR u IN users SORT u.age RETURN u.age",
 			ExpectedDocuments: []interface{}{12, 12, 13, 25, 42, 67},
 			DocumentType:      reflect.TypeOf(12),
 			ExpectSuccess:     true,
 		},
-		queryTest{
+		{
 			Query:             "FOR p IN users COLLECT a = p.age WITH COUNT INTO c SORT a RETURN [a, c]",
 			ExpectedDocuments: []interface{}{[]int{12, 2}, []int{13, 1}, []int{25, 1}, []int{42, 1}, []int{67, 1}},
 			DocumentType:      reflect.TypeOf([]int{}),
 			ExpectSuccess:     true,
 		},
-		queryTest{
+		{
 			Query:             "FOR u IN users SORT u.name RETURN u.name",
 			ExpectedDocuments: []interface{}{"Blair", "Clair", "Jake", "John", "Johnny", "Zz"},
 			DocumentType:      reflect.TypeOf("foo"),
 			ExpectSuccess:     true,
 		},
-		queryTest{
+		{
 			Query:             "FOR d IN books SORT d.Title LIMIT 1, 1 RETURN d",
 			ExpectSuccess:     true,
 			ExpectedDocuments: []interface{}{collectionData["books"][1]},
@@ -160,21 +207,28 @@ func TestCreateCursor(t *testing.T) {
 	}
 
 	// Setup context alternatives
-	contexts := []queryTestContext{
-		queryTestContext{Context: nil},
-		queryTestContext{Context: context.Background()},
-		queryTestContext{Context: driver.WithQueryCount(nil), ExpectCount: true},
-		queryTestContext{Context: driver.WithQueryCount(nil, true), ExpectCount: true},
-		queryTestContext{Context: driver.WithQueryCount(nil, false)},
-		queryTestContext{Context: driver.WithQueryBatchSize(nil, 1)},
-		queryTestContext{Context: driver.WithQueryCache(nil)},
-		queryTestContext{Context: driver.WithQueryCache(nil, true)},
-		queryTestContext{Context: driver.WithQueryCache(nil, false)},
-		queryTestContext{Context: driver.WithQueryMemoryLimit(nil, 60000)},
-		queryTestContext{Context: driver.WithQueryTTL(nil, time.Minute)},
-		queryTestContext{Context: driver.WithQueryBatchSize(driver.WithQueryCount(nil), 1), ExpectCount: true},
-		queryTestContext{Context: driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2))), ExpectCount: true},
-		queryTestContext{Context: driver.WithQueryFullCount(nil, true), ExpectFullCount: true},
+	contexts := []struct {
+		Context         context.Context
+		ExpectCount     bool
+		ExpectFullCount bool
+	}{
+		{Context: nil},
+		{Context: context.Background()},
+		{Context: driver.WithQueryCount(nil), ExpectCount: true},
+		{Context: driver.WithQueryCount(nil, true), ExpectCount: true},
+		{Context: driver.WithQueryCount(nil, false)},
+		{Context: driver.WithQueryBatchSize(nil, 1)},
+		{Context: driver.WithQueryCache(nil)},
+		{Context: driver.WithQueryCache(nil, true)},
+		{Context: driver.WithQueryCache(nil, false)},
+		{Context: driver.WithQueryMemoryLimit(nil, 600000)},
+		{Context: driver.WithQueryTTL(nil, time.Minute)},
+		{Context: driver.WithQueryBatchSize(driver.WithQueryCount(nil), 1), ExpectCount: true},
+		{
+			Context:     driver.WithQueryCache(driver.WithQueryCount(driver.WithQueryBatchSize(nil, 2))),
+			ExpectCount: true,
+		},
+		{Context: driver.WithQueryFullCount(nil, true), ExpectFullCount: true},
 	}
 
 	// Run tests for every context alternative

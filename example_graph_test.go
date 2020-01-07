@@ -24,8 +24,8 @@
 package driver_test
 
 import (
-	"log"
 	"fmt"
+	"log"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"

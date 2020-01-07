@@ -39,6 +39,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
+	"github.com/arangodb/go-driver/jwt"
 	"github.com/arangodb/go-driver/vst"
 	"github.com/arangodb/go-driver/vst/protocol"
 )
@@ -48,9 +49,25 @@ var (
 	runPProfServerOnce sync.Once
 )
 
+// skipBetweenVersion skips the test if the current server version is less than
+// the min version or higher/equal max version
+func skipBetweenVersion(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
+	}
+	if x.Version.CompareTo(minVersion) < 0 {
+		t.Skipf("Skipping below version '%s', got version '%s'", minVersion, x.Version)
+	}
+	if x.Version.CompareTo(maxVersion) >= 0 {
+		t.Skipf("Skipping above version '%s', got version '%s'", maxVersion, x.Version)
+	}
+	return x
+}
+
 // skipBelowVersion skips the test if the current server version is less than
 // the given version.
-func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) {
+func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {
 	x, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Failed to get version info: %s", describe(err))
@@ -58,6 +75,7 @@ func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) {
 	if x.Version.CompareTo(version) < 0 {
 		t.Skipf("Skipping below version '%s', got version '%s'", version, x.Version)
 	}
+	return x
 }
 
 // getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS
@@ -103,6 +121,15 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 			t.Fatalf("Expected username & password for jwt authentication")
 		}
 		return driver.JWTAuthentication(parts[1], parts[2])
+	case "super":
+		if len(parts) != 2 {
+			t.Fatalf("Expected 'super' and jwt secret")
+		}
+		header, err := jwt.CreateArangodJwtAuthorizationHeader(parts[1], "arangodb")
+		if err != nil {
+			t.Fatalf("Could not create JWT authentication header: %s", describe(err))
+		}
+		return driver.RawAuthentication(header)
 	default:
 		t.Fatalf("Unknown authentication: '%s'", parts[0])
 		return nil
@@ -232,6 +259,44 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 	case <-ctx.Done():
 		return nil
 	}
+}
+
+// waitUntilClusterHealthy keeps waiting until the servers are healthy
+func waitUntilClusterHealthy(c driver.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if _, err := c.Cluster(ctx); err != nil {
+		if driver.IsPreconditionFailed(err) {
+			// only in cluster mode
+			return nil
+		}
+
+		return err
+	}
+
+	return retry(time.Second, time.Minute, func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		cluster, err := c.Cluster(ctx)
+		if err != nil {
+			return err
+		}
+
+		health, err := cluster.Health(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, h := range health.Health {
+			if h.Status != driver.ServerStatusGood {
+				return nil
+			}
+		}
+
+		return interrupt{}
+	})
 }
 
 // waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.

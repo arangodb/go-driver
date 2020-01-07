@@ -28,19 +28,23 @@ import (
 )
 
 type indexData struct {
-	ID          string   `json:"id,omitempty"`
-	Type        string   `json:"type"`
-	Fields      []string `json:"fields,omitempty"`
-	Unique      *bool    `json:"unique,omitempty"`
-	Deduplicate *bool    `json:"deduplicate,omitempty"`
-	Sparse      *bool    `json:"sparse,omitempty"`
-	GeoJSON     *bool    `json:"geoJson,omitempty"`
-	MinLength   int      `json:"minLength,omitempty"`
+	ID           string   `json:"id,omitempty"`
+	Type         string   `json:"type"`
+	Fields       []string `json:"fields,omitempty"`
+	Unique       *bool    `json:"unique,omitempty"`
+	Deduplicate  *bool    `json:"deduplicate,omitempty"`
+	Sparse       *bool    `json:"sparse,omitempty"`
+	GeoJSON      *bool    `json:"geoJson,omitempty"`
+	InBackground *bool    `json:"inBackground,omitempty"`
+	MinLength    int      `json:"minLength,omitempty"`
+	ExpireAfter  int      `json:"expireAfter,omitempty"`
+	Name         string   `json:"name,omitempty"`
 }
 
 type genericIndexData struct {
 	ID   string `json:"id,omitempty"`
 	Type string `json:"type"`
+	Name string `json:"name,omitempty"`
 }
 
 type indexListResponse struct {
@@ -65,7 +69,7 @@ func (c *collection) Index(ctx context.Context, name string) (Index, error) {
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, c)
+	idx, err := newIndex(data.ID, data.Type, data.Name, c)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -111,7 +115,7 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 	}
 	result := make([]Index, 0, len(data.Indexes))
 	for _, x := range data.Indexes {
-		idx, err := newIndex(x.ID, x.Type, c)
+		idx, err := newIndex(x.ID, x.Type, x.Name, c)
 		if err != nil {
 			return nil, WithStack(err)
 		}
@@ -130,6 +134,8 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 		Fields: fields,
 	}
 	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
 		input.MinLength = options.MinLength
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
@@ -155,6 +161,8 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 		Fields: fields,
 	}
 	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
 		input.GeoJSON = &options.GeoJSON
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
@@ -174,6 +182,8 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 	}
 	off := false
 	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
 		if options.NoDeduplicate {
@@ -196,6 +206,8 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 		Fields: fields,
 	}
 	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
 	}
@@ -216,11 +228,32 @@ func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, o
 	}
 	off := false
 	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
 		if options.NoDeduplicate {
 			input.Deduplicate = &off
 		}
+	}
+	idx, created, err := c.ensureIndex(ctx, input)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return idx, created, nil
+}
+
+// EnsureTTLIndex creates a TLL collection, if it does not already exist.
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureTTLIndex(ctx context.Context, field string, expireAfter int, options *EnsureTTLIndexOptions) (Index, bool, error) {
+	input := indexData{
+		Type:        string(TTLIndex),
+		Fields:      []string{field},
+		ExpireAfter: expireAfter,
+	}
+	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -253,7 +286,7 @@ func (c *collection) ensureIndex(ctx context.Context, options indexData) (Index,
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, false, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, c)
+	idx, err := newIndex(data.ID, data.Type, data.Name, c)
 	if err != nil {
 		return nil, false, WithStack(err)
 	}

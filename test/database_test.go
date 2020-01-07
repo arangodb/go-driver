@@ -24,10 +24,19 @@ package test
 
 import (
 	"context"
+	"fmt"
+	"github.com/dchest/uniuri"
+	"github.com/stretchr/testify/require"
+	"strings"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
+
+// databaseName is helper to create database name in non-colliding way
+func databaseName(parts ... string) string {
+	return fmt.Sprintf("%s_%s", strings.Join(parts, "_"), uniuri.NewLen(8))
+}
 
 // ensureDatabase is a helper to check if a database exists and create it if needed.
 // It will fail the test when an error occurs.
@@ -46,6 +55,23 @@ func ensureDatabase(ctx context.Context, c driver.Client, name string, options *
 		t.Fatalf("Failed to open database '%s': %s", name, describe(err))
 	}
 	return db
+}
+
+func skipIfEngineTypeRocksDB(t *testing.T, db driver.Database) {
+	skipIfEngineType(t, db, driver.EngineTypeRocksDB)
+}
+
+func skipIfEngineTypeMMFiles(t *testing.T, db driver.Database) {
+	skipIfEngineType(t, db, driver.EngineTypeMMFiles)
+}
+
+func skipIfEngineType(t *testing.T, db driver.Database, engineType driver.EngineType) {
+	info, err := db.EngineInfo(nil)
+	require.NoError(t, err)
+
+	if info.Type == engineType {
+		t.Skipf("test not supported on engine type %s", engineType)
+	}
 }
 
 // TestCreateDatabase creates a database and then checks that it exists.

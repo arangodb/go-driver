@@ -7,7 +7,7 @@ language: go
 
 env:
   - TEST_SUITE=run-tests-http
-  - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.3
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.5
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:latest
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:latest
 

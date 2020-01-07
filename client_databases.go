@@ -24,6 +24,13 @@ package driver
 
 import "context"
 
+type DatabaseSharding string
+
+const (
+	DatabaseShardingSingle DatabaseSharding = "single"
+	DatabaseShardingNone   DatabaseSharding = ""
+)
+
 // ClientDatabases provides access to the databases in a single arangodb database server, or an entire cluster of arangodb servers.
 type ClientDatabases interface {
 	// Database opens a connection to an existing database.
@@ -50,6 +57,19 @@ type CreateDatabaseOptions struct {
 	// If users is not specified or does not contain any users, a default user root will be created with an empty string password.
 	// This ensures that the new database will be accessible after it is created.
 	Users []CreateDatabaseUserOptions `json:"users,omitempty"`
+
+	// Options database defaults
+	Options CreateDatabaseDefaultOptions `json:"options,omitempty"`
+}
+
+// CreateDatabaseDefaultOptions contains options that change defaults for collections
+type CreateDatabaseDefaultOptions struct {
+	// Default replication factor for collections in database
+	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	// Default write concern for collections in database
+	WriteConcern int `json:"writeConcern,omitempty"`
+	// Default sharding for collections in database
+	Sharding DatabaseSharding `json:"sharding,omitempty"`
 }
 
 // CreateDatabaseUserOptions contains options for creating a single user for a database.

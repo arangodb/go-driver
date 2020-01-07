@@ -61,11 +61,18 @@ TEST_ENDPOINTS := http://localhost:7001
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
+	TEST_JWTSECRET := testing
 	TEST_AUTHENTICATION := basic:root:
 endif
 ifeq ("$(TEST_AUTH)", "jwt")
 	CLUSTERENV := JWTSECRET=testing
+	TEST_JWTSECRET := testing
 	TEST_AUTHENTICATION := jwt:root:
+endif
+ifeq ("$(TEST_AUTH)", "jwtsuper")
+	CLUSTERENV := JWTSECRET=testing
+	TEST_JWTSECRET := testing
+	TEST_AUTHENTICATION := super:testing
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
@@ -131,7 +138,7 @@ run-tests-http:
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
 
-run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth run-tests-single-json-ssl
+run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth run-tests-single-json-jwt-super run-tests-single-json-ssl
 
 run-tests-single-vpack: run-tests-single-vpack-with-auth run-tests-single-vpack-no-auth run-tests-single-vpack-ssl
 
@@ -174,6 +181,10 @@ run-tests-single-vst-1.1-with-auth:
 run-tests-single-vst-1.1-jwt-auth:
 	@echo "Single server, Velocystream 1.1, JWT authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
+
+run-tests-single-json-jwt-super:
+	@echo "Single server, HTTP+JSON, JWT super authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="jwtsuper" TEST_CONTENT_TYPE="json" __run_tests
 
 run-tests-single-json-ssl:
 	@echo "Single server, HTTP+JSON, with authentication, SSL"
@@ -273,6 +284,10 @@ run-tests-cluster-json-with-auth:
 	@echo "Cluster server, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
 
+run-tests-cluster-json-jwt-super:
+	@echo "Cluster server, HTTP+JSON, JWT super authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="jwtsuper" TEST_CONTENT_TYPE="json" __run_tests
+
 run-tests-cluster-vpack-with-auth:
 	@echo "Cluster server, Velocypack, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="vpack" __run_tests
@@ -311,11 +326,15 @@ __test_go_test:
 		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
+		-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
 		-e TEST_CVERSION=$(TEST_CVERSION) \
 		-e TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \
 		-e TEST_PPROF=$(TEST_PPROF) \
 		-e TEST_MODE=$(TEST_MODE) \
+		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
+		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
+		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
@@ -332,11 +351,14 @@ endif
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@mkdir -p "${TMPDIR}"
 	@echo "${TMPDIR}"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ENABLE_BACKUP=$(ENABLE_BACKUP) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
 endif
 
 __test_cleanup:
-	@-docker rm -f -v $$(docker stop $$(docker ps -a -q --filter="name=$TESTCONTAINER")) &> /dev/null
+ifdef TESTCONTAINER
+	@TESTCONTAINERS=$$(docker ps -a -q --filter="name=$(TESTCONTAINER)")
+	@if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); fi
+endif
 ifndef TEST_ENDPOINTS_OVERRIDE
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) "${ROOTDIR}/test/cluster.sh" cleanup
 endif
@@ -356,6 +378,7 @@ run-tests-cluster-failover:
 		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
 		-e TEST_AUTHENTICATION=basic:root: \
+		-e GODEBUG=tls13=1 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test

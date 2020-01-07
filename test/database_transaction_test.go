@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -37,4 +38,90 @@ func TestDatabaseTransaction(t *testing.T) {
 			}
 		})
 	}
+}
+
+func insertDocument(ctx context.Context, col driver.Collection, t *testing.T) driver.DocumentMeta {
+	doc := struct {
+		Name string `json:"name,omitempty"`
+	}{
+		Name: "Hello World",
+	}
+	if meta, err := col.CreateDocument(ctx, &doc); err != nil {
+		t.Fatalf("Failed to create document: %s", describe(err))
+	} else {
+		return meta
+	}
+	return driver.DocumentMeta{}
+}
+
+func documentExists(ctx context.Context, col driver.Collection, key string, exists bool, t *testing.T) {
+	if found, err := col.DocumentExists(ctx, key); err != nil {
+		t.Fatalf("DocumentExists failed: %s", describe(err))
+	} else {
+		if exists != found {
+			t.Errorf("Document status not as expected: expected: %t, actual: %t", exists, found)
+		}
+	}
+}
+
+func TestTransactionCommit(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	colname := "trx_test_col"
+	ctx := context.Background()
+	db := ensureDatabase(ctx, c, "trx_test", nil, t)
+	col := ensureCollection(ctx, db, colname, nil, t)
+
+	trxid, err := db.BeginTransaction(ctx, driver.TransactionCollections{Exclusive: []string{colname}}, nil)
+	if err != nil {
+		t.Fatalf("Failed to begin transaction: %s", describe(err))
+	}
+
+	tctx := driver.WithTransactionID(ctx, trxid)
+	meta1 := insertDocument(tctx, col, t)
+
+	// document should not exist without transaction
+	documentExists(ctx, col, meta1.Key, false, t)
+
+	// document should exist with transaction
+	documentExists(tctx, col, meta1.Key, true, t)
+
+	// Now commit the transaction
+	if err := db.CommitTransaction(ctx, trxid, nil); err != nil {
+		t.Fatalf("Failed to commit transaction: %s", describe(err))
+	}
+
+	// document should exist
+	documentExists(ctx, col, meta1.Key, true, t)
+}
+
+func TestTransactionAbort(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	colname := "trx_test_col_abort"
+	ctx := context.Background()
+	db := ensureDatabase(ctx, c, "trx_test", nil, t)
+	col := ensureCollection(ctx, db, colname, nil, t)
+
+	trxid, err := db.BeginTransaction(ctx, driver.TransactionCollections{Exclusive: []string{colname}}, nil)
+	if err != nil {
+		t.Fatalf("Failed to begin transaction: %s", describe(err))
+	}
+
+	tctx := driver.WithTransactionID(ctx, trxid)
+	meta1 := insertDocument(tctx, col, t)
+
+	// document should not exist without transaction
+	documentExists(ctx, col, meta1.Key, false, t)
+
+	// document should exist with transaction
+	documentExists(tctx, col, meta1.Key, true, t)
+
+	// Now commit the transaction
+	if err := db.AbortTransaction(ctx, trxid, nil); err != nil {
+		t.Fatalf("Failed to abort transaction: %s", describe(err))
+	}
+
+	// document should exist
+	documentExists(ctx, col, meta1.Key, false, t)
 }

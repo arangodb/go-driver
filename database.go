@@ -52,6 +52,12 @@ type Database interface {
 	// Graph functions
 	DatabaseGraphs
 
+	// Streaming Transactions functions
+	DatabaseStreamingTransactions
+
+	// ArangoSearch Analyzers API
+	DatabaseArangoSearchAnalyzers
+
 	// Query performs an AQL query, returning a cursor used to iterate over the returned documents.
 	// Note that the returned Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
 	Query(ctx context.Context, query string, bindVars map[string]interface{}) (Cursor, error)
@@ -75,6 +81,12 @@ type DatabaseInfo struct {
 	Path string `json:"path,omitempty"`
 	// If true then the database is the _system database.
 	IsSystem bool `json:"isSystem,omitempty"`
+	// Default replication factor for collections in database
+	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	// Default write concern for collections in database
+	WriteConcern int `json:"writeConcern,omitempty"`
+	// Default sharding for collections in database
+	Sharding DatabaseSharding `json:"sharding,omitempty"`
 }
 
 // EngineType indicates type of database engine being used.

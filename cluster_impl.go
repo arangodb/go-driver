@@ -110,13 +110,20 @@ func (c *cluster) MoveShard(ctx context.Context, col Collection, shard ShardID, 
 	if _, err := req.SetBody(input); err != nil {
 		return WithStack(err)
 	}
-	applyContextSettings(ctx, req)
+	cs := applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return WithStack(err)
 	}
 	if err := resp.CheckStatus(202); err != nil {
 		return WithStack(err)
+	}
+	var result jobIDResponse
+	if err := resp.ParseBody("", &result); err != nil {
+		return WithStack(err)
+	}
+	if cs.JobIDResponse != nil {
+		*cs.JobIDResponse = result.JobID
 	}
 	return nil
 }
@@ -125,7 +132,7 @@ type cleanOutServerRequest struct {
 	Server string `json:"server"`
 }
 
-type cleanOutServerResponse struct {
+type jobIDResponse struct {
 	JobID string `json:"id"`
 }
 
@@ -149,7 +156,37 @@ func (c *cluster) CleanOutServer(ctx context.Context, serverID string) error {
 	if err := resp.CheckStatus(200, 202); err != nil {
 		return WithStack(err)
 	}
-	var result cleanOutServerResponse
+	var result jobIDResponse
+	if err := resp.ParseBody("", &result); err != nil {
+		return WithStack(err)
+	}
+	if cs.JobIDResponse != nil {
+		*cs.JobIDResponse = result.JobID
+	}
+	return nil
+}
+
+// ResignServer triggers activities to let a DBServer resign for all shards.
+func (c *cluster) ResignServer(ctx context.Context, serverID string) error {
+	req, err := c.conn.NewRequest("POST", "_admin/cluster/resignLeadership")
+	if err != nil {
+		return WithStack(err)
+	}
+	input := cleanOutServerRequest{
+		Server: serverID,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	cs := applyContextSettings(ctx, req)
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200, 202); err != nil {
+		return WithStack(err)
+	}
+	var result jobIDResponse
 	if err := resp.ParseBody("", &result); err != nil {
 		return WithStack(err)
 	}
@@ -244,11 +281,15 @@ type inventoryCollectionParametersInternal struct {
 		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
 		LastValue     int64  `json:"lastValue,omitempty"`
 	} `json:"keyOptions"`
-	Name                 string                 `json:"name,omitempty"`
-	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
-	Path                 string                 `json:"path,omitempty"`
-	PlanID               string                 `json:"planId,omitempty"`
-	ReplicationFactor    replicationFactor      `json:"replicationFactor,omitempty"`
+	Name              string            `json:"name,omitempty"`
+	NumberOfShards    int               `json:"numberOfShards,omitempty"`
+	Path              string            `json:"path,omitempty"`
+	PlanID            string            `json:"planId,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+	// Deprecated: use 'WriteConcern' instead
+	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	// Available from 3.6 arangod version.
+	WriteConcern         int                    `json:"writeConcern,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
 	Status               CollectionStatus       `json:"status,omitempty"`
@@ -277,6 +318,8 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		Path:                 p.Path,
 		PlanID:               p.PlanID,
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
+		MinReplicationFactor: p.MinReplicationFactor,
+		WriteConcern:         p.WriteConcern,
 		ShardKeys:            p.ShardKeys,
 		Shards:               p.Shards,
 		Status:               p.Status,
@@ -310,6 +353,8 @@ func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollection
 		Path:                 p.Path,
 		PlanID:               p.PlanID,
 		ReplicationFactor:    int(p.ReplicationFactor),
+		MinReplicationFactor: p.MinReplicationFactor,
+		WriteConcern:         p.WriteConcern,
 		ShardKeys:            p.ShardKeys,
 		Shards:               p.Shards,
 		Status:               p.Status,

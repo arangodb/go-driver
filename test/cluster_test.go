@@ -292,9 +292,12 @@ func TestClusterMoveShard(t *testing.T) {
 					if dbServers[0] != targetServerID {
 						movedShards++
 						var rawResponse []byte
-						if err := cl.MoveShard(driver.WithRawResponse(ctx, &rawResponse), col, shardID, dbServers[0], targetServerID); err != nil {
+						var jobID string
+						jobCtx := driver.WithJobIDResponse(driver.WithRawResponse(ctx, &rawResponse), &jobID)
+						if err := cl.MoveShard(jobCtx, col, shardID, dbServers[0], targetServerID); err != nil {
 							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
+						defer waitForJob(t, jobID, c)()
 					}
 				}
 			}
@@ -334,6 +337,92 @@ func TestClusterMoveShard(t *testing.T) {
 			}
 			if time.Since(start) > maxTestTime {
 				t.Errorf("%d shards did not move within %s", shardsNotOnTargetServerID, maxTestTime)
+				break
+			}
+			t.Log("Waiting a bit")
+			time.Sleep(time.Second * 5)
+		}
+	}
+}
+
+func TestClusterResignLeadership(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5.1", t)
+	cl, err := c.Cluster(ctx)
+	if driver.IsPreconditionFailed(err) {
+		t.Skip("Not a cluster")
+	} else {
+		db, err := c.Database(ctx, "_system")
+		if err != nil {
+			t.Fatalf("Failed to open _system database: %s", describe(err))
+		}
+		col, err := db.CreateCollection(ctx, "test_resign_leadership", &driver.CreateCollectionOptions{
+			NumberOfShards:    12,
+			ReplicationFactor: 2,
+		})
+		if err != nil {
+			t.Fatalf("CreateCollection failed: %s", describe(err))
+		}
+		inv, err := cl.DatabaseInventory(ctx, db)
+		if err != nil {
+			t.Fatalf("DatabaseInventory failed: %s", describe(err))
+		}
+		if len(inv.Collections) == 0 {
+			t.Error("Expected multiple collections, got 0")
+		}
+		var targetServerID driver.ServerID
+	collectionLoop:
+		for _, colInv := range inv.Collections {
+			if colInv.Parameters.Name == col.Name() {
+				for _, dbServers := range colInv.Parameters.Shards {
+					targetServerID = dbServers[0]
+
+					var jobID string
+					jobCtx := driver.WithJobIDResponse(context.Background(), &jobID)
+
+					if err := cl.ResignServer(jobCtx, string(targetServerID)); err != nil {
+						t.Errorf("ResignLeadership for %s failed: %s", targetServerID, describe(err))
+					}
+					defer waitForJob(t, jobID, c)()
+
+					break collectionLoop
+				}
+			}
+		}
+
+		// Wait until targetServerID is no longer leader
+		start := time.Now()
+		maxTestTime := time.Minute
+		lastLeaderForShardsNum := 0
+		for {
+			leaderForShardsNum := 0
+			inv, err := cl.DatabaseInventory(ctx, db)
+			if err != nil {
+				t.Errorf("DatabaseInventory failed: %s", describe(err))
+			} else {
+				for _, colInv := range inv.Collections {
+					if colInv.Parameters.Name == col.Name() {
+						for shardID, dbServers := range colInv.Parameters.Shards {
+							if dbServers[0] == targetServerID {
+								leaderForShardsNum++
+								t.Logf("%s is still leader for %s", targetServerID, shardID)
+							}
+						}
+					}
+				}
+			}
+			if leaderForShardsNum == 0 {
+				// We're done
+				break
+			}
+			if leaderForShardsNum != lastLeaderForShardsNum {
+				// Something changed, we give a bit more time
+				maxTestTime = maxTestTime + time.Second*15
+				lastLeaderForShardsNum = leaderForShardsNum
+			}
+			if time.Since(start) > maxTestTime {
+				t.Errorf("%s did not resign within %s", targetServerID, maxTestTime)
 				break
 			}
 			t.Log("Waiting a bit")
@@ -399,9 +488,12 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 					if dbServers[0] != targetServerID {
 						movedShards++
 						var rawResponse []byte
-						if err := cl.MoveShard(driver.WithRawResponse(ctx, &rawResponse), col, shardID, dbServers[0], targetServerID); err != nil {
+						var jobID string
+						jobCtx := driver.WithJobIDResponse(driver.WithRawResponse(ctx, &rawResponse), &jobID)
+						if err := cl.MoveShard(jobCtx, col, shardID, dbServers[0], targetServerID); err != nil {
 							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
+						defer waitForJob(t, jobID, c)()
 					}
 				}
 			}

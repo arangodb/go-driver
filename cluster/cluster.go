@@ -73,8 +73,8 @@ func NewConnection(config ConnectionConfig, connectionBuilder ServerConnectionBu
 }
 
 const (
-	defaultTimeout = 9 * time.Minute
-	keyEndpoint    = "arangodb-endpoint"
+	defaultTimeout                = 9 * time.Minute
+	keyEndpoint driver.ContextKey = "arangodb-endpoint"
 )
 
 type clusterConnection struct {

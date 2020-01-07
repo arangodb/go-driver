@@ -58,6 +58,7 @@ const (
 	keyBatchID                  ContextKey = "arangodb-batchID"
 	keyJobIDResponse            ContextKey = "arangodb-jobIDResponse"
 	keyAllowDirtyReads          ContextKey = "arangodb-allowDirtyReads"
+	keyTransactionID            ContextKey = "arangodb-transactionID"
 )
 
 // WithRevision is used to configure a context to make document
@@ -139,7 +140,7 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 }
 
 // WithAllowDirtyReads is used in an active failover deployment to allow reads from the follower.
-// You can pass a reference to a boolean that will set according to wether a potentially dirty read
+// You can pass a reference to a boolean that will set according to whether a potentially dirty read
 // happened or not. nil is allowed.
 // This is valid for document reads, aql queries, gharial vertex and edge reads.
 func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Context {
@@ -228,6 +229,11 @@ func WithBatchID(parent context.Context, id string) context.Context {
 // This is used in cluster functions.
 func WithJobIDResponse(parent context.Context, jobID *string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyJobIDResponse, jobID)
+}
+
+// WithTransactionID is used to bind a request to a specific transaction
+func WithTransactionID(parent context.Context, tid TransactionID) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyTransactionID, tid)
 }
 
 type contextSettings struct {
@@ -320,6 +326,10 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if dirtyReadFlag, ok := v.(*bool); ok {
 			result.DirtyReadFlag = dirtyReadFlag
 		}
+	}
+	// TransactionID
+	if v := ctx.Value(keyTransactionID); v != nil {
+		req.SetHeader("x-arango-trx-id", string(v.(TransactionID)))
 	}
 	// ReturnOld
 	if v := ctx.Value(keyReturnOld); v != nil {

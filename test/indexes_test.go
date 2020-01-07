@@ -24,7 +24,9 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -281,4 +283,280 @@ func TestIndexesDeduplicateSkipList(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestIndexesTTL tests TTL index.
+func TestIndexesTTL(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+
+	db := ensureDatabase(nil, c, "index_test", nil, t)
+
+	// Create some indexes with de-duplication off
+	col := ensureCollection(nil, db, "indexes_ttl_test", nil, t)
+	if _, _, err := col.EnsureTTLIndex(nil, "createdAt", 10, nil); err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+
+	doc := struct {
+		CreatedAt int64 `json:"createdAt,omitempty"`
+	}{
+		CreatedAt: time.Now().Add(10 * time.Second).Unix(),
+	}
+	meta, err := col.CreateDocument(nil, doc)
+	if err != nil {
+		t.Errorf("Expected success, got %s", describe(err))
+	}
+
+	wasThere := false
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	for {
+		if found, err := col.DocumentExists(ctx, meta.Key); err != nil {
+			t.Fatalf("Failed to test if document exists: %s", describe(err))
+		} else {
+			if found {
+				if !wasThere {
+					t.Log("Found document")
+				}
+				wasThere = true
+			} else {
+				break
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatalf("Timeout while waiting for document to be deleted: %s", ctx.Err())
+		case <-time.After(time.Second):
+			break
+		}
+	}
+
+	if !wasThere {
+		t.Fatalf("Document never existed")
+	}
+}
+
+var namedIndexTestCases = []struct {
+	Name           string
+	CreateCallback func(col driver.Collection, name string) (driver.Index, error)
+}{
+	{
+		Name: "FullText",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureFullTextIndex(nil, []string{"text"}, &driver.EnsureFullTextIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "Geo",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureGeoIndex(nil, []string{"geo"}, &driver.EnsureGeoIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "Hash",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureHashIndex(nil, []string{"name"}, &driver.EnsureHashIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "Persistent",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsurePersistentIndex(nil, []string{"pername"}, &driver.EnsurePersistentIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "skipList",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureSkipListIndex(nil, []string{"pername"}, &driver.EnsureSkipListIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name: "TTL",
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureTTLIndex(nil, "createdAt", 3600, &driver.EnsureTTLIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+}
+
+func TestNamedIndexes(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+
+	db := ensureDatabase(nil, c, "named_index_test", nil, t)
+	col := ensureCollection(nil, db, "named_index_test_col", nil, t)
+
+	for _, testCase := range namedIndexTestCases {
+		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
+			// Check if index name is forwarded through out all APIs
+			idx, err := testCase.CreateCallback(col, testCase.Name)
+			if err != nil {
+				t.Fatalf("Failed to create index: %s", describe(err))
+			}
+
+			if idx.UserName() != testCase.Name {
+				t.Errorf("Expected user name: %s, found: %s", testCase.Name, idx.UserName())
+			}
+
+			// Now get the index list
+			idxlist, err := col.Indexes(nil)
+			if err != nil {
+				t.Fatalf("Failed to get index list: %s", describe(err))
+			}
+
+			found := false
+			for _, i := range idxlist {
+				if i.ID() == idx.ID() {
+					found = true
+					if i.UserName() != testCase.Name {
+						t.Errorf("Expected user name: %s, found: %s", testCase.Name, i.UserName())
+					}
+					break
+				}
+			}
+
+			if !found {
+				t.Fatal("Index not found in list")
+			}
+
+			// Try to access index by id
+			idx2, err := col.Index(nil, idx.Name())
+			if err != nil {
+				t.Fatalf("Failed to get index by name: %s", describe(err))
+			}
+
+			if idx2.UserName() != testCase.Name {
+				t.Errorf("Expected user name: %s, found: %s", testCase.Name, idx2.UserName())
+			}
+		})
+	}
+}
+
+func TestNamedIndexesClusterInventory(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	colname := "named_index_test_col_inv"
+	db := ensureDatabase(nil, c, "named_index_test_inv", nil, t)
+	col := ensureCollection(nil, db, colname, nil, t)
+
+	cc, err := c.Cluster(nil)
+	if err != nil {
+		t.Fatalf("Failed to obtain cluster client: %s", describe(err))
+	}
+
+	for _, testCase := range namedIndexTestCases {
+		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
+			// Check if index name is forwarded through out all APIs
+			idx, err := testCase.CreateCallback(col, testCase.Name)
+			if err != nil {
+				t.Fatalf("Failed to create index: %s", describe(err))
+			}
+
+			inv, err := cc.DatabaseInventory(nil, db)
+			if err != nil {
+				t.Fatalf("Failed to obtain cluster inventory: %s", describe(err))
+			}
+
+			invcol, found := inv.CollectionByName(colname)
+			if !found {
+				t.Fatalf("Collection not in inventory!")
+			}
+
+			found = false
+			for _, i := range invcol.Indexes {
+				if i.ID == idx.Name() {
+					found = true
+					if i.Name != testCase.Name {
+						t.Errorf("Expected user name: %s, found: %s", testCase.Name, i.Name)
+					}
+				}
+			}
+
+			if !found {
+				t.Errorf("Index with id %s not found", idx.ID())
+			}
+		})
+	}
+}
+
+func TestTTLIndexesClusterInventory(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.5", t)
+	skipNoCluster(c, t)
+	ttl := 3600
+	colname := "ttl_index_test_col_inv"
+	db := ensureDatabase(nil, c, "index_test_inv", nil, t)
+	col := ensureCollection(nil, db, colname, nil, t)
+
+	cc, err := c.Cluster(nil)
+	if err != nil {
+		t.Fatalf("Failed to obtain cluster client: %s", describe(err))
+	}
+
+	idx, _, err := col.EnsureTTLIndex(nil, "createdAt", ttl, nil)
+	if err != nil {
+		t.Fatalf("Failed to create ttl index: %s", describe(err))
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	for {
+
+		var raw []byte
+		rctx := driver.WithRawResponse(ctx, &raw)
+
+		inv, err := cc.DatabaseInventory(rctx, db)
+		if err != nil {
+			t.Fatalf("Failed to obtain cluster inventory: %s", describe(err))
+		}
+
+		invcol, found := inv.CollectionByName(colname)
+		if !found {
+			t.Fatalf("Collection not in inventory!")
+		}
+
+		found = false
+		for _, i := range invcol.Indexes {
+			if i.ID == idx.Name() {
+				found = true
+				if i.ExpireAfter != ttl {
+					t.Errorf("Expected ttl value: %d, found: %d", ttl, i.ExpireAfter)
+				}
+			}
+		}
+
+		if found {
+			break
+		}
+
+		select {
+		case <-time.After(1 * time.Second):
+			break
+		case <-ctx.Done():
+			t.Fatalf("Index not created: %s", describe(ctx.Err()))
+		}
+	}
+
 }

@@ -39,6 +39,7 @@ func (c *collection) DocumentExists(ctx context.Context, key string) (bool, erro
 	if err != nil {
 		return false, WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
 		return false, WithStack(err)
