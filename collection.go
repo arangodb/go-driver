@@ -87,6 +87,8 @@ type CollectionInfo struct {
 	Type CollectionType `json:"type,omitempty"`
 	// If true then the collection is a system collection.
 	IsSystem bool `json:"isSystem,omitempty"`
+	// Global unique name for the collection
+	GloballyUniqueId string `json:"globallyUniqueId,omitempty"`
 }
 
 // CollectionProperties contains extended information about a collection.
