@@ -58,6 +58,12 @@ type CreateGraphOptions struct {
 	// NumberOfShards is the number of shards that is used for every collection within this graph.
 	// Cannot be modified later.
 	NumberOfShards int
+	// ReplicationFactor is the number of replication factor that is used for every collection within this graph.
+	// Cannot be modified later.
+	ReplicationFactor int
+	// WriteConcern is the number of min replication factor that is used for every collection within this graph.
+	// Cannot be modified later.
+	WriteConcern int
 }
 
 // EdgeDefinition contains all information needed to define a single edge in a graph.

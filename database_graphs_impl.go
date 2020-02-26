@@ -117,6 +117,12 @@ type createGraphAdditionalOptions struct {
 	// NumberOfShards is the number of shards that is used for every collection within this graph.
 	// Cannot be modified later.
 	NumberOfShards int `json:"numberOfShards,omitempty"`
+	// ReplicationFactor is the number of replication factor that is used for every collection within this graph.
+	// Cannot be modified later.
+	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	// WriteConcern is the number of min replication factor that is used for every collection within this graph.
+	// Cannot be modified later.
+	WriteConcern int `json:"writeConcern,omitempty"`
 }
 
 // CreateGraph creates a new graph with given name and options, and opens a connection to it.
@@ -133,6 +139,8 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 			input.Options = &createGraphAdditionalOptions{
 				SmartGraphAttribute: options.SmartGraphAttribute,
 				NumberOfShards:      options.NumberOfShards,
+				ReplicationFactor:   options.ReplicationFactor,
+				WriteConcern:        options.WriteConcern,
 			}
 		}
 	}
