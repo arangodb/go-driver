@@ -113,7 +113,7 @@ func Test_Graph_AdvancedCreate(t *testing.T) {
 	options.ReplicationFactor = 3
 	options.WriteConcern = 2
 
-	_, err := db.CreateGraph(ctx, graphID, &options)
+	_, err = db.CreateGraph(ctx, graphID, &options)
 	require.NoError(t, err)
 
 	// Wait for collections to be created
@@ -157,7 +157,7 @@ func Test_Graph_AdvancedCreate_Defaults(t *testing.T) {
 
 	options, collections := newGraphOpts(db)
 
-	_, err := db.CreateGraph(ctx, graphID, &options)
+	_, err = db.CreateGraph(ctx, graphID, &options)
 	require.NoError(t, err)
 
 	// Wait for collections to be created
