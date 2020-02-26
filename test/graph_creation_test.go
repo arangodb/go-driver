@@ -99,6 +99,8 @@ func Test_Graph_AdvancedCreate(t *testing.T) {
 	ctx := context.Background()
 
 	c := createClientFromEnv(t, true)
+	v, err := c.Version(nil)
+	require.NoError(t, err)
 
 	skipNoCluster(c, t)
 
@@ -128,7 +130,9 @@ func Test_Graph_AdvancedCreate(t *testing.T) {
 			require.Equalf(t, 3, prop.NumberOfShards, "NumberOfShards mismatch for %s", collName)
 
 			require.Equalf(t, 3, prop.ReplicationFactor, "ReplicationFactor mismatch for %s", collName)
-			require.Equalf(t, 2, prop.WriteConcern, "WriteConcern mismatch for %s", collName)
+			if v.Version.CompareTo("3.6") >= 0 {
+				require.Equalf(t, 2, prop.WriteConcern, "WriteConcern mismatch for %s", collName)
+			}
 		}
 	})
 }
@@ -141,6 +145,8 @@ func Test_Graph_AdvancedCreate_Defaults(t *testing.T) {
 	ctx := context.Background()
 
 	c := createClientFromEnv(t, true)
+	v, err := c.Version(nil)
+	require.NoError(t, err)
 
 	skipNoCluster(c, t)
 
@@ -166,7 +172,9 @@ func Test_Graph_AdvancedCreate_Defaults(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equalf(t, 1, prop.ReplicationFactor, "ReplicationFactor mismatch for %s", collName)
-			require.Equalf(t, 1, prop.WriteConcern, "WriteConcern mismatch for %s", collName)
+			if v.Version.CompareTo("3.6") >= 0 {
+				require.Equalf(t, 1, prop.WriteConcern, "WriteConcern mismatch for %s", collName)
+			}
 		}
 	})
 }
