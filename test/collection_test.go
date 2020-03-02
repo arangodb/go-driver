@@ -338,11 +338,21 @@ func TestCollectionProperties(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
 	}
+	version, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Version failed: %s", describe(err))
+	}
+
 	if p, err := col.Properties(nil); err != nil {
 		t.Errorf("Failed to fetch collection properties: %s", describe(err))
 	} else {
 		if p.ID == "" {
 			t.Errorf("Got empty collection ID")
+		}
+		if version.Version.CompareTo("3.5") >= 0 {
+			if p.GloballyUniqueId == "" {
+				t.Errorf("Got empty collection globallyUniqueId")
+			}
 		}
 		if p.Name != name {
 			t.Errorf("Expected name '%s', got '%s'", name, p.Name)
