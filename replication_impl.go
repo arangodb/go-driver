@@ -148,8 +148,6 @@ func (b *batchMetadata) Delete(ctx context.Context) error {
 	if err != nil {
 		return WithStack(err)
 	}
-
-	req = req.SetQuery("serverId", strconv.FormatInt(b.serverID, 10))
 	resp, err := b.cl.conn.Do(ctx, req)
 	if err != nil {
 		return WithStack(err)
