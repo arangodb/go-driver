@@ -44,6 +44,9 @@ type batchMetadata struct {
 	closed   int32
 }
 
+// ErrBatchClosed occurs when there is an attempt closing or prolonging closed batch
+var ErrBatchClosed = errors.New("Batch already closed")
+
 // CreateBatch creates a "batch" to prevent WAL file removal and to take a snapshot
 func (c *client) CreateBatch(ctx context.Context, db Database, serverID int64, ttl time.Duration) (Batch, error) {
 	req, err := c.conn.NewRequest("POST", path.Join("_db", db.Name(), "_api/replication/batch"))
@@ -109,7 +112,7 @@ func (b batchMetadata) LastTick() Tick {
 // Extend the lifetime of an existing batch on the server
 func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 0) {
-		return WithStack(errors.New("Batch already closed"))
+		return WithStack(ErrBatchClosed)
 	}
 
 	req, err := b.cl.conn.NewRequest("PUT", path.Join("_db", b.database, "_api/replication/batch", b.ID))
@@ -139,7 +142,7 @@ func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 // Delete an existing dump batch
 func (b *batchMetadata) Delete(ctx context.Context) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 1) {
-		return WithStack(errors.New("Batch already closed"))
+		return WithStack(ErrBatchClosed)
 	}
 
 	req, err := b.cl.conn.NewRequest("DELETE", path.Join("_db", b.database, "_api/replication/batch", b.ID))
