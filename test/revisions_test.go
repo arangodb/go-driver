@@ -12,9 +12,6 @@ import (
 
 // TODO more unit tests ?
 func TestRevisionTree(t *testing.T) {
-	//test := driver.RevisionInt64{1661074099696304128, ""}
-	//test.MarshalJSON()
-	//return
 	c := createClientFromEnv(t, true)
 	if getTestMode() != testModeSingle {
 		t.Skipf("Not a single")
