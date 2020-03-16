@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"github.com/arangodb/go-velocypack"
 	"path"
 )
 
@@ -23,8 +24,8 @@ type RevisionTreeNode struct {
 // RevisionTree is a list of Revisions in a Merkle tree
 type RevisionTree struct {
 	Version  int                `json:"version"`
-	RangeMin RevisionInt64      `json:"rangeMin,string"`
-	RangeMax RevisionInt64      `json:"rangeMax,string"`
+	RangeMin RevisionInt64      `json:"rangeMin,string" velocypack:"string,noquota"`
+	RangeMax RevisionInt64      `json:"rangeMax,string" velocypack:"string,noquota"`
 	Nodes    []RevisionTreeNode `json:"nodes"`
 }
 
@@ -53,17 +54,39 @@ var (
 	}
 )
 
-// UnmarshalJSON parses string revision document into int64 number
-func (n *RevisionInt64) UnmarshalJSON(source []byte) (err error) {
+func decodeRevision(revision []byte) RevisionInt64 {
 	var t int64
 
-	for _, s := range source {
+	for _, s := range revision {
 		if s == '"' {
 			continue
 		}
 		t = t*64 + int64(revisionDecodingTable[s])
 	}
-	*n = RevisionInt64(t)
+
+	return RevisionInt64(t)
+}
+
+func encodeRevision(revision int64) []byte {
+	if revision == 0 {
+		return []byte{}
+	}
+
+	var result [12]byte
+	index := cap(result)
+
+	for revision > 0 {
+		index--
+		result[index] = revisionEncodingTable[uint8(revision&0x3f)]
+		revision >>= 6
+	}
+
+	return result[index:]
+}
+
+// UnmarshalJSON parses string revision document into int64 number
+func (n *RevisionInt64) UnmarshalJSON(revision []byte) (err error) {
+	*n = decodeRevision(revision)
 	return nil
 }
 
@@ -73,68 +96,34 @@ func (n *RevisionInt64) MarshalJSON() ([]byte, error) {
 		return []byte{'"', '"'}, nil // return an empty string
 	}
 
-	var result [16]byte
-	t := *n
-	result[15] = '"'
-	index := 14
-
-	for t > 0 {
-		result[index] = revisionEncodingTable[uint8(t&0x3f)]
-		t >>= 6
-		index--
-	}
-	result[index] = '"'
-
-	return result[index:], nil
+	value := make([]byte, 0, 16)
+	r := encodeRevision(int64(*n))
+	value = append(value, '"')
+	value = append(value, r...)
+	value = append(value, '"')
+	return value, nil
 }
 
-//func (n *RevisionInt64) UnmarshalVPack(slice velocypack.Slice) error {
-//	source, err := slice.GetString()
-//	if err != nil {
-//		return err
-//	}
-//
-//	var t int64
-//
-//	for _, s := range source {
-//		if s == '"' {
-//			continue
-//		}
-//		t = t*64 + int64(revisionDecodingTable[s])
-//	}
-//	*n = RevisionInt64(t)
-//	return nil
-//}
-//
-//func (n *RevisionInt64) MarshalVPack() (velocypack.Slice, error) {
-//	var b velocypack.Builder
-//
-//	var result [16]byte
-//	t := *n
-//
-//	index := 15
-//
-//	for t > 0 {
-//		result[index] = revisionEncodingTable[uint8(t&0x3f)]
-//		t >>= 6
-//		index--
-//	}
-//
-//	if err := b.AddValue(velocypack.NewStringValue(string(result[index+1:]))); err != nil {
-//		return nil, err
-//	}
-//
-//	res, _ := b.Slice()
-//	dupa := make([]byte, 0, len(res))
-//
-//	for _, j := range res {
-//
-//		dupa = append(dupa, j)
-//	}
-//	b.Close()
-//
-//	return dupa, nil
-//}
+func (n *RevisionInt64) UnmarshalVPack(slice velocypack.Slice) error {
+	source, err := slice.GetString()
+	if err != nil {
+		return err
+	}
+
+	*n = decodeRevision([]byte(source))
+	return nil
+}
+
+func (n *RevisionInt64) MarshalVPack() (velocypack.Slice, error) {
+	var b velocypack.Builder
+
+	value := velocypack.NewStringValue(string(encodeRevision(int64(*n))))
+	if err := b.AddValue(value); err != nil {
+		return nil, err
+	}
+
+	return b.Slice()
+}
 
 // GetRevisionTree retrieves the Revision tree (Merkel tree) associated with the collection.
 func (c *client) GetRevisionTree(ctx context.Context, db Database, batchId, collection string) (RevisionTree, error) {
@@ -180,7 +169,7 @@ func (c *client) GetRevisionsByRanges(ctx context.Context, db Database, batchId,
 		req = req.SetQuery("resume", string(bytes))
 	}
 
-	req, err = req.SetBody(minMaxRevision)
+	req, err = req.SetBodyArray(minMaxRevision, nil)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -244,5 +233,3 @@ func (c *client) GetRevisionDocuments(ctx context.Context, db Database, batchId,
 
 	return documents, nil
 }
-
-// TODO implement Marshal and UnMarshal for vst

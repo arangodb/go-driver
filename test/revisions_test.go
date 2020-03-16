@@ -10,13 +10,12 @@ import (
 	"time"
 )
 
-// TODO more unit tests ?
 func TestRevisionTree(t *testing.T) {
-	c := createClientFromEnv(t, true)
 	if getTestMode() != testModeSingle {
 		t.Skipf("Not a single")
 	}
-	//skipBelowVersion(c, "3.7", t) // TODO turn on at the end of task
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.7", t)
 
 	db := ensureDatabase(nil, c, "revision_tree", nil, t)
 	col := ensureCollection(nil, db, "revision_tree", nil, t)
@@ -66,6 +65,7 @@ func TestRevisionTree(t *testing.T) {
 	require.Len(t, revisions[0], noOfDocuments)
 
 	getDocuments := func() ([]map[string]interface{}, error) {
+		time.Sleep(3) // TODO  why we need to wait for documents
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
 
