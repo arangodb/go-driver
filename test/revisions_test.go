@@ -20,7 +20,7 @@ func TestRevisionTree(t *testing.T) {
 	db := ensureDatabase(nil, c, "revision_tree", nil, t)
 	col := ensureCollection(nil, db, "revision_tree", nil, t)
 
-	var noOfDocuments int = 100
+	var noOfDocuments int = 80000
 	expectedDocuments := make([]interface{}, 0, noOfDocuments)
 	for i := 0; i < noOfDocuments; i++ {
 		expectedDocuments = append(expectedDocuments, UserDoc{
@@ -49,27 +49,41 @@ func TestRevisionTree(t *testing.T) {
 	require.NotEmpty(t, tree.RangeMin)
 	require.NotEmpty(t, tree.RangeMax)
 	require.NotEmpty(t, tree.Nodes)
+	require.Equal(t, 6, tree.MaxDepth)
+	//require.Equal(t, 8, tree.BranchingFactor) // TODO it is not in the response from arangod
 
-	getRevisions := func() ([]driver.Revisions, error) {
+	getRanges := func() driver.Revisions {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
 		rangeRevisions := []driver.RevisionMinMax{{tree.RangeMin, tree.RangeMax}}
-		return c.Replication().GetRevisionsByRanges(timeoutCtx, db, batch.BatchID(), col.Name(), rangeRevisions, nil)
+		var resume driver.RevisionInt64
+		revisions := make(driver.Revisions, 0)
+
+		for {
+			ranges, err := c.Replication().GetRevisionsByRanges(timeoutCtx, db, batch.BatchID(), col.Name(),
+				rangeRevisions, resume)
+			require.NoError(t, err)
+			revisions = append(revisions, ranges.Ranges[0]...)
+
+			if ranges.Resume == 0 {
+				break
+			}
+			resume = ranges.Resume
+		}
+		return revisions
 	}
 
-	revisions, err := getRevisions()
-	require.NoError(t, err)
+	revisions := getRanges()
 	require.NotEmpty(t, revisions)
-	require.Len(t, revisions, 1)
-	require.Len(t, revisions[0], noOfDocuments)
+	require.Len(t, revisions, noOfDocuments)
 
 	getDocuments := func() ([]map[string]interface{}, error) {
 		time.Sleep(3) // TODO  why we need to wait for documents
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
 
-		return c.Replication().GetRevisionDocuments(timeoutCtx, db, batch.BatchID(), col.Name(), revisions[0])
+		return c.Replication().GetRevisionDocuments(timeoutCtx, db, batch.BatchID(), col.Name(), revisions)
 	}
 
 	documents, err := getDocuments()

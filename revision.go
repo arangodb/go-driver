@@ -15,7 +15,12 @@ type RevisionMinMax [2]RevisionInt64
 // Revisions is a slice of Revisions
 type Revisions []RevisionInt64
 
-// RevisionTreeNode is a bucket (leaf) in Merkle tree with hashed Revisions and with count of documents in the bucket
+type RevisionRanges struct {
+	Ranges []Revisions   `json:"ranges"`
+	Resume RevisionInt64 `json:"resume,string" velocypack:",noquote"`
+}
+
+// RevisionTreeNode is a leaf in Merkle tree with hashed Revisions and with count of documents in the leaf
 type RevisionTreeNode struct {
 	Hash  string `json:"hash"`
 	Count int64  `json:"count,int"`
@@ -23,10 +28,12 @@ type RevisionTreeNode struct {
 
 // RevisionTree is a list of Revisions in a Merkle tree
 type RevisionTree struct {
-	Version  int                `json:"version"`
-	RangeMin RevisionInt64      `json:"rangeMin,string" velocypack:"string,noquota"`
-	RangeMax RevisionInt64      `json:"rangeMax,string" velocypack:"string,noquota"`
-	Nodes    []RevisionTreeNode `json:"nodes"`
+	Version         int                `json:"version"`
+	BranchingFactor int                `json:"branchingFactor"`
+	MaxDepth        int                `json:"maxDepth"`
+	RangeMin        RevisionInt64      `json:"rangeMin,string" velocypack:",noquote"`
+	RangeMax        RevisionInt64      `json:"rangeMax,string" velocypack:",noquote"`
+	Nodes           []RevisionTreeNode `json:"nodes"`
 }
 
 var (
@@ -155,37 +162,36 @@ func (c *client) GetRevisionTree(ctx context.Context, db Database, batchId, coll
 
 // GetRevisionsByRanges retrieves the revision IDs of documents within requested ranges.
 func (c *client) GetRevisionsByRanges(ctx context.Context, db Database, batchId, collection string,
-	minMaxRevision []RevisionMinMax, resume *RevisionInt64) ([]Revisions, error) {
+	minMaxRevision []RevisionMinMax, resume RevisionInt64) (RevisionRanges, error) {
 
 	req, err := c.conn.NewRequest("PUT", path.Join("_db", db.Name(), "_api/replication/revisions/ranges"))
 	if err != nil {
-		return nil, WithStack(err)
+		return RevisionRanges{}, WithStack(err)
 	}
 
 	req = req.SetQuery("batchId", batchId)
 	req = req.SetQuery("collection", collection)
-	if resume != nil {
-		bytes, _ := resume.MarshalJSON()
-		req = req.SetQuery("resume", string(bytes))
+	if resume > 0 {
+		req = req.SetQuery("resume", string(encodeRevision(int64(resume))))
 	}
 
 	req, err = req.SetBodyArray(minMaxRevision, nil)
 	if err != nil {
-		return nil, WithStack(err)
+		return RevisionRanges{}, WithStack(err)
 	}
 
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
-		return nil, WithStack(err)
+		return RevisionRanges{}, WithStack(err)
 	}
 
 	if err := resp.CheckStatus(200); err != nil {
-		return nil, WithStack(err)
+		return RevisionRanges{}, WithStack(err)
 	}
 
-	ranges := make([]Revisions, 0)
-	if err := resp.ParseBody("ranges", &ranges); err != nil {
-		return nil, WithStack(err)
+	var ranges RevisionRanges
+	if err := resp.ParseBody("", &ranges); err != nil {
+		return RevisionRanges{}, WithStack(err)
 	}
 
 	return ranges, nil

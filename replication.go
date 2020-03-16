@@ -60,7 +60,7 @@ type Replication interface {
 
 	// GetRevisionsByRanges retrieves the revision IDs of documents within requested ranges.
 	GetRevisionsByRanges(ctx context.Context, db Database, batchId, collection string, minMaxRevision []RevisionMinMax,
-		resume *RevisionInt64) ([]Revisions, error)
+		resume RevisionInt64) (RevisionRanges, error)
 
 	// GetRevisionDocuments retrieves documents by revision.
 	GetRevisionDocuments(ctx context.Context, db Database, batchId, collection string,
