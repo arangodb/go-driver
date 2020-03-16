@@ -39,12 +39,12 @@ import (
 
 // httpRequest implements driver.Request using standard golang http requests.
 type httpJSONRequest struct {
-	method  string
-	path    string
-	q       url.Values
-	hdr     map[string]string
-	body    []byte
-	written bool
+	method      string
+	path        string
+	q           url.Values
+	hdr         map[string]string
+	written     bool
+	bodyBuilder driver.BodyBuilder
 }
 
 // Path returns the Request path
@@ -88,94 +88,29 @@ func (r *httpJSONRequest) SetQuery(key, value string) driver.Request {
 // SetBody sets the content of the request.
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpJSONRequest) SetBody(body ...interface{}) (driver.Request, error) {
-	switch len(body) {
-	case 0:
-		return r, driver.WithStack(fmt.Errorf("Must provide at least 1 body"))
-	case 1:
-		if data, err := json.Marshal(body[0]); err != nil {
-			return r, driver.WithStack(err)
-		} else {
-			r.body = data
-		}
-		return r, nil
-	case 2:
-		mo := mergeObject{Object: body[1], Merge: body[0]}
-		if data, err := json.Marshal(mo); err != nil {
-			return r, driver.WithStack(err)
-		} else {
-			r.body = data
-		}
-		return r, nil
-	default:
-		return r, driver.WithStack(fmt.Errorf("Must provide at most 2 bodies"))
+	if r.bodyBuilder == nil {
+		r.bodyBuilder = NewJsonBodyBuilder()
 	}
-
+	return r, r.bodyBuilder.SetBody(body...)
 }
 
 // SetBodyArray sets the content of the request as an array.
 // If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpJSONRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (driver.Request, error) {
-	bodyArrayVal := reflect.ValueOf(bodyArray)
-	switch bodyArrayVal.Kind() {
-	case reflect.Array, reflect.Slice:
-		// OK
-	default:
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	if r.bodyBuilder == nil {
+		r.bodyBuilder = NewJsonBodyBuilder()
 	}
-	if mergeArray == nil {
-		// Simple case; just marshal bodyArray directly.
-		if data, err := json.Marshal(bodyArray); err != nil {
-			return r, driver.WithStack(err)
-		} else {
-			r.body = data
-		}
-		return r, nil
-	}
-	// Complex case, mergeArray is not nil
-	elementCount := bodyArrayVal.Len()
-	mergeObjects := make([]mergeObject, elementCount)
-	for i := 0; i < elementCount; i++ {
-		mergeObjects[i] = mergeObject{
-			Object: bodyArrayVal.Index(i).Interface(),
-			Merge:  mergeArray[i],
-		}
-	}
-	// Now marshal merged array
-	if data, err := json.Marshal(mergeObjects); err != nil {
-		return r, driver.WithStack(err)
-	} else {
-		r.body = data
-	}
-	return r, nil
+	return r, r.bodyBuilder.SetBodyArray(bodyArray, mergeArray)
 }
 
 // SetBodyImportArray sets the content of the request as an array formatted for importing documents.
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpJSONRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request, error) {
-	bodyArrayVal := reflect.ValueOf(bodyArray)
-	switch bodyArrayVal.Kind() {
-	case reflect.Array, reflect.Slice:
-		// OK
-	default:
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	if r.bodyBuilder == nil {
+		r.bodyBuilder = NewJsonBodyBuilder()
 	}
-	// Render elements
-	elementCount := bodyArrayVal.Len()
-	buf := &bytes.Buffer{}
-	encoder := json.NewEncoder(buf)
-	for i := 0; i < elementCount; i++ {
-		entryVal := bodyArrayVal.Index(i)
-		if isNil(entryVal) {
-			buf.WriteString("\n")
-		} else {
-			if err := encoder.Encode(entryVal.Interface()); err != nil {
-				return nil, driver.WithStack(err)
-			}
-		}
-	}
-	r.body = buf.Bytes()
-	return r, nil
+	return r, r.bodyBuilder.SetBodyImportArray(bodyArray)
 }
 
 func isNil(v reflect.Value) bool {
@@ -193,6 +128,15 @@ func (r *httpJSONRequest) SetHeader(key, value string) driver.Request {
 	if r.hdr == nil {
 		r.hdr = make(map[string]string)
 	}
+
+	if strings.EqualFold(key, "Content-Type") {
+		switch strings.ToLower(value) {
+		case "application/octet-stream":
+		case "application/zip":
+			r.bodyBuilder = NewBinaryBodyBuilder(strings.ToLower(value))
+		}
+	}
+
 	r.hdr[key] = value
 	return r
 }
@@ -229,11 +173,13 @@ func (r *httpJSONRequest) createHTTPRequest(endpoint url.URL) (*http.Request, er
 			url = url + "?" + q
 		}
 	}
-	var body io.Reader
-	if r.body != nil {
-		body = bytes.NewReader(r.body)
+
+	var bodyReader io.Reader
+	body := r.bodyBuilder.GetBody()
+	if body != nil {
+		bodyReader = bytes.NewReader(body)
 	}
-	req, err := http.NewRequest(r.method, url, body)
+	req, err := http.NewRequest(r.method, url, bodyReader)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -244,9 +190,161 @@ func (r *httpJSONRequest) createHTTPRequest(endpoint url.URL) (*http.Request, er
 		}
 	}
 
-	if r.body != nil {
-		req.Header.Set("Content-Length", strconv.Itoa(len(r.body)))
-		req.Header.Set("Content-Type", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Length", strconv.Itoa(len(body)))
+		req.Header.Set("Content-Type", r.bodyBuilder.GetContentType())
 	}
 	return req, nil
+}
+
+type jsonBody struct {
+	body []byte
+}
+
+func NewJsonBodyBuilder() *jsonBody {
+	return &jsonBody{}
+}
+
+// SetBody sets the content of the request.
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (b *jsonBody) SetBody(body ...interface{}) error {
+	switch len(body) {
+	case 0:
+		return driver.WithStack(fmt.Errorf("Must provide at least 1 body"))
+	case 1:
+		if data, err := json.Marshal(body[0]); err != nil {
+			return driver.WithStack(err)
+		} else {
+			b.body = data
+		}
+		return nil
+	case 2:
+		mo := mergeObject{Object: body[1], Merge: body[0]}
+		if data, err := json.Marshal(mo); err != nil {
+			return driver.WithStack(err)
+		} else {
+			b.body = data
+		}
+		return nil
+	default:
+		return driver.WithStack(fmt.Errorf("Must provide at most 2 bodies"))
+	}
+
+}
+
+// SetBodyArray sets the content of the request as an array.
+// If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (b *jsonBody) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) error {
+	bodyArrayVal := reflect.ValueOf(bodyArray)
+	switch bodyArrayVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	}
+	if mergeArray == nil {
+		// Simple case; just marshal bodyArray directly.
+		if data, err := json.Marshal(bodyArray); err != nil {
+			return driver.WithStack(err)
+		} else {
+			b.body = data
+		}
+		return nil
+	}
+	// Complex case, mergeArray is not nil
+	elementCount := bodyArrayVal.Len()
+	mergeObjects := make([]mergeObject, elementCount)
+	for i := 0; i < elementCount; i++ {
+		mergeObjects[i] = mergeObject{
+			Object: bodyArrayVal.Index(i).Interface(),
+			Merge:  mergeArray[i],
+		}
+	}
+	// Now marshal merged array
+	if data, err := json.Marshal(mergeObjects); err != nil {
+		return driver.WithStack(err)
+	} else {
+		b.body = data
+	}
+	return nil
+}
+
+// SetBodyImportArray sets the content of the request as an array formatted for importing documents.
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (b *jsonBody) SetBodyImportArray(bodyArray interface{}) error {
+	bodyArrayVal := reflect.ValueOf(bodyArray)
+	switch bodyArrayVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	}
+	// Render elements
+	elementCount := bodyArrayVal.Len()
+	buf := &bytes.Buffer{}
+	encoder := json.NewEncoder(buf)
+	for i := 0; i < elementCount; i++ {
+		entryVal := bodyArrayVal.Index(i)
+		if isNil(entryVal) {
+			buf.WriteString("\n")
+		} else {
+			if err := encoder.Encode(entryVal.Interface()); err != nil {
+				return driver.WithStack(err)
+			}
+		}
+	}
+	b.body = buf.Bytes()
+	return nil
+}
+
+func (b *jsonBody) GetBody() []byte {
+	return b.body
+}
+
+func (b *jsonBody) GetContentType() string {
+	return "application/json"
+}
+
+type binaryBody struct {
+	body        []byte
+	contentType string
+}
+
+func NewBinaryBodyBuilder(contentType string) *binaryBody {
+	b := binaryBody{
+		contentType: contentType,
+	}
+	return &b
+}
+
+// SetBody sets the content of the request.
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (b *binaryBody) SetBody(body ...interface{}) error {
+	if len(body) == 0 {
+		return driver.WithStack(fmt.Errorf("must provide at least 1 body"))
+	}
+
+	if data, ok := body[0].([]byte); ok {
+		b.body = data
+		return nil
+	}
+
+	return driver.WithStack(fmt.Errorf("must provide body as a []byte type"))
+}
+
+func (b *binaryBody) SetBodyArray(_ interface{}, _ []map[string]interface{}) error {
+	return nil
+}
+
+func (b *binaryBody) SetBodyImportArray(_ interface{}) error {
+	return nil
+}
+
+func (b *binaryBody) GetBody() []byte {
+	return b.body
+}
+
+func (b *binaryBody) GetContentType() string {
+	return b.contentType
 }

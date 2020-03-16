@@ -33,7 +33,9 @@ type Sample struct {
 }
 
 func TestSetBodyImportArrayStructs(t *testing.T) {
-	r := &httpJSONRequest{}
+	r := &httpJSONRequest{
+		bodyBuilder: NewJsonBodyBuilder(),
+	}
 	docs := []Sample{
 		Sample{"Foo", 2},
 		Sample{"Dunn", 23},
@@ -49,14 +51,16 @@ func TestSetBodyImportArrayStructs(t *testing.T) {
 	if _, err := r.SetBodyImportArray(docs); err != nil {
 		t.Fatalf("SetBodyImportArray failed: %v", err)
 	}
-	data := strings.TrimSpace(string(r.body))
+	data := strings.TrimSpace(string(r.bodyBuilder.GetBody()))
 	if data != expected {
 		t.Errorf("Encoding failed: Expected\n%s\nGot\n%s\n", expected, data)
 	}
 }
 
 func TestSetBodyImportArrayStructPtrs(t *testing.T) {
-	r := &httpJSONRequest{}
+	r := &httpJSONRequest{
+		bodyBuilder: NewJsonBodyBuilder(),
+	}
 	docs := []*Sample{
 		&Sample{"Foo", 2},
 		&Sample{"Dunn", 23},
@@ -72,14 +76,16 @@ func TestSetBodyImportArrayStructPtrs(t *testing.T) {
 	if _, err := r.SetBodyImportArray(docs); err != nil {
 		t.Fatalf("SetBodyImportArray failed: %v", err)
 	}
-	data := strings.TrimSpace(string(r.body))
+	data := strings.TrimSpace(string(r.bodyBuilder.GetBody()))
 	if data != expected {
 		t.Errorf("Encoding failed: Expected\n%s\nGot\n%s\n", expected, data)
 	}
 }
 
 func TestSetBodyImportArrayStructPtrsNil(t *testing.T) {
-	r := &httpJSONRequest{}
+	r := &httpJSONRequest{
+		bodyBuilder: NewJsonBodyBuilder(),
+	}
 	docs := []*Sample{
 		&Sample{"Foo", 2},
 		nil,
@@ -99,14 +105,16 @@ func TestSetBodyImportArrayStructPtrsNil(t *testing.T) {
 	if _, err := r.SetBodyImportArray(docs); err != nil {
 		t.Fatalf("SetBodyImportArray failed: %v", err)
 	}
-	data := strings.TrimSpace(string(r.body))
+	data := strings.TrimSpace(string(r.bodyBuilder.GetBody()))
 	if data != expected {
 		t.Errorf("Encoding failed: Expected\n%s\nGot\n%s\n", expected, data)
 	}
 }
 
 func TestSetBodyImportArrayMaps(t *testing.T) {
-	r := &httpJSONRequest{}
+	r := &httpJSONRequest{
+		bodyBuilder: NewJsonBodyBuilder(),
+	}
 	docs := []map[string]interface{}{
 		map[string]interface{}{"a": 5, "b": "c", "c": true},
 		map[string]interface{}{"a": 77, "c": false},
@@ -118,7 +126,7 @@ func TestSetBodyImportArrayMaps(t *testing.T) {
 	if _, err := r.SetBodyImportArray(docs); err != nil {
 		t.Fatalf("SetBodyImportArray failed: %v", err)
 	}
-	data := strings.TrimSpace(string(r.body))
+	data := strings.TrimSpace(string(r.bodyBuilder.GetBody()))
 	if data != expected {
 		t.Errorf("Encoding failed: Expected\n%s\nGot\n%s\n", expected, data)
 	}

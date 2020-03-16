@@ -106,7 +106,6 @@ const (
 )
 
 func getTestMode() string {
-
 	return strings.TrimSpace(os.Getenv("TEST_MODE"))
 }
 
@@ -120,7 +119,6 @@ func skipNoEnterprise(t *testing.T) {
 }
 
 type interrupt struct {
-
 }
 
 func (i interrupt) Error() string {

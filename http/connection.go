@@ -212,6 +212,10 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 			method: method,
 			path:   path,
 		}
+
+		// By default each http body has json format.
+		// It will be changed when the header "Content-Type" will be set to the binary data.
+		r.bodyBuilder = NewJsonBodyBuilder()
 		return r, nil
 	case driver.ContentTypeVelocypack:
 		r := &httpVPackRequest{
