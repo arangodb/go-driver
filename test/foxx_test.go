@@ -25,9 +25,25 @@ import (
 	"context"
 	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"net/http"
 	"testing"
 	"time"
 )
+
+func getZipFile(url, path string) error {
+	respZip, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+
+	zipContent, err := ioutil.ReadAll(respZip.Body)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(path, zipContent, 0644)
+}
 
 func TestFoxxItzpapalotlService(t *testing.T) {
 
@@ -35,14 +51,18 @@ func TestFoxxItzpapalotlService(t *testing.T) {
 		t.Skipf("Not a single")
 	}
 
-	c := createClientFromEnv(t, true)
-	// TODO can we download some service from the internet
+	zipFilePath := "/tmp/itzpapalotl-v1.2.0.zip"
+	c := createClientFromEnv(t, false)
+
+	err := getZipFile("https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip", zipFilePath)
+	require.NoError(t, err)
+
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
 	mountName := "test"
 	options := driver.FoxxCreateOptions{
 		Mount: "/" + mountName,
 	}
-	err := c.Foxx().InstallFoxxService(timeoutCtx, "/usr/code/foxx.zip", options)
+	err = c.Foxx().InstallFoxxService(timeoutCtx, zipFilePath, options)
 	cancel()
 	require.NoError(t, err)
 
