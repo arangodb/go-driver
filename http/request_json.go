@@ -72,6 +72,8 @@ func (r *httpJSONRequest) Clone() driver.Request {
 			clone.hdr[k] = v
 		}
 	}
+
+	clone.bodyBuilder = r.bodyBuilder.Clone()
 	return &clone
 }
 
@@ -297,6 +299,12 @@ func (b *jsonBody) GetContentType() string {
 	return "application/json"
 }
 
+func (b *jsonBody) Clone() driver.BodyBuilder {
+	return &jsonBody{
+		body: b.GetBody(),
+	}
+}
+
 type binaryBody struct {
 	body        []byte
 	contentType string
@@ -338,4 +346,11 @@ func (b *binaryBody) GetBody() []byte {
 
 func (b *binaryBody) GetContentType() string {
 	return b.contentType
+}
+
+func (b *binaryBody) Clone() driver.BodyBuilder {
+	return &binaryBody{
+		body:        b.GetBody(),
+		contentType: b.GetContentType(),
+	}
 }

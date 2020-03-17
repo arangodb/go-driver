@@ -102,6 +102,8 @@ type BodyBuilder interface {
 	SetBodyImportArray(bodyArray interface{}) error
 	// GetContentType returns the type of the data in a body
 	GetContentType() string
+	// Clone creates new Body builder
+	Clone() BodyBuilder
 }
 
 // Response represents the response from the server on a given request.

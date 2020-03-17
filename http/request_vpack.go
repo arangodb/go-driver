@@ -72,6 +72,8 @@ func (r *httpVPackRequest) Clone() driver.Request {
 			clone.hdr[k] = v
 		}
 	}
+
+	clone.bodyBuilder = r.bodyBuilder.Clone()
 	return &clone
 }
 
@@ -290,4 +292,10 @@ func (b *velocyPackBody) GetBody() []byte {
 
 func (b *velocyPackBody) GetContentType() string {
 	return "application/x-velocypack"
+}
+
+func (b *velocyPackBody) Clone() driver.BodyBuilder {
+	return &velocyPackBody{
+		body: b.GetBody(),
+	}
 }
