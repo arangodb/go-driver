@@ -39,12 +39,12 @@ import (
 
 // httpVPackRequest implements driver.Request using standard golang http requests.
 type httpVPackRequest struct {
-	method  string
-	path    string
-	q       url.Values
-	hdr     map[string]string
-	body    []byte
-	written bool
+	method      string
+	path        string
+	q           url.Values
+	hdr         map[string]string
+	written     bool
+	bodyBuilder driver.BodyBuilder
 }
 
 // Path returns the Request path
@@ -88,87 +88,26 @@ func (r *httpVPackRequest) SetQuery(key, value string) driver.Request {
 // SetBody sets the content of the request.
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpVPackRequest) SetBody(body ...interface{}) (driver.Request, error) {
-	switch len(body) {
-	case 0:
-		return r, driver.WithStack(fmt.Errorf("Must provide at least 1 body"))
-	case 1:
-		if data, err := velocypack.Marshal(body[0]); err != nil {
-			return r, driver.WithStack(err)
-		} else {
-			r.body = data
-		}
-		return r, nil
-	case 2:
-		mo := mergeObject{Object: body[1], Merge: body[0]}
-		if data, err := velocypack.Marshal(mo); err != nil {
-			return r, driver.WithStack(err)
-		} else {
-			r.body = data
-		}
-		return r, nil
-	default:
-		return r, driver.WithStack(fmt.Errorf("Must provide at most 2 bodies"))
-	}
-
+	return r, r.bodyBuilder.SetBody(body...)
 }
 
 // SetBodyArray sets the content of the request as an array.
 // If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpVPackRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (driver.Request, error) {
-	bodyArrayVal := reflect.ValueOf(bodyArray)
-	switch bodyArrayVal.Kind() {
-	case reflect.Array, reflect.Slice:
-		// OK
-	default:
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
-	}
-	if mergeArray == nil {
-		// Simple case; just marshal bodyArray directly.
-		if data, err := velocypack.Marshal(bodyArray); err != nil {
-			return r, driver.WithStack(err)
-		} else {
-			r.body = data
-		}
-		return r, nil
-	}
-	// Complex case, mergeArray is not nil
-	elementCount := bodyArrayVal.Len()
-	mergeObjects := make([]mergeObject, elementCount)
-	for i := 0; i < elementCount; i++ {
-		mergeObjects[i] = mergeObject{
-			Object: bodyArrayVal.Index(i).Interface(),
-			Merge:  mergeArray[i],
-		}
-	}
-	// Now marshal merged array
-	if data, err := velocypack.Marshal(mergeObjects); err != nil {
-		return r, driver.WithStack(err)
-	} else {
-		r.body = data
-	}
-	return r, nil
+	return r, r.bodyBuilder.SetBodyArray(bodyArray, mergeArray)
 }
 
 // SetBodyImportArray sets the content of the request as an array formatted for importing documents.
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpVPackRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request, error) {
-	bodyArrayVal := reflect.ValueOf(bodyArray)
-	switch bodyArrayVal.Kind() {
-	case reflect.Array, reflect.Slice:
-		// OK
-	default:
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+
+	err := r.bodyBuilder.SetBodyImportArray(bodyArray)
+	if err != nil {
+		r.SetQuery("type", "list")
 	}
-	// Render elements
-	buf := &bytes.Buffer{}
-	encoder := velocypack.NewEncoder(buf)
-	if err := encoder.Encode(bodyArray); err != nil {
-		return nil, driver.WithStack(err)
-	}
-	r.body = buf.Bytes()
-	r.SetQuery("type", "list")
-	return r, nil
+
+	return r, err
 }
 
 // SetHeader sets a single header arguments of the request.
@@ -177,6 +116,15 @@ func (r *httpVPackRequest) SetHeader(key, value string) driver.Request {
 	if r.hdr == nil {
 		r.hdr = make(map[string]string)
 	}
+
+	if strings.EqualFold(key, "Content-Type") {
+		switch strings.ToLower(value) {
+		case "application/octet-stream":
+		case "application/zip":
+			r.bodyBuilder = NewBinaryBodyBuilder(strings.ToLower(value))
+		}
+	}
+
 	r.hdr[key] = value
 	return r
 }
@@ -213,11 +161,14 @@ func (r *httpVPackRequest) createHTTPRequest(endpoint url.URL) (*http.Request, e
 			url = url + "?" + q
 		}
 	}
-	var body io.Reader
-	if r.body != nil {
-		body = bytes.NewReader(r.body)
+
+	var bodyReader io.Reader
+	body := r.bodyBuilder.GetBody()
+	if body != nil {
+		bodyReader = bytes.NewReader(body)
 	}
-	req, err := http.NewRequest(r.method, url, body)
+
+	req, err := http.NewRequest(r.method, url, bodyReader)
 	if err != nil {
 		return nil, driver.WithStack(err)
 	}
@@ -229,10 +180,114 @@ func (r *httpVPackRequest) createHTTPRequest(endpoint url.URL) (*http.Request, e
 	}
 
 	req.Header.Set("Accept", "application/x-velocypack")
-	//req.Header.Set("Accept", "application/json")
-	if r.body != nil {
-		req.Header.Set("Content-Length", strconv.Itoa(len(r.body)))
-		req.Header.Set("Content-Type", "application/x-velocypack")
+	if body != nil {
+		req.Header.Set("Content-Length", strconv.Itoa(len(body)))
+		req.Header.Set("Content-Type", r.bodyBuilder.GetContentType())
 	}
 	return req, nil
+}
+
+type velocyPackBody struct {
+	body []byte
+}
+
+func NewVelocyPackBodyBuilder() *velocyPackBody {
+	return &velocyPackBody{}
+}
+
+// SetBody sets the content of the request.
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (b *velocyPackBody) SetBody(body ...interface{}) error {
+
+	switch len(body) {
+	case 0:
+		return driver.WithStack(fmt.Errorf("Must provide at least 1 body"))
+	case 1:
+		if data, err := velocypack.Marshal(body[0]); err != nil {
+			return driver.WithStack(err)
+		} else {
+			b.body = data
+		}
+		return nil
+	case 2:
+		mo := mergeObject{Object: body[1], Merge: body[0]}
+		if data, err := velocypack.Marshal(mo); err != nil {
+			return driver.WithStack(err)
+		} else {
+			b.body = data
+		}
+		return nil
+	default:
+		return driver.WithStack(fmt.Errorf("Must provide at most 2 bodies"))
+	}
+
+	return nil
+}
+
+// SetBodyArray sets the content of the request as an array.
+// If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (b *velocyPackBody) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) error {
+
+	bodyArrayVal := reflect.ValueOf(bodyArray)
+	switch bodyArrayVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	}
+	if mergeArray == nil {
+		// Simple case; just marshal bodyArray directly.
+		if data, err := velocypack.Marshal(bodyArray); err != nil {
+			return driver.WithStack(err)
+		} else {
+			b.body = data
+		}
+		return nil
+	}
+	// Complex case, mergeArray is not nil
+	elementCount := bodyArrayVal.Len()
+	mergeObjects := make([]mergeObject, elementCount)
+	for i := 0; i < elementCount; i++ {
+		mergeObjects[i] = mergeObject{
+			Object: bodyArrayVal.Index(i).Interface(),
+			Merge:  mergeArray[i],
+		}
+	}
+	// Now marshal merged array
+	if data, err := velocypack.Marshal(mergeObjects); err != nil {
+		return driver.WithStack(err)
+	} else {
+		b.body = data
+	}
+	return nil
+}
+
+// SetBodyImportArray sets the content of the request as an array formatted for importing documents.
+// The protocol of the connection determines what kinds of marshalling is taking place.
+func (b *velocyPackBody) SetBodyImportArray(bodyArray interface{}) error {
+	bodyArrayVal := reflect.ValueOf(bodyArray)
+
+	switch bodyArrayVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		// OK
+	default:
+		return driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("bodyArray must be slice, got %s", bodyArrayVal.Kind())})
+	}
+	// Render elements
+	buf := &bytes.Buffer{}
+	encoder := velocypack.NewEncoder(buf)
+	if err := encoder.Encode(bodyArray); err != nil {
+		return driver.WithStack(err)
+	}
+	b.body = buf.Bytes()
+	return nil
+}
+
+func (b *velocyPackBody) GetBody() []byte {
+	return b.body
+}
+
+func (b *velocyPackBody) GetContentType() string {
+	return "application/x-velocypack"
 }

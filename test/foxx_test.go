@@ -29,14 +29,10 @@ import (
 	"time"
 )
 
-func TestFoxxService(t *testing.T) {
+func TestFoxxItzpapalotlService(t *testing.T) {
 
 	if getTestMode() != testModeSingle {
 		t.Skipf("Not a single")
-	}
-
-	if getContentTypeFromEnv(t) != driver.ContentTypeJSON {
-		t.Skipf("Not a json content type")
 	}
 
 	c := createClientFromEnv(t, true)

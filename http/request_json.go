@@ -88,9 +88,6 @@ func (r *httpJSONRequest) SetQuery(key, value string) driver.Request {
 // SetBody sets the content of the request.
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpJSONRequest) SetBody(body ...interface{}) (driver.Request, error) {
-	if r.bodyBuilder == nil {
-		r.bodyBuilder = NewJsonBodyBuilder()
-	}
 	return r, r.bodyBuilder.SetBody(body...)
 }
 
@@ -98,18 +95,12 @@ func (r *httpJSONRequest) SetBody(body ...interface{}) (driver.Request, error) {
 // If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpJSONRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (driver.Request, error) {
-	if r.bodyBuilder == nil {
-		r.bodyBuilder = NewJsonBodyBuilder()
-	}
 	return r, r.bodyBuilder.SetBodyArray(bodyArray, mergeArray)
 }
 
 // SetBodyImportArray sets the content of the request as an array formatted for importing documents.
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *httpJSONRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request, error) {
-	if r.bodyBuilder == nil {
-		r.bodyBuilder = NewJsonBodyBuilder()
-	}
 	return r, r.bodyBuilder.SetBodyImportArray(bodyArray)
 }
 

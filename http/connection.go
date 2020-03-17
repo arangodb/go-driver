@@ -222,6 +222,7 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 			method: method,
 			path:   path,
 		}
+		r.bodyBuilder = NewVelocyPackBodyBuilder()
 		return r, nil
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
