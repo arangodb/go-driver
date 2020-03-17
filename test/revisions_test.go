@@ -57,7 +57,6 @@ func TestRevisionTree(t *testing.T) {
 	require.NotEmpty(t, tree.RangeMax)
 	require.NotEmpty(t, tree.Nodes)
 	require.Equal(t, 6, tree.MaxDepth)
-	//require.Equal(t, 8, tree.BranchingFactor) // TODO it is not in the response from arangod
 
 	getRanges := func() driver.Revisions {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
