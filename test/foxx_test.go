@@ -36,6 +36,7 @@ func getZipFile(url, path string) error {
 	if err != nil {
 		return err
 	}
+	defer respZip.Body.Close()
 
 	zipContent, err := ioutil.ReadAll(respZip.Body)
 	if err != nil {
