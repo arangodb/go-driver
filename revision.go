@@ -17,7 +17,7 @@ type Revisions []RevisionInt64
 
 type RevisionRanges struct {
 	Ranges []Revisions   `json:"ranges"`
-	Resume RevisionInt64 `json:"resume,string" velocypack:",noquote"`
+	Resume RevisionInt64 `json:"resume,string" velocypack:"resume"`
 }
 
 // RevisionTreeNode is a leaf in Merkle tree with hashed Revisions and with count of documents in the leaf
@@ -31,8 +31,8 @@ type RevisionTree struct {
 	Version         int                `json:"version"`
 	BranchingFactor int                `json:"branchingFactor"`
 	MaxDepth        int                `json:"maxDepth"`
-	RangeMin        RevisionInt64      `json:"rangeMin,string" velocypack:",noquote"`
-	RangeMax        RevisionInt64      `json:"rangeMax,string" velocypack:",noquote"`
+	RangeMin        RevisionInt64      `json:"rangeMin,string" velocypack:"rangeMin"`
+	RangeMax        RevisionInt64      `json:"rangeMax,string" velocypack:"rangeMax"`
 	Nodes           []RevisionTreeNode `json:"nodes"`
 }
 

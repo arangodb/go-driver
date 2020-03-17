@@ -1,5 +1,5 @@
-github.com/arangodb/go-velocypack v0.0.0-20200316184958-c1bba80d02e9 h1:noU/v9ZIFwuInPxRMZNUfaWceSyZf7MURmaCw8IRc94=
-github.com/arangodb/go-velocypack v0.0.0-20200316184958-c1bba80d02e9/go.mod h1:mq7Shfa/CaixoDxiyAAc5jZ6CVBAyPaNQCGS7mkj4Ho=
+github.com/arangodb/go-velocypack v0.0.0-20200317054203-379357483a9e h1:EktrvQiqnzzMC5lxdjwBcdAlGR7touk7LhUKpkFAlLI=
+github.com/arangodb/go-velocypack v0.0.0-20200317054203-379357483a9e/go.mod h1:mq7Shfa/CaixoDxiyAAc5jZ6CVBAyPaNQCGS7mkj4Ho=
 github.com/coreos/go-iptables v0.4.3 h1:jJg1aFuhCqWbgBl1VTqgTHG5faPM60A5JDMjQ2HYv+A=
 github.com/coreos/go-iptables v0.4.3/go.mod h1:/mVI274lEDI2ns62jHCDnCyBF9Iwsmekav8Dbxlm1MU=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
