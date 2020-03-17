@@ -132,6 +132,9 @@ type CollectionProperties struct {
 	// This attribute specifies the name of the sharding strategy to use for the collection.
 	// Can not be changed after creation.
 	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
+	// This attribute specifies that the sharding of a collection follows that of another
+	// one.
+	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
 }
 
 const (
