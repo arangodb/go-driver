@@ -213,15 +213,13 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 			t.Fatalf("Connection is not available in %s: %s", timeout, describe(up))
 		}
 
-		if getTestMode() == testModeCluster {
-			// Synchronize endpoints
-			if err := waitUntilEndpointSynchronized(ctx, c, "", t); err != nil {
-				t.Errorf("Failed to synchronize endpoints: %s", describe(err))
-			} else {
-				logEndpointsOnce.Do(func() {
-					t.Logf("Found endpoints: %v", conn.Endpoints())
-				})
-			}
+		// Synchronize endpoints
+		if err := waitUntilEndpointSynchronized(ctx, c, "", t); err != nil {
+			t.Errorf("Failed to synchronize endpoints: %s", describe(err))
+		} else {
+			logEndpointsOnce.Do(func() {
+				t.Logf("Found endpoints: %v", conn.Endpoints())
+			})
 		}
 	}
 	return c
