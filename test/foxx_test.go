@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 )
@@ -48,13 +49,12 @@ func getZipFile(url, path string) error {
 
 func TestFoxxItzpapalotlService(t *testing.T) {
 
-	if getTestMode() != testModeSingle {
-		t.Skipf("Not a single")
+	c := createClientFromEnv(t, true)
+	if os.Getenv("TEST_CONNECTION") == "vst" {
+		skipBelowVersion(c, "3.6", t)
 	}
 
 	zipFilePath := "/tmp/itzpapalotl-v1.2.0.zip"
-	c := createClientFromEnv(t, true)
-
 	err := getZipFile("https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip", zipFilePath)
 	require.NoError(t, err)
 
