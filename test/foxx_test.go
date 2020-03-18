@@ -23,6 +23,8 @@ package test
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -32,19 +34,20 @@ import (
 	"time"
 )
 
-func getZipFile(url, path string) error {
+func getZipFile(url, path string) (string, error) {
 	respZip, err := http.Get(url)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer respZip.Body.Close()
 
 	zipContent, err := ioutil.ReadAll(respZip.Body)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return ioutil.WriteFile(path, zipContent, 0644)
+	sha256sum := fmt.Sprintf("%x", sha256.Sum256(zipContent))
+	return sha256sum, ioutil.WriteFile(path, zipContent, 0644)
 }
 
 func TestFoxxItzpapalotlService(t *testing.T) {
@@ -54,16 +57,28 @@ func TestFoxxItzpapalotlService(t *testing.T) {
 		skipBelowVersion(c, "3.6", t)
 	}
 
+	attempt := 0
 	zipFilePath := "/tmp/itzpapalotl-v1.2.0.zip"
-	err := getZipFile("https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip", zipFilePath)
-	require.NoError(t, err)
+	for attempt < 3 {
+		sha256sum, err := getZipFile("https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip", zipFilePath)
+		require.NoError(t, err)
+
+		if sha256sum == "86117db897efe86cbbd20236abba127a08c2bdabbcd63683567ee5e84115d83a" {
+			break
+		}
+		attempt++
+	}
+
+	if attempt == 3 {
+		require.FailNow(t, "checksum of zip file is invalid")
+	}
 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
 	mountName := "test"
 	options := driver.FoxxCreateOptions{
 		Mount: "/" + mountName,
 	}
-	err = c.Foxx().InstallFoxxService(timeoutCtx, zipFilePath, options)
+	err := c.Foxx().InstallFoxxService(timeoutCtx, zipFilePath, options)
 	cancel()
 	require.NoError(t, err)
 
