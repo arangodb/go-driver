@@ -53,7 +53,7 @@ func TestFoxxItzpapalotlService(t *testing.T) {
 	}
 
 	zipFilePath := "/tmp/itzpapalotl-v1.2.0.zip"
-	c := createClientFromEnv(t, false)
+	c := createClientFromEnv(t, true)
 
 	err := getZipFile("https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip", zipFilePath)
 	require.NoError(t, err)
