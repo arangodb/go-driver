@@ -138,7 +138,7 @@ func (r *vstRequest) WroteRequest() {
 	r.written = true
 }
 
-// createHTTPRequest creates a golang http.Request based on the configured arguments.
+// createMessageParts creates a golang http.Request based on the configured arguments.
 func (r *vstRequest) createMessageParts() ([][]byte, error) {
 	r.written = false
 

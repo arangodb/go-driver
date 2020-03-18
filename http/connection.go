@@ -201,28 +201,25 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 	default:
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
+
 	ct := c.contentType
 	if ct != driver.ContentTypeJSON && strings.Contains(path, "_api/gharial") {
 		// Currently (3.1.18) calls to this API do not work well with vpack.
 		ct = driver.ContentTypeJSON
 	}
+
+	r := &httpRequest{
+		method: method,
+		path:   path,
+	}
+
 	switch ct {
 	case driver.ContentTypeJSON:
-		r := &httpJSONRequest{
-			method: method,
-			path:   path,
-		}
-
-		// By default each http body has json format.
-		// It will be changed when the header "Content-Type" will be set to the binary data.
 		r.bodyBuilder = NewJsonBodyBuilder()
 		return r, nil
 	case driver.ContentTypeVelocypack:
-		r := &httpVPackRequest{
-			method: method,
-			path:   path,
-		}
 		r.bodyBuilder = NewVelocyPackBodyBuilder()
+		r.velocyPack = true
 		return r, nil
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
@@ -231,18 +228,19 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 
 // Do performs a given request, returning its response.
 func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
-	httpReq, ok := req.(httpRequest)
+	request, ok := req.(*httpRequest)
 	if !ok {
-		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest"})
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest type"})
 	}
-	r, err := httpReq.createHTTPRequest(c.endpoint)
+
+	r, err := request.createHTTPRequest(c.endpoint)
 	rctx := ctx
 	if rctx == nil {
 		rctx = context.Background()
 	}
 	rctx = httptrace.WithClientTrace(rctx, &httptrace.ClientTrace{
 		WroteRequest: func(info httptrace.WroteRequestInfo) {
-			httpReq.WroteRequest(info)
+			request.WroteRequest(info)
 		},
 	})
 	r = r.WithContext(rctx)

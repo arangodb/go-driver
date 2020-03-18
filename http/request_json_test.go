@@ -33,7 +33,7 @@ type Sample struct {
 }
 
 func TestSetBodyImportArrayStructs(t *testing.T) {
-	r := &httpJSONRequest{
+	r := &httpRequest{
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []Sample{
@@ -58,7 +58,7 @@ func TestSetBodyImportArrayStructs(t *testing.T) {
 }
 
 func TestSetBodyImportArrayStructPtrs(t *testing.T) {
-	r := &httpJSONRequest{
+	r := &httpRequest{
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []*Sample{
@@ -83,7 +83,7 @@ func TestSetBodyImportArrayStructPtrs(t *testing.T) {
 }
 
 func TestSetBodyImportArrayStructPtrsNil(t *testing.T) {
-	r := &httpJSONRequest{
+	r := &httpRequest{
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []*Sample{
@@ -112,7 +112,7 @@ func TestSetBodyImportArrayStructPtrsNil(t *testing.T) {
 }
 
 func TestSetBodyImportArrayMaps(t *testing.T) {
-	r := &httpJSONRequest{
+	r := &httpRequest{
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []map[string]interface{}{

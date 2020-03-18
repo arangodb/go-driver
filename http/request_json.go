@@ -38,27 +38,28 @@ import (
 )
 
 // httpRequest implements driver.Request using standard golang http requests.
-type httpJSONRequest struct {
+type httpRequest struct {
 	method      string
 	path        string
 	q           url.Values
 	hdr         map[string]string
 	written     bool
 	bodyBuilder driver.BodyBuilder
+	velocyPack  bool
 }
 
 // Path returns the Request path
-func (r *httpJSONRequest) Path() string {
+func (r *httpRequest) Path() string {
 	return r.path
 }
 
 // Method returns the Request method
-func (r *httpJSONRequest) Method() string {
+func (r *httpRequest) Method() string {
 	return r.method
 }
 
 // Clone creates a new request containing the same data as this request
-func (r *httpJSONRequest) Clone() driver.Request {
+func (r *httpRequest) Clone() driver.Request {
 	clone := *r
 	clone.q = url.Values{}
 	for k, v := range r.q {
@@ -79,7 +80,7 @@ func (r *httpJSONRequest) Clone() driver.Request {
 
 // SetQuery sets a single query argument of the request.
 // Any existing query argument with the same key is overwritten.
-func (r *httpJSONRequest) SetQuery(key, value string) driver.Request {
+func (r *httpRequest) SetQuery(key, value string) driver.Request {
 	if r.q == nil {
 		r.q = url.Values{}
 	}
@@ -89,21 +90,28 @@ func (r *httpJSONRequest) SetQuery(key, value string) driver.Request {
 
 // SetBody sets the content of the request.
 // The protocol of the connection determines what kinds of marshalling is taking place.
-func (r *httpJSONRequest) SetBody(body ...interface{}) (driver.Request, error) {
+func (r *httpRequest) SetBody(body ...interface{}) (driver.Request, error) {
 	return r, r.bodyBuilder.SetBody(body...)
 }
 
 // SetBodyArray sets the content of the request as an array.
 // If the given mergeArray is not nil, its elements are merged with the elements in the body array (mergeArray data overrides bodyArray data).
 // The protocol of the connection determines what kinds of marshalling is taking place.
-func (r *httpJSONRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (driver.Request, error) {
+func (r *httpRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string]interface{}) (driver.Request, error) {
 	return r, r.bodyBuilder.SetBodyArray(bodyArray, mergeArray)
 }
 
 // SetBodyImportArray sets the content of the request as an array formatted for importing documents.
 // The protocol of the connection determines what kinds of marshalling is taking place.
-func (r *httpJSONRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request, error) {
-	return r, r.bodyBuilder.SetBodyImportArray(bodyArray)
+func (r *httpRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request, error) {
+	err := r.bodyBuilder.SetBodyImportArray(bodyArray)
+	if err != nil {
+		if r.velocyPack {
+			r.SetQuery("type", "list")
+		}
+	}
+
+	return r, err
 }
 
 func isNil(v reflect.Value) bool {
@@ -117,7 +125,7 @@ func isNil(v reflect.Value) bool {
 
 // SetHeader sets a single header arguments of the request.
 // Any existing header argument with the same key is overwritten.
-func (r *httpJSONRequest) SetHeader(key, value string) driver.Request {
+func (r *httpRequest) SetHeader(key, value string) driver.Request {
 	if r.hdr == nil {
 		r.hdr = make(map[string]string)
 	}
@@ -136,18 +144,18 @@ func (r *httpJSONRequest) SetHeader(key, value string) driver.Request {
 
 // Written returns true as soon as this request has been written completely to the network.
 // This does not guarantee that the server has received or processed the request.
-func (r *httpJSONRequest) Written() bool {
+func (r *httpRequest) Written() bool {
 	return r.written
 }
 
 // WroteRequest implements the WroteRequest function of an httptrace.
 // It sets written to true.
-func (r *httpJSONRequest) WroteRequest(httptrace.WroteRequestInfo) {
+func (r *httpRequest) WroteRequest(httptrace.WroteRequestInfo) {
 	r.written = true
 }
 
 // createHTTPRequest creates a golang http.Request based on the configured arguments.
-func (r *httpJSONRequest) createHTTPRequest(endpoint url.URL) (*http.Request, error) {
+func (r *httpRequest) createHTTPRequest(endpoint url.URL) (*http.Request, error) {
 	r.written = false
 	u := endpoint
 	u.Path = ""
@@ -172,6 +180,7 @@ func (r *httpJSONRequest) createHTTPRequest(endpoint url.URL) (*http.Request, er
 	if body != nil {
 		bodyReader = bytes.NewReader(body)
 	}
+
 	req, err := http.NewRequest(r.method, url, bodyReader)
 	if err != nil {
 		return nil, driver.WithStack(err)
@@ -181,6 +190,10 @@ func (r *httpJSONRequest) createHTTPRequest(endpoint url.URL) (*http.Request, er
 		for k, v := range r.hdr {
 			req.Header.Set(k, v)
 		}
+	}
+
+	if r.velocyPack {
+		req.Header.Set("Accept", "application/x-velocypack")
 	}
 
 	if body != nil {
