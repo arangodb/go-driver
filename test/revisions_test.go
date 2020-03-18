@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -45,17 +46,19 @@ func TestRevisionTree(t *testing.T) {
 
 	tree, err := getTree()
 	if err != nil {
-		if err.Error() == "this collection doesn't support revision-based replication" {
-			// TODO why it happens
-			t.Skip("Collection " + col.Name() + "does not support revision-based replication")
+		if driver.IsArangoErrorWithCode(err, http.StatusNotImplemented) {
+			t.Skip("Collection '" + col.Name() + "' does not support revision-based replication")
 		}
+
 		require.NoError(t, err)
 	}
 
+	noOfLeafs := 299593
 	require.NotEmpty(t, tree.Version)
 	require.NotEmpty(t, tree.RangeMin)
 	require.NotEmpty(t, tree.RangeMax)
 	require.NotEmpty(t, tree.Nodes)
+	require.Equal(t, noOfLeafs, len(tree.Nodes))
 	require.Equal(t, 6, tree.MaxDepth)
 
 	getRanges := func() driver.Revisions {
@@ -63,13 +66,19 @@ func TestRevisionTree(t *testing.T) {
 		defer cancel()
 
 		rangeRevisions := []driver.RevisionMinMax{{tree.RangeMin, tree.RangeMax}}
-		var resume driver.RevisionInt64
+		var resume driver.RevisionUInt64
 		revisions := make(driver.Revisions, 0)
 
 		for {
 			ranges, err := c.Replication().GetRevisionsByRanges(timeoutCtx, db, batch.BatchID(), col.Name(),
 				rangeRevisions, resume)
 			require.NoError(t, err)
+
+			if len(ranges.Ranges[0]) == 0 {
+				// let's try again because we should get ranges at the end. There is a one minute timeout for it
+				continue
+			}
+
 			revisions = append(revisions, ranges.Ranges[0]...)
 
 			if ranges.Resume == 0 {
@@ -85,7 +94,6 @@ func TestRevisionTree(t *testing.T) {
 	require.Len(t, revisions, noOfDocuments)
 
 	getDocuments := func() ([]map[string]interface{}, error) {
-		time.Sleep(3) // TODO  why we need to wait for documents
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
 

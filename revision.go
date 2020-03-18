@@ -6,18 +6,18 @@ import (
 	"path"
 )
 
-// RevisionInt64 is representation of '_rev' string value as an int64 number
-type RevisionInt64 int64
+// RevisionUInt64 is representation of '_rev' string value as an uint64 number
+type RevisionUInt64 uint64
 
 // RevisionMinMax is an array of two Revisions which create range of them
-type RevisionMinMax [2]RevisionInt64
+type RevisionMinMax [2]RevisionUInt64
 
 // Revisions is a slice of Revisions
-type Revisions []RevisionInt64
+type Revisions []RevisionUInt64
 
 type RevisionRanges struct {
-	Ranges []Revisions   `json:"ranges"`
-	Resume RevisionInt64 `json:"resume,string" velocypack:"resume"`
+	Ranges []Revisions    `json:"ranges"`
+	Resume RevisionUInt64 `json:"resume,string" velocypack:"resume"`
 }
 
 // RevisionTreeNode is a leaf in Merkle tree with hashed Revisions and with count of documents in the leaf
@@ -30,8 +30,8 @@ type RevisionTreeNode struct {
 type RevisionTree struct {
 	Version  int                `json:"version"`
 	MaxDepth int                `json:"maxDepth"`
-	RangeMin RevisionInt64      `json:"rangeMin,string" velocypack:"rangeMin"`
-	RangeMax RevisionInt64      `json:"rangeMax,string" velocypack:"rangeMax"`
+	RangeMin RevisionUInt64     `json:"rangeMin,string" velocypack:"rangeMin"`
+	RangeMax RevisionUInt64     `json:"rangeMax,string" velocypack:"rangeMax"`
 	Nodes    []RevisionTreeNode `json:"nodes"`
 }
 
@@ -60,20 +60,17 @@ var (
 	}
 )
 
-func decodeRevision(revision []byte) RevisionInt64 {
-	var t int64
+func decodeRevision(revision []byte) RevisionUInt64 {
+	var t RevisionUInt64
 
 	for _, s := range revision {
-		if s == '"' {
-			continue
-		}
-		t = t*64 + int64(revisionDecodingTable[s])
+		t = t*64 + RevisionUInt64(revisionDecodingTable[s])
 	}
 
-	return RevisionInt64(t)
+	return t
 }
 
-func encodeRevision(revision int64) []byte {
+func encodeRevision(revision RevisionUInt64) []byte {
 	if revision == 0 {
 		return []byte{}
 	}
@@ -90,27 +87,36 @@ func encodeRevision(revision int64) []byte {
 	return result[index:]
 }
 
-// UnmarshalJSON parses string revision document into int64 number
-func (n *RevisionInt64) UnmarshalJSON(revision []byte) (err error) {
-	*n = decodeRevision(revision)
+// UnmarshalJSON parses string revision document into RevisionUInt64 number
+func (n *RevisionUInt64) UnmarshalJSON(revision []byte) (err error) {
+	length := len(revision)
+
+	if length > 2 {
+		*n = decodeRevision(revision[1 : length-1])
+	} else {
+		// it can be only empty json string ""
+		*n = 0
+	}
+
 	return nil
 }
 
-// MarshalJSON converts int64 into string revision
-func (n *RevisionInt64) MarshalJSON() ([]byte, error) {
+// MarshalJSON converts RevisionUInt64 into string revision
+func (n *RevisionUInt64) MarshalJSON() ([]byte, error) {
 	if *n == 0 {
 		return []byte{'"', '"'}, nil // return an empty string
 	}
 
 	value := make([]byte, 0, 16)
-	r := encodeRevision(int64(*n))
+	r := encodeRevision(*n)
 	value = append(value, '"')
 	value = append(value, r...)
 	value = append(value, '"')
 	return value, nil
 }
 
-func (n *RevisionInt64) UnmarshalVPack(slice velocypack.Slice) error {
+// UnmarshalVPack parses string revision document into RevisionUInt64 number
+func (n *RevisionUInt64) UnmarshalVPack(slice velocypack.Slice) error {
 	source, err := slice.GetString()
 	if err != nil {
 		return err
@@ -120,10 +126,11 @@ func (n *RevisionInt64) UnmarshalVPack(slice velocypack.Slice) error {
 	return nil
 }
 
-func (n *RevisionInt64) MarshalVPack() (velocypack.Slice, error) {
+// MarshalVPack converts RevisionUInt64 into string revision
+func (n *RevisionUInt64) MarshalVPack() (velocypack.Slice, error) {
 	var b velocypack.Builder
 
-	value := velocypack.NewStringValue(string(encodeRevision(int64(*n))))
+	value := velocypack.NewStringValue(string(encodeRevision(*n)))
 	if err := b.AddValue(value); err != nil {
 		return nil, err
 	}
@@ -161,7 +168,7 @@ func (c *client) GetRevisionTree(ctx context.Context, db Database, batchId, coll
 
 // GetRevisionsByRanges retrieves the revision IDs of documents within requested ranges.
 func (c *client) GetRevisionsByRanges(ctx context.Context, db Database, batchId, collection string,
-	minMaxRevision []RevisionMinMax, resume RevisionInt64) (RevisionRanges, error) {
+	minMaxRevision []RevisionMinMax, resume RevisionUInt64) (RevisionRanges, error) {
 
 	req, err := c.conn.NewRequest("PUT", path.Join("_db", db.Name(), "_api/replication/revisions/ranges"))
 	if err != nil {
@@ -171,7 +178,7 @@ func (c *client) GetRevisionsByRanges(ctx context.Context, db Database, batchId,
 	req = req.SetQuery("batchId", batchId)
 	req = req.SetQuery("collection", collection)
 	if resume > 0 {
-		req = req.SetQuery("resume", string(encodeRevision(int64(resume))))
+		req = req.SetQuery("resume", string(encodeRevision(resume)))
 	}
 
 	req, err = req.SetBodyArray(minMaxRevision, nil)
