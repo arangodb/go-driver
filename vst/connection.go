@@ -124,11 +124,14 @@ func (c *vstConnection) NewRequest(method, path string) (driver.Request, error) 
 	default:
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("Invalid method '%s'", method)})
 	}
-	r := &vstRequest{
+
+	r := vstRequest{
 		method: method,
 		path:   path,
 	}
-	return r, nil
+	r.bodyBuilder = NewVstBodyBuilder()
+
+	return &r, nil
 }
 
 // Do performs a given request, returning its response.

@@ -74,6 +74,8 @@ type Client interface {
 
 	// Backup functions
 	ClientAdminBackup
+
+	ClientFoxx
 }
 
 // ClientConfig contains all settings needed to create a client.

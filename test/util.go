@@ -106,7 +106,6 @@ const (
 )
 
 func getTestMode() string {
-
 	return strings.TrimSpace(os.Getenv("TEST_MODE"))
 }
 
