@@ -102,7 +102,7 @@ func (r *vstRequest) SetBodyArray(bodyArray interface{}, mergeArray []map[string
 // The protocol of the connection determines what kinds of marshalling is taking place.
 func (r *vstRequest) SetBodyImportArray(bodyArray interface{}) (driver.Request, error) {
 	err := r.bodyBuilder.SetBodyImportArray(bodyArray)
-	if err != nil {
+	if err == nil {
 		r.SetQuery("type", "list")
 	}
 	return r, err
