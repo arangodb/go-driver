@@ -137,7 +137,7 @@ type CollectionProperties struct {
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
 	// This attribute specifies if the new format introduced in 3.7 is used for this
 	// collection.
-	UseRevisionsAsDocumentIds bool `json:"useRevisionsAsDocumentIds,omitempty"`
+	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
 }
 
 const (
