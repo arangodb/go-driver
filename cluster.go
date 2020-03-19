@@ -118,7 +118,7 @@ const (
 // DatabaseInventory describes a detailed state of the collections & shards of a specific database within a cluster.
 type DatabaseInventory struct {
 	// Details of database, this is present since ArangoDB 3.6
-	Info DatabaseInfo `json:"properties,omitempty"`"
+	Info DatabaseInfo `json:"properties,omitempty"`
 	// Details of all collections
 	Collections []InventoryCollection `json:"collections,omitempty"`
 	// Details of all views
