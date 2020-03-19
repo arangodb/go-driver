@@ -135,6 +135,9 @@ type CollectionProperties struct {
 	// This attribute specifies that the sharding of a collection follows that of another
 	// one.
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
+	// This attribute specifies if the new format introduced in 3.7 is used for this
+	// collection.
+	UseRevisionsAsDocumentIds bool `json:"useRevisionsAsDocumentIds,omitempty"`
 }
 
 const (

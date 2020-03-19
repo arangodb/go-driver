@@ -220,6 +220,7 @@ type InventoryCollectionParameters struct {
 	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
 	SmartJoinAttribute   string                 `json:"smartJoinAttribute,omitempty"`
 	ShardingStrategy     ShardingStrategy       `json:"shardingStrategy,omitempty"`
+	UsesRevisionsAsDocumentIds bool						  `json:"usesRevisionsAsDocumentIds,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a satellite collection
