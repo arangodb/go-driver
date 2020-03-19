@@ -49,8 +49,20 @@ type Batch interface {
 type Replication interface {
 	// CreateBatch creates a "batch" to prevent removal of state required for replication
 	CreateBatch(ctx context.Context, db Database, serverID int64, ttl time.Duration) (Batch, error)
+
 	// Get the inventory of the server containing all collections (with entire details) of a database.
 	// When this function is called on a coordinator is a cluster, an ID of a DBServer must be provided
 	// using a context that is prepare with `WithDBServerID`.
 	DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error)
+
+	// GetRevisionTree retrieves the Revision tree (Merkel tree) associated with the collection.
+	GetRevisionTree(ctx context.Context, db Database, batchId, collection string) (RevisionTree, error)
+
+	// GetRevisionsByRanges retrieves the revision IDs of documents within requested ranges.
+	GetRevisionsByRanges(ctx context.Context, db Database, batchId, collection string, minMaxRevision []RevisionMinMax,
+		resume RevisionUInt64) (RevisionRanges, error)
+
+	// GetRevisionDocuments retrieves documents by revision.
+	GetRevisionDocuments(ctx context.Context, db Database, batchId, collection string,
+		revisions Revisions) ([]map[string]interface{}, error)
 }

@@ -212,6 +212,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		if up := waitUntilServerAvailable(ctx, c, t); up != nil {
 			t.Fatalf("Connection is not available in %s: %s", timeout, describe(up))
 		}
+
 		// Synchronize endpoints
 		if err := waitUntilEndpointSynchronized(ctx, c, "", t); err != nil {
 			t.Errorf("Failed to synchronize endpoints: %s", describe(err))

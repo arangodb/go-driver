@@ -120,7 +120,6 @@ func skipNoEnterprise(t *testing.T) {
 }
 
 type interrupt struct {
-
 }
 
 func (i interrupt) Error() string {
