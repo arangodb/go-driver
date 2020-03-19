@@ -134,6 +134,7 @@ func (c *vstConnection) NewRequest(method, path string) (driver.Request, error) 
 		},
 	}
 	r.BodyBuilder = NewVstBodyBuilder()
+	r.VelocyPack = true
 
 	return &r, nil
 }
