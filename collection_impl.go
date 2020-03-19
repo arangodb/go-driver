@@ -283,22 +283,26 @@ type collectionPropertiesInternal struct {
 	WriteConcern       int              `json:"writeConcern,omitempty"`
 	SmartJoinAttribute string           `json:"smartJoinAttribute,omitempty"`
 	ShardingStrategy   ShardingStrategy `json:"shardingStrategy,omitempty"`
+	DistributeShardsLike string         `json:"distributeShardsLike,omitempty"`
+	UsesRevisionsAsDocumentIds bool     `json:"usesRevisionsAsDocumentIds,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 	return CollectionProperties{
-		CollectionInfo:       p.CollectionInfo,
-		WaitForSync:          p.WaitForSync,
-		DoCompact:            p.DoCompact,
-		JournalSize:          p.JournalSize,
-		KeyOptions:           p.KeyOptions,
-		NumberOfShards:       p.NumberOfShards,
-		ShardKeys:            p.ShardKeys,
-		ReplicationFactor:    int(p.ReplicationFactor),
-		MinReplicationFactor: p.MinReplicationFactor,
-		WriteConcern:         p.WriteConcern,
-		SmartJoinAttribute:   p.SmartJoinAttribute,
-		ShardingStrategy:     p.ShardingStrategy,
+		CollectionInfo:             p.CollectionInfo,
+		WaitForSync:                p.WaitForSync,
+		DoCompact:                  p.DoCompact,
+		JournalSize:                p.JournalSize,
+		KeyOptions:                 p.KeyOptions,
+		NumberOfShards:             p.NumberOfShards,
+		ShardKeys:                  p.ShardKeys,
+		ReplicationFactor:          int(p.ReplicationFactor),
+		MinReplicationFactor:       p.MinReplicationFactor,
+		WriteConcern:               p.WriteConcern,
+		SmartJoinAttribute:         p.SmartJoinAttribute,
+		ShardingStrategy:           p.ShardingStrategy,
+		DistributeShardsLike:       p.DistributeShardsLike,
+		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
 	}
 }
 
