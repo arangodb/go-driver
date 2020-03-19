@@ -20,7 +20,7 @@
 // Author Ewout Prangsma
 //
 
-package http
+package pkg
 
 import (
 	"encoding/json"

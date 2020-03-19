@@ -28,6 +28,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/arangodb/go-driver/internal/pkg"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -209,17 +210,19 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 	}
 
 	r := &httpRequest{
-		method: method,
-		path:   path,
+		RequestInternal: pkg.RequestInternal{
+			MethodName: method,
+			PathName:   path,
+		},
 	}
 
 	switch ct {
 	case driver.ContentTypeJSON:
-		r.bodyBuilder = NewJsonBodyBuilder()
+		r.BodyBuilder = pkg.NewJsonBodyBuilder()
 		return r, nil
 	case driver.ContentTypeVelocypack:
-		r.bodyBuilder = NewVelocyPackBodyBuilder()
-		r.velocyPack = true
+		r.BodyBuilder = pkg.NewVelocyPackBodyBuilder()
+		r.VelocyPack = true
 		return r, nil
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))

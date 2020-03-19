@@ -27,6 +27,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/arangodb/go-driver/internal/pkg"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 
@@ -126,10 +128,12 @@ func (c *vstConnection) NewRequest(method, path string) (driver.Request, error) 
 	}
 
 	r := vstRequest{
-		method: method,
-		path:   path,
+		RequestInternal: pkg.RequestInternal{
+			MethodName: method,
+			PathName:   path,
+		},
 	}
-	r.bodyBuilder = NewVstBodyBuilder()
+	r.BodyBuilder = NewVstBodyBuilder()
 
 	return &r, nil
 }
@@ -161,7 +165,7 @@ func (c *vstConnection) do(ctx context.Context, req driver.Request, transport me
 		return nil, driver.WithStack(err)
 	}
 	// All data was send now
-	vstReq.WroteRequest()
+	vstReq.WroteRequest(httptrace.WroteRequestInfo{})
 
 	// Wait for response
 	var msg protocol.Message
