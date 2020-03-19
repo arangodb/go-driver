@@ -284,6 +284,7 @@ type collectionPropertiesInternal struct {
 	SmartJoinAttribute string           `json:"smartJoinAttribute,omitempty"`
 	ShardingStrategy   ShardingStrategy `json:"shardingStrategy,omitempty"`
 	DistributeShardsLike string         `json:"distributeShardsLike,omitempty"`
+	// Available from 3.7 arangod version.
 	UsesRevisionsAsDocumentIds bool     `json:"usesRevisionsAsDocumentIds,omitempty"`
 }
 

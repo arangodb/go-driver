@@ -220,6 +220,7 @@ type InventoryCollectionParameters struct {
 	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
 	SmartJoinAttribute   string                 `json:"smartJoinAttribute,omitempty"`
 	ShardingStrategy     ShardingStrategy       `json:"shardingStrategy,omitempty"`
+	// Available from 3.7 arangod version
 	UsesRevisionsAsDocumentIds bool						  `json:"usesRevisionsAsDocumentIds,omitempty"`
 }
 
