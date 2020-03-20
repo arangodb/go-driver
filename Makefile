@@ -102,6 +102,11 @@ ifdef ENABLE_VST11
 	VST11_CLUSTER_TESTS := run-tests-cluster-vst-1.1
 endif
 
+TEST_RESOURCES_VOLUME := ""
+ifdef TEST_RESOURCES
+	TEST_RESOURCES_VOLUME := -v ${TEST_RESOURCES}:/tmp/resources
+endif
+
 .PHONY: all build clean run-tests
 
 all: build
@@ -323,7 +328,7 @@ __test_go_test:
 	docker run \
 		--name=$(TESTCONTAINER) \
 		--net=$(TEST_NET) \
-		-v "${ROOTDIR}":/usr/code \
+		-v "${ROOTDIR}":/usr/code ${TEST_RESOURCES_VOLUME} \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
