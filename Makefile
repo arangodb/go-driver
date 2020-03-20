@@ -102,7 +102,7 @@ ifdef ENABLE_VST11
 	VST11_CLUSTER_TESTS := run-tests-cluster-vst-1.1
 endif
 
-TEST_RESOURCES_VOLUME := ""
+TEST_RESOURCES_VOLUME :=
 ifdef TEST_RESOURCES
 	TEST_RESOURCES_VOLUME := -v ${TEST_RESOURCES}:/tmp/resources
 endif
