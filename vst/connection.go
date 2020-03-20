@@ -27,6 +27,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/arangodb/go-driver/http"
 	"net/url"
 	"strings"
 
@@ -129,7 +130,7 @@ func (c *vstConnection) NewRequest(method, path string) (driver.Request, error) 
 		method: method,
 		path:   path,
 	}
-	r.bodyBuilder = NewVstBodyBuilder()
+	r.bodyBuilder = http.NewJsonBodyBuilder()
 
 	return &r, nil
 }

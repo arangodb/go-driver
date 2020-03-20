@@ -174,9 +174,21 @@ func (r *vstRequest) createMessageParts() ([][]byte, error) {
 	}
 	b.Close()      // Parameters
 	b.OpenObject() // Meta
+	content := false
 	for k, v := range r.hdr {
+		if strings.EqualFold(k, "Content-Type") {
+			content = true
+		}
 		b.AddKeyValue(k, velocypack.NewStringValue(v))
 	}
+
+	if !content {
+		con := r.bodyBuilder.GetContentType()
+		if len(con) > 0 {
+			b.AddKeyValue("Content-Type", velocypack.NewStringValue(con))
+		}
+	}
+
 	b.Close() // Meta
 	b.Close() // Header
 
@@ -188,6 +200,7 @@ func (r *vstRequest) createMessageParts() ([][]byte, error) {
 	if len(r.bodyBuilder.GetBody()) == 0 {
 		return [][]byte{hdr}, nil
 	}
+
 	return [][]byte{hdr, r.bodyBuilder.GetBody()}, nil
 }
 
