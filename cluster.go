@@ -117,6 +117,8 @@ const (
 
 // DatabaseInventory describes a detailed state of the collections & shards of a specific database within a cluster.
 type DatabaseInventory struct {
+	// Details of database, this is present since ArangoDB 3.6
+	Info DatabaseInfo `json:"properties,omitempty"`
 	// Details of all collections
 	Collections []InventoryCollection `json:"collections,omitempty"`
 	// Details of all views
@@ -218,6 +220,9 @@ type InventoryCollectionParameters struct {
 	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
 	SmartJoinAttribute   string                 `json:"smartJoinAttribute,omitempty"`
 	ShardingStrategy     ShardingStrategy       `json:"shardingStrategy,omitempty"`
+	// Available from 3.7 arangod version
+	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
+	SyncByRevision             bool `json:"syncByRevision,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a satellite collection

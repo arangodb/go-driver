@@ -280,25 +280,32 @@ type collectionPropertiesInternal struct {
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// Available from 3.6 arangod version.
-	WriteConcern       int              `json:"writeConcern,omitempty"`
-	SmartJoinAttribute string           `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy   ShardingStrategy `json:"shardingStrategy,omitempty"`
+	WriteConcern         int              `json:"writeConcern,omitempty"`
+	SmartJoinAttribute   string           `json:"smartJoinAttribute,omitempty"`
+	ShardingStrategy     ShardingStrategy `json:"shardingStrategy,omitempty"`
+	DistributeShardsLike string           `json:"distributeShardsLike,omitempty"`
+	// Available from 3.7 arangod version.
+	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
+	SyncByRevision             bool `json:"syncByRevision,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 	return CollectionProperties{
-		CollectionInfo:       p.CollectionInfo,
-		WaitForSync:          p.WaitForSync,
-		DoCompact:            p.DoCompact,
-		JournalSize:          p.JournalSize,
-		KeyOptions:           p.KeyOptions,
-		NumberOfShards:       p.NumberOfShards,
-		ShardKeys:            p.ShardKeys,
-		ReplicationFactor:    int(p.ReplicationFactor),
-		MinReplicationFactor: p.MinReplicationFactor,
-		WriteConcern:         p.WriteConcern,
-		SmartJoinAttribute:   p.SmartJoinAttribute,
-		ShardingStrategy:     p.ShardingStrategy,
+		CollectionInfo:             p.CollectionInfo,
+		WaitForSync:                p.WaitForSync,
+		DoCompact:                  p.DoCompact,
+		JournalSize:                p.JournalSize,
+		KeyOptions:                 p.KeyOptions,
+		NumberOfShards:             p.NumberOfShards,
+		ShardKeys:                  p.ShardKeys,
+		ReplicationFactor:          int(p.ReplicationFactor),
+		MinReplicationFactor:       p.MinReplicationFactor,
+		WriteConcern:               p.WriteConcern,
+		SmartJoinAttribute:         p.SmartJoinAttribute,
+		ShardingStrategy:           p.ShardingStrategy,
+		DistributeShardsLike:       p.DistributeShardsLike,
+		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
+		SyncByRevision:             p.SyncByRevision,
 	}
 }
 
