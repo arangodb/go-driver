@@ -221,7 +221,8 @@ type InventoryCollectionParameters struct {
 	SmartJoinAttribute   string                 `json:"smartJoinAttribute,omitempty"`
 	ShardingStrategy     ShardingStrategy       `json:"shardingStrategy,omitempty"`
 	// Available from 3.7 arangod version
-	UsesRevisionsAsDocumentIds bool						  `json:"usesRevisionsAsDocumentIds,omitempty"`
+	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
+	SyncByRevision             bool `json:"syncByRevision,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a satellite collection

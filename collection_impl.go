@@ -280,12 +280,13 @@ type collectionPropertiesInternal struct {
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// Available from 3.6 arangod version.
-	WriteConcern       int              `json:"writeConcern,omitempty"`
-	SmartJoinAttribute string           `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy   ShardingStrategy `json:"shardingStrategy,omitempty"`
-	DistributeShardsLike string         `json:"distributeShardsLike,omitempty"`
+	WriteConcern         int              `json:"writeConcern,omitempty"`
+	SmartJoinAttribute   string           `json:"smartJoinAttribute,omitempty"`
+	ShardingStrategy     ShardingStrategy `json:"shardingStrategy,omitempty"`
+	DistributeShardsLike string           `json:"distributeShardsLike,omitempty"`
 	// Available from 3.7 arangod version.
-	UsesRevisionsAsDocumentIds bool     `json:"usesRevisionsAsDocumentIds,omitempty"`
+	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
+	SyncByRevision             bool `json:"syncByRevision,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
@@ -304,6 +305,7 @@ func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 		ShardingStrategy:           p.ShardingStrategy,
 		DistributeShardsLike:       p.DistributeShardsLike,
 		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
+		SyncByRevision:             p.SyncByRevision,
 	}
 }
 
