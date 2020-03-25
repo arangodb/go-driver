@@ -486,7 +486,7 @@ func (c *edgeCollection) removeDocument(ctx context.Context, key string) (Docume
 	}
 	cs := applyContextSettings(ctx, req)
 	if cs.ReturnOld != nil {
-		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "ReturnOld is not support when removing edges"})
+		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "ReturnOld is not supported when removing edges"})
 	}
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {
@@ -503,12 +503,6 @@ func (c *edgeCollection) removeDocument(ctx context.Context, key string) (Docume
 	var meta DocumentMeta
 	if err := resp.ParseBody("edge", &meta); err != nil {
 		return DocumentMeta{}, cs, WithStack(err)
-	}
-	// Parse returnOld (if needed)
-	if cs.ReturnOld != nil {
-		if err := resp.ParseBody("old", cs.ReturnOld); err != nil {
-			return meta, cs, WithStack(err)
-		}
 	}
 	return meta, cs, nil
 }
