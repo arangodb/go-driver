@@ -339,6 +339,8 @@ func (p *CollectionProperties) fromInternal(i *collectionPropertiesInternal) {
 	p.WriteConcern = i.WriteConcern
 	p.SmartJoinAttribute = i.SmartJoinAttribute
 	p.ShardingStrategy = i.ShardingStrategy
+	p.UsesRevisionsAsDocumentIds = i.UsesRevisionsAsDocumentIds
+	p.SyncByRevision = i.SyncByRevision
 }
 
 // MarshalJSON converts CollectionProperties into json
