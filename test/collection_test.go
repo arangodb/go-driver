@@ -84,6 +84,88 @@ func TestCreateCollection(t *testing.T) {
 	}
 }
 
+// TestCollection_CacheEnabled with cacheEnabled and check if exists
+func TestCollection_CacheEnabled(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_test_cache_enabled", nil, t)
+
+	t.Run("Default value", func(t *testing.T) {
+		name := "test_create_collection_cache_default"
+		_, err := db.CreateCollection(nil, name, nil)
+		require.NoError(t, err)
+
+		// Collection must exist now
+		col, err := db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err := col.Properties(nil)
+		require.NoError(t, err)
+
+		require.False(t, prop.CacheEnabled)
+	})
+
+	t.Run("False", func(t *testing.T) {
+		name := "test_create_collection_cache_false"
+		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
+			CacheEnabled: newBool(false),
+		})
+		require.NoError(t, err)
+
+		// Collection must exist now
+		col, err := db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err := col.Properties(nil)
+		require.NoError(t, err)
+
+		require.False(t, prop.CacheEnabled)
+	})
+
+	t.Run("True", func(t *testing.T) {
+		name := "test_create_collection_cache_true"
+		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
+			CacheEnabled: newBool(true),
+		})
+		require.NoError(t, err)
+
+		// Collection must exist now
+		col, err := db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err := col.Properties(nil)
+		require.NoError(t, err)
+
+		require.True(t, prop.CacheEnabled)
+	})
+
+	t.Run("With update", func(t *testing.T) {
+		name := "test_create_collection_cache_update"
+		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
+			CacheEnabled: newBool(false),
+		})
+		require.NoError(t, err)
+
+		// Collection must exist now
+		col, err := db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err := col.Properties(nil)
+		require.NoError(t, err)
+
+		require.False(t, prop.CacheEnabled)
+
+		err = col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+			CacheEnabled: newBool(true),
+		})
+		require.NoError(t, err)
+
+		prop, err = col.Properties(nil)
+		require.NoError(t, err)
+
+		require.True(t, prop.CacheEnabled)
+	})
+}
+
 // TestCreateSatelliteCollection create a satellite collection
 func TestCreateSatelliteCollection(t *testing.T) {
 	skipNoEnterprise(t)

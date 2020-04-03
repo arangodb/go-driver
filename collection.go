@@ -101,7 +101,9 @@ type CollectionProperties struct {
 	DoCompact bool `json:"doCompact,omitempty"`
 	// JournalSize is the maximal size setting for journals / datafiles in bytes.
 	JournalSize int64 `json:"journalSize,omitempty"`
-	KeyOptions  struct {
+	// CacheEnabled set cacheEnabled option in collection properties
+	CacheEnabled bool `json:"cacheEnabled,omitempty"`
+	KeyOptions   struct {
 		// Type specifies the type of the key generator. The currently available generators are traditional and autoincrement.
 		Type KeyGeneratorType `json:"type,omitempty"`
 		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
@@ -167,6 +169,8 @@ type SetCollectionPropertiesOptions struct {
 	// WriteConcern contains how many copies must be available before a collection can be written.
 	// Available from 3.6 arangod version.
 	WriteConcern int `json:"writeConcern,omitempty"`
+	// CacheEnabled set cacheEnabled option in collection properties
+	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
 }
 
 // CollectionStatus indicates the status of a collection.

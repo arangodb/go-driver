@@ -63,6 +63,8 @@ type CreateCollectionOptions struct {
 	WaitForSync bool `json:"waitForSync,omitempty"`
 	// Whether or not the collection will be compacted (default is true)
 	DoCompact *bool `json:"doCompact,omitempty"`
+	// CacheEnabled set cacheEnabled option in collection properties
+	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
 	// If true then the collection data is kept in-memory only and not made persistent.
 	// Unloading the collection will cause the collection data to be discarded. Stopping or re-starting the server will also
 	// cause full loss of data in the collection. Setting this option will make the resulting collection be slightly faster

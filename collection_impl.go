@@ -267,10 +267,11 @@ func (c *collection) Truncate(ctx context.Context) error {
 
 type collectionPropertiesInternal struct {
 	CollectionInfo
-	WaitForSync bool  `json:"waitForSync,omitempty"`
-	DoCompact   bool  `json:"doCompact,omitempty"`
-	JournalSize int64 `json:"journalSize,omitempty"`
-	KeyOptions  struct {
+	WaitForSync  bool  `json:"waitForSync,omitempty"`
+	DoCompact    bool  `json:"doCompact,omitempty"`
+	JournalSize  int64 `json:"journalSize,omitempty"`
+	CacheEnabled bool  `json:"cacheEnabled,omitempty"`
+	KeyOptions   struct {
 		Type          KeyGeneratorType `json:"type,omitempty"`
 		AllowUserKeys bool             `json:"allowUserKeys,omitempty"`
 	} `json:"keyOptions,omitempty"`
@@ -295,6 +296,7 @@ func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 		WaitForSync:                p.WaitForSync,
 		DoCompact:                  p.DoCompact,
 		JournalSize:                p.JournalSize,
+		CacheEnabled:               p.CacheEnabled,
 		KeyOptions:                 p.KeyOptions,
 		NumberOfShards:             p.NumberOfShards,
 		ShardKeys:                  p.ShardKeys,
@@ -315,6 +317,7 @@ func (p *CollectionProperties) asInternal() collectionPropertiesInternal {
 		WaitForSync:          p.WaitForSync,
 		DoCompact:            p.DoCompact,
 		JournalSize:          p.JournalSize,
+		CacheEnabled:         p.CacheEnabled,
 		KeyOptions:           p.KeyOptions,
 		NumberOfShards:       p.NumberOfShards,
 		ShardKeys:            p.ShardKeys,
@@ -331,6 +334,7 @@ func (p *CollectionProperties) fromInternal(i *collectionPropertiesInternal) {
 	p.WaitForSync = i.WaitForSync
 	p.DoCompact = i.DoCompact
 	p.JournalSize = i.JournalSize
+	p.CacheEnabled = i.CacheEnabled
 	p.KeyOptions = i.KeyOptions
 	p.NumberOfShards = i.NumberOfShards
 	p.ShardKeys = i.ShardKeys
@@ -361,6 +365,7 @@ type setCollectionPropertiesOptionsInternal struct {
 	WaitForSync       *bool             `json:"waitForSync,omitempty"`
 	JournalSize       int64             `json:"journalSize,omitempty"`
 	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+	CacheEnabled      *bool             `json:"cacheEnabled,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// Available from 3.6 arangod version.
@@ -371,6 +376,7 @@ func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOpt
 	return setCollectionPropertiesOptionsInternal{
 		WaitForSync:          p.WaitForSync,
 		JournalSize:          p.JournalSize,
+		CacheEnabled:         p.CacheEnabled,
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
 		WriteConcern:         p.WriteConcern,
@@ -380,6 +386,7 @@ func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOpt
 func (p *SetCollectionPropertiesOptions) fromInternal(i *setCollectionPropertiesOptionsInternal) {
 	p.WaitForSync = i.WaitForSync
 	p.JournalSize = i.JournalSize
+	p.CacheEnabled = i.CacheEnabled
 	p.ReplicationFactor = int(i.ReplicationFactor)
 	p.MinReplicationFactor = i.MinReplicationFactor
 	p.WriteConcern = i.WriteConcern
