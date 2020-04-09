@@ -30,7 +30,7 @@ type RevisionTreeNode struct {
 type RevisionTree struct {
 	Version  int                `json:"version"`
 	MaxDepth int                `json:"maxDepth"`
-	RangeMin RevisionUInt64     `json:"rangeMin,string" velocypack:"rangeMin"`
+	RangeMin RevisionUInt64     `json:"rangeMin,omitempty,string" velocypack:"rangeMin"`
 	RangeMax RevisionUInt64     `json:"rangeMax,string" velocypack:"rangeMax"`
 	Nodes    []RevisionTreeNode `json:"nodes"`
 }
@@ -72,7 +72,7 @@ func decodeRevision(revision []byte) RevisionUInt64 {
 
 func encodeRevision(revision RevisionUInt64) []byte {
 	if revision == 0 {
-		return []byte{}
+		return []byte{'-'}
 	}
 
 	var result [12]byte
@@ -91,22 +91,25 @@ func encodeRevision(revision RevisionUInt64) []byte {
 func (n *RevisionUInt64) UnmarshalJSON(revision []byte) (err error) {
 	length := len(revision)
 
-	if length > 2 {
-		*n = decodeRevision(revision[1 : length-1])
-	} else {
-		// it can be only empty json string ""
+	if length == 0 {
 		*n = 0
+		return nil
 	}
+
+	if length >= 2 && revision[0] == '"' {
+		// it means that the 'map[string]*json.RawMessage' revision tree is being parsed
+		*n = decodeRevision(revision[1 : length-1])
+		return nil
+	}
+
+	// it means that the object revision tree is being parsed
+	*n = decodeRevision(revision)
 
 	return nil
 }
 
 // MarshalJSON converts RevisionUInt64 into string revision
 func (n *RevisionUInt64) MarshalJSON() ([]byte, error) {
-	if *n == 0 {
-		return []byte{'"', '"'}, nil // return an empty string
-	}
-
 	value := make([]byte, 0, 16)
 	r := encodeRevision(*n)
 	value = append(value, '"')
