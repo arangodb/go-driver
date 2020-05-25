@@ -1,6 +1,8 @@
 PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
-ROOTDIR := $(shell cd "${SCRIPTDIR}" && pwd)
+
+CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+ROOTDIR:=$(CURR)
 
 GOVERSION := 1.12.4-stretch
 TMPDIR := ${SCRIPTDIR}/.tmp
@@ -26,7 +28,8 @@ REPONAME := $(PROJECT)
 REPODIR := $(ORGDIR)/$(REPONAME)
 REPOPATH := $(ORGPATH)/$(REPONAME)
 
-SOURCES := $(shell find . -name '*.go')
+SOURCES_EXCLUDE:=vendor
+SOURCES := $(shell find "$(ROOTDIR)" $(foreach SOURCE,$(SOURCES_EXCLUDE),-not -path '$(ROOTDIR)/$(SOURCE)/*') -name '*.go')
 
 # Test variables
 
@@ -407,3 +410,39 @@ run-benchmarks-single-json-no-auth:
 run-benchmarks-single-vpack-no-auth: 
 	@echo "Benchmarks: Single server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" TEST_BENCHMARK="true" __run_tests
+
+## Lint
+
+.PHONY: tools
+tools:
+	@echo ">> Fetching goimports"
+	@go get -u golang.org/x/tools/cmd/goimports
+	@echo ">> Fetching license check"
+	@go get -u github.com/google/addlicense
+
+.PHONY: license
+license:
+	@echo ">> Ensuring license of files"
+	@go run github.com/google/addlicense -f "$(ROOTDIR)/HEADER" $(SOURCES)
+
+.PHONY: license-verify
+license-verify:
+	@echo ">> Verify license of files"
+	@go run github.com/google/addlicense -f "$(ROOTDIR)/HEADER" -check $(SOURCES)
+
+.PHONY: fmt
+fmt:
+	@echo ">> Ensuring style of files"
+	@go run golang.org/x/tools/cmd/goimports -w $(SOURCES)
+
+.PHONY: fmt-verify
+fmt-verify: license-verify
+	@echo ">> Verify files style"
+	@if [ X"$$(go run golang.org/x/tools/cmd/goimports -l $(SOURCES) | wc -l)" != X"0" ]; then echo ">> Style errors"; go run golang.org/x/tools/cmd/goimports -l $(SOURCES); exit 1; fi
+
+.PHONY: linter
+linter: fmt
+	@golangci-lint run --no-config --issues-exit-code=1 --deadline=30m --disable-all \
+	                  $(foreach MODE,$(GOLANGCI_ENABLED),--enable $(MODE) ) \
+	                  --exclude-use-default=false \
+	                  $(SOURCES_PACKAGES)

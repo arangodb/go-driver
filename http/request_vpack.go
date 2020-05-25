@@ -25,9 +25,10 @@ package http
 import (
 	"bytes"
 	"fmt"
+	"reflect"
+
 	driver "github.com/arangodb/go-driver"
 	velocypack "github.com/arangodb/go-velocypack"
-	"reflect"
 )
 
 type velocyPackBody struct {
