@@ -53,7 +53,7 @@ func TestEnsureFullTextIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.FullTextIndex {
 			t.Errorf("Expected FullTextIndex, found `%s`", idxType)
 		}
-		if idx.MinLength() != options.MinLength {
+		if options != nil && idx.MinLength() != options.MinLength {
 			t.Errorf("Expected %d, found `%d`", options.MinLength, idx.MinLength())
 		}
 
@@ -111,7 +111,7 @@ func TestEnsureGeoIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.GeoIndex {
 			t.Errorf("Expected GeoIndex, found `%s`", idxType)
 		}
-		if idx.GeoJSON() != options.GeoJSON {
+		if options != nil && idx.GeoJSON() != options.GeoJSON {
 			t.Errorf("Expected GeoJSON to be %t, found `%t`", options.GeoJSON, idx.GeoJSON())
 		}
 
@@ -171,10 +171,10 @@ func TestEnsureHashIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.HashIndex {
 			t.Errorf("Expected HashIndex, found `%s`", idxType)
 		}
-		if idx.Unique() != options.Unique {
+		if options != nil && idx.Unique() != options.Unique {
 			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
 		}
-		if idx.Sparse() != options.Sparse {
+		if options != nil && idx.Sparse() != options.Sparse {
 			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
 		}
 
@@ -234,10 +234,10 @@ func TestEnsurePersistentIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.PersistentIndex {
 			t.Errorf("Expected PersistentIndex, found `%s`", idxType)
 		}
-		if idx.Unique() != options.Unique {
+		if options != nil && idx.Unique() != options.Unique {
 			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
 		}
-		if idx.Sparse() != options.Sparse {
+		if options != nil && idx.Sparse() != options.Sparse {
 			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
 		}
 
@@ -297,13 +297,13 @@ func TestEnsureSkipListIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.SkipListIndex {
 			t.Errorf("Expected SkipListIndex, found `%s`", idxType)
 		}
-		if idx.Unique() != options.Unique {
+		if options != nil && idx.Unique() != options.Unique {
 			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
 		}
-		if idx.Sparse() != options.Sparse {
+		if options != nil && idx.Sparse() != options.Sparse {
 			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
 		}
-		if idx.Deduplicate() != options.NoDeduplicate {
+		if options != nil && idx.Deduplicate() != options.NoDeduplicate {
 			t.Errorf("Expected NoDeduplicate to be %t, found `%t`", options.NoDeduplicate, idx.Deduplicate())
 		}
 

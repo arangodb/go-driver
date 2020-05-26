@@ -118,21 +118,33 @@ func (i *index) Fields() []string {
 
 // Unique returns if this index is unique.
 func (i *index) Unique() bool {
+	if i.indexData.Unique == nil {
+		return false
+	}
 	return *i.indexData.Unique
 }
 
 // Deduplicate returns deduplicate setting of this index.
 func (i *index) Deduplicate() bool {
+	if i.indexData.Deduplicate == nil {
+		return false
+	}
 	return *i.indexData.Deduplicate
 }
 
 // Sparse returns if this is a sparse index or not.
 func (i *index) Sparse() bool {
+	if i.indexData.Sparse == nil {
+		return false
+	}
 	return *i.indexData.Sparse
 }
 
 // GeoJSON returns if geo json was set for this index or not.
 func (i *index) GeoJSON() bool {
+	if i.indexData.GeoJSON == nil {
+		return false
+	}
 	return *i.indexData.GeoJSON
 }
 
