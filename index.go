@@ -55,6 +55,27 @@ type Index interface {
 	// Type returns the type of the index
 	Type() IndexType
 
+	// Fields returns a list of attributes of this index.
+	Fields() []string
+
+	// Unique returns if this index is unique.
+	Unique() bool
+
+	// Deduplicate returns deduplicate setting of this index.
+	Deduplicate() bool
+
+	// Sparse returns if this is a sparse index or not.
+	Sparse() bool
+
+	// GeoJSON returns if geo json was set for this index or not.
+	GeoJSON() bool
+
+	// MinLength returns min length for this index if set.
+	MinLength() int
+
+	// ExpireAfter returns an expire after for this index if set.
+	ExpireAfter() int
+
 	// Remove removes the entire index.
 	// If the index does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error

@@ -53,6 +53,9 @@ func TestEnsureFullTextIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.FullTextIndex {
 			t.Errorf("Expected FullTextIndex, found `%s`", idxType)
 		}
+		if idx.MinLength() != options.MinLength {
+			t.Errorf("Expected %d, found `%d`", options.MinLength, idx.MinLength())
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -107,6 +110,9 @@ func TestEnsureGeoIndex(t *testing.T) {
 		}
 		if idxType := idx.Type(); idxType != driver.GeoIndex {
 			t.Errorf("Expected GeoIndex, found `%s`", idxType)
+		}
+		if idx.GeoJSON() != options.GeoJSON {
+			t.Errorf("Expected GeoJSON to be %t, found `%t`", options.GeoJSON, idx.GeoJSON())
 		}
 
 		// Index must exists now
@@ -165,6 +171,12 @@ func TestEnsureHashIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.HashIndex {
 			t.Errorf("Expected HashIndex, found `%s`", idxType)
 		}
+		if idx.Unique() != options.Unique {
+			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
+		}
+		if idx.Sparse() != options.Sparse {
+			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -222,6 +234,12 @@ func TestEnsurePersistentIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.PersistentIndex {
 			t.Errorf("Expected PersistentIndex, found `%s`", idxType)
 		}
+		if idx.Unique() != options.Unique {
+			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
+		}
+		if idx.Sparse() != options.Sparse {
+			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -260,10 +278,10 @@ func TestEnsureSkipListIndex(t *testing.T) {
 
 	testOptions := []*driver.EnsureSkipListIndexOptions{
 		nil,
-		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: false},
-		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: true},
-		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: false},
-		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: true},
+		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: false, NoDeduplicate: true},
+		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: true, NoDeduplicate: true},
+		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: false, NoDeduplicate: false},
+		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: true, NoDeduplicate: false},
 	}
 
 	for i, options := range testOptions {
@@ -278,6 +296,15 @@ func TestEnsureSkipListIndex(t *testing.T) {
 		}
 		if idxType := idx.Type(); idxType != driver.SkipListIndex {
 			t.Errorf("Expected SkipListIndex, found `%s`", idxType)
+		}
+		if idx.Unique() != options.Unique {
+			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
+		}
+		if idx.Sparse() != options.Sparse {
+			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
+		}
+		if idx.Deduplicate() != options.NoDeduplicate {
+			t.Errorf("Expected NoDeduplicate to be %t, found `%t`", options.NoDeduplicate, idx.Deduplicate())
 		}
 
 		// Index must exists now
@@ -326,6 +353,9 @@ func TestEnsureTTLIndex(t *testing.T) {
 	}
 	if idxType := idx.Type(); idxType != driver.TTLIndex {
 		t.Errorf("Expected TTLIndex, found `%s`", idxType)
+	}
+	if idx.ExpireAfter() != 3600 {
+		t.Errorf("Expected ExpireAfter to be 3600, found `%d`", idx.ExpireAfter())
 	}
 
 	// Index must exists now
