@@ -303,7 +303,7 @@ func TestEnsureSkipListIndex(t *testing.T) {
 		if options != nil && idx.Sparse() != options.Sparse {
 			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
 		}
-		if options != nil && idx.Deduplicate() != options.NoDeduplicate {
+		if options != nil && !idx.Deduplicate() != options.NoDeduplicate {
 			t.Errorf("Expected NoDeduplicate to be %t, found `%t`", options.NoDeduplicate, idx.Deduplicate())
 		}
 
