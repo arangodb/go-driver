@@ -24,7 +24,6 @@ package test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/arangodb/go-driver"
@@ -96,11 +95,9 @@ func TestCreateGraphWithOptions(t *testing.T) {
 				From:       []string{"from-coll1"},
 			},
 		},
-		IsSmart:             true,
-		SmartGraphAttribute: "attr-1",
-		NumberOfShards:      2,
-		ReplicationFactor:   3,
-		WriteConcern:        5,
+		NumberOfShards:    2,
+		ReplicationFactor: 3,
+		WriteConcern:      2,
 	}
 	if _, err := db.CreateGraph(context.TODO(), name, options); err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
@@ -133,12 +130,6 @@ func TestCreateGraphWithOptions(t *testing.T) {
 	} else if g.Name() != name {
 		t.Errorf("Graph.Name wrong. Expected '%s', got '%s'", name, g.Name())
 	}
-	if g.IsSmart() != options.IsSmart {
-		t.Errorf("Graph.IsSmart wrong. Expected '%t', got '%t'", options.IsSmart, g.IsSmart())
-	}
-	if g.SmartGraphAttribute() != options.SmartGraphAttribute {
-		t.Errorf("Graph.SmartGraphAttribute wrong. Expected '%s', got '%s'", options.SmartGraphAttribute, g.SmartGraphAttribute())
-	}
 	if g.NumberOfShards() != options.NumberOfShards {
 		t.Errorf("Graph.NumberOfShards wrong. Expected '%d', got '%d'", options.NumberOfShards, g.NumberOfShards())
 	}
@@ -148,10 +139,16 @@ func TestCreateGraphWithOptions(t *testing.T) {
 	if g.WriteConcern() != options.WriteConcern {
 		t.Errorf("Graph.WriteConcern wrong. Expected '%d', got '%d'", options.WriteConcern, g.WriteConcern())
 	}
-	if reflect.DeepEqual(g.EdgeDefinitions(), options.EdgeDefinitions) {
-		t.Errorf("Graph.EdgeDefinitions wrong. Expected '%v', got '%v'", options.EdgeDefinitions, g.EdgeDefinitions())
+	if g.EdgeDefinitions()[0].Collection != options.EdgeDefinitions[0].Collection {
+		t.Errorf("Graph.EdgeDefinitions.collection wrong. Expected '%s', got '%s'", options.EdgeDefinitions[0].Collection, g.EdgeDefinitions()[0].Collection)
 	}
-	if reflect.DeepEqual(g.OrphanCollections(), options.OrphanVertexCollections) {
+	if g.EdgeDefinitions()[0].From[0] != options.EdgeDefinitions[0].From[0] {
+		t.Errorf("Graph.EdgeDefinitions.from wrong. Expected '%s', got '%s'", options.EdgeDefinitions[0].From[0], g.EdgeDefinitions()[0].From[0])
+	}
+	if g.EdgeDefinitions()[0].To[0] != options.EdgeDefinitions[0].To[0] {
+		t.Errorf("Graph.EdgeDefinitions.to wrong. Expected '%s', got '%s'", options.EdgeDefinitions[0].To[0], g.EdgeDefinitions()[0].To[0])
+	}
+	if g.OrphanCollections()[0] != options.OrphanVertexCollections[0] && g.OrphanCollections()[1] != options.OrphanVertexCollections[1] {
 		t.Errorf("Graph.IsSmart wrong. Expected '%v', got '%v'", options.OrphanVertexCollections, g.OrphanCollections())
 	}
 }
