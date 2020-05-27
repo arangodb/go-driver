@@ -29,6 +29,36 @@ type Graph interface {
 	// Name returns the name of the graph.
 	Name() string
 
+	// ID returns the id of the graph.
+	ID() string
+
+	// Key returns the key of the graph.
+	Key() DocumentID
+
+	// Rev returns the revision of the graph.
+	Rev() string
+
+	// EdgeDefinitions returns the edge definitions of the graph.
+	EdgeDefinitions() []EdgeDefinition
+
+	// IsSmart returns the isSmart setting of the graph.
+	IsSmart() bool
+
+	// MinReplicationFactor returns the minimum replication factor for the graph.
+	MinReplicationFactor() int
+
+	// NumberOfShards returns the number of shards for the graph.
+	NumberOfShards() int
+
+	// OrphanCollections returns the orphan collcetions of the graph.
+	OrphanCollections() []string
+
+	// ReplicationFactor returns the current replication factor.
+	ReplicationFactor() int
+
+	// WriteConcern returns the write concern setting of the graph.
+	WriteConcern() int
+
 	// Remove removes the entire graph.
 	// If the graph does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error

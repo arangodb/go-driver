@@ -28,35 +28,85 @@ import (
 )
 
 // newGraph creates a new Graph implementation.
-func newGraph(name string, db *database) (Graph, error) {
-	if name == "" {
+func newGraph(graphData graphData, db *database) (Graph, error) {
+	if graphData.Name == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "name is empty"})
 	}
 	if db == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "db is nil"})
 	}
 	return &graph{
-		name: name,
-		db:   db,
-		conn: db.conn,
+		graphData: graphData,
+		db:        db,
+		conn:      db.conn,
 	}, nil
 }
 
 type graph struct {
-	name string
+	graphData
 	db   *database
 	conn Connection
 }
 
 // relPath creates the relative path to this graph (`_db/<db-name>/_api/gharial/<graph-name>`)
 func (g *graph) relPath() string {
-	escapedName := pathEscape(g.name)
+	escapedName := pathEscape(g.graphData.Name)
 	return path.Join(g.db.relPath(), "_api", "gharial", escapedName)
 }
 
 // Name returns the name of the graph.
 func (g *graph) Name() string {
-	return g.name
+	return g.graphData.Name
+}
+
+// ID returns the id of the graph.
+func (g *graph) ID() string {
+	return g.graphData.ID
+}
+
+// Key returns the key of the graph.
+func (g *graph) Key() DocumentID {
+	return g.graphData.Key
+}
+
+// Key returns the key of the graph.
+func (g *graph) Rev() string {
+	return g.graphData.Rev
+}
+
+// EdgeDefinitions returns the edge definitions of the graph.
+func (g *graph) EdgeDefinitions() []EdgeDefinition {
+	return g.graphData.EdgeDefinitions
+}
+
+// IsSmart returns the isSmart setting of the graph.
+func (g *graph) IsSmart() bool {
+	return g.graphData.IsSmart
+}
+
+// MinReplicationFactor returns the minimum replication factor for the graph.
+func (g *graph) MinReplicationFactor() int {
+	return g.graphData.MinReplicationFactor
+}
+
+// NumberOfShards returns the number of shards for the graph.
+func (g *graph) NumberOfShards() int {
+	return g.graphData.NumberOfShards
+}
+
+// OrphanCollections returns the orphan collcetions of the graph.
+func (g *graph) OrphanCollections() []string {
+	return g.graphData.OrphanCollections
+}
+
+// ReplicationFactor returns the current replication factor.
+func (g *graph) ReplicationFactor() int {
+	return g.graphData.ReplicationFactor
+}
+
+// WriteConcern returns the write concern setting of the graph.
+func (g *graph) WriteConcern() int {
+	return g.graphData.WriteConcern
 }
 
 // Remove removes the entire graph.

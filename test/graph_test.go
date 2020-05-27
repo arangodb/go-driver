@@ -26,7 +26,7 @@ import (
 	"context"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // ensureGraph is a helper to check if a graph exists and create if if needed.
@@ -80,6 +80,8 @@ func TestCreateGraph(t *testing.T) {
 		t.Errorf("Graph.Name wrong. Expected '%s', got '%s'", name, g.Name())
 	}
 }
+
+// TODO: Adding tests to test details returned by create.
 
 // TestRemoveGraph creates a graph and then removes it.
 func TestRemoveGraph(t *testing.T) {

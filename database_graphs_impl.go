@@ -27,6 +27,21 @@ import (
 	"path"
 )
 
+// graphData represents a returned graph json object.
+type graphData struct {
+	ID                   string           `json:"_id,omitempty"`
+	Key                  DocumentID       `json:"_key,omitempty"`
+	Rev                  string           `json:"_rev,omitempty"`
+	Name                 string           `json:"name,omitempty"`
+	EdgeDefinitions      []EdgeDefinition `json:"edgeDefinitions,omitempty"`
+	IsSmart              bool             `json:"isSmart,omitempty"`
+	MinReplicationFactor int              `json:"minReplicationFactor,omitempty"`
+	NumberOfShards       int              `json:"numberOfShards,omitempty"`
+	OrphanCollections    []string         `json:"orphanCollections,omitempty"`
+	ReplicationFactor    int              `json:"replicationFactor,omitempty"`
+	WriteConcern         int              `json:"writeConcern,omitempty"`
+}
+
 // Graph opens a connection to an existing graph within the database.
 // If no graph with given name exists, an NotFoundError is returned.
 func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
@@ -42,7 +57,11 @@ func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
 	if err := resp.CheckStatus(200); err != nil {
 		return nil, WithStack(err)
 	}
-	g, err := newGraph(name, d)
+	var data graphData
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, WithStack(err)
+	}
+	g, err := newGraph(data, d)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -70,7 +89,7 @@ func (d *database) GraphExists(ctx context.Context, name string) (bool, error) {
 }
 
 type getGraphsResponse struct {
-	Graphs []DocumentMeta `json:"graphs,omitempty"`
+	Graphs []graphData `json:"graphs,omitempty"`
 }
 
 // Graphs returns a list of all graphs in the database.
@@ -92,7 +111,7 @@ func (d *database) Graphs(ctx context.Context) ([]Graph, error) {
 	}
 	result := make([]Graph, 0, len(data.Graphs))
 	for _, info := range data.Graphs {
-		g, err := newGraph(info.Key, d)
+		g, err := newGraph(info, d)
 		if err != nil {
 			return nil, WithStack(err)
 		}
@@ -158,7 +177,11 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 	if err := resp.CheckStatus(201, 202); err != nil {
 		return nil, WithStack(err)
 	}
-	g, err := newGraph(name, d)
+	var data graphData
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, WithStack(err)
+	}
+	g, err := newGraph(data, d)
 	if err != nil {
 		return nil, WithStack(err)
 	}
