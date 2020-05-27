@@ -26,15 +26,19 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/arangodb/go-driver/jwt"
-	"os"
-	"reflect"
-	"testing"
-
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/agency"
-	"github.com/arangodb/go-driver/http"
+	httpdriver "github.com/arangodb/go-driver/http"
+	"github.com/arangodb/go-driver/jwt"
 	"github.com/arangodb/go-driver/util"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"net/http"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
 )
 
 // getAgencyEndpoints queries the cluster to get all agency endpoints.
@@ -77,7 +81,7 @@ func getHttpAuthAgencyConnection(ctx context.Context, t testEnv, c driver.Client
 	if err != nil {
 		return nil, err
 	}
-	conn, err := agency.NewAgencyConnection(http.ConnectionConfig{
+	conn, err := agency.NewAgencyConnection(httpdriver.ConnectionConfig{
 		Endpoints: endpoints,
 		TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	})
@@ -113,7 +117,7 @@ func getAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agenc
 	if err != nil {
 		return nil, err
 	}
-	conn, err := agency.NewAgencyConnection(http.ConnectionConfig{
+	conn, err := agency.NewAgencyConnection(httpdriver.ConnectionConfig{
 		Endpoints: endpoints,
 		TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	})
@@ -121,6 +125,7 @@ func getAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agenc
 		// This requires a JWT token, which we not always have in this test, so we skip under this condition
 		return nil, driver.ArangoError{HasError: true, Code: 412, ErrorMessage: "Authentication required but not supported in agency tests"}
 	}
+
 	result, err := agency.NewAgency(conn)
 	if err != nil {
 		return nil, err
@@ -144,7 +149,7 @@ func getIndividualAgencyConnections(ctx context.Context, t testEnv, c driver.Cli
 	}
 	result := make([]agency.Agency, len(endpoints))
 	for i, ep := range endpoints {
-		conn, err := http.NewConnection(http.ConnectionConfig{
+		conn, err := httpdriver.NewConnection(httpdriver.ConnectionConfig{
 			Endpoints:          []string{ep},
 			TLSConfig:          &tls.Config{InsecureSkipVerify: true},
 			DontFollowRedirect: true,
@@ -333,5 +338,476 @@ func TestAgencyRemoveIfEqualTo(t *testing.T) {
 		if err := a.ReadKey(ctx, key, &result); !agency.IsKeyNotFound(err) {
 			t.Errorf("Expected KeyNotFoundError, got %s", describe(err))
 		}
+	}
+}
+
+func TestAgencyCallbacks(t *testing.T) {
+	if getTestMode() != testModeCluster {
+		t.Skipf("Not a cluster mode")
+	}
+
+	rootKeyAgency := "TestAgencyCallbacks"
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+
+	a, err := getAgencyConnection(ctx, t, c)
+	if driver.IsPreconditionFailed(err) {
+		t.Skipf("Skip agency test: %s", describe(err))
+	}
+	require.NoError(t, err)
+
+	type callback struct {
+		key     string
+		URL     string
+		observe bool
+	}
+
+	testCases := []struct {
+		name      string
+		callbacks []callback
+	}{
+		{
+			name: "Register callback",
+			callbacks: []callback{
+				{
+					key:     rootKeyAgency + "/test/1",
+					URL:     "",
+					observe: true,
+				},
+			},
+		},
+		{
+			name: "Register and unregister callback",
+			callbacks: []callback{
+				{
+					key:     rootKeyAgency + "/test/1",
+					URL:     "localhost:1234",
+					observe: true,
+				},
+				{
+					key:     rootKeyAgency + "/test/1",
+					URL:     "localhost:1234",
+					observe: false,
+				},
+			},
+		},
+		{
+			name: "Unregister non-existing callback",
+			callbacks: []callback{
+				{
+					key:     rootKeyAgency + "/test/1",
+					URL:     "localhost:1234",
+					observe: false,
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			var err error
+
+			for _, v := range testCase.callbacks {
+				key := strings.Split(v.key, "/")
+				if v.observe {
+					err = a.RegisterChangeCallback(ctx, key, v.URL)
+				} else {
+					err = a.UnregisterChangeCallback(ctx, key, v.URL)
+				}
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestAgencyTransactionWrite(t *testing.T) {
+	writeTransaction(t, false)
+}
+
+func TestAgencyTransactionTransient(t *testing.T) {
+	t.Skip("Currently it does not work because we can not parse the response " +
+		"using ParseBody or ParseArrayBody functions")
+	writeTransaction(t, true)
+}
+
+func writeTransaction(t *testing.T, transient bool) {
+	if getTestMode() != testModeCluster {
+		t.Skipf("Not a cluster mode")
+	}
+
+	rootKeyAgency := "TestAgencyWriteTransaction"
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+
+	a, err := getAgencyConnection(ctx, t, c)
+	if driver.IsPreconditionFailed(err) {
+		t.Skipf("Skip agency test: %s", describe(err))
+	}
+	require.NoError(t, err)
+
+	type TransactionTest struct {
+		keys       []agency.KeyChanger
+		conditions map[string]agency.KeyConditioner
+	}
+
+	type Request struct {
+		transaction   TransactionTest
+		expectedError error
+	}
+
+	testCases := []struct {
+		name           string
+		requests       []Request
+		expectedResult map[string]interface{}
+		sleep          time.Duration
+	}{
+		{
+			name: "Create two keys within one request",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"1": "1",
+						"2": "2",
+					},
+				},
+			},
+		},
+		{
+			name: "Create two keys with two requests",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"1": "1",
+						"2": "2",
+					},
+				},
+			},
+		},
+		{
+			name: "Create two keys in one requests and then remove one of them in next request",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyDelete([]string{rootKeyAgency, "test", "2"}),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"1": "1",
+					},
+				},
+			},
+		},
+		{
+			name: "Register and unregister callback",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyObserve([]string{rootKeyAgency, "test", "1"}, "localhost:2345", true),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyObserve([]string{rootKeyAgency, "test", "1"}, "localhost:2345", false),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Delete non-existing keys",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyDelete([]string{rootKeyAgency, "test", "1"}),
+							agency.NewKeyDelete([]string{rootKeyAgency, "test", "2"}),
+							agency.NewKeyDelete([]string{rootKeyAgency, "test", "3"}),
+							agency.NewKeySet([]string{rootKeyAgency, "test", "4"}, "2", 0),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyDelete([]string{rootKeyAgency, "test", "4"}),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{},
+				},
+			},
+		},
+		{
+			name:  "TTL of Key is expired",
+			sleep: time.Second * 2,
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "4", time.Second),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{},
+				},
+			},
+		},
+		{
+			name: "Conditions 'ifEqual' and 'ifNotEqual' allow to crate two keys",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+						},
+						conditions: map[string]agency.KeyConditioner{
+							rootKeyAgency + "/test/1": agency.NewConditionIfEqual("1"),
+							rootKeyAgency + "/test/2": agency.NewConditionIfNotEqual("3"),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"1": "3",
+						"2": "2",
+					},
+				},
+			},
+		},
+		{
+			name: "Condition 'IfNotEqual' does not allow to create two keys",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+						},
+						conditions: map[string]agency.KeyConditioner{
+							rootKeyAgency + "/test/1": agency.NewConditionIfEqual("1"),
+							rootKeyAgency + "/test/2": agency.NewConditionIfNotEqual("2"),
+						},
+					},
+					expectedError: driver.ArangoError{
+						HasError: true,
+						Code:     http.StatusPreconditionFailed,
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "4", 0),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"1": "4",
+						"2": "2",
+					},
+				},
+			},
+		},
+		{
+			name: "Testing condition 'oldEmpty'",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+						},
+						conditions: map[string]agency.KeyConditioner{
+							rootKeyAgency + "/test/1": agency.NewConditionOldEmpty(true),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+						},
+						conditions: map[string]agency.KeyConditioner{
+							rootKeyAgency + "/test/1": agency.NewConditionOldEmpty(true),
+						},
+					},
+					expectedError: driver.ArangoError{
+						HasError: true,
+						Code:     http.StatusPreconditionFailed,
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"1": "1",
+					},
+				},
+			},
+		},
+		{
+			name: "Testing condition 'isArray'",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, 1, 0),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+						},
+						conditions: map[string]agency.KeyConditioner{
+							rootKeyAgency + "/test/1": agency.NewConditionIsArray(true),
+						},
+					},
+					expectedError: driver.ArangoError{
+						HasError: true,
+						Code:     http.StatusPreconditionFailed,
+					},
+				},
+				{
+					transaction: TransactionTest{
+
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, []int{1, 2}, 0),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "8", 0),
+						},
+						conditions: map[string]agency.KeyConditioner{
+							rootKeyAgency + "/test/1": agency.NewConditionIsArray(true),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"1": "8",
+					},
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			for _, requestTest := range testCase.requests {
+				transaction := agency.NewTransaction("")
+				for _, v := range requestTest.transaction.keys {
+					transaction.AddKey(v)
+				}
+
+				if requestTest.transaction.conditions != nil {
+					for conditionTestKey, conditionTest := range requestTest.transaction.conditions {
+						transaction.AddCondition(strings.Split(conditionTestKey, "/"), conditionTest)
+					}
+				}
+
+				err := a.WriteTransaction(ctx, transaction, transient)
+				if requestTest.expectedError != nil {
+					require.EqualError(t, err, requestTest.expectedError.Error())
+				} else {
+					require.NoError(t, err)
+				}
+			}
+
+			if testCase.sleep > 0 {
+				time.Sleep(testCase.sleep)
+			}
+			var result map[string]interface{}
+			err = a.ReadKey(ctx, []string{rootKeyAgency}, &result)
+			if agency.IsKeyNotFound(err) {
+				if testCase.expectedResult == nil || len(testCase.expectedResult) == 0 {
+
+				} else {
+					require.NoError(t, err)
+				}
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, testCase.expectedResult[rootKeyAgency], result)
+			}
+
+			cleanUpTransaction := agency.NewTransaction("")
+			cleanUpTransaction.AddKey(agency.NewKeyDelete([]string{rootKeyAgency}))
+			err := a.WriteTransaction(ctx, cleanUpTransaction, transient)
+			require.NoError(t, err)
+		})
 	}
 }
