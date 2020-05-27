@@ -129,6 +129,10 @@ type createGraphOptions struct {
 	Options                 *createGraphAdditionalOptions `json:"options,omitempty"`
 }
 
+type createGraphsResponse struct {
+	Graph graphData `json:"graph,omitempty"`
+}
+
 type createGraphAdditionalOptions struct {
 	// SmartGraphAttribute is the attribute name that is used to smartly shard the vertices of a graph.
 	// Every vertex in this Graph has to have this attribute.
@@ -178,11 +182,11 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 	if err := resp.CheckStatus(201, 202); err != nil {
 		return nil, WithStack(err)
 	}
-	var data graphData
+	var data createGraphsResponse
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	g, err := newGraph(data, d)
+	g, err := newGraph(data.Graph, d)
 	if err != nil {
 		return nil, WithStack(err)
 	}
