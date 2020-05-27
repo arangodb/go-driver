@@ -35,6 +35,7 @@ type graphData struct {
 	Name                 string           `json:"name,omitempty"`
 	EdgeDefinitions      []EdgeDefinition `json:"edgeDefinitions,omitempty"`
 	IsSmart              bool             `json:"isSmart,omitempty"`
+	SmartGraphAttribute  string           `json:"smartGraphAttribute,omitempty"`
 	MinReplicationFactor int              `json:"minReplicationFactor,omitempty"`
 	NumberOfShards       int              `json:"numberOfShards,omitempty"`
 	OrphanCollections    []string         `json:"orphanCollections,omitempty"`

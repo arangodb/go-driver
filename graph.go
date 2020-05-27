@@ -44,6 +44,9 @@ type Graph interface {
 	// IsSmart returns the isSmart setting of the graph.
 	IsSmart() bool
 
+	// SmartGraphAttribute returns the attributes of a smart graph if there are any.
+	SmartGraphAttribute() string
+
 	// MinReplicationFactor returns the minimum replication factor for the graph.
 	MinReplicationFactor() int
 

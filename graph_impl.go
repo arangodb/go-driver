@@ -84,6 +84,11 @@ func (g *graph) IsSmart() bool {
 	return g.graphData.IsSmart
 }
 
+// IsSmart returns the isSmart setting of the graph.
+func (g *graph) SmartGraphAttribute() string {
+	return g.graphData.SmartGraphAttribute
+}
+
 // MinReplicationFactor returns the minimum replication factor for the graph.
 func (g *graph) MinReplicationFactor() int {
 	return g.graphData.MinReplicationFactor
