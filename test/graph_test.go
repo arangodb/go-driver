@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/arangodb/go-driver"
@@ -47,19 +48,19 @@ func ensureGraph(ctx context.Context, db driver.Database, name string, options *
 // TestCreateGraph creates a graph and then checks that it exists.
 func TestCreateGraph(t *testing.T) {
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "graph_test", nil, t)
+	db := ensureDatabase(context.TODO(), c, "graph_test", nil, t)
 	name := "test_create_graph"
-	if _, err := db.CreateGraph(nil, name, nil); err != nil {
+	if _, err := db.CreateGraph(context.TODO(), name, nil); err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
 	// Graph must exist now
-	if found, err := db.GraphExists(nil, name); err != nil {
+	if found, err := db.GraphExists(context.TODO(), name); err != nil {
 		t.Errorf("GraphExists('%s') failed: %s", name, describe(err))
 	} else if !found {
 		t.Errorf("GraphExists('%s') return false, expected true", name)
 	}
 	// Graph must be listed
-	if list, err := db.Graphs(nil); err != nil {
+	if list, err := db.Graphs(context.TODO()); err != nil {
 		t.Errorf("Graphs failed: %s", describe(err))
 	} else {
 		found := false
@@ -74,36 +75,108 @@ func TestCreateGraph(t *testing.T) {
 		}
 	}
 	// Open graph
-	if g, err := db.Graph(nil, name); err != nil {
+	if g, err := db.Graph(context.TODO(), name); err != nil {
 		t.Errorf("Graph('%s') failed: %s", name, describe(err))
 	} else if g.Name() != name {
 		t.Errorf("Graph.Name wrong. Expected '%s', got '%s'", name, g.Name())
 	}
 }
 
-// TODO: Adding tests to test details returned by create.
+// TestCreateGraphWithOptions creates a graph with options then checks if each options is set correctly.
+func TestCreateGraphWithOptions(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(context.TODO(), c, "graph_test", nil, t)
+	name := "test_create_graph"
+	options := &driver.CreateGraphOptions{
+		OrphanVertexCollections: []string{"orphan1", "orphan2"},
+		EdgeDefinitions: []driver.EdgeDefinition{
+			{
+				Collection: "coll",
+				To:         []string{"to-coll1"},
+				From:       []string{"from-coll1"},
+			},
+		},
+		IsSmart:             true,
+		SmartGraphAttribute: "attr-1",
+		NumberOfShards:      2,
+		ReplicationFactor:   3,
+		WriteConcern:        5,
+	}
+	if _, err := db.CreateGraph(context.TODO(), name, options); err != nil {
+		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
+	}
+	// Graph must exist now
+	if found, err := db.GraphExists(context.TODO(), name); err != nil {
+		t.Errorf("GraphExists('%s') failed: %s", name, describe(err))
+	} else if !found {
+		t.Errorf("GraphExists('%s') return false, expected true", name)
+	}
+	// Graph must be listed
+	if list, err := db.Graphs(context.TODO()); err != nil {
+		t.Errorf("Graphs failed: %s", describe(err))
+	} else {
+		found := false
+		for _, g := range list {
+			if g.Name() == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Graph '%s' not found in list", name)
+		}
+	}
+	// Open graph
+	g, err := db.Graph(context.TODO(), name)
+	if err != nil {
+		t.Errorf("Graph('%s') failed: %s", name, describe(err))
+	} else if g.Name() != name {
+		t.Errorf("Graph.Name wrong. Expected '%s', got '%s'", name, g.Name())
+	}
+	if g.IsSmart() != options.IsSmart {
+		t.Errorf("Graph.IsSmart wrong. Expected '%t', got '%t'", options.IsSmart, g.IsSmart())
+	}
+	if g.SmartGraphAttribute() != options.SmartGraphAttribute {
+		t.Errorf("Graph.SmartGraphAttribute wrong. Expected '%s', got '%s'", options.SmartGraphAttribute, g.SmartGraphAttribute())
+	}
+	if g.NumberOfShards() != options.NumberOfShards {
+		t.Errorf("Graph.NumberOfShards wrong. Expected '%d', got '%d'", options.NumberOfShards, g.NumberOfShards())
+	}
+	if g.ReplicationFactor() != options.ReplicationFactor {
+		t.Errorf("Graph.ReplicationFactor wrong. Expected '%d', got '%d'", options.ReplicationFactor, g.ReplicationFactor())
+	}
+	if g.WriteConcern() != options.WriteConcern {
+		t.Errorf("Graph.WriteConcern wrong. Expected '%d', got '%d'", options.WriteConcern, g.WriteConcern())
+	}
+	if reflect.DeepEqual(g.EdgeDefinitions(), options.EdgeDefinitions) {
+		t.Errorf("Graph.EdgeDefinitions wrong. Expected '%v', got '%v'", options.EdgeDefinitions, g.EdgeDefinitions())
+	}
+	if reflect.DeepEqual(g.OrphanCollections(), options.OrphanVertexCollections) {
+		t.Errorf("Graph.IsSmart wrong. Expected '%v', got '%v'", options.OrphanVertexCollections, g.OrphanCollections())
+	}
+}
 
 // TestRemoveGraph creates a graph and then removes it.
 func TestRemoveGraph(t *testing.T) {
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "graph_test", nil, t)
+	db := ensureDatabase(context.TODO(), c, "graph_test", nil, t)
 	name := "test_remove_graph"
-	g, err := db.CreateGraph(nil, name, nil)
+	g, err := db.CreateGraph(context.TODO(), name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
 	// Graph must exist now
-	if found, err := db.GraphExists(nil, name); err != nil {
+	if found, err := db.GraphExists(context.TODO(), name); err != nil {
 		t.Errorf("GraphExists('%s') failed: %s", name, describe(err))
 	} else if !found {
 		t.Errorf("GraphExists('%s') return false, expected true", name)
 	}
 	// Now remove it
-	if err := g.Remove(nil); err != nil {
+	if err := g.Remove(context.TODO()); err != nil {
 		t.Fatalf("Failed to remove graph '%s': %s", name, describe(err))
 	}
 	// Graph must not exist now
-	if found, err := db.GraphExists(nil, name); err != nil {
+	if found, err := db.GraphExists(context.TODO(), name); err != nil {
 		t.Errorf("GraphExists('%s') failed: %s", name, describe(err))
 	} else if found {
 		t.Errorf("GraphExists('%s') return true, expected false", name)
