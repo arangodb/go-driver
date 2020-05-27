@@ -86,7 +86,7 @@ func TestCreateGraph(t *testing.T) {
 func TestCreateGraphWithOptions(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(context.TODO(), c, "graph_test", nil, t)
-	name := "test_create_graph"
+	name := "test_create_graph_2"
 	options := &driver.CreateGraphOptions{
 		OrphanVertexCollections: []string{"orphan1", "orphan2"},
 		EdgeDefinitions: []driver.EdgeDefinition{

@@ -29,10 +29,10 @@ import (
 
 // graphData represents a returned graph json object.
 type graphData struct {
-	ID                   string           `json:"_id,omitempty"`
-	Key                  DocumentID       `json:"_key,omitempty"`
-	Rev                  string           `json:"_rev,omitempty"`
-	Name                 string           `json:"name,omitempty"`
+	ID                   string           `json:"_id"`
+	Key                  DocumentID       `json:"_key"`
+	Rev                  string           `json:"_rev"`
+	Name                 string           `json:"name"`
 	EdgeDefinitions      []EdgeDefinition `json:"edgeDefinitions,omitempty"`
 	IsSmart              bool             `json:"isSmart,omitempty"`
 	SmartGraphAttribute  string           `json:"smartGraphAttribute,omitempty"`
@@ -41,6 +41,11 @@ type graphData struct {
 	OrphanCollections    []string         `json:"orphanCollections,omitempty"`
 	ReplicationFactor    int              `json:"replicationFactor,omitempty"`
 	WriteConcern         int              `json:"writeConcern,omitempty"`
+}
+
+// defines a response type where graph data is embedded into a `"graph": {}` node.
+type graphWithCodeAndErrorResponse struct {
+	Graph graphData `json:"graph"`
 }
 
 // Graph opens a connection to an existing graph within the database.
@@ -58,11 +63,11 @@ func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
 	if err := resp.CheckStatus(200); err != nil {
 		return nil, WithStack(err)
 	}
-	var data graphData
+	var data graphWithCodeAndErrorResponse
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	g, err := newGraph(data, d)
+	g, err := newGraph(data.Graph, d)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -129,10 +134,6 @@ type createGraphOptions struct {
 	Options                 *createGraphAdditionalOptions `json:"options,omitempty"`
 }
 
-type createGraphsResponse struct {
-	Graph graphData `json:"graph,omitempty"`
-}
-
 type createGraphAdditionalOptions struct {
 	// SmartGraphAttribute is the attribute name that is used to smartly shard the vertices of a graph.
 	// Every vertex in this Graph has to have this attribute.
@@ -182,7 +183,7 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 	if err := resp.CheckStatus(201, 202); err != nil {
 		return nil, WithStack(err)
 	}
-	var data createGraphsResponse
+	var data graphWithCodeAndErrorResponse
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
