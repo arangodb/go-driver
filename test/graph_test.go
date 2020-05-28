@@ -84,6 +84,7 @@ func TestCreateGraph(t *testing.T) {
 // TestCreateGraphWithOptions creates a graph with options then checks if each options is set correctly.
 func TestCreateGraphWithOptions(t *testing.T) {
 	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.6", t)
 	db := ensureDatabase(context.TODO(), c, "graph_test", nil, t)
 	name := "test_create_graph_2"
 	options := &driver.CreateGraphOptions{
