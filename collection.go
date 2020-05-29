@@ -132,7 +132,7 @@ type CollectionProperties struct {
 	// This requires ArangoDB Enterprise Edition.
 	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
 	// IsSmart
-	// See documentation for smart joins.
+	// See documentation for smart graphs.
 	// This requires ArangoDB Enterprise Edition.
 	IsSmart bool `json:"isSmart,omitempty"`
 	// This attribute specifies the name of the sharding strategy to use for the collection.
