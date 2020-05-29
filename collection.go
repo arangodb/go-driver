@@ -135,6 +135,10 @@ type CollectionProperties struct {
 	// See documentation for smart graphs.
 	// This requires ArangoDB Enterprise Edition.
 	IsSmart bool `json:"isSmart,omitempty"`
+	// SmartGraphAttribe
+	// See documentation for smart graphs.
+	// This requires ArangoDB Enterprise Edition.
+	SmartGraphAttribute bool `json:"smartGraphAttribute,omitempty"`
 	// This attribute specifies the name of the sharding strategy to use for the collection.
 	// Can not be changed after creation.
 	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
