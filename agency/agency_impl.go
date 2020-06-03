@@ -159,11 +159,12 @@ func (c *agency) WriteKey(ctx context.Context, key []string, value interface{}, 
 		return driver.WithStack(fmt.Errorf("too many conditions"))
 	}
 
-	transaction := NewTransaction("")
+	transaction := NewTransaction("", TransactionOptions{})
 	transaction.AddKey(NewKeySet(key, value, ttl))
 	conditions := ConvertWriteCondition(cond)
-	transaction.SetConditions(conditions)
-
+	for k, v := range conditions {
+		transaction.AddConditionByFullKey(k, v)
+	}
 	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
 	}
@@ -174,7 +175,7 @@ func (c *agency) WriteKey(ctx context.Context, key []string, value interface{}, 
 // Deprecated: use 'WriteTransaction' instead
 // WriteKeyIfEmpty writes the given value with the given key only if the key was empty before.
 func (c *agency) WriteKeyIfEmpty(ctx context.Context, key []string, value interface{}, ttl time.Duration) error {
-	transaction := NewTransaction("")
+	transaction := NewTransaction("", TransactionOptions{})
 	transaction.AddKey(NewKeySet(key, value, ttl))
 	transaction.AddCondition(key, NewConditionOldEmpty(true))
 
@@ -189,7 +190,7 @@ func (c *agency) WriteKeyIfEmpty(ctx context.Context, key []string, value interf
 // WriteKeyIfEqualTo writes the given new value with the given key only if the existing value for that key equals
 // to the given old value.
 func (c *agency) WriteKeyIfEqualTo(ctx context.Context, key []string, newValue, oldValue interface{}, ttl time.Duration) error {
-	transaction := NewTransaction("")
+	transaction := NewTransaction("", TransactionOptions{})
 	transaction.AddKey(NewKeySet(key, newValue, ttl))
 	transaction.AddCondition(key, NewConditionIfEqual(oldValue))
 
@@ -239,7 +240,10 @@ func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction, 
 		}
 	}
 
-	f = append(f, keysToChange, conditions, transaction.clientID)
+	f = append(f, keysToChange, conditions)
+	if len(transaction.clientID) > 0 {
+		f = append(f, transaction.clientID)
+	}
 	writeTxs = append(writeTxs, f)
 
 	req, err = req.SetBody(writeTxs)
@@ -288,10 +292,12 @@ func (c *agency) RemoveKey(ctx context.Context, key []string, condition ...Write
 		return driver.WithStack(fmt.Errorf("too many conditions"))
 	}
 
-	transaction := NewTransaction("")
+	transaction := NewTransaction("", TransactionOptions{})
 	transaction.AddKey(NewKeyDelete(key))
 	conditions := ConvertWriteCondition(cond)
-	transaction.SetConditions(conditions)
+	for k, v := range conditions {
+		transaction.AddConditionByFullKey(k, v)
+	}
 
 	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
@@ -304,7 +310,7 @@ func (c *agency) RemoveKey(ctx context.Context, key []string, condition ...Write
 // RemoveKeyIfEqualTo removes the given key only if the existing value for that key equals
 // to the given old value.
 func (c *agency) RemoveKeyIfEqualTo(ctx context.Context, key []string, oldValue interface{}) error {
-	transaction := NewTransaction("")
+	transaction := NewTransaction("", TransactionOptions{})
 	transaction.AddKey(NewKeyDelete(key))
 	transaction.AddCondition(key, NewConditionIfEqual(oldValue))
 
@@ -318,7 +324,7 @@ func (c *agency) RemoveKeyIfEqualTo(ctx context.Context, key []string, oldValue 
 // Deprecated: use 'WriteTransaction' instead
 // Register a URL to receive notification callbacks when the value of the given key changes
 func (c *agency) RegisterChangeCallback(ctx context.Context, key []string, cbURL string) error {
-	transaction := NewTransaction("")
+	transaction := NewTransaction("", TransactionOptions{})
 	transaction.AddKey(NewKeyObserve(key, cbURL, true))
 
 	if err := c.WriteTransaction(ctx, transaction); err != nil {
@@ -332,7 +338,7 @@ func (c *agency) RegisterChangeCallback(ctx context.Context, key []string, cbURL
 // Register a URL to receive notification callbacks when the value of the given key changes
 func (c *agency) UnregisterChangeCallback(ctx context.Context, key []string, cbURL string) error {
 
-	transaction := NewTransaction("")
+	transaction := NewTransaction("", TransactionOptions{})
 	transaction.AddKey(NewKeyObserve(key, cbURL, false))
 
 	if err := c.WriteTransaction(ctx, transaction); err != nil {

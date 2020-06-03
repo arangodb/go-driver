@@ -25,39 +25,34 @@ package agency
 import (
 	"fmt"
 	"github.com/arangodb/go-driver"
-	"github.com/dchest/uniuri"
 )
+
+// TransactionOptions defines options how transaction should behave.
+type TransactionOptions struct{}
 
 // Transaction stores information about operations which must be performed for particular keys with some conditions
 type Transaction struct {
 	keys       []KeyChanger
 	conditions ConditionsMap
 	clientID   string
+	options    TransactionOptions
 }
 
-// NewTransaction creates new transaction
-func NewTransaction(clientID string) Transaction {
-	if len(clientID) == 0 {
-		clientID = uniuri.New()
-	}
-
+// NewTransaction creates new transaction.
+// The argument 'clientID' can be used to mark that transaction uniquely.
+func NewTransaction(clientID string, options TransactionOptions) Transaction {
 	return Transaction{
 		clientID: clientID,
+		options:  options,
 	}
 }
 
-// SetConditions sets new conditions for the transaction
-func (k *Transaction) SetConditions(conditions ConditionsMap) {
-	k.conditions = conditions
-}
-
-// AddCondition adds new condition to the list of keys which must be changed in one transaction
-func (k *Transaction) AddCondition(key []string, condition KeyConditioner) error {
+// AddConditionByFullKey adds new condition to the list of keys which must be changed in one transaction
+func (k *Transaction) AddConditionByFullKey(fullKey string, condition KeyConditioner) error {
 	if k.conditions == nil {
 		k.conditions = make(map[string]KeyConditioner)
 	}
 
-	fullKey := createFullKey(key)
 	if _, ok := k.conditions[fullKey]; ok {
 		// For the time being one key can have only one condition. It is a limitation in agency
 		return driver.WithStack(fmt.Errorf("too many conditions"))
@@ -65,6 +60,12 @@ func (k *Transaction) AddCondition(key []string, condition KeyConditioner) error
 
 	k.conditions[fullKey] = condition
 	return nil
+}
+
+// AddCondition adds new condition to the list of keys which must be changed in one transaction
+func (k *Transaction) AddCondition(key []string, condition KeyConditioner) error {
+	fullKey := createFullKey(key)
+	return k.AddConditionByFullKey(fullKey, condition)
 }
 
 // AddKey adds new key which must be changed in one transaction

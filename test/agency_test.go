@@ -769,7 +769,7 @@ func writeTransaction(t *testing.T, transient bool) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			for _, requestTest := range testCase.requests {
-				transaction := agency.NewTransaction("")
+				transaction := agency.NewTransaction("", agency.TransactionOptions{})
 				for _, v := range requestTest.transaction.keys {
 					transaction.AddKey(v)
 				}
@@ -804,7 +804,7 @@ func writeTransaction(t *testing.T, transient bool) {
 				assert.Equal(t, testCase.expectedResult[rootKeyAgency], result)
 			}
 
-			cleanUpTransaction := agency.NewTransaction("")
+			cleanUpTransaction := agency.NewTransaction("", agency.TransactionOptions{})
 			cleanUpTransaction.AddKey(agency.NewKeyDelete([]string{rootKeyAgency}))
 			err := a.WriteTransaction(ctx, cleanUpTransaction, transient)
 			require.NoError(t, err)
