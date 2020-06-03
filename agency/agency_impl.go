@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech <tomasz@arangodb.com>
 //
 
 package agency
@@ -26,10 +27,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/arangodb/go-driver"
 	"strings"
 	"time"
-
-	"github.com/arangodb/go-driver"
 )
 
 var (
@@ -138,13 +138,13 @@ type writeCondition struct {
 	IsArray  *bool       `json:"isArray,omitempty"`  // Require old value to be array
 }
 
-type writeTransaction []map[string]interface{}
-type writeTransactions []writeTransaction
+type writeTransaction []interface{}
 
 type writeResult struct {
 	Results []int64 `json:"results"`
 }
 
+// Deprecated: use 'WriteTransaction' instead
 // WriteKey writes the given value with the given key with a given TTL (unless TTL is zero).
 // If you pass a condition (only 1 allowed), this condition has to be true,
 // otherwise the write will fail with a ConditionFailed error.
@@ -158,56 +158,94 @@ func (c *agency) WriteKey(ctx context.Context, key []string, value interface{}, 
 	default:
 		return driver.WithStack(fmt.Errorf("too many conditions"))
 	}
-	if err := c.write(ctx, "set", key, value, cond, ttl); err != nil {
+
+	transaction := NewTransaction("", TransactionOptions{})
+	transaction.AddKey(NewKeySet(key, value, ttl))
+	conditions := ConvertWriteCondition(cond)
+	for k, v := range conditions {
+		transaction.AddConditionByFullKey(k, v)
+	}
+	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
 	}
+
 	return nil
 }
 
+// Deprecated: use 'WriteTransaction' instead
 // WriteKeyIfEmpty writes the given value with the given key only if the key was empty before.
 func (c *agency) WriteKeyIfEmpty(ctx context.Context, key []string, value interface{}, ttl time.Duration) error {
-	var cond WriteCondition
-	cond = cond.IfEmpty(key)
-	if err := c.write(ctx, "set", key, value, cond, ttl); err != nil {
+	transaction := NewTransaction("", TransactionOptions{})
+	transaction.AddKey(NewKeySet(key, value, ttl))
+	transaction.AddCondition(key, NewConditionOldEmpty(true))
+
+	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
 	}
+
 	return nil
 }
 
+// Deprecated: use 'WriteTransaction' instead
 // WriteKeyIfEqualTo writes the given new value with the given key only if the existing value for that key equals
 // to the given old value.
 func (c *agency) WriteKeyIfEqualTo(ctx context.Context, key []string, newValue, oldValue interface{}, ttl time.Duration) error {
-	var cond WriteCondition
-	cond = cond.IfEqualTo(key, oldValue)
-	if err := c.write(ctx, "set", key, newValue, cond, ttl); err != nil {
+	transaction := NewTransaction("", TransactionOptions{})
+	transaction.AddKey(NewKeySet(key, newValue, ttl))
+	transaction.AddCondition(key, NewConditionIfEqual(oldValue))
+
+	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
 	}
+
 	return nil
 }
 
-// write writes the given value with the given key only if the given condition is fullfilled.
-func (c *agency) write(ctx context.Context, operation string, key []string, value interface{}, condition WriteCondition, ttl time.Duration) error {
+// WriteTransaction performs transaction in the agency.
+// Transaction can have list of operations to perform like e.g. delete, set, observe...
+// Transaction can have preconditions which must be fulfilled to perform transaction.
+func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction) error {
 	conn := c.conn
-	req, err := conn.NewRequest("POST", "_api/agency/write")
+
+	var path string
+	if transaction.options.Transient {
+		path = "_api/agency/transient"
+	} else {
+		path = "_api/agency/write"
+	}
+
+	req, err := conn.NewRequest("POST", path)
 	if err != nil {
 		return driver.WithStack(err)
 	}
 
-	fullKey := createFullKey(key)
-	writeTxs := writeTransactions{
-		writeTransaction{
-			// Update
-			map[string]interface{}{
-				fullKey: writeUpdate{
-					Operation: operation,
-					New:       value,
-					TTL:       int64(ttl.Seconds()),
-				},
-			},
-			// Condition
-			condition.toMap(),
-		},
+	writeTxs := make([]writeTransaction, 0, 1)
+	f := make(writeTransaction, 0, 3)
+	keysToChange := make(map[string]interface{})
+	for _, v := range transaction.keys {
+		keysToChange[v.GetKey()] = writeUpdate{
+			Operation: v.GetOperation(),
+			New:       v.GetValue(),
+			TTL:       int64(v.GetTTL().Seconds()),
+			URL:       v.GetURL(),
+		}
 	}
+
+	conditions := make(map[string]interface{})
+	if transaction.conditions != nil {
+		for key, condition := range transaction.conditions {
+			conditions[key] = map[string]interface{}{
+				condition.GetName(): condition.GetValue(),
+			}
+		}
+	}
+
+	f = append(f, keysToChange, conditions)
+	if len(transaction.clientID) > 0 {
+		f = append(f, transaction.clientID)
+	}
+	writeTxs = append(writeTxs, f)
+
 	req, err = req.SetBody(writeTxs)
 	if err != nil {
 		return driver.WithStack(err)
@@ -221,16 +259,15 @@ func (c *agency) write(ctx context.Context, operation string, key []string, valu
 	if err := resp.CheckStatus(200, 201, 202); err != nil {
 		return driver.WithStack(err)
 	}
+
 	if err := resp.ParseBody("", &result); err != nil {
 		return driver.WithStack(err)
 	}
 
-	// "results" should be 1 long
 	if len(result.Results) != 1 {
-		return driver.WithStack(fmt.Errorf("Expected results of 1 long, got %d", len(result.Results)))
+		return driver.WithStack(fmt.Errorf("expected results of 1 long, got %d", len(result.Results)))
 	}
 
-	// If results[0] == 0, condition failed, otherwise success
 	if result.Results[0] == 0 {
 		// Condition failed
 		return driver.WithStack(preconditionFailedError)
@@ -240,6 +277,7 @@ func (c *agency) write(ctx context.Context, operation string, key []string, valu
 	return nil
 }
 
+// Deprecated: use 'WriteTransaction' instead
 // RemoveKey removes the given key.
 // If you pass a condition (only 1 allowed), this condition has to be true,
 // otherwise the remove will fail with a ConditionFailed error.
@@ -253,111 +291,58 @@ func (c *agency) RemoveKey(ctx context.Context, key []string, condition ...Write
 	default:
 		return driver.WithStack(fmt.Errorf("too many conditions"))
 	}
-	if err := c.write(ctx, "delete", key, nil, cond, 0); err != nil {
+
+	transaction := NewTransaction("", TransactionOptions{})
+	transaction.AddKey(NewKeyDelete(key))
+	conditions := ConvertWriteCondition(cond)
+	for k, v := range conditions {
+		transaction.AddConditionByFullKey(k, v)
+	}
+
+	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
 	}
+
 	return nil
 }
 
+// Deprecated: use 'WriteTransaction' instead
 // RemoveKeyIfEqualTo removes the given key only if the existing value for that key equals
 // to the given old value.
 func (c *agency) RemoveKeyIfEqualTo(ctx context.Context, key []string, oldValue interface{}) error {
-	var cond WriteCondition
-	cond = cond.IfEqualTo(key, oldValue)
-	if err := c.write(ctx, "delete", key, nil, cond, 0); err != nil {
+	transaction := NewTransaction("", TransactionOptions{})
+	transaction.AddKey(NewKeyDelete(key))
+	transaction.AddCondition(key, NewConditionIfEqual(oldValue))
+
+	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
 	}
+
 	return nil
 }
 
+// Deprecated: use 'WriteTransaction' instead
 // Register a URL to receive notification callbacks when the value of the given key changes
 func (c *agency) RegisterChangeCallback(ctx context.Context, key []string, cbURL string) error {
-	conn := c.conn
-	req, err := conn.NewRequest("POST", "_api/agency/write")
-	if err != nil {
+	transaction := NewTransaction("", TransactionOptions{})
+	transaction.AddKey(NewKeyObserve(key, cbURL, true))
+
+	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
 	}
 
-	fullKey := createFullKey(key)
-	writeTxs := writeTransactions{
-		writeTransaction{
-			// Update
-			map[string]interface{}{
-				fullKey: writeUpdate{
-					Operation: "observe",
-					URL:       cbURL,
-				},
-			},
-		},
-	}
-
-	req, err = req.SetBody(writeTxs)
-	if err != nil {
-		return driver.WithStack(err)
-	}
-	resp, err := conn.Do(ctx, req)
-	if err != nil {
-		return driver.WithStack(err)
-	}
-
-	var result writeResult
-	if err := resp.CheckStatus(200, 201, 202); err != nil {
-		return driver.WithStack(err)
-	}
-	if err := resp.ParseBody("", &result); err != nil {
-		return driver.WithStack(err)
-	}
-
-	// "results" should be 1 long
-	if len(result.Results) != 1 {
-		return driver.WithStack(fmt.Errorf("Expected results of 1 long, got %d", len(result.Results)))
-	}
-
-	// Success
 	return nil
 }
 
+// Deprecated: use 'WriteTransaction' instead
 // Register a URL to receive notification callbacks when the value of the given key changes
 func (c *agency) UnregisterChangeCallback(ctx context.Context, key []string, cbURL string) error {
-	conn := c.conn
-	req, err := conn.NewRequest("POST", "_api/agency/write")
-	if err != nil {
-		return driver.WithStack(err)
-	}
 
-	fullKey := createFullKey(key)
-	writeTxs := writeTransactions{
-		writeTransaction{
-			// Update
-			map[string]interface{}{
-				fullKey: writeUpdate{
-					Operation: "unobserve",
-					URL:       cbURL,
-				},
-			},
-		},
-	}
+	transaction := NewTransaction("", TransactionOptions{})
+	transaction.AddKey(NewKeyObserve(key, cbURL, false))
 
-	req, err = req.SetBody(writeTxs)
-	if err != nil {
+	if err := c.WriteTransaction(ctx, transaction); err != nil {
 		return driver.WithStack(err)
-	}
-	resp, err := conn.Do(ctx, req)
-	if err != nil {
-		return driver.WithStack(err)
-	}
-
-	var result writeResult
-	if err := resp.CheckStatus(200, 201, 202); err != nil {
-		return driver.WithStack(err)
-	}
-	if err := resp.ParseBody("", &result); err != nil {
-		return driver.WithStack(err)
-	}
-
-	// "results" should be 1 long
-	if len(result.Results) != 1 {
-		return driver.WithStack(fmt.Errorf("Expected results of 1 long, got %d", len(result.Results)))
 	}
 
 	// Success
