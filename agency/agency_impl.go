@@ -204,11 +204,11 @@ func (c *agency) WriteKeyIfEqualTo(ctx context.Context, key []string, newValue, 
 // WriteTransaction performs transaction in the agency.
 // Transaction can have list of operations to perform like e.g. delete, set, observe...
 // Transaction can have preconditions which must be fulfilled to perform transaction.
-func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction, transient ...bool) error {
+func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction) error {
 	conn := c.conn
 
 	var path string
-	if len(transient) > 0 && transient[0] == true {
+	if transaction.options.Transient {
 		path = "_api/agency/transient"
 	} else {
 		path = "_api/agency/write"

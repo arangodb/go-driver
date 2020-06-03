@@ -28,7 +28,9 @@ import (
 )
 
 // TransactionOptions defines options how transaction should behave.
-type TransactionOptions struct{}
+type TransactionOptions struct {
+	Transient bool
+}
 
 // Transaction stores information about operations which must be performed for particular keys with some conditions
 type Transaction struct {

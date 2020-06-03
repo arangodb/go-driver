@@ -41,7 +41,7 @@ type Agency interface {
 	// WriteTransaction performs transaction in the agency.
 	// Transaction can have list of operations to perform like e.g. delete, set, observe...
 	// Transaction can have preconditions which must be fulfilled to perform transaction.
-	WriteTransaction(ctx context.Context, transactions Transaction, transient ...bool) error
+	WriteTransaction(ctx context.Context, transaction Transaction) error
 
 	// WriteKey writes the given value with the given key with a given TTL (unless TTL is zero).
 	// If you pass a condition (only 1 allowed), this condition has to be true,
