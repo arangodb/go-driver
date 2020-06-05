@@ -764,6 +764,57 @@ func writeTransaction(t *testing.T, transient bool) {
 				},
 			},
 		},
+		{
+			name: "Adding and removing elements from array",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayPush([]string{rootKeyAgency, "test", "array"}, "1"),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayPush([]string{rootKeyAgency, "test", "array"}, "2"),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayPush([]string{rootKeyAgency, "test", "array"}, "3"),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayPush([]string{rootKeyAgency, "test", "array"}, "4"),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayErase([]string{rootKeyAgency, "test", "array"}, "2"),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"array": []interface{}{
+							"1",
+							"3",
+							"4",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {

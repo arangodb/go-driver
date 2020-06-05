@@ -130,6 +130,7 @@ type writeUpdate struct {
 	New       interface{} `json:"new,omitempty"`
 	TTL       int64       `json:"ttl,omitempty"`
 	URL       string      `json:"url,omitempty"`
+	Val       interface{} `json:"val,omitempty"`
 }
 
 type writeCondition struct {
@@ -225,9 +226,10 @@ func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction) 
 	for _, v := range transaction.keys {
 		keysToChange[v.GetKey()] = writeUpdate{
 			Operation: v.GetOperation(),
-			New:       v.GetValue(),
+			New:       v.GetNew(),
 			TTL:       int64(v.GetTTL().Seconds()),
 			URL:       v.GetURL(),
+			Val:       v.GetVal(),
 		}
 	}
 

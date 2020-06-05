@@ -34,8 +34,10 @@ type KeyChanger interface {
 	GetTTL() time.Duration
 	// GetURL returns URL address where must be sent callback in case of some changes on key
 	GetURL() string
-	// GetValue returns new value for a key in the agency
-	GetValue() interface{}
+	// GetNew returns new value for a key in the agency
+	GetNew() interface{}
+	// GetVal returns new value for a key in the agency
+	GetVal() interface{}
 }
 
 type keyCommon struct {
@@ -60,6 +62,16 @@ type keyObserve struct {
 	keyCommon
 	URL     string
 	observe bool
+}
+
+type keyArrayPush struct {
+	keyCommon
+	value interface{}
+}
+
+type keyArrayErase struct {
+	keyCommon
+	value interface{}
 }
 
 // NewKeyDelete returns a new key operation which must be removed from the agency
@@ -95,6 +107,26 @@ func NewKeyObserve(key []string, URL string, observe bool) KeyChanger {
 	}
 }
 
+// NewKeyArrayPush returns a new key operation for adding elements to the array.
+func NewKeyArrayPush(key []string, value interface{}) KeyChanger {
+	return &keyArrayPush{
+		keyCommon: keyCommon{
+			key: key,
+		},
+		value: value,
+	}
+}
+
+// NewKeyArrayErase returns a new key operation for removing elements from the array.
+func NewKeyArrayErase(key []string, value interface{}) KeyChanger {
+	return &keyArrayErase{
+		keyCommon: keyCommon{
+			key: key,
+		},
+		value: value,
+	}
+}
+
 func (k *keyDelete) GetOperation() string {
 	return "delete"
 }
@@ -103,12 +135,16 @@ func (k *keyDelete) GetTTL() time.Duration {
 	return 0
 }
 
-func (k *keyDelete) GetValue() interface{} {
+func (k *keyDelete) GetNew() interface{} {
 	return nil
 }
 
 func (k *keyDelete) GetURL() string {
 	return ""
+}
+
+func (k *keyDelete) GetVal() interface{} {
+	return nil
 }
 
 func (k *keySet) GetOperation() string {
@@ -119,12 +155,16 @@ func (k *keySet) GetTTL() time.Duration {
 	return k.TTL
 }
 
-func (k *keySet) GetValue() interface{} {
+func (k *keySet) GetNew() interface{} {
 	return k.value
 }
 
 func (k *keySet) GetURL() string {
 	return ""
+}
+
+func (k *keySet) GetVal() interface{} {
+	return nil
 }
 
 func (k *keyObserve) GetOperation() string {
@@ -138,10 +178,54 @@ func (k *keyObserve) GetTTL() time.Duration {
 	return 0
 }
 
-func (k *keyObserve) GetValue() interface{} {
+func (k *keyObserve) GetNew() interface{} {
 	return nil
 }
 
 func (k *keyObserve) GetURL() string {
 	return k.URL
+}
+
+func (k *keyObserve) GetVal() interface{} {
+	return nil
+}
+
+func (k *keyArrayPush) GetOperation() string {
+	return "push"
+}
+
+func (k *keyArrayPush) GetTTL() time.Duration {
+	return 0
+}
+
+func (k *keyArrayPush) GetNew() interface{} {
+	return k.value
+}
+
+func (k *keyArrayPush) GetURL() string {
+	return ""
+}
+
+func (k *keyArrayPush) GetVal() interface{} {
+	return nil
+}
+
+func (k *keyArrayErase) GetOperation() string {
+	return "erase"
+}
+
+func (k *keyArrayErase) GetTTL() time.Duration {
+	return 0
+}
+
+func (k *keyArrayErase) GetNew() interface{} {
+	return nil
+}
+
+func (k *keyArrayErase) GetURL() string {
+	return ""
+}
+
+func (k *keyArrayErase) GetVal() interface{} {
+	return k.value
 }
