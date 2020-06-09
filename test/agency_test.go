@@ -815,6 +815,67 @@ func writeTransaction(t *testing.T, transient bool) {
 				},
 			},
 		},
+		{
+			name: "Replace element in array",
+			requests: []Request{
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayPush([]string{rootKeyAgency, "test", "array"}, map[string]interface{}{
+								"database":   "db",
+								"collection": "col",
+								"shard":      0,
+							}),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayPush([]string{rootKeyAgency, "test", "array"}, map[string]interface{}{
+								"database":   "db",
+								"collection": "col",
+								"shard":      1,
+							}),
+						},
+					},
+				},
+				{
+					transaction: TransactionTest{
+						keys: []agency.KeyChanger{
+							agency.NewKeyArrayReplace([]string{rootKeyAgency, "test", "array"},
+								map[string]interface{}{
+									"database":   "db",
+									"collection": "col",
+									"shard":      0,
+								}, map[string]interface{}{
+									"database":   "db",
+									"collection": "col",
+									"shard":      2,
+								}),
+						},
+					},
+				},
+			},
+			expectedResult: map[string]interface{}{
+				rootKeyAgency: map[string]interface{}{
+					"test": map[string]interface{}{
+						"array": []interface{}{
+							map[string]interface{}{
+								"database":   "db",
+								"collection": "col",
+								"shard":      float64(2),
+							},
+							map[string]interface{}{
+								"database":   "db",
+								"collection": "col",
+								"shard":      float64(1),
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
