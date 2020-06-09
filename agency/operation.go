@@ -74,6 +74,12 @@ type keyArrayErase struct {
 	value interface{}
 }
 
+type keyArrayReplace struct {
+	keyCommon
+	newValue interface{}
+	oldValue interface{}
+}
+
 // NewKeyDelete returns a new key operation which must be removed from the agency
 func NewKeyDelete(key []string) KeyChanger {
 	return &keyDelete{
@@ -124,6 +130,17 @@ func NewKeyArrayErase(key []string, value interface{}) KeyChanger {
 			key: key,
 		},
 		value: value,
+	}
+}
+
+// NewKeyArrayReplace returns a new key operation for replacing element in the array.
+func NewKeyArrayReplace(key []string, oldValue, newValue interface{}) KeyChanger {
+	return &keyArrayReplace{
+		keyCommon: keyCommon{
+			key: key,
+		},
+		newValue: newValue,
+		oldValue: oldValue,
 	}
 }
 
@@ -228,4 +245,24 @@ func (k *keyArrayErase) GetURL() string {
 
 func (k *keyArrayErase) GetVal() interface{} {
 	return k.value
+}
+
+func (k *keyArrayReplace) GetOperation() string {
+	return "replace"
+}
+
+func (k *keyArrayReplace) GetTTL() time.Duration {
+	return 0
+}
+
+func (k *keyArrayReplace) GetNew() interface{} {
+	return k.newValue
+}
+
+func (k *keyArrayReplace) GetURL() string {
+	return ""
+}
+
+func (k *keyArrayReplace) GetVal() interface{} {
+	return k.oldValue
 }
