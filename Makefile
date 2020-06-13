@@ -128,17 +128,19 @@ changelog:
 		--no-author \
 		--unreleased-label "Master"
 
-run-tests: run-tests-http run-tests-single run-tests-resilientsingle run-tests-cluster
+run-tests: run-unit-tests run-tests-single run-tests-resilientsingle run-tests-cluster
 
-# Tests of HTTP package 
-run-tests-http:
+# The below rule exists only for backward compatibility.
+run-tests-http: run-unit-tests
+
+run-unit-tests:
 	@docker run \
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test $(TESTOPTIONS) $(REPOPATH)/http
+		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)

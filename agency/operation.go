@@ -24,6 +24,8 @@ package agency
 
 import "time"
 
+type Key []string
+
 // KeyChanger describes how operation should be performed on a key in the agency
 type KeyChanger interface {
 	// GetKey returns which key must be changed
@@ -41,7 +43,18 @@ type KeyChanger interface {
 }
 
 type keyCommon struct {
-	key []string
+	key Key
+}
+
+// CreateSubKey creates new key based on receiver key.
+// Returns new key with new allocated memory.
+func (k Key) CreateSubKey(elements ...string) Key {
+	NewKey := make([]string, 0, len(k)+len(elements))
+
+	NewKey = append(NewKey, k...)
+	NewKey = append(NewKey, elements...)
+
+	return NewKey
 }
 
 func (k *keyCommon) GetKey() string {
