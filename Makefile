@@ -351,6 +351,7 @@ __test_go_test:
 __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@sleep 3
 else
 ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
@@ -368,6 +369,8 @@ ifdef TESTCONTAINER
 endif
 ifndef TEST_ENDPOINTS_OVERRIDE
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) "${ROOTDIR}/test/cluster.sh" cleanup
+else
+	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
 	@sleep 3
 
