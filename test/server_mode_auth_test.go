@@ -62,6 +62,7 @@ func TestServerModeAndGrants(t *testing.T) {
 		db := ensureDatabase(ctx, c, "_system", nil, t)
 		colName := "server_mode_and_grants_test1"
 		col := ensureCollection(ctx, db, colName, nil, t)
+		clean(t, ctx, col)
 
 		// Get database & collection access
 		defaultDBAccess, err := u.GetDatabaseAccess(ctx, db)
@@ -156,6 +157,5 @@ func TestServerModeAndGrants(t *testing.T) {
 		} else if grant != defaultDBAccess {
 			t.Errorf("Collection access using WithConfigured differs, got '%s', expected '%s'", grant, defaultColAccess)
 		}
-                col.Remove(ctx)
 	}
 }

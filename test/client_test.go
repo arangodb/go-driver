@@ -397,6 +397,7 @@ func TestResponseHeader(t *testing.T) {
 		var resp driver.Response
 		db := ensureDatabase(ctx, c, "_system", nil, t)
 		col := ensureCollection(ctx, db, "response_header_test", nil, t)
+		defer clean(t, ctx, col)
 
 		// `ETag` header must contain the `_rev` of the new document in quotes.
 		doc := map[string]string{
@@ -420,6 +421,5 @@ func TestResponseHeader(t *testing.T) {
 		if x := resp.Header("ETAG"); x != expectedETag {
 			t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
 		}
-                col.Remove(ctx)
 	}
 }

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/arangodb/go-driver"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRevisionTree(t *testing.T) {

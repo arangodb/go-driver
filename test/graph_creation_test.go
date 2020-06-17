@@ -24,10 +24,11 @@ package test
 
 import (
 	"context"
-	"github.com/arangodb/go-driver"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
 )
 
 func newGraphOpts(db driver.Database) (driver.CreateGraphOptions, []string) {
@@ -136,7 +137,6 @@ func Test_Graph_AdvancedCreate(t *testing.T) {
 		}
 	})
 }
-
 
 // Test_Graph_AdvancedCreate_Defaults will check if graph created have properly set replication factor
 // and write concern by default
