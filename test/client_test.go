@@ -420,5 +420,6 @@ func TestResponseHeader(t *testing.T) {
 		if x := resp.Header("ETAG"); x != expectedETag {
 			t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
 		}
+                col.Remove(ctx)
 	}
 }

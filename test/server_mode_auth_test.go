@@ -156,5 +156,6 @@ func TestServerModeAndGrants(t *testing.T) {
 		} else if grant != defaultDBAccess {
 			t.Errorf("Collection access using WithConfigured differs, got '%s', expected '%s'", grant, defaultColAccess)
 		}
+                col.Remove(ctx)
 	}
 }
