@@ -133,7 +133,7 @@ func TestClusterDatabaseInventorySatellite(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+	        col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
 			ReplicationFactor: driver.ReplicationFactorSatellite,
 		}, t)
 		h, err := cl.Health(ctx)
@@ -167,7 +167,9 @@ func TestClusterDatabaseInventorySatellite(t *testing.T) {
 		if !foundSatellite {
 			t.Errorf("No satellite collection.")
 		}
+                col.Remove(ctx)
 	}
+        
 }
 
 // TestClusterDatabaseInventorySmartJoin tests the Cluster.DatabaseInventory method with smart joins
@@ -185,7 +187,7 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+		col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
 			ShardKeys:          []string{"_key:"},
 			SmartJoinAttribute: "smart",
 			NumberOfShards:     2,
@@ -207,6 +209,7 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 		if !foundSmartJoin {
 			t.Errorf("No smart join attribute.")
 		}
+                col.Remove(ctx)
 	}
 }
 
@@ -225,7 +228,7 @@ func TestClusterDatabaseInventoryShardingStrategy(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+                col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
 			ShardingStrategy: driver.ShardingStrategyCommunityCompat,
 		}, t)
 		inv, err := cl.DatabaseInventory(ctx, db)
@@ -243,6 +246,7 @@ func TestClusterDatabaseInventoryShardingStrategy(t *testing.T) {
 				break
 			}
 		}
+                col.Remove(ctx)
 	}
 }
 
@@ -342,6 +346,7 @@ func TestClusterMoveShard(t *testing.T) {
 			t.Log("Waiting a bit")
 			time.Sleep(time.Second * 5)
 		}
+                col.Remove(ctx)
 	}
 }
 
@@ -428,6 +433,7 @@ func TestClusterResignLeadership(t *testing.T) {
 			t.Log("Waiting a bit")
 			time.Sleep(time.Second * 5)
 		}
+                col.Remove(ctx)
 	}
 }
 
@@ -457,7 +463,8 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 			},
 		}
 		viewName := "test_move_shard_view"
-		if _, err := db.CreateArangoSearchView(ctx, viewName, opts); err != nil {
+                view, err := db.CreateArangoSearchView(ctx, viewName, opts)
+		if err != nil {
 			t.Fatalf("Failed to create view '%s': %s", viewName, describe(err))
 		}
 		h, err := cl.Health(ctx)
@@ -538,5 +545,7 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 			t.Log("Waiting a bit")
 			time.Sleep(time.Second * 5)
 		}
+                view.Remove(ctx)
+                col.Remove(ctx)
 	}
 }
