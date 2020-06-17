@@ -38,11 +38,8 @@ type BackupMeta struct {
 	PotentiallyInconsistent bool                 `json:"potentiallyInconsistent,omitempty"`
 	Available               bool                 `json:"available,omitempty"`
 	NumberOfPiecesPresent   uint                 `json:"nrPiecesPresent,omitempty"`
-	Keys                    BackupMetaSha256List `json:"keys,omitempty"`
+	Keys                    []BackupMetaSha256 `json:"keys,omitempty"`
 }
-
-// BackupMetaSha256List baskup sha list
-type BackupMetaSha256List []BackupMetaSha256
 
 // BackupMetaSha256 backup sha details
 type BackupMetaSha256 struct {
