@@ -137,7 +137,6 @@ func Test_Graph_AdvancedCreate(t *testing.T) {
 	})
 }
 
-
 // Test_Graph_AdvancedCreate_Defaults will check if graph created have properly set replication factor
 // and write concern by default
 func Test_Graph_AdvancedCreate_Defaults(t *testing.T) {
