@@ -38,7 +38,7 @@ const (
 	ErrDisabled       = 36
 
 	// HTTP error status codes
-	ErrHttpForbidden            = 403
+	ErrHttpForbidden = 403
 	ErrHttpInternal  = 501
 
 	// Internal ArangoDB storage errors

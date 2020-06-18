@@ -29,16 +29,16 @@ import (
 
 // BackupMeta provides meta data of a backup
 type BackupMeta struct {
-	ID                      BackupID             `json:"id,omitempty"`
-	Version                 string               `json:"version,omitempty"`
-	DateTime                time.Time            `json:"datetime,omitempty"`
-	NumberOfFiles           uint                 `json:"nrFiles,omitempty"`
-	NumberOfDBServers       uint                 `json:"nrDBServers,omitempty"`
-	SizeInBytes             uint64               `json:"sizeInBytes,omitempty"`
-	PotentiallyInconsistent bool                 `json:"potentiallyInconsistent,omitempty"`
-	Available               bool                 `json:"available,omitempty"`
-	NumberOfPiecesPresent   uint                 `json:"nrPiecesPresent,omitempty"`
-	Keys                    []BackupMetaSha256   `json:"keys,omitempty"`
+	ID                      BackupID           `json:"id,omitempty"`
+	Version                 string             `json:"version,omitempty"`
+	DateTime                time.Time          `json:"datetime,omitempty"`
+	NumberOfFiles           uint               `json:"nrFiles,omitempty"`
+	NumberOfDBServers       uint               `json:"nrDBServers,omitempty"`
+	SizeInBytes             uint64             `json:"sizeInBytes,omitempty"`
+	PotentiallyInconsistent bool               `json:"potentiallyInconsistent,omitempty"`
+	Available               bool               `json:"available,omitempty"`
+	NumberOfPiecesPresent   uint               `json:"nrPiecesPresent,omitempty"`
+	Keys                    []BackupMetaSha256 `json:"keys,omitempty"`
 }
 
 // BackupMetaSha256 backup sha details

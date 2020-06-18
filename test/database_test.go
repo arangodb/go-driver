@@ -34,7 +34,7 @@ import (
 )
 
 // databaseName is helper to create database name in non-colliding way
-func databaseName(parts ... string) string {
+func databaseName(parts ...string) string {
 	return fmt.Sprintf("%s_%s", strings.Join(parts, "_"), uniuri.NewLen(8))
 }
 
