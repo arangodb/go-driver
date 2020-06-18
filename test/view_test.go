@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -577,7 +578,7 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 	}{
 		{
 			Name:      "NoneSet",
-			ErrorCode: 400, // Bad Parameter
+			ErrorCode: http.StatusBadRequest, // Bad Parameter
 		},
 		{
 			Name:              "AscTrue",
@@ -603,25 +604,25 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 			Name:        "SetBothAsc",
 			InDirection: &directionAsc,
 			InAscending: &boolTrue,
-			ErrorCode:   400,
+			ErrorCode:   http.StatusBadRequest,
 		},
 		{
 			Name:        "SetBothDesc",
 			InDirection: &directionDesc,
 			InAscending: &boolFalse,
-			ErrorCode:   400,
+			ErrorCode:   http.StatusBadRequest,
 		},
 		{
 			Name:        "DirAscAscFalse",
 			InDirection: &directionAsc,
 			InAscending: &boolTrue,
-			ErrorCode:   400,
+			ErrorCode:   http.StatusBadRequest,
 		},
 		{
 			Name:        "DirDescAscTrue",
 			InDirection: &directionAsc,
 			InAscending: &boolTrue,
-			ErrorCode:   400,
+			ErrorCode:   http.StatusBadRequest,
 		},
 	}
 
