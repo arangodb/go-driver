@@ -23,9 +23,10 @@
 package test
 
 import (
-	"github.com/dchest/uniuri"
 	"strings"
 	"testing"
+
+	"github.com/dchest/uniuri"
 
 	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"

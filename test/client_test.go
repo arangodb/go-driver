@@ -397,6 +397,7 @@ func TestResponseHeader(t *testing.T) {
 		var resp driver.Response
 		db := ensureDatabase(ctx, c, "_system", nil, t)
 		col := ensureCollection(ctx, db, "response_header_test", nil, t)
+		defer clean(t, ctx, col)
 
 		// `ETag` header must contain the `_rev` of the new document in quotes.
 		doc := map[string]string{

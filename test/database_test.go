@@ -25,10 +25,11 @@ package test
 import (
 	"context"
 	"fmt"
-	"github.com/dchest/uniuri"
-	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
+
+	"github.com/dchest/uniuri"
+	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
 )

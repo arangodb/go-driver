@@ -133,9 +133,10 @@ func TestClusterDatabaseInventorySatellite(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+		col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
 			ReplicationFactor: driver.ReplicationFactorSatellite,
 		}, t)
+		defer clean(t, ctx, col)
 		h, err := cl.Health(ctx)
 		if err != nil {
 			t.Fatalf("Health failed: %s", describe(err))
@@ -185,11 +186,12 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+		col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
 			ShardKeys:          []string{"_key:"},
 			SmartJoinAttribute: "smart",
 			NumberOfShards:     2,
 		}, t)
+		defer clean(t, ctx, col)
 		inv, err := cl.DatabaseInventory(ctx, db)
 		if err != nil {
 			t.Fatalf("DatabaseInventory failed: %s", describe(err))
@@ -225,9 +227,10 @@ func TestClusterDatabaseInventoryShardingStrategy(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
-		ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
+		col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
 			ShardingStrategy: driver.ShardingStrategyCommunityCompat,
 		}, t)
+		defer clean(t, ctx, col)
 		inv, err := cl.DatabaseInventory(ctx, db)
 		if err != nil {
 			t.Fatalf("DatabaseInventory failed: %s", describe(err))
@@ -261,6 +264,7 @@ func TestClusterMoveShard(t *testing.T) {
 		col, err := db.CreateCollection(ctx, "test_move_shard", &driver.CreateCollectionOptions{
 			NumberOfShards: 12,
 		})
+		defer clean(t, ctx, col)
 		if err != nil {
 			t.Fatalf("CreateCollection failed: %s", describe(err))
 		}
@@ -361,6 +365,7 @@ func TestClusterResignLeadership(t *testing.T) {
 			NumberOfShards:    12,
 			ReplicationFactor: 2,
 		})
+		defer clean(t, ctx, col)
 		if err != nil {
 			t.Fatalf("CreateCollection failed: %s", describe(err))
 		}
@@ -448,6 +453,7 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 		col, err := db.CreateCollection(ctx, "test_move_shard_with_view", &driver.CreateCollectionOptions{
 			NumberOfShards: 12,
 		})
+		clean(t, ctx, col)
 		if err != nil {
 			t.Fatalf("CreateCollection failed: %s", describe(err))
 		}
@@ -457,7 +463,9 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 			},
 		}
 		viewName := "test_move_shard_view"
-		if _, err := db.CreateArangoSearchView(ctx, viewName, opts); err != nil {
+		view, err := db.CreateArangoSearchView(ctx, viewName, opts)
+		clean(t, ctx, view)
+		if err != nil {
 			t.Fatalf("Failed to create view '%s': %s", viewName, describe(err))
 		}
 		h, err := cl.Health(ctx)

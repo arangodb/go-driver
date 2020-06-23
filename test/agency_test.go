@@ -26,6 +26,13 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/http"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/agency"
 	httpdriver "github.com/arangodb/go-driver/http"
@@ -33,12 +40,6 @@ import (
 	"github.com/arangodb/go-driver/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"os"
-	"reflect"
-	"strings"
-	"testing"
-	"time"
 )
 
 // getAgencyEndpoints queries the cluster to get all agency endpoints.

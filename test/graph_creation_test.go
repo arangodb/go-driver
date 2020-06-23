@@ -24,10 +24,11 @@ package test
 
 import (
 	"context"
-	"github.com/arangodb/go-driver"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
 )
 
 func newGraphOpts(db driver.Database) (driver.CreateGraphOptions, []string) {
