@@ -869,17 +869,19 @@ func TestBackupRestoreWithViews(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 
+			books := make([]BookWithAuthor, numDocs)
+
 			for j := 0; j < numDocs; j++ {
 
-				book := BookWithAuthor{
+				books[j] = BookWithAuthor{
 					Title:  fmt.Sprintf("Hello World - %d", j),
 					Author: fmt.Sprintf("Author - %d", i),
 				}
+			}
 
-				_, err := col.CreateDocument(ctx, book)
-				if err != nil {
-					t.Fatalf("Failed to create document %s", describe(err))
-				}
+			_, _, err := col.CreateDocuments(ctx, books)
+			if err != nil {
+				t.Fatalf("Failed to create document %s", describe(err))
 			}
 		}(k)
 	}

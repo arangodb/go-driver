@@ -348,11 +348,13 @@ func TestCreateStreamCursor(t *testing.T) {
 	}
 
 	// This might take a few seconds
-	for i := 0; i < 10000; i++ {
-		user := UserDoc{Name: "John", Age: i}
-		if _, err := col.CreateDocument(ctx, user); err != nil {
-			t.Fatalf("Expected success, got %s", describe(err))
-		}
+	docs := 10000
+	users := make([]UserDoc, 0, docs)
+	for i := 0; i < docs; i++ {
+		users[i] = UserDoc{Name: "John", Age: i}
+	}
+	if _, _, err := col.CreateDocuments(ctx, users); err != nil {
+		t.Fatalf("Expected success, got %s", describe(err))
 	}
 	t.Log("Completed inserting 10k docs")
 
