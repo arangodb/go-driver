@@ -168,6 +168,7 @@ func sendBulks(t *testing.T, col driver.Collection, ctx context.Context, creator
 		}
 
 		_, _, err := col.CreateDocuments(ctx, objs)
+		t.Logf("Creating %d documents", len(objs))
 		require.NoError(t, err)
 
 		current += stepSize
