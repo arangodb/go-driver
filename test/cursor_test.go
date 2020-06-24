@@ -349,7 +349,7 @@ func TestCreateStreamCursor(t *testing.T) {
 
 	// This might take a few seconds
 	docs := 10000
-	users := make([]UserDoc, 0, docs)
+	users := make([]UserDoc, docs)
 	for i := 0; i < docs; i++ {
 		users[i] = UserDoc{Name: "John", Age: i}
 	}
