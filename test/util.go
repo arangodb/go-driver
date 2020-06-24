@@ -177,8 +177,8 @@ func sendBulks(t *testing.T, col driver.Collection, ctx context.Context, creator
 	}
 }
 
-func min(ints ...int) int {
-	z := 0
+func min(max int, ints ...int) int {
+	z := max
 
 	for _, i := range ints {
 		if z > i {
