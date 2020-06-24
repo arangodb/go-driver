@@ -23,6 +23,7 @@
 package test
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -31,6 +32,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -146,4 +149,42 @@ func retry(interval, timeout time.Duration, f func() error) error {
 			}
 		}
 	}
+}
+
+const bulkSize = 1000
+
+func sendBulks(t *testing.T, col driver.Collection, ctx context.Context, creator func(t *testing.T, i int) interface{}, size int) {
+	current := 0
+	t.Logf("Creating %d documents", size)
+
+	for {
+		t.Logf("Created %d/%d documents", current, size)
+		stepSize := min(bulkSize, size-current)
+		if stepSize == 0 {
+			return
+		}
+
+		objs := make([]interface{}, min(bulkSize, stepSize))
+		for i := 0; i < stepSize; i++ {
+			objs[i] = creator(t, current+i)
+		}
+
+		_, _, err := col.CreateDocuments(ctx, objs)
+		t.Logf("Creating %d documents", len(objs))
+		require.NoError(t, err)
+
+		current += stepSize
+	}
+}
+
+func min(max int, ints ...int) int {
+	z := max
+
+	for _, i := range ints {
+		if z > i {
+			z = i
+		}
+	}
+
+	return z
 }

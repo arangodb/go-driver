@@ -264,10 +264,10 @@ func TestClusterMoveShard(t *testing.T) {
 		col, err := db.CreateCollection(ctx, "test_move_shard", &driver.CreateCollectionOptions{
 			NumberOfShards: 12,
 		})
-		defer clean(t, ctx, col)
 		if err != nil {
 			t.Fatalf("CreateCollection failed: %s", describe(err))
 		}
+		defer clean(t, ctx, col)
 		h, err := cl.Health(ctx)
 		if err != nil {
 			t.Fatalf("Health failed: %s", describe(err))
@@ -365,10 +365,10 @@ func TestClusterResignLeadership(t *testing.T) {
 			NumberOfShards:    12,
 			ReplicationFactor: 2,
 		})
-		defer clean(t, ctx, col)
 		if err != nil {
 			t.Fatalf("CreateCollection failed: %s", describe(err))
 		}
+		defer clean(t, ctx, col)
 		inv, err := cl.DatabaseInventory(ctx, db)
 		if err != nil {
 			t.Fatalf("DatabaseInventory failed: %s", describe(err))
@@ -453,10 +453,10 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 		col, err := db.CreateCollection(ctx, "test_move_shard_with_view", &driver.CreateCollectionOptions{
 			NumberOfShards: 12,
 		})
-		clean(t, ctx, col)
 		if err != nil {
 			t.Fatalf("CreateCollection failed: %s", describe(err))
 		}
+		defer clean(t, ctx, col)
 		opts := &driver.ArangoSearchViewProperties{
 			Links: driver.ArangoSearchLinks{
 				"test_move_shard_with_view": driver.ArangoSearchElementProperties{},
@@ -464,10 +464,10 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 		}
 		viewName := "test_move_shard_view"
 		view, err := db.CreateArangoSearchView(ctx, viewName, opts)
-		clean(t, ctx, view)
 		if err != nil {
 			t.Fatalf("Failed to create view '%s': %s", viewName, describe(err))
 		}
+		defer clean(t, ctx, view)
 		h, err := cl.Health(ctx)
 		if err != nil {
 			t.Fatalf("Health failed: %s", describe(err))

@@ -34,5 +34,9 @@ type remove interface {
 }
 
 func clean(t *testing.T, ctx context.Context, col remove) {
+	if col == nil {
+		return
+	}
+
 	require.NoError(t, col.Remove(ctx))
 }

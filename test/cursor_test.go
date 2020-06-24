@@ -348,12 +348,10 @@ func TestCreateStreamCursor(t *testing.T) {
 	}
 
 	// This might take a few seconds
-	for i := 0; i < 10000; i++ {
-		user := UserDoc{Name: "John", Age: i}
-		if _, err := col.CreateDocument(ctx, user); err != nil {
-			t.Fatalf("Expected success, got %s", describe(err))
-		}
-	}
+	docs := 10000
+	sendBulks(t, col, ctx, func(t *testing.T, i int) interface{} {
+		return UserDoc{Name: "John", Age: i}
+	}, docs)
 	t.Log("Completed inserting 10k docs")
 
 	const expectedResults int = 10 * 10000
