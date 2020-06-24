@@ -155,8 +155,10 @@ const bulkSize = 1000
 
 func sendBulks(t *testing.T, col driver.Collection, ctx context.Context, creator func(t *testing.T, i int) interface{}, size int) {
 	current := 0
+	t.Logf("Creating %d documents", size)
 
 	for {
+		t.Logf("Created %d/%d documents", current, size)
 		stepSize := min(bulkSize, size-current)
 		if stepSize == 0 {
 			return
