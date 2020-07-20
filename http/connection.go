@@ -34,6 +34,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
@@ -412,4 +413,79 @@ func (c *httpConnection) SetAuthentication(auth driver.Authentication) (driver.C
 // Protocols returns all protocols used by this connection.
 func (c *httpConnection) Protocols() driver.ProtocolSet {
 	return driver.ProtocolSet{driver.ProtocolHTTP}
+}
+
+// RequestRepeater creates possibility to send the request many times.
+type RequestRepeater interface {
+	Repeat(conn driver.Connection, resp driver.Response, err error) bool
+}
+
+// RepeatConnection is responsible for sending request until request repeater gives up.
+type RepeatConnection struct {
+	mutex  sync.Mutex
+	auth   driver.Authentication
+	conn   driver.Connection
+	repeat RequestRepeater
+}
+
+func NewRepeatConnection(conn driver.Connection, repeat RequestRepeater) driver.Connection {
+	return &RepeatConnection{
+		conn:   conn,
+		repeat: repeat,
+	}
+}
+
+// NewRequest creates a new request with given method and path.
+func (h *RepeatConnection) NewRequest(method, path string) (driver.Request, error) {
+	return h.conn.NewRequest(method, path)
+}
+
+// Do performs a given request, returning its response. Repeats requests until repeat function gives up.
+func (h *RepeatConnection) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
+	for {
+		resp, err := h.conn.Do(ctx, req.Clone())
+
+		if !h.repeat.Repeat(h, resp, err) {
+			return resp, err
+		}
+	}
+}
+
+// Unmarshal unmarshals the given raw object into the given result interface.
+func (h *RepeatConnection) Unmarshal(data driver.RawObject, result interface{}) error {
+	return h.conn.Unmarshal(data, result)
+}
+
+// Endpoints returns the endpoints used by this connection.
+func (h *RepeatConnection) Endpoints() []string {
+	return h.conn.Endpoints()
+}
+
+// UpdateEndpoints reconfigures the connection to use the given endpoints.
+func (h *RepeatConnection) UpdateEndpoints(endpoints []string) error {
+	return h.conn.UpdateEndpoints(endpoints)
+}
+
+// Configure the authentication used for this connection.
+// Returns ErrAuthenticationNotChanged in when the authentication is not changed.
+func (h *RepeatConnection) SetAuthentication(authentication driver.Authentication) (driver.Connection, error) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	if IsAuthenticationTheSame(h.auth, authentication) {
+		return h, ErrAuthenticationNotChanged
+	}
+
+	_, err := h.conn.SetAuthentication(authentication)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+	h.auth = authentication
+
+	return h, nil
+}
+
+// Protocols returns all protocols used by this connection.
+func (h RepeatConnection) Protocols() driver.ProtocolSet {
+	return h.conn.Protocols()
 }

@@ -26,6 +26,8 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"log"
 	httplib "net/http"
 	"os"
@@ -422,4 +424,37 @@ func TestResponseHeader(t *testing.T) {
 			t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
 		}
 	}
+}
+
+type dummyRequestRepeat struct {
+	counter int
+}
+
+func (r *dummyRequestRepeat) Repeat(conn driver.Connection, resp driver.Response, err error) bool {
+	r.counter++
+	if r.counter == 2 {
+		return false
+	}
+	return true
+}
+
+func TestCreateClientHttpRepeatConnection(t *testing.T) {
+	if getTestMode() != testModeSingle {
+		t.Skipf("Not a single")
+	}
+	createClientFromEnv(t, true)
+
+	requestRepeat := dummyRequestRepeat{}
+	conn := createConnectionFromEnv(t)
+	c, err := driver.NewClient(driver.ClientConfig{
+		Connection:     http.NewRepeatConnection(conn, &requestRepeat),
+		Authentication: createAuthenticationFromEnv(t),
+	})
+
+	_, err = c.Connection().SetAuthentication(createAuthenticationFromEnv(t))
+	assert.Equal(t, http.ErrAuthenticationNotChanged, err)
+
+	_, err = c.Databases(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, requestRepeat.counter)
 }

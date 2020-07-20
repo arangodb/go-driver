@@ -25,12 +25,16 @@ package http
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
 
 	driver "github.com/arangodb/go-driver"
 )
+
+// ErrAuthenticationNotChanged is returned when authentication is not changed.
+var ErrAuthenticationNotChanged = errors.New("authentication not changed")
 
 // Authentication implements a kind of authentication.
 type httpAuthentication interface {
@@ -39,6 +43,35 @@ type httpAuthentication interface {
 
 	// Configure is called for every request made on a connection.
 	Configure(req driver.Request) error
+}
+
+// IsAuthenticationTheSame checks whether two authentications are the same.
+func IsAuthenticationTheSame(auth1, auth2 driver.Authentication) bool {
+
+	if auth1 == nil && auth2 == nil {
+		return true
+	}
+
+	if auth1 == nil || auth2 == nil {
+		return false
+	}
+
+	if auth1.Type() != auth2.Type() {
+		return false
+	}
+
+	if auth1.Type() == driver.AuthenticationTypeRaw {
+		if auth1.Get("value") != auth2.Get("value") {
+			return false
+		}
+	} else {
+		if auth1.Get("username") != auth2.Get("username") ||
+			auth1.Get("password") != auth2.Get("password") {
+			return false
+		}
+	}
+
+	return true
 }
 
 // newBasicAuthentication creates an authentication implementation based on the given username & password.
