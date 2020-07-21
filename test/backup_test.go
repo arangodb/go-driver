@@ -922,8 +922,7 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	})
 
 	t.Run("waitForSync", func(t *testing.T) {
-		// this is because views are dropped and recreated
-		time.Sleep(5 * time.Second)
+
 		// run query to get document count of view
 		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s OPTIONS { waitForSync: true } COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
 		if err != nil {

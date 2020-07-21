@@ -63,11 +63,11 @@ if [ "$CMD" == "start" ]; then
         ${STARTER} \
         --starter.port=${STARTERPORT} --starter.address=127.0.0.1 \
         --docker.image=${ARANGODB} \
-        --starter.local --starter.mode=${STARTERMODE} --all.log.output=+ $STARTERARGS"
+        --starter.local --starter.mode=${STARTERMODE} --all.log.level=debug --all.log.output=+ $STARTERARGS"
     docker run -d --name=${STARTERCONTAINER} --net=container:${NAMESPACE} \
         -v ${STARTERVOLUME}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS \
         ${STARTER} \
         --starter.port=${STARTERPORT} --starter.address=127.0.0.1 \
         --docker.image=${ARANGODB} \
-        --starter.local --starter.mode=${STARTERMODE} --all.log.output=+ $STARTERARGS
+        --starter.local --starter.mode=${STARTERMODE} --all.log.level=debug --all.log.output=+ $STARTERARGS
 fi
