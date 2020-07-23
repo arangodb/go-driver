@@ -128,7 +128,13 @@ func (i interrupt) Error() string {
 	return "interrupted"
 }
 
-func retry(interval, timeout time.Duration, f func() error) error {
+type retryFunc func() error
+
+func (r retryFunc) RetryT(t *testing.T, interval, timeout time.Duration) {
+	require.NoError(t, r.Retry(interval, timeout))
+}
+
+func (r retryFunc) Retry(interval, timeout time.Duration) error {
 	timeoutT := time.NewTimer(timeout)
 	defer timeoutT.Stop()
 
@@ -140,7 +146,7 @@ func retry(interval, timeout time.Duration, f func() error) error {
 		case <-timeoutT.C:
 			return fmt.Errorf("function timeouted")
 		case <-intervalT.C:
-			if err := f(); err != nil {
+			if err := r(); err != nil {
 				if _, ok := err.(interrupt); ok {
 					return nil
 				}
@@ -149,6 +155,14 @@ func retry(interval, timeout time.Duration, f func() error) error {
 			}
 		}
 	}
+}
+
+func newRetryFunc(f func() error) retryFunc {
+	return f
+}
+
+func retry(interval, timeout time.Duration, f func() error) error {
+	return newRetryFunc(f).Retry(interval, timeout)
 }
 
 const bulkSize = 1000
