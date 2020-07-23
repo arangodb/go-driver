@@ -879,10 +879,14 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	}
 	wg.Wait()
 
+	t.Logf("Creating backup")
+
 	id, _, err := b.Create(ctx, nil)
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
+
+	t.Logf("Restoring backup")
 
 	// Now restore
 	if err := b.Restore(ctx, id, nil); err != nil {
@@ -901,43 +905,50 @@ func TestBackupRestoreWithViews(t *testing.T) {
 		if err := waitUntilClusterHealthy(c); err != nil {
 			t.Fatalf("Failed to wait for healthy cluster: %s", describe(err))
 		}
+		newRetryFunc(func() error {
+			// run query to get document count of view
+			cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
+			if err != nil {
+				t.Fatalf("Failed to create query: %s", describe(err))
+			}
+			defer cursor.Close()
 
-		// run query to get document count of view
-		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
-		if err != nil {
-			t.Fatalf("Failed to create query: %s", describe(err))
-		}
+			var numDocumentsInView int
+			_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
+			if err != nil {
+				t.Fatalf("Failed to get document count: %s", describe(err))
+			}
 
-		defer cursor.Close()
+			if numDocumentsInView != totalNumDocs {
+				t.Logf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
+				return nil
+			}
 
-		var numDocumentsInView int
-		_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
-		if err != nil {
-			t.Fatalf("Failed to get document count: %s", describe(err))
-		}
-
-		if numDocumentsInView != totalNumDocs {
-			t.Errorf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
-		}
+			return interrupt{}
+		}).RetryT(t, time.Second, time.Minute)
 	})
 
 	t.Run("waitForSync", func(t *testing.T) {
+		newRetryFunc(func() error {
+			// run query to get document count of view
+			cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s OPTIONS { waitForSync: true } COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
+			if err != nil {
+				t.Fatalf("Failed to create query: %s", describe(err))
+			}
+			defer cursor.Close()
 
-		// run query to get document count of view
-		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s OPTIONS { waitForSync: true } COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
-		if err != nil {
-			t.Fatalf("Failed to create query: %s", describe(err))
-		}
-		defer cursor.Close()
+			var numDocumentsInView int
+			_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
+			if err != nil {
+				t.Fatalf("Failed to get document count: %s", describe(err))
+			}
 
-		var numDocumentsInView int
-		_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
-		if err != nil {
-			t.Fatalf("Failed to get document count: %s", describe(err))
-		}
+			if numDocumentsInView != totalNumDocs {
+				t.Logf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
+				return nil
+			}
 
-		if numDocumentsInView != totalNumDocs {
-			t.Errorf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
-		}
+			return interrupt{}
+		}).RetryT(t, 125*time.Millisecond, time.Minute)
 	})
 }
