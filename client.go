@@ -30,7 +30,7 @@ import (
 	"time"
 )
 
-// Client provides access to a single arangodb database server, or an entire cluster of arangodb servers.
+// Client provides access to a single ArangoDB database server, or an entire cluster of ArangoDB servers.
 type Client interface {
 	// SynchronizeEndpoints fetches all endpoints from an ArangoDB cluster and updates the
 	// connection to use those endpoints.
@@ -85,7 +85,7 @@ type ClientConfig struct {
 	Connection Connection
 	// Authentication implements authentication on the server.
 	Authentication Authentication
-	// SynchronizeEndpointsInterval is the interval between automatisch synchronization of endpoints.
+	// SynchronizeEndpointsInterval is the interval between automatic synchronization of endpoints.
 	// If this value is 0, no automatic synchronization is performed.
 	// If this value is > 0, automatic synchronization is started on a go routine.
 	// This feature requires ArangoDB 3.1.15 or up.
