@@ -29,6 +29,6 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 
 Key:
 
-✓ Exactly the same features in both driver and the ArangoDB version.
-+ Features included in driver may be not present in the ArangoDB API. Calls to the ArangoDB may results in unexpected responses (404).
-- The ArangoDB has features which are not supported by driver.
+* `✓` Exactly the same features in both driver and the ArangoDB version.
+* `+` Features included in driver may be not present in the ArangoDB API. Calls to the ArangoDB may results in unexpected responses (404).
+* `-` The ArangoDB has features which are not supported by driver.
