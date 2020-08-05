@@ -25,7 +25,7 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 |                   | < ArangoDB 3.6 | ArangoDB 3.6 | ArangoDB 3.7 |
 |-------------------|----------------|--------------|--------------|
 | `1.0.0`           | ✓              | ✓            | -            |
-| `master`          | ✓              | ✓            | -            |
+| `master`          | +              | +            | -            |
 
 Key:
 
