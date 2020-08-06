@@ -24,7 +24,6 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"net/http"
 	"sort"
@@ -131,12 +130,10 @@ func (c *clusterConnection) Do(ctx context.Context, req driver.Request) (driver.
 	var specificServer driver.Connection
 	if v := ctx.Value(keyEndpoint); v != nil {
 		if endpoint, ok := v.(string); ok {
-			// Specific endpoint specified
-			serverCount = 1
-			var err error
-			specificServer, err = c.getSpecificServer(endpoint)
-			if err != nil {
-				return nil, driver.WithStack(err)
+			// Override pool to only specific server if it is found
+			if s, ok := c.getSpecificServer(endpoint); ok {
+				serverCount = 1
+				specificServer = s
 			}
 		}
 	}
@@ -332,25 +329,20 @@ func (c *clusterConnection) getCurrentServer() driver.Connection {
 }
 
 // getSpecificServer returns the server with the given endpoint.
-func (c *clusterConnection) getSpecificServer(endpoint string) (driver.Connection, error) {
+func (c *clusterConnection) getSpecificServer(endpoint string) (driver.Connection, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
 	for _, s := range c.servers {
-		endpoints := s.Endpoints()
-		found := false
-		for _, x := range endpoints {
+		for _, x := range s.Endpoints() {
 			if x == endpoint {
-				found = true
-				break
+				return s, true
 			}
-		}
-		if found {
-			return s, nil
 		}
 	}
 
-	return nil, driver.WithStack(driver.InvalidArgumentError{Message: fmt.Sprintf("unknown endpoint: %s", endpoint)})
+	// If endpoint is not found allow to use default connection pool - request will be routed thru coordinators
+	return nil, false
 }
 
 // getNextServer changes the currently used server and returns the new server.
