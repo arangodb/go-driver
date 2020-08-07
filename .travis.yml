@@ -30,7 +30,9 @@ language: go
 env:
   - TEST_SUITE=run-unit-tests
   - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.5
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.6
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:latest
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:3.7.1-rc.1
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:latest
 
 script:
