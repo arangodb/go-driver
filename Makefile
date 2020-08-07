@@ -5,6 +5,8 @@ ROOTDIR := $(shell cd "${SCRIPTDIR}" && pwd)
 GOVERSION := 1.12.4-stretch
 TMPDIR := ${SCRIPTDIR}/.tmp
 
+DOCKER_CMD:=docker run
+
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
 endif
@@ -119,7 +121,7 @@ clean:
 
 .PHONY: changelog
 changelog:
-	@docker run --rm \
+	@$(DOCKER_CMD) --rm \
 		-e CHANGELOG_GITHUB_TOKEN=$(shell cat ~/.arangodb/github-token) \
 		-v "${ROOTDIR}":/usr/local/src/your-app \
 		ferrarimarco/github-changelog-generator \
@@ -134,7 +136,7 @@ run-tests: run-unit-tests run-tests-single run-tests-resilientsingle run-tests-c
 run-tests-http: run-unit-tests
 
 run-unit-tests:
-	@docker run \
+	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
 		-e CGO_ENABLED=0 \
@@ -327,7 +329,7 @@ run-tests-cluster-vst-1.1-ssl:
 __run_tests: __test_prepare __test_go_test __test_cleanup
 
 __test_go_test:
-	docker run \
+	$(DOCKER_CMD) \
 		--name=$(TESTCONTAINER) \
 		--net=$(TEST_NET) \
 		-v "${ROOTDIR}":/usr/code ${TEST_RESOURCES_VOLUME} \
@@ -381,7 +383,7 @@ run-tests-cluster-failover:
 	@echo "Cluster server, failover, no authentication"
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" start
 	go get github.com/coreos/go-iptables/iptables
-	docker run \
+	$(DOCKER_CMD) \
 		--rm \
 		--net=container:$(TESTCONTAINER)-ns \
 		--privileged \

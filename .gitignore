@@ -6,3 +6,6 @@
 
 #IDE's files
 .idea
+
+#Vendor files
+vendor

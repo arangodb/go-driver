@@ -33,6 +33,12 @@ type UserDocWithKey struct {
 	Age  int    `json:"age"`
 }
 
+type UserDocWithKeyWithOmit struct {
+	Key  string `json:"_key,omitempty"`
+	Name string `json:"name,omitempty"`
+	Age  int    `json:"age,omitempty"`
+}
+
 type Account struct {
 	ID   string   `json:"id"`
 	User *UserDoc `json:"user"`

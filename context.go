@@ -59,6 +59,16 @@ const (
 	keyJobIDResponse            ContextKey = "arangodb-jobIDResponse"
 	keyAllowDirtyReads          ContextKey = "arangodb-allowDirtyReads"
 	keyTransactionID            ContextKey = "arangodb-transactionID"
+	keyOverwriteMode            ContextKey = "arangodb-overwriteMode"
+)
+
+type OverwriteMode string
+
+const (
+	OverwriteModeIgnore   OverwriteMode = "ignore"
+	OverwriteModeReplace  OverwriteMode = "replace"
+	OverwriteModeUpdate   OverwriteMode = "update"
+	OverwriteModeConflict OverwriteMode = "conflict"
 )
 
 // WithRevision is used to configure a context to make document
@@ -236,6 +246,12 @@ func WithTransactionID(parent context.Context, tid TransactionID) context.Contex
 	return context.WithValue(contextOrBackground(parent), keyTransactionID, tid)
 }
 
+// WithConfigured is used to configure a context to return the configured value of
+// a user grant instead of the effective grant.
+func WithOverwriteMode(parent context.Context, mode OverwriteMode) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyOverwriteMode, mode)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -255,6 +271,7 @@ type contextSettings struct {
 	DBServerID               string
 	BatchID                  string
 	JobIDResponse            *string
+	OverwriteMode            OverwriteMode
 }
 
 // loadContextResponseValue loads generic values from the response and puts it into variables specified
@@ -421,6 +438,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 	if v := ctx.Value(keyJobIDResponse); v != nil {
 		if idRef, ok := v.(*string); ok {
 			result.JobIDResponse = idRef
+		}
+	}
+	// OverwriteMode
+	if v := ctx.Value(keyOverwriteMode); v != nil {
+		if mode, ok := v.(OverwriteMode); ok {
+			req.SetQuery("overwriteMode", string(mode))
+			result.OverwriteMode = mode
 		}
 	}
 	return result
