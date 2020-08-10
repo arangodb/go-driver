@@ -34,7 +34,7 @@ type mode string
 
 const (
 	cluster mode = "cluster"
-	single mode ="single"
+	single  mode = "single"
 )
 
 func EnsureVersion(t *testing.T, ctx context.Context, c driver.Client) VersionCheck {
@@ -56,12 +56,12 @@ func EnsureVersion(t *testing.T, ctx context.Context, c driver.Client) VersionCh
 		t:          t,
 		version:    version.Version,
 		enterprise: version.IsEnterprise(),
-		mode:m,
+		mode:       m,
 	}
 }
 
 type VersionCheck struct {
-	t          *testing.T
+	t *testing.T
 
 	version    driver.Version
 	enterprise bool
