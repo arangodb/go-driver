@@ -30,23 +30,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type mode string
+
+const (
+	cluster mode = "cluster"
+	single  mode = "single"
+)
+
 func EnsureVersion(t *testing.T, ctx context.Context, c driver.Client) VersionCheck {
 	version, err := c.Version(ctx)
 	if err != nil {
 		require.NoError(t, err, "Version check failed")
 	}
 
+	m := cluster
+
+	_, err = c.Cluster(ctx)
+	if driver.IsPreconditionFailed(err) {
+		m = single
+	} else if err != nil {
+		require.NoError(t, err)
+	}
+
 	return VersionCheck{
 		t:          t,
 		version:    version.Version,
 		enterprise: version.IsEnterprise(),
+		mode:       m,
 	}
 }
 
 type VersionCheck struct {
-	t          *testing.T
+	t *testing.T
+
 	version    driver.Version
 	enterprise bool
+
+	mode mode
 }
 
 func (v VersionCheck) MinimumVersion(version driver.Version) VersionCheck {
@@ -93,6 +113,14 @@ func (v VersionCheck) Community() VersionCheck {
 	v.t.Logf("Community version required")
 	if !v.enterprise {
 		v.t.Skipf("Required community version")
+	}
+	return v
+}
+
+func (v VersionCheck) Cluster() VersionCheck {
+	v.t.Logf("Cluster mode required")
+	if v.mode != cluster {
+		v.t.Skipf("Required cluster mode, got %s", v.mode)
 	}
 	return v
 }
