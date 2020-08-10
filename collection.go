@@ -143,6 +143,8 @@ type CollectionProperties struct {
 	// The following attribute specifies if the new MerkleTree based sync protocol
 	// can be used on the collection.
 	SyncByRevision bool `json:"syncByRevision,omitempty"`
+	// Schema for collection validation
+	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
 const (
@@ -171,6 +173,8 @@ type SetCollectionPropertiesOptions struct {
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// CacheEnabled set cacheEnabled option in collection properties
 	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
+	// Schema for collection validation
+	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
 // CollectionStatus indicates the status of a collection.
