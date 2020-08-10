@@ -28,35 +28,47 @@ import (
 )
 
 // newGraph creates a new Graph implementation.
-func newGraph(name string, db *database) (Graph, error) {
-	if name == "" {
+func newGraph(input graphDefinition, db *database) (Graph, error) {
+	if input.Name == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "name is empty"})
 	}
 	if db == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "db is nil"})
 	}
 	return &graph{
-		name: name,
-		db:   db,
-		conn: db.conn,
+		input: input,
+		db:    db,
+		conn:  db.conn,
 	}, nil
 }
 
 type graph struct {
-	name string
-	db   *database
-	conn Connection
+	input graphDefinition
+	db    *database
+	conn  Connection
+}
+
+func (g *graph) IsSmart() bool {
+	return g.input.IsSmart
+}
+
+func (g *graph) IsDisjoint() bool {
+	return g.input.IsDisjoint
+}
+
+func (g *graph) IsSatellite() bool {
+	return g.input.IsSatellite
 }
 
 // relPath creates the relative path to this graph (`_db/<db-name>/_api/gharial/<graph-name>`)
 func (g *graph) relPath() string {
-	escapedName := pathEscape(g.name)
+	escapedName := pathEscape(g.Name())
 	return path.Join(g.db.relPath(), "_api", "gharial", escapedName)
 }
 
 // Name returns the name of the graph.
 func (g *graph) Name() string {
-	return g.name
+	return g.input.Name
 }
 
 // Remove removes the entire graph.
