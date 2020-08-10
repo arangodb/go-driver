@@ -25,7 +25,7 @@ package driver
 import "context"
 
 const (
-	SatelliteGraph = -1
+	SatelliteGraph = -100
 )
 
 // DatabaseGraphs provides access to all graphs in a single database.

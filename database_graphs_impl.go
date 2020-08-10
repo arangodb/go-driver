@@ -121,7 +121,7 @@ type graphReplicationFactor int
 func (g graphReplicationFactor) MarshalJSON() ([]byte, error) {
 	switch g {
 	case SatelliteGraph:
-		return json.Marshal("satellite")
+		return json.Marshal(replicationFactorSatelliteString)
 	default:
 		return json.Marshal(int(g))
 	}
@@ -142,7 +142,7 @@ func (g *graphReplicationFactor) UnmarshalJSON(data []byte) error {
 	}
 
 	switch s {
-	case "satellite":
+	case replicationFactorSatelliteString:
 		*g = graphReplicationFactor(SatelliteGraph)
 		return nil
 	default:
