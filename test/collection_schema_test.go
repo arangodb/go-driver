@@ -144,4 +144,48 @@ func TestCollectionSchema(t *testing.T) {
 
 		require.Equal(t, http.StatusBadRequest, arangoErr.Code)
 	})
+
+	t.Run("Update collection with valid schema and create docs", func(t *testing.T) {
+		schema := &driver.CollectionSchemaOptions{
+			Level:   driver.CollectionSchemaLevelStrict,
+			Message: "Validation Err",
+		}
+
+		require.NoError(t, schema.LoadRule([]byte(`{
+			"properties": {
+				"name": {
+					"type": "string"
+				}
+			},
+			"required": ["name"]
+}`)))
+
+		col := ensureCollection(nil, db, "document_schema_validation_test_wo_opts", &driver.CreateCollectionOptions{
+			Schema: schema,
+		}, t)
+
+		t.Run("Success", func(t *testing.T) {
+			u := UserDocWithKeyWithOmit{
+				Key:  NewUUID(),
+				Name: "name",
+			}
+
+			_, err := col.CreateDocument(ctx, u)
+			require.NoError(t, err)
+		})
+		t.Run("Failure", func(t *testing.T) {
+
+			u := UserDocWithKeyWithOmit{
+				Key: NewUUID(),
+			}
+
+			_, err := col.CreateDocument(ctx, u)
+			require.Error(t, err)
+
+			arangoErr, ok := err.(driver.ArangoError)
+			require.True(t, ok)
+
+			require.Equal(t, http.StatusBadRequest, arangoErr.Code)
+		})
+	})
 }
