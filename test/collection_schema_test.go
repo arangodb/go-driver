@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/arangodb/go-driver"
@@ -61,7 +62,7 @@ func TestCollectionSchema(t *testing.T) {
 
 		require.NoError(t, opts.Schema.LoadRule([]byte(`{
 		"type": "object",
-			"properties": {
+		"properties": {
 			"name": {
 				"type": "string"
 			},
@@ -93,7 +94,7 @@ func TestCollectionSchema(t *testing.T) {
 
 		require.NoError(t, schema.LoadRule([]byte(`{
 		"type": "object",
-			"properties": {
+		"properties": {
 			"name": {
 				"type": "string"
 			},
@@ -119,5 +120,28 @@ func TestCollectionSchema(t *testing.T) {
 		require.NoError(t, err)
 
 		jsonEqual(t, schema, loadOpts.Schema)
+	})
+
+	t.Run("Update collection with invalid schema", func(t *testing.T) {
+		schema := &driver.CollectionSchemaOptions{
+			Level:   driver.CollectionSchemaLevelStrict,
+			Message: "Validation Err",
+		}
+
+		require.NoError(t, schema.LoadRule([]byte(`{
+		"type": 4,
+		"properties": [],
+		"required": {}
+}`)))
+
+		err := col.SetProperties(ctx, driver.SetCollectionPropertiesOptions{
+			Schema: schema,
+		})
+		require.Error(t, err)
+
+		arangoErr, ok := err.(driver.ArangoError)
+		require.True(t, ok)
+
+		require.Equal(t, http.StatusBadRequest, arangoErr.Code)
 	})
 }
