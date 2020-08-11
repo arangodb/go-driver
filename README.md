@@ -18,6 +18,7 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 |                   | Go 1.13 | Go 1.14 |
 |-------------------|---------|---------|
 | `1.0.0`           | ✓       | ✓       |
+| `1.1.0`           | ✓       | ✓       |
 | `master`          | ✓       | ✓       |
 
 # Supported Versions
@@ -25,7 +26,8 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 |                   | < ArangoDB 3.6 | ArangoDB 3.6 | ArangoDB 3.7 |
 |-------------------|----------------|--------------|--------------|
 | `1.0.0`           | ✓              | ✓            | -            |
-| `master`          | +              | +            | -            |
+| `1.1.0`           | +              | +            | ✓            |
+| `master`          | +              | +            | +            |
 
 Key:
 

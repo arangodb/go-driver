@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.1.0](https://github.com/arangodb/go-driver/tree/1.1.0) (2020-08-11)
 - Use internal coordinator communication for cursors if specified coordinator was not found on endpoint list
 - Add support for Overwrite Mode (ArangoDB 3.7)
 - Add support for Schema Collection options (ArangoDB 3.7)
