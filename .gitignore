@@ -7,10 +7,5 @@
 #IDE's files
 .idea
 
-<<<<<<< HEAD
 #Vendor files
 vendor
-=======
-# Vendor
-vendor/
->>>>>>> Initial V2 commit
