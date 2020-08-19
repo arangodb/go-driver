@@ -28,12 +28,17 @@ services:
 language: go
 
 env:
-  - TEST_SUITE=run-unit-tests
+  - TEST_SUITE=run-unit-tests PR=false
   - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.5
   - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.6
-  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:latest
-  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:3.7.1
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:latest PR=false
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:3.7
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:latest
+  - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb:3.5
+  - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb:3.6
+  - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb/arangodb:latest PR=false
+  - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb/arangodb:3.7
+  - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb/arangodb-preview:latest
 
 script:
-  - TEST_RESOURCES="$HOME/resources/" VERBOSE=1 make $TEST_SUITE
+  - if [ "$TRAVIS_PULL_REQUEST" == "${PR:-true}" ]; then TEST_RESOURCES="$HOME/resources/" VERBOSE=1 make $TEST_SUITE; fi
