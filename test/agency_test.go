@@ -26,17 +26,12 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-<<<<<<< HEAD
 	"net/http"
-=======
->>>>>>> Initial V2 commit
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/arangodb/go-driver/jwt"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/agency"

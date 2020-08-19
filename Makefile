@@ -4,7 +4,8 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION := 1.12.4-stretch
+GOVERSION := 1.13.4-stretch
+GOV2VERSION := 1.13.4-stretch
 TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run
@@ -351,7 +352,27 @@ __test_go_test:
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
-		
+
+# Internal test tasks
+__run_v2_tests: __test_prepare __test_v2_go_test __test_cleanup
+
+__test_v2_go_test:
+	$(DOCKER_CMD) \
+		--name=$(TESTCONTAINER) \
+		--net=$(TEST_NET) \
+		-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
+		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
+		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
+		-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
+		-e TEST_MODE=$(TEST_MODE) \
+		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
+		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
+		-e GODEBUG=tls13=1 \
+		-e CGO_ENABLED=0 \
+		-w /usr/code/v2/ \
+		golang:$(GOV2VERSION) \
+		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
+
 
 __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
@@ -446,3 +467,44 @@ linter: fmt
 	                  $(foreach MODE,$(GOLANGCI_ENABLED),--enable $(MODE) ) \
 	                  --exclude-use-default=false \
 	                  $(SOURCES_PACKAGES)
+
+# V2
+
+v2-%:
+	@(cd "$(ROOTDIR)/v2"; make)
+
+run-v2-tests: run-v2-tests-single run-v2-tests-cluster run-v2-tests-resilientsingle
+
+run-v2-tests-cluster: run-v2-tests-cluster-with-basic-auth run-v2-tests-cluster-without-ssl run-v2-tests-cluster-without-auth run-v2-tests-cluster-with-jwt-auth
+
+run-v2-tests-cluster-with-basic-auth:
+	@echo "Cluster server, with basic authentication, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v2_tests
+
+run-v2-tests-cluster-with-jwt-auth:
+	@echo "Cluster server, with JWT authentication, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="jwt" __run_v2_tests
+
+run-v2-tests-cluster-without-auth:
+	@echo "Cluster server, without authentication, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="none" __run_v2_tests
+
+run-v2-tests-cluster-without-ssl:
+	@echo "Cluster server, without authentication and SSL, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" __run_v2_tests
+
+run-v2-tests-single: run-v2-tests-single-without-auth run-v2-tests-single-with-auth
+
+run-v2-tests-single-without-auth:
+	@echo "Single server, without authentication, v2"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" __run_v2_tests
+
+run-v2-tests-single-with-auth:
+	@echo "Single server, with authentication, v2"
+	@${MAKE} TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v2_tests
+
+run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
+
+run-v2-tests-resilientsingle-with-auth:
+	@echo "Resilient Single, with authentication, v2"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" __run_v2_tests

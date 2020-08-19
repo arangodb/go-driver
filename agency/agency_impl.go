@@ -27,9 +27,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/arangodb/go-driver"
 	"strings"
 	"time"
+
+	"github.com/arangodb/go-driver"
 )
 
 var (

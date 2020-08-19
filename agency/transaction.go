@@ -24,6 +24,7 @@ package agency
 
 import (
 	"fmt"
+
 	"github.com/arangodb/go-driver"
 )
 
