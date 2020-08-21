@@ -6,14 +6,14 @@ Implementation of Driver V2 make use of runtime JSON/VPACK serialization, reduci
 
 | Implemented | Test Coverage | Description                                                             |
 |-------------|---------------|-------------------------------------------------------------------------|
-| [x]         | [x]           | HTTP JSON & VPACK Connection                                            |
-| [x]         | [ ]           | HTTP2 JSON & VPACK Connection                                           |
-| [x]         | [ ]           | VST Connection                                                          |
-| [ ]         | [ ]           | Database API Implementation                                             |
-| [ ]         | [ ]           | Collection API Implementation                                           |
-| [x]         | [x]           | Collection Document Creation                                            |
-| [ ]         | [ ]           | Collection Document Update                                              |
-| [x]         | [x]           | Collection Document Read                                                |
-| [x]         | [x]           | Query Execution                                                         |
-| [x]         | [ ]           | Transaction Execution                                                   |
-| [ ]         | [ ]           | ArangoDB Operations (Views, Users, Graphs)                              |
+|  ✓          |  ✓            | HTTP JSON & VPACK Connection                                            |
+|  -          |  -            | HTTP2 JSON & VPACK Connection                                           |
+|  -          |  -            | VST Connection                                                          |
+|  +          |  -            | Database API Implementation                                             |
+|  +          |  -            | Collection API Implementation                                           |
+|  ✓          |  ✓            | Collection Document Creation                                            |
+|  +          |  -            | Collection Document Update                                              |
+|  ✓          |  ✓            | Collection Document Read                                                |
+|  ✓          |  ✓            | Query Execution                                                         |
+|  +          |  -            | Transaction Execution                                                   |
+|  -          |  -            | ArangoDB Operations (Views, Users, Graphs)                              |
