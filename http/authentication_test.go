@@ -23,9 +23,10 @@
 package http
 
 import (
+	"testing"
+
 	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestIsAuthenticationTheSame(t *testing.T) {
