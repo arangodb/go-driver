@@ -22,23 +22,7 @@
 
 package connection
 
-import (
-	"bytes"
-	"context"
-	"crypto/tls"
-	"io"
-	"net/http"
-	"net/url"
-	"path"
-
-	"github.com/arangodb/go-driver/v2/log"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-)
-
-const (
-	ContentType = "content-type"
-)
+import "net/http"
 
 type HttpConfiguration struct {
 	Authentication Authentication
@@ -46,7 +30,17 @@ type HttpConfiguration struct {
 
 	ContentType string
 
-	TLS *tls.Config
+	Transport http.RoundTripper
+}
+
+func (h HttpConfiguration) getTransport() http.RoundTripper {
+	if h.Transport != nil {
+		return h.Transport
+	}
+
+	return &http.Transport{
+		MaxIdleConns: 100,
+	}
 }
 
 func (h HttpConfiguration) GetContentType() string {
@@ -58,194 +52,13 @@ func (h HttpConfiguration) GetContentType() string {
 }
 
 func NewHttpConnection(config HttpConfiguration) Connection {
-	c := &http.Client{}
-	c.Transport = &http.Transport{
-		TLSClientConfig: config.TLS,
-		MaxIdleConns:    100,
+	c := newHttpConnection(config.getTransport(), config.ContentType, config.Endpoint)
+
+	if a := config.Authentication; a != nil {
+		c.authentication = a
 	}
 
-	ct := config.ContentType
-	if ct == "" {
-		ct = ApplicationJSON
-	}
+	c.streamSender = false
 
-	return &httpConnection{
-		tls:         config.TLS,
-		client:      c,
-		endpoint:    config.Endpoint,
-		contentType: ct,
-	}
-}
-
-type httpConnection struct {
-	client *http.Client
-
-	tls            *tls.Config
-	endpoint       Endpoint
-	authentication Authentication
-	contentType    string
-}
-
-func (j httpConnection) GetAuthentication() Authentication {
-	return j.authentication
-}
-
-func (j *httpConnection) SetAuthentication(a Authentication) error {
-	j.authentication = a
-	return nil
-}
-
-func (j httpConnection) Decoder(content string) Decoder {
-	switch content {
-	case ApplicationVPack:
-		return getVPackDecoder()
-	case ApplicationJSON:
-		return getJsonDecoder()
-	default:
-		switch j.contentType {
-		case ApplicationVPack:
-			return getVPackDecoder()
-		case ApplicationJSON:
-			return getJsonDecoder()
-		default:
-			return getJsonDecoder()
-		}
-	}
-}
-
-func (j httpConnection) DoWithReader(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
-	req, ok := request.(*httpRequest)
-	if !ok {
-		return nil, nil, errors.Errorf("unable to parse request into JSON Request")
-	}
-	return j.do(ctx, req)
-}
-
-func (j httpConnection) GetEndpoint() Endpoint {
-	return j.endpoint
-}
-
-func (j *httpConnection) SetEndpoint(e Endpoint) error {
-	j.endpoint = e
-	return nil
-}
-
-func (j httpConnection) NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error) {
-	return j.newRequestWithEndpoint(endpoint, method, urls...)
-}
-
-func (j httpConnection) NewRequest(method string, urls ...string) (Request, error) {
-	return j.newRequest(method, urls...)
-}
-
-func (j httpConnection) newRequest(method string, urls ...string) (*httpRequest, error) {
-	return j.newRequestWithEndpoint("", method, urls...)
-}
-
-func (j httpConnection) newRequestWithEndpoint(endpoint string, method string, urls ...string) (*httpRequest, error) {
-	e, ok := j.endpoint.Get(endpoint)
-	if !ok {
-		return nil, errors.Errorf("Unable to resolve endpoint for %s", e)
-	}
-	url, err := url.Parse(e)
-	if err != nil {
-		return nil, err
-	}
-
-	url.Path = path.Join(url.Path, path.Join(urls...))
-
-	r := &httpRequest{
-		method:   method,
-		url:      url,
-		endpoint: endpoint,
-	}
-
-	return r, nil
-}
-
-func (j httpConnection) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
-	req, ok := request.(*httpRequest)
-	if !ok {
-		return nil, errors.Errorf("unable to parse request into JSON Request")
-	}
-	return j.doWithOutput(ctx, req, output)
-}
-
-func (j httpConnection) doWithOutput(ctx context.Context, request *httpRequest, output interface{}) (*httpResponse, error) {
-	resp, body, err := j.do(ctx, request)
-	if err != nil {
-		return nil, err
-	}
-
-	if output != nil {
-		defer dropBodyData(body) // In case if there is data drop it all
-		if err = j.Decoder(resp.Content()).Decode(body, output); err != nil {
-			if err != io.EOF {
-				return nil, errors.WithStack(err)
-			}
-		}
-	} else {
-		// We still need to read data from request, but we can do this in background and ignore output
-		defer dropBodyData(body)
-	}
-
-	return resp, nil
-}
-
-func (j httpConnection) do(ctx context.Context, req *httpRequest) (*httpResponse, io.ReadCloser, error) {
-	id := uuid.New().String()
-	log.Debugf("(%s) Sending request to %s/%s", id, req.Method(), req.URL())
-	if v, ok := req.GetHeader(ContentType); !ok || v == "" {
-		req.AddHeader(ContentType, j.contentType)
-	}
-	if v, ok := req.GetHeader("Accept"); !ok || v == "" {
-		req.AddHeader("Accept", j.contentType)
-	}
-
-	if auth := j.authentication; auth != nil {
-		if err := auth.RequestModifier(req); err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-	}
-
-	var httpReq *http.Request
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	if req.Method() == http.MethodPost || req.Method() == http.MethodPut {
-		b := bytes.NewBuffer([]byte{})
-		if err := j.Decoder(j.contentType).Encode(b, req.body); err != nil {
-			return nil, nil, err
-		}
-
-		r, err := req.asRequest(ctx, b)
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		httpReq = r
-	} else {
-		r, err := req.asRequest(ctx, nil)
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		httpReq = r
-	}
-
-	resp, err := j.client.Do(httpReq)
-	if err != nil {
-		log.Debugf("(%s) Request failed: %s", id, err.Error())
-		return nil, nil, errors.WithStack(err)
-	}
-	log.Debugf("(%s) Response received: %d", id, resp.StatusCode)
-
-	if b := resp.Body; b != nil {
-		var body = resp.Body
-
-		return &httpResponse{response: resp, request: req}, body, nil
-
-	}
-
-	return &httpResponse{response: resp, request: req}, nil, nil
+	return c
 }

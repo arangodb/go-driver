@@ -23,8 +23,8 @@
 package jwt
 
 import (
-	driver "github.com/arangodb/go-driver"
 	jg "github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -49,7 +49,7 @@ func CreateArangodJwtAuthorizationHeader(jwtSecret, serverID string) (string, er
 	// Sign and get the complete encoded token as a string using the secret
 	signedToken, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
-		return "", driver.WithStack(err)
+		return "", errors.WithStack(err)
 	}
 
 	return "bearer " + signedToken, nil
@@ -75,7 +75,7 @@ func CreateArangodJwtAuthorizationHeaderAllowedPaths(jwtSecret, serverID string,
 	// Sign and get the complete encoded token as a string using the secret
 	signedToken, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
-		return "", driver.WithStack(err)
+		return "", errors.WithStack(err)
 	}
 
 	return "bearer " + signedToken, nil

@@ -10,6 +10,9 @@ TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run
 
+GOBUILDTAGS:=$(TAGS)
+GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
+
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
 endif
@@ -43,18 +46,17 @@ endif
 
 ifeq ("$(TEST_AUTH)", "none")
 	ARANGOENV := -e ARANGO_NO_AUTH=1
-	TEST_AUTHENTICATION := 
-	TAGS := 
+	TEST_AUTHENTICATION :=
 	TESTS := $(REPOPATH) $(REPOPATH)/test
 else ifeq ("$(TEST_AUTH)", "rootpw")
 	ARANGOENV := -e ARANGO_ROOT_PASSWORD=rootpw
 	TEST_AUTHENTICATION := basic:root:rootpw
-	TAGS := -tags auth
+	GOBUILDTAGS += auth
 	TESTS := $(REPOPATH)/test
 else ifeq ("$(TEST_AUTH)", "jwt")
 	ARANGOENV := -e ARANGO_ROOT_PASSWORD=rootpw 
 	TEST_AUTHENTICATION := jwt:root:rootpw
-	TAGS := -tags auth
+	GOBUILDTAGS += auth
 	TESTS := $(REPOPATH)/test
 	JWTSECRET := testing
 	JWTSECRETFILE := "${TMPDIR}/${TESTCONTAINER}-jwtsecret"
@@ -178,6 +180,10 @@ run-tests-single-vst-1.1-no-auth:
 run-tests-single-json-with-auth:
 	@echo "Single server, HTTP+JSON, with authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
+
+run-tests-single-json-http2-with-auth:
+	@echo "Single server, HTTP+JSON, with authentication"
+	@${MAKE} TEST_MODE="single" TAGS="http2" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
 
 run-tests-single-vpack-with-auth:
 	@echo "Single server, HTTP+Velocypack, with authentication"
@@ -351,7 +357,7 @@ __test_go_test:
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
 
 # Internal test tasks
 __run_v2_tests: __test_prepare __test_v2_go_test __test_cleanup
@@ -371,7 +377,7 @@ __test_v2_go_test:
 		-e CGO_ENABLED=0 \
 		-w /usr/code/v2/ \
 		golang:$(GOV2VERSION) \
-		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
+		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
 
 
 __test_prepare:

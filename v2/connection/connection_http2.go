@@ -20,24 +20,45 @@
 // Author Adam Janikowski
 //
 
-package arangodb
+package connection
 
 import (
-	"context"
+	"golang.org/x/net/http2"
 )
 
-type Database interface {
-	// Name returns the name of the database.
-	Name() string
+type Http2Configuration struct {
+	Authentication Authentication
+	Endpoint       Endpoint
 
-	// Info fetches information about the database.
-	Info(ctx context.Context) (DatabaseInfo, error)
+	ContentType string
 
-	// Remove removes the entire database.
-	// If the database does not exist, a NotFoundError is returned.
-	Remove(ctx context.Context) error
+	Transport *http2.Transport
+}
 
-	DatabaseCollection
-	DatabaseTransaction
-	DatabaseQuery
+func (h Http2Configuration) getTransport() *http2.Transport {
+	if h.Transport != nil {
+		return h.Transport
+	}
+
+	return &http2.Transport{AllowHTTP: true}
+}
+
+func (h Http2Configuration) GetContentType() string {
+	if h.ContentType == "" {
+		return ApplicationJSON
+	}
+
+	return h.ContentType
+}
+
+func NewHttp2Connection(config Http2Configuration) Connection {
+	c := newHttpConnection(config.getTransport(), config.ContentType, config.Endpoint)
+
+	if a := config.Authentication; a != nil {
+		c.authentication = a
+	}
+
+	c.streamSender = true
+
+	return c
 }

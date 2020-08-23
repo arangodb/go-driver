@@ -28,13 +28,12 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
-	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/pkg/errors"
 )
 
-func newTransaction(db *database, id driver.TransactionID) *transaction {
-	newDb := newDatabase(db.client, db.name, connection.WithTransactionID(id))
+func newTransaction(db *database, id TransactionID) *transaction {
+	newDb := newDatabase(db.client, db.name, connection.WithTransactionID(string(id)))
 
 	d := &transaction{
 		database: newDb,
@@ -49,10 +48,10 @@ var _ Transaction = &transaction{}
 type transaction struct {
 	*database
 
-	id driver.TransactionID
+	id TransactionID
 }
 
-func (t transaction) Commit(ctx context.Context, opts *driver.CommitTransactionOptions) error {
+func (t transaction) Commit(ctx context.Context, opts *CommitTransactionOptions) error {
 	resp, err := connection.CallPut(ctx, t.database.connection(), t.url(), nil, nil)
 	if err != nil {
 		return errors.WithStack(err)
@@ -66,7 +65,7 @@ func (t transaction) Commit(ctx context.Context, opts *driver.CommitTransactionO
 	}
 }
 
-func (t transaction) Abort(ctx context.Context, opts *driver.AbortTransactionOptions) error {
+func (t transaction) Abort(ctx context.Context, opts *AbortTransactionOptions) error {
 	resp, err := connection.CallDelete(ctx, t.database.connection(), t.url(), nil)
 	if err != nil {
 		return errors.WithStack(err)
@@ -80,26 +79,26 @@ func (t transaction) Abort(ctx context.Context, opts *driver.AbortTransactionOpt
 	}
 }
 
-func (t transaction) Status(ctx context.Context) (driver.TransactionStatusRecord, error) {
+func (t transaction) Status(ctx context.Context) (TransactionStatusRecord, error) {
 	response := struct {
 		shared.ResponseStruct
-		Result driver.TransactionStatusRecord `json:"result"`
+		Result TransactionStatusRecord `json:"result"`
 	}{}
 
 	resp, err := connection.CallGet(ctx, t.database.connection(), t.url(), &response)
 	if err != nil {
-		return driver.TransactionStatusRecord{}, errors.WithStack(err)
+		return TransactionStatusRecord{}, errors.WithStack(err)
 	}
 
 	switch resp.Code() {
 	case http.StatusOK:
 		return response.Result, nil
 	default:
-		return driver.TransactionStatusRecord{}, connection.NewError(resp.Code(), "unexpected code")
+		return TransactionStatusRecord{}, connection.NewError(resp.Code(), "unexpected code")
 	}
 }
 
-func (t transaction) ID() driver.TransactionID {
+func (t transaction) ID() TransactionID {
 	return t.id
 }
 

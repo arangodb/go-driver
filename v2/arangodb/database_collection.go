@@ -24,8 +24,6 @@ package arangodb
 
 import (
 	"context"
-
-	"github.com/arangodb/go-driver"
 )
 
 type DatabaseCollection interface {
@@ -41,5 +39,5 @@ type DatabaseCollection interface {
 
 	// CreateCollection creates a new collection with given name and options, and opens a connection to it.
 	// If a collection with given name already exists within the database, a DuplicateError is returned.
-	CreateCollection(ctx context.Context, name string, options *driver.CreateCollectionOptions) (Collection, error)
+	CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error)
 }

@@ -23,7 +23,6 @@
 package arangodb
 
 import (
-	"github.com/arangodb/go-driver"
 	"github.com/pkg/errors"
 )
 
@@ -39,7 +38,7 @@ type DocumentMeta struct {
 // validateKey returns an error if the given key is empty otherwise invalid.
 func validateKey(key string) error {
 	if key == "" {
-		return errors.WithStack(driver.InvalidArgumentError{Message: "key is empty"})
+		return errors.WithStack(InvalidArgumentError{Message: "key is empty"})
 	}
 	return nil
 }

@@ -27,4 +27,5 @@ type Client interface {
 
 	ClientAdminBackup
 	ClientDatabase
+	ClientServerInfo
 }

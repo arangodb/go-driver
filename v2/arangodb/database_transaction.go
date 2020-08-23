@@ -24,34 +24,14 @@ package arangodb
 
 import (
 	"context"
-	"time"
-
-	"github.com/arangodb/go-driver"
 )
 
 type DatabaseTransaction interface {
-	BeginTransaction(ctx context.Context, cols driver.TransactionCollections, opts *BeginTransactionOptions) (Transaction, error)
+	BeginTransaction(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions) (Transaction, error)
 
-	Transaction(ctx context.Context, id driver.TransactionID) (Transaction, error)
+	Transaction(ctx context.Context, id TransactionID) (Transaction, error)
 
-	WithTransaction(ctx context.Context, cols driver.TransactionCollections, opts *BeginTransactionOptions, commitOptions *driver.CommitTransactionOptions, abortOptions *driver.AbortTransactionOptions, w TransactionWrap) error
+	WithTransaction(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions, commitOptions *CommitTransactionOptions, abortOptions *AbortTransactionOptions, w TransactionWrap) error
 }
 
 type TransactionWrap func(ctx context.Context, t Transaction) error
-
-// BeginTransactionOptions provides options for BeginTransaction call
-type BeginTransactionOptions struct {
-	WaitForSync         bool          `json:"waitForSync,omitempty"`
-	AllowImplicit       bool          `json:"allowImplicit,omitempty"`
-	LockTimeoutDuration time.Duration `json:"-"`
-	LockTimeout         float64       `json:"lockTimeout,omitempty"`
-	MaxTransactionSize  uint64        `json:"maxTransactionSize,omitempty"`
-}
-
-func (b *BeginTransactionOptions) set() *BeginTransactionOptions {
-	if b.LockTimeoutDuration != 0 && b.LockTimeout == 0 {
-		b.LockTimeout = float64(b.LockTimeoutDuration) / float64(time.Second)
-	}
-
-	return b
-}

@@ -22,11 +22,9 @@
 
 package connection
 
-import "github.com/arangodb/go-driver"
-
-func WithTransactionID(transactionID driver.TransactionID) RequestModifier {
+func WithTransactionID(transactionID string) RequestModifier {
 	return func(r Request) error {
-		r.AddHeader("x-arango-trx-id", string(transactionID))
+		r.AddHeader("x-arango-trx-id", transactionID)
 		return nil
 	}
 }

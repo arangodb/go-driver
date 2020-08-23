@@ -26,7 +26,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 )
@@ -81,24 +80,24 @@ func (d database) Name() string {
 	return d.name
 }
 
-func (d database) Info(ctx context.Context) (driver.DatabaseInfo, error) {
+func (d database) Info(ctx context.Context) (DatabaseInfo, error) {
 	url := d.url("_api", "database", "current")
 
 	var response struct {
 		shared.ResponseStruct
 
-		Database driver.DatabaseInfo `json:"result"`
+		Database DatabaseInfo `json:"result"`
 	}
 
 	resp, err := connection.CallGet(ctx, d.client.connection, url, &response)
 	if err != nil {
-		return driver.DatabaseInfo{}, err
+		return DatabaseInfo{}, err
 	}
 
 	switch resp.Code() {
 	case http.StatusOK:
 		return response.Database, nil
 	default:
-		return driver.DatabaseInfo{}, connection.NewError(resp.Code(), "unexpected code")
+		return DatabaseInfo{}, connection.NewError(resp.Code(), "unexpected code")
 	}
 }

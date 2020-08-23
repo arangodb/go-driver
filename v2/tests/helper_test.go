@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -56,7 +55,7 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 	})
 }
 
-func WithCollection(t testing.TB, db arangodb.Database, opts *driver.CreateCollectionOptions, f func(col arangodb.Collection)) {
+func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCollectionOptions, f func(col arangodb.Collection)) {
 	name := fmt.Sprintf("test-%s", uuid.New().String())
 
 	info(t)("Creating COL %s", name)
@@ -65,10 +64,23 @@ func WithCollection(t testing.TB, db arangodb.Database, opts *driver.CreateColle
 		col, err := db.CreateCollection(ctx, name, opts)
 		require.NoError(t, err)
 
+		NewTimeout(func() error {
+			_, err := db.Collection(ctx, name)
+			if err == nil {
+				return Interrupt{}
+			}
+
+			if arangodb.IsNotFound(err) {
+				return nil
+			}
+
+			return err
+		}).TimeoutT(t, 15*time.Second, 125*time.Millisecond)
+
 		defer func() {
 			withContext(2*time.Minute, func(ctx context.Context) error {
 				info(t)("Removing COL %s", name)
-				require.NoError(t, db.Remove(ctx))
+				require.NoError(t, col.Remove(ctx))
 				return nil
 			})
 		}()
