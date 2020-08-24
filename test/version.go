@@ -124,3 +124,11 @@ func (v VersionCheck) Cluster() VersionCheck {
 	}
 	return v
 }
+
+func (v VersionCheck) NotCluster() VersionCheck {
+	v.t.Logf("Skipping cluster mode")
+	if v.mode == cluster {
+		v.t.Skipf("Test should not run on cluster")
+	}
+	return v
+}
