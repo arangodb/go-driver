@@ -47,7 +47,7 @@ func TestCreateOverwriteDocument(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	EnsureVersion(t, ctx, c).MinimumVersion("3.7.0")
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0"))
 
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "document_test", nil, t)

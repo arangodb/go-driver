@@ -48,7 +48,7 @@ func TestCollectionSchema(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	EnsureVersion(t, ctx, c).MinimumVersion("3.7.0")
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0"))
 
 	name := "document_schema_validation_test"
 	db := ensureDatabase(nil, c, name, nil, t)

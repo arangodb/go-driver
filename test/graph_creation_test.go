@@ -184,7 +184,7 @@ func TestGraphCreation(t *testing.T) {
 	ctx := context.Background()
 
 	c := createClientFromEnv(t, true)
-	EnsureVersion(t, ctx, c).MinimumVersion("3.7.0").Cluster().Enterprise()
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0")).Cluster().Enterprise()
 
 	t.Run("Satellite", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
@@ -195,6 +195,8 @@ func TestGraphCreation(t *testing.T) {
 		options, collections := newGraphOpts(db)
 
 		options.ReplicationFactor = driver.SatelliteGraph
+		options.IsSmart = false
+		options.SmartGraphAttribute = ""
 
 		g, err := db.CreateGraph(ctx, graphID, &options)
 		require.NoError(t, err)
@@ -214,6 +216,8 @@ func TestGraphCreation(t *testing.T) {
 		options, collections := newGraphOpts(db)
 
 		options.ReplicationFactor = driver.SatelliteGraph
+		options.IsSmart = false
+		options.SmartGraphAttribute = ""
 
 		g, err := db.CreateGraph(ctx, graphID, &options)
 		require.NoError(t, err)
