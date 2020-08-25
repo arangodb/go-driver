@@ -24,6 +24,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/arangodb/go-driver"
@@ -69,36 +70,31 @@ type VersionCheck struct {
 	mode mode
 }
 
-func (v VersionCheck) MinimumVersion(version driver.Version) VersionCheck {
-	v.t.Logf("Minimum version required: %s", version)
-	if v.version.CompareTo(version) < 0 {
-		v.t.Skipf("Required version ArangoDB(%s) >= Expected(%s)", v.version, version)
+func (v VersionCheck) CheckVersion(check VersionChecker) VersionCheck {
+	v.t.Logf("Version check: %s", check.String(v.version))
+	if !check.Check(v.version) {
+		v.t.Skipf("Version check failed: %s", check.String(v.version))
 	}
+
 	return v
 }
 
-func (v VersionCheck) MaximumVersion(version driver.Version) VersionCheck {
-	v.t.Logf("Maximum version required: %s", version)
-	if v.version.CompareTo(version) > 0 {
-		v.t.Skipf("Required version ArangoDB(%s) <= Expected(%s)", v.version, version)
-	}
-	return v
+func AbovePatchRelease(version driver.Version) VersionChecker {
+	currMinor := driver.Version(fmt.Sprintf("%d.%d.0", version.Major(), version.Minor()))
+	nextMinor := driver.Version(fmt.Sprintf("%d.%d.0", version.Major(), version.Minor()+1))
+
+	return LT.Than(currMinor).Or(GE.Than(nextMinor)).Or(LT.Than(nextMinor).And(GE.Than(version)))
 }
 
-func (v VersionCheck) AboveVersion(version driver.Version) VersionCheck {
-	v.t.Logf("Above version required: %s", version)
-	if v.version.CompareTo(version) <= 0 {
-		v.t.Skipf("Required version ArangoDB(%s) > Expected(%s)", v.version, version)
-	}
-	return v
+func BelowPatchRelease(version driver.Version) VersionChecker {
+	currMinor := driver.Version(fmt.Sprintf("%d.%d.0", version.Major(), version.Minor()))
+	nextMinor := driver.Version(fmt.Sprintf("%d.%d.0", version.Major(), version.Minor()+1))
+
+	return LT.Than(currMinor).Or(GE.Than(nextMinor)).Or(LT.Than(nextMinor).And(LT.Than(version)))
 }
 
-func (v VersionCheck) BelowVersion(version driver.Version) VersionCheck {
-	v.t.Logf("Below version required: %s", version)
-	if v.version.CompareTo(version) >= 0 {
-		v.t.Skipf("Required version ArangoDB(%s) < Expected(%s)", v.version, version)
-	}
-	return v
+func MinimumVersion(version driver.Version) VersionChecker {
+	return GE.Than(version)
 }
 
 func (v VersionCheck) Enterprise() VersionCheck {
