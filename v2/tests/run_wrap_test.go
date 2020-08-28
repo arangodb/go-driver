@@ -25,10 +25,11 @@ package tests
 import (
 	"context"
 	"crypto/tls"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/http2"
