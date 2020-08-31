@@ -26,6 +26,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+
 	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/pkg/errors"
 )
@@ -45,17 +47,20 @@ type clientServerInfo struct {
 func (c clientServerInfo) Version(ctx context.Context) (VersionInfo, error) {
 	url := connection.NewUrl("_api", "version")
 
-	var version VersionInfo
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		VersionInfo
+	}
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &version)
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
 	if err != nil {
 		return VersionInfo{}, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return version, nil
+		return response.VersionInfo, nil
 	default:
-		return VersionInfo{}, connection.NewError(resp.Code(), "unexpected code")
+		return VersionInfo{}, response.AsArangoErrorWithCode(code)
 	}
 }

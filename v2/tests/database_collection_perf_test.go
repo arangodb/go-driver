@@ -27,43 +27,19 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+
 	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
-
-type document struct {
-	Key    string      `json:"_key"`
-	Fields interface{} `json:",inline"`
-}
-
-func newBenchDocs(c int) []benchDoc {
-	r := make([]benchDoc, c)
-
-	for i := 0; i < c; i++ {
-		r[i] = newBenchDoc()
-	}
-
-	return r
-}
-
-func newBenchDoc() benchDoc {
-	return benchDoc{
-		Key: uuid.New().String(),
-	}
-}
-
-type benchDoc struct {
-	Key string `json:"_key"`
-}
 
 func insertDocuments(t testing.TB, col arangodb.Collection, documents, batch int, factory func(i int) interface{}) {
 	b := make([]document, 0, batch)
 
 	for i := 0; i < documents; i++ {
 		b = append(b, document{
-			Key:    uuid.New().String(),
-			Fields: factory(i),
+			basicDocument: newBasicDocument(),
+			Fields:        factory(i),
 		})
 
 		if len(b) == batch {
@@ -83,11 +59,11 @@ func insertBatch(t testing.TB, ctx context.Context, col arangodb.Collection, opt
 	results, err := col.CreateDocumentsWithOptions(ctx, documents, opts)
 	require.NoError(t, err)
 	for {
-		meta, next, err := results.Read()
-		require.NoError(t, err)
-		if !next {
+		meta, err := results.Read()
+		if shared.IsNoMoreDocuments(err) {
 			break
 		}
+		require.NoError(t, err)
 
 		require.False(t, getBool(meta.Error, false))
 	}
@@ -116,7 +92,7 @@ func _b_insert(b *testing.B, db arangodb.Database, threads int) {
 						return
 					}
 
-					d := newBenchDoc()
+					d := newBasicDocument()
 
 					_, err := col.CreateDocument(context.Background(), d)
 					require.NoError(b, err)
@@ -138,17 +114,17 @@ func _b_batchInsert(b *testing.B, db arangodb.Database, threads int) {
 						return
 					}
 
-					d := newBenchDocs(512)
+					d := newDocs(512)
 
 					r, err := col.CreateDocuments(context.Background(), d)
 					require.NoError(b, err)
 
 					for {
-						_, ok, err := r.Read()
-						require.NoError(b, err)
-						if !ok {
+						_, err := r.Read()
+						if shared.IsNoMoreDocuments(err) {
 							break
 						}
+						require.NoError(b, err)
 					}
 				}
 			})

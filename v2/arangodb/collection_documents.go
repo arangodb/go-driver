@@ -32,4 +32,5 @@ type CollectionDocuments interface {
 
 	CollectionDocumentCreate
 	CollectionDocumentRead
+	CollectionDocumentUpdate
 }

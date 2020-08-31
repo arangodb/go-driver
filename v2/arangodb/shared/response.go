@@ -22,6 +22,10 @@
 
 package shared
 
+import (
+	"fmt"
+)
+
 type Response struct {
 	ResponseStruct `json:",inline"`
 }
@@ -42,11 +46,83 @@ func (r ResponseStructList) HasError() bool {
 	return false
 }
 
+func NewResponseStruct() *ResponseStruct {
+	return &ResponseStruct{}
+}
+
 type ResponseStruct struct {
-	Error        *bool   `json:"error"`
-	Code         *int    `json:"code"`
-	ErrorMessage *string `json:"errorMessage"`
-	ErrorNum     *int    `json:"errorNum"`
+	Error        *bool   `json:"error,omitempty"`
+	Code         *int    `json:"code,omitempty"`
+	ErrorMessage *string `json:"errorMessage,omitempty"`
+	ErrorNum     *int    `json:"errorNum,omitempty"`
+}
+
+func (r ResponseStruct) ExpectCode(codes ...int) error {
+	if r.Error == nil || !*r.Error || r.Code == nil {
+		return nil
+	}
+
+	for _, code := range codes {
+		if code == *r.Code {
+			return nil
+		}
+	}
+
+	return r.AsArangoError()
+}
+
+func (r *ResponseStruct) AsArangoErrorWithCode(code int) ArangoError {
+	if r == nil {
+		return (&ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+	//r.Code = &code
+	//t := true
+	//r.Error = &t
+	return r.AsArangoError()
+}
+
+func (r ResponseStruct) AsArangoError() ArangoError {
+	a := ArangoError{}
+
+	if r.Error != nil {
+		a.HasError = *r.Error
+	}
+
+	if r.Code != nil {
+		a.Code = *r.Code
+	}
+
+	if r.ErrorNum != nil {
+		a.ErrorNum = *r.ErrorNum
+	}
+
+	if r.ErrorMessage != nil {
+		a.ErrorMessage = *r.ErrorMessage
+	}
+
+	return a
+}
+
+func (r ResponseStruct) String() string {
+	if r.Error == nil || !*r.Error {
+		return ""
+	}
+
+	s := "Response error"
+
+	if r.Code != nil {
+		s = fmt.Sprintf("%s (Code: %d)", s, *r.Code)
+	}
+
+	if r.ErrorNum != nil {
+		s = fmt.Sprintf("%s (ErrorNum: %d)", s, *r.ErrorNum)
+	}
+
+	if r.ErrorMessage != nil {
+		s = fmt.Sprintf("%s: %s", s, *r.ErrorMessage)
+	}
+
+	return s
 }
 
 func (r Response) GetError() bool {

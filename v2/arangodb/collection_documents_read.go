@@ -53,7 +53,7 @@ type CollectionDocumentRead interface {
 }
 
 type CollectionDocumentReadResponseReader interface {
-	Read(i interface{}) (CollectionDocumentReadResponse, bool, error)
+	Read(i interface{}) (CollectionDocumentReadResponse, error)
 }
 
 type CollectionDocumentReadResponse struct {

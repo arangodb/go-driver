@@ -186,6 +186,7 @@ func (j httpConnection) doWithOutput(ctx context.Context, request *httpRequest, 
 
 	if output != nil {
 		defer dropBodyData(body) // In case if there is data drop it all
+
 		if err = j.Decoder(resp.Content()).Decode(body, output); err != nil {
 			if err != io.EOF {
 				return nil, errors.WithStack(err)
@@ -221,7 +222,7 @@ func (j httpConnection) do(ctx context.Context, req *httpRequest) (*httpResponse
 		ctx = context.Background()
 	}
 
-	if req.Method() == http.MethodPost || req.Method() == http.MethodPut {
+	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch {
 		decoder := j.Decoder(j.contentType)
 		if !j.streamSender {
 			b := bytes.NewBuffer([]byte{})

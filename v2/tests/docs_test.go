@@ -22,6 +22,17 @@
 
 package tests
 
+import (
+	"context"
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/stretchr/testify/require"
+)
+
 type UserDoc struct {
 	Name string `json:"name"`
 	Age  int    `json:"age"`
@@ -76,4 +87,24 @@ type AccountEdge struct {
 	From string   `json:"_from,omitempty"`
 	To   string   `json:"_to,omitempty"`
 	User *UserDoc `json:"user"`
+}
+
+func DocumentExists(t testing.TB, col arangodb.Collection, doc DocIDGetter) {
+	withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+		z := reflect.New(reflect.TypeOf(doc))
+
+		_, err := col.ReadDocument(ctx, doc.GetKey(), z.Interface())
+		require.NoError(t, err)
+		require.Equal(t, doc, z.Elem().Interface())
+	})
+}
+
+func DocumentNotExists(t testing.TB, col arangodb.Collection, doc DocIDGetter) {
+	withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+		z := reflect.New(reflect.TypeOf(doc))
+
+		_, err := col.ReadDocument(ctx, doc.GetKey(), z.Interface())
+		require.Error(t, err)
+		require.True(t, shared.IsNotFound(err))
+	})
 }

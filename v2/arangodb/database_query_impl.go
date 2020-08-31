@@ -26,6 +26,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
@@ -52,35 +54,42 @@ func (d databaseQuery) Query(ctx context.Context, query string, opts *QueryOptio
 		QueryRequest: &QueryRequest{Query: query},
 	}
 
-	var out cursorData
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		cursorData            `json:",inline"`
+	}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, &out, &req, d.db.modifiers...)
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, &req, d.db.modifiers...)
 	if err != nil {
 		return nil, err
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusCreated:
-		return newCursor(d.db, resp.Endpoint(), out), nil
+		return newCursor(d.db, resp.Endpoint(), response.cursorData), nil
 	default:
-		return nil, connection.NewError(resp.Code(), "unexpected code")
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 
 func (d databaseQuery) ValidateQuery(ctx context.Context, query string) error {
 	url := d.db.url("_api", "query")
 
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
 	queryStruct := QueryRequest{Query: query}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, nil, &queryStruct, d.db.modifiers...)
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, &queryStruct, d.db.modifiers...)
 	if err != nil {
 		return err
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return nil
 	default:
-		return connection.NewError(resp.Code(), "unexpected code")
+		return response.AsArangoErrorWithCode(code)
 	}
 }

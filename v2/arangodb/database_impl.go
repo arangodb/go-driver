@@ -60,11 +60,11 @@ func (d database) Remove(ctx context.Context) error {
 		return err
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return nil
 	default:
-		return connection.NewError(resp.Code(), "unexpected code")
+		return shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}
 }
 
@@ -84,9 +84,8 @@ func (d database) Info(ctx context.Context) (DatabaseInfo, error) {
 	url := d.url("_api", "database", "current")
 
 	var response struct {
-		shared.ResponseStruct
-
-		Database DatabaseInfo `json:"result"`
+		shared.ResponseStruct `json:",inline"`
+		Database              DatabaseInfo `json:"result"`
 	}
 
 	resp, err := connection.CallGet(ctx, d.client.connection, url, &response)
@@ -94,10 +93,10 @@ func (d database) Info(ctx context.Context) (DatabaseInfo, error) {
 		return DatabaseInfo{}, err
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response.Database, nil
 	default:
-		return DatabaseInfo{}, connection.NewError(resp.Code(), "unexpected code")
+		return DatabaseInfo{}, response.AsArangoErrorWithCode(code)
 	}
 }

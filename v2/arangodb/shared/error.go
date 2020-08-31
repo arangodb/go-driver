@@ -20,15 +20,13 @@
 // Author Ewout Prangsma
 //
 
-package arangodb
+package shared
 
 import (
 	"context"
 	"fmt"
-	"net"
+	"io"
 	"net/http"
-	"net/url"
-	"os"
 )
 
 const (
@@ -96,28 +94,43 @@ func newArangoError(code, errorNum int, errorMessage string) error {
 
 // IsArangoError returns true when the given error is an ArangoError.
 func IsArangoError(err error) bool {
-	ae, ok := Cause(err).(ArangoError)
-	return ok && ae.HasError
+	return checkCause(err, func(err error) bool {
+		if a, ok := err.(ArangoError); ok {
+			return a.HasError
+		}
+
+		return false
+	})
 }
 
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
 func IsArangoErrorWithCode(err error, code int) bool {
-	ae, ok := Cause(err).(ArangoError)
-	return ok && ae.Code == code
+	return checkCause(err, func(err error) bool {
+		if a, ok := err.(ArangoError); ok {
+			return a.HasError && a.Code == code
+		}
+
+		return false
+	})
 }
 
 // IsArangoErrorWithErrorNum returns true when the given error is an ArangoError and its ErrorNum field is equal to one of the given numbers.
 func IsArangoErrorWithErrorNum(err error, errorNum ...int) bool {
-	ae, ok := Cause(err).(ArangoError)
-	if !ok {
-		return false
-	}
-	for _, x := range errorNum {
-		if ae.ErrorNum == x {
-			return true
+	return checkCause(err, func(err error) bool {
+		if a, ok := err.(ArangoError); ok {
+			if !a.HasError {
+				return false
+			}
+
+			for _, num := range errorNum {
+				if num == a.ErrorNum {
+					return true
+				}
+			}
 		}
-	}
-	return false
+
+		return false
+	})
 }
 
 // IsInvalidRequest returns true if the given error is an ArangoError with code 400, indicating an invalid request.
@@ -140,6 +153,12 @@ func IsForbidden(err error) bool {
 func IsNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, http.StatusNotFound) ||
 		IsArangoErrorWithErrorNum(err, ErrArangoDocumentNotFound, ErrArangoDataSourceNotFound)
+}
+
+// IsOperationTimeout returns true if the given error is an ArangoError with code 412, indicating a Operation timeout error
+func IsOperationTimeout(err error) bool {
+	return IsArangoErrorWithCode(err, http.StatusPreconditionFailed) ||
+		IsArangoErrorWithErrorNum(err, ErrArangoConflict)
 }
 
 // IsConflict returns true if the given error is an ArangoError with code 409, indicating a conflict.
@@ -176,8 +195,13 @@ func (e InvalidArgumentError) Error() string {
 
 // IsInvalidArgument returns true if the given error is an InvalidArgumentError.
 func IsInvalidArgument(err error) bool {
-	_, ok := Cause(err).(InvalidArgumentError)
-	return ok
+	return checkCause(err, func(err error) bool {
+		if _, ok := err.(InvalidArgumentError); ok {
+			return true
+		}
+
+		return false
+	})
 }
 
 // NoMoreDocumentsError is returned by Cursor's, when an attempt is made to read documents when there are no more.
@@ -188,10 +212,21 @@ func (e NoMoreDocumentsError) Error() string {
 	return "no more documents"
 }
 
+func IsEOF(err error) bool {
+	return checkCause(err, func(err error) bool {
+		return err == io.EOF
+	}) || IsNoMoreDocuments(err)
+}
+
 // IsNoMoreDocuments returns true if the given error is an NoMoreDocumentsError.
 func IsNoMoreDocuments(err error) bool {
-	_, ok := Cause(err).(NoMoreDocumentsError)
-	return ok
+	return checkCause(err, func(err error) bool {
+		if _, ok := err.(NoMoreDocumentsError); ok {
+			return true
+		}
+
+		return false
+	})
 }
 
 // A ResponseError is returned when a request was completely written to a server, but
@@ -207,55 +242,54 @@ func (e *ResponseError) Error() string {
 
 // IsResponse returns true if the given error is (or is caused by) a ResponseError.
 func IsResponse(err error) bool {
-	return isCausedBy(err, func(e error) bool { _, ok := e.(*ResponseError); return ok })
+	return checkCause(err, func(err error) bool {
+		if _, ok := err.(*ResponseError); ok {
+			return true
+		}
+
+		return false
+	})
 }
 
 // IsCanceled returns true if the given error is the result on a cancelled context.
 func IsCanceled(err error) bool {
-	return isCausedBy(err, func(e error) bool { return e == context.Canceled })
+	return checkCause(err, func(err error) bool {
+		return err == context.Canceled
+	})
 }
 
 // IsTimeout returns true if the given error is the result on a deadline that has been exceeded.
 func IsTimeout(err error) bool {
-	return isCausedBy(err, func(e error) bool { return e == context.DeadlineExceeded })
+	return checkCause(err, func(err error) bool {
+		return err == context.DeadlineExceeded
+	})
 }
 
-// isCausedBy returns true if the given error returns true on the given predicate,
-// unwrapping various standard library error wrappers.
-func isCausedBy(err error, p func(error) bool) bool {
-	if p(err) {
+type causer interface {
+	Cause() error
+}
+
+func checkCause(err error, f func(err error) bool) bool {
+	if err == nil {
+		return false
+	}
+
+	if f(err) {
 		return true
 	}
-	err = Cause(err)
-	for {
-		if p(err) {
-			return true
-		} else if err == nil {
-			return false
-		}
-		if xerr, ok := err.(*ResponseError); ok {
-			err = xerr.Err
-		} else if xerr, ok := err.(*url.Error); ok {
-			err = xerr.Err
-		} else if xerr, ok := err.(*net.OpError); ok {
-			err = xerr.Err
-		} else if xerr, ok := err.(*os.SyscallError); ok {
-			err = xerr.Err
-		} else {
-			return false
-		}
-	}
-}
 
-var (
-	// WithStack is called on every return of an error to add stacktrace information to the error.
-	// When setting this function, also set the Cause function.
-	// The interface of this function is compatible with functions in github.com/pkg/errors.
-	WithStack = func(err error) error { return err }
-	// Cause is used to get the root cause of the given error.
-	// The interface of this function is compatible with functions in github.com/pkg/errors.
-	Cause = func(err error) error { return err }
-)
+	if c, ok := err.(causer); ok {
+		cErr := c.Cause()
+
+		if err == cErr {
+			return false
+		}
+
+		return checkCause(cErr, f)
+	}
+
+	return false
+}
 
 // ErrorSlice is a slice of errors
 type ErrorSlice []error

@@ -27,6 +27,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+
 	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/pkg/errors"
 )
@@ -93,7 +95,7 @@ func (c *cursor) readDocument(ctx context.Context, result interface{}) (Document
 
 func (c *cursor) getNextBatch(ctx context.Context) error {
 	if !c.data.HasMore {
-		return errors.WithStack(NoMoreDocumentsError{})
+		return errors.WithStack(shared.NoMoreDocumentsError{})
 	}
 
 	url := c.db.url("_api", "cursor", c.data.ID)
@@ -103,11 +105,11 @@ func (c *cursor) getNextBatch(ctx context.Context) error {
 		return err
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return nil
 	default:
-		return connection.NewError(resp.Code(), "unexpected code")
+		return shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}
 }
 

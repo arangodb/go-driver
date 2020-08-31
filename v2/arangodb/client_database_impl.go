@@ -55,16 +55,20 @@ func (c clientDatabase) CreateDatabase(ctx context.Context, name string, options
 		Name:                  name,
 	}
 
-	resp, err := connection.CallPost(ctx, c.client.connection, url, nil, &createRequest)
+	response := struct {
+		shared.ResponseStruct `json:",inline"`
+	}{}
+
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, &createRequest)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusCreated:
 		return newDatabase(c.client, name), nil
 	default:
-		return nil, connection.NewError(resp.Code(), "unexpected code")
+		return nil, response.AsArangoError()
 	}
 }
 
@@ -93,16 +97,22 @@ func (c clientDatabase) Databases(ctx context.Context) ([]Database, error) {
 
 func (c clientDatabase) Database(ctx context.Context, name string) (Database, error) {
 	url := connection.NewUrl("_db", name, "_api", "database", "current")
-	resp, err := connection.CallGet(ctx, c.client.connection, url, nil)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		VersionInfo           `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return newDatabase(c.client, name), nil
 	default:
-		return nil, connection.NewError(resp.Code(), "unexpected code")
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 
@@ -117,7 +127,7 @@ func (c clientDatabase) databases(ctx context.Context, url string) ([]Database, 
 		return nil, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		dbs := make([]Database, len(databases.Result))
 
@@ -127,6 +137,6 @@ func (c clientDatabase) databases(ctx context.Context, url string) ([]Database, 
 
 		return dbs, nil
 	default:
-		return nil, connection.NewError(resp.Code(), "unexpected code")
+		return nil, databases.AsArangoErrorWithCode(code)
 	}
 }
