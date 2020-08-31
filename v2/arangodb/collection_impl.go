@@ -26,6 +26,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
@@ -52,16 +54,20 @@ type collection struct {
 func (c collection) Remove(ctx context.Context) error {
 	url := c.url("collection")
 
-	resp, err := connection.CallDelete(ctx, c.connection(), url, nil)
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallDelete(ctx, c.connection(), url, &response)
 	if err != nil {
 		return err
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return nil
 	default:
-		return connection.NewError(resp.Code(), "unexpected code")
+		return response.AsArangoErrorWithCode(code)
 	}
 }
 

@@ -52,37 +52,45 @@ type transaction struct {
 }
 
 func (t transaction) Commit(ctx context.Context, opts *CommitTransactionOptions) error {
-	resp, err := connection.CallPut(ctx, t.database.connection(), t.url(), nil, nil)
+	response := struct {
+		shared.ResponseStruct `json:",inline"`
+	}{}
+
+	resp, err := connection.CallPut(ctx, t.database.connection(), t.url(), &response, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return nil
 	default:
-		return connection.NewError(resp.Code(), "unexpected code")
+		return response.AsArangoErrorWithCode(code)
 	}
 }
 
 func (t transaction) Abort(ctx context.Context, opts *AbortTransactionOptions) error {
-	resp, err := connection.CallDelete(ctx, t.database.connection(), t.url(), nil)
+	response := struct {
+		shared.ResponseStruct `json:",inline"`
+	}{}
+
+	resp, err := connection.CallDelete(ctx, t.database.connection(), t.url(), &response)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return nil
 	default:
-		return connection.NewError(resp.Code(), "unexpected code")
+		return response.AsArangoErrorWithCode(code)
 	}
 }
 
 func (t transaction) Status(ctx context.Context) (TransactionStatusRecord, error) {
 	response := struct {
-		shared.ResponseStruct
-		Result TransactionStatusRecord `json:"result"`
+		shared.ResponseStruct `json:",inline"`
+		Result                TransactionStatusRecord `json:"result"`
 	}{}
 
 	resp, err := connection.CallGet(ctx, t.database.connection(), t.url(), &response)
@@ -90,11 +98,11 @@ func (t transaction) Status(ctx context.Context) (TransactionStatusRecord, error
 		return TransactionStatusRecord{}, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response.Result, nil
 	default:
-		return TransactionStatusRecord{}, connection.NewError(resp.Code(), "unexpected code")
+		return TransactionStatusRecord{}, response.AsArangoErrorWithCode(code)
 	}
 }
 

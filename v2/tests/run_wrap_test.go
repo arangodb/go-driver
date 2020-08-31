@@ -217,3 +217,10 @@ func withContext(timeout time.Duration, f func(ctx context.Context) error) error
 
 	return f(ctx)
 }
+
+func withContextT(t testing.TB, timeout time.Duration, f func(ctx context.Context, t testing.TB)) {
+	require.NoError(t, withContext(timeout, func(ctx context.Context) error {
+		f(ctx, t)
+		return nil
+	}))
+}

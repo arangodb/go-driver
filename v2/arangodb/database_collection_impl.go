@@ -46,16 +46,21 @@ type databaseCollection struct {
 
 func (d databaseCollection) Collection(ctx context.Context, name string) (Collection, error) {
 	url := d.db.url("_api", "collection", name)
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, nil)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return newCollection(d.db, name), nil
 	default:
-		return nil, connection.NewError(resp.Code(), "unexpected code")
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 
@@ -75,17 +80,17 @@ func (d databaseCollection) CollectionExists(ctx context.Context, name string) (
 func (d databaseCollection) Collections(ctx context.Context) ([]Collection, error) {
 	url := d.db.url("_api", "collection")
 
-	response := struct {
-		shared.Response
-		Result []CollectionInfo `json:"result,omitempty"`
-	}{}
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                []CollectionInfo `json:"result,omitempty"`
+	}
 
 	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		colls := make([]Collection, len(response.Result))
 
@@ -95,14 +100,15 @@ func (d databaseCollection) Collections(ctx context.Context) ([]Collection, erro
 
 		return colls, nil
 	default:
-		return nil, connection.NewError(resp.Code(), "unexpected code")
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 
 func (d databaseCollection) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
 	url := d.db.url("_api", "collection")
 	reqData := struct {
-		Name string `json:"name"`
+		shared.ResponseStruct `json:",inline"`
+		Name                  string `json:"name"`
 		*CreateCollectionOptions
 	}{
 		Name:                    name,
@@ -114,10 +120,10 @@ func (d databaseCollection) CreateCollection(ctx context.Context, name string, o
 		return nil, errors.WithStack(err)
 	}
 
-	switch resp.Code() {
+	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return newCollection(d.db, name), nil
 	default:
-		return nil, connection.NewError(resp.Code(), "unexpected code")
+		return nil, reqData.AsArangoErrorWithCode(code)
 	}
 }

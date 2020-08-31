@@ -34,6 +34,7 @@ type Requests interface {
 	Put(ctx context.Context, output, input interface{}, urlParts ...string) (connection.Response, error)
 	Delete(ctx context.Context, output interface{}, urlParts ...string) (connection.Response, error)
 	Head(ctx context.Context, output interface{}, urlParts ...string) (connection.Response, error)
+	Patch(ctx context.Context, output, input interface{}, urlParts ...string) (connection.Response, error)
 }
 
 func NewRequests(connection connection.Connection, urlParts ...string) Requests {
@@ -49,6 +50,10 @@ type requests struct {
 	connection connection.Connection
 
 	prefix []string
+}
+
+func (r requests) Patch(ctx context.Context, output, input interface{}, urlParts ...string) (connection.Response, error) {
+	return connection.CallPatch(ctx, r.connection, r.path(urlParts...), output, input)
 }
 
 func (r requests) path(urlParts ...string) string {

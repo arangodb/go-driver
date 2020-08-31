@@ -28,6 +28,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -70,7 +72,7 @@ func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCol
 				return Interrupt{}
 			}
 
-			if arangodb.IsNotFound(err) {
+			if shared.IsNotFound(err) {
 				return nil
 			}
 

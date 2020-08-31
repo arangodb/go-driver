@@ -20,21 +20,19 @@
 // Author Adam Janikowski
 //
 
-package arangodb
+package tests
 
 import (
-	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-type DatabaseTransaction interface {
-	ListTransactions(ctx context.Context) ([]Transaction, error)
-	ListTransactionsWithStatuses(ctx context.Context, statuses ...TransactionStatus) ([]Transaction, error)
-
-	BeginTransaction(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions) (Transaction, error)
-
-	Transaction(ctx context.Context, id TransactionID) (Transaction, error)
-
-	WithTransaction(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions, commitOptions *CommitTransactionOptions, abortOptions *AbortTransactionOptions, w TransactionWrap) error
+func ExpectPanic(t testing.TB, f func(), expected interface{}) {
+	defer func() {
+		o := recover()
+		require.NotNil(t, o, "Panic did not occur")
+		require.Equal(t, expected, o)
+	}()
+	f()
 }
-
-type TransactionWrap func(ctx context.Context, t Transaction) error

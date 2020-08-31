@@ -31,6 +31,50 @@ import (
 	"github.com/pkg/errors"
 )
 
+var _ json.Unmarshaler = &multiUnmarshaller{}
+var _ json.Marshaler = &multiUnmarshaller{}
+
+func newMultiUnmarshaller(obj ...interface{}) json.Unmarshaler {
+	return &multiUnmarshaller{
+		obj: obj,
+	}
+}
+
+type multiUnmarshaller struct {
+	obj []interface{}
+}
+
+func (m multiUnmarshaller) MarshalJSON() ([]byte, error) {
+	r := map[string]interface{}{}
+	for _, o := range m.obj {
+		z := map[string]interface{}{}
+		if d, err := json.Marshal(o); err != nil {
+			return nil, err
+		} else {
+			if err := json.Unmarshal(d, &z); err != nil {
+				return nil, err
+			}
+		}
+
+		for k, v := range z {
+			r[k] = v
+		}
+	}
+
+	return json.Marshal(r)
+}
+
+func (m multiUnmarshaller) UnmarshalJSON(d []byte) error {
+	println(string(d))
+	for _, o := range m.obj {
+		if err := json.Unmarshal(d, o); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 type byteDecoder struct {
 	data []byte
 }
@@ -47,17 +91,17 @@ func (b *byteDecoder) Unmarshal(i interface{}) error {
 	return json.Unmarshal(b.data, i)
 }
 
-func newUnmarshalInto(obj interface{}) *unmarshalInto {
-	return &unmarshalInto{obj}
+func newUnmarshalInto(obj interface{}) *UnmarshalInto {
+	return &UnmarshalInto{obj}
 }
 
-var _ json.Unmarshaler = &unmarshalInto{}
+var _ json.Unmarshaler = &UnmarshalInto{}
 
-type unmarshalInto struct {
+type UnmarshalInto struct {
 	obj interface{}
 }
 
-func (u *unmarshalInto) UnmarshalJSON(d []byte) error {
+func (u *UnmarshalInto) UnmarshalJSON(d []byte) error {
 	if u.obj == nil {
 		return nil
 	}

@@ -71,14 +71,13 @@ type CollectionDocumentCreate interface {
 }
 
 type CollectionDocumentCreateResponseReader interface {
-	Read() (CollectionDocumentCreateResponse, bool, error)
+	Read() (CollectionDocumentCreateResponse, error)
 }
 
 type CollectionDocumentCreateResponse struct {
 	DocumentMeta
-	shared.ResponseStruct
-
-	Old, New interface{}
+	shared.ResponseStruct `json:",inline"`
+	Old, New              interface{}
 }
 
 type CollectionDocumentCreateOverwriteMode string

@@ -54,6 +54,10 @@ func CallPost(ctx context.Context, c Connection, url string, output interface{},
 	return Call(ctx, c, http.MethodPost, url, output, append(modifiers, WithBody(body))...)
 }
 
+func CallPatch(ctx context.Context, c Connection, url string, output interface{}, body interface{}, modifiers ...RequestModifier) (Response, error) {
+	return Call(ctx, c, http.MethodPatch, url, output, append(modifiers, WithBody(body))...)
+}
+
 func CallHead(ctx context.Context, c Connection, url string, output interface{}, modifiers ...RequestModifier) (Response, error) {
 	return Call(ctx, c, http.MethodHead, url, output, modifiers...)
 }

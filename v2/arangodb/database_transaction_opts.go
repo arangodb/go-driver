@@ -61,6 +61,18 @@ type AbortTransactionOptions struct{}
 // TransactionID identifies a transaction
 type TransactionID string
 
+// TransactionStatuses list of transaction statuses
+type TransactionStatuses []TransactionStatus
+
+func (t TransactionStatuses) Contains(status TransactionStatus) bool {
+	for _, i := range t {
+		if i == status {
+			return true
+		}
+	}
+	return false
+}
+
 // TransactionStatus describes the status of an transaction
 type TransactionStatus string
 
