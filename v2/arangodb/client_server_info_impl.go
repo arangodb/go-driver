@@ -24,20 +24,38 @@ package arangodb
 
 import (
 	"context"
+	"net/http"
+
+	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/pkg/errors"
 )
 
-type Database interface {
-	// Name returns the name of the database.
-	Name() string
+func newClientServerInfo(client *client) *clientServerInfo {
+	return &clientServerInfo{
+		client: client,
+	}
+}
 
-	// Info fetches information about the database.
-	Info(ctx context.Context) (DatabaseInfo, error)
+var _ ClientServerInfo = &clientServerInfo{}
 
-	// Remove removes the entire database.
-	// If the database does not exist, a NotFoundError is returned.
-	Remove(ctx context.Context) error
+type clientServerInfo struct {
+	client *client
+}
 
-	DatabaseCollection
-	DatabaseTransaction
-	DatabaseQuery
+func (c clientServerInfo) Version(ctx context.Context) (VersionInfo, error) {
+	url := connection.NewUrl("_api", "version")
+
+	var version VersionInfo
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &version)
+	if err != nil {
+		return VersionInfo{}, errors.WithStack(err)
+	}
+
+	switch resp.Code() {
+	case http.StatusOK:
+		return version, nil
+	default:
+		return VersionInfo{}, connection.NewError(resp.Code(), "unexpected code")
+	}
 }

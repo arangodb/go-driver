@@ -1,7 +1,8 @@
+// +build !http2
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,24 +21,28 @@
 // Author Adam Janikowski
 //
 
-package arangodb
+package test
 
 import (
-	"context"
+	"crypto/tls"
+	"net"
+	"net/http"
+	"time"
 )
 
-type Database interface {
-	// Name returns the name of the database.
-	Name() string
-
-	// Info fetches information about the database.
-	Info(ctx context.Context) (DatabaseInfo, error)
-
-	// Remove removes the entire database.
-	// If the database does not exist, a NotFoundError is returned.
-	Remove(ctx context.Context) error
-
-	DatabaseCollection
-	DatabaseTransaction
-	DatabaseQuery
+func NewConnectionTransport() http.RoundTripper {
+	return &http.Transport{
+		// Copy default values from http.DefaultTransport
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 }

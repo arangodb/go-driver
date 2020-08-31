@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Add Driver V2 in Alpha version
+- Add HTTP2 support for V1 and V2
 
 ## [1.1.0](https://github.com/arangodb/go-driver/tree/1.1.0) (2020-08-11)
 - Use internal coordinator communication for cursors if specified coordinator was not found on endpoint list

@@ -29,5 +29,7 @@ import (
 )
 
 func init() {
-	log2.SetZeroLogLogger(log.Logger.Level(zerolog.DebugLevel))
+	log.Logger = log.Logger.Level(zerolog.WarnLevel)
+
+	log2.SetZeroLogLogger(log.Logger)
 }

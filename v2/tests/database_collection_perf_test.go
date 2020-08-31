@@ -24,6 +24,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -34,6 +35,26 @@ import (
 type document struct {
 	Key    string      `json:"_key"`
 	Fields interface{} `json:",inline"`
+}
+
+func newBenchDocs(c int) []benchDoc {
+	r := make([]benchDoc, c)
+
+	for i := 0; i < c; i++ {
+		r[i] = newBenchDoc()
+	}
+
+	return r
+}
+
+func newBenchDoc() benchDoc {
+	return benchDoc{
+		Key: uuid.New().String(),
+	}
+}
+
+type benchDoc struct {
+	Key string `json:"_key"`
 }
 
 func insertDocuments(t testing.TB, col arangodb.Collection, documents, batch int, factory func(i int) interface{}) {
@@ -80,6 +101,76 @@ func Test_BatchInsert(t *testing.T) {
 					return i
 				})
 			})
+		})
+	})
+}
+
+func _b_insert(b *testing.B, db arangodb.Database, threads int) {
+	WithCollection(b, db, nil, func(col arangodb.Collection) {
+		b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
+			b.SetParallelism(threads)
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				for {
+					if !pb.Next() {
+						return
+					}
+
+					d := newBenchDoc()
+
+					_, err := col.CreateDocument(context.Background(), d)
+					require.NoError(b, err)
+				}
+			})
+			b.ReportAllocs()
+		})
+	})
+}
+
+func _b_batchInsert(b *testing.B, db arangodb.Database, threads int) {
+	WithCollection(b, db, nil, func(col arangodb.Collection) {
+		b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
+			b.SetParallelism(threads)
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				for {
+					if !pb.Next() {
+						return
+					}
+
+					d := newBenchDocs(512)
+
+					r, err := col.CreateDocuments(context.Background(), d)
+					require.NoError(b, err)
+
+					for {
+						_, ok, err := r.Read()
+						require.NoError(b, err)
+						if !ok {
+							break
+						}
+					}
+				}
+			})
+			b.ReportAllocs()
+		})
+	})
+}
+
+func Benchmark_Insert(b *testing.B) {
+	WrapB(b, func(b *testing.B, client arangodb.Client) {
+		WithDatabase(b, client, nil, func(db arangodb.Database) {
+			_b_insert(b, db, 1)
+			_b_insert(b, db, 4)
+		})
+	})
+}
+
+func Benchmark_BatchInsert(b *testing.B) {
+	WrapB(b, func(b *testing.B, client arangodb.Client) {
+		WithDatabase(b, client, nil, func(db arangodb.Database) {
+			_b_batchInsert(b, db, 1)
+			_b_batchInsert(b, db, 4)
 		})
 	})
 }

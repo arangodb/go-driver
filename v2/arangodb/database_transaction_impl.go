@@ -28,7 +28,6 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
-	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/pkg/errors"
 )
@@ -45,11 +44,11 @@ type databaseTransaction struct {
 	db *database
 }
 
-func (d databaseTransaction) WithTransaction(ctx context.Context, cols driver.TransactionCollections, opts *BeginTransactionOptions, commitOptions *driver.CommitTransactionOptions, abortOptions *driver.AbortTransactionOptions, w TransactionWrap) error {
+func (d databaseTransaction) WithTransaction(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions, commitOptions *CommitTransactionOptions, abortOptions *AbortTransactionOptions, w TransactionWrap) error {
 	return d.withTransactionPanic(ctx, cols, opts, commitOptions, abortOptions, w)
 }
 
-func (d databaseTransaction) withTransactionPanic(ctx context.Context, cols driver.TransactionCollections, opts *BeginTransactionOptions, commitOptions *driver.CommitTransactionOptions, abortOptions *driver.AbortTransactionOptions, w TransactionWrap) (transactionError error) {
+func (d databaseTransaction) withTransactionPanic(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions, commitOptions *CommitTransactionOptions, abortOptions *AbortTransactionOptions, w TransactionWrap) (transactionError error) {
 	t, err := d.BeginTransaction(ctx, cols, opts)
 	if err != nil {
 		return err
@@ -74,12 +73,12 @@ func (d databaseTransaction) withTransactionPanic(ctx context.Context, cols driv
 	return
 }
 
-func (d databaseTransaction) BeginTransaction(ctx context.Context, cols driver.TransactionCollections, opts *BeginTransactionOptions) (Transaction, error) {
+func (d databaseTransaction) BeginTransaction(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions) (Transaction, error) {
 	url := d.db.url("_api", "transaction", "begin")
 
 	input := struct {
 		*BeginTransactionOptions
-		Collections driver.TransactionCollections `json:"collections,omitempty"`
+		Collections TransactionCollections `json:"collections,omitempty"`
 	}{
 		BeginTransactionOptions: opts,
 		Collections:             cols,
@@ -89,7 +88,7 @@ func (d databaseTransaction) BeginTransaction(ctx context.Context, cols driver.T
 		shared.ResponseStruct
 
 		Response struct {
-			TransactionID driver.TransactionID `json:"id,omitempty"`
+			TransactionID TransactionID `json:"id,omitempty"`
 		} `json:"result"`
 	}{}
 
@@ -106,7 +105,7 @@ func (d databaseTransaction) BeginTransaction(ctx context.Context, cols driver.T
 	}
 }
 
-func (d databaseTransaction) Transaction(ctx context.Context, id driver.TransactionID) (Transaction, error) {
+func (d databaseTransaction) Transaction(ctx context.Context, id TransactionID) (Transaction, error) {
 	url := d.db.url("_api", "transaction", string(id))
 	resp, err := connection.CallGet(ctx, d.db.connection(), url, nil)
 	if err != nil {

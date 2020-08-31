@@ -23,21 +23,31 @@
 package arangodb
 
 import (
-	"context"
+	"encoding/json"
 )
 
-type Database interface {
-	// Name returns the name of the database.
-	Name() string
+type CollectionSchemaLevel string
 
-	// Info fetches information about the database.
-	Info(ctx context.Context) (DatabaseInfo, error)
+const (
+	CollectionSchemaLevelNone     CollectionSchemaLevel = "none"
+	CollectionSchemaLevelNew      CollectionSchemaLevel = "new"
+	CollectionSchemaLevelModerate CollectionSchemaLevel = "moderate"
+	CollectionSchemaLevelStrict   CollectionSchemaLevel = "strict"
+)
 
-	// Remove removes the entire database.
-	// If the database does not exist, a NotFoundError is returned.
-	Remove(ctx context.Context) error
+type CollectionSchemaOptions struct {
+	Rule    interface{}           `json:"rule,omitempty"`
+	Level   CollectionSchemaLevel `json:"level,omitempty"`
+	Message string                `json:"message,omitempty"`
+}
 
-	DatabaseCollection
-	DatabaseTransaction
-	DatabaseQuery
+func (d *CollectionSchemaOptions) LoadRule(data []byte) error {
+	var rule interface{}
+
+	if err := json.Unmarshal(data, &rule); err != nil {
+		return err
+	}
+
+	d.Rule = rule
+	return nil
 }

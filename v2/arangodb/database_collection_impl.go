@@ -28,7 +28,6 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
-	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/pkg/errors"
 )
@@ -78,7 +77,7 @@ func (d databaseCollection) Collections(ctx context.Context) ([]Collection, erro
 
 	response := struct {
 		shared.Response
-		Result []driver.CollectionInfo `json:"result,omitempty"`
+		Result []CollectionInfo `json:"result,omitempty"`
 	}{}
 
 	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
@@ -100,11 +99,11 @@ func (d databaseCollection) Collections(ctx context.Context) ([]Collection, erro
 	}
 }
 
-func (d databaseCollection) CreateCollection(ctx context.Context, name string, options *driver.CreateCollectionOptions) (Collection, error) {
+func (d databaseCollection) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
 	url := d.db.url("_api", "collection")
 	reqData := struct {
 		Name string `json:"name"`
-		*driver.CreateCollectionOptions
+		*CreateCollectionOptions
 	}{
 		Name:                    name,
 		CreateCollectionOptions: options,

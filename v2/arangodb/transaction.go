@@ -24,16 +24,14 @@ package arangodb
 
 import (
 	"context"
-
-	"github.com/arangodb/go-driver"
 )
 
 type Transaction interface {
-	ID() driver.TransactionID
+	ID() TransactionID
 
-	Status(ctx context.Context) (driver.TransactionStatusRecord, error)
-	Commit(ctx context.Context, opts *driver.CommitTransactionOptions) error
-	Abort(ctx context.Context, opts *driver.AbortTransactionOptions) error
+	Status(ctx context.Context) (TransactionStatusRecord, error)
+	Commit(ctx context.Context, opts *CommitTransactionOptions) error
+	Abort(ctx context.Context, opts *AbortTransactionOptions) error
 
 	DatabaseCollection
 }

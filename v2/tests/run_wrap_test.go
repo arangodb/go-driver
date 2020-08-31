@@ -29,6 +29,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/rs/zerolog/log"
+	"golang.org/x/net/http2"
+
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/connection"
 )
@@ -37,7 +42,12 @@ type Wrapper func(t *testing.T, client arangodb.Client)
 type WrapperB func(t *testing.B, client arangodb.Client)
 
 func Wrap(t *testing.T, w Wrapper) {
+	c := newClient(t, connectionJsonHttp(t))
+
+	version, err := c.Version(context.Background())
+	require.NoError(t, err)
 	// HTTP
+
 	t.Parallel()
 
 	t.Run("HTTP JSON", func(t *testing.T) {
@@ -49,10 +59,31 @@ func Wrap(t *testing.T, w Wrapper) {
 		t.Parallel()
 		w(t, newClient(t, connectionVPACKHttp(t)))
 	})
+
+	t.Run("HTTP2 JSON", func(t *testing.T) {
+		if version.Version.CompareTo("3.7.1") < 1 {
+			t.Skipf("Not supported")
+		}
+		t.Parallel()
+		w(t, newClient(t, connectionJsonHttp2(t)))
+	})
+
+	t.Run("HTTP2 VPACK", func(t *testing.T) {
+		if version.Version.CompareTo("3.7.1") < 1 {
+			t.Skipf("Not supported")
+		}
+		t.Parallel()
+		w(t, newClient(t, connectionVPACKHttp2(t)))
+	})
 }
 
 func WrapB(t *testing.B, w WrapperB) {
 	// HTTP
+
+	c := newClient(t, connectionJsonHttp(t))
+
+	version, err := c.Version(context.Background())
+	require.NoError(t, err)
 
 	t.Run("HTTP JSON", func(t *testing.B) {
 		w(t, newClient(t, connectionJsonHttp(t)))
@@ -60,6 +91,20 @@ func WrapB(t *testing.B, w WrapperB) {
 
 	t.Run("HTTP VPACK", func(t *testing.B) {
 		w(t, newClient(t, connectionVPACKHttp(t)))
+	})
+
+	t.Run("HTTP2 VPACK", func(t *testing.B) {
+		if version.Version.CompareTo("3.7.1") < 1 {
+			t.Skipf("Not supported")
+		}
+		w(t, newClient(t, connectionVPACKHttp2(t)))
+	})
+
+	t.Run("HTTP2 JSON", func(t *testing.B) {
+		if version.Version.CompareTo("3.7.1") < 1 {
+			t.Skipf("Not supported")
+		}
+		w(t, newClient(t, connectionJsonHttp2(t)))
 	})
 }
 
@@ -73,6 +118,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 
 			resp, err := client.Get(ctx, nil, "_admin", "server", "availability")
 			if err != nil {
+				log.Warn().Err(err).Msgf("Unable to get cluster health")
 				return nil
 			}
 
@@ -91,7 +137,9 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
 		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
 		ContentType: connection.ApplicationJSON,
-		TLS:         &tls.Config{InsecureSkipVerify: true},
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
 	}
 
 	c := connection.NewHttpConnection(h)
@@ -107,10 +155,54 @@ func connectionVPACKHttp(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
 		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
 		ContentType: connection.ApplicationVPack,
-		TLS:         &tls.Config{InsecureSkipVerify: true},
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
 	}
 
 	c := connection.NewHttpConnection(h)
+
+	withContext(2*time.Minute, func(ctx context.Context) error {
+		c = createAuthenticationFromEnv(t, ctx, c)
+		return nil
+	})
+	return c
+}
+
+func connectionJsonHttp2(t testing.TB) connection.Connection {
+	h := connection.Http2Configuration{
+		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
+		ContentType: connection.ApplicationJSON,
+		Transport: &http2.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			AllowHTTP:       true,
+
+			DialTLS: connection.NewHTTP2DialForEndpoint(connection.NewEndpoints(getEndpointsFromEnv(t)...)),
+		},
+	}
+
+	c := connection.NewHttp2Connection(h)
+
+	withContext(2*time.Minute, func(ctx context.Context) error {
+		c = createAuthenticationFromEnv(t, ctx, c)
+		return nil
+	})
+	return c
+}
+
+func connectionVPACKHttp2(t testing.TB) connection.Connection {
+	h := connection.Http2Configuration{
+		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
+		ContentType: connection.ApplicationVPack,
+		Transport: &http2.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			AllowHTTP:       true,
+
+			DialTLS: connection.NewHTTP2DialForEndpoint(connection.NewEndpoints(getEndpointsFromEnv(t)...)),
+		},
+	}
+
+	c := connection.NewHttp2Connection(h)
 
 	withContext(2*time.Minute, func(ctx context.Context) error {
 		c = createAuthenticationFromEnv(t, ctx, c)
