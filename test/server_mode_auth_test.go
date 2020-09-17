@@ -62,6 +62,7 @@ func TestServerModeAndGrants(t *testing.T) {
 		db := ensureDatabase(ctx, c, "_system", nil, t)
 		colName := "server_mode_and_grants_test1"
 		col := ensureCollection(ctx, db, colName, nil, t)
+		defer clean(t, ctx, col)
 
 		// Get database & collection access
 		defaultDBAccess, err := u.GetDatabaseAccess(ctx, db)

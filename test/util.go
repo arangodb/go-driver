@@ -23,6 +23,7 @@
 package test
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -31,6 +32,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -42,6 +47,10 @@ type testEnv interface {
 	Fatalf(format string, args ...interface{})
 	Log(message ...interface{})
 	Logf(format string, args ...interface{})
+}
+
+func NewUUID() string {
+	return uuid.New().String()
 }
 
 // boolRef returns a reference to a given boolean
@@ -125,7 +134,13 @@ func (i interrupt) Error() string {
 	return "interrupted"
 }
 
-func retry(interval, timeout time.Duration, f func() error) error {
+type retryFunc func() error
+
+func (r retryFunc) RetryT(t *testing.T, interval, timeout time.Duration) {
+	require.NoError(t, r.Retry(interval, timeout))
+}
+
+func (r retryFunc) Retry(interval, timeout time.Duration) error {
 	timeoutT := time.NewTimer(timeout)
 	defer timeoutT.Stop()
 
@@ -137,7 +152,7 @@ func retry(interval, timeout time.Duration, f func() error) error {
 		case <-timeoutT.C:
 			return fmt.Errorf("function timeouted")
 		case <-intervalT.C:
-			if err := f(); err != nil {
+			if err := r(); err != nil {
 				if _, ok := err.(interrupt); ok {
 					return nil
 				}
@@ -146,4 +161,50 @@ func retry(interval, timeout time.Duration, f func() error) error {
 			}
 		}
 	}
+}
+
+func newRetryFunc(f func() error) retryFunc {
+	return f
+}
+
+func retry(interval, timeout time.Duration, f func() error) error {
+	return newRetryFunc(f).Retry(interval, timeout)
+}
+
+const bulkSize = 1000
+
+func sendBulks(t *testing.T, col driver.Collection, ctx context.Context, creator func(t *testing.T, i int) interface{}, size int) {
+	current := 0
+	t.Logf("Creating %d documents", size)
+
+	for {
+		t.Logf("Created %d/%d documents", current, size)
+		stepSize := min(bulkSize, size-current)
+		if stepSize == 0 {
+			return
+		}
+
+		objs := make([]interface{}, min(bulkSize, stepSize))
+		for i := 0; i < stepSize; i++ {
+			objs[i] = creator(t, current+i)
+		}
+
+		_, _, err := col.CreateDocuments(ctx, objs)
+		t.Logf("Creating %d documents", len(objs))
+		require.NoError(t, err)
+
+		current += stepSize
+	}
+}
+
+func min(max int, ints ...int) int {
+	z := max
+
+	for _, i := range ints {
+		if z > i {
+			z = i
+		}
+	}
+
+	return z
 }

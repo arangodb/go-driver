@@ -176,6 +176,11 @@ func TestBackupCreateWithLabel(t *testing.T) {
 func TestBackupCreateWithAllowInconsistent(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
+
+	EnsureVersion(t, context.Background(), c).Enterprise().NotCluster().
+		CheckVersion(BelowPatchRelease("3.7.2")).
+		CheckVersion(BelowPatchRelease("3.6.6"))
+
 	var wg sync.WaitGroup
 	defer func() {
 		wg.Wait()
@@ -869,26 +874,24 @@ func TestBackupRestoreWithViews(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 
-			for j := 0; j < numDocs; j++ {
-
-				book := BookWithAuthor{
+			sendBulks(t, col, ctx, func(t *testing.T, j int) interface{} {
+				return BookWithAuthor{
 					Title:  fmt.Sprintf("Hello World - %d", j),
 					Author: fmt.Sprintf("Author - %d", i),
 				}
-
-				_, err := col.CreateDocument(ctx, book)
-				if err != nil {
-					t.Fatalf("Failed to create document %s", describe(err))
-				}
-			}
+			}, numDocs)
 		}(k)
 	}
 	wg.Wait()
+
+	t.Logf("Creating backup")
 
 	id, _, err := b.Create(ctx, nil)
 	if err != nil {
 		t.Fatalf("Failed to create backup: %s", describe(err))
 	}
+
+	t.Logf("Restoring backup")
 
 	// Now restore
 	if err := b.Restore(ctx, id, nil); err != nil {
@@ -907,44 +910,50 @@ func TestBackupRestoreWithViews(t *testing.T) {
 		if err := waitUntilClusterHealthy(c); err != nil {
 			t.Fatalf("Failed to wait for healthy cluster: %s", describe(err))
 		}
+		newRetryFunc(func() error {
+			// run query to get document count of view
+			cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
+			if err != nil {
+				t.Fatalf("Failed to create query: %s", describe(err))
+			}
+			defer cursor.Close()
 
-		// run query to get document count of view
-		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
-		if err != nil {
-			t.Fatalf("Failed to create query: %s", describe(err))
-		}
+			var numDocumentsInView int
+			_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
+			if err != nil {
+				t.Fatalf("Failed to get document count: %s", describe(err))
+			}
 
-		defer cursor.Close()
+			if numDocumentsInView != totalNumDocs {
+				t.Logf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
+				return nil
+			}
 
-		var numDocumentsInView int
-		_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
-		if err != nil {
-			t.Fatalf("Failed to get document count: %s", describe(err))
-		}
-
-		if numDocumentsInView != totalNumDocs {
-			t.Errorf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
-		}
+			return interrupt{}
+		}).RetryT(t, time.Second, time.Minute)
 	})
 
 	t.Run("waitForSync", func(t *testing.T) {
-		// this is because views are dropped and recreated
-		time.Sleep(5 * time.Second)
-		// run query to get document count of view
-		cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s OPTIONS { waitForSync: true } COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
-		if err != nil {
-			t.Fatalf("Failed to create query: %s", describe(err))
-		}
-		defer cursor.Close()
+		newRetryFunc(func() error {
+			// run query to get document count of view
+			cursor, err := db.Query(ctx, fmt.Sprintf("FOR x IN %s OPTIONS { waitForSync: true } COLLECT WITH COUNT INTO n RETURN n", viewname), nil)
+			if err != nil {
+				t.Fatalf("Failed to create query: %s", describe(err))
+			}
+			defer cursor.Close()
 
-		var numDocumentsInView int
-		_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
-		if err != nil {
-			t.Fatalf("Failed to get document count: %s", describe(err))
-		}
+			var numDocumentsInView int
+			_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
+			if err != nil {
+				t.Fatalf("Failed to get document count: %s", describe(err))
+			}
 
-		if numDocumentsInView != totalNumDocs {
-			t.Errorf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
-		}
+			if numDocumentsInView != totalNumDocs {
+				t.Logf("Wrong number of documents: found: %d, expected: %d", numDocumentsInView, totalNumDocs)
+				return nil
+			}
+
+			return interrupt{}
+		}).RetryT(t, 125*time.Millisecond, time.Minute)
 	})
 }

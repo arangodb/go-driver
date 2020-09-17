@@ -35,6 +35,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	_ "net/http/pprof"
 
 	driver "github.com/arangodb/go-driver"
@@ -336,7 +339,7 @@ func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname 
 func TestCreateClientHttpConnection(t *testing.T) {
 	conn, err := http.NewConnection(http.ConnectionConfig{
 		Endpoints: getEndpointsFromEnv(t),
-		TLSConfig: &tls.Config{InsecureSkipVerify: true},
+		Transport: NewConnectionTransport(),
 	})
 	if err != nil {
 		t.Fatalf("Failed to create new http connection: %s", describe(err))
@@ -347,37 +350,6 @@ func TestCreateClientHttpConnection(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("Failed to create new client: %s", describe(err))
-	}
-}
-
-// TestCreateClientHttpConnectionCustomTransport creates an HTTP connection to the environment specified
-// endpoints with a custom HTTP roundtripper and creates a client for that.
-func TestCreateClientHttpConnectionCustomTransport(t *testing.T) {
-	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: getEndpointsFromEnv(t),
-		Transport: &httplib.Transport{},
-		TLSConfig: &tls.Config{InsecureSkipVerify: true},
-	})
-	if err != nil {
-		t.Fatalf("Failed to create new http connection: %s", describe(err))
-	}
-	c, err := driver.NewClient(driver.ClientConfig{
-		Connection:     conn,
-		Authentication: createAuthenticationFromEnv(t),
-	})
-	if err != nil {
-		t.Fatalf("Failed to create new client: %s", describe(err))
-	}
-	timeout := 3 * time.Minute
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	if up := waitUntilServerAvailable(ctx, c, t); up != nil {
-		t.Fatalf("Connection is not available in %s: %s", timeout, describe(up))
-	}
-	if info, err := c.Version(driver.WithDetails(ctx)); err != nil {
-		t.Errorf("Version failed: %s", describe(err))
-	} else {
-		t.Logf("Got server version %s", info)
 	}
 }
 
@@ -397,6 +369,7 @@ func TestResponseHeader(t *testing.T) {
 		var resp driver.Response
 		db := ensureDatabase(ctx, c, "_system", nil, t)
 		col := ensureCollection(ctx, db, "response_header_test", nil, t)
+		defer clean(t, ctx, col)
 
 		// `ETag` header must contain the `_rev` of the new document in quotes.
 		doc := map[string]string{
@@ -421,4 +394,37 @@ func TestResponseHeader(t *testing.T) {
 			t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
 		}
 	}
+}
+
+type dummyRequestRepeat struct {
+	counter int
+}
+
+func (r *dummyRequestRepeat) Repeat(conn driver.Connection, resp driver.Response, err error) bool {
+	r.counter++
+	if r.counter == 2 {
+		return false
+	}
+	return true
+}
+
+func TestCreateClientHttpRepeatConnection(t *testing.T) {
+	if getTestMode() != testModeSingle {
+		t.Skipf("Not a single")
+	}
+	createClientFromEnv(t, true)
+
+	requestRepeat := dummyRequestRepeat{}
+	conn := createConnectionFromEnv(t)
+	c, err := driver.NewClient(driver.ClientConfig{
+		Connection:     http.NewRepeatConnection(conn, &requestRepeat),
+		Authentication: createAuthenticationFromEnv(t),
+	})
+
+	_, err = c.Connection().SetAuthentication(createAuthenticationFromEnv(t))
+	assert.Equal(t, http.ErrAuthenticationNotChanged, err)
+
+	_, err = c.Databases(nil)
+	require.NoError(t, err)
+	assert.Equal(t, 2, requestRepeat.counter)
 }

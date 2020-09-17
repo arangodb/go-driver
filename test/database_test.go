@@ -25,16 +25,17 @@ package test
 import (
 	"context"
 	"fmt"
-	"github.com/dchest/uniuri"
-	"github.com/stretchr/testify/require"
 	"strings"
 	"testing"
+
+	"github.com/dchest/uniuri"
+	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
 )
 
 // databaseName is helper to create database name in non-colliding way
-func databaseName(parts ... string) string {
+func databaseName(parts ...string) string {
 	return fmt.Sprintf("%s_%s", strings.Join(parts, "_"), uniuri.NewLen(8))
 }
 

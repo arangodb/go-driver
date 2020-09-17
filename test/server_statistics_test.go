@@ -35,7 +35,7 @@ import (
 func checkEnabled(t *testing.T, c driver.Client, ctx context.Context) {
 	_, err := c.Statistics(ctx)
 	if err != nil {
-		if driver.IsArangoErrorWithErrorNum(err, 36) {
+		if driver.IsArangoErrorWithErrorNum(err, driver.ErrDisabled) {
 			t.Skip("Statistics disabled.")
 		}
 		t.Fatalf("Statistics failed: %s", describe(err))

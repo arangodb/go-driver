@@ -31,6 +31,33 @@ import (
 	"os"
 )
 
+const (
+	// general errors
+	ErrNotImplemented = 9
+	ErrForbidden      = 11
+	ErrDisabled       = 36
+
+	// HTTP error status codes
+	ErrHttpForbidden = 403
+	ErrHttpInternal  = 501
+
+	// Internal ArangoDB storage errors
+	ErrArangoReadOnly = 1004
+
+	// General ArangoDB storage errors
+	ErrArangoConflict                 = 1200
+	ErrArangoDocumentNotFound         = 1202
+	ErrArangoDataSourceNotFound       = 1203
+	ErrArangoUniqueConstraintViolated = 1210
+
+	// ArangoDB cluster errors
+	ErrClusterLeadershipChallengeOngoing = 1495
+	ErrClusterNotLeader                  = 1496
+
+	// User management errors
+	ErrUserDuplicate = 1702
+)
+
 // ArangoError is a Go error with arangodb specific error information.
 type ArangoError struct {
 	HasError     bool   `json:"error"`
@@ -95,42 +122,46 @@ func IsArangoErrorWithErrorNum(err error, errorNum ...int) bool {
 
 // IsInvalidRequest returns true if the given error is an ArangoError with code 400, indicating an invalid request.
 func IsInvalidRequest(err error) bool {
-	return IsArangoErrorWithCode(err, 400)
+	return IsArangoErrorWithCode(err, http.StatusBadRequest)
+
 }
 
 // IsUnauthorized returns true if the given error is an ArangoError with code 401, indicating an unauthorized request.
 func IsUnauthorized(err error) bool {
-	return IsArangoErrorWithCode(err, 401)
+	return IsArangoErrorWithCode(err, http.StatusUnauthorized)
 }
 
 // IsForbidden returns true if the given error is an ArangoError with code 403, indicating a forbidden request.
 func IsForbidden(err error) bool {
-	return IsArangoErrorWithCode(err, 403)
+	return IsArangoErrorWithCode(err, http.StatusForbidden)
 }
 
 // IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
 func IsNotFound(err error) bool {
-	return IsArangoErrorWithCode(err, 404) || IsArangoErrorWithErrorNum(err, 1202, 1203)
+	return IsArangoErrorWithCode(err, http.StatusNotFound) ||
+		IsArangoErrorWithErrorNum(err, ErrArangoDocumentNotFound, ErrArangoDataSourceNotFound)
 }
 
 // IsConflict returns true if the given error is an ArangoError with code 409, indicating a conflict.
 func IsConflict(err error) bool {
-	return IsArangoErrorWithCode(err, 409) || IsArangoErrorWithErrorNum(err, 1702)
+	return IsArangoErrorWithCode(err, http.StatusConflict) || IsArangoErrorWithErrorNum(err, ErrUserDuplicate)
 }
 
 // IsPreconditionFailed returns true if the given error is an ArangoError with code 412, indicating a failed precondition.
 func IsPreconditionFailed(err error) bool {
-	return IsArangoErrorWithCode(err, 412) || IsArangoErrorWithErrorNum(err, 1200, 1210)
+	return IsArangoErrorWithCode(err, http.StatusPreconditionFailed) ||
+		IsArangoErrorWithErrorNum(err, ErrArangoConflict, ErrArangoUniqueConstraintViolated)
 }
 
 // IsNoLeader returns true if the given error is an ArangoError with code 503 error number 1496.
 func IsNoLeader(err error) bool {
-	return IsArangoErrorWithCode(err, 503) && IsArangoErrorWithErrorNum(err, 1496)
+	return IsArangoErrorWithCode(err, http.StatusServiceUnavailable) && IsArangoErrorWithErrorNum(err, ErrClusterNotLeader)
 }
 
 // IsNoLeaderOrOngoing return true if the given error is an ArangoError with code 503 and error number 1496 or 1495
 func IsNoLeaderOrOngoing(err error) bool {
-	return IsArangoErrorWithCode(err, 503) && (IsArangoErrorWithErrorNum(err, 1495) || IsArangoErrorWithErrorNum(err, 1496))
+	return IsArangoErrorWithCode(err, http.StatusServiceUnavailable) &&
+		IsArangoErrorWithErrorNum(err, ErrClusterLeadershipChallengeOngoing, ErrClusterNotLeader)
 }
 
 // InvalidArgumentError is returned when a go function argument is invalid.

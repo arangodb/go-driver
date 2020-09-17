@@ -1,9 +1,17 @@
 PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
-ROOTDIR := $(shell cd "${SCRIPTDIR}" && pwd)
 
-GOVERSION := 1.12.4-stretch
+CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+ROOTDIR:=$(CURR)
+
+GOVERSION := 1.13.4-stretch
+GOV2VERSION := 1.13.4-stretch
 TMPDIR := ${SCRIPTDIR}/.tmp
+
+DOCKER_CMD:=docker run
+
+GOBUILDTAGS:=$(TAGS)
+GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
 ifndef ARANGODB
 	ARANGODB := arangodb/arangodb:latest
@@ -24,7 +32,8 @@ REPONAME := $(PROJECT)
 REPODIR := $(ORGDIR)/$(REPONAME)
 REPOPATH := $(ORGPATH)/$(REPONAME)
 
-SOURCES := $(shell find . -name '*.go')
+SOURCES_EXCLUDE:=vendor
+SOURCES := $(shell find "$(ROOTDIR)" $(foreach SOURCE,$(SOURCES_EXCLUDE),-not -path '$(ROOTDIR)/$(SOURCE)/*') -name '*.go')
 
 # Test variables
 
@@ -37,18 +46,17 @@ endif
 
 ifeq ("$(TEST_AUTH)", "none")
 	ARANGOENV := -e ARANGO_NO_AUTH=1
-	TEST_AUTHENTICATION := 
-	TAGS := 
+	TEST_AUTHENTICATION :=
 	TESTS := $(REPOPATH) $(REPOPATH)/test
 else ifeq ("$(TEST_AUTH)", "rootpw")
 	ARANGOENV := -e ARANGO_ROOT_PASSWORD=rootpw
 	TEST_AUTHENTICATION := basic:root:rootpw
-	TAGS := -tags auth
+	GOBUILDTAGS += auth
 	TESTS := $(REPOPATH)/test
 else ifeq ("$(TEST_AUTH)", "jwt")
 	ARANGOENV := -e ARANGO_ROOT_PASSWORD=rootpw 
 	TEST_AUTHENTICATION := jwt:root:rootpw
-	TAGS := -tags auth
+	GOBUILDTAGS += auth
 	TESTS := $(REPOPATH)/test
 	JWTSECRET := testing
 	JWTSECRETFILE := "${TMPDIR}/${TESTCONTAINER}-jwtsecret"
@@ -119,7 +127,7 @@ clean:
 
 .PHONY: changelog
 changelog:
-	@docker run --rm \
+	@$(DOCKER_CMD) --rm \
 		-e CHANGELOG_GITHUB_TOKEN=$(shell cat ~/.arangodb/github-token) \
 		-v "${ROOTDIR}":/usr/local/src/your-app \
 		ferrarimarco/github-changelog-generator \
@@ -128,17 +136,19 @@ changelog:
 		--no-author \
 		--unreleased-label "Master"
 
-run-tests: run-tests-http run-tests-single run-tests-resilientsingle run-tests-cluster
+run-tests: run-unit-tests run-tests-single run-tests-resilientsingle run-tests-cluster
 
-# Tests of HTTP package 
-run-tests-http:
-	@docker run \
+# The below rule exists only for backward compatibility.
+run-tests-http: run-unit-tests
+
+run-unit-tests:
+	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test $(TESTOPTIONS) $(REPOPATH)/http
+		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
@@ -170,6 +180,10 @@ run-tests-single-vst-1.1-no-auth:
 run-tests-single-json-with-auth:
 	@echo "Single server, HTTP+JSON, with authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
+
+run-tests-single-json-http2-with-auth:
+	@echo "Single server, HTTP+JSON, with authentication"
+	@${MAKE} TEST_MODE="single" TAGS="http2" TEST_AUTH="rootpw" TEST_CONTENT_TYPE="json" __run_tests
 
 run-tests-single-vpack-with-auth:
 	@echo "Single server, HTTP+Velocypack, with authentication"
@@ -325,7 +339,7 @@ run-tests-cluster-vst-1.1-ssl:
 __run_tests: __test_prepare __test_go_test __test_cleanup
 
 __test_go_test:
-	docker run \
+	$(DOCKER_CMD) \
 		--name=$(TESTCONTAINER) \
 		--net=$(TEST_NET) \
 		-v "${ROOTDIR}":/usr/code ${TEST_RESOURCES_VOLUME} \
@@ -343,12 +357,33 @@ __test_go_test:
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
-		go test $(TAGS) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
-		
+		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+
+# Internal test tasks
+__run_v2_tests: __test_prepare __test_v2_go_test __test_cleanup
+
+__test_v2_go_test:
+	$(DOCKER_CMD) \
+		--name=$(TESTCONTAINER) \
+		--net=$(TEST_NET) \
+		-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
+		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
+		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
+		-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
+		-e TEST_MODE=$(TEST_MODE) \
+		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
+		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
+		-e GODEBUG=tls13=1 \
+		-e CGO_ENABLED=0 \
+		-w /usr/code/v2/ \
+		golang:$(GOV2VERSION) \
+		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
+
 
 __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@sleep 3
 else
 ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
@@ -366,6 +401,8 @@ ifdef TESTCONTAINER
 endif
 ifndef TEST_ENDPOINTS_OVERRIDE
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) "${ROOTDIR}/test/cluster.sh" cleanup
+else
+	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
 	@sleep 3
 
@@ -376,7 +413,7 @@ run-tests-cluster-failover:
 	@echo "Cluster server, failover, no authentication"
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" start
 	go get github.com/coreos/go-iptables/iptables
-	docker run \
+	$(DOCKER_CMD) \
 		--rm \
 		--net=container:$(TESTCONTAINER)-ns \
 		--privileged \
@@ -400,3 +437,80 @@ run-benchmarks-single-json-no-auth:
 run-benchmarks-single-vpack-no-auth: 
 	@echo "Benchmarks: Single server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" TEST_BENCHMARK="true" __run_tests
+
+## Lint
+
+.PHONY: tools
+tools:
+	@echo ">> Fetching goimports"
+	@go get -u golang.org/x/tools/cmd/goimports
+	@echo ">> Fetching license check"
+	@go get -u github.com/google/addlicense
+
+.PHONY: license
+license:
+	@echo ">> Ensuring license of files"
+	@go run github.com/google/addlicense -f "$(ROOTDIR)/HEADER" $(SOURCES)
+
+.PHONY: license-verify
+license-verify:
+	@echo ">> Verify license of files"
+	@go run github.com/google/addlicense -f "$(ROOTDIR)/HEADER" -check $(SOURCES)
+
+.PHONY: fmt
+fmt:
+	@echo ">> Ensuring style of files"
+	@go run golang.org/x/tools/cmd/goimports -w $(SOURCES)
+
+.PHONY: fmt-verify
+fmt-verify: license-verify
+	@echo ">> Verify files style"
+	@if [ X"$$(go run golang.org/x/tools/cmd/goimports -l $(SOURCES) | wc -l)" != X"0" ]; then echo ">> Style errors"; go run golang.org/x/tools/cmd/goimports -l $(SOURCES); exit 1; fi
+
+.PHONY: linter
+linter: fmt
+	@golangci-lint run --no-config --issues-exit-code=1 --deadline=30m --disable-all \
+	                  $(foreach MODE,$(GOLANGCI_ENABLED),--enable $(MODE) ) \
+	                  --exclude-use-default=false \
+	                  $(SOURCES_PACKAGES)
+
+# V2
+
+v2-%:
+	@(cd "$(ROOTDIR)/v2"; make)
+
+run-v2-tests: run-v2-tests-single run-v2-tests-cluster run-v2-tests-resilientsingle
+
+run-v2-tests-cluster: run-v2-tests-cluster-with-basic-auth run-v2-tests-cluster-without-ssl run-v2-tests-cluster-without-auth run-v2-tests-cluster-with-jwt-auth
+
+run-v2-tests-cluster-with-basic-auth:
+	@echo "Cluster server, with basic authentication, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v2_tests
+
+run-v2-tests-cluster-with-jwt-auth:
+	@echo "Cluster server, with JWT authentication, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="jwt" __run_v2_tests
+
+run-v2-tests-cluster-without-auth:
+	@echo "Cluster server, without authentication, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="none" __run_v2_tests
+
+run-v2-tests-cluster-without-ssl:
+	@echo "Cluster server, without authentication and SSL, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" __run_v2_tests
+
+run-v2-tests-single: run-v2-tests-single-without-auth run-v2-tests-single-with-auth
+
+run-v2-tests-single-without-auth:
+	@echo "Single server, without authentication, v2"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" __run_v2_tests
+
+run-v2-tests-single-with-auth:
+	@echo "Single server, with authentication, v2"
+	@${MAKE} TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v2_tests
+
+run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
+
+run-v2-tests-resilientsingle-with-auth:
+	@echo "Resilient Single, with authentication, v2"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" __run_v2_tests

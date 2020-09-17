@@ -27,10 +27,17 @@ import (
 	"path"
 )
 
+type graphDefinition struct {
+	Name        string `json:"name"`
+	IsSmart     bool   `json:"isSmart"`
+	IsSatellite bool   `json:"isSatellite"`
+	IsDisjoint  bool   `json:"isDisjoint,omitempty"`
+
+	EdgeDefinitions []EdgeDefinition `json:"edgeDefinitions,omitempty"`
+}
+
 type getGraphResponse struct {
-	Graph struct {
-		EdgeDefinitions []EdgeDefinition `json:"edgeDefinitions,omitempty"`
-	} `json:"graph"`
+	Graph graphDefinition `json:"graph"`
 }
 
 // EdgeCollection opens a connection to an existing edge-collection within the graph.

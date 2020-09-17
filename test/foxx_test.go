@@ -19,15 +19,17 @@
 //
 // Author Tomasz Mielech
 //
+
 package test
 
 import (
 	"context"
-	"github.com/arangodb/go-driver"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFoxxItzpapalotlService(t *testing.T) {

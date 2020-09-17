@@ -25,6 +25,7 @@ package agency
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -84,7 +85,7 @@ func AreAgentsHealthy(ctx context.Context, clients []driver.Connection) error {
 					statuses[i].LeaderEndpoint = strings.Join(c.Endpoints(), ",")
 					statuses[i].IsResponding = true
 				} else {
-					if driver.IsArangoErrorWithCode(err, 307) && resp != nil {
+					if driver.IsArangoErrorWithCode(err, http.StatusTemporaryRedirect) && resp != nil {
 						location := resp.Header("Location")
 						// Valid response from a follower
 						statuses[i].IsLeader = false

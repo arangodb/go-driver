@@ -28,90 +28,102 @@ import (
 )
 
 // newGraph creates a new Graph implementation.
-func newGraph(graphData graphData, db *database) (Graph, error) {
-	if graphData.Name == "" {
+func newGraph(input graphDefinition, db *database) (Graph, error) {
+	if input.Name == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "name is empty"})
 	}
 	if db == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "db is nil"})
 	}
 	return &graph{
-		graphData: graphData,
-		db:        db,
-		conn:      db.conn,
+		input: input,
+		db:    db,
+		conn:  db.conn,
 	}, nil
 }
 
 type graph struct {
-	graphData
-	db   *database
-	conn Connection
+	input graphDefinition
+	db    *database
+	conn  Connection
+}
+
+func (g *graph) IsSmart() bool {
+	return g.input.IsSmart
+}
+
+func (g *graph) IsDisjoint() bool {
+	return g.input.IsDisjoint
+}
+
+func (g *graph) IsSatellite() bool {
+	return g.input.IsSatellite
 }
 
 // relPath creates the relative path to this graph (`_db/<db-name>/_api/gharial/<graph-name>`)
 func (g *graph) relPath() string {
-	escapedName := pathEscape(g.graphData.Name)
+	escapedName := pathEscape(g.Name())
 	return path.Join(g.db.relPath(), "_api", "gharial", escapedName)
 }
 
 // Name returns the name of the graph.
 func (g *graph) Name() string {
-	return g.graphData.Name
+	return g.input.Name
 }
 
 // ID returns the id of the graph.
 func (g *graph) ID() string {
-	return g.graphData.ID
+	return g.input.ID
 }
 
 // Key returns the key of the graph.
 func (g *graph) Key() DocumentID {
-	return g.graphData.Key
+	return g.input.Key
 }
 
 // Key returns the key of the graph.
 func (g *graph) Rev() string {
-	return g.graphData.Rev
+	return g.input.Rev
 }
 
 // EdgeDefinitions returns the edge definitions of the graph.
 func (g *graph) EdgeDefinitions() []EdgeDefinition {
-	return g.graphData.EdgeDefinitions
+	return g.input.EdgeDefinitions
 }
 
 // IsSmart returns the isSmart setting of the graph.
 func (g *graph) IsSmart() bool {
-	return g.graphData.IsSmart
+	return g.input.IsSmart
 }
 
 // IsSmart returns the isSmart setting of the graph.
 func (g *graph) SmartGraphAttribute() string {
-	return g.graphData.SmartGraphAttribute
+	return g.input.SmartGraphAttribute
 }
 
 // MinReplicationFactor returns the minimum replication factor for the graph.
 func (g *graph) MinReplicationFactor() int {
-	return g.graphData.MinReplicationFactor
+	return g.input.MinReplicationFactor
 }
 
 // NumberOfShards returns the number of shards for the graph.
 func (g *graph) NumberOfShards() int {
-	return g.graphData.NumberOfShards
+	return g.input.NumberOfShards
 }
 
 // OrphanCollections returns the orphan collcetions of the graph.
 func (g *graph) OrphanCollections() []string {
-	return g.graphData.OrphanCollections
+	return g.input.OrphanCollections
 }
 
 // ReplicationFactor returns the current replication factor.
 func (g *graph) ReplicationFactor() int {
-	return g.graphData.ReplicationFactor
+	return g.input.ReplicationFactor
 }
 
 // WriteConcern returns the write concern setting of the graph.
 func (g *graph) WriteConcern() int {
-	return g.graphData.WriteConcern
+	return g.input.WriteConcern
 }
 
 // Remove removes the entire graph.

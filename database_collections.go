@@ -113,6 +113,8 @@ type CreateCollectionOptions struct {
 	// This attribute specifies the name of the sharding strategy to use for the collection.
 	// Must be one of ShardingStrategy* values.
 	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
+	// Schema for collection validation
+	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
 // CollectionType is the type of a collection.
