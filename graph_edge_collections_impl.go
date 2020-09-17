@@ -34,6 +34,16 @@ type graphDefinition struct {
 	IsDisjoint  bool   `json:"isDisjoint,omitempty"`
 
 	EdgeDefinitions []EdgeDefinition `json:"edgeDefinitions,omitempty"`
+
+	ID                   string     `json:"_id"`
+	Key                  DocumentID `json:"_key"`
+	Rev                  string     `json:"_rev"`
+	SmartGraphAttribute  string     `json:"smartGraphAttribute,omitempty"`
+	MinReplicationFactor int        `json:"minReplicationFactor,omitempty"`
+	NumberOfShards       int        `json:"numberOfShards,omitempty"`
+	OrphanCollections    []string   `json:"orphanCollections,omitempty"`
+	ReplicationFactor    int        `json:"replicationFactor,omitempty"`
+	WriteConcern         int        `json:"writeConcern,omitempty"`
 }
 
 type getGraphResponse struct {

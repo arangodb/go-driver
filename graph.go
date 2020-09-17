@@ -41,9 +41,6 @@ type Graph interface {
 	// EdgeDefinitions returns the edge definitions of the graph.
 	EdgeDefinitions() []EdgeDefinition
 
-	// IsSmart returns the isSmart setting of the graph.
-	IsSmart() bool
-
 	// SmartGraphAttribute returns the attributes of a smart graph if there are any.
 	SmartGraphAttribute() string
 

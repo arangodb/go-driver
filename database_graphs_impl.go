@@ -30,27 +30,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// graphData represents a returned graph json object.
-type graphData struct {
-	ID                   string           `json:"_id"`
-	Key                  DocumentID       `json:"_key"`
-	Rev                  string           `json:"_rev"`
-	Name                 string           `json:"name"`
-	EdgeDefinitions      []EdgeDefinition `json:"edgeDefinitions,omitempty"`
-	IsSmart              bool             `json:"isSmart,omitempty"`
-	SmartGraphAttribute  string           `json:"smartGraphAttribute,omitempty"`
-	MinReplicationFactor int              `json:"minReplicationFactor,omitempty"`
-	NumberOfShards       int              `json:"numberOfShards,omitempty"`
-	OrphanCollections    []string         `json:"orphanCollections,omitempty"`
-	ReplicationFactor    int              `json:"replicationFactor,omitempty"`
-	WriteConcern         int              `json:"writeConcern,omitempty"`
-}
-
-// defines a response type where graph data is embedded into a `"graph": {}` node.
-type graphWithCodeAndErrorResponse struct {
-	Graph graphData `json:"graph"`
-}
-
 // Graph opens a connection to an existing graph within the database.
 // If no graph with given name exists, an NotFoundError is returned.
 func (d *database) Graph(ctx context.Context, name string) (Graph, error) {

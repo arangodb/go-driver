@@ -48,10 +48,6 @@ type graph struct {
 	conn  Connection
 }
 
-func (g *graph) IsSmart() bool {
-	return g.input.IsSmart
-}
-
 func (g *graph) IsDisjoint() bool {
 	return g.input.IsDisjoint
 }
