@@ -96,9 +96,10 @@ func TestCreateGraphWithOptions(t *testing.T) {
 				From:       []string{"from-coll1"},
 			},
 		},
-		NumberOfShards:    2,
-		ReplicationFactor: 3,
-		WriteConcern:      2,
+		NumberOfShards:      2,
+		ReplicationFactor:   3,
+		WriteConcern:        2,
+		SmartGraphAttribute: "orphan1",
 	}
 	if _, err := db.CreateGraph(context.TODO(), name, options); err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
@@ -167,8 +168,9 @@ func TestCreateGraphWithOptions35(t *testing.T) {
 				From:       []string{"from-coll1"},
 			},
 		},
-		NumberOfShards:    2,
-		ReplicationFactor: 3,
+		NumberOfShards:      2,
+		ReplicationFactor:   3,
+		SmartGraphAttribute: "orphan1",
 	}
 	if _, err := db.CreateGraph(context.TODO(), name, options); err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
