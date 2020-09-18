@@ -193,7 +193,7 @@ func TestCreateGraphWithOptions35(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("Graph '%s' not found in list", name)
+			t.Errorf("Graph '%s' not found in list.", name)
 		}
 	}
 	// Open graph
