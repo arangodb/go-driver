@@ -90,14 +90,14 @@ func fetchJobStatus(t *testing.T, jobID string, client driver.Client) jobStatus 
 }
 
 // waitForJob will check if job exists and return function which will wait for job to finish (desired to use with defer)
-func waitForJob(t *testing.T, jobID string, client driver.Client) func() {
+func waitForJob(t *testing.T, jobID string, client driver.Client, timeout time.Duration) func() {
 	require.NotEqual(t, JobNotFound, fetchJobStatus(t, jobID, client))
 
 	t.Logf("waiting for job %s before test end", jobID)
 
 	return func() {
 		t.Logf("waiting for job %s to finish", jobID)
-		err := retry(125*time.Millisecond, time.Minute, func() error {
+		err := retry(125*time.Millisecond, timeout, func() error {
 			result := fetchJobStatus(t, jobID, client)
 
 			require.NotEqual(t, JobFailed, result, "job failed")

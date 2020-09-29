@@ -301,7 +301,7 @@ func TestClusterMoveShard(t *testing.T) {
 						if err := cl.MoveShard(jobCtx, col, shardID, dbServers[0], targetServerID); err != nil {
 							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
-						defer waitForJob(t, jobID, c)()
+						defer waitForJob(t, jobID, c, time.Minute)
 					}
 				}
 			}
@@ -389,7 +389,7 @@ func TestClusterResignLeadership(t *testing.T) {
 					if err := cl.ResignServer(jobCtx, string(targetServerID)); err != nil {
 						t.Errorf("ResignLeadership for %s failed: %s", targetServerID, describe(err))
 					}
-					defer waitForJob(t, jobID, c)()
+					defer waitForJob(t, jobID, c, time.Minute)()
 
 					break collectionLoop
 				}
@@ -501,7 +501,7 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 						if err := cl.MoveShard(jobCtx, col, shardID, dbServers[0], targetServerID); err != nil {
 							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
-						defer waitForJob(t, jobID, c)()
+						defer waitForJob(t, jobID, c, time.Minute*2)()
 					}
 				}
 			}
