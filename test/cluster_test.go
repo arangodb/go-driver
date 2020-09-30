@@ -511,7 +511,7 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 		}
 		// Wait until all shards are on the targetServerID
 		start := time.Now()
-		maxTestTime := time.Minute
+		maxTestTime := time.Minute*4
 		lastShardsNotOnTargetServerID := movedShards
 		for {
 			shardsNotOnTargetServerID := 0
