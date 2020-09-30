@@ -501,7 +501,7 @@ func TestClusterMoveShardWithViews(t *testing.T) {
 						if err := cl.MoveShard(jobCtx, col, shardID, dbServers[0], targetServerID); err != nil {
 							t.Errorf("MoveShard for shard %s in collection %s failed: %s (raw response '%s' %x)", shardID, col.Name(), describe(err), string(rawResponse), rawResponse)
 						}
-						defer waitForJob(t, jobID, c, time.Minute*2)()
+						defer waitForJob(t, jobID, c, time.Minute*4)()
 					}
 				}
 			}
