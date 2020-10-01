@@ -61,14 +61,25 @@ func (c *cursor) HasMore() bool {
 	return c.data.Result.HasMore() || c.data.HasMore
 }
 
+// ReadDocument reads the next document from the cursor.
+// The document data is stored into result, and the document meta data is returned.
 func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	return c.readDocument(ctx, result)
+	return c.readDocument(ctx, result, false)
 }
 
-func (c *cursor) readDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
+// ReadDocumentOnly reads the next document from the cursor.
+// The document data is stored into result.
+func (c *cursor) ReadDocumentOnly(ctx context.Context, result interface{}) (DocumentMeta, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.readDocument(ctx, result, true)
+}
+
+func (c *cursor) readDocument(ctx context.Context, result interface{}, excludeMeta bool) (DocumentMeta, error) {
 	if !c.data.Result.HasMore() {
 		if err := c.getNextBatch(ctx); err != nil {
 			return DocumentMeta{}, err
@@ -82,8 +93,10 @@ func (c *cursor) readDocument(ctx context.Context, result interface{}) (Document
 
 	var meta DocumentMeta
 
-	if err := data.Unmarshal(&meta); err != nil {
-		// Ignore error
+	if !excludeMeta {
+		if err := data.Unmarshal(&meta); err != nil {
+			// Ignore error
+		}
 	}
 
 	if err := data.Unmarshal(result); err != nil {

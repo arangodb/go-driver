@@ -322,6 +322,27 @@ func TestCreateCursorReturnNull(t *testing.T) {
 	}
 }
 
+// TestCreateCursorDocumentOnlyReturnNull creates a cursor with a `RETURN NULL` query and ReadDocumentOnly.
+func TestCreateCursorDocumentOnlyReturnNull(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "cursor_test", nil, t)
+
+	var result interface{}
+	query := "return null"
+	cursor, err := db.Query(ctx, query, nil)
+	if err != nil {
+		t.Fatalf("Query(return null) failed: %s", describe(err))
+	}
+	defer cursor.Close()
+	if err := cursor.ReadDocumentOnly(ctx, &result); err != nil {
+		t.Fatalf("ReadDocument failed: %s", describe(err))
+	}
+	if result != nil {
+		t.Errorf("Expected result to be nil, got %#v", result)
+	}
+}
+
 // Test stream query cursors. The goroutines are technically only
 // relevant for the MMFiles engine, but don't hurt on rocksdb either
 func TestCreateStreamCursor(t *testing.T) {

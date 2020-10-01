@@ -135,10 +135,24 @@ func (c *cursor) Close() error {
 	return nil
 }
 
+// ReadDocumentOnly reads the next document from the cursor.
+// If the cursor has no more documents, a NoMoreDocuments error is returned.
+func (c *cursor) ReadDocumentOnly(ctx context.Context, result interface{}) error {
+	_, err := c.readDocumentMeta(ctx, result, true)
+	return err
+}
+
 // ReadDocument reads the next document from the cursor.
-// The document data is stored into result, the document meta data is returned.
+// The document data is stored into result, and the document meta data is returned.
 // If the cursor has no more documents, a NoMoreDocuments error is returned.
 func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
+	return c.readDocumentMeta(ctx, result, false)
+}
+
+// readDocumentMeta reads the next document from the cursor.
+// The document data is stored into result, and the document meta data is optionally returned.
+// If the cursor has no more documents, a NoMoreDocuments error is returned.
+func (c *cursor) readDocumentMeta(ctx context.Context, result interface{}, excludeMeta bool) (DocumentMeta, error) {
 	// Force use of initial endpoint
 	ctx = WithEndpoint(ctx, c.endpoint)
 
@@ -196,9 +210,11 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 		e := rv.Elem()
 		e.Set(reflect.Zero(e.Type()))
 	} else {
-		if err := c.conn.Unmarshal(*resultPtr, &meta); err != nil {
-			// If a cursor returns something other than a document, this will fail.
-			// Just ignore it.
+		if !excludeMeta {
+			if err := c.conn.Unmarshal(*resultPtr, &meta); err != nil {
+				// If a cursor returns something other than a document, this will fail.
+				// Just ignore it.
+			}
 		}
 		if err := c.conn.Unmarshal(*resultPtr, result); err != nil {
 			return DocumentMeta{}, WithStack(err)
