@@ -30,6 +30,7 @@ import (
 
 	driver "github.com/arangodb/go-driver"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -515,6 +516,8 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 	sortDir := driver.ArangoSearchSortDirectionDesc
 	name := "test_get_asview_35"
 	sortField := "foo"
+	storedValuesFields := []string{"now", "is", "the", "time"}
+	storedValuesCompression := "none"
 	opts := &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
 			"someCol": driver.ArangoSearchElementProperties{},
@@ -523,6 +526,10 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 		PrimarySort: []driver.ArangoSearchPrimarySortEntry{{
 			Field:     sortField,
 			Direction: &sortDir,
+		}},
+		StoredValues: []driver.ArangoSearchStoredValuesEntry{{
+			Fields:      storedValuesFields,
+			Compression: storedValuesCompression,
 		}},
 	}
 	if _, err := db.CreateArangoSearchView(ctx, name, opts); err != nil {
@@ -551,6 +558,16 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 		ps := p.PrimarySort[0]
 		if ps.Field != sortField {
 			t.Errorf("Primary Sort field is wrong: %s, expected %s", ps.Field, sortField)
+		}
+	}
+	if len(p.StoredValues) != 1 {
+		t.Fatalf("StoredValues expected length: %d, found %d", 1, len(p.StoredValues))
+	} else {
+		sv := p.StoredValues[0]
+		if !assert.Equal(t, sv.Fields, storedValuesFields) {
+			t.Errorf("StoredValues field is wrong: %s, expected %s", sv.Fields, storedValuesFields)
+		} else if sv.Compression != storedValuesCompression {
+			t.Errorf("StoredValues Compression is wrong: %s, expected %s", sv.Compression, storedValuesCompression)
 		}
 	}
 }

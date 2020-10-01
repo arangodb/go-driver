@@ -183,6 +183,10 @@ type ArangoSearchViewProperties struct {
 
 	// PrimarySort describes how individual fields are sorted
 	PrimarySort []ArangoSearchPrimarySortEntry `json:"primarySort,omitempty"`
+
+	// StoredValues is an array of objects to describe which document attributes to store in the
+	// View index.
+	StoredValues []ArangoSearchStoredValuesEntry `json:"storedValues,omitempty"`
 }
 
 // ArangoSearchSortDirection describes the sorting direction
@@ -303,3 +307,13 @@ const (
 	// information about value presence, to allow use of the EXISTS() function.
 	ArangoSearchStoreValuesID ArangoSearchStoreValues = "id"
 )
+
+type ArangoSearchStoredValuesEntry struct {
+	// Fields is an array of strings with one or more document attribute paths.
+	Fields []string `json:"fields,omitempty"`
+	// Compression defines the compression type used for the internal column-store, which can be
+	// "lz4" (LZ4 fast compression, default) or "none".
+	// NOTE: While "lz4" is documented, specifying it in the API is not currently supported.
+	// (2020.09.30)
+	Compression string `json:"compression,omitempty"`
+}
