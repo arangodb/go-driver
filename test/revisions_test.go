@@ -76,13 +76,13 @@ func TestRevisionTree(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	noOfLeafs := 299593
+	noOfLeafs := 37449
 	require.NotEmpty(t, tree.Version)
 	require.NotEmpty(t, tree.RangeMin)
 	require.NotEmpty(t, tree.RangeMax)
 	require.NotEmpty(t, tree.Nodes)
 	require.Equal(t, noOfLeafs, len(tree.Nodes))
-	require.Equal(t, 6, tree.MaxDepth)
+	require.Equal(t, 5, tree.MaxDepth)
 
 	getRanges := func() driver.Revisions {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
