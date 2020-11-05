@@ -118,8 +118,8 @@ type ArangoSearchAnalyzerProperties struct {
 
 	// Stemming used by Text
 	Stemming *bool `json:"stemming,omitempty"`
-	// Stopword used by Text
-	Stopwords []string `json:"stopwords,omitempty"`
+	// Stopword used by Text. This field is not mandatory since version 3.7 of arangod so it can not be omitted in 3.6.
+	Stopwords []string `json:"stopwords"`
 	// StopwordsPath used by Text
 	StopwordsPath []string `json:"stopwordsPath,omitempty"`
 }
