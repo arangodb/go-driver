@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.1.1](https://github.com/arangodb/go-driver/tree/1.1.1) (2020-11-13)
 - Add Driver V2 in Alpha version
 - Add HTTP2 support for V1 and V2
 - Don't omit the `stopwords` field. The field is mandatory in 3.6 ArangoDB
