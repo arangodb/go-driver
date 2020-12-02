@@ -178,3 +178,140 @@ func Test_Graph_AdvancedCreate_Defaults(t *testing.T) {
 		}
 	})
 }
+
+func TestGraphCreation(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0")).Cluster().Enterprise()
+
+	t.Run("Satellite", func(t *testing.T) {
+		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+
+		// Create
+		graphID := db.Name() + "_graph"
+
+		options, collections := newGraphOpts(db)
+
+		options.ReplicationFactor = driver.SatelliteGraph
+		options.IsSmart = false
+		options.SmartGraphAttribute = ""
+
+		g, err := db.CreateGraph(ctx, graphID, &options)
+		require.NoError(t, err)
+
+		// Wait for collections to be created
+		waitForCollections(t, db, collections)
+
+		require.True(t, g.IsSatellite())
+	})
+
+	t.Run("Satellite - list", func(t *testing.T) {
+		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+
+		// Create
+		graphID := db.Name() + "_graph"
+
+		options, collections := newGraphOpts(db)
+
+		options.ReplicationFactor = driver.SatelliteGraph
+		options.IsSmart = false
+		options.SmartGraphAttribute = ""
+
+		g, err := db.CreateGraph(ctx, graphID, &options)
+		require.NoError(t, err)
+
+		// Wait for collections to be created
+		waitForCollections(t, db, collections)
+
+		graphs, err := db.Graphs(ctx)
+		require.NoError(t, err)
+		require.Len(t, graphs, 1)
+
+		require.Equal(t, g.Name(), graphs[0].Name())
+		require.True(t, graphs[0].IsSatellite())
+	})
+
+	t.Run("Standard", func(t *testing.T) {
+		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+
+		// Create
+		graphID := db.Name() + "_graph"
+
+		options, collections := newGraphOpts(db)
+
+		g, err := db.CreateGraph(ctx, graphID, &options)
+		require.NoError(t, err)
+
+		// Wait for collections to be created
+		waitForCollections(t, db, collections)
+
+		require.False(t, g.IsSatellite())
+	})
+
+	t.Run("Standard - list", func(t *testing.T) {
+		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+
+		// Create
+		graphID := db.Name() + "_graph"
+
+		options, collections := newGraphOpts(db)
+
+		g, err := db.CreateGraph(ctx, graphID, &options)
+		require.NoError(t, err)
+
+		// Wait for collections to be created
+		waitForCollections(t, db, collections)
+
+		graphs, err := db.Graphs(ctx)
+		require.NoError(t, err)
+		require.Len(t, graphs, 1)
+
+		require.Equal(t, g.Name(), graphs[0].Name())
+		require.False(t, graphs[0].IsSatellite())
+	})
+
+	t.Run("Disjoint", func(t *testing.T) {
+		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+
+		// Create
+		graphID := db.Name() + "_graph"
+
+		options, collections := newGraphOpts(db)
+
+		options.IsDisjoint = true
+
+		g, err := db.CreateGraph(ctx, graphID, &options)
+		require.NoError(t, err)
+
+		// Wait for collections to be created
+		waitForCollections(t, db, collections)
+
+		require.True(t, g.IsDisjoint())
+	})
+
+	t.Run("Disjoint - list", func(t *testing.T) {
+		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+
+		// Create
+		graphID := db.Name() + "_graph"
+
+		options, collections := newGraphOpts(db)
+
+		options.IsDisjoint = true
+
+		g, err := db.CreateGraph(ctx, graphID, &options)
+		require.NoError(t, err)
+
+		// Wait for collections to be created
+		waitForCollections(t, db, collections)
+
+		graphs, err := db.Graphs(ctx)
+		require.NoError(t, err)
+		require.Len(t, graphs, 1)
+
+		require.Equal(t, g.Name(), graphs[0].Name())
+		require.True(t, graphs[0].IsDisjoint())
+	})
+}

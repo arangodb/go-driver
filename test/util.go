@@ -33,6 +33,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
@@ -45,6 +47,10 @@ type testEnv interface {
 	Fatalf(format string, args ...interface{})
 	Log(message ...interface{})
 	Logf(format string, args ...interface{})
+}
+
+func NewUUID() string {
+	return uuid.New().String()
 }
 
 // boolRef returns a reference to a given boolean

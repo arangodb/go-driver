@@ -286,8 +286,9 @@ type collectionPropertiesInternal struct {
 	ShardingStrategy     ShardingStrategy `json:"shardingStrategy,omitempty"`
 	DistributeShardsLike string           `json:"distributeShardsLike,omitempty"`
 	// Available from 3.7 arangod version.
-	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
-	SyncByRevision             bool `json:"syncByRevision,omitempty"`
+	UsesRevisionsAsDocumentIds bool                     `json:"usesRevisionsAsDocumentIds,omitempty"`
+	SyncByRevision             bool                     `json:"syncByRevision,omitempty"`
+	Schema                     *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
@@ -308,6 +309,7 @@ func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
 		DistributeShardsLike:       p.DistributeShardsLike,
 		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
 		SyncByRevision:             p.SyncByRevision,
+		Schema:                     p.Schema,
 	}
 }
 
@@ -326,6 +328,7 @@ func (p *CollectionProperties) asInternal() collectionPropertiesInternal {
 		WriteConcern:         p.WriteConcern,
 		SmartJoinAttribute:   p.SmartJoinAttribute,
 		ShardingStrategy:     p.ShardingStrategy,
+		Schema:               p.Schema,
 	}
 }
 
@@ -371,7 +374,8 @@ type setCollectionPropertiesOptionsInternal struct {
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// Available from 3.6 arangod version.
-	WriteConcern int `json:"writeConcern,omitempty"`
+	WriteConcern int                      `json:"writeConcern,omitempty"`
+	Schema       *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
 func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOptionsInternal {
@@ -382,6 +386,7 @@ func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOpt
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
 		WriteConcern:         p.WriteConcern,
+		Schema:               p.Schema,
 	}
 }
 
@@ -392,6 +397,7 @@ func (p *SetCollectionPropertiesOptions) fromInternal(i *setCollectionProperties
 	p.ReplicationFactor = int(i.ReplicationFactor)
 	p.MinReplicationFactor = i.MinReplicationFactor
 	p.WriteConcern = i.WriteConcern
+	p.Schema = i.Schema
 }
 
 // MarshalJSON converts SetCollectionPropertiesOptions into json

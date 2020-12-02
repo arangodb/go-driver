@@ -33,6 +33,15 @@ type Graph interface {
 	// If the graph does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
 
+	// IsSmart returns true of smart is smart. In case of Community Edition it is always false
+	IsSmart() bool
+
+	// IsSatellite returns true of smart is satellite. In case of Community Edition it is always false
+	IsSatellite() bool
+
+	// IsDisjoint return information if graph have isDisjoint flag set to true
+	IsDisjoint() bool
+
 	// Edge collection functions
 	GraphEdgeCollections
 

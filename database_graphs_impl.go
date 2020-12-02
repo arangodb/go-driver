@@ -24,7 +24,10 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"path"
+
+	"github.com/pkg/errors"
 )
 
 // Graph opens a connection to an existing graph within the database.
@@ -42,7 +45,11 @@ func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
 	if err := resp.CheckStatus(200); err != nil {
 		return nil, WithStack(err)
 	}
-	g, err := newGraph(name, d)
+	var data getGraphResponse
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, WithStack(err)
+	}
+	g, err := newGraph(data.Graph, d)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -70,7 +77,7 @@ func (d *database) GraphExists(ctx context.Context, name string) (bool, error) {
 }
 
 type getGraphsResponse struct {
-	Graphs []DocumentMeta `json:"graphs,omitempty"`
+	Graphs []graphDefinition `json:"graphs,omitempty"`
 }
 
 // Graphs returns a list of all graphs in the database.
@@ -92,7 +99,7 @@ func (d *database) Graphs(ctx context.Context) ([]Graph, error) {
 	}
 	result := make([]Graph, 0, len(data.Graphs))
 	for _, info := range data.Graphs {
-		g, err := newGraph(info.Key, d)
+		g, err := newGraph(info, d)
 		if err != nil {
 			return nil, WithStack(err)
 		}
@@ -109,6 +116,40 @@ type createGraphOptions struct {
 	Options                 *createGraphAdditionalOptions `json:"options,omitempty"`
 }
 
+type graphReplicationFactor int
+
+func (g graphReplicationFactor) MarshalJSON() ([]byte, error) {
+	switch g {
+	case SatelliteGraph:
+		return json.Marshal(replicationFactorSatelliteString)
+	default:
+		return json.Marshal(int(g))
+	}
+}
+
+func (g *graphReplicationFactor) UnmarshalJSON(data []byte) error {
+	var d int
+
+	if err := json.Unmarshal(data, &d); err == nil {
+		*g = graphReplicationFactor(d)
+		return nil
+	}
+
+	var s string
+
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	switch s {
+	case replicationFactorSatelliteString:
+		*g = graphReplicationFactor(SatelliteGraph)
+		return nil
+	default:
+		return errors.Errorf("Unsupported type %s", s)
+	}
+}
+
 type createGraphAdditionalOptions struct {
 	// SmartGraphAttribute is the attribute name that is used to smartly shard the vertices of a graph.
 	// Every vertex in this Graph has to have this attribute.
@@ -119,10 +160,12 @@ type createGraphAdditionalOptions struct {
 	NumberOfShards int `json:"numberOfShards,omitempty"`
 	// ReplicationFactor is the number of replication factor that is used for every collection within this graph.
 	// Cannot be modified later.
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor graphReplicationFactor `json:"replicationFactor,omitempty"`
 	// WriteConcern is the number of min replication factor that is used for every collection within this graph.
 	// Cannot be modified later.
 	WriteConcern int `json:"writeConcern,omitempty"`
+	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
+	IsDisjoint bool `json:"isDisjoint,omitempty"`
 }
 
 // CreateGraph creates a new graph with given name and options, and opens a connection to it.
@@ -135,12 +178,19 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 		input.OrphanVertexCollections = options.OrphanVertexCollections
 		input.EdgeDefinitions = options.EdgeDefinitions
 		input.IsSmart = options.IsSmart
-		if options.SmartGraphAttribute != "" || options.NumberOfShards != 0 {
+		if options.ReplicationFactor == SatelliteGraph {
+			input.Options = &createGraphAdditionalOptions{
+				SmartGraphAttribute: options.SmartGraphAttribute,
+				ReplicationFactor:   graphReplicationFactor(options.ReplicationFactor),
+				IsDisjoint:          options.IsDisjoint,
+			}
+		} else if options.SmartGraphAttribute != "" || options.NumberOfShards != 0 {
 			input.Options = &createGraphAdditionalOptions{
 				SmartGraphAttribute: options.SmartGraphAttribute,
 				NumberOfShards:      options.NumberOfShards,
-				ReplicationFactor:   options.ReplicationFactor,
+				ReplicationFactor:   graphReplicationFactor(options.ReplicationFactor),
 				WriteConcern:        options.WriteConcern,
+				IsDisjoint:          options.IsDisjoint,
 			}
 		}
 	}
@@ -158,7 +208,11 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 	if err := resp.CheckStatus(201, 202); err != nil {
 		return nil, WithStack(err)
 	}
-	g, err := newGraph(name, d)
+	var data getGraphResponse
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, WithStack(err)
+	}
+	g, err := newGraph(data.Graph, d)
 	if err != nil {
 		return nil, WithStack(err)
 	}

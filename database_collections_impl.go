@@ -106,23 +106,24 @@ type createCollectionOptionsInternal struct {
 	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
 	CacheEnabled      *bool             `json:"cacheEnabled,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
-	MinReplicationFactor int                   `json:"minReplicationFactor,omitempty"`
-	WriteConcern         int                   `json:"writeConcern,omitempty"`
-	WaitForSync          bool                  `json:"waitForSync,omitempty"`
-	DoCompact            *bool                 `json:"doCompact,omitempty"`
-	IsVolatile           bool                  `json:"isVolatile,omitempty"`
-	ShardKeys            []string              `json:"shardKeys,omitempty"`
-	NumberOfShards       int                   `json:"numberOfShards,omitempty"`
-	IsSystem             bool                  `json:"isSystem,omitempty"`
-	Type                 CollectionType        `json:"type,omitempty"`
-	IndexBuckets         int                   `json:"indexBuckets,omitempty"`
-	KeyOptions           *CollectionKeyOptions `json:"keyOptions,omitempty"`
-	DistributeShardsLike string                `json:"distributeShardsLike,omitempty"`
-	IsSmart              bool                  `json:"isSmart,omitempty"`
-	SmartGraphAttribute  string                `json:"smartGraphAttribute,omitempty"`
-	Name                 string                `json:"name"`
-	SmartJoinAttribute   string                `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy     ShardingStrategy      `json:"shardingStrategy,omitempty"`
+	MinReplicationFactor int                      `json:"minReplicationFactor,omitempty"`
+	WriteConcern         int                      `json:"writeConcern,omitempty"`
+	WaitForSync          bool                     `json:"waitForSync,omitempty"`
+	DoCompact            *bool                    `json:"doCompact,omitempty"`
+	IsVolatile           bool                     `json:"isVolatile,omitempty"`
+	ShardKeys            []string                 `json:"shardKeys,omitempty"`
+	NumberOfShards       int                      `json:"numberOfShards,omitempty"`
+	IsSystem             bool                     `json:"isSystem,omitempty"`
+	Type                 CollectionType           `json:"type,omitempty"`
+	IndexBuckets         int                      `json:"indexBuckets,omitempty"`
+	KeyOptions           *CollectionKeyOptions    `json:"keyOptions,omitempty"`
+	DistributeShardsLike string                   `json:"distributeShardsLike,omitempty"`
+	IsSmart              bool                     `json:"isSmart,omitempty"`
+	SmartGraphAttribute  string                   `json:"smartGraphAttribute,omitempty"`
+	Name                 string                   `json:"name"`
+	SmartJoinAttribute   string                   `json:"smartJoinAttribute,omitempty"`
+	ShardingStrategy     ShardingStrategy         `json:"shardingStrategy,omitempty"`
+	Schema               *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
 // CreateCollection creates a new collection with given name and options, and opens a connection to it.
@@ -195,6 +196,7 @@ func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOption
 	p.SmartGraphAttribute = i.SmartGraphAttribute
 	p.SmartJoinAttribute = i.SmartJoinAttribute
 	p.ShardingStrategy = i.ShardingStrategy
+	p.Schema = i.Schema
 }
 
 // // MarshalJSON converts CreateCollectionOptions into json

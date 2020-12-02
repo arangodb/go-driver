@@ -25,10 +25,11 @@ package vst
 import (
 	"bytes"
 	"fmt"
-	"github.com/arangodb/go-driver/http"
 	"net/url"
 	"reflect"
 	"strings"
+
+	"github.com/arangodb/go-driver/http"
 
 	driver "github.com/arangodb/go-driver"
 	velocypack "github.com/arangodb/go-velocypack"

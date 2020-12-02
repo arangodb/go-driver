@@ -176,6 +176,11 @@ func TestBackupCreateWithLabel(t *testing.T) {
 func TestBackupCreateWithAllowInconsistent(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
+
+	EnsureVersion(t, context.Background(), c).Enterprise().NotCluster().
+		CheckVersion(BelowPatchRelease("3.7.2")).
+		CheckVersion(BelowPatchRelease("3.6.6"))
+
 	var wg sync.WaitGroup
 	defer func() {
 		wg.Wait()
