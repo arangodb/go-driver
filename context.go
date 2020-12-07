@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech <tomasz@arangodb.com>
 //
 
 package driver
@@ -60,6 +61,7 @@ const (
 	keyAllowDirtyReads          ContextKey = "arangodb-allowDirtyReads"
 	keyTransactionID            ContextKey = "arangodb-transactionID"
 	keyOverwriteMode            ContextKey = "arangodb-overwriteMode"
+	keyOverwrite                ContextKey = "arangodb-overwrite"
 )
 
 type OverwriteMode string
@@ -246,10 +248,14 @@ func WithTransactionID(parent context.Context, tid TransactionID) context.Contex
 	return context.WithValue(contextOrBackground(parent), keyTransactionID, tid)
 }
 
-// WithConfigured is used to configure a context to return the configured value of
-// a user grant instead of the effective grant.
+// WithOverwriteMode is used to configure a context to instruct how a document should be overwritten.
 func WithOverwriteMode(parent context.Context, mode OverwriteMode) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyOverwriteMode, mode)
+}
+
+// WithOverwrite is used to configure a context to instruct if a document should be overwritten.
+func WithOverwrite(parent context.Context) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyOverwrite, true)
 }
 
 type contextSettings struct {
@@ -272,6 +278,7 @@ type contextSettings struct {
 	BatchID                  string
 	JobIDResponse            *string
 	OverwriteMode            OverwriteMode
+	Overwrite                bool
 }
 
 // loadContextResponseValue loads generic values from the response and puts it into variables specified
@@ -447,6 +454,14 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 			result.OverwriteMode = mode
 		}
 	}
+
+	if v := ctx.Value(keyOverwrite); v != nil {
+		if overwrite, ok := v.(bool); ok && overwrite {
+			req.SetQuery("overwrite", "true")
+			result.Overwrite = true
+		}
+	}
+
 	return result
 }
 
