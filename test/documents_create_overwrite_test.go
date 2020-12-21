@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech <tomasz@arangodb.com>
 //
 
 package test
@@ -40,8 +41,59 @@ func generateIDs(count int) []string {
 	return s
 }
 
-// TestCreateOverwriteDocument creates a document and then checks that it exists. Check with overwrite flag
+// TestCreateOverwriteDocument creates a document and then checks that it exists. Check with overwrite flag.
 func TestCreateOverwriteDocument(t *testing.T) {
+	c := createClientFromEnv(t, true)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	db := ensureDatabase(nil, c, "document_test", nil, t)
+	col := ensureCollection(nil, db, "document_overwrite_test", nil, t)
+
+	t.Run("Single Doc - replace", func(t *testing.T) {
+		id := generateIDs(1)[0]
+
+		first := UserDocWithKeyWithOmit{
+			Key:  id,
+			Name: "MyName",
+			Age:  10,
+		}
+
+		_, err := col.CreateDocument(ctx, first)
+		require.NoError(t, err)
+
+		{
+			var result UserDocWithKeyWithOmit
+			_, err := col.ReadDocument(ctx, id, &result)
+			require.NoError(t, err)
+
+			require.Equal(t, first, result)
+		}
+
+		second := UserDocWithKeyWithOmit{
+			Key:  id,
+			Name: "MyName2",
+			Age:  100,
+		}
+
+		_, err = col.CreateDocument(driver.WithOverwrite(ctx), second)
+		require.NoError(t, err)
+
+		{
+			var result UserDocWithKeyWithOmit
+			_, err := col.ReadDocument(ctx, id, &result)
+			require.NoError(t, err)
+
+			require.NotEqual(t, first, result)
+			require.Equal(t, second, result)
+		}
+	})
+
+}
+
+// TestCreateOverwriteModeDocument creates a document and then checks that it exists. Check with overwriteMode flag.
+func TestCreateOverwriteModeDocument(t *testing.T) {
 	c := createClientFromEnv(t, true)
 
 	ctx, cancel := context.WithCancel(context.Background())
