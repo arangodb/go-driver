@@ -105,6 +105,8 @@ func (d databaseCollection) Collections(ctx context.Context) ([]Collection, erro
 }
 
 func (d databaseCollection) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
+	options.Init()
+
 	url := d.db.url("_api", "collection")
 	reqData := struct {
 		shared.ResponseStruct `json:",inline"`

@@ -47,6 +47,8 @@ type testEnv interface {
 	Fatalf(format string, args ...interface{})
 	Log(message ...interface{})
 	Logf(format string, args ...interface{})
+	Name() string
+	FailNow()
 }
 
 func NewUUID() string {

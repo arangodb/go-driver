@@ -35,6 +35,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arangodb/go-driver/util/connection/wrappers"
+
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -139,6 +142,13 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 	}
 }
 
+// createConnectionFromEnvWitLog initializes a Connection from information specified in environment variables with logger.
+func createConnectionFromEnvWitLog(t testEnv, logger zerolog.Logger) driver.Connection {
+	conn := createConnectionFromEnv(t)
+
+	return wrappers.NewLoggerConnection(conn, wrappers.NewZeroLogLogger(logger), true)
+}
+
 // createConnectionFromEnv initializes a Connection from information specified in environment variables.
 func createConnectionFromEnv(t testEnv) driver.Connection {
 	connSpec := os.Getenv("TEST_CONNECTION")
@@ -197,7 +207,15 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 			}()
 		}
 	})
+
 	conn := createConnectionFromEnv(t)
+	if os.Getenv("TEST_DEBUG") != "" {
+		file, err := os.OpenFile("./test.log", os.O_CREATE|os.O_RDWR, 0666)
+		require.NoError(t, err)
+		l := zerolog.New(file).With().Str("Test", t.Name()).Logger()
+		conn = wrappers.NewLoggerConnection(conn, wrappers.NewZeroLogLogger(l), true)
+	}
+
 	if len(connection) == 1 {
 		*connection[0] = conn
 	}
