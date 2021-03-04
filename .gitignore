@@ -9,3 +9,7 @@
 
 #Vendor files
 vendor
+
+# Helper files
+debug/
+*.log

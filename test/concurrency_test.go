@@ -53,7 +53,7 @@ func TestConcurrentCreateSmallDocuments(t *testing.T) {
 		db := ensureDatabase(nil, c, "document_test", nil, t)
 		col := ensureCollection(nil, db, "TestConcurrentCreateSmallDocuments", nil, t)
 
-		docChan := make(chan driver.DocumentMeta, 16*1024)
+		docChan := make(chan driver.DocumentMeta, 128*1024)
 
 		creator := func(limit, interval int) {
 			for i := 0; i < limit; i++ {

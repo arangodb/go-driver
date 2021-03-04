@@ -353,6 +353,7 @@ __test_go_test:
 		-e TEST_MODE=$(TEST_MODE) \
 		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
 		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
+		-e TEST_DEBUG='$(TEST_DEBUG)' \
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
@@ -373,6 +374,7 @@ __test_v2_go_test:
 		-e TEST_MODE=$(TEST_MODE) \
 		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
 		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
+		-e TEST_DEBUG='$(TEST_DEBUG)' \
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/v2/ \
@@ -443,29 +445,29 @@ run-benchmarks-single-vpack-no-auth:
 .PHONY: tools
 tools:
 	@echo ">> Fetching goimports"
-	@go get -u golang.org/x/tools/cmd/goimports
+	@go get -mod 'readonly' golang.org/x/tools/cmd/goimports
 	@echo ">> Fetching license check"
-	@go get -u github.com/google/addlicense
+	@go get -mod 'readonly' github.com/google/addlicense
 
 .PHONY: license
 license:
 	@echo ">> Ensuring license of files"
-	@go run github.com/google/addlicense -f "$(ROOTDIR)/HEADER" $(SOURCES)
+	@go run -mod 'readonly' github.com/google/addlicense -f "$(ROOTDIR)/HEADER" $(SOURCES)
 
 .PHONY: license-verify
 license-verify:
 	@echo ">> Verify license of files"
-	@go run github.com/google/addlicense -f "$(ROOTDIR)/HEADER" -check $(SOURCES)
+	@go run -mod 'readonly' github.com/google/addlicense -f "$(ROOTDIR)/HEADER" -check $(SOURCES)
 
 .PHONY: fmt
 fmt:
 	@echo ">> Ensuring style of files"
-	@go run golang.org/x/tools/cmd/goimports -w $(SOURCES)
+	@go run -mod 'readonly' golang.org/x/tools/cmd/goimports -w $(SOURCES)
 
 .PHONY: fmt-verify
 fmt-verify: license-verify
 	@echo ">> Verify files style"
-	@if [ X"$$(go run golang.org/x/tools/cmd/goimports -l $(SOURCES) | wc -l)" != X"0" ]; then echo ">> Style errors"; go run golang.org/x/tools/cmd/goimports -l $(SOURCES); exit 1; fi
+	@if [ X"$$(go run -mod 'readonly' golang.org/x/tools/cmd/goimports -l $(SOURCES) | wc -l)" != X"0" ]; then echo ">> Style errors"; go run -mod 'readonly' golang.org/x/tools/cmd/goimports -l $(SOURCES); exit 1; fi
 
 .PHONY: linter
 linter: fmt

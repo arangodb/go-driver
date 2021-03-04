@@ -129,6 +129,7 @@ type createCollectionOptionsInternal struct {
 // CreateCollection creates a new collection with given name and options, and opens a connection to it.
 // If a collection with given name already exists within the database, a DuplicateError is returned.
 func (d *database) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
+	options.Init()
 	input := createCollectionOptionsInternal{
 		Name: name,
 	}

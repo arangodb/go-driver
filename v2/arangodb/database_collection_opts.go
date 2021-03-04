@@ -98,6 +98,15 @@ type CreateCollectionOptions struct {
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
+// Init translate deprecated fields into current one for backward compatibility
+func (c *CreateCollectionOptions) Init() {
+	if c == nil {
+		return
+	}
+
+	c.KeyOptions.Init()
+}
+
 // CollectionType is the type of a collection.
 type CollectionType int
 
@@ -113,13 +122,31 @@ type CollectionKeyOptions struct {
 	// If set to true, then it is allowed to supply own key values in the _key attribute of a document.
 	// If set to false, then the key generator will solely be responsible for generating keys and supplying own
 	// key values in the _key attribute of documents is considered an error.
-	AllowUserKeys bool `json:"allowUserKeys,omitempty"`
+	// Deprecated: Use AllowUserKeysPtr instead
+	AllowUserKeys bool `json:"-"`
+	// If set to true, then it is allowed to supply own key values in the _key attribute of a document.
+	// If set to false, then the key generator will solely be responsible for generating keys and supplying own
+	// key values in the _key attribute of documents is considered an error.
+	AllowUserKeysPtr *bool `json:"allowUserKeys,omitempty"`
 	// Specifies the type of the key generator. The currently available generators are traditional and autoincrement.
 	Type KeyGeneratorType `json:"type,omitempty"`
 	// increment value for autoincrement key generator. Not used for other key generator types.
 	Increment int `json:"increment,omitempty"`
 	// Initial offset value for autoincrement key generator. Not used for other key generator types.
 	Offset int `json:"offset,omitempty"`
+}
+
+// Init translate deprecated fields into current one for backward compatibility
+func (c *CollectionKeyOptions) Init() {
+	if c == nil {
+		return
+	}
+
+	if c.AllowUserKeysPtr == nil {
+		if c.AllowUserKeys {
+			c.AllowUserKeysPtr = &c.AllowUserKeys
+		}
+	}
 }
 
 // KeyGeneratorType is a type of key generated, used in `CollectionKeyOptions`.

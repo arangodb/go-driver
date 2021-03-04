@@ -106,7 +106,7 @@ func waitForJob(t *testing.T, jobID string, client driver.Client) func() {
 				return interrupt{}
 			}
 
-			t.Logf("job %s not yet finished", jobID)
+			t.Logf("(%s) job %s not yet finished - %d", time.Now().String(), jobID, result)
 
 			return nil
 		})
