@@ -29,6 +29,7 @@ import (
 
 const (
 	keyQueryCount          = "arangodb-query-count"
+	keyQueryCursorID       = "arangodb-query-cursorID"
 	keyQueryBatchSize      = "arangodb-query-batchSize"
 	keyQueryCache          = "arangodb-query-cache"
 	keyQueryMemoryLimit    = "arangodb-query-memoryLimit"
@@ -47,6 +48,10 @@ func WithQueryCount(parent context.Context, value ...bool) context.Context {
 		v = value[0]
 	}
 	return context.WithValue(contextOrBackground(parent), keyQueryCount, v)
+}
+
+func WithQueryCursorID(parent context.Context, value string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryCursorID, value)
 }
 
 // WithQueryBatchSize is used to configure a context that will set the BatchSize of a query request,
@@ -114,7 +119,8 @@ type queryRequest struct {
 	// indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
 	// turned off by default, and "count" is only returned when requested.
-	Count bool `json:"count,omitempty"`
+	Count    bool `json:"count,omitempty"`
+	CursorID string
 	// maximum number of result documents to be transferred from the server to the client in one roundtrip.
 	// If this attribute is not set, a server-controlled default value will be used. A batchSize value of 0 is disallowed.
 	BatchSize int `json:"batchSize,omitempty"`
@@ -172,6 +178,11 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryCount); rawValue != nil {
 		if value, ok := rawValue.(bool); ok {
 			q.Count = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryCursorID); rawValue != nil {
+		if value, ok := rawValue.(string); ok {
+			q.CursorID = value
 		}
 	}
 	if rawValue := ctx.Value(keyQueryBatchSize); rawValue != nil {

@@ -90,6 +90,10 @@ func (c *cursor) relPath() string {
 	return path.Join(c.db.relPath(), "_api", "cursor")
 }
 
+func (c *cursor) ID() string {
+	return c.cursorData.ID
+}
+
 // Name returns the name of the collection.
 func (c *cursor) HasMore() bool {
 	return c.resultIndex < len(c.Result) || c.cursorData.HasMore

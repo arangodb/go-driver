@@ -54,6 +54,8 @@ type QueryStatistics interface {
 type Cursor interface {
 	io.Closer
 
+	ID() string
+
 	// HasMore returns true if the next call to ReadDocument does not return a NoMoreDocuments error.
 	HasMore() bool
 
