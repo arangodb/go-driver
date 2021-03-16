@@ -24,7 +24,6 @@ package driver
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"path"
 )
@@ -129,15 +128,14 @@ func (d *database) Remove(ctx context.Context) error {
 // Query performs an AQL query, returning a cursor used to iterate over the returned documents.
 func (d *database) Query(ctx context.Context, query string, bindVars map[string]interface{}) (Cursor, error) {
 	method := "POST"
-	loc := "_api/cursor"
+	location := "_api/cursor"
 	if cursorID, ok := ctx.Value(keyQueryCursorID).(string); ok {
 		if cursorID != "" {
 			method = "PUT"
-			loc += "/" + cursorID
+			location += "/" + cursorID
 		}
 	}
-	fmt.Printf("%v\n", loc)
-	req, err := d.conn.NewRequest(method, path.Join(d.relPath(), loc))
+	req, err := d.conn.NewRequest(method, path.Join(d.relPath(), location))
 	if err != nil {
 		return nil, WithStack(err)
 	}
