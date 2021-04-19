@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Add support for AQL, Pipeline, Stopwords, GeoJSON and GeoPoint Arango Search analyzers.
+- Add `estimates` field to indexes properties
 
 ## [1.1.1](https://github.com/arangodb/go-driver/tree/1.1.1) (2020-11-13)
 - Add Driver V2 in Alpha version

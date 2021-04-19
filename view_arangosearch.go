@@ -55,15 +55,15 @@ const (
 	ArangoSearchAnalyzerTypeNGram ArangoSearchAnalyzerType = "ngram"
 	// ArangoSearchAnalyzerTypeText tokenize into words, optionally with stemming, normalization and stop-word filtering
 	ArangoSearchAnalyzerTypeText ArangoSearchAnalyzerType = "text"
-	// ArangoSearchAnalyzerTypeAQL TODO
+	// ArangoSearchAnalyzerTypeAQL an Analyzer capable of running a restricted AQL query to perform data manipulation / filtering.
 	ArangoSearchAnalyzerTypeAQL ArangoSearchAnalyzerType = "aql"
-	// ArangoSearchAnalyzerTypePipeline TODO
+	// ArangoSearchAnalyzerTypePipeline an Analyzer capable of chaining effects of multiple Analyzers into one. The pipeline is a list of Analyzers, where the output of an Analyzer is passed to the next for further processing. The final token value is determined by last Analyzer in the pipeline.
 	ArangoSearchAnalyzerTypePipeline ArangoSearchAnalyzerType = "pipeline"
-	// ArangoSearchAnalyzerTypeStopwords TODO
+	// ArangoSearchAnalyzerTypeStopwords an Analyzer capable of removing specified tokens from the input.
 	ArangoSearchAnalyzerTypeStopwords ArangoSearchAnalyzerType = "stopwords"
-	// ArangoSearchAnalyzerTypeGeoJSON TODO
+	// ArangoSearchAnalyzerTypeGeoJSON an Analyzer capable of breaking up a GeoJSON object into a set of indexable tokens for further usage with ArangoSearch Geo functions.
 	ArangoSearchAnalyzerTypeGeoJSON ArangoSearchAnalyzerType = "geojson"
-	// ArangoSearchAnalyzerTypeGeoPoint TODO
+	// ArangoSearchAnalyzerTypeGeoPoint an Analyzer capable of breaking up JSON object describing a coordinate into a set of indexable tokens for further usage with ArangoSearch Geo functions.
 	ArangoSearchAnalyzerTypeGeoPoint ArangoSearchAnalyzerType = "geopoint"
 )
 
