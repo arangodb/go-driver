@@ -81,6 +81,8 @@ type EnsureFullTextIndexOptions struct {
 	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
+	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	Estimates *bool
 }
 
 // EnsureGeoIndexOptions contains specific options for creating a geo index.
@@ -92,6 +94,8 @@ type EnsureGeoIndexOptions struct {
 	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
+	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	Estimates *bool
 }
 
 // EnsureHashIndexOptions contains specific options for creating a hash index.
@@ -108,6 +112,8 @@ type EnsureHashIndexOptions struct {
 	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
+	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	Estimates *bool
 }
 
 // EnsurePersistentIndexOptions contains specific options for creating a persistent index.
@@ -120,6 +126,8 @@ type EnsurePersistentIndexOptions struct {
 	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
+	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	Estimates *bool
 }
 
 // EnsureSkipListIndexOptions contains specific options for creating a skip-list index.
@@ -136,6 +144,8 @@ type EnsureSkipListIndexOptions struct {
 	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
+	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	Estimates *bool
 }
 
 // EnsureTTLIndexOptions provides specific options for creating a TTL index
@@ -144,4 +154,6 @@ type EnsureTTLIndexOptions struct {
 	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
 	Name string
+	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	Estimates *bool
 }

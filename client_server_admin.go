@@ -40,6 +40,22 @@ type ClientServerAdmin interface {
 
 	// Statistics queries statistics from a specific server
 	Statistics(ctx context.Context) (ServerStatistics, error)
+
+	// Logs retrieve logs from server in ArangoDB 3.8.0+ format
+	Logs(ctx context.Context) (ServerLogs, error)
+}
+
+type ServerLogs struct {
+	Total    int                `json:"total"`
+	Messages []ServerLogMessage `json:"messages,omitempty"`
+}
+
+type ServerLogMessage struct {
+	ID      int    `json:"id"`
+	Topic   string `json:"topic"`
+	Level   string `json:"level"`
+	Date    string `json:"date"`
+	Message string `json:"message"`
 }
 
 type ServerMode string

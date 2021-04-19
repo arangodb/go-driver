@@ -55,6 +55,16 @@ const (
 	ArangoSearchAnalyzerTypeNGram ArangoSearchAnalyzerType = "ngram"
 	// ArangoSearchAnalyzerTypeText tokenize into words, optionally with stemming, normalization and stop-word filtering
 	ArangoSearchAnalyzerTypeText ArangoSearchAnalyzerType = "text"
+	// ArangoSearchAnalyzerTypeAQL TODO
+	ArangoSearchAnalyzerTypeAQL ArangoSearchAnalyzerType = "aql"
+	// ArangoSearchAnalyzerTypePipeline TODO
+	ArangoSearchAnalyzerTypePipeline ArangoSearchAnalyzerType = "pipeline"
+	// ArangoSearchAnalyzerTypeStopwords TODO
+	ArangoSearchAnalyzerTypeStopwords ArangoSearchAnalyzerType = "stopwords"
+	// ArangoSearchAnalyzerTypeGeoJSON TODO
+	ArangoSearchAnalyzerTypeGeoJSON ArangoSearchAnalyzerType = "geojson"
+	// ArangoSearchAnalyzerTypeGeoPoint TODO
+	ArangoSearchAnalyzerTypeGeoPoint ArangoSearchAnalyzerType = "geopoint"
 )
 
 // ArangoSearchAnalyzerFeature specifies a feature to an analyzer
@@ -132,10 +142,75 @@ type ArangoSearchAnalyzerProperties struct {
 
 	// Stemming used by Text
 	Stemming *bool `json:"stemming,omitempty"`
-	// Stopword used by Text. This field is not mandatory since version 3.7 of arangod so it can not be omitted in 3.6.
+	// Stopword used by Text and Stopwords. This field is not mandatory since version 3.7 of arangod so it can not be omitted in 3.6.
 	Stopwords []string `json:"stopwords"`
 	// StopwordsPath used by Text
 	StopwordsPath []string `json:"stopwordsPath,omitempty"`
+
+	// QueryString used by AQL.
+	QueryString string `json:"queryString,omitempty"`
+	// CollapsePositions used by AQL.
+	CollapsePositions *bool `json:"collapsePositions,omitempty"`
+	// KeepNull used by AQL.
+	KeepNull *bool `json:"keepNull,omitempty"`
+	// BatchSize used by AQL.
+	BatchSize *int `json:"batchSize,omitempty"`
+	// MemoryLimit used by AQL.
+	MemoryLimit *int `json:"memoryLimit,omitempty"`
+	// ReturnType used by AQL.
+	ReturnType *ArangoSearchAnalyzerAQLReturnType `json:"returnType,omitempty"`
+
+	// Pipeline used by Pipeline.
+	Pipeline []ArangoSearchAnalyzerPipeline `json:"pipeline,omitempty"`
+
+	// Type used by GeoJSON.
+	Type *ArangoSearchAnalyzerGeoJSONType `json:"type,omitempty"`
+
+	// Options used by GeoJSON and GeoPoint
+	Options *ArangoSearchAnalyzerGeoOptions `json:"options,omitempty"`
+
+	// Latitude used by GetPoint.
+	Latitude []string `json:"latitude,omitempty"`
+	// Longitude used by GetPoint.
+	Longitude []string `json:"longitude,omitempty"`
+}
+
+// ArangoSearchAnalyzerGeoJSONType GeoJSON Type parameter.
+type ArangoSearchAnalyzerGeoJSONType string
+
+const (
+	// ArangoSearchAnalyzerGeoJSONTypeShape define index all GeoJSON geometry types (Point, Polygon etc.). (default)
+	ArangoSearchAnalyzerGeoJSONTypeShape ArangoSearchAnalyzerGeoJSONType = "shape"
+	// ArangoSearchAnalyzerGeoJSONTypeCentroid define compute and only index the centroid of the input geometry.
+	ArangoSearchAnalyzerGeoJSONTypeCentroid ArangoSearchAnalyzerGeoJSONType = "centroid"
+	// ArangoSearchAnalyzerGeoJSONTypePoint define only index GeoJSON objects of type Point, ignore all other geometry types.
+	ArangoSearchAnalyzerGeoJSONTypePoint ArangoSearchAnalyzerGeoJSONType = "point"
+)
+
+// ArangoSearchAnalyzerGeoOptions for fine-tuning geo queries. These options should generally remain unchanged.
+type ArangoSearchAnalyzerGeoOptions struct {
+	// MaxCells define maximum number of S2 cells.
+	MaxCells *int `json:"maxCells,omitempty"`
+	// MinLevel define the least precise S2 level.
+	MinLevel *int `json:"minLevel,omitempty"`
+	// MaxLevel define the most precise S2 level
+	MaxLevel *int `json:"maxLevel,omitempty"`
+}
+
+type ArangoSearchAnalyzerAQLReturnType string
+
+const (
+	ArangoSearchAnalyzerAQLReturnTypeString ArangoSearchAnalyzerAQLReturnType = "string"
+	ArangoSearchAnalyzerAQLReturnTypeNumber ArangoSearchAnalyzerAQLReturnType = "number"
+	ArangoSearchAnalyzerAQLReturnTypeBool   ArangoSearchAnalyzerAQLReturnType = "bool"
+)
+
+// ArangoSearchAnalyzerPipeline provides object definition for Pipeline array parameter
+type ArangoSearchAnalyzerPipeline struct {
+	// Type of the Pipeline Analyzer
+	Type ArangoSearchAnalyzerType `json:"type"`
+	// Properties of the Pipeline Analyzer
+	Properties ArangoSearchAnalyzerProperties `json:"properties,omitempty"`
 }
 
 // ArangoSearchAnalyzerDefinition provides definition of an analyzer
