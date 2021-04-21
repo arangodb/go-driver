@@ -62,6 +62,8 @@ const (
 	keyTransactionID            ContextKey = "arangodb-transactionID"
 	keyOverwriteMode            ContextKey = "arangodb-overwriteMode"
 	keyOverwrite                ContextKey = "arangodb-overwrite"
+	keyWithRevisions            ContextKey = "arangodb-withRevisions"
+	keyWithData                 ContextKey = "arangodb-withData"
 )
 
 type OverwriteMode string
@@ -258,6 +260,16 @@ func WithOverwrite(parent context.Context) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyOverwrite, true)
 }
 
+// WithChecksumRevisions is used to add 'withRevisions=true' param to the URL query.
+func WithChecksumRevisions(parent context.Context) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyWithRevisions, true)
+}
+
+// WithChecksumData is used to add 'withData=true' param to the URL query.
+func WithChecksumData(parent context.Context) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyWithData, true)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -279,6 +291,8 @@ type contextSettings struct {
 	JobIDResponse            *string
 	OverwriteMode            OverwriteMode
 	Overwrite                bool
+	WithRevisions            bool
+	WithData                 bool
 }
 
 // loadContextResponseValue loads generic values from the response and puts it into variables specified
@@ -459,6 +473,20 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if overwrite, ok := v.(bool); ok && overwrite {
 			req.SetQuery("overwrite", "true")
 			result.Overwrite = true
+		}
+	}
+
+	if v := ctx.Value(keyWithRevisions); v != nil {
+		if withRevisions, ok := v.(bool); ok && withRevisions {
+			req.SetQuery("withRevisions", "true")
+			result.WithRevisions = true
+		}
+	}
+
+	if v := ctx.Value(keyWithData); v != nil {
+		if withData, ok := v.(bool); ok && withData {
+			req.SetQuery("withData", "true")
+			result.WithData = true
 		}
 	}
 
