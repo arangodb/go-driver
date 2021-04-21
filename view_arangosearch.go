@@ -89,6 +89,17 @@ const (
 	ArangoSearchNGramStreamUTF8 ArangoSearchNGramStreamType = "utf8"
 )
 
+// ArangoSearchEdgeNGram specifies options for the edgeNGram text analyzer.
+// More information can be found here: https://www.arangodb.com/docs/stable/arangosearch-analyzers.html#text
+type ArangoSearchEdgeNGram struct {
+	// Min used by Text
+	Min *int64 `json:"min,omitempty"`
+	// Max used by Text
+	Max *int64 `json:"max,omitempty"`
+	// PreserveOriginal used by Text
+	PreserveOriginal *bool `json:"preserveOriginal,omitempty"`
+}
+
 // ArangoSearchAnalyzerProperties specifies options for the analyzer. Which fields are required and
 // respected depends on the analyzer type.
 // more information can be found here: https://www.arangodb.com/docs/stable/arangosearch-analyzers.html#analyzer-properties
@@ -101,6 +112,9 @@ type ArangoSearchAnalyzerProperties struct {
 	Accent *bool `json:"accent,omitempty"`
 	// Case used by Norm, Text
 	Case ArangoSearchCaseType `json:"case,omitempty"`
+
+	// EdgeNGram used by Text
+	EdgeNGram *ArangoSearchEdgeNGram `json:"edgeNgram,omitempty"`
 
 	// Min used by NGram
 	Min *int64 `json:"min,omitempty"`
