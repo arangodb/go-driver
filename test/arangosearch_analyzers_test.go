@@ -181,7 +181,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 		},
 		{
 			Name:       "create-pipeline-analyzer",
-			MaxVersion: newVersion("3.8"),
+			MinVersion: newVersion("3.8"),
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-pipeline",
 				Type: driver.ArangoSearchAnalyzerTypePipeline,
@@ -204,7 +204,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 		},
 		{
 			Name:       "create-aql-analyzer",
-			MaxVersion: newVersion("3.8"),
+			MinVersion: newVersion("3.8"),
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-aql",
 				Type: driver.ArangoSearchAnalyzerTypeAQL,
@@ -220,7 +220,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 		},
 		{
 			Name:       "create-geopoint",
-			MaxVersion: newVersion("3.8"),
+			MinVersion: newVersion("3.8"),
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-geopoint",
 				Type: driver.ArangoSearchAnalyzerTypeGeoPoint,
@@ -237,7 +237,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 		},
 		{
 			Name:       "create-geojson",
-			MaxVersion: newVersion("3.8"),
+			MinVersion: newVersion("3.8"),
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-geojson",
 				Type: driver.ArangoSearchAnalyzerTypeGeoJSON,
