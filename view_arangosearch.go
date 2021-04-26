@@ -178,6 +178,11 @@ type ArangoSearchAnalyzerProperties struct {
 // ArangoSearchAnalyzerGeoJSONType GeoJSON Type parameter.
 type ArangoSearchAnalyzerGeoJSONType string
 
+// New returns pointer to selected return type
+func (a ArangoSearchAnalyzerGeoJSONType) New() *ArangoSearchAnalyzerGeoJSONType {
+	return &a
+}
+
 const (
 	// ArangoSearchAnalyzerGeoJSONTypeShape define index all GeoJSON geometry types (Point, Polygon etc.). (default)
 	ArangoSearchAnalyzerGeoJSONTypeShape ArangoSearchAnalyzerGeoJSONType = "shape"
@@ -204,6 +209,11 @@ const (
 	ArangoSearchAnalyzerAQLReturnTypeNumber ArangoSearchAnalyzerAQLReturnType = "number"
 	ArangoSearchAnalyzerAQLReturnTypeBool   ArangoSearchAnalyzerAQLReturnType = "bool"
 )
+
+// New returns pointer to selected return type
+func (a ArangoSearchAnalyzerAQLReturnType) New() *ArangoSearchAnalyzerAQLReturnType {
+	return &a
+}
 
 // ArangoSearchAnalyzerPipeline provides object definition for Pipeline array parameter
 type ArangoSearchAnalyzerPipeline struct {

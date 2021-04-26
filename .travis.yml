@@ -29,15 +29,15 @@ language: go
 
 env:
   - TEST_SUITE=run-unit-tests ALWAYS=1
-  - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.5
   - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.6
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb:latest ALWAYS=1
   - TEST_SUITE=run-tests-single ARANGODB=arangodb:3.7
+  - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:3.8.0-beta.1
   - TEST_SUITE=run-tests-single ARANGODB=arangodb/arangodb-preview:latest
-  - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb:3.5
   - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb:3.6
   - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb/arangodb:latest ALWAYS=1
   - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb:3.7
+  - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb/arangodb-preview:3.8.0-beta.1
   - TEST_SUITE=run-v2-tests-single ARANGODB=arangodb/arangodb-preview:latest
 
 script:
