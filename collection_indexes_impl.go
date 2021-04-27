@@ -36,6 +36,7 @@ type indexData struct {
 	Sparse       *bool    `json:"sparse,omitempty"`
 	GeoJSON      *bool    `json:"geoJson,omitempty"`
 	InBackground *bool    `json:"inBackground,omitempty"`
+	Estimates    *bool    `json:"estimates,omitempty"`
 	MinLength    int      `json:"minLength,omitempty"`
 	ExpireAfter  int      `json:"expireAfter,omitempty"`
 	Name         string   `json:"name,omitempty"`
@@ -137,6 +138,7 @@ func (c *collection) EnsureFullTextIndex(ctx context.Context, fields []string, o
 		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.MinLength = options.MinLength
+		input.Estimates = options.Estimates
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -164,6 +166,7 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.GeoJSON = &options.GeoJSON
+		input.Estimates = options.Estimates
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -186,6 +189,7 @@ func (c *collection) EnsureHashIndex(ctx context.Context, fields []string, optio
 		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
+		input.Estimates = options.Estimates
 		if options.NoDeduplicate {
 			input.Deduplicate = &off
 		}
@@ -210,6 +214,7 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
+		input.Estimates = options.Estimates
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {
@@ -232,6 +237,7 @@ func (c *collection) EnsureSkipListIndex(ctx context.Context, fields []string, o
 		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
+		input.Estimates = options.Estimates
 		if options.NoDeduplicate {
 			input.Deduplicate = &off
 		}
@@ -254,6 +260,7 @@ func (c *collection) EnsureTTLIndex(ctx context.Context, field string, expireAft
 	if options != nil {
 		input.InBackground = &options.InBackground
 		input.Name = options.Name
+		input.Estimates = options.Estimates
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {

@@ -24,11 +24,16 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
 )
+
+func newInt(v int) *int {
+	return &v
+}
 
 func newInt64(v int64) *int64 {
 	return &v
@@ -174,6 +179,78 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:       "create-pipeline-analyzer",
+			MinVersion: newVersion("3.8"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-pipeline",
+				Type: driver.ArangoSearchAnalyzerTypePipeline,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Pipeline: []driver.ArangoSearchAnalyzerPipeline{
+						{
+							Type: driver.ArangoSearchAnalyzerTypeNGram,
+							Properties: driver.ArangoSearchAnalyzerProperties{
+								Min:              newInt64(1),
+								Max:              newInt64(14),
+								PreserveOriginal: newBool(false),
+								StartMarker:      newString("^"),
+								EndMarker:        newString("^"),
+								StreamType:       newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamUTF8),
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name:       "create-aql-analyzer",
+			MinVersion: newVersion("3.8"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-aql",
+				Type: driver.ArangoSearchAnalyzerTypeAQL,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					QueryString:       `FOR year IN [ 2011, 2012, 2013 ] FOR quarter IN [ 1, 2, 3, 4 ] RETURN { year, quarter, formatted: CONCAT(quarter, " / ", year)}`,
+					CollapsePositions: newBool(true),
+					KeepNull:          newBool(false),
+					BatchSize:         newInt(10),
+					ReturnType:        driver.ArangoSearchAnalyzerAQLReturnTypeString.New(),
+					MemoryLimit:       newInt(1024 * 1024),
+				},
+			},
+		},
+		{
+			Name:       "create-geopoint",
+			MinVersion: newVersion("3.8"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-geopoint",
+				Type: driver.ArangoSearchAnalyzerTypeGeoPoint,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Options: &driver.ArangoSearchAnalyzerGeoOptions{
+						MaxCells: newInt(20),
+						MinLevel: newInt(4),
+						MaxLevel: newInt(23),
+					},
+					Latitude:  []string{},
+					Longitude: []string{},
+				},
+			},
+		},
+		{
+			Name:       "create-geojson",
+			MinVersion: newVersion("3.8"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-geojson",
+				Type: driver.ArangoSearchAnalyzerTypeGeoJSON,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Options: &driver.ArangoSearchAnalyzerGeoOptions{
+						MaxCells: newInt(20),
+						MinLevel: newInt(4),
+						MaxLevel: newInt(23),
+					},
+					Type: driver.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -207,7 +284,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				require.Equal(t, a.Type(), def.Type)
 				require.Equal(t, a.UniqueName(), dbname+"::"+def.Name)
 				require.Equal(t, a.Database(), db)
-				require.Equal(t, a.Properties(), def.Properties)
+				d, err := json.Marshal(a.Properties())
+				require.NoError(t, err)
+				require.Equal(t, a.Properties(), def.Properties, string(d))
 			}
 		})
 	}

@@ -80,6 +80,26 @@ func (c *client) SetServerMode(ctx context.Context, mode ServerMode) error {
 	return nil
 }
 
+// Logs retrieve logs from server in ArangoDB 3.8.0+ format
+func (c *client) Logs(ctx context.Context) (ServerLogs, error) {
+	req, err := c.conn.NewRequest("GET", "_admin/log/entries")
+	if err != nil {
+		return ServerLogs{}, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return ServerLogs{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return ServerLogs{}, WithStack(err)
+	}
+	var data ServerLogs
+	if err := resp.ParseBody("", &data); err != nil {
+		return ServerLogs{}, WithStack(err)
+	}
+	return data, nil
+}
+
 // Shutdown a specific server, optionally removing it from its cluster.
 func (c *client) Shutdown(ctx context.Context, removeFromCluster bool) error {
 	req, err := c.conn.NewRequest("DELETE", "_admin/shutdown")
