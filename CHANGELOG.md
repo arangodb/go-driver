@@ -4,6 +4,7 @@
 - Add support for AQL, Pipeline, Stopwords, GeoJSON and GeoPoint Arango Search analyzers.
 - Add `estimates` field to indexes properties
 - Add tests for 3.8 ArangoDB and remove tests for 3.5
+- Add Plan support in Query execution
 
 ## [1.1.1](https://github.com/arangodb/go-driver/tree/1.1.1) (2020-11-13)
 - Add Driver V2 in Alpha version
