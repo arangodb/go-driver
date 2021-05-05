@@ -142,8 +142,6 @@ func TestProfileQuery(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(ctx, c, "validate_query_test", nil, t)
 
-	EnsureVersion(t, ctx, c).Cluster()
-
 	db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_test")
 	defer clean(t)
 
