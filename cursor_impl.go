@@ -75,14 +75,73 @@ type cursorStats struct {
 	ExecutionTimeInt float64 `json:"executionTime,omitempty"`
 }
 
+type cursorPlan struct {
+	Nodes               []cursorPlanNodes      `json:"nodes,omitempty"`
+	Rules               []string               `json:"rules,omitempty"`
+	Collections         []cursorPlanCollection `json:"collections,omitempty"`
+	Variables           []cursorPlanVariable   `json:"variables,omitempty"`
+	EstimatedCost       float64                `json:"estimatedCost,omitempty"`
+	EstimatedNrItems    int                    `json:"estimatedNrItems,omitempty"`
+	IsModificationQuery bool                   `json:"isModificationQuery,omitempty"`
+}
+
+type cursorExtra struct {
+	Stats   cursorStats   `json:"stats,omitempty"`
+	Profile cursorProfile `json:"profile,omitempty"`
+	Plan    *cursorPlan   `json:"plan,omitempty"`
+}
+
+func (c cursorExtra) GetStatistics() QueryStatistics {
+	return c.Stats
+}
+
+func (c cursorExtra) GetProfileRaw() ([]byte, bool, error) {
+	if c.Profile == nil {
+		return nil, false, nil
+	}
+
+	d, err := json.Marshal(c.Profile)
+	if err != nil {
+		return nil, true, err
+	}
+
+	return d, true, nil
+}
+
+func (c cursorExtra) GetPlanRaw() ([]byte, bool, error) {
+	if c.Plan == nil {
+		return nil, false, nil
+	}
+
+	d, err := json.Marshal(c.Plan)
+	if err != nil {
+		return nil, true, err
+	}
+
+	return d, true, nil
+}
+
+type cursorPlanVariable struct {
+	ID                   int    `json:"id"`
+	Name                 string `json:"name"`
+	IsDataFromCollection bool   `json:"isDataFromCollection"`
+}
+
+type cursorPlanCollection struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type cursorPlanNodes map[string]interface{}
+
+type cursorProfile map[string]interface{}
+
 type cursorData struct {
 	Count   int64        `json:"count,omitempty"`   // the total number of result documents available (only available if the query was executed with the count attribute set)
 	ID      string       `json:"id"`                // id of temporary cursor created on the server (optional, see above)
 	Result  []*RawObject `json:"result,omitempty"`  // an array of result documents (might be empty if query has no results)
 	HasMore bool         `json:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
-	Extra   struct {
-		Stats cursorStats `json:"stats,omitempty"`
-	} `json:"extra"`
+	Extra   cursorExtra  `json:"extra"`
 }
 
 // relPath creates the relative path to this cursor (`_db/<db-name>/_api/cursor`)
@@ -212,6 +271,10 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 // prepared with `WithStream`
 func (c *cursor) Statistics() QueryStatistics {
 	return c.cursorData.Extra.Stats
+}
+
+func (c *cursor) Extra() QueryExtra {
+	return c.cursorData.Extra
 }
 
 // the total number of data-modification operations successfully executed.
