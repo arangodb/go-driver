@@ -28,6 +28,18 @@ import (
 	"time"
 )
 
+// QueryExtra holds Query extra information
+type QueryExtra interface {
+	// GetStatistics returns Query statistics
+	GetStatistics() QueryStatistics
+
+	// GetProfileRaw returns raw profile information in json
+	GetProfileRaw() ([]byte, bool, error)
+
+	// PlanRaw returns raw plan
+	GetPlanRaw() ([]byte, bool, error)
+}
+
 // Statistics returned with the query cursor
 type QueryStatistics interface {
 	// the total number of data-modification operations successfully executed.
@@ -73,4 +85,7 @@ type Cursor interface {
 	// This might not be valid if the cursor has been created with a context that was
 	// prepared with `WithQueryStream`
 	Statistics() QueryStatistics
+
+	// Extra returns the query extras for this cursor.
+	Extra() QueryExtra
 }

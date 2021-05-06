@@ -36,6 +36,7 @@ const (
 	keyQueryOptSatSyncWait = "arangodb-query-opt-satSyncWait"
 	keyQueryOptFullCount   = "arangodb-query-opt-fullCount"
 	keyQueryOptStream      = "arangodb-query-opt-stream"
+	keyQueryOptProfile     = "arangodb-query-opt-profile"
 	keyQueryOptMaxRuntime  = "arangodb-query-opt-maxRuntime"
 )
 
@@ -102,6 +103,22 @@ func WithQueryStream(parent context.Context, value ...bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryOptStream, v)
 }
 
+// WithQueryProfile is used to configure whether Query should be profiled.
+func WithQueryProfile(parent context.Context, value ...int) context.Context {
+	v := 1
+	if len(value) > 0 {
+		v = value[0]
+	}
+
+	if v < 0 {
+		v = 0
+	} else if v > 2 {
+		v = 2
+	}
+
+	return context.WithValue(contextOrBackground(parent), keyQueryOptProfile, v)
+}
+
 func WithQueryMaxRuntime(parent context.Context, value ...float64) context.Context {
 	v := 0.0
 	if len(value) > 0 {
@@ -134,9 +151,10 @@ type queryRequest struct {
 	// key/value pairs representing the bind parameters.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
 	Options  struct {
-		// If set to true, then the additional query profiling information will be returned in the sub-attribute profile of the
-		// extra return attribute if the query result is not served from the query cache.
-		Profile bool `json:"profile,omitempty"`
+		// Profile If set to true or 1, then the additional query profiling information will be returned in the sub-attribute profile of the extra return attribute,
+		// if the query result is not served from the query cache. Set to 2 the query will include execution stats per query plan node in
+		// sub-attribute stats.nodes of the extra return attribute. Additionally the query plan is returned in the sub-attribute extra.plan.
+		Profile int `json:"profile,omitempty"`
 		// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute, telling the optimizer to include or exclude specific rules.
 		// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +. There is also a pseudo-rule all, which will match all optimizer rules.
 		OptimizerRules string `json:"optimizer.rules,omitempty"`
@@ -207,6 +225,13 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryOptStream); rawValue != nil {
 		if value, ok := rawValue.(bool); ok {
 			q.Options.Stream = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryOptProfile); rawValue != nil {
+		if _, ok := rawValue.(bool); ok {
+			q.Options.Profile = 1
+		} else if value, ok := rawValue.(int); ok {
+			q.Options.Profile = value
 		}
 	}
 	if rawValue := ctx.Value(keyQueryOptMaxRuntime); rawValue != nil {
