@@ -35,8 +35,9 @@ import (
 )
 
 const (
-	maxAgentResponseTime                   = time.Second * 10
-	keyAllowNoLeader     driver.ContextKey = "arangodb-agency-allow-no-leader"
+	maxAgentResponseTime                               = time.Second * 10
+	keyAllowNoLeader                 driver.ContextKey = "arangodb-agency-allow-no-leader"
+	keyAllowDifferentLeaderEndpoints driver.ContextKey = "arangodb-agency-allow-different-leader-endpoints"
 )
 
 // agentStatus is a helper structure used in AreAgentsHealthy.
@@ -59,6 +60,21 @@ func WithAllowNoLeader(parent context.Context) context.Context {
 // prepared with WithAllowNoLeader.
 func hasAllowNoLeader(ctx context.Context) bool {
 	return ctx != nil && ctx.Value(keyAllowNoLeader) != nil
+}
+
+// WithAllowNoLeader is used to configure a context to make AreAgentsHealthy
+// accept the situation where leader endpoint is different (during agency endpoint update).
+func WithAllowDifferentLeaderEndpoints(parent context.Context) context.Context {
+	if parent == nil {
+		parent = context.Background()
+	}
+	return context.WithValue(parent, keyAllowDifferentLeaderEndpoints, true)
+}
+
+// hasAllowNoLeader returns true when the given context was
+// prepared with WithAllowDifferentLeaderEndpoints.
+func hasAllowDifferentLeaderEndpoints(ctx context.Context) bool {
+	return ctx != nil && ctx.Value(keyAllowDifferentLeaderEndpoints) != nil
 }
 
 // AreAgentsHealthy performs a health check on all given agents.
@@ -111,6 +127,10 @@ func AreAgentsHealthy(ctx context.Context, clients []driver.Connection) error {
 			noLeaders++
 		}
 		if i > 0 {
+			if hasAllowDifferentLeaderEndpoints(ctx) {
+				continue
+			}
+
 			// Compare leader endpoint with previous
 			prev := statuses[i-1].LeaderEndpoint
 			if !IsSameEndpoint(prev, status.LeaderEndpoint) {
