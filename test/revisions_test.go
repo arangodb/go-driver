@@ -79,6 +79,7 @@ func TestRevisionTree(t *testing.T) {
 	require.NotEmpty(t, tree.Version)
 	require.NotEmpty(t, tree.RangeMin)
 	require.NotEmpty(t, tree.RangeMax)
+	require.NotEmpty(t, tree.InitialRangeMin)
 	require.NotEmpty(t, tree.Nodes)
 
 	branchFactor := 8
@@ -90,6 +91,7 @@ func TestRevisionTree(t *testing.T) {
 			noOfLeaves = noOfLeavesOnLevel
 		}
 	}
+	require.Equalf(t, noOfDocuments, int(tree.Count), "Count value of tree is not correct")
 	require.Equalf(t, noOfLeaves, len(tree.Nodes), "Number of leaves in the revision tree is not correct")
 
 	getRanges := func() driver.Revisions {

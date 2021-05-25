@@ -51,11 +51,14 @@ type RevisionTreeNode struct {
 
 // RevisionTree is a list of Revisions in a Merkle tree
 type RevisionTree struct {
-	Version  int                `json:"version"`
-	MaxDepth int                `json:"maxDepth"`
-	RangeMin RevisionUInt64     `json:"rangeMin,string" velocypack:"rangeMin"`
-	RangeMax RevisionUInt64     `json:"rangeMax,string" velocypack:"rangeMax"`
-	Nodes    []RevisionTreeNode `json:"nodes"`
+	Version         int                `json:"version"`
+	MaxDepth        int                `json:"maxDepth"`
+	RangeMin        RevisionUInt64     `json:"rangeMin,string" velocypack:"rangeMin"`
+	RangeMax        RevisionUInt64     `json:"rangeMax,string" velocypack:"rangeMax"`
+	InitialRangeMin RevisionUInt64     `json:"initialRangeMin,string" velocypack:"initialRangeMin"`
+	Count           uint64             `json:"count,int"`
+	Hash            uint64             `json:"hash"`
+	Nodes           []RevisionTreeNode `json:"nodes"`
 }
 
 var (
