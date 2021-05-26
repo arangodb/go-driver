@@ -54,7 +54,7 @@ if [ "$CMD" == "start" ]; then
     fi
 
     # Start network namespace
-    docker run -d --name=${NAMESPACE} alpine:3.4 sleep 365d
+    docker run -d --name=${NAMESPACE} "${ALPINE_IMAGE}" sleep 365d
 
     # Start starters 
     # arangodb/arangodb-starter 0.7.0 or higher is needed.
