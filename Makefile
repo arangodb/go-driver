@@ -4,8 +4,9 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION := 1.13.4-stretch
-GOV2VERSION := 1.13.4-stretch
+GOIMAGE ?= golang:1.13.4-stretch
+GOV2IMAGE ?= $(GOIMAGE)
+ALPINE_IMAGE ?= alpine:3.4
 TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run
@@ -13,12 +14,8 @@ DOCKER_CMD:=docker run
 GOBUILDTAGS:=$(TAGS)
 GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
-ifndef ARANGODB
-	ARANGODB := arangodb/arangodb:latest
-endif
-ifndef STARTER
-	STARTER := arangodb/arangodb-starter:latest
-endif
+ARANGODB ?= arangodb/arangodb:latest
+STARTER ?= arangodb/arangodb-starter:latest
 
 ifndef TESTOPTIONS
 	TESTOPTIONS := 
@@ -147,7 +144,7 @@ run-unit-tests:
 		-v "${ROOTDIR}":/usr/code \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
-		golang:$(GOVERSION) \
+		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
 
 # Single server tests 
@@ -357,7 +354,7 @@ __test_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
-		golang:$(GOVERSION) \
+		$(GOIMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
 
 # Internal test tasks
@@ -378,7 +375,7 @@ __test_v2_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/v2/ \
-		golang:$(GOV2VERSION) \
+		$(GOV2IMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
 
 
@@ -393,7 +390,7 @@ endif
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@mkdir -p "${TMPDIR}"
 	@echo "${TMPDIR}"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ENABLE_BACKUP=$(ENABLE_BACKUP) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) ENABLE_BACKUP=$(ENABLE_BACKUP) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
 endif
 
 __test_cleanup:
@@ -402,7 +399,7 @@ ifdef TESTCONTAINER
 	@if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); fi
 endif
 ifndef TEST_ENDPOINTS_OVERRIDE
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) "${ROOTDIR}/test/cluster.sh" cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) "${ROOTDIR}/test/cluster.sh" cleanup
 else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
@@ -413,7 +410,7 @@ run-tests-cluster-failover:
 	# Note that we use 127.0.0.1:7001.. as endpoints, so we force using IPv4
 	# This is essential since we only block IPv4 ports in the test.
 	@echo "Cluster server, failover, no authentication"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" start
 	go get github.com/coreos/go-iptables/iptables
 	$(DOCKER_CMD) \
 		--rm \
@@ -426,10 +423,10 @@ run-tests-cluster-failover:
 		-w /usr/code/ \
 		golang:$(GOVERSION) \
 		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
 
 run-tests-cluster-cleanup:
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) "${ROOTDIR}/test/cluster.sh" cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 
