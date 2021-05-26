@@ -29,16 +29,16 @@ language: go
 
 env:
   - TEST_SUITE=run-unit-tests ALWAYS=1
-  - TEST_SUITE=run-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.6
-  - TEST_SUITE=run-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:latest ALWAYS=1
-  - TEST_SUITE=run-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.7
-  - TEST_SUITE=run-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.8.0-beta.1
-  - TEST_SUITE=run-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest
-  - TEST_SUITE=run-v2-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.6
-  - TEST_SUITE=run-v2-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:latest ALWAYS=1
-  - TEST_SUITE=run-v2-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.7
-  - TEST_SUITE=run-v2-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.8.0-beta.1
-  - TEST_SUITE=run-v2-tests-single GOVERSION=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.6
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:latest ALWAYS=1
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.7
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.8.0-beta.1
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.6
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:latest ALWAYS=1
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb:3.7
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.8.0-beta.1
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.13.4-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest
 
 script:
   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then make $TEST_SUITE TEST_RESOURCES="$HOME/resources/" VERBOSE=1; fi'

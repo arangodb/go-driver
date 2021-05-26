@@ -4,8 +4,8 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.13.4-stretch
-GOV2VERSION ?= $(GOVERSION)
+GOIMAGE ?= golang:1.13.4-stretch
+GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.4
 TMPDIR := ${SCRIPTDIR}/.tmp
 
@@ -144,7 +144,7 @@ run-unit-tests:
 		-v "${ROOTDIR}":/usr/code \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
-		golang:$(GOVERSION) \
+		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
 
 # Single server tests 
@@ -354,7 +354,7 @@ __test_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/ \
-		golang:$(GOVERSION) \
+		$(GOIMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
 
 # Internal test tasks
@@ -375,7 +375,7 @@ __test_v2_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=0 \
 		-w /usr/code/v2/ \
-		golang:$(GOV2VERSION) \
+		$(GOV2IMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
 
 
