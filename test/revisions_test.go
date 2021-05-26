@@ -39,7 +39,7 @@ func TestRevisionTree(t *testing.T) {
 		t.Skipf("Not a single")
 	}
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.7", t)
+	skipBelowVersion(c, "3.8", t)
 
 	db := ensureDatabase(nil, c, "revision_tree", nil, t)
 	col := ensureCollection(nil, db, "revision_tree", nil, t)
@@ -79,6 +79,7 @@ func TestRevisionTree(t *testing.T) {
 	require.NotEmpty(t, tree.Version)
 	require.NotEmpty(t, tree.RangeMin)
 	require.NotEmpty(t, tree.RangeMax)
+	require.NotEmpty(t, tree.InitialRangeMin)
 	require.NotEmpty(t, tree.Nodes)
 
 	branchFactor := 8
@@ -86,8 +87,11 @@ func TestRevisionTree(t *testing.T) {
 	noOfLeaves := noOfLeavesOnLevel
 	for i := 1; i <= tree.MaxDepth; i++ {
 		noOfLeavesOnLevel *= branchFactor
-		noOfLeaves += noOfLeavesOnLevel
+		if i == tree.MaxDepth {
+			noOfLeaves = noOfLeavesOnLevel
+		}
 	}
+	require.Equalf(t, noOfDocuments, int(tree.Count), "Count value of tree is not correct")
 	require.Equalf(t, noOfLeaves, len(tree.Nodes), "Number of leaves in the revision tree is not correct")
 
 	getRanges := func() driver.Revisions {
