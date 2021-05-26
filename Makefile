@@ -14,12 +14,8 @@ DOCKER_CMD:=docker run
 GOBUILDTAGS:=$(TAGS)
 GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
-ifndef ARANGODB
-	ARANGODB := arangodb/arangodb:latest
-endif
-ifndef STARTER
-	STARTER := arangodb/arangodb-starter:latest
-endif
+ARANGODB ?= arangodb/arangodb:latest
+STARTER ?= arangodb/arangodb-starter:latest
 
 ifndef TESTOPTIONS
 	TESTOPTIONS := 
