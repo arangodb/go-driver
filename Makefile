@@ -4,8 +4,8 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION := 1.13.4-stretch
-GOV2VERSION := 1.13.4-stretch
+GOVERSION ?= 1.13.4-stretch
+GOV2VERSION ?= $(GOVERSION)
 ALPINE_IMAGE ?= alpine:3.4
 TMPDIR := ${SCRIPTDIR}/.tmp
 
