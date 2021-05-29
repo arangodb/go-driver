@@ -38,7 +38,7 @@ type indexData struct {
 	InBackground *bool    `json:"inBackground,omitempty"`
 	Estimates    *bool    `json:"estimates,omitempty"`
 	MinLength    int      `json:"minLength,omitempty"`
-	ExpireAfter  int      `json:"expireAfter,omitempty"`
+	ExpireAfter  *int     `json:"expireAfter,omitempty"`
 	Name         string   `json:"name,omitempty"`
 }
 
@@ -255,7 +255,7 @@ func (c *collection) EnsureTTLIndex(ctx context.Context, field string, expireAft
 	input := indexData{
 		Type:        string(TTLIndex),
 		Fields:      []string{field},
-		ExpireAfter: expireAfter,
+		ExpireAfter: &expireAfter,
 	}
 	if options != nil {
 		input.InBackground = &options.InBackground
