@@ -42,6 +42,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func checkAgencyEndpoints(ctx context.Context, c driver.Client) error {
+	cl, err := c.Cluster(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = cl.Health(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // getAgencyEndpoints queries the cluster to get all agency endpoints.
 func getAgencyEndpoints(ctx context.Context, c driver.Client) ([]string, error) {
 	cl, err := c.Cluster(ctx)
@@ -114,6 +127,11 @@ func getAgencyConnection(ctx context.Context, t testEnv, c driver.Client) (agenc
 		// These tests assume an HTTP connetion, so we skip under this condition
 		return nil, driver.ArangoError{HasError: true, Code: 412, ErrorMessage: "Using vst is not supported in agency tests"}
 	}
+
+	if err := driverErrorCheck(ctx, c, checkAgencyEndpoints, driverErrorCheckRetry503).Retry(125*time.Millisecond, time.Minute); err != nil {
+		return nil, err
+	}
+
 	endpoints, err := getAgencyEndpoints(ctx, c)
 	if err != nil {
 		return nil, err
