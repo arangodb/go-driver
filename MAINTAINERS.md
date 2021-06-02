@@ -8,4 +8,6 @@
   - `make run-tests-single`
   - `make run-tests-resilientsingle`
   - `make run-tests-cluster`.
+- The test can be launched with the flag `RACE=on` which means that test will be performed with the race detector, e.g:
+  - `RACE=on make run-tests-single`
 - Always create changes in a PR

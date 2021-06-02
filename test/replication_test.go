@@ -18,14 +18,19 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -84,4 +89,54 @@ func TestReplicationDatabaseInventory(t *testing.T) {
 			t.Error("Expected multiple system collections, found none")
 		}
 	}
+}
+
+func TestReplicationBatch(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+
+	if _, err := c.Cluster(ctx); err == nil {
+		// Cluster, not supported for this test
+		t.Skip("Skipping in cluster")
+	} else if !driver.IsPreconditionFailed(err) {
+		t.Errorf("Failed to query cluster: %s", describe(err))
+	}
+
+	rep := c.Replication()
+	db, err := c.Database(ctx, "_system")
+	require.NoError(t, err, "failed to open _system database")
+
+	var serverID int64 = 1338 // Random test value
+	batch, err := rep.CreateBatch(ctx, db, serverID, time.Second*60)
+	require.NoError(t, err, "can not create a batch")
+
+	ctxCancel, cancel := context.WithCancel(ctx)
+	errExtend := make(chan error)
+	go func(channel chan<- error) {
+		for {
+			select {
+			case <-ctxCancel.Done():
+				// The batch should be closed.
+				channel <- batch.Extend(ctx, time.Second*60)
+				return
+			default:
+				// Extend the batch immediately.
+				if e := batch.Extend(ctx, time.Second*60); e == driver.ErrBatchClosed {
+					if ctxError := ctx.Err(); ctxError != nil && ctxError != context.Canceled {
+						channel <- errors.New("the batch extension is closed before it is expected")
+						return
+					}
+				}
+			}
+		}
+	}(errExtend)
+
+	// Extend the created batch for 1 second.
+	time.Sleep(time.Second * 1)
+
+	// Delete the batch and interrupt the Go routine for batch extension.
+	err = batch.Delete(ctx)
+	cancel()
+	assert.NoError(t, err, "can not delete a batch")
+	require.EqualError(t, <-errExtend, driver.ErrBatchClosed.Error(), "batch should be already closed")
 }

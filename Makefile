@@ -24,6 +24,13 @@ ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
 endif
 
+CGO_ENABLED=0
+ifdef RACE
+	TESTVERBOSEOPTIONS += -race
+	CGO_ENABLED=1
+endif
+
+
 ORGPATH := github.com/arangodb
 REPONAME := $(PROJECT)
 REPODIR := $(ORGDIR)/$(REPONAME)
@@ -142,7 +149,7 @@ run-unit-tests:
 	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
-		-e CGO_ENABLED=0 \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
@@ -352,7 +359,7 @@ __test_go_test:
 		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
 		-e TEST_DEBUG='$(TEST_DEBUG)' \
 		-e GODEBUG=tls13=1 \
-		-e CGO_ENABLED=0 \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
@@ -373,7 +380,7 @@ __test_v2_go_test:
 		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
 		-e TEST_DEBUG='$(TEST_DEBUG)' \
 		-e GODEBUG=tls13=1 \
-		-e CGO_ENABLED=0 \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/v2/ \
 		$(GOV2IMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
