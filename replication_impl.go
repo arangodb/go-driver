@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package driver
@@ -110,7 +111,7 @@ func (b batchMetadata) LastTick() Tick {
 }
 
 // Extend the lifetime of an existing batch on the server
-func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
+func (b *batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 0) {
 		return WithStack(ErrBatchClosed)
 	}
