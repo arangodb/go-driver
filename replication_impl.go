@@ -101,12 +101,16 @@ func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseIn
 }
 
 // BatchID reported by the server
-func (b batchMetadata) BatchID() string {
+// The receiver is pointer because this struct contains the field `closed` and it can not be copied
+// because race detector will complain.
+func (b *batchMetadata) BatchID() string {
 	return b.ID
 }
 
 // LastTick reported by the server for this batch
-func (b batchMetadata) LastTick() Tick {
+// The receiver is pointer because this struct contains the field `closed` and it can not be copied
+// because race detector will complain.
+func (b *batchMetadata) LastTick() Tick {
 	return b.LastTickInt
 }
 
