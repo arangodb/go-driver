@@ -42,14 +42,8 @@ type indexData struct {
 	Name         string   `json:"name,omitempty"`
 }
 
-type genericIndexData struct {
-	ID   string `json:"id,omitempty"`
-	Type string `json:"type"`
-	Name string `json:"name,omitempty"`
-}
-
 type indexListResponse struct {
-	Indexes []genericIndexData `json:"indexes,omitempty"`
+	Indexes []indexData `json:"indexes,omitempty"`
 }
 
 // Index opens a connection to an existing index within the collection.
@@ -70,7 +64,7 @@ func (c *collection) Index(ctx context.Context, name string) (Index, error) {
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, data.Name, c)
+	idx, err := newIndex(data, c)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -116,7 +110,7 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 	}
 	result := make([]Index, 0, len(data.Indexes))
 	for _, x := range data.Indexes {
-		idx, err := newIndex(x.ID, x.Type, x.Name, c)
+		idx, err := newIndex(x, c)
 		if err != nil {
 			return nil, WithStack(err)
 		}
@@ -293,7 +287,7 @@ func (c *collection) ensureIndex(ctx context.Context, options indexData) (Index,
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, false, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, data.Name, c)
+	idx, err := newIndex(data, c)
 	if err != nil {
 		return nil, false, WithStack(err)
 	}
