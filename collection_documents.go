@@ -54,7 +54,7 @@ type CollectionDocuments interface {
 	// If a documents element already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
 	// If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
-	// a ConflictError is returned in its inded in the errors slice.
+	// a ConflictError is returned in its index in the errors slice.
 	// To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
 	// a slice with the same number of entries as the `documents` slice.
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
@@ -150,7 +150,7 @@ const (
 	// This is the default setting.
 	ImportOnDuplicateError = ImportOnDuplicate("error")
 	// ImportOnDuplicateUpdate will update an existing document in the database with the data specified in the request.
-	// Attributes of the existing document that are not present in the request will be preseved.
+	// Attributes of the existing document that are not present in the request will be preserved.
 	ImportOnDuplicateUpdate = ImportOnDuplicate("update")
 	// ImportOnDuplicateReplace will replace an existing document in the database with the data specified in the request.
 	ImportOnDuplicateReplace = ImportOnDuplicate("replace")
