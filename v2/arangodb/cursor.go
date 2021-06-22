@@ -42,6 +42,13 @@ type Cursor interface {
 	//       then the returned DocumentMeta will be empty.
 	ReadDocument(ctx context.Context, result interface{}) (DocumentMeta, error)
 
+	// ReadDocumentOnly reads the next document from the cursor.
+	// The document data is stored into result, the document meta data is returned.
+	// If the cursor has no more documents, a NoMoreDocuments error is returned.
+	// Note: If the query (resulting in this cursor) does not return documents,
+	//       then the returned DocumentMeta will be empty.
+	ReadDocumentOnly(ctx context.Context, result interface{}) error
+
 	// Count returns the total number of result documents available.
 	// A valid return value is only available when the cursor has been created with `Count` and not with `Stream`.
 	Count() int64
