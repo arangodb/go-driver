@@ -190,6 +190,25 @@ func (c *collection) SetProperties(ctx context.Context, options SetCollectionPro
 	return nil
 }
 
+// Rename the collection
+func (c *collection) Rename(ctx context.Context, options SetRenameOptions) error {
+	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "rename"))
+	if err != nil {
+		return WithStack(err)
+	}
+	if _, err := req.SetBody(options); err != nil {
+		return WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
 // Load the collection into memory.
 func (c *collection) Load(ctx context.Context) error {
 	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("collection"), "load"))

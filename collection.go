@@ -55,6 +55,9 @@ type Collection interface {
 	// SetProperties changes properties of the collection.
 	SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error
 
+	// Rename the collection
+	Rename(ctx context.Context, options SetRenameOptions) error
+
 	// Load the collection into memory.
 	Load(ctx context.Context) error
 
@@ -175,6 +178,11 @@ type SetCollectionPropertiesOptions struct {
 	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+}
+
+// SetRenameOptions contains data for Collection.Rename
+type SetRenameOptions struct {
+	Name string `json:"name"`
 }
 
 // CollectionStatus indicates the status of a collection.
