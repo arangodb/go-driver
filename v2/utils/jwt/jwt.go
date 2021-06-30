@@ -23,7 +23,7 @@
 package jwt
 
 import (
-	jg "github.com/dgrijalva/jwt-go"
+	jg "github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 )
 
