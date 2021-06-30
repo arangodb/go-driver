@@ -1,4 +1,4 @@
-module github.com/michabub/go-driver
+module github.com/arangodb/go-driver
 
 go 1.12
 
