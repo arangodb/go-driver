@@ -34,6 +34,28 @@ type serverModeRequest struct {
 	Mode ServerMode `json:"mode"`
 }
 
+// ShutdownInfo stores information about shutdown of the coordinator.
+type ShutdownInfo struct {
+	// AQLCursors stores a number of AQL cursors that are still active.
+	AQLCursors int `json:"AQLcursors"`
+	// Transactions stores a number of ongoing transactions.
+	Transactions int `json:"transactions"`
+	// PendingJobs stores a number of ongoing asynchronous requests.
+	PendingJobs int `json:"pendingJobs"`
+	// DoneJobs stores a number of finished asynchronous requests, whose result has not yet been collected.
+	DoneJobs int `json:"doneJobs"`
+	// PregelConductors stores a number of ongoing Pregel jobs.
+	PregelConductors int `json:"pregelConductors"`
+	// LowPrioOngoingRequests stores a number of ongoing low priority requests.
+	LowPrioOngoingRequests int `json:"lowPrioOngoingRequests"`
+	// LowPrioQueuedRequests stores a number of queued low priority requests.
+	LowPrioQueuedRequests int `json:"lowPrioQueuedRequests"`
+	// AllClear is set if all operations are closed.
+	AllClear bool `json:"allClear"`
+	// SoftShutdownOngoing describes whether a soft shutdown of the Coordinator is in progress.
+	SoftShutdownOngoing bool `json:"softShutdownOngoing"`
+}
+
 // ServerMode returns the current mode in which the server/cluster is operating.
 // This call needs ArangoDB 3.3 and up.
 func (c *client) ServerMode(ctx context.Context) (ServerMode, error) {
@@ -135,6 +157,51 @@ func (c *client) Statistics(ctx context.Context) (ServerStatistics, error) {
 	var data ServerStatistics
 	if err := resp.ParseBody("", &data); err != nil {
 		return ServerStatistics{}, WithStack(err)
+	}
+	return data, nil
+}
+
+// ShutdownV2 shuts down a specific coordinator, optionally removing it from the cluster with a graceful manner.
+// When `graceful` is true then run soft shutdown process and the `ShutdownInfoV2` can be used to check the progress.
+// It is available since versions: v3.7.12, v3.8.1, v3.9.0.
+func (c *client) ShutdownV2(ctx context.Context, removeFromCluster, graceful bool) error {
+	req, err := c.conn.NewRequest("DELETE", "_admin/shutdown")
+	if err != nil {
+		return WithStack(err)
+	}
+	if removeFromCluster {
+		req.SetQuery("remove_from_cluster", "1")
+	}
+	if graceful {
+		req.SetQuery("soft", "true")
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	return nil
+}
+
+// ShutdownInfoV2 returns information about shutdown progress.
+// It is available since versions: v3.7.12, v3.8.1, v3.9.0.
+func (c *client) ShutdownInfoV2(ctx context.Context) (ShutdownInfo, error) {
+	req, err := c.conn.NewRequest("GET", "_admin/shutdown")
+	if err != nil {
+		return ShutdownInfo{}, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return ShutdownInfo{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return ShutdownInfo{}, WithStack(err)
+	}
+	data := ShutdownInfo{}
+	if err := resp.ParseBody("", &data); err != nil {
+		return ShutdownInfo{}, WithStack(err)
 	}
 	return data, nil
 }

@@ -41,6 +41,12 @@ type ClientServerAdmin interface {
 	// Statistics queries statistics from a specific server
 	Statistics(ctx context.Context) (ServerStatistics, error)
 
+	// ShutdownV2 shuts down a specific coordinator, optionally removing it from the cluster with a graceful manner.
+	ShutdownV2(ctx context.Context, removeFromCluster, graceful bool) error
+
+	// ShutdownInfoV2 queries information about shutdown progress.
+	ShutdownInfoV2(ctx context.Context) (ShutdownInfo, error)
+
 	// Logs retrieve logs from server in ArangoDB 3.8.0+ format
 	Logs(ctx context.Context) (ServerLogs, error)
 }

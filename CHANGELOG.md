@@ -6,6 +6,7 @@
 - Add tests for 3.8 ArangoDB and remove tests for 3.5.
 - Add Plan support in Query execution.
 - Change Golang version from 1.13.4 to 1.16.6.
+- Add graceful shutdown for the coordinators.
 
 ## [1.1.1](https://github.com/arangodb/go-driver/tree/1.1.1) (2020-11-13)
 - Add Driver V2 in Alpha version
