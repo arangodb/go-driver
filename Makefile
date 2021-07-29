@@ -4,7 +4,8 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOIMAGE ?= golang:1.13.4-stretch
+GOVERSION ?= 1.16.6
+GOIMAGE ?= golang:$(GOVERSION)-stretch
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.4
 TMPDIR := ${SCRIPTDIR}/.tmp
