@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package jwt
 
 import (
-	jg "github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 )
 
@@ -41,7 +42,7 @@ func CreateArangodJwtAuthorizationHeader(jwtSecret, serverID string) (string, er
 	}
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
-	token := jg.NewWithClaims(jg.SigningMethodHS256, jg.MapClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"iss":       issArangod,
 		"server_id": serverID,
 	})
@@ -66,7 +67,7 @@ func CreateArangodJwtAuthorizationHeaderAllowedPaths(jwtSecret, serverID string,
 	}
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
-	token := jg.NewWithClaims(jg.SigningMethodHS256, jg.MapClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"iss":           issArangod,
 		"server_id":     serverID,
 		"allowed_paths": paths,
