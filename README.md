@@ -15,11 +15,11 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 
 # Supported Go Versions
 
-|                   | Go 1.13 | Go 1.14 |
-|-------------------|---------|---------|
-| `1.0.0`           | ✓       | ✓       |
-| `1.1.0`           | ✓       | ✓       |
-| `master`          | ✓       | ✓       |
+|                   | Go 1.13 | Go 1.14 | Go 1.16 |
+|-------------------|---------|---------|---------|
+| `1.0.0`           | ✓       | ✓       | ✓       |
+| `1.1.0`           | ✓       | ✓       | ✓       |
+| `master`          | ✓       | ✓       | ✓       |
 
 # Supported Versions
 
