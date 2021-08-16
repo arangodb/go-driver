@@ -46,7 +46,7 @@ type RevisionRanges struct {
 // RevisionTreeNode is a leaf in Merkle tree with hashed Revisions and with count of documents in the leaf
 type RevisionTreeNode struct {
 	Hash  uint64 `json:"hash"`
-	Count uint64  `json:"count,int"`
+	Count uint64 `json:"count,int"`
 }
 
 // RevisionTree is a list of Revisions in a Merkle tree

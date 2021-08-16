@@ -175,8 +175,8 @@ func TestUpdateVerticesReturnNew(t *testing.T) {
 // TestUpdateVerticesKeepNullTrue creates documents, updates them with KeepNull(true) and then checks the updates have succeeded.
 func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	var conn driver.Connection
-	c := createClientFromEnv(t, true, &conn)
+	c := createClientFromEnv(t, true)
+	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertices_keepNullTrue_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "keepers", t)
