@@ -150,17 +150,19 @@ func (r retryFunc) Retry(interval, timeout time.Duration) error {
 	defer intervalT.Stop()
 
 	for {
+		if err := r(); err != nil {
+			if _, ok := err.(interrupt); ok {
+				return nil
+			}
+
+			return err
+		}
+
 		select {
 		case <-timeoutT.C:
 			return fmt.Errorf("function timeouted")
 		case <-intervalT.C:
-			if err := r(); err != nil {
-				if _, ok := err.(interrupt); ok {
-					return nil
-				}
-
-				return err
-			}
+			continue
 		}
 	}
 }

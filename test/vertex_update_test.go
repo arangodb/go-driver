@@ -132,8 +132,8 @@ func TestUpdateVertexReturnNew(t *testing.T) {
 // TestUpdateVertexKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateVertexKeepNullTrue(t *testing.T) {
 	var ctx context.Context
-	var conn driver.Connection
-	c := createClientFromEnv(t, true, &conn)
+	c := createClientFromEnv(t, true)
+	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_keepNullTrue_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "accounts", t)

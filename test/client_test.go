@@ -25,7 +25,6 @@ package test
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"log"
 	httplib "net/http"
 	"os"
@@ -196,7 +195,7 @@ func createConnectionFromEnv(t testEnv) driver.Connection {
 }
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
-func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.Connection) driver.Client {
+func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
 	runPProfServerOnce.Do(func() {
 		if os.Getenv("TEST_PPROF") != "" {
 			go func() {
@@ -216,9 +215,6 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 		conn = wrappers.NewLoggerConnection(conn, wrappers.NewZeroLogLogger(l), true)
 	}
 
-	if len(connection) == 1 {
-		*connection[0] = conn
-	}
 	c, err := driver.NewClient(driver.ClientConfig{
 		Connection:     conn,
 		Authentication: createAuthenticationFromEnv(t),
@@ -226,6 +222,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 	if err != nil {
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
+
 	if waitUntilReady {
 		timeout := time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -250,39 +247,42 @@ func createClientFromEnv(t testEnv, waitUntilReady bool, connection ...*driver.C
 
 // waitUntilServerAvailable keeps waiting until the server/cluster that the client is addressing is available.
 func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) error {
-	instanceUp := make(chan error)
-	go func() {
-		for {
-			verCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-			if _, err := c.Version(verCtx); err == nil {
-
-				// check if leader challenge is ongoing
-				if _, err := c.ServerRole(verCtx); err != nil {
-					if !driver.IsNoLeaderOrOngoing(err) {
-						cancel()
-						instanceUp <- err
-						return
-					}
-					//t.Logf("Retry. Waiting for leader: %s", describe(err))
-					continue
-				}
-
-				//t.Logf("Found version %s", v.Version)
-				cancel()
-				instanceUp <- nil
-				return
+	return driverErrorCheck(ctx, c, func(ctx context.Context, client driver.Client) error {
+		if getTestMode() != testModeSingle {
+			// Refresh endpoints
+			if err := client.SynchronizeEndpoints2(ctx, "_system"); err != nil {
+				return err
 			}
-			cancel()
-			//t.Logf("Version failed: %s %#v", describe(err), err)
-			time.Sleep(time.Second * 2)
 		}
-	}()
-	select {
-	case up := <-instanceUp:
-		return up
-	case <-ctx.Done():
+
+		if _, err := client.Version(ctx); err != nil {
+			return err
+		}
+
+		if _, err := client.Databases(ctx); err != nil {
+			return err
+		}
+
 		return nil
-	}
+	}, func(err error) (bool, error) {
+		if err == nil {
+			return true, nil
+		}
+
+		if driver.IsNoLeaderOrOngoing(err) {
+			t.Logf("Retry. Waiting for leader: %s", describe(err))
+			return false, nil
+		}
+
+		if driver.IsArangoErrorWithCode(err, 503) {
+			t.Logf("Retry. Service not ready: %s", describe(err))
+			return false, nil
+		}
+
+		t.Logf("Retry. Unknown error: %s", describe(err))
+
+		return false, nil
+	}).Retry(3*time.Second, time.Minute)
 }
 
 // waitUntilClusterHealthy keeps waiting until the servers are healthy
@@ -325,31 +325,21 @@ func waitUntilClusterHealthy(c driver.Client) error {
 
 // waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.
 func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname string, t testEnv) error {
-	endpointsSynced := make(chan error)
-	go func() {
-		for {
-			callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-			if err := c.SynchronizeEndpoints2(callCtx, dbname); err != nil {
-				t.Logf("SynchonizedEnpoints failed: %s", describe(err))
-			} else {
-				cancel()
-				endpointsSynced <- nil
-				return
-			}
-			cancel()
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(time.Second):
-			}
+	return driverErrorCheck(ctx, c, func(ctx context.Context, client driver.Client) error {
+		callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
+		if err := c.SynchronizeEndpoints2(callCtx, dbname); err != nil {
+			return err
 		}
-	}()
-	select {
-	case up := <-endpointsSynced:
-		return up
-	case <-ctx.Done():
-		return fmt.Errorf("Timeout while synchronizing endpoints")
-	}
+
+		return nil
+	}, func(err error) (bool, error) {
+		if err == nil {
+			return true, nil
+		} else {
+			return false, nil
+		}
+	}).Retry(3*time.Second, time.Minute)
 }
 
 // TestCreateClientHttpConnection creates an HTTP connection to the environment specified
