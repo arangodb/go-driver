@@ -33,6 +33,8 @@ import (
 
 // TestAgencyLock tests the agency.Lock interface.
 func TestAgencyLock(t *testing.T) {
+	t.Fatal("Test failure")
+
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
