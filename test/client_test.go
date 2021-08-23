@@ -207,13 +207,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
 		}
 	})
 
-	conn := createConnectionFromEnv(t)
-	if os.Getenv("TEST_DEBUG") != "" {
-		file, err := os.OpenFile("./test.log", os.O_CREATE|os.O_RDWR, 0666)
-		require.NoError(t, err)
-		l := zerolog.New(file).With().Str("Test", t.Name()).Logger()
-		conn = wrappers.NewLoggerConnection(conn, wrappers.NewZeroLogLogger(l), true)
-	}
+	conn := WrapLogger(t, createConnectionFromEnv(t))
 
 	c, err := driver.NewClient(driver.ClientConfig{
 		Connection:     conn,
