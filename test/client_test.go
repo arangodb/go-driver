@@ -207,7 +207,10 @@ func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
 		}
 	})
 
-	conn := WrapLogger(t, createConnectionFromEnv(t))
+	conn := createConnectionFromEnv(t)
+	if os.Getenv("TEST_REQUEST_LOG") != "" {
+		conn = WrapLogger(t, conn)
+	}
 
 	c, err := driver.NewClient(driver.ClientConfig{
 		Connection:     conn,
