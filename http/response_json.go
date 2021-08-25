@@ -49,6 +49,7 @@ func (r *httpJSONResponse) StatusCode() int {
 func (r *httpJSONResponse) Endpoint() string {
 	u := *r.resp.Request.URL
 	u.Path = ""
+	u.RawQuery = ""
 	return u.String()
 }
 

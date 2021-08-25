@@ -47,6 +47,7 @@ func (r *httpVPackResponse) StatusCode() int {
 func (r *httpVPackResponse) Endpoint() string {
 	u := *r.resp.Request.URL
 	u.Path = ""
+	u.RawQuery = ""
 	return u.String()
 }
 
