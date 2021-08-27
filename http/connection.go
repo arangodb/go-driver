@@ -28,6 +28,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -225,6 +226,122 @@ func (c *httpConnection) NewRequest(method, path string) (driver.Request, error)
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.contentType)))
 	}
+}
+
+// waitForAvailability waits until connection in the pool is available.
+// If Context is canceled then error is returned.
+func (c *httpConnection) waitForAvailability(ctx context.Context) (context.CancelFunc, error) {
+	if c.connPool == nil {
+		return func() {}, nil
+	}
+
+	select {
+	case t := <-c.connPool:
+		// The ticket was taken from the connection pool.
+		return func() {
+			// Give back the token.
+			c.connPool <- t
+		}, nil
+	case <-ctx.Done():
+		// Context cancelled or expired
+		return func() {}, driver.WithStack(ctx.Err())
+	}
+
+}
+
+type DataFetcher interface {
+	GetData() ([]byte, error)
+}
+
+type bodyRead struct {
+	cancel context.CancelFunc
+	io.ReadCloser
+}
+
+type httpRawResponse struct {
+	resp *http.Response
+}
+
+//func (r *bodyRead) Read([]byte) (n int, error) {
+//	//if r.closed {
+//	//	return nil, io.EOF
+//	//}
+//	//
+//	//b := make([]byte, 0, 512)
+//	//n, err := r.resp.Body.Read(b)
+//	//if err == nil {
+//	//	return b[:n], nil
+//	//}
+//	//
+//	//if err != io.EOF {
+//	//	r.resp.Body.Close()
+//	//	r.cancel()
+//	//	r.closed = true
+//	//	return nil, err
+//	//}
+//	//
+//	//r.resp.Body.Close()
+//	//r.cancel()
+//	//r.closed = true
+//	//
+//	//return b[:n], nil
+//}
+
+func (b *bodyRead) Close() error {
+	if b.cancel != nil {
+		b.cancel()
+		b.cancel = nil
+	}
+
+	return b.ReadCloser.Close()
+}
+
+// DoRaw TODO performs a given request, returning its response.
+func (c *httpConnection) DoRaw(ctx context.Context, req driver.Request) (*http.Response, error) {
+	request, ok := req.(*httpRequest)
+	if !ok {
+		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest type"})
+	}
+
+	r, err := request.createHTTPRequest(c.endpoint)
+	rctx := ctx
+	if rctx == nil {
+		rctx = context.Background()
+	}
+	rctx = httptrace.WithClientTrace(rctx, &httptrace.ClientTrace{
+		WroteRequest: func(info httptrace.WroteRequestInfo) {
+			request.WroteRequest(info)
+		},
+	})
+
+	r = r.WithContext(rctx)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+
+	// Block on too many concurrent connections
+	cancel, err := c.waitForAvailability(ctx)
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+
+	resp, err := c.client.Do(r)
+	if err != nil {
+		cancel()
+		return nil, driver.WithStack(err)
+	}
+
+	resp.Body = &bodyRead{
+		cancel:     cancel,
+		ReadCloser: resp.Body,
+	}
+
+	return resp, nil
+	//return &httpRawResponse{
+	//	resp.Body
+	//	//res
+	//	//resp:   resp,
+	//}, nil
 }
 
 // Do performs a given request, returning its response.
