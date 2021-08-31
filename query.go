@@ -28,16 +28,17 @@ import (
 )
 
 const (
-	keyQueryCount          = "arangodb-query-count"
-	keyQueryBatchSize      = "arangodb-query-batchSize"
-	keyQueryCache          = "arangodb-query-cache"
-	keyQueryMemoryLimit    = "arangodb-query-memoryLimit"
-	keyQueryTTL            = "arangodb-query-ttl"
-	keyQueryOptSatSyncWait = "arangodb-query-opt-satSyncWait"
-	keyQueryOptFullCount   = "arangodb-query-opt-fullCount"
-	keyQueryOptStream      = "arangodb-query-opt-stream"
-	keyQueryOptProfile     = "arangodb-query-opt-profile"
-	keyQueryOptMaxRuntime  = "arangodb-query-opt-maxRuntime"
+	keyQueryCount                       = "arangodb-query-count"
+	keyQueryBatchSize                   = "arangodb-query-batchSize"
+	keyQueryCache                       = "arangodb-query-cache"
+	keyQueryMemoryLimit                 = "arangodb-query-memoryLimit"
+	keyQueryForceOneShardAttributeValue = "arangodb-query-ForceOneShardAttributeValue"
+	keyQueryTTL                         = "arangodb-query-ttl"
+	keyQueryOptSatSyncWait              = "arangodb-query-opt-satSyncWait"
+	keyQueryOptFullCount                = "arangodb-query-opt-fullCount"
+	keyQueryOptStream                   = "arangodb-query-opt-stream"
+	keyQueryOptProfile                  = "arangodb-query-opt-profile"
+	keyQueryOptMaxRuntime               = "arangodb-query-opt-maxRuntime"
 )
 
 // WithQueryCount is used to configure a context that will set the Count of a query request,
@@ -68,6 +69,11 @@ func WithQueryCache(parent context.Context, value ...bool) context.Context {
 // WithQueryMemoryLimit is used to configure a context that will set the MemoryList of a query request,
 func WithQueryMemoryLimit(parent context.Context, value int64) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryMemoryLimit, value)
+}
+
+// WithQueryForceOneShardAttributeValue is used to configure a context that will set the ForceOneShardAttributeValue of a query request,
+func WithQueryForceOneShardAttributeValue(parent context.Context, value string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryForceOneShardAttributeValue, value)
 }
 
 // WithQueryTTL is used to configure a context that will set the TTL of a query request,
@@ -146,6 +152,9 @@ type queryRequest struct {
 	// amount of time. This is useful to ensure garbage collection of cursors that are not fully fetched by clients.
 	// If not set, a server-defined value will be used.
 	TTL float64 `json:"ttl,omitempty"`
+	// ForceOneShardAttributeValue This query option can be used in complex queries in case the query optimizer cannot
+	// automatically detect that the query can be limited to only a single server (e.g. in a disjoint smart graph case).
+	ForceOneShardAttributeValue *string `json:"forceOneShardAttributeValue,omitempty"`
 	// contains the query string to be executed
 	Query string `json:"query"`
 	// key/value pairs representing the bind parameters.
@@ -205,6 +214,11 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryMemoryLimit); rawValue != nil {
 		if value, ok := rawValue.(int64); ok {
 			q.MemoryLimit = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryForceOneShardAttributeValue); rawValue != nil {
+		if value, ok := rawValue.(string); ok {
+			q.ForceOneShardAttributeValue = &value
 		}
 	}
 	if rawValue := ctx.Value(keyQueryTTL); rawValue != nil {
