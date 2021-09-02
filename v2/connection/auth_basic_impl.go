@@ -31,5 +31,5 @@ func NewBasicAuth(username, password string) Authentication {
 	auth := fmt.Sprintf("%s:%s", username, password)
 	encoded := base64.StdEncoding.EncodeToString([]byte(auth))
 
-	return newHeaderAuth("Authorization", "Basic %s", encoded)
+	return NewHeaderAuth("Authorization", "Basic %s", encoded)
 }

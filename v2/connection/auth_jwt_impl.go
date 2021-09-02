@@ -45,7 +45,7 @@ func NewJWTAuthWrapper(username, password string) Wrapper {
 
 		switch resp.Code() {
 		case http.StatusOK:
-			return newHeaderAuth("Authorization", "bearer %s", data.Token), nil
+			return NewHeaderAuth("Authorization", "bearer %s", data.Token), nil
 		default:
 			return nil, NewError(resp.Code(), "unexpected code")
 		}
