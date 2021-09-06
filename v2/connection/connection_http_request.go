@@ -25,6 +25,7 @@ package connection
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -95,10 +96,25 @@ func (j *httpRequest) URL() string {
 	return j.url.String()
 }
 
-func (j *httpRequest) asRequest(ctx context.Context, body io.Reader) (*http.Request, error) {
+func (j *httpRequest) asRequest(ctx context.Context, bodyReader bodyReadFactory) (*http.Request, error) {
+	body, err := bodyReader()
+	if err != nil {
+		return nil, err
+	}
+
 	r, err := http.NewRequestWithContext(ctx, j.Method(), j.URL(), body)
 	if err != nil {
 		return nil, err
+	}
+
+	r.GetBody = func() (io.ReadCloser, error) {
+		if body, err := bodyReader(); err != nil {
+			return nil, err
+		} else if c, ok := body.(io.ReadCloser); ok {
+			return c, nil
+		} else {
+			return ioutil.NopCloser(body), nil
+		}
 	}
 
 	for key, value := range j.headers {
