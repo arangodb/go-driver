@@ -30,6 +30,8 @@ import (
 
 type Wrapper func(c Connection) Connection
 
+type Factory func() (Connection, error)
+
 type Connection interface {
 	NewRequest(method string, urls ...string) (Request, error)
 	NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error)
