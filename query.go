@@ -32,7 +32,7 @@ const (
 	keyQueryBatchSize                   = "arangodb-query-batchSize"
 	keyQueryCache                       = "arangodb-query-cache"
 	keyQueryMemoryLimit                 = "arangodb-query-memoryLimit"
-	keyQueryForceOneShardAttributeValue = "arangodb-query-ForceOneShardAttributeValue"
+	keyQueryForceOneShardAttributeValue = "arangodb-query-forceOneShardAttributeValue"
 	keyQueryTTL                         = "arangodb-query-ttl"
 	keyQueryOptSatSyncWait              = "arangodb-query-opt-satSyncWait"
 	keyQueryOptFullCount                = "arangodb-query-opt-fullCount"
