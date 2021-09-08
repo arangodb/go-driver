@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package connection
@@ -102,22 +103,21 @@ func (j *httpConnection) SetAuthentication(a Authentication) error {
 	return nil
 }
 
-func (j httpConnection) Decoder(content string) Decoder {
-	switch content {
-	case ApplicationVPack:
-		return getVPackDecoder()
-	case ApplicationJSON:
-		return getJsonDecoder()
-	default:
-		switch j.contentType {
-		case ApplicationVPack:
-			return getVPackDecoder()
-		case ApplicationJSON:
-			return getJsonDecoder()
-		default:
-			return getJsonDecoder()
-		}
+// Decoder returns the decoder according to the response content type or HTTP connection request content type.
+// If the content type is unknown then it returns default JSON decoder.
+func (j httpConnection) Decoder(contentType string) Decoder {
+	// First try to get decoder by the content type of the response.
+	if decoder := getDecoderByContentType(contentType); decoder != nil {
+		return decoder
 	}
+
+	// Next try to get decoder by the content type of the HTTP connection.
+	if decoder := getDecoderByContentType(j.contentType); decoder != nil {
+		return decoder
+	}
+
+	// Return the default decoder.
+	return getJsonDecoder()
 }
 
 func (j httpConnection) DoWithReader(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
@@ -184,17 +184,16 @@ func (j httpConnection) doWithOutput(ctx context.Context, request *httpRequest, 
 		return nil, err
 	}
 
-	if output != nil {
-		defer dropBodyData(body) // In case if there is data drop it all
+	// The body should be closed at the end of the function.
+	defer dropBodyData(body)
 
+	if output != nil {
+		// The output should be stored in the output variable.
 		if err = j.Decoder(resp.Content()).Decode(body, output); err != nil {
 			if err != io.EOF {
 				return nil, errors.WithStack(err)
 			}
 		}
-	} else {
-		// We still need to read data from request, but we can do this in background and ignore output
-		defer dropBodyData(body)
 	}
 
 	return resp, nil
@@ -222,6 +221,7 @@ func (j httpConnection) do(ctx context.Context, req *httpRequest) (*httpResponse
 		ctx = context.Background()
 	}
 
+	var bodyReader io.Reader
 	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch {
 		decoder := j.Decoder(j.contentType)
 		if !j.streamSender {
@@ -230,12 +230,7 @@ func (j httpConnection) do(ctx context.Context, req *httpRequest) (*httpResponse
 				return nil, nil, err
 			}
 
-			r, err := req.asRequest(ctx, b)
-			if err != nil {
-				return nil, nil, errors.WithStack(err)
-			}
-
-			httpReq = r
+			bodyReader = b
 		} else {
 			reader, writer := io.Pipe()
 			go func() {
@@ -245,20 +240,15 @@ func (j httpConnection) do(ctx context.Context, req *httpRequest) (*httpResponse
 				}
 			}()
 
-			r, err := req.asRequest(ctx, reader)
-			if err != nil {
-				return nil, nil, errors.WithStack(err)
-			}
-
-			httpReq = r
+			bodyReader = reader
 		}
-	} else {
-		r, err := req.asRequest(ctx, nil)
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		httpReq = r
 	}
+
+	r, err := req.asRequest(ctx, bodyReader)
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+	httpReq = r
 
 	resp, err := j.client.Do(httpReq)
 	if err != nil {
@@ -275,4 +265,19 @@ func (j httpConnection) do(ctx context.Context, req *httpRequest) (*httpResponse
 	}
 
 	return &httpResponse{response: resp, request: req}, nil, nil
+}
+
+// getDecoderByContentType returns the decoder according to the content type.
+// If content type is unknown then nil is returned.
+func getDecoderByContentType(contentType string) Decoder {
+	switch contentType {
+	case ApplicationVPack:
+		return getVPackDecoder()
+	case ApplicationJSON:
+		return getJsonDecoder()
+	case PlainText, ApplicationOctetStream, ApplicationZip:
+		return getBytesDecoder()
+	default:
+		return nil
+	}
 }
