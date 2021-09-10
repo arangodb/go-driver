@@ -966,8 +966,8 @@ func TestCollectionWriteConcernSetPropInvalid(t *testing.T) {
 		minRepl, prop.WriteConcern)
 }
 
-// TestCollectionShards creates a collection and gets the shards' information.
-func TestCollectionShards(t *testing.T) {
+// Test_CollectionShards creates a collection and gets the shards' information.
+func Test_CollectionShards(t *testing.T) {
 	if getTestMode() != testModeCluster {
 		t.Skipf("Not a cluster mode")
 	}
@@ -990,5 +990,5 @@ func TestCollectionShards(t *testing.T) {
 		require.Lenf(t, dbServers, 2, "expected 2 DB servers for the shard")
 		leaders = append(leaders, dbServers[0])
 	}
-	assert.NotEqualf(t, leaders[0], leaders[1], "the leader can not be on the same server")
+	assert.NotEqualf(t, leaders[0], leaders[1], "the leader shard can not be on the same server")
 }

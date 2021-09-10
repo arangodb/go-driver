@@ -30,11 +30,40 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
+
+// Test_CollectionShards creates a collection and gets the shards' information.
+func Test_CollectionShards(t *testing.T) {
+	requireClusterMode(t)
+
+	options := arangodb.CreateCollectionOptions{
+		ReplicationFactor: 2,
+		NumberOfShards:    2,
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, &options, func(col arangodb.Collection) {
+				shards, err := col.Shards(context.Background(), true)
+				require.NoError(t, err)
+
+				require.Len(t, shards.Shards, 2, "expected 2 shards")
+				var leaders []arangodb.ServerID
+
+				for _, dbServers := range shards.Shards {
+					require.Lenf(t, dbServers, 2, "expected 2 DB servers for the shard")
+					leaders = append(leaders, dbServers[0])
+				}
+				assert.NotEqualf(t, leaders[0], leaders[1], "the leader shard can not be on the same server")
+			})
+		})
+	})
+}
 
 func Test_DatabaseCollectionOperations(t *testing.T) {
 
