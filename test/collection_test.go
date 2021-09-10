@@ -972,7 +972,7 @@ func Test_CollectionShards(t *testing.T) {
 		t.Skipf("Not a cluster mode")
 	}
 
-	databaseName := getThisFunctionName()
+	databaseName := getCallerFunctionName()
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, databaseName, nil, t)
 	name := "test_collection_set_properties"
@@ -984,6 +984,19 @@ func Test_CollectionShards(t *testing.T) {
 
 	shards, err := col.Shards(context.Background(), true)
 	require.NoError(t, err)
+	assert.NotEmpty(t, shards.ID)
+	assert.Equal(t, name, shards.Name)
+	assert.NotEmpty(t, shards.Status)
+	assert.Equal(t, driver.CollectionTypeDocument, shards.Type)
+	assert.Equal(t, false, shards.IsSystem)
+	assert.NotEmpty(t, shards.GloballyUniqueId)
+	assert.Equal(t, false, shards.CacheEnabled)
+	assert.Equal(t, false, shards.IsSmart)
+	assert.Equal(t, driver.KeyGeneratorTraditional, shards.KeyOptions.Type)
+	assert.Equal(t, true, shards.KeyOptions.AllowUserKeys)
+	assert.Equal(t, 2, shards.NumberOfShards)
+	assert.Equal(t, driver.ShardingStrategyHash, shards.ShardingStrategy)
+	assert.Equal(t, []string{"_key"}, shards.ShardKeys)
 	require.Len(t, shards.Shards, 2, "expected 2 shards")
 	var leaders []driver.ServerID
 	for _, dbServers := range shards.Shards {
@@ -991,4 +1004,7 @@ func Test_CollectionShards(t *testing.T) {
 		leaders = append(leaders, dbServers[0])
 	}
 	assert.NotEqualf(t, leaders[0], leaders[1], "the leader shard can not be on the same server")
+	assert.Equal(t, 2, shards.ReplicationFactor)
+	assert.Equal(t, false, shards.WaitForSync)
+	assert.Equal(t, 1, shards.WriteConcern)
 }

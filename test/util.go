@@ -215,8 +215,8 @@ func min(max int, ints ...int) int {
 	return z
 }
 
-// getThisFunctionName returns the name of the function of the caller.
-func getThisFunctionName() string {
+// getCallerFunctionName returns the name of the function of the caller.
+func getCallerFunctionName() string {
 	programCounters := make([]uintptr, 10)
 	// skip this function and 'runtime.Callers' function
 	runtime.Callers(2, programCounters)
