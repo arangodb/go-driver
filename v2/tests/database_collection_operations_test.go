@@ -30,11 +30,55 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
+
+// Test_CollectionShards creates a collection and gets the shards' information.
+func Test_CollectionShards(t *testing.T) {
+	requireClusterMode(t)
+
+	options := arangodb.CreateCollectionOptions{
+		ReplicationFactor: 2,
+		NumberOfShards:    2,
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, &options, func(col arangodb.Collection) {
+				shards, err := col.Shards(context.Background(), true)
+				require.NoError(t, err)
+
+				assert.NotEmpty(t, shards.ID)
+				assert.Equal(t, col.Name(), shards.Name)
+				assert.NotEmpty(t, shards.Status)
+				assert.Equal(t, arangodb.CollectionTypeDocument, shards.Type)
+				assert.Equal(t, false, shards.IsSystem)
+				assert.NotEmpty(t, shards.GloballyUniqueId)
+				assert.Equal(t, false, shards.CacheEnabled)
+				assert.Equal(t, false, shards.IsSmart)
+				assert.Equal(t, arangodb.KeyGeneratorTraditional, shards.KeyOptions.Type)
+				assert.Equal(t, true, shards.KeyOptions.AllowUserKeys)
+				assert.Equal(t, 2, shards.NumberOfShards)
+				assert.Equal(t, arangodb.ShardingStrategyHash, shards.ShardingStrategy)
+				assert.Equal(t, []string{"_key"}, shards.ShardKeys)
+				require.Len(t, shards.Shards, 2, "expected 2 shards")
+				var leaders []arangodb.ServerID
+				for _, dbServers := range shards.Shards {
+					require.Lenf(t, dbServers, 2, "expected 2 DB servers for the shard")
+					leaders = append(leaders, dbServers[0])
+				}
+				assert.NotEqualf(t, leaders[0], leaders[1], "the leader shard can not be on the same server")
+				assert.Equal(t, 2, shards.ReplicationFactor)
+				assert.Equal(t, false, shards.WaitForSync)
+				assert.Equal(t, 1, shards.WriteConcern)
+			})
+		})
+	})
+}
 
 func Test_DatabaseCollectionOperations(t *testing.T) {
 
