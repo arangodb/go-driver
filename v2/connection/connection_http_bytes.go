@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,40 +17,13 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
 // Author Tomasz Mielech
 //
 
 package connection
 
-import (
-	"net/http"
-	"strings"
+const (
+	PlainText              = "text/plain"
+	ApplicationOctetStream = "application/octet-stream"
+	ApplicationZip         = "application/zip"
 )
-
-type httpResponse struct {
-	response *http.Response
-	request  *httpRequest
-}
-
-func (j *httpResponse) Endpoint() string {
-	return j.request.Endpoint()
-}
-
-func (j *httpResponse) Response() interface{} {
-	return j.response
-}
-
-func (j httpResponse) Code() int {
-	return j.response.StatusCode
-}
-
-func (j httpResponse) Content() string {
-	value := strings.Split(j.response.Header.Get(ContentType), ";")
-	if len(value) > 0 {
-		// The header can be returned with arguments, e.g.: "Content-Type: text/html; charset=UTF-8".
-		return value[0]
-	}
-
-	return ""
-}

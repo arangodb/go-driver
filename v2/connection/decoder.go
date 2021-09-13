@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,13 +18,16 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package connection
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
+	"io/ioutil"
 
 	"github.com/arangodb/go-velocypack"
 )
@@ -85,4 +88,51 @@ func (v vpackDecoder) Reencode(in, out interface{}) error {
 	}
 
 	return velocypack.Unmarshal(d, out)
+}
+
+func getBytesDecoder() Decoder {
+	return bytesDecoderObj
+}
+
+// ErrReaderOutputBytes is the error to inform caller about invalid output argument.
+var ErrReaderOutputBytes = errors.New("use *[]byte as output argument")
+
+// ErrWriterInputBytes is the error to inform caller about invalid input argument.
+var ErrWriterInputBytes = errors.New("use []byte as input argument")
+
+var bytesDecoderObj Decoder = &bytesDecoder{}
+
+type bytesDecoder struct {
+}
+
+// Decode decodes bytes from the reader into the obj.
+func (j bytesDecoder) Decode(reader io.Reader, obj interface{}) error {
+	result, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	if pointer, ok := obj.(*[]byte); ok {
+		*pointer = result
+
+		return nil
+	}
+
+	return ErrReaderOutputBytes
+}
+
+// Encode encodes bytes to the writer.
+func (j bytesDecoder) Encode(writer io.Writer, obj interface{}) error {
+	if bytes, ok := obj.([]byte); ok {
+		writer.Write(bytes)
+		return nil
+	}
+
+	return ErrWriterInputBytes
+}
+
+// Reencode creates shallow copy of the input.
+func (j bytesDecoder) Reencode(in, out interface{}) error {
+	in = out
+	return nil
 }

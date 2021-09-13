@@ -36,24 +36,20 @@ func WrapAuthentication(getter AuthenticationGetter) Wrapper {
 	return func(c Connection) Connection {
 		return &wrapAuthentication{
 			getter:     getter,
-			connection: c,
+			Connection: c,
 		}
 	}
 }
 
 type wrapAuthentication struct {
-	getter     AuthenticationGetter
-	connection Connection
+	getter AuthenticationGetter
+	Connection
 
 	lock sync.Mutex
 }
 
-func (w wrapAuthentication) Decoder(contentType string) Decoder {
-	return w.connection.Decoder(contentType)
-}
-
 func (w wrapAuthentication) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
-	r, err := w.connection.Do(ctx, request, output)
+	r, err := w.Connection.Do(ctx, request, output)
 
 	if err != nil {
 		return nil, err
@@ -67,21 +63,21 @@ func (w wrapAuthentication) Do(ctx context.Context, request Request, output inte
 		return nil, err
 	}
 
-	return w.connection.Do(ctx, request, output)
+	return w.Connection.Do(ctx, request, output)
 }
 
 func (w *wrapAuthentication) reAuth(ctx context.Context) error {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 
-	if err := w.connection.SetAuthentication(nil); err != nil {
+	if err := w.Connection.SetAuthentication(nil); err != nil {
 		return err
 	}
 
-	if a, err := w.getter(ctx, w.connection); err != nil {
+	if a, err := w.getter(ctx, w.Connection); err != nil {
 		return err
 	} else {
-		if err := w.connection.SetAuthentication(a); err != nil {
+		if err := w.Connection.SetAuthentication(a); err != nil {
 			return err
 		}
 	}
@@ -89,26 +85,6 @@ func (w *wrapAuthentication) reAuth(ctx context.Context) error {
 	return nil
 }
 
-func (w wrapAuthentication) NewRequest(method string, urls ...string) (Request, error) {
-	return w.connection.NewRequest(method, urls...)
-}
-
-func (w wrapAuthentication) NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error) {
-	return w.connection.NewRequestWithEndpoint(endpoint, method, urls...)
-}
-
-func (w wrapAuthentication) GetEndpoint() Endpoint {
-	return w.connection.GetEndpoint()
-}
-
-func (w wrapAuthentication) SetEndpoint(e Endpoint) error {
-	return w.connection.SetEndpoint(e)
-}
-
-func (w wrapAuthentication) GetAuthentication() Authentication {
-	return w.connection.GetAuthentication()
-}
-
-func (w wrapAuthentication) SetAuthentication(a Authentication) error {
+func (w wrapAuthentication) SetAuthentication(_ Authentication) error {
 	return errors.Errorf("Unable to override authentication when it rapped by Authentication wrapper")
 }
