@@ -152,9 +152,6 @@ type queryRequest struct {
 	// amount of time. This is useful to ensure garbage collection of cursors that are not fully fetched by clients.
 	// If not set, a server-defined value will be used.
 	TTL float64 `json:"ttl,omitempty"`
-	// ForceOneShardAttributeValue This query option can be used in complex queries in case the query optimizer cannot
-	// automatically detect that the query can be limited to only a single server (e.g. in a disjoint smart graph case).
-	ForceOneShardAttributeValue *string `json:"forceOneShardAttributeValue,omitempty"`
 	// contains the query string to be executed
 	Query string `json:"query"`
 	// key/value pairs representing the bind parameters.
@@ -188,6 +185,9 @@ type queryRequest struct {
 		// MaxRuntime specify the timeout which can be used to kill a query on the server after the specified
 		// amount in time. The timeout value is specified in seconds. A value of 0 means no timeout will be enforced.
 		MaxRuntime float64 `json:"maxRuntime,omitempty"`
+		// ForceOneShardAttributeValue This query option can be used in complex queries in case the query optimizer cannot
+		// automatically detect that the query can be limited to only a single server (e.g. in a disjoint smart graph case).
+		ForceOneShardAttributeValue *string `json:"forceOneShardAttributeValue,omitempty"`
 	} `json:"options,omitempty"`
 }
 
@@ -218,7 +218,7 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	}
 	if rawValue := ctx.Value(keyQueryForceOneShardAttributeValue); rawValue != nil {
 		if value, ok := rawValue.(string); ok {
-			q.ForceOneShardAttributeValue = &value
+			q.Options.ForceOneShardAttributeValue = &value
 		}
 	}
 	if rawValue := ctx.Value(keyQueryTTL); rawValue != nil {
