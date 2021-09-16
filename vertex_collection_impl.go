@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package driver
@@ -126,6 +127,15 @@ func (c *vertexCollection) SetProperties(ctx context.Context, options SetCollect
 	return nil
 }
 
+// Shards fetches shards information of the collection.
+func (c *vertexCollection) Shards(ctx context.Context, details bool) (CollectionShards, error) {
+	result, err := c.rawCollection().Shards(ctx, details)
+	if err != nil {
+		return result, WithStack(err)
+	}
+	return result, nil
+}
+
 // Load the collection into memory.
 func (c *vertexCollection) Load(ctx context.Context) error {
 	if err := c.rawCollection().Load(ctx); err != nil {
@@ -134,7 +144,7 @@ func (c *vertexCollection) Load(ctx context.Context) error {
 	return nil
 }
 
-// UnLoad the collection from memory.
+// Unload unloads the collection from memory.
 func (c *vertexCollection) Unload(ctx context.Context) error {
 	if err := c.rawCollection().Unload(ctx); err != nil {
 		return WithStack(err)

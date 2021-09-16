@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package test
@@ -963,4 +964,47 @@ func TestCollectionWriteConcernSetPropInvalid(t *testing.T) {
 	require.Nilf(t, err, "Failed to get properties: %s", describe(err))
 	assert.Equalf(t, defaultWriteConcern, prop.WriteConcern, "MinReplicationFactor not updated, expected %d, found %d",
 		minRepl, prop.WriteConcern)
+}
+
+// Test_CollectionShards creates a collection and gets the shards' information.
+func Test_CollectionShards(t *testing.T) {
+	if getTestMode() != testModeCluster {
+		t.Skipf("Not a cluster mode")
+	}
+
+	databaseName := getCallerFunctionName()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, databaseName, nil, t)
+	name := "test_collection_set_properties"
+	col, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
+		ReplicationFactor: 2,
+		NumberOfShards:    2,
+	})
+	require.NoError(t, err)
+
+	shards, err := col.Shards(context.Background(), true)
+	require.NoError(t, err)
+	assert.NotEmpty(t, shards.ID)
+	assert.Equal(t, name, shards.Name)
+	assert.NotEmpty(t, shards.Status)
+	assert.Equal(t, driver.CollectionTypeDocument, shards.Type)
+	assert.Equal(t, false, shards.IsSystem)
+	assert.NotEmpty(t, shards.GloballyUniqueId)
+	assert.Equal(t, false, shards.CacheEnabled)
+	assert.Equal(t, false, shards.IsSmart)
+	assert.Equal(t, driver.KeyGeneratorTraditional, shards.KeyOptions.Type)
+	assert.Equal(t, true, shards.KeyOptions.AllowUserKeys)
+	assert.Equal(t, 2, shards.NumberOfShards)
+	assert.Equal(t, driver.ShardingStrategyHash, shards.ShardingStrategy)
+	assert.Equal(t, []string{"_key"}, shards.ShardKeys)
+	require.Len(t, shards.Shards, 2, "expected 2 shards")
+	var leaders []driver.ServerID
+	for _, dbServers := range shards.Shards {
+		require.Lenf(t, dbServers, 2, "expected 2 DB servers for the shard")
+		leaders = append(leaders, dbServers[0])
+	}
+	assert.NotEqualf(t, leaders[0], leaders[1], "the leader shard can not be on the same server")
+	assert.Equal(t, 2, shards.ReplicationFactor)
+	assert.Equal(t, false, shards.WaitForSync)
+	assert.Equal(t, 1, shards.WriteConcern)
 }
