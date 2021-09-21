@@ -1,7 +1,11 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.2.1](https://github.com/arangodb/go-driver/tree/v1.2.1) (2021-09-21)
 - Add support for fetching shards' info by the given collection name.
+- Change versioning to be go mod compatible
+- Add support for ForceOneShardAttributeValue in Query
 
 ## [1.2.0](https://github.com/arangodb/go-driver/tree/1.2.0) (2021-08-04)
 - Add support for AQL, Pipeline, Stopwords, GeoJSON and GeoPoint Arango Search analyzers.
