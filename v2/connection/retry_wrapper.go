@@ -25,6 +25,7 @@ package connection
 
 import (
 	"context"
+	"io"
 	"net/http"
 )
 
@@ -73,4 +74,37 @@ func (w retryWrapper) Do(ctx context.Context, request Request, output interface{
 	}
 
 	return r, err
+}
+
+// Stream performs HTTP request.
+// It returns the response and body reader to read the data from there.
+// The caller is responsible to free the response body.
+func (w retryWrapper) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
+	var r Response
+	var err error
+	var body io.ReadCloser
+	for i := 0; i < w.retries; i++ {
+		r, body, err = w.Connection.Stream(ctx, request)
+
+		if w.wrapper(r, err) {
+			if body != nil {
+				// Discard the data.
+				body.Close()
+			}
+			continue
+		}
+
+		if err == nil {
+			return r, body, nil
+		}
+
+		if body != nil {
+			// Discard the data.
+			body.Close()
+		}
+
+		return nil, nil, err
+	}
+
+	return r, nil, err
 }
