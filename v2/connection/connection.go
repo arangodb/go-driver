@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package connection
 
 import (
 	"context"
+	"io"
 )
 
 type Wrapper func(c Connection) Connection
@@ -33,6 +35,7 @@ type Connection interface {
 	NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error)
 
 	Do(ctx context.Context, request Request, output interface{}) (Response, error)
+	Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error)
 
 	GetEndpoint() Endpoint
 	SetEndpoint(e Endpoint) error

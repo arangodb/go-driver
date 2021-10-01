@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- [V2] Add support for streaming the response body by the caller.
 
 ## [1.2.1](https://github.com/arangodb/go-driver/tree/v1.2.1) (2021-09-21)
 - Add support for fetching shards' info by the given collection name.

@@ -120,14 +120,6 @@ func (j httpConnection) Decoder(contentType string) Decoder {
 	return getJsonDecoder()
 }
 
-func (j httpConnection) DoWithReader(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
-	req, ok := request.(*httpRequest)
-	if !ok {
-		return nil, nil, errors.Errorf("unable to parse request into JSON Request")
-	}
-	return j.do(ctx, req)
-}
-
 func (j httpConnection) GetEndpoint() Endpoint {
 	return j.endpoint
 }
@@ -170,16 +162,10 @@ func (j httpConnection) newRequestWithEndpoint(endpoint string, method string, u
 	return r, nil
 }
 
+// Do performs HTTP request and returns the response.
+// If `output` is provided then it is populated from response body and the response is automatically freed.
 func (j httpConnection) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
-	req, ok := request.(*httpRequest)
-	if !ok {
-		return nil, errors.Errorf("unable to parse request into JSON Request")
-	}
-	return j.doWithOutput(ctx, req, output)
-}
-
-func (j httpConnection) doWithOutput(ctx context.Context, request *httpRequest, output interface{}) (*httpResponse, error) {
-	resp, body, err := j.do(ctx, request)
+	resp, body, err := j.Stream(ctx, request)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +185,21 @@ func (j httpConnection) doWithOutput(ctx context.Context, request *httpRequest, 
 	return resp, nil
 }
 
-func (j httpConnection) do(ctx context.Context, req *httpRequest) (*httpResponse, io.ReadCloser, error) {
+// Stream performs HTTP request.
+// It returns the response and body reader to read the data from there.
+// The caller is responsible to free the response body.
+func (j httpConnection) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
+	req, ok := request.(*httpRequest)
+	if !ok {
+		return nil, nil, errors.Errorf("unable to parse request into JSON Request")
+	}
+
+	return j.stream(ctx, req)
+}
+
+// stream performs the HTTP request.
+// It returns HTTP response and body reader to read the data from there.
+func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResponse, io.ReadCloser, error) {
 	id := uuid.New().String()
 	log.Debugf("(%s) Sending request to %s/%s", id, req.Method(), req.URL())
 	if v, ok := req.GetHeader(ContentType); !ok || v == "" {

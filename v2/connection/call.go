@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package connection
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -44,6 +46,24 @@ func Call(ctx context.Context, c Connection, method, url string, output interfac
 	}
 
 	return c.Do(ctx, req, output)
+}
+
+// CallStream performs HTTP request with the given method and URL.
+// It returns the response and body reader to read the data from there.
+// The caller is responsible to free the response body.
+func CallStream(ctx context.Context, c Connection, method, url string, modifiers ...RequestModifier) (Response, io.ReadCloser, error) {
+	req, err := c.NewRequest(method, url)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, modifier := range modifiers {
+		if err = modifier(req); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return c.Stream(ctx, req)
 }
 
 func CallGet(ctx context.Context, c Connection, url string, output interface{}, modifiers ...RequestModifier) (Response, error) {

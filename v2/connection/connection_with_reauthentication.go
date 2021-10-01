@@ -24,6 +24,7 @@ package connection
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"sync"
 
@@ -64,6 +65,30 @@ func (w wrapAuthentication) Do(ctx context.Context, request Request, output inte
 	}
 
 	return w.Connection.Do(ctx, request, output)
+}
+
+// Stream performs HTTP request.
+// It returns the response and body reader to read the data from there.
+// The caller is responsible to free the response body.
+func (w wrapAuthentication) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
+	r, body, err := w.Connection.Stream(ctx, request)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if r.Code() != http.StatusUnauthorized {
+		return r, body, err
+	}
+
+	if body != nil {
+		body.Close()
+	}
+
+	if err := w.reAuth(ctx); err != nil {
+		return nil, nil, err
+	}
+
+	return w.Connection.Stream(ctx, request)
 }
 
 func (w *wrapAuthentication) reAuth(ctx context.Context) error {
