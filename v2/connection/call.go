@@ -27,7 +27,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/url"
 	"path"
 )
 
@@ -96,11 +95,8 @@ func WithBody(i interface{}) RequestModifier {
 	}
 }
 
+// NewUrl returns the path in the URL.
 func NewUrl(parts ...string) string {
-	s := make([]string, len(parts))
-	for id, part := range parts {
-		s[id] = url.PathEscape(part)
-	}
-
-	return path.Join(s...)
+	// The path will be escaped when request is created.
+	return path.Join(parts...)
 }
