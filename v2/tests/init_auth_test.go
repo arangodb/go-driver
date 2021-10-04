@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package tests
 
 import (
-	"context"
 	"os"
 	"strings"
 	"testing"
@@ -32,7 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createAuthenticationFromEnv(t testing.TB, ctx context.Context, conn connection.Connection) connection.Connection {
+func createAuthenticationFromEnv(t testing.TB, conn connection.Connection) connection.Connection {
 	authSpec := os.Getenv("TEST_AUTHENTICATION")
 	if authSpec == "" {
 		return conn

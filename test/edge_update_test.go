@@ -151,8 +151,8 @@ func TestUpdateEdgeReturnNew(t *testing.T) {
 // TestUpdateEdgeKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateEdgeKeepNullTrue(t *testing.T) {
 	var ctx context.Context
-	var conn driver.Connection
-	c := createClientFromEnv(t, true, &conn)
+	c := createClientFromEnv(t, true)
+	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_keepNullTrue_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

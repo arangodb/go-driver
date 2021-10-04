@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package test
@@ -28,13 +29,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/google/uuid"
-
 	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
@@ -150,17 +152,19 @@ func (r retryFunc) Retry(interval, timeout time.Duration) error {
 	defer intervalT.Stop()
 
 	for {
+		if err := r(); err != nil {
+			if _, ok := err.(interrupt); ok {
+				return nil
+			}
+
+			return err
+		}
+
 		select {
 		case <-timeoutT.C:
 			return fmt.Errorf("function timeouted")
 		case <-intervalT.C:
-			if err := r(); err != nil {
-				if _, ok := err.(interrupt); ok {
-					return nil
-				}
-
-				return err
-			}
+			continue
 		}
 	}
 }
@@ -209,4 +213,19 @@ func min(max int, ints ...int) int {
 	}
 
 	return z
+}
+
+// getCallerFunctionName returns the name of the function of the caller.
+func getCallerFunctionName() string {
+	programCounters := make([]uintptr, 10)
+	// skip this function and 'runtime.Callers' function
+	runtime.Callers(2, programCounters)
+	functionPackage := runtime.FuncForPC(programCounters[0])
+
+	function := strings.Split(functionPackage.Name(), ".")
+	if len(function) > 1 {
+		return function[len(function)-1] + "_" + uniuri.NewLen(6)
+	}
+
+	return function[0] + "_" + uniuri.NewLen(6)
 }

@@ -38,8 +38,8 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	var conn driver.Connection
-	c := createClientFromEnv(t, true, &conn)
+	c := createClientFromEnv(t, true)
+	conn := c.Connection()
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
@@ -76,8 +76,8 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	var conn driver.Connection
-	c := createClientFromEnv(t, true, &conn)
+	c := createClientFromEnv(t, true)
+	conn := c.Connection()
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))

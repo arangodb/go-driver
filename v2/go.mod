@@ -1,11 +1,11 @@
 module github.com/arangodb/go-driver/v2
 
-go 1.13
+go 1.16
 
 require (
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1

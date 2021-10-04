@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package driver
@@ -124,6 +125,15 @@ func (c *edgeCollection) SetProperties(ctx context.Context, options SetCollectio
 		return WithStack(err)
 	}
 	return nil
+}
+
+// Shards fetches shards information of the collection.
+func (c *edgeCollection) Shards(ctx context.Context, details bool) (CollectionShards, error) {
+	result, err := c.rawCollection().Shards(ctx, details)
+	if err != nil {
+		return result, WithStack(err)
+	}
+	return result, nil
 }
 
 // Load the collection into memory.

@@ -229,3 +229,41 @@ func TestProfileQuery(t *testing.T) {
 		}
 	})
 }
+
+// TestForceOneShardAttributeValue test ForceOneShardAttributeValue query attribute.
+func TestForceOneShardAttributeValue(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c := createClientFromEnv(t, true)
+
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
+
+	db := ensureDatabase(ctx, c, "force_one_shard_attribute_value", nil, t)
+
+	db, clean := prepareQueryDatabase(t, ctx, c, "force_one_shard_attribute_value")
+	defer clean(t)
+
+	// Setup tests
+	tests := []profileQueryTest{
+		{
+			Query: "FOR d IN books SORT d.Title RETURN d",
+		},
+		{
+			Query: "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars: map[string]interface{}{
+				"title": "Book 16",
+			},
+		},
+	}
+
+	t.Run("With ForceOneShardAttributeValue", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryForceOneShardAttributeValue(ctx, "value")
+				_, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+			})
+		}
+	})
+}

@@ -100,6 +100,16 @@ func IsArangoError(err error) bool {
 	return ok && ae.HasError
 }
 
+// AsArangoError returns true when the given error is an ArangoError together with an object.
+func AsArangoError(err error) (ArangoError, bool) {
+	ae, ok := Cause(err).(ArangoError)
+	if ok {
+		return ae, true
+	} else {
+		return ArangoError{}, false
+	}
+}
+
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
 func IsArangoErrorWithCode(err error, code int) bool {
 	ae, ok := Cause(err).(ArangoError)

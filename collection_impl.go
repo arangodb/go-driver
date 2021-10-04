@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package driver
@@ -188,6 +189,34 @@ func (c *collection) SetProperties(ctx context.Context, options SetCollectionPro
 		return WithStack(err)
 	}
 	return nil
+}
+
+// Shards fetches shards information of the collection.
+func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards, error) {
+	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("collection"), "shards"))
+	if err != nil {
+		return CollectionShards{}, WithStack(err)
+	}
+	if details {
+		req.SetQuery("details", "true")
+	}
+
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return CollectionShards{}, WithStack(err)
+	}
+
+	if err := resp.CheckStatus(200); err != nil {
+		return CollectionShards{}, WithStack(err)
+	}
+
+	shards := CollectionShards{}
+	if err := resp.ParseBody("", &shards); err != nil {
+		return CollectionShards{}, WithStack(err)
+	}
+
+	return shards, nil
+
 }
 
 // Load the collection into memory.

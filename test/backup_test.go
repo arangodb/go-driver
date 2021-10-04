@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Adam Janikowski
 //
 
 package test
@@ -33,8 +34,6 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
-
-	errors "github.com/pkg/errors"
 )
 
 var backupAPIAvailable *bool
@@ -344,40 +343,34 @@ func TestBackupDeleteNonExisting(t *testing.T) {
 	}
 }
 
-func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) {
+func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) driver.Client {
+	// Wait for server to go down
+	newRetryFunc(func() error {
+		c = createClientFromEnv(t, false)
+		nCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
 
-	serverWasDown := false
-
-	saveDriver := driver.WithStack
-	driver.WithStack = errors.WithStack
-
-	for {
-		vctx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
-		if _, err := c.Version(vctx); err != nil {
-			fmt.Printf("Error Response: %v\n", err)
-			fmt.Printf("Error Response: %+v\n", err)
-			serverWasDown = true
-		} else {
-			if serverWasDown {
-				fmt.Print("Leaving successfully\n")
-				cancel()
-				driver.WithStack = saveDriver
-				return
-			}
+		if _, err := c.Version(nCtx); err != nil {
+			return interrupt{}
 		}
 
-		cancel()
-		select {
-		case <-ctx.Done():
-			fmt.Print("Context cancelled\n")
-			driver.WithStack = saveDriver
-			return
-		case <-time.After(1 * time.Second):
-			//fmt.Print("After 1 second\n")
-			break
-		}
-	}
+		return nil
+	}).RetryT(t, 100*time.Millisecond, 15*time.Second)
 
+	// Wait for secret to start
+	newRetryFunc(func() error {
+		c = createClientFromEnv(t, false)
+		nCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+
+		if _, err := c.Version(nCtx); err == nil {
+			return interrupt{}
+		}
+
+		return nil
+	}).RetryT(t, 100*time.Millisecond, 15*time.Second)
+
+	return c
 }
 
 func TestBackupRestore(t *testing.T) {
@@ -432,7 +425,7 @@ func TestBackupRestore(t *testing.T) {
 	if isSingle {
 		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		waitForServerRestart(waitctx, c, t)
+		c = waitForServerRestart(waitctx, c, t)
 	}
 
 	if ok, err := col.DocumentExists(ctx, meta1.Key); err != nil {
@@ -683,7 +676,7 @@ func TestBackupCompleteCycle(t *testing.T) {
 	if isSingle {
 		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		waitForServerRestart(waitctx, c, t)
+		c = waitForServerRestart(waitctx, c, t)
 	}
 
 	if ok, err := col.DocumentExists(ctx, meta1.Key); err != nil {
@@ -803,7 +796,7 @@ func TestBackupCreateRestoreParallel(t *testing.T) {
 			if isSingle {
 				waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 				defer cancel()
-				waitForServerRestart(waitctx, c, t)
+				c = waitForServerRestart(waitctx, c, t)
 			}
 		} else {
 			errchan <- err
@@ -901,7 +894,7 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	if isSingle {
 		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		waitForServerRestart(waitctx, c, t)
+		c = waitForServerRestart(waitctx, c, t)
 	}
 
 	t.Run("immediate", func(t *testing.T) {
