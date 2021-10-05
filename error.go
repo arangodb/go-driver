@@ -18,7 +18,6 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
-// Author Tomasz Mielech
 //
 
 package driver

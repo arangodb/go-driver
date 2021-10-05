@@ -18,7 +18,6 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package arangodb
@@ -27,10 +26,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pkg/errors"
-
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
+
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/pkg/errors"
 )
 
 func newClientDatabase(client *client) *clientDatabase {
