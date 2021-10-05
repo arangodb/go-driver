@@ -170,15 +170,13 @@ func TestDatabaseNameUnicode(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	databaseExtendedNamesRequired(t, c)
 
-	options := driver.CreateDatabaseOptions{
-		Options: driver.CreateDatabaseDefaultOptions{
-			NormalizeNFC: true,
-		},
-	}
 	dbName := "\u006E\u0303\u00f1"
 	normalized := norm.NFC.String(dbName)
 	ctx := context.Background()
-	_, err := c.CreateDatabase(ctx, dbName, &options)
+	_, err := c.CreateDatabase(ctx, dbName, nil)
+	require.EqualError(t, err, "database name is not properly UTF-8 NFC-normalized")
+
+	_, err = c.CreateDatabase(ctx, normalized, nil)
 	require.NoError(t, err)
 
 	// The database should not be found by the not normalized name.
@@ -218,21 +216,16 @@ func databaseExtendedNamesRequired(t *testing.T, c driver.Client) {
 		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
 	}
 
-	options := driver.CreateDatabaseOptions{
-		Options: driver.CreateDatabaseDefaultOptions{
-			NormalizeNFC: true,
-		},
-	}
-
 	// If the database can be created with the below name then it means that it excepts unicode names.
 	dbName := "\u006E\u0303\u00f1"
-	db, err := c.CreateDatabase(ctx, dbName, &options)
+	normalized := norm.NFC.String(dbName)
+	db, err := c.CreateDatabase(ctx, normalized, nil)
 	if err == nil {
 		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
 		return
 	}
 
-	if driver.IsArangoErrorWithErrorNum(err, driver.ErrDatabaseNameInvalid) {
+	if driver.IsArangoErrorWithErrorNum(err, driver.ErrArangoDatabaseNameInvalid) {
 		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
 	}
 

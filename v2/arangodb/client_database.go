@@ -71,8 +71,6 @@ type CreateDatabaseDefaultOptions struct {
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// Default sharding for collections in database
 	Sharding DatabaseSharding `json:"sharding,omitempty"`
-	// NormalizeNFC normalizes the unicode, e.g.: "\u006E\u0303\u00f1" into "ññ"
-	NormalizeNFC bool `json:"normalizeNFC,omitempty"`
 }
 
 // CreateDatabaseUserOptions contains options for creating a single user for a database.

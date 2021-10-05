@@ -26,8 +26,6 @@ package driver
 import (
 	"context"
 	"path"
-
-	"golang.org/x/text/unicode/norm"
 )
 
 // Database opens a connection to an existing database.
@@ -125,10 +123,6 @@ func listDatabases(ctx context.Context, conn Connection, path string) ([]Databas
 // CreateDatabase creates a new database with given name and opens a connection to it.
 // If the a database with given name already exists, a DuplicateError is returned.
 func (c *client) CreateDatabase(ctx context.Context, name string, options *CreateDatabaseOptions) (Database, error) {
-	if options != nil && options.Options.NormalizeNFC {
-		name = norm.NFC.String(name)
-	}
-
 	input := struct {
 		CreateDatabaseOptions
 		Name string `json:"name"`

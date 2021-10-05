@@ -17,9 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-// Author Tomasz Mielech
-//
 
 package tests
 
@@ -252,18 +249,15 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 func TestDatabaseNameUnicode(t *testing.T) {
 	databaseExtendedNamesRequired(t)
 
-	options := arangodb.CreateDatabaseOptions{
-		Options: arangodb.CreateDatabaseDefaultOptions{
-			NormalizeNFC: true,
-		},
-	}
-
 	Wrap(t, func(t *testing.T, c arangodb.Client) {
 		withContext(30*time.Second, func(ctx context.Context) error {
 			random := uuid.New().String()
 			dbName := "\u006E\u0303\u00f1" + random
+			_, err := c.CreateDatabase(ctx, dbName, nil)
+			require.EqualError(t, err, "database name is not properly UTF-8 NFC-normalized")
+
 			normalized := norm.NFC.String(dbName)
-			_, err := c.CreateDatabase(ctx, dbName, &options)
+			_, err = c.CreateDatabase(ctx, normalized, nil)
 			require.NoError(t, err)
 
 			// The database should not be found by the not normalized name.
@@ -309,20 +303,15 @@ func databaseExtendedNamesRequired(t *testing.T) {
 		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
 	}
 
-	options := arangodb.CreateDatabaseOptions{
-		Options: arangodb.CreateDatabaseDefaultOptions{
-			NormalizeNFC: true,
-		},
-	}
-
 	// If the database can be created with the below name then it means that it excepts unicode names.
 	dbName := "\u006E\u0303\u00f1"
-	db, err := c.CreateDatabase(ctx, dbName, &options)
+	normalized := norm.NFC.String(dbName)
+	db, err := c.CreateDatabase(ctx, normalized, nil)
 	if err == nil {
 		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
 	}
 
-	if shared.IsArangoErrorWithErrorNum(err, shared.ErrDatabaseNameInvalid) {
+	if shared.IsArangoErrorWithErrorNum(err, shared.ErrArangoDatabaseNameInvalid) {
 		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
 	}
 
