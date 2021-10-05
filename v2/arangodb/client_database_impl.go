@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package arangodb
@@ -26,10 +27,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
-
-	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/pkg/errors"
+	"golang.org/x/text/unicode/norm"
+
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/arangodb/go-driver/v2/connection"
 )
 
 func newClientDatabase(client *client) *clientDatabase {
@@ -47,6 +49,9 @@ type clientDatabase struct {
 func (c clientDatabase) CreateDatabase(ctx context.Context, name string, options *CreateDatabaseOptions) (Database, error) {
 	url := connection.NewUrl("_db", "_system", "_api", "database")
 
+	if options != nil && options.Options.NormalizeNFC {
+		name = norm.NFC.String(name)
+	}
 	createRequest := struct {
 		*CreateDatabaseOptions `json:",inline,omitempty"`
 		Name                   string `json:"name"`

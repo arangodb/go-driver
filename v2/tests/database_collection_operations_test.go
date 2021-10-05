@@ -32,6 +32,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
@@ -246,4 +247,85 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestDatabaseNameUnicode(t *testing.T) {
+	databaseExtendedNamesRequired(t)
+
+	options := arangodb.CreateDatabaseOptions{
+		Options: arangodb.CreateDatabaseDefaultOptions{
+			NormalizeNFC: true,
+		},
+	}
+
+	Wrap(t, func(t *testing.T, c arangodb.Client) {
+		withContext(30*time.Second, func(ctx context.Context) error {
+			random := uuid.New().String()
+			dbName := "\u006E\u0303\u00f1" + random
+			normalized := norm.NFC.String(dbName)
+			_, err := c.CreateDatabase(ctx, dbName, &options)
+			require.NoError(t, err)
+
+			// The database should not be found by the not normalized name.
+			_, err = c.Database(ctx, dbName)
+			require.NotNil(t, err)
+
+			// The database should be found by the normalized name.
+			exist, err := c.DatabaseExists(ctx, normalized)
+			require.NoError(t, err)
+			require.True(t, exist)
+
+			var found bool
+			databases, err := c.Databases(ctx)
+			require.NoError(t, err)
+			for _, database := range databases {
+				if database.Name() == normalized {
+					found = true
+					break
+				}
+			}
+			require.Truef(t, found, "the database %s should have been found", normalized)
+
+			// The database should return handler to the database by the normalized name.
+			db, err := c.Database(ctx, normalized)
+			require.NoError(t, err)
+			require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
+
+			return nil
+		})
+	})
+}
+
+// databaseExtendedNamesRequired skips test if the version is < 3.9.0 or the ArangoDB has not been launched
+// with the option --database.extended-names-databases=true.
+func databaseExtendedNamesRequired(t *testing.T) {
+	c := newClient(t, connectionJsonHttp(t))
+
+	ctx := context.Background()
+	version, err := c.Version(ctx)
+	require.NoError(t, err)
+
+	if version.Version.CompareTo("3.9.0") < 0 {
+		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
+	}
+
+	options := arangodb.CreateDatabaseOptions{
+		Options: arangodb.CreateDatabaseDefaultOptions{
+			NormalizeNFC: true,
+		},
+	}
+
+	// If the database can be created with the below name then it means that it excepts unicode names.
+	dbName := "\u006E\u0303\u00f1"
+	db, err := c.CreateDatabase(ctx, dbName, &options)
+	if err == nil {
+		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
+	}
+
+	if shared.IsArangoErrorWithErrorNum(err, shared.ErrDatabaseNameInvalid) {
+		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
+	}
+
+	// Some other error which has not been expected.
+	require.NoError(t, err)
 }
