@@ -721,7 +721,7 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 						Name: analyzerName,
 						Type: driver.ArangoSearchAnalyzerTypeNorm,
 						Properties: driver.ArangoSearchAnalyzerProperties{
-							Locale: "en_US.utf-8",
+							Locale: "en_US",
 							Case:   driver.ArangoSearchCaseLower,
 						},
 						Features: []driver.ArangoSearchAnalyzerFeature{
@@ -763,6 +763,6 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.Len(t, analyzer.Features, 2)
 	require.Contains(t, analyzer.Features, driver.ArangoSearchAnalyzerFeatureFrequency)
 	require.Contains(t, analyzer.Features, driver.ArangoSearchAnalyzerFeaturePosition)
-	require.EqualValues(t, analyzer.Properties.Locale, "en_US.utf-8")
+	require.EqualValues(t, analyzer.Properties.Locale, "en_US")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
 }
