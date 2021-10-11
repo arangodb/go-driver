@@ -290,6 +290,70 @@ func TestDatabaseNameUnicode(t *testing.T) {
 	})
 }
 
+// TestLoadUnloadCollection unloads and loads the collection checking the appropriate statue.
+func TestLoadUnloadCollection(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContext(30*time.Second, func(ctx context.Context) error {
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				WithCollection(t, db, nil, func(col arangodb.Collection) {
+					status, err := col.Status(ctx)
+					require.NoErrorf(t, err, "failed to get status of the collection")
+					require.Equal(t, arangodb.CollectionStatusLoaded, status)
+
+					err = col.Unload(ctx)
+					require.NoErrorf(t, err, "failed to unload the collection")
+					err = waitForCollectionStatus(ctx, col, arangodb.CollectionStatusUnloaded)
+					require.NoErrorf(t, err, "the collection should be unloaded")
+
+					err = col.Load(ctx)
+					require.NoErrorf(t, err, "failed to load the collection")
+					err = waitForCollectionStatus(ctx, col, arangodb.CollectionStatusLoaded)
+					require.NoErrorf(t, err, "the collection should be loaded")
+				})
+
+				require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
+			})
+
+			return nil
+		})
+	})
+}
+
+// TestCollectionTruncate creates a collection, adds some documents and truncates it.
+func TestCollectionTruncate(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContext(30*time.Minute, func(ctx context.Context) error {
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				WithCollection(t, db, nil, func(col arangodb.Collection) {
+					var docs []Book
+					numberDocs := 10
+					for i := 0; i < numberDocs; i++ {
+						docs = append(docs, Book{Title: fmt.Sprintf("Book %d", i)})
+					}
+
+					_, err := col.CreateDocumentsWithOptions(ctx, docs, nil)
+					require.NoErrorf(t, err, "failed to create documents")
+
+					count, err := col.Count(ctx)
+					require.NoErrorf(t, err, "failed to get count of the documents")
+					require.Equal(t, int64(numberDocs), count)
+
+					err = col.Truncate(ctx)
+					require.NoErrorf(t, err, "failed to truncate the collection")
+
+					count, err = col.Count(ctx)
+					require.NoErrorf(t, err, "failed to get count of the documents")
+					require.Equal(t, int64(0), count)
+				})
+
+				require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
+			})
+
+			return nil
+		})
+	})
+}
+
 // databaseExtendedNamesRequired skips test if the version is < 3.9.0 or the ArangoDB has not been launched
 // with the option --database.extended-names-databases=true.
 func databaseExtendedNamesRequired(t *testing.T) {
@@ -317,4 +381,17 @@ func databaseExtendedNamesRequired(t *testing.T) {
 
 	// Some other error which has not been expected.
 	require.NoError(t, err)
+}
+
+// waitForCollectionStatus wait for the expected status of the collection.
+func waitForCollectionStatus(ctx context.Context, col arangodb.Collection, status arangodb.CollectionStatus) error {
+	for {
+		if currentStatus, err := col.Status(ctx); err != nil {
+			return err
+		} else if currentStatus == status {
+			return nil
+		}
+
+		time.Sleep(time.Millisecond * 10)
+	}
 }

@@ -26,15 +26,25 @@ package arangodb
 import "context"
 
 type Collection interface {
+	// Name returns the name of the collection.
 	Name() string
+	// Database returns the database containing the collection.
 	Database() Database
-
+	//Status fetches the current status of the collection.
+	Status(ctx context.Context) (CollectionStatus, error)
+	// Count fetches the number of document in the collection.
+	Count(ctx context.Context) (int64, error)
 	// Shards fetches shards information of the collection.
 	Shards(ctx context.Context, details bool) (CollectionShards, error)
-
+	//Load the collection into memory.
+	Load(ctx context.Context) error
+	//Unload unloads the collection from memory.
+	Unload(ctx context.Context) error
 	// Remove removes the entire collection.
 	// If the collection does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+	// Truncate removes all documents from the collection, but leaves the indexes intact.
+	Truncate(ctx context.Context) error
 
 	CollectionDocuments
 }

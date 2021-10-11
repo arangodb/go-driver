@@ -25,9 +25,9 @@ package arangodb
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/pkg/errors"
+	"net/http"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
@@ -114,8 +114,11 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 		CollectionShards      `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), c.url("collection", "shards"), &body,
-		connection.WithQuery("details", "true"))
+	var rm []connection.RequestModifier
+	if details {
+		rm = append(rm, connection.WithQuery("details", "true"))
+	}
+	resp, err := connection.CallGet(ctx, c.connection(), c.url("collection", "shards"), &body, rm...)
 	if err != nil {
 		return CollectionShards{}, errors.WithStack(err)
 	}
@@ -125,5 +128,107 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 		return body.CollectionShards, nil
 	default:
 		return CollectionShards{}, body.AsArangoErrorWithCode(code)
+	}
+}
+
+// Count fetches the number of document in the collection.
+func (c *collection) Count(ctx context.Context) (int64, error) {
+	type Data struct {
+		Count int64 `json:"count,omitempty"`
+	}
+	var output struct {
+		shared.ResponseStruct `json:",omitempty"`
+		Data                  `json:",omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.connection(), c.url("collection", "count"), &output)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return output.Data.Count, nil
+	default:
+		return 0, output.AsArangoErrorWithCode(code)
+	}
+}
+
+// Truncate removes all documents from the collection, but leaves the indexes intact.
+func (c *collection) Truncate(ctx context.Context) error {
+	var output struct {
+		shared.ResponseStruct `json:",omitempty"`
+		CollectionInfo        `json:",omitempty"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), c.url("collection", "truncate"), &output, nil)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return output.AsArangoErrorWithCode(code)
+	}
+}
+
+// Status fetches the current status of the collection.
+func (c *collection) Status(ctx context.Context) (CollectionStatus, error) {
+	var output struct {
+		shared.ResponseStruct `json:",omitempty"`
+		CollectionInfo        `json:",omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.connection(), c.url("collection"), &output)
+	if err != nil {
+		return CollectionStatus(0), errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return output.CollectionInfo.Status, nil
+	default:
+		return CollectionStatus(0), output.AsArangoErrorWithCode(code)
+	}
+}
+
+// Load the collection into memory.
+func (c *collection) Load(ctx context.Context) error {
+	var output struct {
+		shared.ResponseStruct `json:",omitempty"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), c.url("collection", "load"), nil, &output,
+		connection.WithQuery("count", "false"))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return output.AsArangoErrorWithCode(code)
+	}
+}
+
+// Unload unloads the collection from memory.
+func (c *collection) Unload(ctx context.Context) error {
+	var output struct {
+		shared.ResponseStruct `json:",omitempty"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), c.url("collection", "unload"), nil, &output)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return output.AsArangoErrorWithCode(code)
 	}
 }
