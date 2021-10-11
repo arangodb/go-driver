@@ -12,6 +12,7 @@ require (
 	github.com/rs/zerolog v1.19.0
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+	golang.org/x/text v0.3.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ const (
 	ErrArangoDocumentNotFound         = 1202
 	ErrArangoDataSourceNotFound       = 1203
 	ErrArangoUniqueConstraintViolated = 1210
+	ErrArangoDatabaseNameInvalid      = 1229
 
 	// ArangoDB cluster errors
 	ErrClusterLeadershipChallengeOngoing = 1495
