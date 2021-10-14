@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package arangodb
@@ -26,8 +27,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/pkg/errors"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
@@ -103,4 +105,25 @@ func (c collection) connection() connection.Connection {
 
 func (c collection) url(api string, parts ...string) string {
 	return c.db.url(append([]string{"_api", api, c.name}, parts...)...)
+}
+
+// Shards fetches shards information of the collection.
+func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards, error) {
+	var body struct {
+		shared.ResponseStruct `json:",inline"`
+		CollectionShards      `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.connection(), c.url("collection", "shards"), &body,
+		connection.WithQuery("details", "true"))
+	if err != nil {
+		return CollectionShards{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return body.CollectionShards, nil
+	default:
+		return CollectionShards{}, body.AsArangoErrorWithCode(code)
+	}
 }

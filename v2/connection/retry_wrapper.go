@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Adam Janikowski
+// Author Tomasz Mielech
 //
 
 package connection
 
 import (
 	"context"
+	"io"
 	"net/http"
 )
 
@@ -40,7 +42,7 @@ func RetryOn503(conn Connection, retries int) Connection {
 func NewRetryWrapper(conn Connection, retries int, wrapper RetryWrapper) Connection {
 	return &retryWrapper{
 		wrapper:    wrapper,
-		connection: conn,
+		Connection: conn,
 		retries:    retries,
 	}
 }
@@ -48,21 +50,17 @@ func NewRetryWrapper(conn Connection, retries int, wrapper RetryWrapper) Connect
 type RetryWrapper func(response Response, err error) bool
 
 type retryWrapper struct {
-	wrapper    RetryWrapper
-	connection Connection
+	wrapper RetryWrapper
+	Connection
 
 	retries int
-}
-
-func (w retryWrapper) Decoder(contentType string) Decoder {
-	return w.connection.Decoder(contentType)
 }
 
 func (w retryWrapper) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
 	var r Response
 	var err error
 	for i := 0; i < w.retries; i++ {
-		r, err = w.connection.Do(ctx, request, output)
+		r, err = w.Connection.Do(ctx, request, output)
 
 		if w.wrapper(r, err) {
 			continue
@@ -78,26 +76,35 @@ func (w retryWrapper) Do(ctx context.Context, request Request, output interface{
 	return r, err
 }
 
-func (w retryWrapper) NewRequest(method string, urls ...string) (Request, error) {
-	return w.connection.NewRequest(method, urls...)
-}
+// Stream performs HTTP request.
+// It returns the response and body reader to read the data from there.
+// The caller is responsible to free the response body.
+func (w retryWrapper) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
+	var r Response
+	var err error
+	var body io.ReadCloser
+	for i := 0; i < w.retries; i++ {
+		r, body, err = w.Connection.Stream(ctx, request)
 
-func (w retryWrapper) NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error) {
-	return w.connection.NewRequestWithEndpoint(endpoint, method, urls...)
-}
+		if w.wrapper(r, err) {
+			if body != nil {
+				// Discard the data.
+				body.Close()
+			}
+			continue
+		}
 
-func (w retryWrapper) GetEndpoint() Endpoint {
-	return w.connection.GetEndpoint()
-}
+		if err == nil {
+			return r, body, nil
+		}
 
-func (w retryWrapper) SetEndpoint(e Endpoint) error {
-	return w.connection.SetEndpoint(e)
-}
+		if body != nil {
+			// Discard the data.
+			body.Close()
+		}
 
-func (w retryWrapper) GetAuthentication() Authentication {
-	return w.connection.GetAuthentication()
-}
+		return nil, nil, err
+	}
 
-func (w retryWrapper) SetAuthentication(a Authentication) error {
-	return w.connection.SetAuthentication(a)
+	return r, nil, err
 }

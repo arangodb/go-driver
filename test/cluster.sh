@@ -48,6 +48,9 @@ if [ "$CMD" == "start" ]; then
     if [ -n "$ENABLE_BACKUP" ]; then
         STARTERARGS="$STARTERARGS --all.backup.api-enabled=true"
     fi
+    if [ -n "$ENABLE_DATABASE_EXTENDED_NAMES" ]; then
+        STARTERARGS="${STARTERARGS} --all.database.extended-names-databases=true"
+    fi
 
     if [ -z "$STARTERPORT" ]; then
         STARTERPORT=7000
@@ -69,5 +72,5 @@ if [ "$CMD" == "start" ]; then
         ${STARTER} \
         --starter.port=${STARTERPORT} --starter.address=127.0.0.1 \
         --docker.image=${ARANGODB} \
-        --starter.local --starter.mode=${STARTERMODE} --all.log.level=debug --all.log.output=+ $STARTERARGS
+        --starter.local --starter.mode=${STARTERMODE} --all.log.level=debug --all.log.output=+ --log.verbose $STARTERARGS
 fi

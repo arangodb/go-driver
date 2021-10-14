@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,40 +17,43 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
 // Author Tomasz Mielech
 //
 
-package connection
+package tests
 
 import (
-	"net/http"
+	"os"
 	"strings"
+	"testing"
 )
 
-type httpResponse struct {
-	response *http.Response
-	request  *httpRequest
+func getTestMode() string {
+	return strings.TrimSpace(os.Getenv("TEST_MODE"))
 }
 
-func (j *httpResponse) Endpoint() string {
-	return j.request.Endpoint()
-}
+type mode string
 
-func (j *httpResponse) Response() interface{} {
-	return j.response
-}
+const (
+	testModeCluster         mode = "cluster"
+	testModeResilientSingle mode = "resilientsingle"
+	testModeSingle          mode = "single"
+)
 
-func (j httpResponse) Code() int {
-	return j.response.StatusCode
-}
-
-func (j httpResponse) Content() string {
-	value := strings.Split(j.response.Header.Get(ContentType), ";")
-	if len(value) > 0 {
-		// The header can be returned with arguments, e.g.: "Content-Type: text/html; charset=UTF-8".
-		return value[0]
+func requireMode(t *testing.T, mode mode) {
+	if getTestMode() != string(mode) {
+		t.Skipf("the test requires %s mode", mode)
 	}
+}
 
-	return ""
+func requireClusterMode(t *testing.T) {
+	requireMode(t, testModeCluster)
+}
+
+func requireSingleMode(t *testing.T) {
+	requireMode(t, testModeSingle)
+}
+
+func requireResilientSingleMode(t *testing.T) {
+	requireMode(t, testModeResilientSingle)
 }

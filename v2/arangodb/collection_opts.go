@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package arangodb
@@ -26,7 +27,7 @@ import (
 	"time"
 )
 
-// CollectionInfo contains information about a collection
+// CollectionInfo contains basic information about a collection.
 type CollectionInfo struct {
 	// The identifier of the collection.
 	ID string `json:"id,omitempty"`
@@ -42,17 +43,10 @@ type CollectionInfo struct {
 	GloballyUniqueId string `json:"globallyUniqueId,omitempty"`
 }
 
-// CollectionProperties contains extended information about a collection.
-type CollectionProperties struct {
+// CollectionExtendedInfo contains extended information about a collection.
+type CollectionExtendedInfo struct {
 	CollectionInfo
-
-	// WaitForSync; If true then creating, changing or removing documents will wait until the data has been synchronized to disk.
-	WaitForSync bool `json:"waitForSync,omitempty"`
-	// DoCompact specifies whether or not the collection will be compacted.
-	DoCompact bool `json:"doCompact,omitempty"`
-	// JournalSize is the maximal size setting for journals / datafiles in bytes.
-	JournalSize int64 `json:"journalSize,omitempty"`
-	// CacheEnabled set cacheEnabled option in collection properties
+	// CacheEnabled set cacheEnabled option in collection properties.
 	CacheEnabled bool `json:"cacheEnabled,omitempty"`
 	KeyOptions   struct {
 		// Type specifies the type of the key generator. The currently available generators are traditional and autoincrement.
@@ -62,29 +56,41 @@ type CollectionProperties struct {
 		// the _key attribute of documents is considered an error.
 		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
 	} `json:"keyOptions,omitempty"`
+	// Deprecated: use 'WriteConcern' instead.
+	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// NumberOfShards is the number of shards of the collection.
 	// Only available in cluster setup.
 	NumberOfShards int `json:"numberOfShards,omitempty"`
+	// This attribute specifies the name of the sharding strategy to use for the collection.
+	// Can not be changed after creation.
+	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
 	// ShardKeys contains the names of document attributes that are used to determine the target shard for documents.
 	// Only available in cluster setup.
 	ShardKeys []string `json:"shardKeys,omitempty"`
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
 	ReplicationFactor int `json:"replicationFactor,omitempty"`
-	// Deprecated: use 'WriteConcern' instead
-	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	// WaitForSync; If true then creating, changing or removing documents will wait
+	// until the data has been synchronized to disk.
+	WaitForSync bool `json:"waitForSync,omitempty"`
 	// WriteConcern contains how many copies must be available before a collection can be written.
 	// It is required that 1 <= WriteConcern <= ReplicationFactor.
 	// Default is 1. Not available for satellite collections.
 	// Available from 3.6 arangod version.
 	WriteConcern int `json:"writeConcern,omitempty"`
+}
+
+// CollectionProperties contains extended information about a collection.
+type CollectionProperties struct {
+	CollectionExtendedInfo
+	// DoCompact specifies whether or not the collection will be compacted.
+	DoCompact bool `json:"doCompact,omitempty"`
+	// JournalSize is the maximal size setting for journals / datafiles in bytes.
+	JournalSize int64 `json:"journalSize,omitempty"`
 	// SmartJoinAttribute
 	// See documentation for smart joins.
 	// This requires ArangoDB Enterprise Edition.
 	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
-	// This attribute specifies the name of the sharding strategy to use for the collection.
-	// Can not be changed after creation.
-	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
 	// This attribute specifies that the sharding of a collection follows that of another
 	// one.
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
@@ -212,4 +218,19 @@ type CollectionStatistics struct {
 			Size int64 `json:"size,omitempty"`
 		} `json:"revisions"`
 	} `json:"figures"`
+}
+
+// CollectionShards contains shards information about a collection.
+type CollectionShards struct {
+	CollectionExtendedInfo
+	// Set to create a smart edge or vertex collection.
+	// This requires ArangoDB Enterprise Edition.
+	IsSmart bool `json:"isSmart,omitempty"`
+
+	// Shards is a list of shards that belong to the collection.
+	// Each shard contains a list of DB servers where the first one is the leader and the rest are followers.
+	Shards map[ShardID][]ServerID `json:"shards,omitempty"`
+
+	// StatusString represents status as a string.
+	StatusString string `json:"statusString,omitempty"`
 }

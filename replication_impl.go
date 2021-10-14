@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 // Author Ewout Prangsma
+// Author Tomasz Mielech
 //
 
 package driver
@@ -100,17 +101,21 @@ func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseIn
 }
 
 // BatchID reported by the server
-func (b batchMetadata) BatchID() string {
+// The receiver is pointer because this struct contains the field `closed` and it can not be copied
+// because race detector will complain.
+func (b *batchMetadata) BatchID() string {
 	return b.ID
 }
 
 // LastTick reported by the server for this batch
-func (b batchMetadata) LastTick() Tick {
+// The receiver is pointer because this struct contains the field `closed` and it can not be copied
+// because race detector will complain.
+func (b *batchMetadata) LastTick() Tick {
 	return b.LastTickInt
 }
 
 // Extend the lifetime of an existing batch on the server
-func (b batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
+func (b *batchMetadata) Extend(ctx context.Context, ttl time.Duration) error {
 	if !atomic.CompareAndSwapInt32(&b.closed, 0, 0) {
 		return WithStack(ErrBatchClosed)
 	}

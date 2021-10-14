@@ -125,8 +125,8 @@ func TestUpdateDocumentReturnNew(t *testing.T) {
 // TestUpdateDocumentKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateDocumentKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	var conn driver.Connection
-	c := createClientFromEnv(t, true, &conn)
+	c := createClientFromEnv(t, true)
+	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := Account{

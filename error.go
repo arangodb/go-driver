@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ const (
 	ErrArangoDocumentNotFound         = 1202
 	ErrArangoDataSourceNotFound       = 1203
 	ErrArangoUniqueConstraintViolated = 1210
+	ErrArangoDatabaseNameInvalid      = 1229
 
 	// ArangoDB cluster errors
 	ErrClusterLeadershipChallengeOngoing = 1495
@@ -98,6 +99,16 @@ func newArangoError(code, errorNum int, errorMessage string) error {
 func IsArangoError(err error) bool {
 	ae, ok := Cause(err).(ArangoError)
 	return ok && ae.HasError
+}
+
+// AsArangoError returns true when the given error is an ArangoError together with an object.
+func AsArangoError(err error) (ArangoError, bool) {
+	ae, ok := Cause(err).(ArangoError)
+	if ok {
+		return ae, true
+	} else {
+		return ArangoError{}, false
+	}
 }
 
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.

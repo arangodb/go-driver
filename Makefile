@@ -4,7 +4,8 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOIMAGE ?= golang:1.13.4-stretch
+GOVERSION ?= 1.16.6
+GOIMAGE ?= golang:$(GOVERSION)-stretch
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.4
 TMPDIR := ${SCRIPTDIR}/.tmp
@@ -23,6 +24,13 @@ endif
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
 endif
+
+CGO_ENABLED=0
+ifdef RACE
+	TESTVERBOSEOPTIONS += -race
+	CGO_ENABLED=1
+endif
+
 
 ORGPATH := github.com/arangodb
 REPONAME := $(PROJECT)
@@ -138,14 +146,23 @@ run-tests: run-unit-tests run-tests-single run-tests-resilientsingle run-tests-c
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
 
-run-unit-tests:
+run-unit-tests: run-v2-unit-tests
 	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
-		-e CGO_ENABLED=0 \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
+
+run-v2-unit-tests:
+	@$(DOCKER_CMD) \
+		--rm \
+		-v "${ROOTDIR}"/v2:/usr/code \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
+		-w /usr/code/ \
+		$(GOIMAGE) \
+		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
@@ -351,8 +368,10 @@ __test_go_test:
 		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
 		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
 		-e TEST_DEBUG='$(TEST_DEBUG)' \
+		-e TEST_ENABLE_SHUTDOWN=$(TEST_ENABLE_SHUTDOWN) \
+		-e TEST_REQUEST_LOG=$(TEST_REQUEST_LOG) \
 		-e GODEBUG=tls13=1 \
-		-e CGO_ENABLED=0 \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
@@ -372,8 +391,9 @@ __test_v2_go_test:
 		-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
 		-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
 		-e TEST_DEBUG='$(TEST_DEBUG)' \
+		-e TEST_ENABLE_SHUTDOWN=$(TEST_ENABLE_SHUTDOWN) \
 		-e GODEBUG=tls13=1 \
-		-e CGO_ENABLED=0 \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/v2/ \
 		$(GOV2IMAGE) \
 		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
