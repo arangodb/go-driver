@@ -58,7 +58,7 @@ func NewHttp2Connection(config Http2Configuration) Connection {
 		c.authentication = a
 	}
 
-	c.streamSender = false
+	c.streamSender = true
 
 	return c
 }
