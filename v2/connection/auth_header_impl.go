@@ -27,7 +27,7 @@ import (
 	"fmt"
 )
 
-func newHeaderAuth(key, value string, args ...interface{}) Authentication {
+func NewHeaderAuth(key, value string, args ...interface{}) Authentication {
 	return &headerAuth{
 		key:   key,
 		value: fmt.Sprintf(value, args...),

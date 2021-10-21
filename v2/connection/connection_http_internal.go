@@ -221,34 +221,23 @@ func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResp
 		ctx = context.Background()
 	}
 
-	var bodyReader io.Reader
 	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch {
 		decoder := j.Decoder(j.contentType)
-		if !j.streamSender {
-			b := bytes.NewBuffer([]byte{})
-			if err := decoder.Encode(b, req.body); err != nil {
-				return nil, nil, err
-			}
-
-			bodyReader = b
-		} else {
-			reader, writer := io.Pipe()
-			go func() {
-				defer writer.Close()
-				if err := decoder.Encode(writer, req.body); err != nil {
-					writer.CloseWithError(err)
-				}
-			}()
-
-			bodyReader = reader
+		reader := j.bodyReadFunc(decoder, req.body, j.streamSender)
+		r, err := req.asRequest(ctx, reader)
+		if err != nil {
+			return nil, nil, errors.WithStack(err)
 		}
+		httpReq = r
+	} else {
+		r, err := req.asRequest(ctx, func() (io.Reader, error) {
+			return nil, nil
+		})
+		if err != nil {
+			return nil, nil, errors.WithStack(err)
+		}
+		httpReq = r
 	}
-
-	r, err := req.asRequest(ctx, bodyReader)
-	if err != nil {
-		return nil, nil, errors.WithStack(err)
-	}
-	httpReq = r
 
 	resp, err := j.client.Do(httpReq)
 	if err != nil {
@@ -279,5 +268,31 @@ func getDecoderByContentType(contentType string) Decoder {
 		return getBytesDecoder()
 	default:
 		return nil
+	}
+}
+
+type bodyReadFactory func() (io.Reader, error)
+
+func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bool) bodyReadFactory {
+	if !stream {
+		return func() (io.Reader, error) {
+			b := bytes.NewBuffer([]byte{})
+			if err := decoder.Encode(b, obj); err != nil {
+				return nil, err
+			}
+
+			return b, nil
+		}
+	} else {
+		return func() (io.Reader, error) {
+			reader, writer := io.Pipe()
+			go func() {
+				defer writer.Close()
+				if err := decoder.Encode(writer, obj); err != nil {
+					writer.CloseWithError(err)
+				}
+			}()
+			return reader, nil
+		}
 	}
 }

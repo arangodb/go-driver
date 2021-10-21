@@ -34,4 +34,5 @@ type Transaction interface {
 	Abort(ctx context.Context, opts *AbortTransactionOptions) error
 
 	DatabaseCollection
+	DatabaseQuery
 }

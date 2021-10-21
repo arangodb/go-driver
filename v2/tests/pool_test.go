@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,41 +20,42 @@
 // Author Adam Janikowski
 //
 
-package arangodb
+package tests
 
 import (
+	"context"
+	"sync"
+	"testing"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/stretchr/testify/require"
 )
 
-func NewClient(connection connection.Connection) Client {
-	return newClient(connection)
+func Test_Pool(t *testing.T) {
+	WrapConnectionFactory(t, func(t *testing.T, connFactory ConnectionFactory) {
+		conn, err := connection.NewPool(5, func() (connection.Connection, error) {
+			return connFactory(t), nil
+		})
+		require.NoError(t, err)
+
+		client := arangodb.NewClient(conn)
+
+		var wg sync.WaitGroup
+		ctx := context.Background()
+
+		for i := 0; i < 8; i++ {
+			wg.Add(1)
+
+			go func() {
+				defer wg.Done()
+				for j := 0; j < 16; j++ {
+					_, err := client.Version(ctx)
+					require.NoError(t, err)
+				}
+			}()
+		}
+
+		wg.Wait()
+	})
 }
-
-func newClient(connection connection.Connection) *client {
-	c := &client{
-		connection: connection,
-	}
-
-	c.clientDatabase = newClientDatabase(c)
-	c.clientServerInfo = newClientServerInfo(c)
-
-	c.Requests = NewRequests(connection)
-
-	return c
-}
-
-var _ Client = &client{}
-
-type client struct {
-	connection connection.Connection
-
-	*clientDatabase
-	*clientServerInfo
-
-	Requests
-}
-
-func (c *client) Connection() connection.Connection {
-	return c.connection
-}
-

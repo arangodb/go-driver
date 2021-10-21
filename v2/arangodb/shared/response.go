@@ -75,9 +75,9 @@ func (r *ResponseStruct) AsArangoErrorWithCode(code int) ArangoError {
 	if r == nil {
 		return (&ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
-	//r.Code = &code
-	//t := true
-	//r.Error = &t
+	r.Code = &code
+	t := true
+	r.Error = &t
 	return r.AsArangoError()
 }
 

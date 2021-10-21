@@ -22,7 +22,12 @@
 
 package arangodb
 
+import "github.com/arangodb/go-driver/v2/connection"
+
 type Client interface {
+	// Connection returns current Driver Connection
+	Connection() connection.Connection
+
 	Requests
 
 	ClientAdminBackup

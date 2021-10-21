@@ -26,6 +26,7 @@ package tests
 import (
 	"context"
 	"crypto/tls"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -40,9 +41,13 @@ import (
 )
 
 type Wrapper func(t *testing.T, client arangodb.Client)
+type WrapperConnection func(t *testing.T, conn connection.Connection)
+type WrapperConnectionFactory func(t *testing.T, connFactory ConnectionFactory)
+type ConnectionFactory func(t *testing.T) connection.Connection
+
 type WrapperB func(t *testing.B, client arangodb.Client)
 
-func Wrap(t *testing.T, w Wrapper) {
+func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 	c := newClient(t, connectionJsonHttp(t))
 
 	version, err := c.Version(context.Background())
@@ -53,12 +58,22 @@ func Wrap(t *testing.T, w Wrapper) {
 
 	t.Run("HTTP JSON", func(t *testing.T) {
 		t.Parallel()
-		w(t, newClient(t, connectionJsonHttp(t)))
+
+		w(t, func(t *testing.T) connection.Connection {
+			conn := connectionJsonHttp(t)
+			waitForConnection(t, arangodb.NewClient(conn))
+			return conn
+		})
 	})
 
 	t.Run("HTTP VPACK", func(t *testing.T) {
 		t.Parallel()
-		w(t, newClient(t, connectionVPACKHttp(t)))
+
+		w(t, func(t *testing.T) connection.Connection {
+			conn := connectionVPACKHttp(t)
+			waitForConnection(t, arangodb.NewClient(conn))
+			return conn
+		})
 	})
 
 	t.Run("HTTP2 JSON", func(t *testing.T) {
@@ -66,7 +81,12 @@ func Wrap(t *testing.T, w Wrapper) {
 			t.Skipf("Not supported")
 		}
 		t.Parallel()
-		w(t, newClient(t, connectionJsonHttp2(t)))
+
+		w(t, func(t *testing.T) connection.Connection {
+			conn := connectionJsonHttp2(t)
+			waitForConnection(t, arangodb.NewClient(conn))
+			return conn
+		})
 	})
 
 	t.Run("HTTP2 VPACK", func(t *testing.T) {
@@ -74,7 +94,24 @@ func Wrap(t *testing.T, w Wrapper) {
 			t.Skipf("Not supported")
 		}
 		t.Parallel()
-		w(t, newClient(t, connectionVPACKHttp2(t)))
+
+		w(t, func(t *testing.T) connection.Connection {
+			conn := connectionVPACKHttp2(t)
+			waitForConnection(t, arangodb.NewClient(conn))
+			return conn
+		})
+	})
+}
+
+func WrapConnection(t *testing.T, w WrapperConnection) {
+	WrapConnectionFactory(t, func(t *testing.T, connFactory ConnectionFactory) {
+		w(t, connFactory(t))
+	})
+}
+
+func Wrap(t *testing.T, w Wrapper) {
+	WrapConnection(t, func(t *testing.T, conn connection.Connection) {
+		w(t, arangodb.NewClient(conn))
 	})
 }
 
@@ -140,6 +177,15 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 		ContentType: connection.ApplicationJSON,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 90 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
 
@@ -158,6 +204,15 @@ func connectionPlainHttp(t testing.TB) connection.Connection {
 		ContentType: connection.PlainText,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 90 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
 
@@ -176,6 +231,15 @@ func connectionVPACKHttp(t testing.TB) connection.Connection {
 		ContentType: connection.ApplicationVPack,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 90 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
 

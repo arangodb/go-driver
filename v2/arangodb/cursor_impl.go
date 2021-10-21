@@ -48,13 +48,46 @@ type cursor struct {
 
 	endpoint string
 
+	closed bool
+
 	data cursorData
 
 	lock sync.Mutex
 }
 
-func (c cursor) Close() error {
-	panic("implement me")
+func (c *cursor) Close() error {
+	return c.CloseWithContext(context.Background())
+}
+
+func (c *cursor) CloseWithContext(ctx context.Context) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.closed {
+		return nil
+	}
+
+	if c.data.ID == "" {
+		c.closed = true
+		c.data = cursorData{}
+		return nil
+	}
+
+	url := c.db.url("_api", "cursor", c.data.ID)
+
+	resp, err := connection.CallDelete(ctx, c.db.connection(), url, &c.data, c.db.modifiers...)
+	if err != nil {
+		return err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusAccepted:
+		c.closed = true
+		c.data = cursorData{}
+		return nil
+	default:
+		return shared.NewResponseStruct().AsArangoErrorWithCode(code)
+	}
 }
 
 func (c *cursor) HasMore() bool {
@@ -69,6 +102,10 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 }
 
 func (c *cursor) readDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
+	if c.closed {
+		return DocumentMeta{}, shared.NoMoreDocumentsError{}
+	}
+
 	if !c.data.Result.HasMore() {
 		if err := c.getNextBatch(ctx); err != nil {
 			return DocumentMeta{}, err

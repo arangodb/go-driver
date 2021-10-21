@@ -79,14 +79,6 @@ func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCol
 			return err
 		}).TimeoutT(t, 15*time.Second, 125*time.Millisecond)
 
-		defer func() {
-			withContext(2*time.Minute, func(ctx context.Context) error {
-				info(t)("Removing COL %s", name)
-				require.NoError(t, col.Remove(ctx))
-				return nil
-			})
-		}()
-
 		f(col)
 
 		return nil

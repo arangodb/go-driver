@@ -32,6 +32,9 @@ import (
 type Cursor interface {
 	io.Closer
 
+	// CloseWithContext run Close with specified Context
+	CloseWithContext(ctx context.Context) error
+
 	// HasMore returns true if the next call to ReadDocument does not return a NoMoreDocuments error.
 	HasMore() bool
 
