@@ -132,7 +132,6 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 					nd := docs
 
 					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
-					println(query)
 
 					q, err := db.Query(ctx, query, &arangodb.QueryOptions{
 						BatchSize: size,
@@ -164,7 +163,6 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 					nd := docs
 
 					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
-					println(query)
 
 					q, err := db.Query(ctx, query, &arangodb.QueryOptions{
 						BatchSize: size / 10,
@@ -190,6 +188,19 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 							nd = nd[1:]
 						}
 					}
+				})
+
+				t.Run("Cursor - close", func(t *testing.T) {
+					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
+
+					q, err := db.Query(ctx, query, nil)
+					require.NoError(t, err)
+
+					require.NoError(t, q.CloseWithContext(ctx))
+
+					var doc document
+					_, err = q.ReadDocument(ctx, &doc)
+					require.True(t, shared.IsNoMoreDocuments(err))
 				})
 
 				t.Run("Update", func(t *testing.T) {

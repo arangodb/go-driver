@@ -24,6 +24,7 @@ package connection
 
 import (
 	"context"
+	"io"
 	"sync"
 )
 
@@ -50,6 +51,10 @@ type connectionPool struct {
 	connections []Connection
 
 	id int
+}
+
+func (c *connectionPool) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
+	return c.connection().Stream(ctx, request)
 }
 
 func (c *connectionPool) NewRequest(method string, urls ...string) (Request, error) {

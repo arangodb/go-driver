@@ -24,7 +24,7 @@ package tests
 
 import (
 	"context"
-	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -35,19 +35,20 @@ import (
 )
 
 func Test_CallStream(t *testing.T) {
-	conn := connectionJsonHttp(t)
-	waitForConnection(t, arangodb.NewClient(conn))
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		url := connection.NewUrl("_api", "version")
 
-	url := connection.NewUrl("_api", "version")
+		resp, body, err := connection.CallStream(context.Background(), client.Connection(), http.MethodGet, url)
+		require.NoError(t, err)
+		defer body.Close()
+		require.Equal(t, http.StatusOK, resp.Code())
+		dec := client.Connection().Decoder(resp.Content())
 
-	resp, body, err := connection.CallStream(context.Background(), conn, http.MethodGet, url)
-	require.NoError(t, err)
-	defer body.Close()
-	require.Equal(t, http.StatusOK, resp.Code())
-	dec := json.NewDecoder(body)
-
-	version := arangodb.VersionInfo{}
-	dec.Decode(&version)
-	require.Equal(t, false, dec.More())
-	require.GreaterOrEqual(t, version.Version.Major(), 3)
+		version := arangodb.VersionInfo{}
+		require.NoError(t, dec.Decode(body, &version))
+		data, err := ioutil.ReadAll(body)
+		require.NoError(t, err)
+		require.Len(t, data, 0)
+		require.GreaterOrEqual(t, version.Version.Major(), 3)
+	})
 }

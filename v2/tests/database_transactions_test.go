@@ -212,7 +212,9 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 					_, err = col1.UpdateDocument(ctx, d.Key, ud)
 					require.NoError(t, err)
 
-					_, err = col2.UpdateDocument(ctx, d.Key, ud)
+					sctx, c := context.WithTimeout(ctx, 2*time.Second)
+					defer c()
+					_, err = col2.UpdateDocument(sctx, d.Key, ud)
 					require.Error(t, err)
 					require.True(t, shared.IsOperationTimeout(err))
 				})

@@ -65,7 +65,6 @@ func (m multiUnmarshaller) MarshalJSON() ([]byte, error) {
 }
 
 func (m multiUnmarshaller) UnmarshalJSON(d []byte) error {
-	println(string(d))
 	for _, o := range m.obj {
 		if err := json.Unmarshal(d, o); err != nil {
 			return err
