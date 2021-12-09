@@ -7,7 +7,7 @@ ROOTDIR:=$(CURR)
 GOVERSION ?= 1.16.6
 GOIMAGE ?= golang:$(GOVERSION)-stretch
 GOV2IMAGE ?= $(GOIMAGE)
-ALPINE_IMAGE ?= alpine:3.4
+ALPINE_IMAGE ?= alpine:3.14
 TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run

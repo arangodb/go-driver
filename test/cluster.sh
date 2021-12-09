@@ -49,24 +49,25 @@ if [ "$CMD" == "start" ]; then
         STARTERARGS="$STARTERARGS --all.backup.api-enabled=true"
     fi
     if [ -n "$ENABLE_DATABASE_EXTENDED_NAMES" ]; then
-        STARTERARGS="${STARTERARGS} --all.database.extended-names-databases=true"
+        STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true"
+    fi
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        DOCKERPLATFORMARG="--platform linux/x86_64"
+        DOCKERARGS="$DOCKERARGS $DOCKERPLATFORMARG"
+        STARTERARGS="--docker.container=$STARTERCONTAINER"
     fi
 
     if [ -z "$STARTERPORT" ]; then
         STARTERPORT=7000
     fi
 
+    set -x
+
     # Start network namespace
-    docker run -d --name=${NAMESPACE} "${ALPINE_IMAGE}" sleep 365d
+    docker run -d --name=${NAMESPACE} $DOCKERPLATFORMARG "${ALPINE_IMAGE}" sleep 365d
 
     # Start starters 
     # arangodb/arangodb-starter 0.7.0 or higher is needed.
-    echo "docker run -d --name=${STARTERCONTAINER} --net=container:${NAMESPACE} \
-        -v ${STARTERVOLUME}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS \
-        ${STARTER} \
-        --starter.port=${STARTERPORT} --starter.address=127.0.0.1 \
-        --docker.image=${ARANGODB} \
-        --starter.local --starter.mode=${STARTERMODE} --all.log.level=debug --all.log.output=+ $STARTERARGS"
     docker run -d --name=${STARTERCONTAINER} --net=container:${NAMESPACE} \
         -v ${STARTERVOLUME}:/data -v /var/run/docker.sock:/var/run/docker.sock $DOCKERARGS \
         ${STARTER} \
