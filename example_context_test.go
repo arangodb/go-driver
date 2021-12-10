@@ -26,6 +26,7 @@ package driver_test
 
 import (
 	"context"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -45,5 +46,16 @@ func ExampleWithSilent(collection driver.Collection) {
 	ctx := driver.WithSilent(context.Background())
 	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); err != nil {
 		// No meta data is returned
+	}
+}
+
+func ExampleWithQueueTimeout(collection driver.Collection) {
+	var result Book
+	// Using WithArangoQueueTimeout we get Timout error if not response after time specified in WithArangoQueueTime
+	ctx := driver.WithArangoQueueTimeout(context.Background(), true)
+	ctx = driver.WithArangoQueueTime(ctx, time.Second*5)
+
+	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); err != nil {
+		// This call will fail if no response after 5 sec
 	}
 }

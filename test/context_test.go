@@ -25,6 +25,7 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -46,4 +47,6 @@ func TestContextParentNil(t *testing.T) {
 	testValue(driver.WithSilent(nil))
 	testValue(driver.WithWaitForSync(nil))
 	testValue(driver.WithRawResponse(nil, &[]byte{}))
+	testValue(driver.WithArangoQueueTimeout(nil, true))
+	testValue(driver.WithArangoQueueTime(nil, time.Second*5))
 }
