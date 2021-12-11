@@ -120,6 +120,18 @@ ifdef TEST_RESOURCES
 	TEST_RESOURCES_VOLUME := -v ${TEST_RESOURCES}:/tmp/resources
 endif
 
+ifeq ("$(DEBUG)", "true")
+	GOIMAGE := go-driver-tests:debug
+	DOCKER_DEBUG_ARGS := --security-opt=seccomp:unconfined
+	DEBUG_PORT := 2345
+
+	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 exec /test_debug.test -- $(TESTOPTIONS)
+	DOCKER_V2_RUN_CMD := $(DOCKER_RUN_CMD)
+else
+    DOCKER_RUN_CMD := $(GOIMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
+endif
+
 .PHONY: all build clean run-tests
 
 all: build
@@ -350,7 +362,7 @@ run-tests-cluster-vst-1.1-ssl:
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # Internal test tasks
-__run_tests: __test_prepare __test_go_test __test_cleanup
+__run_tests: __test_debug__ __test_prepare __test_go_test __test_cleanup
 
 __test_go_test:
 	$(DOCKER_CMD) \
@@ -373,11 +385,10 @@ __test_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
-		$(GOIMAGE) \
-		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+		$(DOCKER_RUN_CMD)
 
 # Internal test tasks
-__run_v2_tests: __test_prepare __test_v2_go_test __test_cleanup
+__run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
 
 __test_v2_go_test:
 	$(DOCKER_CMD) \
@@ -395,9 +406,17 @@ __test_v2_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/v2/ \
-		$(GOV2IMAGE) \
-		go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
+		$(DOCKER_V2_RUN_CMD)
 
+__test_debug__:
+ifeq ("$(DEBUG)", "true")
+	@docker build -f Dockerfile.debug --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
+endif
+
+__test_v2_debug__:
+ifeq ("$(DEBUG)", "true")
+	@docker build -f Dockerfile.debug --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
+endif
 
 __test_prepare:
 ifdef TEST_ENDPOINTS_OVERRIDE
@@ -410,7 +429,7 @@ endif
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@mkdir -p "${TMPDIR}"
 	@echo "${TMPDIR}"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) ENABLE_BACKUP=$(ENABLE_BACKUP) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
+	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) ENABLE_BACKUP=$(ENABLE_BACKUP) ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" DEBUG_PORT=$(DEBUG_PORT) $(CLUSTERENV) "${ROOTDIR}/test/cluster.sh" start
 endif
 
 __test_cleanup:
