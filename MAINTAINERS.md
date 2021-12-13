@@ -18,3 +18,10 @@
 - Edit the .travis file and change all occurrences of `golang:x.y.z-stretch` to the appropriate version.
 
 - Edit the Makefile and change the line `GOVERSION ?= 1.16.6` into the required version.
+
+## Debugging with DLV
+
+To attach DLV debugger run tests with `DEBUG=true` flag e.g.:
+```shell
+DEBUG=true TESTOPTIONS="-test.run TestResponseHeader -test.v" make run-tests-single-json-with-auth
+```
