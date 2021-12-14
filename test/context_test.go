@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 )
 
@@ -49,4 +51,41 @@ func TestContextParentNil(t *testing.T) {
 	testValue(driver.WithRawResponse(nil, &[]byte{}))
 	testValue(driver.WithArangoQueueTimeout(nil, true))
 	testValue(driver.WithArangoQueueTime(nil, time.Second*5))
+}
+
+func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
+	c := createClientFromEnv(t, true)
+
+	t.Run("without timout", func(t *testing.T) {
+		_, err := c.Version(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("with context deadLine timeout", func(t *testing.T) {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Nanosecond))
+		defer cancel()
+
+		ctx = driver.WithArangoQueueTimeout(ctx, true)
+
+		_, err := c.Version(ctx)
+		require.Error(t, err)
+	})
+
+	t.Run("without timeout - if no queue timeout and no context deadline set", func(t *testing.T) {
+		ctx := driver.WithArangoQueueTimeout(context.Background(), true)
+
+		_, err := c.Version(ctx)
+		require.NoError(t, err)
+	})
+
+	t.Run("with queue param timeout", func(t *testing.T) {
+		// TODO: verify that this test works under 3.9
+		skipBelowVersion(c, "3.9", t)
+
+		ctx := driver.WithArangoQueueTimeout(context.Background(), true)
+		ctx = driver.WithArangoQueueTime(context.Background(), time.Nanosecond)
+
+		_, err := c.Version(ctx)
+		require.Error(t, err)
+	})
 }
