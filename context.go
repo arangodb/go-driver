@@ -163,13 +163,13 @@ func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Con
 	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, wasDirtyRead)
 }
 
-// WithArangoQueueTimeout is used to enable Queue timeout on client and server side.
+// WithArangoQueueTimeout is used to enable Queue timeout on the server side.
 // If WithArangoQueueTime is used then its value takes precedence in other case value of ctx.Deadline will be taken
 func WithArangoQueueTimeout(parent context.Context, useQueueTimeout bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyUseQueueTimeout, useQueueTimeout)
 }
 
-// WithArangoQueueTime defines max queue timeout on client and server side.
+// WithArangoQueueTime defines max queue timeout on the server side.
 func WithArangoQueueTime(parent context.Context, duration time.Duration) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyMaxQueueTime, duration)
 }

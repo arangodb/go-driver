@@ -22,6 +22,12 @@
 
 package connection
 
+import (
+	"context"
+	"fmt"
+	"time"
+)
+
 func WithTransactionID(transactionID string) RequestModifier {
 	return func(r Request) error {
 		r.AddHeader("x-arango-trx-id", transactionID)
@@ -39,6 +45,28 @@ func WithFragment(s string) RequestModifier {
 func WithQuery(s, value string) RequestModifier {
 	return func(r Request) error {
 		r.AddQuery(s, value)
+		return nil
+	}
+}
+
+// applyGlobalSettings applies the settings configured in the context to the given request.
+func applyGlobalSettings(ctx context.Context) RequestModifier {
+	return func(r Request) error {
+
+		// Enable Queue timeout
+		if v := ctx.Value(keyUseQueueTimeout); v != nil {
+			if useQueueTimeout, ok := v.(bool); ok && useQueueTimeout {
+				if v := ctx.Value(keyMaxQueueTime); v != nil {
+					if timeout, ok := v.(time.Duration); ok {
+						r.AddHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+					}
+				} else if deadline, ok := ctx.Deadline(); ok {
+					timeout := deadline.Sub(time.Now())
+					r.AddHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+				}
+			}
+		}
+
 		return nil
 	}
 }

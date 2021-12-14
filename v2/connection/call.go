@@ -38,6 +38,8 @@ func Call(ctx context.Context, c Connection, method, url string, output interfac
 		return nil, err
 	}
 
+	modifiers = append(modifiers, applyGlobalSettings(ctx))
+
 	for _, modifier := range modifiers {
 		if err = modifier(req); err != nil {
 			return nil, err
