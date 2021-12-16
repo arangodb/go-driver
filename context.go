@@ -25,8 +25,10 @@ package driver
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/arangodb/go-driver/util"
 )
@@ -62,6 +64,8 @@ const (
 	keyTransactionID            ContextKey = "arangodb-transactionID"
 	keyOverwriteMode            ContextKey = "arangodb-overwriteMode"
 	keyOverwrite                ContextKey = "arangodb-overwrite"
+	keyUseQueueTimeout          ContextKey = "arangodb-use-queue-timeout"
+	keyMaxQueueTime             ContextKey = "arangodb-max-queue-time-seconds"
 )
 
 type OverwriteMode string
@@ -157,6 +161,17 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 // This is valid for document reads, aql queries, gharial vertex and edge reads.
 func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, wasDirtyRead)
+}
+
+// WithArangoQueueTimeout is used to enable Queue timeout on the server side.
+// If WithArangoQueueTime is used then its value takes precedence in other case value of ctx.Deadline will be taken
+func WithArangoQueueTimeout(parent context.Context, useQueueTimeout bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyUseQueueTimeout, useQueueTimeout)
+}
+
+// WithArangoQueueTime defines max queue timeout on the server side.
+func WithArangoQueueTime(parent context.Context, duration time.Duration) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyMaxQueueTime, duration)
 }
 
 // WithRawResponse is used to configure a context that will make all functions store the raw response into a
@@ -279,6 +294,8 @@ type contextSettings struct {
 	JobIDResponse            *string
 	OverwriteMode            OverwriteMode
 	Overwrite                bool
+	QueueTimeout             bool
+	MaxQueueTime             time.Duration
 }
 
 // loadContextResponseValue loads generic values from the response and puts it into variables specified
@@ -351,6 +368,23 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 			result.DirtyReadFlag = dirtyReadFlag
 		}
 	}
+
+	// Enable Queue timeout
+	if v := ctx.Value(keyUseQueueTimeout); v != nil {
+		if useQueueTimeout, ok := v.(bool); ok && useQueueTimeout {
+			result.QueueTimeout = useQueueTimeout
+			if v := ctx.Value(keyMaxQueueTime); v != nil {
+				if timeout, ok := v.(time.Duration); ok {
+					result.MaxQueueTime = timeout
+					req.SetHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+				}
+			} else if deadline, ok := ctx.Deadline(); ok {
+				timeout := deadline.Sub(time.Now())
+				req.SetHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+			}
+		}
+	}
+
 	// TransactionID
 	if v := ctx.Value(keyTransactionID); v != nil {
 		req.SetHeader("x-arango-trx-id", string(v.(TransactionID)))

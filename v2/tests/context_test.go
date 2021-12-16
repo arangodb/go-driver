@@ -17,44 +17,23 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
+// Author Jakub Wierzbowski
 //
 
-package test
+package tests
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/arangodb/go-driver/v2/connection"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
 )
 
-// TestContextParentNil calls all WithXyz context functions with a nil parent context.
-// This must not crash.
-func TestContextParentNil(t *testing.T) {
-	testValue := func(ctx context.Context) {
-		ctx.Value("foo")
-	}
-
-	testValue(driver.WithRevision(nil, "rev"))
-	testValue(driver.WithRevisions(nil, []string{"rev1", "rev2"}))
-	testValue(driver.WithReturnNew(nil, make(map[string]interface{})))
-	testValue(driver.WithReturnOld(nil, make(map[string]interface{})))
-	testValue(driver.WithDetails(nil))
-	testValue(driver.WithKeepNull(nil, false))
-	testValue(driver.WithMergeObjects(nil, true))
-	testValue(driver.WithSilent(nil))
-	testValue(driver.WithWaitForSync(nil))
-	testValue(driver.WithRawResponse(nil, &[]byte{}))
-	testValue(driver.WithArangoQueueTimeout(nil, true))
-	testValue(driver.WithArangoQueueTime(nil, time.Second*5))
-}
-
 func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := newClient(t, connectionJsonHttp(t))
 
 	t.Run("without timout", func(t *testing.T) {
 		_, err := c.Version(context.Background())
@@ -65,16 +44,17 @@ func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Nanosecond))
 		defer cancel()
 
-		ctx = driver.WithArangoQueueTimeout(ctx, true)
+		ctx = connection.WithArangoQueueTimeout(ctx, true)
 
 		_, err := c.Version(ctx)
 		require.Error(t, err)
 	})
 
 	t.Run("without timeout - if no queue timeout and no context deadline set", func(t *testing.T) {
-		ctx := driver.WithArangoQueueTimeout(context.Background(), true)
+		ctx := connection.WithArangoQueueTimeout(context.Background(), true)
 
 		_, err := c.Version(ctx)
 		require.NoError(t, err)
 	})
+
 }
