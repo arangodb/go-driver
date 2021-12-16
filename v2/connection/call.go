@@ -58,6 +58,8 @@ func CallStream(ctx context.Context, c Connection, method, url string, modifiers
 		return nil, nil, err
 	}
 
+	modifiers = append(modifiers, applyGlobalSettings(ctx))
+
 	for _, modifier := range modifiers {
 		if err = modifier(req); err != nil {
 			return nil, nil, err
