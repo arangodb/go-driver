@@ -65,6 +65,11 @@ type QuerySubOptions struct {
 	// MaxRuntime specify the timeout which can be used to kill a query on the server after the specified
 	// amount in time. The timeout value is specified in seconds. A value of 0 means no timeout will be enforced.
 	MaxRuntime float64 `json:"maxRuntime,omitempty"`
+	// FillBlockCache if is set to true or not specified, this will make the query store the data it reads via the RocksDB storage engine in the RocksDB block cache.
+	// This is usually the desired behavior. The option can be set to false for queries that are known to either read a lot of data which would thrash the block cache,
+	// or for queries that read data which are known to be outside of the hot set. By setting the option to false, data read by the query will not make it into
+	// the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
+	FillBlockCache bool `json:"fillBlockCache,omitempty"`
 }
 
 type QueryOptions struct {

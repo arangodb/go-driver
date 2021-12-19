@@ -302,3 +302,51 @@ func TestForceOneShardAttributeValue(t *testing.T) {
 		}
 	})
 }
+
+// TestFillBlockCache test FillBlockCache query attribute
+func TestFillBlockCache(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c := createClientFromEnv(t, true)
+
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.8.1")).Cluster().Enterprise()
+
+	db := ensureDatabase(ctx, c, "fill_block_cache", nil, t)
+
+	db, clean := prepareQueryDatabase(t, ctx, c, "fill_block_cache")
+	defer clean(t)
+
+	// Setup tests
+	tests := []profileQueryTest{
+		{
+			Query: "FOR d IN books SORT d.Title RETURN d",
+		},
+		{
+			Query: "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars: map[string]interface{}{
+				"title": "Book 16",
+			},
+		},
+	}
+
+	t.Run("With FillBlockCache enabled", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryFillBlockCache(ctx, true)
+				_, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("With FillBlockCache disabled", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryFillBlockCache(ctx, false)
+				_, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+			})
+		}
+	})
+}
