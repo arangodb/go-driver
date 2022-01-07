@@ -190,6 +190,29 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 					}
 				})
 
+				t.Run("Cursor - shardIds", func(t *testing.T) {
+					//nd := docs
+
+					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
+
+					q, err := db.Query(ctx, query, &arangodb.QueryOptions{
+						ShardIds: []string{"s1"},
+					})
+					require.NoError(t, err)
+
+					for {
+						var doc document
+						_, err := q.ReadDocument(ctx, &doc)
+						if shared.IsNoMoreDocuments(err) {
+							break
+						}
+
+						require.NoError(t, err)
+
+						//require.True(t, len(nd) == 0)
+					}
+				})
+
 				t.Run("Cursor - close", func(t *testing.T) {
 					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
 

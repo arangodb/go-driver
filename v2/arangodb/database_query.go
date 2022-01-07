@@ -66,6 +66,8 @@ type QuerySubOptions struct {
 }
 
 type QueryOptions struct {
+	// ShardId query option
+	ShardIds []string `json:"shardIds,omitempty"`
 	// indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
 	// turned off by default, and "count" is only returned when requested.

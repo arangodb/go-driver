@@ -39,6 +39,7 @@ const (
 	keyQueryOptStream                   = "arangodb-query-opt-stream"
 	keyQueryOptProfile                  = "arangodb-query-opt-profile"
 	keyQueryOptMaxRuntime               = "arangodb-query-opt-maxRuntime"
+	keyQueryShardIds                    = "arangodb-query-opt-shardIds"
 )
 
 // WithQueryCount is used to configure a context that will set the Count of a query request,
@@ -54,6 +55,11 @@ func WithQueryCount(parent context.Context, value ...bool) context.Context {
 // WithQueryBatchSize is used to configure a context that will set the BatchSize of a query request,
 func WithQueryBatchSize(parent context.Context, value int) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryBatchSize, value)
+}
+
+// WithQuerySharIds is used to configure a context that will set the ShardIds of a query request,
+func WithQueryShardIds(parent context.Context, value []string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryShardIds, value)
 }
 
 // WithQueryCache is used to configure a context that will set the Cache of a query request,
@@ -138,6 +144,8 @@ type queryRequest struct {
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
 	// turned off by default, and "count" is only returned when requested.
 	Count bool `json:"count,omitempty"`
+	// ShardId query option
+	ShardIds []string `json:"shardIds,omitempty"`
 	// maximum number of result documents to be transferred from the server to the client in one roundtrip.
 	// If this attribute is not set, a server-controlled default value will be used. A batchSize value of 0 is disallowed.
 	BatchSize int `json:"batchSize,omitempty"`
@@ -204,6 +212,11 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryBatchSize); rawValue != nil {
 		if value, ok := rawValue.(int); ok {
 			q.BatchSize = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryShardIds); rawValue != nil {
+		if value, ok := rawValue.([]string); ok {
+			q.ShardIds = value
 		}
 	}
 	if rawValue := ctx.Value(keyQueryCache); rawValue != nil {

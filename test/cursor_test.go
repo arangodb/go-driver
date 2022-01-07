@@ -229,6 +229,7 @@ func TestCreateCursor(t *testing.T) {
 			ExpectCount: true,
 		},
 		{Context: driver.WithQueryFullCount(nil, true), ExpectFullCount: true},
+		{Context: driver.WithQueryShardIds(nil, []string{"s1"})},
 	}
 
 	// Run tests for every context alternative
