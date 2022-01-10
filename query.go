@@ -216,7 +216,7 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	}
 	if rawValue := ctx.Value(keyQueryShardIds); rawValue != nil {
 		if value, ok := rawValue.([]string); ok {
-			q.ShardIds = value
+			q.Options.ShardIds = value
 		}
 	}
 	if rawValue := ctx.Value(keyQueryCache); rawValue != nil {

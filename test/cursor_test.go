@@ -211,7 +211,6 @@ func TestCreateCursor(t *testing.T) {
 		Context         context.Context
 		ExpectCount     bool
 		ExpectFullCount bool
-		ExpectEmpty     bool
 	}{
 		{Context: nil},
 		{Context: context.Background()},
@@ -230,7 +229,6 @@ func TestCreateCursor(t *testing.T) {
 			ExpectCount: true,
 		},
 		{Context: driver.WithQueryFullCount(nil, true), ExpectFullCount: true},
-		{Context: driver.WithQueryShardIds(nil, []string{"s1"}), ExpectEmpty: true},
 	}
 
 	// Run tests for every context alternative
@@ -261,12 +259,6 @@ func TestCreateCursor(t *testing.T) {
 					stat := cursor.Statistics()
 					if stat.FullCount() != test.ExpectedFullCount {
 						t.Errorf("Expected full count of %d, got %d in query %d (%s)", test.ExpectedFullCount, stat.FullCount(), i, test.Query)
-					}
-				}
-				if qctx.ExpectEmpty {
-					stat := cursor.Statistics()
-					if stat.FullCount() != 0 {
-						t.Errorf("Expected empty cursor, got %d in query %d (%s)", stat.FullCount(), i, test.Query)
 					}
 				}
 				var result []interface{}

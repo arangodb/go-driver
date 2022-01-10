@@ -136,6 +136,27 @@ func TestValidateQuery(t *testing.T) {
 	}
 }
 
+// TestValidateQuery validates several AQL queries.
+func TestValidateQueryOptionShardIds(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "validate_query_options_test", nil, t)
+	col := ensureCollection(ctx, db, "c", nil, t)
+
+	db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_options_test")
+	defer clean(t)
+
+	t.Run(fmt.Sprintf("Run"), func(t *testing.T) {
+		props, err := col.Properties(ctx)
+		driver.WithQueryShardIds(ctx, props.ShardKeys)
+		_, err = db.Query(ctx, "FOR doc in c RETURN c", map[string]interface{}{})
+		require.NoError(t, err)
+	})
+
+	return
+
+}
+
 // TestProfileQuery profile several AQL queries.
 func TestProfileQuery(t *testing.T) {
 	ctx := context.Background()
