@@ -61,16 +61,6 @@ func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("with context deadLine timeout", func(t *testing.T) {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Nanosecond))
-		defer cancel()
-
-		ctx = driver.WithArangoQueueTimeout(ctx, true)
-
-		_, err := c.Version(ctx)
-		require.Error(t, err)
-	})
-
 	t.Run("without timeout - if no queue timeout and no context deadline set", func(t *testing.T) {
 		ctx := driver.WithArangoQueueTimeout(context.Background(), true)
 

@@ -25,7 +25,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/arangodb/go-driver/v2/connection"
 
@@ -38,16 +37,6 @@ func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
 	t.Run("without timout", func(t *testing.T) {
 		_, err := c.Version(context.Background())
 		require.NoError(t, err)
-	})
-
-	t.Run("with context deadLine timeout", func(t *testing.T) {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Nanosecond))
-		defer cancel()
-
-		ctx = connection.WithArangoQueueTimeout(ctx, true)
-
-		_, err := c.Version(ctx)
-		require.Error(t, err)
 	})
 
 	t.Run("without timeout - if no queue timeout and no context deadline set", func(t *testing.T) {
