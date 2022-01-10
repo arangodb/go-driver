@@ -191,6 +191,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 				})
 
 				t.Run("Cursor - shardIds", func(t *testing.T) {
+					requireClusterMode(t)
 
 					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
 
