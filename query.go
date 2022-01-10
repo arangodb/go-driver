@@ -39,6 +39,7 @@ const (
 	keyQueryOptStream                   = "arangodb-query-opt-stream"
 	keyQueryOptProfile                  = "arangodb-query-opt-profile"
 	keyQueryOptMaxRuntime               = "arangodb-query-opt-maxRuntime"
+	keyQueryShardIds                    = "arangodb-query-opt-shardIds"
 )
 
 // WithQueryCount is used to configure a context that will set the Count of a query request,
@@ -54,6 +55,11 @@ func WithQueryCount(parent context.Context, value ...bool) context.Context {
 // WithQueryBatchSize is used to configure a context that will set the BatchSize of a query request,
 func WithQueryBatchSize(parent context.Context, value int) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryBatchSize, value)
+}
+
+// WithQuerySharIds is used to configure a context that will set the ShardIds of a query request,
+func WithQueryShardIds(parent context.Context, value []string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryShardIds, value)
 }
 
 // WithQueryCache is used to configure a context that will set the Cache of a query request,
@@ -157,6 +163,8 @@ type queryRequest struct {
 	// key/value pairs representing the bind parameters.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
 	Options  struct {
+		// ShardId query option
+		ShardIds []string `json:"shardIds,omitempty"`
 		// Profile If set to true or 1, then the additional query profiling information will be returned in the sub-attribute profile of the extra return attribute,
 		// if the query result is not served from the query cache. Set to 2 the query will include execution stats per query plan node in
 		// sub-attribute stats.nodes of the extra return attribute. Additionally the query plan is returned in the sub-attribute extra.plan.
@@ -204,6 +212,11 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryBatchSize); rawValue != nil {
 		if value, ok := rawValue.(int); ok {
 			q.BatchSize = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryShardIds); rawValue != nil {
+		if value, ok := rawValue.([]string); ok {
+			q.Options.ShardIds = value
 		}
 	}
 	if rawValue := ctx.Value(keyQueryCache); rawValue != nil {

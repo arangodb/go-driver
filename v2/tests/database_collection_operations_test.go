@@ -190,6 +190,58 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 					}
 				})
 
+				t.Run("Cursor - shardIds", func(t *testing.T) {
+					requireClusterMode(t)
+
+					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
+
+					q, err := db.Query(ctx, query, &arangodb.QueryOptions{})
+					require.NoError(t, err)
+					i := 0
+					for {
+						var doc document
+						_, err := q.ReadDocument(ctx, &doc)
+						if shared.IsNoMoreDocuments(err) {
+							break
+						}
+						require.NoError(t, err)
+						i++
+					}
+
+					// Non existing shard should error
+					q, err = db.Query(ctx, query, &arangodb.QueryOptions{
+						Options: arangodb.QuerySubOptions{
+							ShardIds: []string{"ss1"},
+						},
+					})
+					require.NotNil(t, err)
+
+					// collect all docs from all shards
+					s, err := col.Shards(context.Background(), true)
+					j := 0
+					for sk := range s.Shards {
+						shardIds := []string{string(sk)}
+						q, err = db.Query(ctx, query, &arangodb.QueryOptions{
+							Options: arangodb.QuerySubOptions{
+								ShardIds: shardIds,
+							},
+						})
+						require.NoError(t, err)
+
+						for {
+							var doc document
+							_, err := q.ReadDocument(ctx, &doc)
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err)
+							j++
+						}
+					}
+					require.Equal(t, i, j)
+
+				})
+
 				t.Run("Cursor - close", func(t *testing.T) {
 					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
 

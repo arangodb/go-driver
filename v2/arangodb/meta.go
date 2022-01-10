@@ -36,7 +36,7 @@ type ServerID string
 
 type DocumentID string
 
-// DocumentMeta contains all meta data used to identifier a document.
+// DocumentMeta contains all meta data used to identify a document.
 type DocumentMeta struct {
 	Key string     `json:"_key,omitempty"`
 	ID  DocumentID `json:"_id,omitempty"`

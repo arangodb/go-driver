@@ -136,6 +136,41 @@ func TestValidateQuery(t *testing.T) {
 	}
 }
 
+// TestValidateQuery validates several AQL queries.
+func TestValidateQueryOptionShardIds(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	_, err := c.Cluster(ctx)
+
+	if driver.IsPreconditionFailed(err) {
+		t.Skip("Not a cluster")
+	} else {
+		db := ensureDatabase(ctx, c, "validate_query_options_test", nil, t)
+		col := ensureCollection(ctx, db, "c", nil, t)
+
+		db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_options_test")
+		defer clean(t)
+
+		t.Run(fmt.Sprintf("Real shards"), func(t *testing.T) {
+			shards, err := col.Shards(ctx, true)
+			for sk := range shards.Shards {
+				ctx = driver.WithQueryShardIds(nil, []string{string(sk)})
+				_, err = db.Query(ctx, "FOR doc in c RETURN c", map[string]interface{}{})
+				require.NoError(t, err)
+			}
+		})
+
+		t.Run(fmt.Sprintf("Fake shards"), func(t *testing.T) {
+			ctx = driver.WithQueryShardIds(nil, []string{"s1"})
+			_, err = db.Query(ctx, "FOR doc in c RETURN c", map[string]interface{}{})
+			require.NotNil(t, err)
+		})
+	}
+
+	return
+
+}
+
 // TestProfileQuery profile several AQL queries.
 func TestProfileQuery(t *testing.T) {
 	ctx := context.Background()
