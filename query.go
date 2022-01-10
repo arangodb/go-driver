@@ -144,8 +144,6 @@ type queryRequest struct {
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
 	// turned off by default, and "count" is only returned when requested.
 	Count bool `json:"count,omitempty"`
-	// ShardId query option
-	ShardIds []string `json:"shardIds,omitempty"`
 	// maximum number of result documents to be transferred from the server to the client in one roundtrip.
 	// If this attribute is not set, a server-controlled default value will be used. A batchSize value of 0 is disallowed.
 	BatchSize int `json:"batchSize,omitempty"`
@@ -165,6 +163,8 @@ type queryRequest struct {
 	// key/value pairs representing the bind parameters.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
 	Options  struct {
+		// ShardId query option
+		ShardIds []string `json:"shardIds,omitempty"`
 		// Profile If set to true or 1, then the additional query profiling information will be returned in the sub-attribute profile of the extra return attribute,
 		// if the query result is not served from the query cache. Set to 2 the query will include execution stats per query plan node in
 		// sub-attribute stats.nodes of the extra return attribute. Additionally the query plan is returned in the sub-attribute extra.plan.

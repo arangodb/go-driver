@@ -36,6 +36,8 @@ type DatabaseQuery interface {
 }
 
 type QuerySubOptions struct {
+	// ShardId query option
+	ShardIds []string `json:"shardIds,omitempty"`
 	// If set to true, then the additional query profiling information will be returned in the sub-attribute profile of the
 	// extra return attribute if the query result is not served from the query cache.
 	Profile bool `json:"profile,omitempty"`
@@ -66,8 +68,6 @@ type QuerySubOptions struct {
 }
 
 type QueryOptions struct {
-	// ShardId query option
-	ShardIds []string `json:"shardIds,omitempty"`
 	// indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
 	// turned off by default, and "count" is only returned when requested.
