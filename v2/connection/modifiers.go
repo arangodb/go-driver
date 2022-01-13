@@ -58,11 +58,11 @@ func applyGlobalSettings(ctx context.Context) RequestModifier {
 			if useQueueTimeout, ok := v.(bool); ok && useQueueTimeout {
 				if v := ctx.Value(keyMaxQueueTime); v != nil {
 					if timeout, ok := v.(time.Duration); ok {
-						r.AddHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+						r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 					}
 				} else if deadline, ok := ctx.Deadline(); ok {
 					timeout := deadline.Sub(time.Now())
-					r.AddHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+					r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 				}
 			}
 		}

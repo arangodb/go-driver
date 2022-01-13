@@ -376,11 +376,11 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 			if v := ctx.Value(keyMaxQueueTime); v != nil {
 				if timeout, ok := v.(time.Duration); ok {
 					result.MaxQueueTime = timeout
-					req.SetHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+					req.SetHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 				}
 			} else if deadline, ok := ctx.Deadline(); ok {
 				timeout := deadline.Sub(time.Now())
-				req.SetHeader("arangodb-max-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+				req.SetHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 			}
 		}
 	}
