@@ -44,6 +44,9 @@ type GraphEdgeCollections interface {
 	// constraints.To: contains the names of one or more edge collections that can contain target vertices.
 	CreateEdgeCollection(ctx context.Context, collection string, constraints VertexConstraints) (Collection, error)
 
+	// CreateEdgeCollectionWithOptions creates an edge collection in the graph with additional options
+	CreateEdgeCollectionWithOptions(ctx context.Context, collection string, constraints VertexConstraints, options CreateEdgeCollectionOptions) (Collection, error)
+
 	// SetVertexConstraints modifies the vertex constraints of an existing edge collection in the graph.
 	SetVertexConstraints(ctx context.Context, collection string, constraints VertexConstraints) error
 }
@@ -54,4 +57,10 @@ type VertexConstraints struct {
 	From []string
 	// To contains names of vertex collection that are allowed to be used in the To part of an edge.
 	To []string
+}
+
+// CreateEdgeCollectionOptions contains optional parameters for creating a new edge collection
+type CreateEdgeCollectionOptions struct {
+	// Satellites contains an array of collection names that will be used to create SatelliteCollections for a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
+	Satellites []string `json:"satellites"`
 }

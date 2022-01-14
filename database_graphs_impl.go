@@ -166,6 +166,8 @@ type createGraphAdditionalOptions struct {
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
 	IsDisjoint bool `json:"isDisjoint,omitempty"`
+	// Satellites contains an array of collection names that will be used to create SatelliteCollections for a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
+	Satellites []string `json:"satellites"`
 }
 
 // CreateGraph creates a new graph with given name and options, and opens a connection to it.
@@ -183,6 +185,7 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 				SmartGraphAttribute: options.SmartGraphAttribute,
 				ReplicationFactor:   graphReplicationFactor(options.ReplicationFactor),
 				IsDisjoint:          options.IsDisjoint,
+				Satellites:          options.Satellites,
 			}
 		} else if options.SmartGraphAttribute != "" || options.NumberOfShards != 0 {
 			input.Options = &createGraphAdditionalOptions{
@@ -191,6 +194,7 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 				ReplicationFactor:   graphReplicationFactor(options.ReplicationFactor),
 				WriteConcern:        options.WriteConcern,
 				IsDisjoint:          options.IsDisjoint,
+				Satellites:          options.Satellites,
 			}
 		}
 	}

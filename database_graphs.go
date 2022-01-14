@@ -70,6 +70,8 @@ type CreateGraphOptions struct {
 	WriteConcern int
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
 	IsDisjoint bool
+	// Satellites contains an array of collection names that will be used to create SatelliteCollections for a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
+	Satellites []string `json:"satellites"`
 }
 
 // EdgeDefinition contains all information needed to define a single edge in a graph.
