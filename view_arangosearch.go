@@ -65,6 +65,10 @@ const (
 	ArangoSearchAnalyzerTypeGeoJSON ArangoSearchAnalyzerType = "geojson"
 	// ArangoSearchAnalyzerTypeGeoPoint an Analyzer capable of breaking up JSON object describing a coordinate into a set of indexable tokens for further usage with ArangoSearch Geo functions.
 	ArangoSearchAnalyzerTypeGeoPoint ArangoSearchAnalyzerType = "geopoint"
+	// ArangoSearchAnalyzerTypeSegmentation an Analyzer capable of breaking up the input text into tokens in a language-agnostic manner
+	ArangoSearchAnalyzerTypeSegmentation ArangoSearchAnalyzerType = "segmentation"
+	// ArangoSearchAnalyzerTypeCollation an Analyzer capable of converting the input into a set of language-specific tokens
+	ArangoSearchAnalyzerTypeCollation ArangoSearchAnalyzerType = "collation"
 )
 
 // ArangoSearchAnalyzerFeature specifies a feature to an analyzer
@@ -88,6 +92,17 @@ const (
 	ArangoSearchCaseLower ArangoSearchCaseType = "lower"
 	// ArangoSearchCaseNone to not change character case (default)
 	ArangoSearchCaseNone ArangoSearchCaseType = "none"
+)
+
+type ArangoSearchBreakType string
+
+const (
+	// ArangoSearchBreakTypeAll to return all tokens
+	ArangoSearchBreakTypeAll ArangoSearchBreakType = "all"
+	// ArangoSearchBreakTypeAlpha to return tokens composed of alphanumeric characters only (default)
+	ArangoSearchBreakTypeAlpha ArangoSearchBreakType = "alpha"
+	// ArangoSearchBreakTypeGraphic to return tokens composed of non-whitespace characters only
+	ArangoSearchBreakTypeGraphic ArangoSearchBreakType = "graphic"
 )
 
 type ArangoSearchNGramStreamType string
@@ -120,7 +135,7 @@ type ArangoSearchAnalyzerProperties struct {
 	Delimiter string `json:"delimiter,omitempty"`
 	// Accent used by Norm, Text
 	Accent *bool `json:"accent,omitempty"`
-	// Case used by Norm, Text
+	// Case used by Norm, Text, Segmentation
 	Case ArangoSearchCaseType `json:"case,omitempty"`
 
 	// EdgeNGram used by Text
@@ -173,6 +188,9 @@ type ArangoSearchAnalyzerProperties struct {
 	Latitude []string `json:"latitude,omitempty"`
 	// Longitude used by GetPoint.
 	Longitude []string `json:"longitude,omitempty"`
+
+	// Break used by Segmentation
+	Break ArangoSearchBreakType `json:"break,omitempty"`
 }
 
 // ArangoSearchAnalyzerGeoJSONType GeoJSON Type parameter.
