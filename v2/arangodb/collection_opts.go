@@ -24,6 +24,8 @@
 package arangodb
 
 import (
+	"encoding/json"
+	"reflect"
 	"time"
 )
 
@@ -69,7 +71,7 @@ type CollectionExtendedInfo struct {
 	ShardKeys []string `json:"shardKeys,omitempty"`
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
 	// WaitForSync; If true then creating, changing or removing documents will wait
 	// until the data has been synchronized to disk.
 	WaitForSync bool `json:"waitForSync,omitempty"`
@@ -104,10 +106,50 @@ type CollectionProperties struct {
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
+type ReplicationFactor int
+
 const (
 	// ReplicationFactorSatellite represents a satellite collection's replication factor
-	ReplicationFactorSatellite int = -1
+	ReplicationFactorSatellite       ReplicationFactor = -1
+	replicationFactorSatelliteString string            = "satellite"
 )
+
+// MarshalJSON marshals InventoryCollectionParameters to arangodb json representation
+func (r ReplicationFactor) MarshalJSON() ([]byte, error) {
+	var replicationFactor interface{}
+
+	if r == ReplicationFactorSatellite {
+		replicationFactor = replicationFactorSatelliteString
+	} else {
+		replicationFactor = int(r)
+	}
+
+	return json.Marshal(replicationFactor)
+}
+
+// UnmarshalJSON marshals InventoryCollectionParameters to arangodb json representation
+func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
+	var internal interface{}
+
+	if err := json.Unmarshal(d, &internal); err != nil {
+		return err
+	}
+
+	if i, ok := internal.(float64); ok {
+		*r = ReplicationFactor(i)
+		return nil
+	} else if str, ok := internal.(string); ok {
+		if ok && str == replicationFactorSatelliteString {
+			*r = ReplicationFactor(ReplicationFactorSatellite)
+			return nil
+		}
+	}
+
+	return &json.UnmarshalTypeError{
+		Value: string(d),
+		Type:  reflect.TypeOf(r).Elem(),
+	}
+}
 
 // IsSatellite returns true if the collection is a satellite collection
 func (p *CollectionProperties) IsSatellite() bool {
@@ -122,7 +164,7 @@ type SetCollectionPropertiesOptions struct {
 	JournalSize int64 `json:"journalSize,omitempty"`
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// WriteConcern contains how many copies must be available before a collection can be written.

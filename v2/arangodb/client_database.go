@@ -66,7 +66,7 @@ type CreateDatabaseOptions struct {
 // CreateDatabaseDefaultOptions contains options that change defaults for collections
 type CreateDatabaseDefaultOptions struct {
 	// Default replication factor for collections in database
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor int `json:"replicationFactor,omitempty"` // TODO can it be satellite?
 	// Default write concern for collections in database
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// Default sharding for collections in database

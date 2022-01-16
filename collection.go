@@ -311,7 +311,7 @@ type CollectionShards struct {
 
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
 
 	// WaitForSync; If true then creating, changing or removing documents will wait
 	// until the data has been synchronized to disk.
