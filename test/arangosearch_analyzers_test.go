@@ -251,6 +251,36 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:       "create-segmentation",
+			MinVersion: newVersion("3.9"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-segmentation",
+				Type: driver.ArangoSearchAnalyzerTypeSegmentation,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Break: driver.ArangoSearchBreakTypeAll,
+					Case:  driver.ArangoSearchCaseUpper,
+				},
+			},
+		},
+		{
+			Name:       "create-collation",
+			MinVersion: newVersion("3.9"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-collation",
+				Type: driver.ArangoSearchAnalyzerTypeCollation,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Locale: "en_US.utf-8",
+				},
+			},
+			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-collation",
+				Type: driver.ArangoSearchAnalyzerTypeCollation,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Locale: "en_US",
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
