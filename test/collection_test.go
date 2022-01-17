@@ -1004,7 +1004,7 @@ func Test_CollectionShards(t *testing.T) {
 		leaders = append(leaders, dbServers[0])
 	}
 	assert.NotEqualf(t, leaders[0], leaders[1], "the leader shard can not be on the same server")
-	assert.Equal(t, 2, int(shards.ReplicationFactor))
+	assert.Equal(t, 2, shards.ReplicationFactor)
 	assert.Equal(t, false, shards.WaitForSync)
 	assert.Equal(t, 1, shards.WriteConcern)
 
@@ -1017,6 +1017,6 @@ func Test_CollectionShards(t *testing.T) {
 
 		shards, err := col.Shards(context.Background(), true)
 		require.NoError(t, err)
-		assert.Equal(t, driver.ReplicationFactorSatellite, int(shards.ReplicationFactor))
+		assert.Equal(t, driver.ReplicationFactorSatellite, shards.ReplicationFactor)
 	})
 }
