@@ -70,6 +70,8 @@ type CreateGraphOptions struct {
 	WriteConcern int
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
 	IsDisjoint bool
+	// Satellites contains an array of collection names that will be used to create SatelliteCollections for a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
+	Satellites []string `json:"satellites"`
 }
 
 // EdgeDefinition contains all information needed to define a single edge in a graph.
@@ -80,4 +82,6 @@ type EdgeDefinition struct {
 	To []string `json:"to"`
 	// From contains the names of one or more vertex collections that can contain source vertices.
 	From []string `json:"from"`
+	// Options contains optional parameters
+	Options CreateEdgeCollectionOptions `json:"options,omitempty"`
 }

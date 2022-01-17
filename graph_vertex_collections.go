@@ -41,4 +41,13 @@ type GraphVertexCollections interface {
 	// CreateVertexCollection creates a vertex collection in the graph.
 	// collection: The name of the vertex collection to be used.
 	CreateVertexCollection(ctx context.Context, collection string) (Collection, error)
+
+	// CreateVertexCollectionWithOptions creates a vertex collection in the graph
+	CreateVertexCollectionWithOptions(ctx context.Context, collection string, options CreateVertexCollectionOptions) (Collection, error)
+}
+
+// CreateVertexCollectionOptions contains optional parameters for creating a new vertex collection
+type CreateVertexCollectionOptions struct {
+	// Satellites contains an array of collection names that will be used to create SatelliteCollections for a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
+	Satellites []string `json:"satellites"`
 }

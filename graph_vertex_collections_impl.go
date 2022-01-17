@@ -143,3 +143,33 @@ func (g *graph) CreateVertexCollection(ctx context.Context, collection string) (
 	}
 	return ec, nil
 }
+
+// CreateVertexCollectionWithOptions creates a vertex collection in the graph
+func (g *graph) CreateVertexCollectionWithOptions(ctx context.Context, collection string, options CreateVertexCollectionOptions) (Collection, error) {
+	req, err := g.conn.NewRequest("POST", path.Join(g.relPath(), "vertex"))
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	input := struct {
+		Collection string                        `json:"collection,omitempty"`
+		Options    CreateVertexCollectionOptions `json:"options,omitempty"`
+	}{
+		Collection: collection,
+		Options:    options,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return nil, WithStack(err)
+	}
+	resp, err := g.conn.Do(ctx, req)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	if err := resp.CheckStatus(201, 202); err != nil {
+		return nil, WithStack(err)
+	}
+	ec, err := newVertexCollection(collection, g)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	return ec, nil
+}
