@@ -29,6 +29,14 @@ import (
 	"time"
 )
 
+type ReplicationFactor int
+
+const (
+	// ReplicationFactorSatellite represents a satellite collection's replication factor
+	ReplicationFactorSatellite       ReplicationFactor = -1
+	replicationFactorSatelliteString string            = "satellite"
+)
+
 // CollectionInfo contains basic information about a collection.
 type CollectionInfo struct {
 	// The identifier of the collection.
@@ -104,51 +112,6 @@ type CollectionProperties struct {
 	SyncByRevision bool `json:"syncByRevision,omitempty"`
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
-}
-
-type ReplicationFactor int
-
-const (
-	// ReplicationFactorSatellite represents a satellite collection's replication factor
-	ReplicationFactorSatellite       ReplicationFactor = -1
-	replicationFactorSatelliteString string            = "satellite"
-)
-
-// MarshalJSON marshals InventoryCollectionParameters to arangodb json representation
-func (r ReplicationFactor) MarshalJSON() ([]byte, error) {
-	var replicationFactor interface{}
-
-	if r == ReplicationFactorSatellite {
-		replicationFactor = replicationFactorSatelliteString
-	} else {
-		replicationFactor = int(r)
-	}
-
-	return json.Marshal(replicationFactor)
-}
-
-// UnmarshalJSON marshals InventoryCollectionParameters to arangodb json representation
-func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
-	var internal interface{}
-
-	if err := json.Unmarshal(d, &internal); err != nil {
-		return err
-	}
-
-	if i, ok := internal.(float64); ok {
-		*r = ReplicationFactor(i)
-		return nil
-	} else if str, ok := internal.(string); ok {
-		if ok && str == replicationFactorSatelliteString {
-			*r = ReplicationFactor(ReplicationFactorSatellite)
-			return nil
-		}
-	}
-
-	return &json.UnmarshalTypeError{
-		Value: string(d),
-		Type:  reflect.TypeOf(r).Elem(),
-	}
 }
 
 // IsSatellite returns true if the collection is a satellite collection
@@ -275,4 +238,41 @@ type CollectionShards struct {
 
 	// StatusString represents status as a string.
 	StatusString string `json:"statusString,omitempty"`
+}
+
+// MarshalJSON marshals InventoryCollectionParameters to arangodb json representation
+func (r ReplicationFactor) MarshalJSON() ([]byte, error) {
+	var replicationFactor interface{}
+
+	if r == ReplicationFactorSatellite {
+		replicationFactor = replicationFactorSatelliteString
+	} else {
+		replicationFactor = int(r)
+	}
+
+	return json.Marshal(replicationFactor)
+}
+
+// UnmarshalJSON marshals InventoryCollectionParameters to arangodb json representation
+func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
+	var internal interface{}
+
+	if err := json.Unmarshal(d, &internal); err != nil {
+		return err
+	}
+
+	if i, ok := internal.(float64); ok {
+		*r = ReplicationFactor(i)
+		return nil
+	} else if str, ok := internal.(string); ok {
+		if ok && str == replicationFactorSatelliteString {
+			*r = ReplicationFactor(ReplicationFactorSatellite)
+			return nil
+		}
+	}
+
+	return &json.UnmarshalTypeError{
+		Value: string(d),
+		Type:  reflect.TypeOf(r).Elem(),
+	}
 }
