@@ -82,4 +82,6 @@ type EdgeDefinition struct {
 	To []string `json:"to"`
 	// From contains the names of one or more vertex collections that can contain source vertices.
 	From []string `json:"from"`
+	// Options contains optional parameters
+	Options CreateEdgeCollectionOptions `json:"options,omitempty"`
 }

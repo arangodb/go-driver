@@ -172,6 +172,7 @@ func (g *graph) CreateEdgeCollectionWithOptions(ctx context.Context, collection 
 		Collection: collection,
 		From:       constraints.From,
 		To:         constraints.To,
+		Options:    options,
 	}
 	if _, err := req.SetBody(input); err != nil {
 		return nil, WithStack(err)
