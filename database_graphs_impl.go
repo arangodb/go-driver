@@ -172,6 +172,7 @@ type createGraphAdditionalOptions struct {
 
 // CreateGraph creates a new graph with given name and options, and opens a connection to it.
 // If a graph with given name already exists within the database, a DuplicateError is returned.
+// todo test
 func (d *database) CreateGraph(ctx context.Context, name string, options *CreateGraphOptions) (Graph, error) {
 	input := createGraphOptions{
 		Name: name,
@@ -180,22 +181,13 @@ func (d *database) CreateGraph(ctx context.Context, name string, options *Create
 		input.OrphanVertexCollections = options.OrphanVertexCollections
 		input.EdgeDefinitions = options.EdgeDefinitions
 		input.IsSmart = options.IsSmart
-		if options.ReplicationFactor == SatelliteGraph {
-			input.Options = &createGraphAdditionalOptions{
-				SmartGraphAttribute: options.SmartGraphAttribute,
-				ReplicationFactor:   graphReplicationFactor(options.ReplicationFactor),
-				IsDisjoint:          options.IsDisjoint,
-				Satellites:          options.Satellites,
-			}
-		} else if options.SmartGraphAttribute != "" || options.NumberOfShards != 0 {
-			input.Options = &createGraphAdditionalOptions{
-				SmartGraphAttribute: options.SmartGraphAttribute,
-				NumberOfShards:      options.NumberOfShards,
-				ReplicationFactor:   graphReplicationFactor(options.ReplicationFactor),
-				WriteConcern:        options.WriteConcern,
-				IsDisjoint:          options.IsDisjoint,
-				Satellites:          options.Satellites,
-			}
+		input.Options = &createGraphAdditionalOptions{
+			SmartGraphAttribute: options.SmartGraphAttribute,
+			NumberOfShards:      options.NumberOfShards,
+			ReplicationFactor:   graphReplicationFactor(options.ReplicationFactor),
+			WriteConcern:        options.WriteConcern,
+			IsDisjoint:          options.IsDisjoint,
+			Satellites:          options.Satellites,
 		}
 	}
 	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/gharial"))

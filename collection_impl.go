@@ -210,13 +210,15 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 		return CollectionShards{}, WithStack(err)
 	}
 
-	shards := CollectionShards{}
-	if err := resp.ParseBody("", &shards); err != nil {
+	shardsInternal := collectionShardsInternal{}
+	if err := resp.ParseBody("", &shardsInternal); err != nil {
 		return CollectionShards{}, WithStack(err)
 	}
 
-	return shards, nil
+	var shards CollectionShards
+	shards.fromInternal(shardsInternal)
 
+	return shards, nil
 }
 
 // Load the collection into memory.

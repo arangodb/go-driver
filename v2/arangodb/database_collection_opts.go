@@ -32,7 +32,7 @@ type CreateCollectionOptions struct {
 	// Replication between them is synchronous, that is, every write operation to the "leader" copy will be replicated to all "follower" replicas,
 	// before the write operation is reported successful. If a server fails, this is detected automatically
 	// and one of the servers holding copies take over, usually without an error being reported.
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// WriteConcern contains how many copies must be available before a collection can be written.
