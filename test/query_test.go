@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -155,14 +154,14 @@ func TestValidateQueryOptionShardIds(t *testing.T) {
 			shards, err := col.Shards(ctx, true)
 			for sk := range shards.Shards {
 				ctx = driver.WithQueryShardIds(nil, []string{string(sk)})
-				_, err = db.Query(ctx, "FOR doc in c RETURN c", map[string]interface{}{})
+				_, err = db.Query(ctx, "FOR doc in c RETURN doc", map[string]interface{}{})
 				require.NoError(t, err)
 			}
 		})
 
 		t.Run(fmt.Sprintf("Fake shards"), func(t *testing.T) {
 			ctx = driver.WithQueryShardIds(nil, []string{"s1"})
-			_, err = db.Query(ctx, "FOR doc in c RETURN c", map[string]interface{}{})
+			_, err = db.Query(ctx, "FOR doc in c RETURN doc", map[string]interface{}{})
 			require.NotNil(t, err)
 		})
 	}

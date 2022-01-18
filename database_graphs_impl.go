@@ -167,7 +167,7 @@ type createGraphAdditionalOptions struct {
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
 	IsDisjoint bool `json:"isDisjoint,omitempty"`
 	// Satellites contains an array of collection names that will be used to create SatelliteCollections for a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
-	Satellites []string `json:"satellites"`
+	Satellites []string `json:"satellites,omitempty"`
 }
 
 // CreateGraph creates a new graph with given name and options, and opens a connection to it.
