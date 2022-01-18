@@ -92,6 +92,63 @@ func TestCreateVertexCollection(t *testing.T) {
 	}
 }
 
+// TestCreateSatelliteVertexCollection creates a graph and then adds a Satellite vertex collection in it
+func TestCreateSatelliteVertexCollection(t *testing.T) {
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
+
+	db := ensureDatabase(ctx, c, "vertex_collection_test", nil, t)
+
+	name := "test_create_satellite_vertex_collection"
+	options := driver.CreateGraphOptions{
+		IsSmart:             true,
+		SmartGraphAttribute: "key",
+	}
+	g, err := db.CreateGraph(ctx, name, &options)
+	if err != nil {
+		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
+	}
+
+	// List vertex collections, must be empty
+	if list, err := g.VertexCollections(ctx); err != nil {
+		t.Errorf("VertexCollections failed: %s", describe(err))
+	} else if len(list) > 0 {
+		t.Errorf("VertexCollections return %d vertex collections, expected 0", len(list))
+	}
+
+	satelliteName := "vertex-sat-test"
+	opt := driver.CreateVertexCollectionOptions{Satellites: []string{satelliteName}}
+
+	// Now create a vertex collection
+	if vc, err := g.CreateVertexCollectionWithOptions(ctx, satelliteName, opt); err != nil {
+		t.Errorf("CreateVertexCollection failed: %s", describe(err))
+	} else if vc.Name() != satelliteName {
+		t.Errorf("Invalid name, expected 'vertex-sat-test', got '%s'", vc.Name())
+	}
+
+	// List vertex collections, must be contain 'person'
+	if list, err := g.VertexCollections(ctx); err != nil {
+		t.Errorf("VertexCollections failed: %s", describe(err))
+	} else if len(list) != 1 {
+		t.Errorf("VertexCollections return %d vertex collections, expected 1", len(list))
+	} else if list[0].Name() != satelliteName {
+		t.Errorf("Invalid list[0].name, expected 'vertex-sat-test', got '%s'", list[0].Name())
+	} else {
+		prop, err := list[0].Properties(ctx)
+		if err != nil {
+			t.Errorf("VertexCollections Properties failed: %s", describe(err))
+		}
+		if !prop.IsSatellite() {
+			t.Errorf("Collection %s is not satellite", satelliteName)
+		}
+	}
+
+	// revert
+	g.Remove(ctx)
+}
+
 // TestRemoveVertexCollection creates a graph and then adds an vertex collection in it and then removes the vertex collection.
 func TestRemoveVertexCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
