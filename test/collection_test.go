@@ -1007,4 +1007,16 @@ func Test_CollectionShards(t *testing.T) {
 	assert.Equal(t, 2, shards.ReplicationFactor)
 	assert.Equal(t, false, shards.WaitForSync)
 	assert.Equal(t, 1, shards.WriteConcern)
+
+	t.Run("Satellite collection", func(t *testing.T) {
+		skipNoEnterprise(t)
+		col, err := db.CreateCollection(nil, "satellite", &driver.CreateCollectionOptions{
+			ReplicationFactor: driver.ReplicationFactorSatellite,
+		})
+		require.NoError(t, err)
+
+		shards, err := col.Shards(context.Background(), true)
+		require.NoError(t, err)
+		assert.Equal(t, driver.ReplicationFactorSatellite, shards.ReplicationFactor)
+	})
 }

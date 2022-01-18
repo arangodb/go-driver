@@ -33,7 +33,7 @@ type DatabaseInfo struct {
 	// If true then the database is the _system database.
 	IsSystem bool `json:"isSystem,omitempty"`
 	// Default replication factor for collections in database
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
+	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
 	// Default write concern for collections in database
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// Default sharding for collections in database
