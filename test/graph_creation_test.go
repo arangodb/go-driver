@@ -315,3 +315,56 @@ func TestGraphCreation(t *testing.T) {
 		require.True(t, graphs[0].IsDisjoint())
 	})
 }
+
+func TestHybridSmartGraphCreation(t *testing.T) {
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
+
+	db := ensureDatabase(ctx, c, databaseName("graph", "create", "hybrid"), nil, t)
+
+	name := db.Name() + "_test_create_hybrid_graph"
+	colName := db.Name() + "_create_hybrid_edge_col"
+	col1Name := db.Name() + "_sat_edge_col"
+	col2Name := db.Name() + "_non_sat_edge_col"
+
+	options := driver.CreateGraphOptions{
+		IsSmart:             true,
+		SmartGraphAttribute: "test",
+		ReplicationFactor:   2,
+		NumberOfShards:      2,
+		Satellites:          []string{colName, col1Name},
+		EdgeDefinitions: []driver.EdgeDefinition{{
+			Collection: colName,
+			From:       []string{col1Name},
+			To:         []string{col2Name},
+		}},
+	}
+	g, err := db.CreateGraph(ctx, name, &options)
+	if err != nil {
+		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
+	}
+
+	graphs, err := db.Graphs(ctx)
+	require.NoError(t, err)
+	require.Len(t, graphs, 1)
+
+	require.Equal(t, g.Name(), graphs[0].Name())
+	require.True(t, graphs[0].IsSmart())
+
+	for _, collName := range []string{colName, col1Name, col2Name} {
+		collection, err := db.Collection(ctx, collName)
+		require.NoError(t, err)
+
+		prop, err := collection.Properties(ctx)
+		require.NoError(t, err)
+
+		if collName == col2Name {
+			require.Equalf(t, 2, prop.ReplicationFactor, "ReplicationFactor mismatch for %s", collName)
+			require.Equalf(t, 2, prop.NumberOfShards, "NumberOfShards mismatch for %s", collName)
+		} else {
+			require.True(t, prop.IsSatellite())
+		}
+	}
+}

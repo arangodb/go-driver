@@ -62,5 +62,5 @@ type VertexConstraints struct {
 // CreateEdgeCollectionOptions contains optional parameters for creating a new edge collection
 type CreateEdgeCollectionOptions struct {
 	// Satellites contains an array of collection names that will be used to create SatelliteCollections for a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
-	Satellites []string `json:"satellites"`
+	Satellites []string `json:"satellites,omitempty"`
 }

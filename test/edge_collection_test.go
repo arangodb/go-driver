@@ -109,6 +109,80 @@ func TestCreateEdgeCollection(t *testing.T) {
 	}
 }
 
+// TestCreateSatelliteEdgeCollection creates a graph and then adds an Satellite edge collection in it
+func TestCreateSatelliteEdgeCollection(t *testing.T) {
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
+
+	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
+
+	name := "test_create_sat_edge_collection"
+	options := driver.CreateGraphOptions{
+		IsSmart:             true,
+		SmartGraphAttribute: "test",
+	}
+	g, err := db.CreateGraph(ctx, name, &options)
+	if err != nil {
+		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
+	}
+
+	// List edge collections, must be empty
+	if list, _, err := g.EdgeCollections(nil); err != nil {
+		t.Errorf("EdgeCollections failed: %s", describe(err))
+	} else if len(list) > 0 {
+		t.Errorf("EdgeCollections return %d edge collections, expected 0", len(list))
+	}
+
+	// Now create an edge collection
+	colName := "create_sat_edge_collection"
+	col1Name := "sat_edge_collection1"
+	col2Name := "sat_edge_collection2"
+
+	opt := driver.CreateEdgeCollectionOptions{Satellites: []string{col1Name}}
+	if ec, err := g.CreateEdgeCollectionWithOptions(nil, colName, driver.VertexConstraints{From: []string{col1Name}, To: []string{col2Name}}, opt); err != nil {
+		t.Errorf("CreateEdgeCollection failed: %s", describe(err))
+	} else if ec.Name() != colName {
+		t.Errorf("Invalid name, expected '%s', got '%s'", colName, ec.Name())
+	}
+
+	assertCollection(nil, db, colName, t)
+	assertCollection(nil, db, col1Name, t)
+	assertCollection(nil, db, col2Name, t)
+
+	if list, constraints, err := g.EdgeCollections(nil); err != nil {
+		t.Errorf("EdgeCollections failed: %s", describe(err))
+	} else {
+		if len(list) != 1 {
+			t.Errorf("EdgeCollections return %d edge collections, expected 1", len(list))
+		} else if list[0].Name() != colName {
+			t.Errorf("Invalid list[0].name, expected '%s', got '%s'", colName, list[0].Name())
+		}
+		if len(constraints) != 1 {
+			t.Errorf("EdgeCollections return %d constraints, expected 1", len(constraints))
+		} else {
+			if strings.Join(constraints[0].From, ",") != col1Name {
+				t.Errorf("Invalid constraints[0].From, expected ['%s'], got %q", col1Name, constraints[0].From)
+			}
+			if strings.Join(constraints[0].To, ",") != col2Name {
+				t.Errorf("Invalid constraints[0].From, expected ['%s'], got %q", col2Name, constraints[0].To)
+			}
+
+			prop, err := list[0].Properties(ctx)
+			if err != nil {
+				t.Errorf("VertexCollections Properties failed: %s", describe(err))
+			}
+			if !prop.IsSatellite() {
+				t.Errorf("Collection %s is not satellite", colName)
+			}
+		}
+	}
+
+	// revert
+	g.Remove(ctx)
+}
+
 // TestRemoveEdgeCollection creates a graph and then adds an edge collection in it and then removes the edge collection.
 func TestRemoveEdgeCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
