@@ -37,6 +37,7 @@ const (
 	GeoIndex        = IndexType("geo")
 	EdgeIndex       = IndexType("edge")
 	TTLIndex        = IndexType("ttl")
+	ZKDIndex        = IndexType("zkd")
 )
 
 // Index provides access to a single index in a single collection.

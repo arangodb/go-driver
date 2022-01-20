@@ -28,18 +28,19 @@ import (
 )
 
 type indexData struct {
-	ID           string   `json:"id,omitempty"`
-	Type         string   `json:"type"`
-	Fields       []string `json:"fields,omitempty"`
-	Unique       *bool    `json:"unique,omitempty"`
-	Deduplicate  *bool    `json:"deduplicate,omitempty"`
-	Sparse       *bool    `json:"sparse,omitempty"`
-	GeoJSON      *bool    `json:"geoJson,omitempty"`
-	InBackground *bool    `json:"inBackground,omitempty"`
-	Estimates    *bool    `json:"estimates,omitempty"`
-	MinLength    int      `json:"minLength,omitempty"`
-	ExpireAfter  int      `json:"expireAfter,omitempty"`
-	Name         string   `json:"name,omitempty"`
+	ID              string   `json:"id,omitempty"`
+	Type            string   `json:"type"`
+	Fields          []string `json:"fields,omitempty"`
+	Unique          *bool    `json:"unique,omitempty"`
+	Deduplicate     *bool    `json:"deduplicate,omitempty"`
+	Sparse          *bool    `json:"sparse,omitempty"`
+	GeoJSON         *bool    `json:"geoJson,omitempty"`
+	InBackground    *bool    `json:"inBackground,omitempty"`
+	Estimates       *bool    `json:"estimates,omitempty"`
+	MinLength       int      `json:"minLength,omitempty"`
+	ExpireAfter     int      `json:"expireAfter,omitempty"`
+	Name            string   `json:"name,omitempty"`
+	FieldValueTypes string   `json:"fieldValueTypes,omitempty"`
 }
 
 type genericIndexData struct {
@@ -261,6 +262,29 @@ func (c *collection) EnsureTTLIndex(ctx context.Context, field string, expireAft
 		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.Estimates = options.Estimates
+	}
+	idx, created, err := c.ensureIndex(ctx, input)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return idx, created, nil
+}
+
+// EnsureZKDIndex creates a ZKD index in the collection, if it does not already exist.
+// Fields is a slice of attribute paths.
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureZKDIndex(ctx context.Context, fields []string, options *EnsureZKDIndexOptions) (Index, bool, error) {
+	input := indexData{
+		Type:   string(ZKDIndex),
+		Fields: fields,
+		// fieldValueTypes is required and the only allowed value is "double". Future extensions of the index will allow other types.
+		FieldValueTypes: "double",
+	}
+	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
+		input.Unique = &options.Unique
+		//input.Sparse = &options.Sparse
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {

@@ -23,8 +23,11 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -355,4 +358,70 @@ func TestEnsureTTLIndex(t *testing.T) {
 	} else if found {
 		t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 	}
+}
+
+// TestEnsureZKDIndex creates a collection with a ZKD index.
+func TestEnsureZKDIndex(t *testing.T) {
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0"))
+
+	db := ensureDatabase(ctx, c, "index_test", nil, t)
+	col := ensureCollection(nil, db, fmt.Sprintf("zkd_index_test"), nil, t)
+
+	f1 := "field-zkd-index1"
+	f2 := "field-zkd-index2"
+
+	idx, created, err := col.EnsureZKDIndex(nil, []string{f1, f2}, nil)
+	require.NoError(t, err)
+	require.True(t, created)
+	require.Equal(t, driver.ZKDIndex, idx.Type())
+
+	f1Exist, err := col.IndexExists(ctx, f1)
+	require.NoError(t, err)
+	require.True(t, f1Exist)
+
+	f2Exist, err := col.IndexExists(ctx, f2)
+	require.NoError(t, err)
+	require.True(t, f2Exist)
+
+	err = idx.Remove(nil)
+	require.NoError(t, err)
+}
+
+// TestEnsureZKDIndexWithOptions creates a collection with a ZKD index and additional options
+func TestEnsureZKDIndexWithOptions(t *testing.T) {
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0"))
+
+	db := ensureDatabase(ctx, c, "index_test", nil, t)
+	col := ensureCollection(nil, db, fmt.Sprintf("zkd_index__opt_test"), nil, t)
+
+	name := "zkd-opt"
+	f1 := "field-zkd-index1-opt"
+	f2 := "field-zkd-index2-opy"
+
+	opt := driver.EnsureZKDIndexOptions{
+		Name: name,
+	}
+
+	idx, created, err := col.EnsureZKDIndex(nil, []string{f1, f2}, &opt)
+	require.NoError(t, err)
+	require.True(t, created)
+	require.Equal(t, driver.ZKDIndex, idx.Type())
+	require.Equal(t, name, idx.Name())
+
+	f1Exist, err := col.IndexExists(ctx, f1)
+	require.NoError(t, err)
+	require.True(t, f1Exist)
+
+	f2Exist, err := col.IndexExists(ctx, f2)
+	require.NoError(t, err)
+	require.True(t, f2Exist)
+
+	err = idx.Remove(nil)
+	require.NoError(t, err)
 }

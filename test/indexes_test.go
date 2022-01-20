@@ -341,6 +341,7 @@ func TestIndexesTTL(t *testing.T) {
 
 var namedIndexTestCases = []struct {
 	Name           string
+	MinVersion     *driver.Version
 	CreateCallback func(col driver.Collection, name string) (driver.Index, error)
 }{
 	{
@@ -397,6 +398,16 @@ var namedIndexTestCases = []struct {
 			return idx, err
 		},
 	},
+	{
+		Name:       "ZKD",
+		MinVersion: newVersion("3.9"),
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureZKDIndex(nil, []string{"zkd"}, &driver.EnsureZKDIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
 }
 
 func TestNamedIndexes(t *testing.T) {
@@ -408,6 +419,10 @@ func TestNamedIndexes(t *testing.T) {
 
 	for _, testCase := range namedIndexTestCases {
 		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
+			if testCase.MinVersion != nil {
+				skipBelowVersion(c, *testCase.MinVersion, t)
+			}
+
 			// Check if index name is forwarded through out all APIs
 			idx, err := testCase.CreateCallback(col, testCase.Name)
 			if err != nil {
