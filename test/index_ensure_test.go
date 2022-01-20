@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
@@ -368,23 +369,17 @@ func TestEnsureZKDIndex(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0"))
 
 	db := ensureDatabase(ctx, c, "index_test", nil, t)
-	col := ensureCollection(nil, db, fmt.Sprintf("zkd_index_test"), nil, t)
+	col := ensureCollection(ctx, db, fmt.Sprintf("zkd_index_test"), nil, t)
 
-	f1 := "field-zkd-index1"
-	f2 := "field-zkd-index2"
+	f1 := "field-zkd-index_1"
+	f2 := "field-zkd-index_2"
 
-	idx, created, err := col.EnsureZKDIndex(nil, []string{f1, f2}, nil)
+	idx, created, err := col.EnsureZKDIndex(ctx, []string{f1, f2}, nil)
 	require.NoError(t, err)
 	require.True(t, created)
 	require.Equal(t, driver.ZKDIndex, idx.Type())
-
-	f1Exist, err := col.IndexExists(ctx, f1)
-	require.NoError(t, err)
-	require.True(t, f1Exist)
-
-	f2Exist, err := col.IndexExists(ctx, f2)
-	require.NoError(t, err)
-	require.True(t, f2Exist)
+	assert.Contains(t, idx.Fields(), f1)
+	assert.Contains(t, idx.Fields(), f2)
 
 	err = idx.Remove(nil)
 	require.NoError(t, err)
@@ -398,29 +393,23 @@ func TestEnsureZKDIndexWithOptions(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0"))
 
 	db := ensureDatabase(ctx, c, "index_test", nil, t)
-	col := ensureCollection(nil, db, fmt.Sprintf("zkd_index__opt_test"), nil, t)
+	col := ensureCollection(ctx, db, fmt.Sprintf("zkd_index_opt_test"), nil, t)
 
 	name := "zkd-opt"
 	f1 := "field-zkd-index1-opt"
-	f2 := "field-zkd-index2-opy"
+	f2 := "field-zkd-index2-opt"
 
 	opt := driver.EnsureZKDIndexOptions{
 		Name: name,
 	}
 
-	idx, created, err := col.EnsureZKDIndex(nil, []string{f1, f2}, &opt)
+	idx, created, err := col.EnsureZKDIndex(ctx, []string{f1, f2}, &opt)
 	require.NoError(t, err)
 	require.True(t, created)
 	require.Equal(t, driver.ZKDIndex, idx.Type())
 	require.Equal(t, name, idx.Name())
-
-	f1Exist, err := col.IndexExists(ctx, f1)
-	require.NoError(t, err)
-	require.True(t, f1Exist)
-
-	f2Exist, err := col.IndexExists(ctx, f2)
-	require.NoError(t, err)
-	require.True(t, f2Exist)
+	assert.Contains(t, idx.Fields(), f1)
+	assert.Contains(t, idx.Fields(), f2)
 
 	err = idx.Remove(nil)
 	require.NoError(t, err)

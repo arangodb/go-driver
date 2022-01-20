@@ -59,4 +59,6 @@ type Index interface {
 	// Remove removes the entire index.
 	// If the index does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+
+	Fields() []string
 }

@@ -47,31 +47,34 @@ func indexStringToType(indexTypeString string) (IndexType, error) {
 		return EdgeIndex, nil
 	case string(TTLIndex):
 		return TTLIndex, nil
+	case string(ZKDIndex):
+		return ZKDIndex, nil
 	default:
 		return "", WithStack(InvalidArgumentError{Message: "unknown index type"})
 	}
 }
 
 // newIndex creates a new Index implementation.
-func newIndex(id string, indexTypeString string, name string, col *collection) (Index, error) {
-	if id == "" {
+func newIndex(data indexData, col *collection) (Index, error) {
+	if data.ID == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
-	parts := strings.Split(id, "/")
+	parts := strings.Split(data.ID, "/")
 	if len(parts) != 2 {
 		return nil, WithStack(InvalidArgumentError{Message: "id must be `collection/name`"})
 	}
 	if col == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "col is nil"})
 	}
-	indexType, err := indexStringToType(indexTypeString)
+	indexType, err := indexStringToType(data.Type)
 	if err != nil {
 		return nil, WithStack(err)
 	}
 	return &index{
-		id:        id,
-		name:      name,
+		id:        data.ID,
+		name:      data.Name,
 		indexType: indexType,
+		fields:    data.Fields,
 		col:       col,
 		db:        col.db,
 		conn:      col.conn,
@@ -82,6 +85,7 @@ type index struct {
 	id        string
 	name      string
 	indexType IndexType
+	fields    []string
 	db        *database
 	col       *collection
 	conn      Connection
@@ -111,6 +115,10 @@ func (i *index) UserName() string {
 // Type returns the type of the index
 func (i *index) Type() IndexType {
 	return i.indexType
+}
+
+func (i *index) Fields() []string {
+	return i.fields
 }
 
 // Remove removes the entire index.
