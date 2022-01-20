@@ -224,13 +224,6 @@ type InventoryCollectionParameters struct {
 	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
 	// Available from 3.7 arangod version
 	SyncByRevision bool `json:"syncByRevision,omitempty"`
-	// TODO when it was introduced?:
-	CacheEnabled          bool   `json:"cacheEnabled,omitempty"`
-	IsDisjoint            bool   `json:"isDisjoint,omitempty"`
-	IsSmartChild          bool   `json:"isSmartChild,omitempty"`
-	InternalValidatorType int    `json:"internalValidatorType,omitempty"`
-	GloballyUniqueId      string `json:"globallyUniqueId,omitempty"`
-	// TODO schema what's that?
 }
 
 // IsSatellite returns true if the collection is a satellite collection

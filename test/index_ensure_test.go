@@ -57,6 +57,9 @@ func TestEnsureFullTextIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.FullTextIndex {
 			t.Errorf("Expected FullTextIndex, found `%s`", idxType)
 		}
+		if options != nil && idx.MinLength() != options.MinLength {
+			t.Errorf("Expected %d, found `%d`", options.MinLength, idx.MinLength())
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -111,6 +114,9 @@ func TestEnsureGeoIndex(t *testing.T) {
 		}
 		if idxType := idx.Type(); idxType != driver.GeoIndex {
 			t.Errorf("Expected GeoIndex, found `%s`", idxType)
+		}
+		if options != nil && idx.GeoJSON() != options.GeoJSON {
+			t.Errorf("Expected GeoJSON to be %t, found `%t`", options.GeoJSON, idx.GeoJSON())
 		}
 
 		// Index must exists now
@@ -169,6 +175,12 @@ func TestEnsureHashIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.HashIndex {
 			t.Errorf("Expected HashIndex, found `%s`", idxType)
 		}
+		if options != nil && idx.Unique() != options.Unique {
+			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
+		}
+		if options != nil && idx.Sparse() != options.Sparse {
+			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -226,6 +238,12 @@ func TestEnsurePersistentIndex(t *testing.T) {
 		if idxType := idx.Type(); idxType != driver.PersistentIndex {
 			t.Errorf("Expected PersistentIndex, found `%s`", idxType)
 		}
+		if options != nil && idx.Unique() != options.Unique {
+			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
+		}
+		if options != nil && idx.Sparse() != options.Sparse {
+			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
+		}
 
 		// Index must exists now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
@@ -264,10 +282,10 @@ func TestEnsureSkipListIndex(t *testing.T) {
 
 	testOptions := []*driver.EnsureSkipListIndexOptions{
 		nil,
-		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: false},
-		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: true},
-		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: false},
-		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: true},
+		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: false, NoDeduplicate: true},
+		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: true, NoDeduplicate: true},
+		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: false, NoDeduplicate: false},
+		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: true, NoDeduplicate: false},
 	}
 
 	for i, options := range testOptions {
@@ -282,6 +300,15 @@ func TestEnsureSkipListIndex(t *testing.T) {
 		}
 		if idxType := idx.Type(); idxType != driver.SkipListIndex {
 			t.Errorf("Expected SkipListIndex, found `%s`", idxType)
+		}
+		if options != nil && idx.Unique() != options.Unique {
+			t.Errorf("Expected Unique to be %t, found `%t`", options.Unique, idx.Unique())
+		}
+		if options != nil && idx.Sparse() != options.Sparse {
+			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
+		}
+		if options != nil && !idx.Deduplicate() != options.NoDeduplicate {
+			t.Errorf("Expected NoDeduplicate to be %t, found `%t`", options.NoDeduplicate, idx.Deduplicate())
 		}
 
 		// Index must exists now
@@ -330,6 +357,9 @@ func TestEnsureTTLIndex(t *testing.T) {
 	}
 	if idxType := idx.Type(); idxType != driver.TTLIndex {
 		t.Errorf("Expected TTLIndex, found `%s`", idxType)
+	}
+	if idx.ExpireAfter() != 3600 {
+		t.Errorf("Expected ExpireAfter to be 3600, found `%d`", idx.ExpireAfter())
 	}
 
 	// Index must exists now
@@ -395,19 +425,18 @@ func TestEnsureZKDIndexWithOptions(t *testing.T) {
 	db := ensureDatabase(ctx, c, "index_test", nil, t)
 	col := ensureCollection(ctx, db, fmt.Sprintf("zkd_index_opt_test"), nil, t)
 
-	name := "zkd-opt"
 	f1 := "field-zkd-index1-opt"
 	f2 := "field-zkd-index2-opt"
 
 	opt := driver.EnsureZKDIndexOptions{
-		Name: name,
+		Name: "zkd-opt",
 	}
 
 	idx, created, err := col.EnsureZKDIndex(ctx, []string{f1, f2}, &opt)
 	require.NoError(t, err)
 	require.True(t, created)
 	require.Equal(t, driver.ZKDIndex, idx.Type())
-	require.Equal(t, name, idx.Name())
+	require.Equal(t, opt.Name, idx.UserName())
 	assert.Contains(t, idx.Fields(), f1)
 	assert.Contains(t, idx.Fields(), f2)
 
