@@ -224,6 +224,13 @@ type InventoryCollectionParameters struct {
 	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
 	// Available from 3.7 arangod version
 	SyncByRevision bool `json:"syncByRevision,omitempty"`
+	// TODO when it was introduced?:
+	CacheEnabled          bool   `json:"cacheEnabled,omitempty"`
+	IsDisjoint            bool   `json:"isDisjoint,omitempty"`
+	IsSmartChild          bool   `json:"isSmartChild,omitempty"`
+	InternalValidatorType int    `json:"internalValidatorType,omitempty"`
+	GloballyUniqueId      string `json:"globallyUniqueId,omitempty"`
+	// TODO schema what's that?
 }
 
 // IsSatellite returns true if the collection is a satellite collection
@@ -236,16 +243,18 @@ type ShardID string
 
 // InventoryIndex contains all configuration parameters of a single index of a collection in a database inventory.
 type InventoryIndex struct {
-	ID          string   `json:"id,omitempty"`
-	Type        string   `json:"type,omitempty"`
-	Fields      []string `json:"fields,omitempty"`
-	Unique      bool     `json:"unique"`
-	Sparse      bool     `json:"sparse"`
-	Deduplicate bool     `json:"deduplicate"`
-	MinLength   int      `json:"minLength,omitempty"`
-	GeoJSON     bool     `json:"geoJson,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	ExpireAfter int      `json:"expireAfter,omitempty"`
+	ID              string   `json:"id,omitempty"`
+	Type            string   `json:"type,omitempty"`
+	Fields          []string `json:"fields,omitempty"`
+	Unique          bool     `json:"unique"`
+	Sparse          bool     `json:"sparse"`
+	Deduplicate     bool     `json:"deduplicate"`
+	MinLength       int      `json:"minLength,omitempty"`
+	GeoJSON         bool     `json:"geoJson,omitempty"`
+	Name            string   `json:"name,omitempty"`
+	ExpireAfter     int      `json:"expireAfter,omitempty"`
+	Estimates       bool     `json:"estimates,omitempty"`
+	FieldValueTypes string   `json:"fieldValueTypes,omitempty"`
 }
 
 // FieldsEqual returns true when the given fields list equals the
