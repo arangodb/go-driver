@@ -49,7 +49,7 @@ func TestCreateVertexCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
 	name := "test_create_vertex_collection"
-	g, err := db.CreateGraph(nil, name, nil)
+	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
@@ -106,7 +106,7 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 		IsSmart:             true,
 		SmartGraphAttribute: "key",
 	}
-	g, err := db.CreateGraph(ctx, name, &options)
+	g, err := db.CreateGraphV2(ctx, name, &options)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
@@ -154,7 +154,7 @@ func TestRemoveVertexCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
 	name := "test_remove_vertex_collection"
-	g, err := db.CreateGraph(nil, name, nil)
+	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}

@@ -77,7 +77,7 @@ func Example_createGraph() {
 	options.EdgeDefinitions = []driver.EdgeDefinition{edgeDefinition}
 
 	// now it's possible to create a graph
-	graph, err := db.CreateGraph(nil, "myGraph", &options)
+	graph, err := db.CreateGraphV2(nil, "myGraph", &options)
 	if err != nil {
 		log.Fatalf("Failed to create graph: %v", err)
 	}

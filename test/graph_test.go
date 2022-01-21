@@ -34,7 +34,7 @@ import (
 func ensureGraph(ctx context.Context, db driver.Database, name string, options *driver.CreateGraphOptions, t *testing.T) driver.Graph {
 	g, err := db.Graph(ctx, name)
 	if driver.IsNotFound(err) {
-		g, err = db.CreateGraph(ctx, name, options)
+		g, err = db.CreateGraphV2(ctx, name, options)
 		if err != nil {
 			t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 		}
@@ -49,7 +49,7 @@ func TestCreateGraph(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "graph_test", nil, t)
 	name := "test_create_graph"
-	if _, err := db.CreateGraph(nil, name, nil); err != nil {
+	if _, err := db.CreateGraphV2(nil, name, nil); err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
 	// Graph must exist now
@@ -86,7 +86,7 @@ func TestRemoveGraph(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "graph_test", nil, t)
 	name := "test_remove_graph"
-	g, err := db.CreateGraph(nil, name, nil)
+	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}

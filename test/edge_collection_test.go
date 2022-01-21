@@ -50,7 +50,7 @@ func TestCreateEdgeCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
 	name := "test_create_edge_collection"
-	g, err := db.CreateGraph(nil, name, nil)
+	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
@@ -123,7 +123,7 @@ func TestCreateSatelliteEdgeCollection(t *testing.T) {
 		IsSmart:             true,
 		SmartGraphAttribute: "test",
 	}
-	g, err := db.CreateGraph(ctx, name, &options)
+	g, err := db.CreateGraphV2(ctx, name, &options)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
@@ -188,7 +188,7 @@ func TestRemoveEdgeCollection(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
 	name := "test_remove_edge_collection"
-	g, err := db.CreateGraph(nil, name, nil)
+	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
@@ -230,7 +230,7 @@ func TestSetVertexConstraints(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
 	name := "set_vertex_constraints"
-	g, err := db.CreateGraph(nil, name, nil)
+	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
