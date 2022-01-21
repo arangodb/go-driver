@@ -47,30 +47,31 @@ func indexStringToType(indexTypeString string) (IndexType, error) {
 		return EdgeIndex, nil
 	case string(TTLIndex):
 		return TTLIndex, nil
+	case string(ZKDIndex):
+		return ZKDIndex, nil
 	default:
 		return "", WithStack(InvalidArgumentError{Message: "unknown index type"})
 	}
 }
 
 // newIndex creates a new Index implementation.
-func newIndex(id string, indexTypeString string, name string, col *collection) (Index, error) {
-	if id == "" {
+func newIndex(data indexData, col *collection) (Index, error) {
+	if data.ID == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
-	parts := strings.Split(id, "/")
+	parts := strings.Split(data.ID, "/")
 	if len(parts) != 2 {
 		return nil, WithStack(InvalidArgumentError{Message: "id must be `collection/name`"})
 	}
 	if col == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "col is nil"})
 	}
-	indexType, err := indexStringToType(indexTypeString)
+	indexType, err := indexStringToType(data.Type)
 	if err != nil {
 		return nil, WithStack(err)
 	}
 	return &index{
-		id:        id,
-		name:      name,
+		indexData: data,
 		indexType: indexType,
 		col:       col,
 		db:        col.db,
@@ -79,8 +80,7 @@ func newIndex(id string, indexTypeString string, name string, col *collection) (
 }
 
 type index struct {
-	id        string
-	name      string
+	indexData
 	indexType IndexType
 	db        *database
 	col       *collection
@@ -94,18 +94,18 @@ func (i *index) relPath() string {
 
 // Name returns the name of the index.
 func (i *index) Name() string {
-	parts := strings.Split(i.id, "/")
+	parts := strings.Split(i.indexData.ID, "/")
 	return parts[1]
 }
 
 // ID returns the ID of the index.
 func (i *index) ID() string {
-	return i.id
+	return i.indexData.ID
 }
 
 // UserName returns the user provided name of the index or empty string if non is provided.
 func (i *index) UserName() string {
-	return i.name
+	return i.indexData.Name
 }
 
 // Type returns the type of the index
@@ -113,10 +113,73 @@ func (i *index) Type() IndexType {
 	return i.indexType
 }
 
+// Fields returns a list of attributes of this index.
+func (i *index) Fields() []string {
+	return i.indexData.Fields
+}
+
+// Unique returns if this index is unique.
+func (i *index) Unique() bool {
+	if i.indexData.Unique == nil {
+		return false
+	}
+	return *i.indexData.Unique
+}
+
+// Deduplicate returns deduplicate setting of this index.
+func (i *index) Deduplicate() bool {
+	if i.indexData.Deduplicate == nil {
+		return false
+	}
+	return *i.indexData.Deduplicate
+}
+
+// Sparse returns if this is a sparse index or not.
+func (i *index) Sparse() bool {
+	if i.indexData.Sparse == nil {
+		return false
+	}
+	return *i.indexData.Sparse
+}
+
+// GeoJSON returns if geo json was set for this index or not.
+func (i *index) GeoJSON() bool {
+	if i.indexData.GeoJSON == nil {
+		return false
+	}
+	return *i.indexData.GeoJSON
+}
+
+// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+func (i *index) InBackground() bool {
+	if i.indexData.InBackground == nil {
+		return false
+	}
+	return *i.indexData.InBackground
+}
+
+// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+func (i *index) Estimates() bool {
+	if i.indexData.Estimates == nil {
+		return false
+	}
+	return *i.indexData.Estimates
+}
+
+// MinLength returns min length for this index if set.
+func (i *index) MinLength() int {
+	return i.indexData.MinLength
+}
+
+// ExpireAfter returns an expire after for this index if set.
+func (i *index) ExpireAfter() int {
+	return i.indexData.ExpireAfter
+}
+
 // Remove removes the entire index.
 // If the index does not exist, a NotFoundError is returned.
 func (i *index) Remove(ctx context.Context) error {
-	req, err := i.conn.NewRequest("DELETE", path.Join(i.relPath(), i.id))
+	req, err := i.conn.NewRequest("DELETE", path.Join(i.relPath(), i.indexData.ID))
 	if err != nil {
 		return WithStack(err)
 	}

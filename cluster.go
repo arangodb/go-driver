@@ -236,16 +236,18 @@ type ShardID string
 
 // InventoryIndex contains all configuration parameters of a single index of a collection in a database inventory.
 type InventoryIndex struct {
-	ID          string   `json:"id,omitempty"`
-	Type        string   `json:"type,omitempty"`
-	Fields      []string `json:"fields,omitempty"`
-	Unique      bool     `json:"unique"`
-	Sparse      bool     `json:"sparse"`
-	Deduplicate bool     `json:"deduplicate"`
-	MinLength   int      `json:"minLength,omitempty"`
-	GeoJSON     bool     `json:"geoJson,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	ExpireAfter int      `json:"expireAfter,omitempty"`
+	ID              string   `json:"id,omitempty"`
+	Type            string   `json:"type,omitempty"`
+	Fields          []string `json:"fields,omitempty"`
+	Unique          bool     `json:"unique"`
+	Sparse          bool     `json:"sparse"`
+	Deduplicate     bool     `json:"deduplicate"`
+	MinLength       int      `json:"minLength,omitempty"`
+	GeoJSON         bool     `json:"geoJson,omitempty"`
+	Name            string   `json:"name,omitempty"`
+	ExpireAfter     int      `json:"expireAfter,omitempty"`
+	Estimates       bool     `json:"estimates,omitempty"`
+	FieldValueTypes string   `json:"fieldValueTypes,omitempty"`
 }
 
 // FieldsEqual returns true when the given fields list equals the

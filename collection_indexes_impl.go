@@ -28,28 +28,23 @@ import (
 )
 
 type indexData struct {
-	ID           string   `json:"id,omitempty"`
-	Type         string   `json:"type"`
-	Fields       []string `json:"fields,omitempty"`
-	Unique       *bool    `json:"unique,omitempty"`
-	Deduplicate  *bool    `json:"deduplicate,omitempty"`
-	Sparse       *bool    `json:"sparse,omitempty"`
-	GeoJSON      *bool    `json:"geoJson,omitempty"`
-	InBackground *bool    `json:"inBackground,omitempty"`
-	Estimates    *bool    `json:"estimates,omitempty"`
-	MinLength    int      `json:"minLength,omitempty"`
-	ExpireAfter  int      `json:"expireAfter,omitempty"`
-	Name         string   `json:"name,omitempty"`
-}
-
-type genericIndexData struct {
-	ID   string `json:"id,omitempty"`
-	Type string `json:"type"`
-	Name string `json:"name,omitempty"`
+	ID              string   `json:"id,omitempty"`
+	Type            string   `json:"type"`
+	Fields          []string `json:"fields,omitempty"`
+	Unique          *bool    `json:"unique,omitempty"`
+	Deduplicate     *bool    `json:"deduplicate,omitempty"`
+	Sparse          *bool    `json:"sparse,omitempty"`
+	GeoJSON         *bool    `json:"geoJson,omitempty"`
+	InBackground    *bool    `json:"inBackground,omitempty"`
+	Estimates       *bool    `json:"estimates,omitempty"`
+	MinLength       int      `json:"minLength,omitempty"`
+	ExpireAfter     int      `json:"expireAfter,omitempty"`
+	Name            string   `json:"name,omitempty"`
+	FieldValueTypes string   `json:"fieldValueTypes,omitempty"`
 }
 
 type indexListResponse struct {
-	Indexes []genericIndexData `json:"indexes,omitempty"`
+	Indexes []indexData `json:"indexes,omitempty"`
 }
 
 // Index opens a connection to an existing index within the collection.
@@ -70,7 +65,7 @@ func (c *collection) Index(ctx context.Context, name string) (Index, error) {
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, data.Name, c)
+	idx, err := newIndex(data, c)
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -116,7 +111,7 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 	}
 	result := make([]Index, 0, len(data.Indexes))
 	for _, x := range data.Indexes {
-		idx, err := newIndex(x.ID, x.Type, x.Name, c)
+		idx, err := newIndex(x, c)
 		if err != nil {
 			return nil, WithStack(err)
 		}
@@ -269,6 +264,29 @@ func (c *collection) EnsureTTLIndex(ctx context.Context, field string, expireAft
 	return idx, created, nil
 }
 
+// EnsureZKDIndex creates a ZKD index in the collection, if it does not already exist.
+// Fields is a slice of attribute paths.
+// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+func (c *collection) EnsureZKDIndex(ctx context.Context, fields []string, options *EnsureZKDIndexOptions) (Index, bool, error) {
+	input := indexData{
+		Type:   string(ZKDIndex),
+		Fields: fields,
+		// fieldValueTypes is required and the only allowed value is "double". Future extensions of the index will allow other types.
+		FieldValueTypes: "double",
+	}
+	if options != nil {
+		input.InBackground = &options.InBackground
+		input.Name = options.Name
+		input.Unique = &options.Unique
+		//input.Sparse = &options.Sparse
+	}
+	idx, created, err := c.ensureIndex(ctx, input)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return idx, created, nil
+}
+
 // ensureIndex creates a persistent index in the collection, if it does not already exist.
 // Fields is a slice of attribute paths.
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
@@ -293,7 +311,7 @@ func (c *collection) ensureIndex(ctx context.Context, options indexData) (Index,
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, false, WithStack(err)
 	}
-	idx, err := newIndex(data.ID, data.Type, data.Name, c)
+	idx, err := newIndex(data, c)
 	if err != nil {
 		return nil, false, WithStack(err)
 	}

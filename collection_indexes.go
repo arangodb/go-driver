@@ -70,6 +70,10 @@ type CollectionIndexes interface {
 	// EnsureTTLIndex creates a TLL collection, if it does not already exist.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	EnsureTTLIndex(ctx context.Context, field string, expireAfter int, options *EnsureTTLIndexOptions) (Index, bool, error)
+
+	// EnsureZKDIndex creates a ZKD multi-dimensional index for the collection, if it does not already exist.
+	// Note that zkd indexes are an experimental feature in ArangoDB 3.9.
+	EnsureZKDIndex(ctx context.Context, fields []string, options *EnsureZKDIndexOptions) (Index, bool, error)
 }
 
 // EnsureFullTextIndexOptions contains specific options for creating a full text index.
@@ -156,4 +160,20 @@ type EnsureTTLIndexOptions struct {
 	Name string
 	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
 	Estimates *bool
+}
+
+// EnsureZKDIndexOptions provides specific options for creating a ZKD index
+type EnsureZKDIndexOptions struct {
+	// If true, then create a unique index.
+	Unique bool
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground bool
+	// Name optional user defined name used for hints in AQL queries
+	Name string
+	// fieldValueTypes is required and the only allowed value is "double". Future extensions of the index will allow other types.
+	FieldValueTypes string
+
+	// If true, then create a sparse index.
+	// TODO: The sparse property is not supported yet
+	// Sparse bool
 }

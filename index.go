@@ -37,6 +37,7 @@ const (
 	GeoIndex        = IndexType("geo")
 	EdgeIndex       = IndexType("edge")
 	TTLIndex        = IndexType("ttl")
+	ZKDIndex        = IndexType("zkd")
 )
 
 // Index provides access to a single index in a single collection.
@@ -45,11 +46,11 @@ type Index interface {
 	// the require a index _name_.
 	Name() string
 
-	// ID returns the ID of the index. Effectivly this is `<collection-name>/<index.Name()>`.
+	// ID returns the ID of the index. Effectively this is `<collection-name>/<index.Name()>`.
 	ID() string
 
 	// UserName returns the user provided name of the index or empty string if non is provided. This _name_
-	// is used in querys to provides hints for the optimizer about preferred indexes.
+	// is used in query to provide hints for the optimizer about preferred indexes.
 	UserName() string
 
 	// Type returns the type of the index
@@ -58,4 +59,31 @@ type Index interface {
 	// Remove removes the entire index.
 	// If the index does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+
+	// Fields returns a list of attributes of this index.
+	Fields() []string
+
+	// Unique returns if this index is unique.
+	Unique() bool
+
+	// Deduplicate returns deduplicate setting of this index.
+	Deduplicate() bool
+
+	// Sparse returns if this is a sparse index or not.
+	Sparse() bool
+
+	// GeoJSON returns if geo json was set for this index or not.
+	GeoJSON() bool
+
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground() bool
+
+	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	Estimates() bool
+
+	// MinLength returns min length for this index if set.
+	MinLength() int
+
+	// ExpireAfter returns an expire after for this index if set.
+	ExpireAfter() int
 }
