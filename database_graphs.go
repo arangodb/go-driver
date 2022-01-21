@@ -42,7 +42,12 @@ type DatabaseGraphs interface {
 
 	// CreateGraph creates a new graph with given name and options, and opens a connection to it.
 	// If a graph with given name already exists within the database, a DuplicateError is returned.
+	// @deprecated since ArangoDB 3.9 - please use CreateGraphV2 instead
 	CreateGraph(ctx context.Context, name string, options *CreateGraphOptions) (Graph, error)
+
+	// CreateGraphV2 creates a new graph with given name and options, and opens a connection to it.
+	// If a graph with given name already exists within the database, a DuplicateError is returned.
+	CreateGraphV2(ctx context.Context, name string, options *CreateGraphOptions) (Graph, error)
 }
 
 // CreateGraphOptions contains options that customize the creating of a graph.
