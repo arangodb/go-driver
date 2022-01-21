@@ -54,6 +54,16 @@ var (
 	runPProfServerOnce sync.Once
 )
 
+func skipOnK8S(t *testing.T) {
+	if isK8S() {
+		t.Skip("Skipping on k8s")
+	}
+}
+
+func isK8S() bool {
+	return os.Getenv("TEST_MODE") == "k8s"
+}
+
 // skipBetweenVersion skips the test if the current server version is less than
 // the min version or higher/equal max version
 func skipBetweenVersion(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {
@@ -245,7 +255,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
 // waitUntilServerAvailable keeps waiting until the server/cluster that the client is addressing is available.
 func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) error {
 	return driverErrorCheck(ctx, c, func(ctx context.Context, client driver.Client) error {
-		if getTestMode() != testModeSingle {
+		if getTestMode() != testModeSingle && !isK8S() {
 			// Refresh endpoints
 			if err := client.SynchronizeEndpoints2(ctx, "_system"); err != nil {
 				return err
@@ -322,6 +332,10 @@ func waitUntilClusterHealthy(c driver.Client) error {
 
 // waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.
 func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname string, t testEnv) error {
+	if isK8S() {
+		return nil
+	}
+
 	return driverErrorCheck(ctx, c, func(ctx context.Context, client driver.Client) error {
 		callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
 		defer cancel()

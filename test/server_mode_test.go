@@ -24,10 +24,11 @@ package test
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
+	"os"
+	"strings"
 )
 
 // TestServerMode creates a database and checks the various server modes.
@@ -35,7 +36,7 @@ func TestServerMode(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	ctx := context.Background()
 
-	if os.Getenv("TEST_AUTHENTICATION") == "super:testing" {
+	if strings.HasPrefix(os.Getenv("TEST_AUTHENTICATION"), "super:") {
 		t.Skip("Skipping read only test because of superuser access.")
 	}
 	version, err := c.Version(nil)
