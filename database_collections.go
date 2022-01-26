@@ -80,6 +80,8 @@ type CreateCollectionOptions struct {
 	ShardKeys []string `json:"shardKeys,omitempty"`
 	// In a cluster, this value determines the number of shards to create for the collection. In a single server setup, this option is meaningless. (default is 1)
 	NumberOfShards int `json:"numberOfShards,omitempty"`
+	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
+	IsDisjoint bool `json:"isDisjoint,omitempty"`
 	// If true, create a system collection. In this case collection-name should start with an underscore.
 	// End users should normally create non-system collections only. API implementors may be required to create system
 	// collections in very special occasions, but normally a regular collection will do. (The default is false)

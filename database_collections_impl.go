@@ -110,6 +110,7 @@ type createCollectionOptionsInternal struct {
 	WriteConcern         int                      `json:"writeConcern,omitempty"`
 	WaitForSync          bool                     `json:"waitForSync,omitempty"`
 	DoCompact            *bool                    `json:"doCompact,omitempty"`
+	IsDisjoint           bool                     `json:"isDisjoint,omitempty"`
 	IsVolatile           bool                     `json:"isVolatile,omitempty"`
 	ShardKeys            []string                 `json:"shardKeys,omitempty"`
 	NumberOfShards       int                      `json:"numberOfShards,omitempty"`
@@ -180,6 +181,7 @@ func (d *database) CreateCollection(ctx context.Context, name string, options *C
 func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOptions) {
 	p.JournalSize = i.JournalSize
 	p.CacheEnabled = i.CacheEnabled
+	p.IsDisjoint = i.IsDisjoint
 	p.ReplicationFactor = replicationFactor(i.ReplicationFactor)
 	p.MinReplicationFactor = i.MinReplicationFactor
 	p.WriteConcern = i.WriteConcern
