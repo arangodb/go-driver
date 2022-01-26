@@ -266,74 +266,90 @@ func (c *cluster) RemoveServer(ctx context.Context, serverID ServerID) error {
 type replicationFactor int
 
 type inventoryCollectionParametersInternal struct {
-	Deleted             bool             `json:"deleted,omitempty"`
-	DoCompact           bool             `json:"doCompact,omitempty"`
-	ID                  string           `json:"id,omitempty"`
-	IndexBuckets        int              `json:"indexBuckets,omitempty"`
-	Indexes             []InventoryIndex `json:"indexes,omitempty"`
-	IsSmart             bool             `json:"isSmart,omitempty"`
-	SmartGraphAttribute string           `json:"smartGraphAttribute,omitempty"`
-	IsSystem            bool             `json:"isSystem,omitempty"`
-	IsVolatile          bool             `json:"isVolatile,omitempty"`
-	JournalSize         int64            `json:"journalSize,omitempty"`
-	KeyOptions          struct {
-		Type          string `json:"type,omitempty"`
+	// Available from 3.7 ArangoD version.
+	CacheEnabled         bool   `json:"cacheEnabled,omitempty"`
+	Deleted              bool   `json:"deleted,omitempty"`
+	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
+	DoCompact            bool   `json:"doCompact,omitempty"`
+	// Available from 3.7 ArangoD version.
+	GloballyUniqueId string           `json:"globallyUniqueId,omitempty"`
+	ID               string           `json:"id,omitempty"`
+	IndexBuckets     int              `json:"indexBuckets,omitempty"`
+	Indexes          []InventoryIndex `json:"indexes,omitempty"`
+	// Available from 3.7 ArangoD version.
+	IsDisjoint bool `json:"isDisjoint,omitempty"`
+	IsSmart    bool `json:"isSmart,omitempty"`
+	// Available from 3.7 ArangoD version.
+	IsSmartChild bool `json:"isSmartChild,omitempty"`
+	IsSystem     bool `json:"isSystem,omitempty"`
+	// Deprecated since 3.7 version. It is related only to MMFiles.
+	IsVolatile bool `json:"isVolatile,omitempty"`
+	// Deprecated since 3.7 version. It is related only to MMFiles.
+	JournalSize int64 `json:"journalSize,omitempty"`
+	KeyOptions  struct {
 		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
 		LastValue     int64  `json:"lastValue,omitempty"`
+		Type          string `json:"type,omitempty"`
 	} `json:"keyOptions"`
-	Name              string            `json:"name,omitempty"`
-	NumberOfShards    int               `json:"numberOfShards,omitempty"`
-	Path              string            `json:"path,omitempty"`
-	PlanID            string            `json:"planId,omitempty"`
-	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
-	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
-	// Available from 3.6 arangod version.
-	WriteConcern         int                    `json:"writeConcern,omitempty"`
+	MinReplicationFactor int                    `json:"minReplicationFactor,omitempty"`
+	Name                 string                 `json:"name,omitempty"`
+	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
+	Path                 string                 `json:"path,omitempty"`
+	PlanID               string                 `json:"planId,omitempty"`
+	ReplicationFactor    replicationFactor      `json:"replicationFactor,omitempty"`
+	ShardingStrategy     ShardingStrategy       `json:"shardingStrategy,omitempty"`
 	ShardKeys            []string               `json:"shardKeys,omitempty"`
 	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
-	Status               CollectionStatus       `json:"status,omitempty"`
-	Type                 CollectionType         `json:"type,omitempty"`
-	WaitForSync          bool                   `json:"waitForSync,omitempty"`
-	DistributeShardsLike string                 `json:"distributeShardsLike,omitempty"`
-	SmartJoinAttribute   string                 `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy     ShardingStrategy       `json:"shardingStrategy,omitempty"`
+	// Optional only for some collections.
+	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
+	// Optional only for some collections.
+	SmartJoinAttribute string           `json:"smartJoinAttribute,omitempty"`
+	Status             CollectionStatus `json:"status,omitempty"`
+	// Available from 3.7 arangod version
+	SyncByRevision bool           `json:"syncByRevision,omitempty"`
+	Type           CollectionType `json:"type,omitempty"`
 	// Available from 3.7 arangod version
 	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
-	// Available from 3.7 arangod version
-	SyncByRevision bool `json:"syncByRevision,omitempty"`
+	WaitForSync                bool `json:"waitForSync,omitempty"`
+	// Available from 3.6 arangod version.
+	WriteConcern int `json:"writeConcern,omitempty"`
 }
 
 func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParametersInternal {
 	return inventoryCollectionParametersInternal{
+		CacheEnabled:               p.CacheEnabled,
 		Deleted:                    p.Deleted,
+		DistributeShardsLike:       p.DistributeShardsLike,
 		DoCompact:                  p.DoCompact,
+		GloballyUniqueId:           p.GloballyUniqueId,
 		ID:                         p.ID,
 		IndexBuckets:               p.IndexBuckets,
 		Indexes:                    p.Indexes,
+		IsDisjoint:                 p.IsDisjoint,
 		IsSmart:                    p.IsSmart,
-		SmartGraphAttribute:        p.SmartGraphAttribute,
+		IsSmartChild:               p.IsSmartChild,
 		IsSystem:                   p.IsSystem,
 		IsVolatile:                 p.IsVolatile,
 		JournalSize:                p.JournalSize,
 		KeyOptions:                 p.KeyOptions,
+		MinReplicationFactor:       p.MinReplicationFactor,
 		Name:                       p.Name,
 		NumberOfShards:             p.NumberOfShards,
 		Path:                       p.Path,
 		PlanID:                     p.PlanID,
 		ReplicationFactor:          replicationFactor(p.ReplicationFactor),
-		MinReplicationFactor:       p.MinReplicationFactor,
-		WriteConcern:               p.WriteConcern,
+		ShardingStrategy:           p.ShardingStrategy,
 		ShardKeys:                  p.ShardKeys,
 		Shards:                     p.Shards,
-		Status:                     p.Status,
-		Type:                       p.Type,
-		WaitForSync:                p.WaitForSync,
-		DistributeShardsLike:       p.DistributeShardsLike,
+		SmartGraphAttribute:        p.SmartGraphAttribute,
 		SmartJoinAttribute:         p.SmartJoinAttribute,
-		ShardingStrategy:           p.ShardingStrategy,
-		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
+		Status:                     p.Status,
 		SyncByRevision:             p.SyncByRevision,
+		Type:                       p.Type,
+		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
+		WaitForSync:                p.WaitForSync,
+		WriteConcern:               p.WriteConcern,
 	}
 }
 
@@ -343,34 +359,38 @@ func (p *InventoryCollectionParameters) fromInternal(i inventoryCollectionParame
 
 func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollectionParameters {
 	return InventoryCollectionParameters{
+		CacheEnabled:               p.CacheEnabled,
 		Deleted:                    p.Deleted,
+		DistributeShardsLike:       p.DistributeShardsLike,
 		DoCompact:                  p.DoCompact,
+		GloballyUniqueId:           p.GloballyUniqueId,
 		ID:                         p.ID,
 		IndexBuckets:               p.IndexBuckets,
 		Indexes:                    p.Indexes,
+		IsDisjoint:                 p.IsDisjoint,
 		IsSmart:                    p.IsSmart,
-		SmartGraphAttribute:        p.SmartGraphAttribute,
+		IsSmartChild:               p.IsSmartChild,
 		IsSystem:                   p.IsSystem,
 		IsVolatile:                 p.IsVolatile,
 		JournalSize:                p.JournalSize,
 		KeyOptions:                 p.KeyOptions,
+		MinReplicationFactor:       p.MinReplicationFactor,
 		Name:                       p.Name,
 		NumberOfShards:             p.NumberOfShards,
 		Path:                       p.Path,
 		PlanID:                     p.PlanID,
 		ReplicationFactor:          int(p.ReplicationFactor),
-		MinReplicationFactor:       p.MinReplicationFactor,
-		WriteConcern:               p.WriteConcern,
+		ShardingStrategy:           p.ShardingStrategy,
 		ShardKeys:                  p.ShardKeys,
 		Shards:                     p.Shards,
-		Status:                     p.Status,
-		Type:                       p.Type,
-		WaitForSync:                p.WaitForSync,
-		DistributeShardsLike:       p.DistributeShardsLike,
+		SmartGraphAttribute:        p.SmartGraphAttribute,
 		SmartJoinAttribute:         p.SmartJoinAttribute,
-		ShardingStrategy:           p.ShardingStrategy,
-		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
+		Status:                     p.Status,
 		SyncByRevision:             p.SyncByRevision,
+		Type:                       p.Type,
+		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
+		WaitForSync:                p.WaitForSync,
+		WriteConcern:               p.WriteConcern,
 	}
 }
 
