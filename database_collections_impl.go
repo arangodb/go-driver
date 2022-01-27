@@ -102,29 +102,33 @@ func (d *database) Collections(ctx context.Context) ([]Collection, error) {
 }
 
 type createCollectionOptionsInternal struct {
-	JournalSize       int               `json:"journalSize,omitempty"`
-	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
-	CacheEnabled      *bool             `json:"cacheEnabled,omitempty"`
+	CacheEnabled          *bool                 `json:"cacheEnabled,omitempty"`
+	DistributeShardsLike  string                `json:"distributeShardsLike,omitempty"`
+	DoCompact             *bool                 `json:"doCompact,omitempty"`
+	IndexBuckets          int                   `json:"indexBuckets,omitempty"`
+	Indexes               []InventoryIndex      `json:"indexes,omitempty"`
+	InternalValidatorType int                   `json:"internalValidatorType,omitempty"`
+	IsDisjoint            bool                  `json:"isDisjoint,omitempty"`
+	IsSmart               bool                  `json:"isSmart,omitempty"`
+	IsSmartChild          bool                  `json:"isSmartChild,omitempty"`
+	IsSystem              bool                  `json:"isSystem,omitempty"`
+	IsVolatile            bool                  `json:"isVolatile,omitempty"`
+	JournalSize           int                   `json:"journalSize,omitempty"`
+	KeyOptions            *CollectionKeyOptions `json:"keyOptions,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int                      `json:"minReplicationFactor,omitempty"`
-	WriteConcern         int                      `json:"writeConcern,omitempty"`
-	WaitForSync          bool                     `json:"waitForSync,omitempty"`
-	DoCompact            *bool                    `json:"doCompact,omitempty"`
-	IsDisjoint           bool                     `json:"isDisjoint,omitempty"`
-	IsVolatile           bool                     `json:"isVolatile,omitempty"`
-	ShardKeys            []string                 `json:"shardKeys,omitempty"`
-	NumberOfShards       int                      `json:"numberOfShards,omitempty"`
-	IsSystem             bool                     `json:"isSystem,omitempty"`
-	Type                 CollectionType           `json:"type,omitempty"`
-	IndexBuckets         int                      `json:"indexBuckets,omitempty"`
-	KeyOptions           *CollectionKeyOptions    `json:"keyOptions,omitempty"`
-	DistributeShardsLike string                   `json:"distributeShardsLike,omitempty"`
-	IsSmart              bool                     `json:"isSmart,omitempty"`
-	SmartGraphAttribute  string                   `json:"smartGraphAttribute,omitempty"`
 	Name                 string                   `json:"name"`
-	SmartJoinAttribute   string                   `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy     ShardingStrategy         `json:"shardingStrategy,omitempty"`
+	NumberOfShards       int                      `json:"numberOfShards,omitempty"`
+	ReplicationFactor    replicationFactor        `json:"replicationFactor,omitempty"`
 	Schema               *CollectionSchemaOptions `json:"schema,omitempty"`
+	ShardingStrategy     ShardingStrategy         `json:"shardingStrategy,omitempty"`
+	ShardKeys            []string                 `json:"shardKeys,omitempty"`
+	SmartGraphAttribute  string                   `json:"smartGraphAttribute,omitempty"`
+	SmartJoinAttribute   string                   `json:"smartJoinAttribute,omitempty"`
+	SyncByRevision       bool                     `json:"syncByRevision,omitempty"`
+	Type                 CollectionType           `json:"type,omitempty"`
+	WaitForSync          bool                     `json:"waitForSync,omitempty"`
+	WriteConcern         int                      `json:"writeConcern,omitempty"`
 }
 
 // CreateCollection creates a new collection with given name and options, and opens a connection to it.
@@ -179,27 +183,31 @@ func (d *database) CreateCollection(ctx context.Context, name string, options *C
 // }
 
 func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOptions) {
-	p.JournalSize = i.JournalSize
 	p.CacheEnabled = i.CacheEnabled
-	p.IsDisjoint = i.IsDisjoint
-	p.ReplicationFactor = replicationFactor(i.ReplicationFactor)
-	p.MinReplicationFactor = i.MinReplicationFactor
-	p.WriteConcern = i.WriteConcern
-	p.WaitForSync = i.WaitForSync
-	p.DoCompact = i.DoCompact
-	p.IsVolatile = i.IsVolatile
-	p.ShardKeys = i.ShardKeys
-	p.NumberOfShards = i.NumberOfShards
-	p.IsSystem = i.IsSystem
-	p.Type = i.Type
-	p.IndexBuckets = i.IndexBuckets
-	p.KeyOptions = i.KeyOptions
 	p.DistributeShardsLike = i.DistributeShardsLike
+	p.DoCompact = i.DoCompact
+	p.IndexBuckets = i.IndexBuckets
+	p.Indexes = i.Indexes
+	p.InternalValidatorType = i.InternalValidatorType
+	p.IsDisjoint = i.IsDisjoint
 	p.IsSmart = i.IsSmart
+	p.IsSmartChild = i.IsSmartChild
+	p.IsSystem = i.IsSystem
+	p.IsVolatile = i.IsVolatile
+	p.JournalSize = i.JournalSize
+	p.KeyOptions = i.KeyOptions
+	p.MinReplicationFactor = i.MinReplicationFactor
+	p.NumberOfShards = i.NumberOfShards
+	p.ReplicationFactor = replicationFactor(i.ReplicationFactor)
+	p.Schema = i.Schema
+	p.ShardingStrategy = i.ShardingStrategy
+	p.ShardKeys = i.ShardKeys
 	p.SmartGraphAttribute = i.SmartGraphAttribute
 	p.SmartJoinAttribute = i.SmartJoinAttribute
-	p.ShardingStrategy = i.ShardingStrategy
-	p.Schema = i.Schema
+	p.SyncByRevision = i.SyncByRevision
+	p.Type = i.Type
+	p.WaitForSync = i.WaitForSync
+	p.WriteConcern = i.WriteConcern
 }
 
 // // MarshalJSON converts CreateCollectionOptions into json

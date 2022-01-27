@@ -276,6 +276,8 @@ type inventoryCollectionParametersInternal struct {
 	ID               string           `json:"id,omitempty"`
 	IndexBuckets     int              `json:"indexBuckets,omitempty"`
 	Indexes          []InventoryIndex `json:"indexes,omitempty"`
+	// Available from 3.9 ArangoD version.
+	InternalValidatorType int `json:"internalValidatorType,omitempty"`
 	// Available from 3.7 ArangoD version.
 	IsDisjoint bool `json:"isDisjoint,omitempty"`
 	IsSmart    bool `json:"isSmart,omitempty"`
@@ -292,15 +294,18 @@ type inventoryCollectionParametersInternal struct {
 		Type          string `json:"type,omitempty"`
 	} `json:"keyOptions"`
 	// Deprecated: use 'WriteConcern' instead
-	MinReplicationFactor int                    `json:"minReplicationFactor,omitempty"`
-	Name                 string                 `json:"name,omitempty"`
-	NumberOfShards       int                    `json:"numberOfShards,omitempty"`
-	Path                 string                 `json:"path,omitempty"`
-	PlanID               string                 `json:"planId,omitempty"`
-	ReplicationFactor    replicationFactor      `json:"replicationFactor,omitempty"`
-	ShardingStrategy     ShardingStrategy       `json:"shardingStrategy,omitempty"`
-	ShardKeys            []string               `json:"shardKeys,omitempty"`
-	Shards               map[ShardID][]ServerID `json:"shards,omitempty"`
+	MinReplicationFactor int               `json:"minReplicationFactor,omitempty"`
+	Name                 string            `json:"name,omitempty"`
+	NumberOfShards       int               `json:"numberOfShards,omitempty"`
+	Path                 string            `json:"path,omitempty"`
+	PlanID               string            `json:"planId,omitempty"`
+	ReplicationFactor    replicationFactor `json:"replicationFactor,omitempty"`
+	// Schema for collection validation
+	Schema            *CollectionSchemaOptions `json:"schema,omitempty"`
+	ShadowCollections []int                    `json:"shadowCollections,omitempty"`
+	ShardingStrategy  ShardingStrategy         `json:"shardingStrategy,omitempty"`
+	ShardKeys         []string                 `json:"shardKeys,omitempty"`
+	Shards            map[ShardID][]ServerID   `json:"shards,omitempty"`
 	// Optional only for some collections.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
 	// Optional only for some collections.
@@ -326,6 +331,7 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		ID:                         p.ID,
 		IndexBuckets:               p.IndexBuckets,
 		Indexes:                    p.Indexes,
+		InternalValidatorType:      p.InternalValidatorType,
 		IsDisjoint:                 p.IsDisjoint,
 		IsSmart:                    p.IsSmart,
 		IsSmartChild:               p.IsSmartChild,
@@ -339,6 +345,8 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		Path:                       p.Path,
 		PlanID:                     p.PlanID,
 		ReplicationFactor:          replicationFactor(p.ReplicationFactor),
+		Schema:                     p.Schema,
+		ShadowCollections:          p.ShadowCollections,
 		ShardingStrategy:           p.ShardingStrategy,
 		ShardKeys:                  p.ShardKeys,
 		Shards:                     p.Shards,
@@ -367,6 +375,7 @@ func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollection
 		ID:                         p.ID,
 		IndexBuckets:               p.IndexBuckets,
 		Indexes:                    p.Indexes,
+		InternalValidatorType:      p.InternalValidatorType,
 		IsDisjoint:                 p.IsDisjoint,
 		IsSmart:                    p.IsSmart,
 		IsSmartChild:               p.IsSmartChild,
@@ -380,6 +389,8 @@ func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollection
 		Path:                       p.Path,
 		PlanID:                     p.PlanID,
 		ReplicationFactor:          int(p.ReplicationFactor),
+		Schema:                     p.Schema,
+		ShadowCollections:          p.ShadowCollections,
 		ShardingStrategy:           p.ShardingStrategy,
 		ShardKeys:                  p.ShardKeys,
 		Shards:                     p.Shards,

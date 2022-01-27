@@ -200,6 +200,8 @@ type InventoryCollectionParameters struct {
 	// Deprecated since 3.7 version. It is related only to MMFiles.
 	IndexBuckets int              `json:"indexBuckets,omitempty"`
 	Indexes      []InventoryIndex `json:"indexes,omitempty"`
+	// Available from 3.9 ArangoD version.
+	InternalValidatorType int `json:"internalValidatorType,omitempty"`
 	// Available from 3.7 ArangoD version.
 	IsDisjoint bool `json:"isDisjoint,omitempty"`
 	IsSmart    bool `json:"isSmart,omitempty"`
@@ -220,12 +222,15 @@ type InventoryCollectionParameters struct {
 	Name                 string `json:"name,omitempty"`
 	NumberOfShards       int    `json:"numberOfShards,omitempty"`
 	// Deprecated since 3.7 ArangoD version.
-	Path              string                 `json:"path,omitempty"`
-	PlanID            string                 `json:"planId,omitempty"`
-	ReplicationFactor int                    `json:"replicationFactor,omitempty"`
-	ShardingStrategy  ShardingStrategy       `json:"shardingStrategy,omitempty"`
-	ShardKeys         []string               `json:"shardKeys,omitempty"`
-	Shards            map[ShardID][]ServerID `json:"shards,omitempty"`
+	Path              string `json:"path,omitempty"`
+	PlanID            string `json:"planId,omitempty"`
+	ReplicationFactor int    `json:"replicationFactor,omitempty"`
+	// Schema for collection validation.
+	Schema            *CollectionSchemaOptions `json:"schema,omitempty"`
+	ShadowCollections []int                    `json:"shadowCollections,omitempty"`
+	ShardingStrategy  ShardingStrategy         `json:"shardingStrategy,omitempty"`
+	ShardKeys         []string                 `json:"shardKeys,omitempty"`
+	Shards            map[ShardID][]ServerID   `json:"shards,omitempty"`
 	// Optional only for some collections.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
 	// Optional only for some collections.
