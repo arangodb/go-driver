@@ -284,9 +284,9 @@ type inventoryCollectionParametersInternal struct {
 	// Available from 3.7 ArangoD version.
 	IsSmartChild bool `json:"isSmartChild,omitempty"`
 	IsSystem     bool `json:"isSystem,omitempty"`
-	// Deprecated since 3.7 version. It is related only to MMFiles.
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IsVolatile bool `json:"isVolatile,omitempty"`
-	// Deprecated since 3.7 version. It is related only to MMFiles.
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	JournalSize int64 `json:"journalSize,omitempty"`
 	KeyOptions  struct {
 		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
@@ -311,13 +311,13 @@ type inventoryCollectionParametersInternal struct {
 	// Optional only for some collections.
 	SmartJoinAttribute string           `json:"smartJoinAttribute,omitempty"`
 	Status             CollectionStatus `json:"status,omitempty"`
-	// Available from 3.7 arangod version
+	// Available from 3.7 ArangoD version
 	SyncByRevision bool           `json:"syncByRevision,omitempty"`
 	Type           CollectionType `json:"type,omitempty"`
-	// Available from 3.7 arangod version
+	// Available from 3.7 ArangoD version
 	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
 	WaitForSync                bool `json:"waitForSync,omitempty"`
-	// Available from 3.6 arangod version.
+	// Available from 3.6 ArangoD version.
 	WriteConcern int `json:"writeConcern,omitempty"`
 }
 

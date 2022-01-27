@@ -192,12 +192,12 @@ type InventoryCollectionParameters struct {
 	CacheEnabled         bool   `json:"cacheEnabled,omitempty"`
 	Deleted              bool   `json:"deleted,omitempty"`
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
-	// Deprecated since 3.7 version. It is related only to MMFiles.
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	DoCompact bool `json:"doCompact,omitempty"`
 	// Available from 3.7 ArangoD version.
 	GloballyUniqueId string `json:"globallyUniqueId,omitempty"`
 	ID               string `json:"id,omitempty"`
-	// Deprecated since 3.7 version. It is related only to MMFiles.
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IndexBuckets int              `json:"indexBuckets,omitempty"`
 	Indexes      []InventoryIndex `json:"indexes,omitempty"`
 	// Available from 3.9 ArangoD version.
@@ -208,9 +208,9 @@ type InventoryCollectionParameters struct {
 	// Available from 3.7 ArangoD version.
 	IsSmartChild bool `json:"isSmartChild,omitempty"`
 	IsSystem     bool `json:"isSystem,omitempty"`
-	// Deprecated since 3.7 version. It is related only to MMFiles.
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IsVolatile bool `json:"isVolatile,omitempty"`
-	// Deprecated since 3.7 version. It is related only to MMFiles.
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	JournalSize int64 `json:"journalSize,omitempty"`
 	KeyOptions  struct {
 		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
@@ -221,7 +221,7 @@ type InventoryCollectionParameters struct {
 	MinReplicationFactor int    `json:"minReplicationFactor,omitempty"`
 	Name                 string `json:"name,omitempty"`
 	NumberOfShards       int    `json:"numberOfShards,omitempty"`
-	// Deprecated since 3.7 ArangoD version.
+	// Deprecated: since 3.7 ArangoD version.
 	Path              string `json:"path,omitempty"`
 	PlanID            string `json:"planId,omitempty"`
 	ReplicationFactor int    `json:"replicationFactor,omitempty"`
