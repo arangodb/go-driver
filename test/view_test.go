@@ -731,6 +731,7 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 					},
 				},
 				IncludeAllFields: newBool(true),
+				InBackground:     newBool(false),
 			},
 		},
 	}
@@ -765,4 +766,5 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.Contains(t, analyzer.Features, driver.ArangoSearchAnalyzerFeaturePosition)
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
+	require.Equal(t, newBool(true), link.IncludeAllFields)
 }
