@@ -128,6 +128,7 @@ func TestGraphCreationV2(t *testing.T) {
 		options, collections := newGraphOpts(db)
 
 		options.ReplicationFactor = driver.SatelliteGraph
+		options.NumberOfShards = 1
 		options.IsSmart = false
 		options.SmartGraphAttribute = ""
 
@@ -149,6 +150,7 @@ func TestGraphCreationV2(t *testing.T) {
 		options, collections := newGraphOpts(db)
 
 		options.ReplicationFactor = driver.SatelliteGraph
+		options.NumberOfShards = 1
 		options.IsSmart = false
 		options.SmartGraphAttribute = ""
 
