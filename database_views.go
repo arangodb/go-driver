@@ -43,7 +43,7 @@ type DatabaseViews interface {
 	CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (ArangoSearchView, error)
 }
 
-// ViewType is the type of a view.
+// ViewType is the type of view.
 type ViewType string
 
 const (

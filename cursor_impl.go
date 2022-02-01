@@ -70,9 +70,12 @@ type cursorStats struct {
 	// The total number of documents that were removed after executing a filter condition in a FilterNode
 	FilteredInt int64 `json:"filtered,omitempty"`
 	// The total number of documents that matched the search condition if the query's final LIMIT statement were not present.
-	FullCountInt int64 `json:"fullCount,omitempty"`
+	HttpRequests    int64 `json:"httpRequests,omitempty"`
+	PeakMemoryUsage int64 `json:"peakMemoryUsage,omitempty"`
+	FullCountInt    int64 `json:"fullCount,omitempty"`
 	// Query execution time (wall-clock time). value will be set from the outside
-	ExecutionTimeInt float64 `json:"executionTime,omitempty"`
+	ExecutionTimeInt float64           `json:"executionTime,omitempty"`
+	Nodes            []cursorPlanNodes `json:"nodes,omitempty"`
 }
 
 type cursorPlan struct {
@@ -86,9 +89,10 @@ type cursorPlan struct {
 }
 
 type cursorExtra struct {
-	Stats   cursorStats   `json:"stats,omitempty"`
-	Profile cursorProfile `json:"profile,omitempty"`
-	Plan    *cursorPlan   `json:"plan,omitempty"`
+	Stats    cursorStats   `json:"stats,omitempty"`
+	Profile  cursorProfile `json:"profile,omitempty"`
+	Plan     *cursorPlan   `json:"plan,omitempty"`
+	Warnings []string      `json:"warnings,omitempty"`
 }
 
 func (c cursorExtra) GetStatistics() QueryStatistics {
@@ -137,11 +141,14 @@ type cursorPlanNodes map[string]interface{}
 type cursorProfile map[string]interface{}
 
 type cursorData struct {
+	Key     string       `json:"_key,omitempty"`
 	Count   int64        `json:"count,omitempty"`   // the total number of result documents available (only available if the query was executed with the count attribute set)
 	ID      string       `json:"id"`                // id of temporary cursor created on the server (optional, see above)
 	Result  []*RawObject `json:"result,omitempty"`  // an array of result documents (might be empty if query has no results)
 	HasMore bool         `json:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
 	Extra   cursorExtra  `json:"extra"`
+	Cached  bool         `json:"cached,omitempty"`
+	ArangoError
 }
 
 // relPath creates the relative path to this cursor (`_db/<db-name>/_api/cursor`)

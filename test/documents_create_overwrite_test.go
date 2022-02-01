@@ -43,7 +43,8 @@ func generateIDs(count int) []string {
 
 // TestCreateOverwriteDocument creates a document and then checks that it exists. Check with overwrite flag.
 func TestCreateOverwriteDocument(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -94,7 +95,8 @@ func TestCreateOverwriteDocument(t *testing.T) {
 
 // TestCreateOverwriteModeDocument creates a document and then checks that it exists. Check with overwriteMode flag.
 func TestCreateOverwriteModeDocument(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

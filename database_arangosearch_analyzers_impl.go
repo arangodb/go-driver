@@ -150,6 +150,7 @@ func (d *database) Analyzer(ctx context.Context, name string) (ArangoSearchAnaly
 
 type analyzerListResponse struct {
 	Analyzer []ArangoSearchAnalyzerDefinition `json:"result,omitempty"`
+	ArangoError
 }
 
 // List returns a list of all analyzers

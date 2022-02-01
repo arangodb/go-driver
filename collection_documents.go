@@ -170,4 +170,9 @@ type ImportDocumentStatistics struct {
 	Updated int64 `json:"updated,omitempty"`
 	// Ignored holds the number of failed but ignored insert operations (in case onDuplicate was set to ignore).
 	Ignored int64 `json:"ignored,omitempty"`
+	// if query parameter details is set to true, the result will contain a details attribute which is an array
+	// with more detailed information about which documents could not be inserted.
+	Details []string
+
+	ArangoError
 }

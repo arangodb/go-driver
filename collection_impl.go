@@ -143,9 +143,7 @@ func (c *collection) Revision(ctx context.Context) (string, error) {
 	if err := resp.CheckStatus(200); err != nil {
 		return "", WithStack(err)
 	}
-	var data struct {
-		Revision string `json:"revision,omitempty"`
-	}
+	var data collectionPropertiesInternal
 	if err := resp.ParseBody("", &data); err != nil {
 		return "", WithStack(err)
 	}
@@ -298,28 +296,81 @@ func (c *collection) Truncate(ctx context.Context) error {
 
 type collectionPropertiesInternal struct {
 	CollectionInfo
-	WaitForSync  bool  `json:"waitForSync,omitempty"`
-	DoCompact    bool  `json:"doCompact,omitempty"`
-	JournalSize  int64 `json:"journalSize,omitempty"`
-	CacheEnabled bool  `json:"cacheEnabled,omitempty"`
+	ArangoError
+
+	// WaitForSync; If true then creating, changing or removing documents will wait
+	// until the data has been synchronized to disk.
+	WaitForSync bool `json:"waitForSync,omitempty"`
+
+	DoCompact   bool  `json:"doCompact,omitempty"`
+	JournalSize int64 `json:"journalSize,omitempty"`
+	// CacheEnabled set cacheEnabled option in collection properties
+	CacheEnabled bool `json:"cacheEnabled,omitempty"`
 	KeyOptions   struct {
-		Type          KeyGeneratorType `json:"type,omitempty"`
-		AllowUserKeys bool             `json:"allowUserKeys,omitempty"`
+		// Type specifies the type of the key generator. The currently available generators are traditional and autoincrement.
+		Type KeyGeneratorType `json:"type,omitempty"`
+		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
+		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
+		// the _key attribute of documents is considered an error.
+		AllowUserKeys bool  `json:"allowUserKeys,omitempty"`
+		LastValue     int64 `json:"lastValue,omitempty"`
 	} `json:"keyOptions,omitempty"`
-	NumberOfShards    int               `json:"numberOfShards,omitempty"`
-	ShardKeys         []string          `json:"shardKeys,omitempty"`
+
+	// NumberOfShards is the number of shards of the collection.
+	// Only available in cluster setup.
+	NumberOfShards int `json:"numberOfShards,omitempty"`
+
+	// ShardKeys contains the names of document attributes that are used to determine the target shard for documents.
+	// Only available in cluster setup.
+	ShardKeys []string `json:"shardKeys,omitempty"`
+
+	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
+	// Only available in cluster setup.
 	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
-	// Available from 3.6 arangod version.
-	WriteConcern         int              `json:"writeConcern,omitempty"`
-	SmartJoinAttribute   string           `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy     ShardingStrategy `json:"shardingStrategy,omitempty"`
-	DistributeShardsLike string           `json:"distributeShardsLike,omitempty"`
+
+	// WriteConcern contains how many copies must be available before a collection can be written.
+	// It is required that 1 <= WriteConcern <= ReplicationFactor.
+	// Default is 1. Not available for satellite collections.
+	// Available from 3.6 ArangoDB version.
+	WriteConcern int `json:"writeConcern,omitempty"`
+
+	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
+
+	// This attribute specifies the name of the sharding strategy to use for the collection.
+	// Can not be changed after creation.
+	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
+
+	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
+
 	// Available from 3.7 arangod version.
-	UsesRevisionsAsDocumentIds bool                     `json:"usesRevisionsAsDocumentIds,omitempty"`
-	SyncByRevision             bool                     `json:"syncByRevision,omitempty"`
-	Schema                     *CollectionSchemaOptions `json:"schema,omitempty"`
+	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
+
+	SyncByRevision bool `json:"syncByRevision,omitempty"`
+
+	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+
+	Revision string `json:"revision,omitempty"`
+
+	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
+	IsDisjoint bool `json:"isDisjoint,omitempty"`
+
+	IsSmartChild bool `json:"isSmartChild,omitempty"`
+
+	InternalValidatorType *int `json:"internalValidatorType, omitempty"`
+
+	// Set to create a smart edge or vertex collection.
+	// This requires ArangoDB Enterprise Edition.
+	IsSmart bool `json:"isSmart,omitempty"`
+
+	// StatusString represents status as a string.
+	StatusString string `json:"statusString,omitempty"`
+
+	TempObjectId string `json:"tempObjectId,omitempty"`
+
+	ObjectId string `json:"objectId,omitempty"`
 }
 
 func (p *collectionPropertiesInternal) asExternal() CollectionProperties {

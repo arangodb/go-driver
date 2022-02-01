@@ -112,7 +112,8 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 	if getContentTypeFromEnv(t) == driver.ContentTypeVelocypack {
 		t.Skip("Not supported on vpack")
 	}
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_emptyEntries_test", nil, t)
 	docs := []*UserDocWithKey{
@@ -270,7 +271,8 @@ func TestImportDocumentsDuplicateEntriesComplete(t *testing.T) {
 
 // TestImportDocumentsDuplicateEntriesUpdate imports documents and then checks that it exists.
 func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_duplicateEntriesUpdate_test", nil, t)
 	docs := []interface{}{
@@ -325,7 +327,8 @@ func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
 
 // TestImportDocumentsDuplicateEntriesReplace imports documents and then checks that it exists.
 func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_duplicateEntriesReplace_test", nil, t)
 	docs := []interface{}{
@@ -380,7 +383,8 @@ func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
 
 // TestImportDocumentsDuplicateEntriesIgnore imports documents and then checks that it exists.
 func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_duplicateEntriesIgnore_test", nil, t)
 	docs := []interface{}{
@@ -435,7 +439,8 @@ func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
 
 // TestImportDocumentsDetails imports documents and then checks that it exists.
 func TestImportDocumentsDetails(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_details_test", nil, t)
 	docs := []interface{}{
@@ -484,7 +489,8 @@ func TestImportDocumentsDetails(t *testing.T) {
 
 // TestImportDocumentsOverwriteYes imports documents and then checks that it exists.
 func TestImportDocumentsOverwriteYes(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_overwriteYes_test", nil, t)
 	docs := []interface{}{
@@ -523,7 +529,8 @@ func TestImportDocumentsOverwriteYes(t *testing.T) {
 
 // TestImportDocumentsOverwriteNo imports documents and then checks that it exists.
 func TestImportDocumentsOverwriteNo(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_overwriteNo_test", nil, t)
 	docs := []interface{}{

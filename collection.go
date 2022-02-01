@@ -87,8 +87,13 @@ type CollectionInfo struct {
 	Name string `json:"name,omitempty"`
 	// The status of the collection
 	Status CollectionStatus `json:"status,omitempty"`
+	// StatusString represents status as a string.
+	StatusString string `json:"statusString,omitempty"`
 	// The type of the collection
 	Type CollectionType `json:"type,omitempty"`
+	// Set to create a smart edge or vertex collection.
+	// This requires ArangoDB Enterprise Edition.
+	IsSmart bool `json:"isSmart,omitempty"`
 	// If true then the collection is a system collection.
 	IsSystem bool `json:"isSystem,omitempty"`
 	// Global unique name for the collection
@@ -113,7 +118,8 @@ type CollectionProperties struct {
 		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
 		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
 		// the _key attribute of documents is considered an error.
-		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
+		AllowUserKeys bool  `json:"allowUserKeys,omitempty"`
+		LastValue     int64 `json:"lastValue,omitempty"`
 	} `json:"keyOptions,omitempty"`
 	// NumberOfShards is the number of shards of the collection.
 	// Only available in cluster setup.
@@ -195,6 +201,9 @@ const (
 
 // CollectionStatistics contains the number of documents and additional statistical information about a collection.
 type CollectionStatistics struct {
+	ArangoError
+	CollectionProperties
+
 	//The number of documents currently present in the collection.
 	Count int64 `json:"count,omitempty"`
 	// The maximal size of a journal or datafile in bytes.
@@ -269,115 +278,19 @@ type CollectionStatistics struct {
 
 // CollectionShards contains shards information about a collection.
 type CollectionShards struct {
-	CollectionInfo
-
-	// CacheEnabled set cacheEnabled option in collection properties
-	CacheEnabled bool `json:"cacheEnabled,omitempty"`
-
-	// Set to create a smart edge or vertex collection.
-	// This requires ArangoDB Enterprise Edition.
-	IsSmart bool `json:"isSmart,omitempty"`
-
-	KeyOptions struct {
-		// Type specifies the type of the key generator. The currently available generators are traditional and autoincrement.
-		Type KeyGeneratorType `json:"type,omitempty"`
-		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
-		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
-		// the _key attribute of documents is considered an error.
-		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
-	} `json:"keyOptions,omitempty"`
-
-	// Deprecated: use 'WriteConcern' instead.
-	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
-
-	// NumberOfShards is the number of shards of the collection.
-	// Only available in cluster setup.
-	NumberOfShards int `json:"numberOfShards,omitempty"`
-
-	// This attribute specifies the name of the sharding strategy to use for the collection.
-	// Can not be changed after creation.
-	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
-
-	// ShardKeys contains the names of document attributes that are used to determine the target shard for documents.
-	// Only available in cluster setup.
-	ShardKeys []string `json:"shardKeys,omitempty"`
+	CollectionProperties
 
 	// Shards is a list of shards that belong to the collection.
 	// Each shard contains a list of DB servers where the first one is the leader and the rest are followers.
 	Shards map[ShardID][]ServerID `json:"shards,omitempty"`
-
-	// StatusString represents status as a string.
-	StatusString string `json:"statusString,omitempty"`
-
-	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
-	// Only available in cluster setup.
-	ReplicationFactor int `json:"replicationFactor,omitempty"`
-
-	// WaitForSync; If true then creating, changing or removing documents will wait
-	// until the data has been synchronized to disk.
-	WaitForSync bool `json:"waitForSync,omitempty"`
-
-	// WriteConcern contains how many copies must be available before a collection can be written.
-	// It is required that 1 <= WriteConcern <= ReplicationFactor.
-	// Default is 1. Not available for satellite collections.
-	// Available from 3.6 ArangoDB version.
-	WriteConcern int `json:"writeConcern,omitempty"`
 }
 
 type collectionShardsInternal struct {
-	CollectionInfo
-
-	// CacheEnabled set cacheEnabled option in collection properties
-	CacheEnabled bool `json:"cacheEnabled,omitempty"`
-
-	// Set to create a smart edge or vertex collection.
-	// This requires ArangoDB Enterprise Edition.
-	IsSmart bool `json:"isSmart,omitempty"`
-
-	KeyOptions struct {
-		// Type specifies the type of the key generator. The currently available generators are traditional and autoincrement.
-		Type KeyGeneratorType `json:"type,omitempty"`
-		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
-		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
-		// the _key attribute of documents is considered an error.
-		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
-	} `json:"keyOptions,omitempty"`
-
-	// Deprecated: use 'WriteConcern' instead.
-	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
-
-	// NumberOfShards is the number of shards of the collection.
-	// Only available in cluster setup.
-	NumberOfShards int `json:"numberOfShards,omitempty"`
-
-	// This attribute specifies the name of the sharding strategy to use for the collection.
-	// Can not be changed after creation.
-	ShardingStrategy ShardingStrategy `json:"shardingStrategy,omitempty"`
-
-	// ShardKeys contains the names of document attributes that are used to determine the target shard for documents.
-	// Only available in cluster setup.
-	ShardKeys []string `json:"shardKeys,omitempty"`
+	collectionPropertiesInternal
 
 	// Shards is a list of shards that belong to the collection.
 	// Each shard contains a list of DB servers where the first one is the leader and the rest are followers.
 	Shards map[ShardID][]ServerID `json:"shards,omitempty"`
-
-	// StatusString represents status as a string.
-	StatusString string `json:"statusString,omitempty"`
-
-	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
-	// Only available in cluster setup.
-	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
-
-	// WaitForSync; If true then creating, changing or removing documents will wait
-	// until the data has been synchronized to disk.
-	WaitForSync bool `json:"waitForSync,omitempty"`
-
-	// WriteConcern contains how many copies must be available before a collection can be written.
-	// It is required that 1 <= WriteConcern <= ReplicationFactor.
-	// Default is 1. Not available for satellite collections.
-	// Available from 3.6 ArangoDB version.
-	WriteConcern int `json:"writeConcern,omitempty"`
 }
 
 func (p *CollectionShards) fromInternal(i collectionShardsInternal) {

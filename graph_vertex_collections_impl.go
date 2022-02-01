@@ -29,6 +29,7 @@ import (
 
 type listVertexCollectionResponse struct {
 	Collections []string `json:"collections,omitempty"`
+	ArangoError `json:",inline"`
 }
 
 // VertexCollection opens a connection to an existing edge-collection within the graph.

@@ -41,7 +41,8 @@ func createDocument(ctx context.Context, col driver.Collection, document interfa
 
 // TestCreateDocument creates a document and then checks that it exists.
 func TestCreateDocument(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -70,7 +71,8 @@ func TestCreateDocument(t *testing.T) {
 
 // TestCreateDocumentWithKey creates a document with given key and then checks that it exists.
 func TestCreateDocumentWithKey(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "document_withKey_test", nil, t)
 	doc := UserDocWithKey{
@@ -104,7 +106,8 @@ func TestCreateDocumentWithKey(t *testing.T) {
 // TestCreateDocumentReturnNew creates a document and checks the document returned in in ReturnNew.
 func TestCreateDocumentReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -160,7 +163,8 @@ func TestCreateDocumentNil(t *testing.T) {
 // TestCreateDocumentInWaitForSyncCollection creates a document in a collection with waitForSync enabled,
 // and then checks that it exists.
 func TestCreateDocumentInWaitForSyncCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "TestCreateDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

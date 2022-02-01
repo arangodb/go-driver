@@ -63,7 +63,8 @@ func TestRemoveDocument(t *testing.T) {
 // TestRemoveDocumentReturnOld creates a document, removes it checks the ReturnOld value.
 func TestRemoveDocumentReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -174,7 +175,8 @@ func TestRemoveDocumentKeyEmpty(t *testing.T) {
 // removes it and then checks the removal has succeeded.
 func TestRemoveDocumentInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestRemoveDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

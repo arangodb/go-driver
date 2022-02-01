@@ -50,8 +50,9 @@ func (c *client) Version(ctx context.Context) (VersionInfo, error) {
 // roleResponse contains the response body of the `/admin/server/role` api.
 type roleResponse struct {
 	// Role of the server within a cluster
-	Role string `json:"role,omitempty"`
-	Mode string `json:"mode,omitempty"`
+	Role        string `json:"role,omitempty"`
+	Mode        string `json:"mode,omitempty"`
+	ArangoError `json:",inline"`
 }
 
 // asServerRole converts the response into a ServerRole

@@ -506,7 +506,8 @@ func TestImportVerticesDetails(t *testing.T) {
 // TestImportVerticesOverwriteYes imports documents and then checks that it exists.
 func TestImportVerticesOverwriteYes(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_overwriteYes_test", t)
@@ -547,7 +548,8 @@ func TestImportVerticesOverwriteYes(t *testing.T) {
 // TestImportVerticesOverwriteNo imports documents and then checks that it exists.
 func TestImportVerticesOverwriteNo(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_overwriteNo_test", t)

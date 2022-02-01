@@ -426,7 +426,8 @@ func TestRemoveArangoSearchView(t *testing.T) {
 // an AQL query.
 func TestUseArangoSearchView(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(nil, c, "view_test", nil, t)
 	col := ensureCollection(ctx, db, "some_collection", nil, t)

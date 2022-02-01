@@ -51,6 +51,7 @@ type userData struct {
 	Active         bool       `json:"active,omitempty"`
 	Extra          *RawObject `json:"extra,omitempty"`
 	ChangePassword bool       `json:"changePassword,omitempty"`
+	ArangoError
 }
 
 // relPath creates the relative path to this index (`_api/user/<name>`)

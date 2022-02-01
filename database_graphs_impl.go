@@ -77,7 +77,8 @@ func (d *database) GraphExists(ctx context.Context, name string) (bool, error) {
 }
 
 type getGraphsResponse struct {
-	Graphs []graphDefinition `json:"graphs,omitempty"`
+	Graphs      []graphDefinition `json:"graphs,omitempty"`
+	ArangoError `json:",inline"`
 }
 
 // Graphs returns a list of all graphs in the database.
