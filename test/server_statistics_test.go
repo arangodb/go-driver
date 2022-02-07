@@ -30,6 +30,7 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
+	"strings"
 )
 
 func checkEnabled(t *testing.T, c driver.Client, ctx context.Context) {
@@ -193,16 +194,15 @@ func TestServerStatisticsTraffic(t *testing.T) {
 	// Now check if user only stats are there and see if they should have increased:
 	if statsBefore.ClientUser.BytesReceived.Counts != nil {
 		t.Logf("New user only statistics API is present, testing...")
-		auth := os.Getenv("TEST_AUTHENTICATION")
-		if auth == "super:testing" {
-			t.Logf("Authentication %s is jwt superuser, expecting no user traffic...", auth)
+		if strings.HasPrefix(os.Getenv("TEST_AUTHENTICATION"), "super:") {
+			t.Logf("Authentication %s is jwt superuser, expecting no user traffic...", os.Getenv("TEST_AUTHENTICATION"))
 			// Traffic is superuser, so nothing should be counted in ClientUser,
 			// not even the statistics calls.
 			checkTrafficAtMost(t, &statsBefore, &statsAfter, user,
 				&limits{Sent: 0.1, Recv: 0.1,
 					SentCount: 0, RecvCount: 0}, "Cherry")
 		} else {
-			t.Logf("Authentication %s is not jwt superuser, expecting to see user traffic...", auth)
+			t.Logf("Authentication %s is not jwt superuser, expecting to see user traffic...", os.Getenv("TEST_AUTHENTICATION"))
 			// Traffic is either unauthenticated or with password, so there should
 			// be traffic in ClientUser
 			checkTrafficAtLeast(t, &statsBefore, &statsAfter, user,
@@ -246,7 +246,7 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	endpoints := conn.Endpoints()
 
 	if len(endpoints) < 2 {
-		t.Fatalf("Did not have at least two endpoints. Giving up.")
+		t.Skipf("Did not have at least two endpoints. Giving up.")
 	}
 
 	// Do a preliminary test to see if we can do some traffic on one coordinator
@@ -348,8 +348,7 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	// However, first coordinator should have counted the user traffic,
 	// note: it was just a single request with nearly no upload but quite
 	// some download:
-	auth := os.Getenv("TEST_AUTHENTICATION")
-	if auth != "super:testing" {
+	if !strings.HasPrefix(os.Getenv("TEST_AUTHENTICATION"), "super:") {
 		t.Logf("Checking user traffic on coordinator1...")
 		t.Logf("statsBefore1: %v\nstatsAfter1: %v", statsBefore1.ClientUser.BytesSent, statsAfter1.ClientUser.BytesSent)
 		checkTrafficAtLeast(t, &statsBefore1, &statsAfter1, user,
