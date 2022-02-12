@@ -80,6 +80,7 @@ func TestDefaultEdgeIndexes(t *testing.T) {
 
 // TestCreateFullTextIndex creates a collection with a full text index.
 func TestIndexes(t *testing.T) {
+	//t.Skip("skipping test (temporary)")
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 	col := ensureCollection(nil, db, "indexes_test", nil, t)
@@ -131,6 +132,7 @@ func TestIndexes(t *testing.T) {
 
 // TestMultipleIndexes creates a collection with a full text index.
 func TestMultipleIndexes(t *testing.T) {
+	//t.Skip("skipping test (temporary)")
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 	col := ensureCollection(nil, db, "multiple_indexes_test", nil, t)

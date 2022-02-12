@@ -620,6 +620,7 @@ func TestCollectionRevision(t *testing.T) {
 
 // TestCollectionStatistics creates a collection, checks statistics after adding documents.
 func TestCollectionStatistics(t *testing.T) {
+	t.Skip("skipping test (temporary)")
 	c := createClientFromEnv(t, true)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_statistics"

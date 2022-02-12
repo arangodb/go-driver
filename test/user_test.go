@@ -46,6 +46,7 @@ func ensureUser(ctx context.Context, c driver.Client, name string, options *driv
 	return u
 }
 
+// TODO velocity test
 // TestCreateUser creates a user and then checks that it exists.
 func TestCreateUser(t *testing.T) {
 	c := createClientFromEnv(t, true)

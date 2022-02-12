@@ -67,8 +67,6 @@ func (c *connectionDebugWrapper) Unmarshal(data driver.RawObject, result interfa
 			return driver.WithStack(errors.New(fmt.Sprintf("Struct: %s, Error: %s", reflect.TypeOf(result).String(), err.Error())))
 		}
 	case driver.ContentTypeVelocypack:
-		//TODO implement DisallowUnknownFields
-		panic("let's find a test which is using this ContentType")
 		if err := velocypack.Unmarshal(velocypack.Slice(data), result); err != nil {
 			return driver.WithStack(err)
 		}

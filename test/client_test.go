@@ -160,7 +160,7 @@ func createConnectionFromEnvWitLog(t testEnv, logger zerolog.Logger) driver.Conn
 
 // createConnectionFromEnv initializes a Connection from information specified in environment variables.
 func createConnectionFromEnv(t testEnv) driver.Connection {
-	// todo set to false
+	// todo set to false + add ENV
 	return createConnection(t, true)
 }
 
@@ -218,7 +218,7 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
 func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
-	// todo set to false
+	// todo set to false + add ENV
 	return createClient(t, waitUntilReady, true)
 }
 
