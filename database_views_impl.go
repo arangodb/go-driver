@@ -28,13 +28,16 @@ import (
 )
 
 type viewInfo struct {
-	ID   string   `json:"id,omitempty"`
 	Name string   `json:"name,omitempty"`
 	Type ViewType `json:"type,omitempty"`
+	ArangoID
+	ArangoError
 }
 
 type getViewResponse struct {
 	Result []viewInfo `json:"result,omitempty"`
+
+	ArangoError
 }
 
 // View opens a connection to an existing view within the database.

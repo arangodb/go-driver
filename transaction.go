@@ -71,5 +71,6 @@ type transactionCollectionsRequest struct {
 }
 
 type transactionResponse struct {
+	ArangoError
 	Result interface{} `json:"result"`
 }

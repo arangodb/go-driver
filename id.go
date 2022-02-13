@@ -27,6 +27,12 @@ import (
 	"strings"
 )
 
+// ArangoID is a generic Arango ID struct representation
+type ArangoID struct {
+	ID               string `json:"id,omitempty"`
+	GloballyUniqueId string `json:"globallyUniqueId,omitempty"`
+}
+
 // DocumentID references a document in a collection.
 // Format: collection/_key
 type DocumentID string

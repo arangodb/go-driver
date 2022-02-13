@@ -75,6 +75,7 @@ func (c *client) UserExists(ctx context.Context, name string) (bool, error) {
 
 type listUsersResponse struct {
 	Result []userData `json:"result,omitempty"`
+	ArangoError
 }
 
 // Users returns a list of all users found by the client.

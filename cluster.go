@@ -123,6 +123,16 @@ type DatabaseInventory struct {
 	Collections []InventoryCollection `json:"collections,omitempty"`
 	// Details of all views
 	Views []InventoryView `json:"views,omitempty"`
+	State State           `json:"state,omitempty"`
+	Tick  string          `json:"tick,omitempty"`
+}
+
+type State struct {
+	Running                bool      `json:"running,omitempty"`
+	LastLogTick            string    `json:"lastLogTick,omitempty"`
+	LastUncommittedLogTick string    `json:"lastUncommittedLogTick,omitempty"`
+	TotalEvents            int64     `json:"totalEvents,omitempty"`
+	Time                   time.Time `json:"time,omitempty"`
 }
 
 // IsReady returns true if the IsReady flag of all collections is set.
