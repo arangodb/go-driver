@@ -33,7 +33,8 @@ import (
 // TestReplaceDocument creates a document, replaces it and then checks the replacement has succeeded.
 func TestReplaceDocument(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -65,7 +66,8 @@ func TestReplaceDocument(t *testing.T) {
 // TestReplaceDocumentReturnOld creates a document, replaces it checks the ReturnOld value.
 func TestReplaceDocumentReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -94,7 +96,8 @@ func TestReplaceDocumentReturnOld(t *testing.T) {
 // TestReplaceDocumentReturnNew creates a document, replaces it checks the ReturnNew value.
 func TestReplaceDocumentReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -219,7 +222,8 @@ func TestReplaceDocumentUpdateNil(t *testing.T) {
 // replaces it and then checks the replacement has succeeded.
 func TestReplaceDocumentInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestReplaceDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

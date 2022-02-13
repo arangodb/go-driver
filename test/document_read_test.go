@@ -31,7 +31,8 @@ import (
 
 // TestReadDocumentWithIfMatch creates a document and reads it with a non-matching revision.
 func TestReadDocumentWithIfMatch(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_read_test", nil, t)
 	col := ensureCollection(nil, db, "document_read_test", nil, t)
 	doc := UserDoc{
@@ -50,7 +51,7 @@ func TestReadDocumentWithIfMatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read document: %s", describe(err))
 	}
-	if meta2 != meta {
+	if meta2.Key != meta.Key || meta2.Rev != meta.Rev || meta2.ID != meta.ID {
 		t.Error("Read wrong meta data.")
 	}
 

@@ -34,7 +34,8 @@ import (
 // TestReplaceDocuments creates documents, replaces them and then checks the replacements have succeeded.
 func TestReplaceDocuments(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -334,7 +335,8 @@ func TestReplaceDocumentsUpdateLenDiff(t *testing.T) {
 // replaces them and then checks the replacements have succeeded.
 func TestReplaceDocumentsInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestReplaceDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

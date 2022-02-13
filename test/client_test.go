@@ -160,6 +160,15 @@ func createConnectionFromEnvWitLog(t testEnv, logger zerolog.Logger) driver.Conn
 
 // createConnectionFromEnv initializes a Connection from information specified in environment variables.
 func createConnectionFromEnv(t testEnv) driver.Connection {
+	disallowUnknownFields := os.Getenv("TEST_DISALLOW_UNKNOWN_FIELDS")
+	if disallowUnknownFields == "true" {
+		return createConnection(t, true)
+	}
+	return createConnection(t, false)
+}
+
+// createConnection initializes a Connection from information specified in environment variables.
+func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 	connSpec := os.Getenv("TEST_CONNECTION")
 	connVer := os.Getenv("TEST_CVERSION")
 	switch connSpec {
@@ -184,6 +193,9 @@ func createConnectionFromEnv(t testEnv) driver.Connection {
 		if err != nil {
 			t.Fatalf("Failed to create new vst connection: %s", describe(err))
 		}
+		if disallowUnknownFields {
+			return http.NewConnectionDebugWrapper(conn, driver.ContentTypeVelocypack)
+		}
 		return conn
 
 	case "http", "":
@@ -196,6 +208,9 @@ func createConnectionFromEnv(t testEnv) driver.Connection {
 		if err != nil {
 			t.Fatalf("Failed to create new http connection: %s", describe(err))
 		}
+		if disallowUnknownFields {
+			return http.NewConnectionDebugWrapper(conn, config.ContentType)
+		}
 		return conn
 
 	default:
@@ -206,6 +221,15 @@ func createConnectionFromEnv(t testEnv) driver.Connection {
 
 // createClientFromEnv initializes a Client from information specified in environment variables.
 func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
+	disallowUnknownFields := os.Getenv("TEST_DISALLOW_UNKNOWN_FIELDS")
+	if disallowUnknownFields == "true" {
+		return createClient(t, waitUntilReady, true)
+	}
+	return createClient(t, waitUntilReady, false)
+}
+
+// createClient initializes a Client from information specified in environment variables.
+func createClient(t testEnv, waitUntilReady bool, disallowUnknownFields bool) driver.Client {
 	runPProfServerOnce.Do(func() {
 		if os.Getenv("TEST_PPROF") != "" {
 			go func() {
@@ -217,7 +241,7 @@ func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
 		}
 	})
 
-	conn := createConnectionFromEnv(t)
+	conn := createConnection(t, disallowUnknownFields)
 	if os.Getenv("TEST_REQUEST_LOG") != "" {
 		conn = WrapLogger(t, conn)
 	}

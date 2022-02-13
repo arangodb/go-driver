@@ -33,7 +33,8 @@ import (
 // TestUpdateDocument1 creates a document, updates it and then checks the update has succeeded.
 func TestUpdateDocument1(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -65,7 +66,8 @@ func TestUpdateDocument1(t *testing.T) {
 // TestUpdateDocumentReturnOld creates a document, updates it checks the ReturnOld value.
 func TestUpdateDocumentReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -94,7 +96,8 @@ func TestUpdateDocumentReturnOld(t *testing.T) {
 // TestUpdateDocumentReturnNew creates a document, updates it checks the ReturnNew value.
 func TestUpdateDocumentReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -125,7 +128,8 @@ func TestUpdateDocumentReturnNew(t *testing.T) {
 // TestUpdateDocumentKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateDocumentKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
@@ -171,7 +175,8 @@ func TestUpdateDocumentKeepNullTrue(t *testing.T) {
 // TestUpdateDocumentKeepNullFalse creates a document, updates it with KeepNull(false) and then checks the update has succeeded.
 func TestUpdateDocumentKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := Account{
@@ -301,7 +306,8 @@ func TestUpdateDocumentUpdateNil(t *testing.T) {
 // updates it and then checks the update has succeeded.
 func TestUpdateDocumentInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestUpdateDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

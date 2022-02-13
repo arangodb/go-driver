@@ -598,7 +598,8 @@ func TestImportEdgesDetails(t *testing.T) {
 // TestImportEdgesOverwriteYes imports documents and then checks that it exists.
 func TestImportEdgesOverwriteYes(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_overwriteYes_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -647,7 +648,8 @@ func TestImportEdgesOverwriteYes(t *testing.T) {
 // TestImportEdgesOverwriteNo imports documents and then checks that it exists.
 func TestImportEdgesOverwriteNo(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_overwriteNo_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -696,7 +698,8 @@ func TestImportEdgesOverwriteNo(t *testing.T) {
 // TestImportEdgesPrefix imports documents and then checks that it exists.
 func TestImportEdgesPrefix(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_prefix_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
