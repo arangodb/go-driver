@@ -143,9 +143,7 @@ func (c *collection) Revision(ctx context.Context) (string, error) {
 	if err := resp.CheckStatus(200); err != nil {
 		return "", WithStack(err)
 	}
-	var data struct {
-		Revision string `json:"revision,omitempty"`
-	}
+	var data CollectionProperties
 	if err := resp.ParseBody("", &data); err != nil {
 		return "", WithStack(err)
 	}
@@ -165,11 +163,11 @@ func (c *collection) Properties(ctx context.Context) (CollectionProperties, erro
 	if err := resp.CheckStatus(200); err != nil {
 		return CollectionProperties{}, WithStack(err)
 	}
-	var data collectionPropertiesInternal
+	var data CollectionProperties
 	if err := resp.ParseBody("", &data); err != nil {
 		return CollectionProperties{}, WithStack(err)
 	}
-	return data.asExternal(), nil
+	return data, nil
 }
 
 // SetProperties changes properties of the collection.
@@ -210,13 +208,10 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 		return CollectionShards{}, WithStack(err)
 	}
 
-	shardsInternal := collectionShardsInternal{}
-	if err := resp.ParseBody("", &shardsInternal); err != nil {
+	shards := CollectionShards{}
+	if err := resp.ParseBody("", &shards); err != nil {
 		return CollectionShards{}, WithStack(err)
 	}
-
-	var shards CollectionShards
-	shards.fromInternal(shardsInternal)
 
 	return shards, nil
 }
@@ -296,104 +291,36 @@ func (c *collection) Truncate(ctx context.Context) error {
 	return nil
 }
 
-type collectionPropertiesInternal struct {
-	CollectionInfo
-	WaitForSync  bool  `json:"waitForSync,omitempty"`
-	DoCompact    bool  `json:"doCompact,omitempty"`
-	JournalSize  int64 `json:"journalSize,omitempty"`
-	CacheEnabled bool  `json:"cacheEnabled,omitempty"`
-	KeyOptions   struct {
-		Type          KeyGeneratorType `json:"type,omitempty"`
-		AllowUserKeys bool             `json:"allowUserKeys,omitempty"`
-	} `json:"keyOptions,omitempty"`
-	NumberOfShards    int               `json:"numberOfShards,omitempty"`
-	ShardKeys         []string          `json:"shardKeys,omitempty"`
+type internalReplicationFactor struct {
 	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
-	// Deprecated: use 'WriteConcern' instead
-	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
-	// Available from 3.6 arangod version.
-	WriteConcern         int              `json:"writeConcern,omitempty"`
-	SmartJoinAttribute   string           `json:"smartJoinAttribute,omitempty"`
-	ShardingStrategy     ShardingStrategy `json:"shardingStrategy,omitempty"`
-	DistributeShardsLike string           `json:"distributeShardsLike,omitempty"`
-	// Available from 3.7 arangod version.
-	UsesRevisionsAsDocumentIds bool                     `json:"usesRevisionsAsDocumentIds,omitempty"`
-	SyncByRevision             bool                     `json:"syncByRevision,omitempty"`
-	Schema                     *CollectionSchemaOptions `json:"schema,omitempty"`
-}
-
-func (p *collectionPropertiesInternal) asExternal() CollectionProperties {
-	return CollectionProperties{
-		CollectionInfo:             p.CollectionInfo,
-		WaitForSync:                p.WaitForSync,
-		DoCompact:                  p.DoCompact,
-		JournalSize:                p.JournalSize,
-		CacheEnabled:               p.CacheEnabled,
-		KeyOptions:                 p.KeyOptions,
-		NumberOfShards:             p.NumberOfShards,
-		ShardKeys:                  p.ShardKeys,
-		ReplicationFactor:          int(p.ReplicationFactor),
-		MinReplicationFactor:       p.MinReplicationFactor,
-		WriteConcern:               p.WriteConcern,
-		SmartJoinAttribute:         p.SmartJoinAttribute,
-		ShardingStrategy:           p.ShardingStrategy,
-		DistributeShardsLike:       p.DistributeShardsLike,
-		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
-		SyncByRevision:             p.SyncByRevision,
-		Schema:                     p.Schema,
-	}
-}
-
-func (p *CollectionProperties) asInternal() collectionPropertiesInternal {
-	return collectionPropertiesInternal{
-		CollectionInfo:       p.CollectionInfo,
-		WaitForSync:          p.WaitForSync,
-		DoCompact:            p.DoCompact,
-		JournalSize:          p.JournalSize,
-		CacheEnabled:         p.CacheEnabled,
-		KeyOptions:           p.KeyOptions,
-		NumberOfShards:       p.NumberOfShards,
-		ShardKeys:            p.ShardKeys,
-		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
-		MinReplicationFactor: p.MinReplicationFactor,
-		WriteConcern:         p.WriteConcern,
-		SmartJoinAttribute:   p.SmartJoinAttribute,
-		ShardingStrategy:     p.ShardingStrategy,
-		Schema:               p.Schema,
-	}
-}
-
-func (p *CollectionProperties) fromInternal(i *collectionPropertiesInternal) {
-	p.CollectionInfo = i.CollectionInfo
-	p.WaitForSync = i.WaitForSync
-	p.DoCompact = i.DoCompact
-	p.JournalSize = i.JournalSize
-	p.CacheEnabled = i.CacheEnabled
-	p.KeyOptions = i.KeyOptions
-	p.NumberOfShards = i.NumberOfShards
-	p.ShardKeys = i.ShardKeys
-	p.ReplicationFactor = int(i.ReplicationFactor)
-	p.MinReplicationFactor = i.MinReplicationFactor
-	p.WriteConcern = i.WriteConcern
-	p.SmartJoinAttribute = i.SmartJoinAttribute
-	p.ShardingStrategy = i.ShardingStrategy
-	p.UsesRevisionsAsDocumentIds = i.UsesRevisionsAsDocumentIds
-	p.SyncByRevision = i.SyncByRevision
 }
 
 // MarshalJSON converts CollectionProperties into json
-func (p *CollectionProperties) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.asInternal())
+func (p CollectionProperties) MarshalJSON() ([]byte, error) {
+	type Alias CollectionProperties
+	return json.Marshal(&struct {
+		ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+		Alias
+	}{
+		ReplicationFactor: replicationFactor(p.ReplicationFactor),
+		Alias:             (Alias)(p),
+	})
 }
 
 // UnmarshalJSON loads CollectionProperties from json
 func (p *CollectionProperties) UnmarshalJSON(d []byte) error {
-	var internal collectionPropertiesInternal
-	if err := json.Unmarshal(d, &internal); err != nil {
+	type Alias CollectionProperties
+	out := &struct {
+		ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(p),
+	}
+	if err := json.Unmarshal(d, &out); err != nil {
 		return err
 	}
+	p.ReplicationFactor = int(out.ReplicationFactor)
 
-	p.fromInternal(&internal)
 	return nil
 }
 
