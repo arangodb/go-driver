@@ -13,21 +13,17 @@ import (
 )
 
 type connectionDebugWrapper struct {
-	connOrigin driver.Connection
-	ct         driver.ContentType
+	driver.Connection
+	ct driver.ContentType
 }
 
 func NewConnectionDebugWrapper(conn driver.Connection, ct driver.ContentType) driver.Connection {
 	return &connectionDebugWrapper{conn, ct}
 }
 
-func (c *connectionDebugWrapper) NewRequest(method, path string) (driver.Request, error) {
-	return c.connOrigin.NewRequest(method, path)
-}
-
 func (c *connectionDebugWrapper) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
 	if c.ct == driver.ContentTypeJSON {
-		resp, err := c.connOrigin.Do(ctx, req)
+		resp, err := c.Connection.Do(ctx, req)
 		if err != nil {
 			return resp, err
 		}
@@ -40,7 +36,7 @@ func (c *connectionDebugWrapper) Do(ctx context.Context, req driver.Request) (dr
 		return &responseDebugWrapper{httpResponse}, err
 
 	}
-	return c.connOrigin.Do(ctx, req)
+	return c.Connection.Do(ctx, req)
 }
 
 func (c *connectionDebugWrapper) Unmarshal(data driver.RawObject, result interface{}) error {
@@ -71,47 +67,13 @@ func (c *connectionDebugWrapper) Unmarshal(data driver.RawObject, result interfa
 			return driver.WithStack(err)
 		}
 	default:
-		return driver.WithStack(fmt.Errorf("Unsupported content type %d", int(c.ct)))
+		return driver.WithStack(fmt.Errorf("unsupported content type %d", int(c.ct)))
 	}
 	return nil
-
-	return c.connOrigin.Unmarshal(data, result)
-}
-
-func (c *connectionDebugWrapper) Endpoints() []string {
-	return c.connOrigin.Endpoints()
-}
-
-func (c *connectionDebugWrapper) UpdateEndpoints(endpoints []string) error {
-	return c.connOrigin.UpdateEndpoints(endpoints)
-}
-
-func (c *connectionDebugWrapper) SetAuthentication(authentication driver.Authentication) (driver.Connection, error) {
-	return c.connOrigin.SetAuthentication(authentication)
-}
-
-func (c *connectionDebugWrapper) Protocols() driver.ProtocolSet {
-	return c.connOrigin.Protocols()
 }
 
 type responseDebugWrapper struct {
 	*httpJSONResponse
-}
-
-func (r *responseDebugWrapper) StatusCode() int {
-	return r.httpJSONResponse.StatusCode()
-}
-
-func (r *responseDebugWrapper) Endpoint() string {
-	return r.httpJSONResponse.Endpoint()
-}
-
-func (r *responseDebugWrapper) CheckStatus(validStatusCodes ...int) error {
-	return r.httpJSONResponse.CheckStatus(validStatusCodes...)
-}
-
-func (r *responseDebugWrapper) Header(key string) string {
-	return r.httpJSONResponse.Header(key)
 }
 
 func (r *responseDebugWrapper) ParseBody(field string, result interface{}) error {
@@ -126,8 +88,4 @@ func (r *responseDebugWrapper) ParseBody(field string, result interface{}) error
 		}
 	}
 	return r.httpJSONResponse.ParseBody(field, result)
-}
-
-func (r *responseDebugWrapper) ParseArrayBody() ([]driver.Response, error) {
-	return r.httpJSONResponse.ParseArrayBody()
 }
