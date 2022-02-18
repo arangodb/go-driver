@@ -61,7 +61,7 @@ func skipOnK8S(t *testing.T) {
 }
 
 func isK8S() bool {
-	return os.Getenv("TEST_MODE") == "k8s"
+	return os.Getenv("TEST_MODE_K8S") == "k8s"
 }
 
 // skipBetweenVersion skips the test if the current server version is less than
