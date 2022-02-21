@@ -56,8 +56,6 @@ type CreateCollectionOptions struct {
 	// Currently, only the edge index respects this value, but other index types might follow in future ArangoDB versions.
 	// Changes are applied when the collection is loaded the next time.
 	IndexBuckets int `json:"indexBuckets,omitempty"`
-	// The indices of the collection.
-	Indexes []InventoryIndex `json:"indexes,omitempty"`
 	// Available from 3.9 ArangoD version.
 	InternalValidatorType int `json:"internalValidatorType,omitempty"`
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
@@ -65,8 +63,6 @@ type CreateCollectionOptions struct {
 	// Set to create a smart edge or vertex collection.
 	// This requires ArangoDB Enterprise Edition.
 	IsSmart bool `json:"isSmart,omitempty"`
-	// Available from 3.7 ArangoD version.
-	IsSmartChild bool `json:"isSmartChild,omitempty"`
 	// If true, create a system collection. In this case collection-name should start with an underscore.
 	// End users should normally create non-system collections only. API implementors may be required to create system
 	// collections in very special occasions, but normally a regular collection will do. (The default is false)
@@ -118,8 +114,6 @@ type CreateCollectionOptions struct {
 	SyncByRevision bool `json:"syncByRevision,omitempty"`
 	// The type of the collection to create. (default is CollectionTypeDocument)
 	Type CollectionType `json:"type,omitempty"`
-	// Available from 3.7 ArangoDB version
-	UsesRevisionsAsDocumentIds bool `json:"usesRevisionsAsDocumentIds,omitempty"`
 	// If true then the data is synchronized to disk before returning from a document create, update, replace or removal operation. (default: false)
 	WaitForSync bool `json:"waitForSync,omitempty"`
 	// WriteConcern contains how many copies must be available before a collection can be written.

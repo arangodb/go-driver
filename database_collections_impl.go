@@ -106,11 +106,9 @@ type createCollectionOptionsInternal struct {
 	DistributeShardsLike  string                `json:"distributeShardsLike,omitempty"`
 	DoCompact             *bool                 `json:"doCompact,omitempty"`
 	IndexBuckets          int                   `json:"indexBuckets,omitempty"`
-	Indexes               []InventoryIndex      `json:"indexes,omitempty"`
 	InternalValidatorType int                   `json:"internalValidatorType,omitempty"`
 	IsDisjoint            bool                  `json:"isDisjoint,omitempty"`
 	IsSmart               bool                  `json:"isSmart,omitempty"`
-	IsSmartChild          bool                  `json:"isSmartChild,omitempty"`
 	IsSystem              bool                  `json:"isSystem,omitempty"`
 	IsVolatile            bool                  `json:"isVolatile,omitempty"`
 	JournalSize           int                   `json:"journalSize,omitempty"`
@@ -163,35 +161,14 @@ func (d *database) CreateCollection(ctx context.Context, name string, options *C
 	return col, nil
 }
 
-// func (p *CreateCollectionOptions) asInternal() createCollectionOptionsInternal {
-// 	return createCollectionOptionsInternal{
-// 		JournalSize:          p.JournalSize,
-// 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
-// 		WaitForSync:          p.WaitForSync,
-// 		DoCompact:            p.DoCompact,
-// 		IsVolatile:           p.IsVolatile,
-// 		ShardKeys:            p.ShardKeys,
-// 		NumberOfShards:       p.NumberOfShards,
-// 		IsSystem:             p.IsSystem,
-// 		Type:                 p.Type,
-// 		IndexBuckets:         p.IndexBuckets,
-// 		KeyOptions:           p.KeyOptions,
-// 		DistributeShardsLike: p.DistributeShardsLike,
-// 		IsSmart:              p.IsSmart,
-// 		SmartGraphAttribute:  p.SmartGraphAttribute,
-// 	}
-// }
-
 func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOptions) {
 	p.CacheEnabled = i.CacheEnabled
 	p.DistributeShardsLike = i.DistributeShardsLike
 	p.DoCompact = i.DoCompact
 	p.IndexBuckets = i.IndexBuckets
-	p.Indexes = i.Indexes
 	p.InternalValidatorType = i.InternalValidatorType
 	p.IsDisjoint = i.IsDisjoint
 	p.IsSmart = i.IsSmart
-	p.IsSmartChild = i.IsSmartChild
 	p.IsSystem = i.IsSystem
 	p.IsVolatile = i.IsVolatile
 	p.JournalSize = i.JournalSize
@@ -209,19 +186,3 @@ func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOption
 	p.WaitForSync = i.WaitForSync
 	p.WriteConcern = i.WriteConcern
 }
-
-// // MarshalJSON converts CreateCollectionOptions into json
-// func (p *CreateCollectionOptions) MarshalJSON() ([]byte, error) {
-// 	return json.Marshal(p.asInternal())
-// }
-
-// // UnmarshalJSON loads CreateCollectionOptions from json
-// func (p *CreateCollectionOptions) UnmarshalJSON(d []byte) error {
-// 	var internal createCollectionOptionsInternal
-// 	if err := json.Unmarshal(d, &internal); err != nil {
-// 		return err
-// 	}
-
-// 	p.fromInternal(&internal)
-// 	return nil
-// }
