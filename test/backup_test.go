@@ -36,6 +36,11 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+func waitForHealthyClusterAfterBackup(t *testing.T, client driver.Client) {
+	time.Sleep(5 * time.Second)
+	waitForHealthyCluster(t, client, 2*time.Second).RetryT(t, 125*time.Millisecond, 10*time.Second)
+}
+
 var backupAPIAvailable *bool
 
 func setBackupAvailable(av bool) {
@@ -421,6 +426,7 @@ func TestBackupRestore(t *testing.T) {
 	if err := b.Restore(ctx, id, nil); err != nil {
 		t.Fatalf("Failed to restore backup: %s", describe(err))
 	}
+	defer waitForHealthyClusterAfterBackup(t, c)
 
 	if isSingle {
 		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -672,6 +678,7 @@ func TestBackupCompleteCycle(t *testing.T) {
 	if err := b.Restore(ctx, id, nil); err != nil {
 		t.Fatalf("Failed to restore backup: %s", describe(err))
 	}
+	defer waitForHealthyClusterAfterBackup(t, c)
 
 	if isSingle {
 		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -759,75 +766,6 @@ func TestBackupCreateManyBackupsFast(t *testing.T) {
 	}
 }
 
-func TestBackupCreateRestoreParallel(t *testing.T) {
-	c := createClientFromEnv(t, true)
-	skipIfNoBackup(c, t)
-
-	ctx := context.Background()
-	b := c.Backup()
-	id := ensureBackup(ctx, b, t)
-
-	isSingle := false
-	if role, err := c.ServerRole(ctx); err != nil {
-		t.Fatalf("Failed to obtain server role: %s", describe(err))
-	} else {
-		isSingle = role == driver.ServerRoleSingle
-	}
-
-	errchan := make(chan error)
-	defer close(errchan)
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if _, _, err := b.Create(ctx, nil); err == nil {
-			errchan <- nil
-		} else {
-			errchan <- err
-			t.Logf("Create failed: %s", describe(err))
-		}
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := b.Restore(ctx, id, nil); err == nil {
-			errchan <- nil
-			if isSingle {
-				waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-				defer cancel()
-				c = waitForServerRestart(waitctx, c, t)
-			}
-		} else {
-			errchan <- err
-			t.Logf("Restore failed: %s", describe(err))
-		}
-	}()
-
-	errCount := 0
-	for i := 0; i < 2; i++ {
-		err := <-errchan
-		if err != nil {
-			errCount++
-		}
-	}
-
-	wg.Wait()
-
-	if errCount >= 2 {
-		t.Fatalf("Both operation failed!")
-	}
-}
-
-func ensureRemoteBackup(ctx context.Context, b driver.ClientBackup, t *testing.T) driver.BackupID {
-	id := ensureBackup(ctx, b, t)
-	uploadBackupWaitForCompletion(ctx, id, b, t)
-	if err := b.Delete(ctx, id); err != nil {
-		t.Fatalf("Failed to remove backup: %s", err)
-	}
-	return id
-}
-
 func TestBackupRestoreWithViews(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	skipIfNoBackup(c, t)
@@ -890,6 +828,7 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	if err := b.Restore(ctx, id, nil); err != nil {
 		t.Fatalf("Failed to restore backup: %s", describe(err))
 	}
+	defer waitForHealthyClusterAfterBackup(t, c)
 
 	if isSingle {
 		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)

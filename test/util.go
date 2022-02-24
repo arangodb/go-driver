@@ -229,3 +229,48 @@ func getCallerFunctionName() string {
 
 	return function[0] + "_" + uniuri.NewLen(6)
 }
+
+func waitForHealthyCluster(t *testing.T, client driver.Client, timeout time.Duration) retryFunc {
+	return func() error {
+		ctx, c := context.WithTimeout(context.Background(), timeout)
+		defer c()
+
+		cluster, err := client.Cluster(ctx)
+		if err != nil {
+			if !driver.IsPreconditionFailed(err) {
+				t.Logf("Unable to get cluster: %s", err.Error())
+				return nil
+			}
+			// We are on single, check version
+
+			_, err = client.Version(ctx)
+			if err == nil {
+				return interrupt{}
+			}
+
+			t.Logf("Unable to get version: %s", err.Error())
+			return nil
+		}
+
+		health, err := cluster.Health(ctx)
+		if err != nil {
+			t.Logf("Unable to get health: %s", err.Error())
+			return nil
+		}
+
+		healthy := true
+
+		for id, m := range health.Health {
+			if m.Status != driver.ServerStatusGood {
+				healthy = false
+				t.Logf("Server %s in bad health: %s", id, m.Status)
+			}
+		}
+
+		if healthy {
+			return interrupt{}
+		}
+
+		return nil
+	}
+}
