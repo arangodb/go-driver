@@ -85,7 +85,8 @@ func TestCreateCursorWithMaxRuntime(t *testing.T) {
 // TestCreateCursor creates several cursors.
 func TestCreateCursor(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "cursor_test", nil, t)
 
 	// Create data set
@@ -327,7 +328,8 @@ func TestCreateCursorReturnNull(t *testing.T) {
 func TestCreateStreamCursor(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 
 	version, err := c.Version(nil)
 	if err != nil {

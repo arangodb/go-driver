@@ -40,7 +40,14 @@ func TestConcurrentCreateSmallDocuments(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skip on short tests")
 	}
-	c := createClientFromEnv(t, true)
+
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
+
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 
 	version, err := c.Version(nil)
 	if err != nil {
@@ -124,7 +131,14 @@ func TestConcurrentCreateBigDocuments(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skip on short tests")
 	}
-	c := createClientFromEnv(t, true)
+
+	// Disable those tests for active failover
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
+
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 
 	version, err := c.Version(nil)
 	if err != nil {

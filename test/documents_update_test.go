@@ -35,7 +35,8 @@ import (
 // TestUpdateDocuments1 creates documents, updates them and then checks the updates have succeeded.
 func TestUpdateDocuments1(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -187,7 +188,8 @@ func TestUpdateDocumentsReturnNew(t *testing.T) {
 // TestUpdateDocumentsKeepNullTrue creates documents, updates them with KeepNull(true) and then checks the updates have succeeded.
 func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
@@ -253,7 +255,8 @@ func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 // TestUpdateDocumentsKeepNullFalse creates documents, updates them with KeepNull(false) and then checks the updates have succeeded.
 func TestUpdateDocumentsKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []Account{
@@ -457,7 +460,8 @@ func TestUpdateDocumentsUpdateLenDiff(t *testing.T) {
 // updates them and then checks the updates have succeeded.
 func TestUpdateDocumentsInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestUpdateDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

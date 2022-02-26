@@ -376,7 +376,8 @@ func TestCollectionName(t *testing.T) {
 
 // TestCollectionTruncate creates a collection, adds some documents and truncates it.
 func TestCollectionTruncate(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_truncate"
 	col, err := db.CreateCollection(nil, name, nil)

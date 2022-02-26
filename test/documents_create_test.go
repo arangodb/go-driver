@@ -32,7 +32,8 @@ import (
 
 // TestCreateDocuments creates a document and then checks that it exists.
 func TestCreateDocuments(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -90,7 +91,8 @@ func TestCreateDocuments(t *testing.T) {
 // TestCreateDocumentsReturnNew creates a document and checks the document returned in in ReturnNew.
 func TestCreateDocumentsReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -185,7 +187,8 @@ func TestCreateDocumentsNonSlice(t *testing.T) {
 
 // TestCreateDocumentsInWaitForSyncCollection creates a few documents in a collection with waitForSync enabled and then checks that it exists.
 func TestCreateDocumentsInWaitForSyncCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "TestCreateDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,
