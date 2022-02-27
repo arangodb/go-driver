@@ -53,9 +53,9 @@ type graphDefinition struct {
 
 	Initial    *string    `json:"initial,omitempty"`
 	InitialCid int        `json:"initialCid,omitempty"`
-	Key        string     `json:"_key,omitempty"`
-	ID         DocumentID `json:"_id,omitempty"`
-	Rev        string     `json:"_rev,omitempty"`
+	ID         string     `json:"_id"`
+	Key        DocumentID `json:"_key"`
+	Rev        string     `json:"_rev"`
 }
 
 type getGraphResponse struct {

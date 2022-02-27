@@ -71,6 +71,56 @@ func (g *graph) Name() string {
 	return g.input.Name
 }
 
+// ID returns the id of the graph.
+func (g *graph) ID() string {
+	return g.input.ID
+}
+
+// Key returns the key of the graph.
+func (g *graph) Key() DocumentID {
+	return g.input.Key
+}
+
+// Key returns the key of the graph.
+func (g *graph) Rev() string {
+	return g.input.Rev
+}
+
+// EdgeDefinitions returns the edge definitions of the graph.
+func (g *graph) EdgeDefinitions() []EdgeDefinition {
+	return g.input.EdgeDefinitions
+}
+
+// IsSmart returns the isSmart setting of the graph.
+func (g *graph) SmartGraphAttribute() string {
+	return g.input.SmartGraphAttribute
+}
+
+// MinReplicationFactor returns the minimum replication factor for the graph.
+func (g *graph) MinReplicationFactor() int {
+	return g.input.MinReplicationFactor
+}
+
+// NumberOfShards returns the number of shards for the graph.
+func (g *graph) NumberOfShards() int {
+	return g.input.NumberOfShards
+}
+
+// OrphanCollections returns the orphan collcetions of the graph.
+func (g *graph) OrphanCollections() []string {
+	return g.input.OrphanCollections
+}
+
+// ReplicationFactor returns the current replication factor.
+func (g *graph) ReplicationFactor() int {
+	return int(g.input.ReplicationFactor)
+}
+
+// WriteConcern returns the write concern setting of the graph.
+func (g *graph) WriteConcern() int {
+	return g.input.WriteConcern
+}
+
 // Remove removes the entire graph.
 // If the graph does not exist, a NotFoundError is returned.
 func (g *graph) Remove(ctx context.Context) error {
