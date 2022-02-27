@@ -95,7 +95,7 @@ func (r *httpJSONResponse) ParseBody(field string, result interface{}) error {
 		r.bodyObject = bodyMap
 	}
 	if result != nil {
-		if err := parseBody(r.bodyObject, field, result); err != nil {
+		if err := parseBody(r.bodyObject, field, result, r.rawResponse); err != nil {
 			return driver.WithStack(err)
 		}
 	}
@@ -119,7 +119,7 @@ func (r *httpJSONResponse) ParseArrayBody() ([]driver.Response, error) {
 	return resps, nil
 }
 
-func parseBody(bodyObject map[string]*json.RawMessage, field string, result interface{}) error {
+func parseBody(bodyObject map[string]*json.RawMessage, field string, result interface{}, rawResponse []byte) error {
 	if field != "" {
 		// Unmarshal only a specific field
 		raw, ok := bodyObject[field]
@@ -138,6 +138,18 @@ func parseBody(bodyObject map[string]*json.RawMessage, field string, result inte
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return &json.InvalidUnmarshalError{Type: reflect.TypeOf(result)}
 	}
+
+	// Use custom UnmarshalJSON method if exist
+	rt := reflect.TypeOf(result)
+	_, ok := rt.MethodByName("UnmarshalJSON")
+	if ok {
+		fmt.Println("custom Unmarshal method exist and will be used")
+		if err := json.Unmarshal(rawResponse, result); err != nil {
+			return driver.WithStack(err)
+		}
+		return nil
+	}
+
 	objValue := rv.Elem()
 	switch objValue.Kind() {
 	case reflect.Struct:

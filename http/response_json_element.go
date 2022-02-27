@@ -99,7 +99,7 @@ func (r *httpJSONResponseElement) Header(key string) string {
 // If the given field is non-empty, the contents of that field will be parsed into the given result.
 func (r *httpJSONResponseElement) ParseBody(field string, result interface{}) error {
 	if result != nil {
-		if err := parseBody(r.bodyObject, field, result); err != nil {
+		if err := parseBody(r.bodyObject, field, result, nil); err != nil {
 			return driver.WithStack(err)
 		}
 	}
