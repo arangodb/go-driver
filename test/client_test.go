@@ -254,6 +254,10 @@ func createClient(t testEnv, waitUntilReady bool, disallowUnknownFields bool) dr
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
 
+	if os.Getenv("TEST_NOT_WAIT_UNTIL_READY") != "" {
+		waitUntilReady = false
+	}
+
 	if waitUntilReady {
 		timeout := time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)

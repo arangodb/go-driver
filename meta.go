@@ -24,9 +24,11 @@ package driver
 
 // DocumentMeta contains all meta data used to identifier a document.
 type DocumentMeta struct {
-	Key string     `json:"_key,omitempty"`
-	ID  DocumentID `json:"_id,omitempty"`
-	Rev string     `json:"_rev,omitempty"`
+	Name   string     `json:"name,omitempty"`
+	Key    string     `json:"_key,omitempty"`
+	ID     DocumentID `json:"_id,omitempty"`
+	Rev    string     `json:"_rev,omitempty"`
+	OldRev string     `json:"_oldRev,omitempty"`
 }
 
 // validateKey returns an error if the given key is empty otherwise invalid.

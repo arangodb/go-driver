@@ -71,6 +71,7 @@ func (c *client) DatabaseExists(ctx context.Context, name string) (bool, error) 
 
 type getDatabaseResponse struct {
 	Result []string `json:"result,omitempty"`
+	ArangoError
 }
 
 // Databases returns a list of all databases found by the client.

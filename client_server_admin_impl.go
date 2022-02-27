@@ -28,6 +28,7 @@ import (
 
 type serverModeResponse struct {
 	Mode ServerMode `json:"mode"`
+	ArangoError
 }
 
 type serverModeRequest struct {

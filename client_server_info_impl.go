@@ -52,6 +52,7 @@ type roleResponse struct {
 	// Role of the server within a cluster
 	Role string `json:"role,omitempty"`
 	Mode string `json:"mode,omitempty"`
+	ArangoError
 }
 
 // asServerRole converts the response into a ServerRole

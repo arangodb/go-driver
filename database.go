@@ -103,5 +103,6 @@ func (t EngineType) String() string {
 
 // EngineInfo contains information about the database engine being used.
 type EngineInfo struct {
-	Type EngineType `json:"name"`
+	Type     EngineType             `json:"name"`
+	Supports map[string]interface{} `json:"supports,omitempty"`
 }

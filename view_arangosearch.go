@@ -247,9 +247,17 @@ type ArangoSearchAnalyzerDefinition struct {
 	Type       ArangoSearchAnalyzerType       `json:"type,omitempty"`
 	Properties ArangoSearchAnalyzerProperties `json:"properties,omitempty"`
 	Features   []ArangoSearchAnalyzerFeature  `json:"features,omitempty"`
+	ArangoError
 }
 
-// ArangoSearchViewProperties contains properties an an ArangoSearch view.
+type ArangoSearchViewBase struct {
+	Type ViewType `json:"type,omitempty"`
+	Name string   `json:"name,omitempty"`
+	ArangoID
+	ArangoError
+}
+
+// ArangoSearchViewProperties contains properties on an ArangoSearch view.
 type ArangoSearchViewProperties struct {
 	// CleanupIntervalStep specifies the minimum number of commits to wait between
 	// removing unused files in the data directory.
@@ -294,12 +302,38 @@ type ArangoSearchViewProperties struct {
 	WriteBufferSizeMax *int64 `json:"writebufferSizeMax,omitempty"`
 
 	// Links contains the properties for how individual collections
-	// are indexed in thie view.
+	// are indexed in the view.
 	// The key of the map are collection names.
 	Links ArangoSearchLinks `json:"links,omitempty"`
 
 	// PrimarySort describes how individual fields are sorted
 	PrimarySort []ArangoSearchPrimarySortEntry `json:"primarySort,omitempty"`
+
+	// PrimarySortCompression Defines how to compress the primary sort data (introduced in v3.7.1).
+	// ArangoDB v3.5 and v3.6 always compress the index using LZ4. This option is immutable.
+	PrimarySortCompression PrimarySortCompression `json:"primarySortCompression,omitempty"`
+
+	// StoredValues An array of objects to describe which document attributes to store in the View index (introduced in v3.7.1).
+	// It can then cover search queries, which means the data can be taken from the index directly and accessing the storage engine can be avoided.
+	// This option is immutable.
+	StoredValues []StoredValue `json:"storedValues,omitempty"`
+
+	ArangoSearchViewBase
+}
+
+// PrimarySortCompression Defines how to compress the primary sort data (introduced in v3.7.1)
+type PrimarySortCompression string
+
+const (
+	// PrimarySortCompressionLz4 (default): use LZ4 fast compression.
+	PrimarySortCompressionLz4 PrimarySortCompression = "lz4"
+	// PrimarySortCompressionNone disable compression to trade space for speed.
+	PrimarySortCompressionNone PrimarySortCompression = "none"
+)
+
+type StoredValue struct {
+	Fields      []string               `json:"fields,omitempty"`
+	Compression PrimarySortCompression `json:"compression,omitempty"`
 }
 
 // ArangoSearchSortDirection describes the sorting direction
@@ -368,10 +402,11 @@ type ArangoSearchConsolidationPolicyBytesAccum struct {
 
 // ArangoSearchConsolidationPolicyTier contains fields used for ArangoSearchConsolidationPolicyTypeTier
 type ArangoSearchConsolidationPolicyTier struct {
+	MinScore *int64 `json:"minScore,omitempty"`
 	// MinSegments specifies the minimum number of segments that will be evaluated as candidates for consolidation.
-	MinSegments *int64 `json:"minSegments,omitempty"`
+	MinSegments *int64 `json:"segmentsMin,omitempty"`
 	// MaxSegments specifies the maximum number of segments that will be evaluated as candidates for consolidation.
-	MaxSegments *int64 `json:"maxSegments,omitempty"`
+	MaxSegments *int64 `json:"segmentsMax,omitempty"`
 	// SegmentsBytesMax specifies the maxinum allowed size of all consolidated segments in bytes.
 	SegmentsBytesMax *int64 `json:"segmentsBytesMax,omitempty"`
 	// SegmentsBytesFloor defines the value (in bytes) to treat all smaller segments as equal for consolidation selection.

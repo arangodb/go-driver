@@ -75,6 +75,7 @@ type ServerStatistics struct {
 	ClientUser ClientStats `json:"clientUser,omitempty"`
 	HTTP       HTTPStats   `json:"http"`
 	Server     ServerStats `json:"server"`
+	ArangoError
 }
 
 // SystemStats contains statistical data about the system, this is part of
@@ -110,16 +111,18 @@ type ClientStats struct {
 
 // HTTPStats contains statistics about the HTTP traffic.
 type HTTPStats struct {
-	RequestsTotal   int64 `json:"requestsTotal"`
-	RequestsAsync   int64 `json:"requestsAsync"`
-	RequestsGet     int64 `json:"requestsGet"`
-	RequestsHead    int64 `json:"requestsHead"`
-	RequestsPost    int64 `json:"requestsPost"`
-	RequestsPut     int64 `json:"requestsPut"`
-	RequestsPatch   int64 `json:"requestsPatch"`
-	RequestsDelete  int64 `json:"requestsDelete"`
-	RequestsOptions int64 `json:"requestsOptions"`
-	RequestsOther   int64 `json:"requestsOther"`
+	RequestsTotal     int64 `json:"requestsTotal"`
+	RequestsAsync     int64 `json:"requestsAsync"`
+	RequestsGet       int64 `json:"requestsGet"`
+	RequestsHead      int64 `json:"requestsHead"`
+	RequestsPost      int64 `json:"requestsPost"`
+	RequestsPut       int64 `json:"requestsPut"`
+	RequestsPatch     int64 `json:"requestsPatch"`
+	RequestsDelete    int64 `json:"requestsDelete"`
+	RequestsOptions   int64 `json:"requestsOptions"`
+	RequestsOther     int64 `json:"requestsOther"`
+	RequestsSuperuser int64 `json:"requestsSuperuser,omitempty"`
+	RequestsUser      int64 `json:"requestsUser,omitempty"`
 }
 
 // TransactionStats contains statistics about transactions.
@@ -128,6 +131,7 @@ type TransactionStats struct {
 	Aborted             int64 `json:"aborted"`
 	Committed           int64 `json:"committed"`
 	IntermediateCommits int64 `json:"intermediateCommits"`
+	ReadOnly            int64 `json:"readOnly,omitempty"`
 }
 
 // MemoryStats contains statistics about memory usage.
@@ -137,6 +141,7 @@ type MemoryStats struct {
 	CountOfTimes int64   `json:"countOfTimes"`
 	HeapMax      int64   `json:"heapMax"`
 	HeapMin      int64   `json:"heapMin"`
+	Invocations  int64   `json:"invocations,omitempty"`
 }
 
 // V8ContextStats contains statistics about V8 contexts.
@@ -145,6 +150,7 @@ type V8ContextStats struct {
 	Busy      int64         `json:"busy"`
 	Dirty     int64         `json:"dirty"`
 	Free      int64         `json:"free"`
+	Min       int64         `json:"min,omitempty"`
 	Max       int64         `json:"max"`
 	Memory    []MemoryStats `json:"memory"`
 }
