@@ -24,6 +24,9 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -123,9 +126,8 @@ type DatabaseInventory struct {
 	Collections []InventoryCollection `json:"collections,omitempty"`
 	// Details of all views
 	Views []InventoryView `json:"views,omitempty"`
-	// Todo 'State' filed can be String os State type - it will be handled with Custom JSON Marshalers in v2 version
-	State interface{} `json:"state,omitempty"`
-	Tick  string      `json:"tick,omitempty"`
+	State State           `json:"state,omitempty"`
+	Tick  string          `json:"tick,omitempty"`
 }
 
 type State struct {
@@ -134,6 +136,36 @@ type State struct {
 	LastUncommittedLogTick string    `json:"lastUncommittedLogTick,omitempty"`
 	TotalEvents            int64     `json:"totalEvents,omitempty"`
 	Time                   time.Time `json:"time,omitempty"`
+}
+
+// UnmarshalJSON marshals State to arangodb json representation
+func (s *State) UnmarshalJSON(d []byte) error {
+	var internal interface{}
+
+	if err := json.Unmarshal(d, &internal); err != nil {
+		return err
+	}
+
+	if val, ok := internal.(string); ok {
+		if val != "unused" {
+			fmt.Printf("unrecognized State value: %s\n", val)
+		}
+		*s = State{}
+		return nil
+	} else {
+		type Alias State
+		out := Alias{}
+
+		if err := json.Unmarshal(d, &out); err != nil {
+			return &json.UnmarshalTypeError{
+				Value: string(d),
+				Type:  reflect.TypeOf(s).Elem(),
+			}
+		}
+		*s = State(out)
+	}
+
+	return nil
 }
 
 // IsReady returns true if the IsReady flag of all collections is set.
