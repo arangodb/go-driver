@@ -123,8 +123,9 @@ type DatabaseInventory struct {
 	Collections []InventoryCollection `json:"collections,omitempty"`
 	// Details of all views
 	Views []InventoryView `json:"views,omitempty"`
-	State State           `json:"state,omitempty"`
-	Tick  string          `json:"tick,omitempty"`
+	// Todo 'State' filed can be String os State type - it will be handled with Custom JSON Marshalers in v2 version
+	State interface{} `json:"state,omitempty"`
+	Tick  string      `json:"tick,omitempty"`
 }
 
 type State struct {
