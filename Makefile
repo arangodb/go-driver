@@ -370,6 +370,7 @@ __test_go_test:
 		--net=$(TEST_NET) \
 		-v "${ROOTDIR}":/usr/code ${TEST_RESOURCES_VOLUME} \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
+		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
 		-e TEST_CONNECTION=$(TEST_CONNECTION) \
@@ -397,6 +398,7 @@ __test_v2_go_test:
 		--net=$(TEST_NET) \
 		-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
+		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
 		-e TEST_AUTHENTICATION=$(TEST_AUTHENTICATION) \
 		-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
 		-e TEST_MODE=$(TEST_MODE) \
@@ -458,6 +460,7 @@ run-tests-cluster-failover:
 		--privileged \
 		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
+		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
 		-e TEST_AUTHENTICATION=basic:root: \
 		-e GODEBUG=tls13=1 \
 		-w /usr/code/ \
