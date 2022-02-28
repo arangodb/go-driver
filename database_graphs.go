@@ -83,7 +83,7 @@ type CreateGraphOptions struct {
 type EdgeDefinition struct {
 	// The name of the edge collection to be used.
 	Collection string `json:"collection"`
-	// To contains the names of one or more edge collections that can contain target vertices.
+	// To contains the names of one or more vertex collections that can contain target vertices.
 	To []string `json:"to"`
 	// From contains the names of one or more vertex collections that can contain source vertices.
 	From []string `json:"from"`
