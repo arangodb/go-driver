@@ -55,6 +55,7 @@ func TestContextParentNil(t *testing.T) {
 
 func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
 	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.9", t)
 
 	t.Run("without timout", func(t *testing.T) {
 		_, err := c.Version(context.Background())
