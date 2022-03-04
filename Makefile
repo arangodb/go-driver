@@ -391,7 +391,9 @@ __test_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
-		$(DOCKER_RUN_CMD)
+		$(DOCKER_RUN_CMD) && echo "success!" || \
+			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
 
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
@@ -413,7 +415,9 @@ __test_v2_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/v2/ \
-		$(DOCKER_V2_RUN_CMD)
+		$(DOCKER_V2_RUN_CMD) && echo "success!" || \
+			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
