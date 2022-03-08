@@ -69,7 +69,7 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 	ARANGOARGS := --server.jwt-secret=/jwtsecret
 endif
 
-TEST_NET := container:$(TESTCONTAINER)-ns
+TEST_NET := --net=container:$(TESTCONTAINER)-ns
 TEST_ENDPOINTS := http://localhost:7001
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
@@ -105,8 +105,12 @@ ifeq ("$(TEST_BENCHMARK)", "true")
 endif
 
 ifdef TEST_ENDPOINTS_OVERRIDE
-	TEST_NET := host 
+	TEST_NET := --net=host
 	TEST_ENDPOINTS := $(TEST_ENDPOINTS_OVERRIDE)
+endif
+
+ifdef TEST_NET_OVERRIDE
+	TEST_NET := $(TEST_NET_OVERRIDE)
 endif
 
 ifdef ENABLE_VST11
@@ -367,7 +371,7 @@ __run_tests: __test_debug__ __test_prepare __test_go_test __test_cleanup
 __test_go_test:
 	$(DOCKER_CMD) \
 		--name=$(TESTCONTAINER) \
-		--net=$(TEST_NET) \
+		$(TEST_NET) \
 		-v "${ROOTDIR}":/usr/code ${TEST_RESOURCES_VOLUME} \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
@@ -387,7 +391,9 @@ __test_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
-		$(DOCKER_RUN_CMD)
+		$(DOCKER_RUN_CMD) && echo "success!" || \
+			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
 
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
@@ -395,7 +401,7 @@ __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanu
 __test_v2_go_test:
 	$(DOCKER_CMD) \
 		--name=$(TESTCONTAINER) \
-		--net=$(TEST_NET) \
+		$(TEST_NET) \
 		-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
 		-e TEST_ENDPOINTS=$(TEST_ENDPOINTS) \
 		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
@@ -409,7 +415,9 @@ __test_v2_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/v2/ \
-		$(DOCKER_V2_RUN_CMD)
+		$(DOCKER_V2_RUN_CMD) && echo "success!" || \
+			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
@@ -456,7 +464,7 @@ run-tests-cluster-failover:
 	go get github.com/coreos/go-iptables/iptables
 	$(DOCKER_CMD) \
 		--rm \
-		--net=container:$(TESTCONTAINER)-ns \
+		$(TEST_NET) \
 		--privileged \
 		-v "${ROOTDIR}":/usr/code \
 		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
