@@ -34,10 +34,33 @@ type graphDefinition struct {
 	IsDisjoint  bool   `json:"isDisjoint,omitempty"`
 
 	EdgeDefinitions []EdgeDefinition `json:"edgeDefinitions,omitempty"`
+
+	NumberOfShards    int      `json:"numberOfShards,omitempty"`
+	OrphanCollections []string `json:"orphanCollections,omitempty"`
+
+	// Deprecated: use 'WriteConcern' instead.
+	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
+	WriteConcern         int `json:"writeConcern,omitempty"`
+
+	// ReplicationFactor is the number of replication factor that is used for every collection within this graph.
+	// Cannot be modified later.
+	ReplicationFactor graphReplicationFactor `json:"replicationFactor,omitempty"`
+
+	// This field must be set to the attribute that will be used for sharding or smart graphs.
+	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
+	// This requires ArangoDB Enterprise Edition.
+	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
+
+	Initial    *string    `json:"initial,omitempty"`
+	InitialCid int        `json:"initialCid,omitempty"`
+	ID         string     `json:"_id"`
+	Key        DocumentID `json:"_key"`
+	Rev        string     `json:"_rev"`
 }
 
 type getGraphResponse struct {
 	Graph graphDefinition `json:"graph"`
+	ArangoError
 }
 
 // EdgeCollection opens a connection to an existing edge-collection within the graph.

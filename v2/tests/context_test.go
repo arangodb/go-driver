@@ -34,6 +34,12 @@ import (
 func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
 	c := newClient(t, connectionJsonHttp(t))
 
+	version, err := c.Version(context.Background())
+	require.NoError(t, err)
+	if version.Version.CompareTo("3.9.0") < 0 {
+		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
+	}
+
 	t.Run("without timout", func(t *testing.T) {
 		_, err := c.Version(context.Background())
 		require.NoError(t, err)

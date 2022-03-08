@@ -28,23 +28,32 @@ import (
 )
 
 type indexData struct {
-	ID              string   `json:"id,omitempty"`
-	Type            string   `json:"type"`
-	Fields          []string `json:"fields,omitempty"`
-	Unique          *bool    `json:"unique,omitempty"`
-	Deduplicate     *bool    `json:"deduplicate,omitempty"`
-	Sparse          *bool    `json:"sparse,omitempty"`
-	GeoJSON         *bool    `json:"geoJson,omitempty"`
-	InBackground    *bool    `json:"inBackground,omitempty"`
-	Estimates       *bool    `json:"estimates,omitempty"`
-	MinLength       int      `json:"minLength,omitempty"`
-	ExpireAfter     int      `json:"expireAfter,omitempty"`
-	Name            string   `json:"name,omitempty"`
-	FieldValueTypes string   `json:"fieldValueTypes,omitempty"`
+	ID                  string   `json:"id,omitempty"`
+	Type                string   `json:"type"`
+	Fields              []string `json:"fields,omitempty"`
+	Unique              *bool    `json:"unique,omitempty"`
+	Deduplicate         *bool    `json:"deduplicate,omitempty"`
+	Sparse              *bool    `json:"sparse,omitempty"`
+	GeoJSON             *bool    `json:"geoJson,omitempty"`
+	InBackground        *bool    `json:"inBackground,omitempty"`
+	Estimates           *bool    `json:"estimates,omitempty"`
+	MaxNumCoverCells    int      `json:"maxNumCoverCells,omitempty"`
+	MinLength           int      `json:"minLength,omitempty"`
+	ExpireAfter         int      `json:"expireAfter,omitempty"`
+	Name                string   `json:"name,omitempty"`
+	FieldValueTypes     string   `json:"fieldValueTypes,omitempty"`
+	IsNewlyCreated      *bool    `json:"isNewlyCreated,omitempty"`
+	SelectivityEstimate int      `json:"selectivityEstimate,omitempty"`
+	BestIndexedLevel    int      `json:"bestIndexedLevel,omitempty"`
+	WorstIndexedLevel   int      `json:"worstIndexedLevel,omitempty"`
+
+	ArangoError `json:",inline"`
 }
 
 type indexListResponse struct {
-	Indexes []indexData `json:"indexes,omitempty"`
+	Indexes     []indexData          `json:"indexes,omitempty"`
+	Identifiers map[string]indexData `json:"identifiers,omitempty"`
+	ArangoError
 }
 
 // Index opens a connection to an existing index within the collection.

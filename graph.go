@@ -47,4 +47,34 @@ type Graph interface {
 
 	// Vertex collection functions
 	GraphVertexCollections
+
+	// ID returns the id of the graph.
+	ID() string
+
+	// Key returns the key of the graph.
+	Key() DocumentID
+
+	// Rev returns the revision of the graph.
+	Rev() string
+
+	// EdgeDefinitions returns the edge definitions of the graph.
+	EdgeDefinitions() []EdgeDefinition
+
+	// SmartGraphAttribute returns the attributes of a smart graph if there are any.
+	SmartGraphAttribute() string
+
+	// MinReplicationFactor returns the minimum replication factor for the graph.
+	MinReplicationFactor() int
+
+	// NumberOfShards returns the number of shards for the graph.
+	NumberOfShards() int
+
+	// OrphanCollections returns the orphan collcetions of the graph.
+	OrphanCollections() []string
+
+	// ReplicationFactor returns the current replication factor.
+	ReplicationFactor() int
+
+	// WriteConcern returns the write concern setting of the graph.
+	WriteConcern() int
 }
