@@ -510,7 +510,7 @@ func TestUseArangoSearchView(t *testing.T) {
 func TestArangoSearchViewProperties35(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.5", t)
+	skipBelowVersion(c, "3.7.1", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	ensureCollection(ctx, db, "someCol", nil, t)
 	commitInterval := int64(100)
