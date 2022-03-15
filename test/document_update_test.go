@@ -125,6 +125,97 @@ func TestUpdateDocumentReturnNew(t *testing.T) {
 	}
 }
 
+// TestUpdateDocumentKeepNullTrue creates a document, updates it with MergeObjects(true) and then checks the update has succeeded.
+func TestUpdateDocumentWithMergeObjectsTrue(t *testing.T) {
+	ctx := context.Background()
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	type account struct {
+		ID   string                 `json:"id"`
+		User UserDocWithKeyWithOmit `json:"user"`
+	}
+	doc := account{
+		ID: "1234",
+		User: UserDocWithKeyWithOmit{
+			Name: "Mathilda",
+		},
+	}
+	meta, err := col.CreateDocument(ctx, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+
+	// Update document
+	const newUserAge = 30
+	update := map[string]interface{}{
+		"user": UserDocWithKeyWithOmit{
+			Age: newUserAge,
+		},
+	}
+	if _, err := col.UpdateDocument(driver.WithMergeObjects(ctx, true), meta.Key, update); err != nil {
+		t.Fatalf("Failed to update document '%s': %s", meta.Key, describe(err))
+	}
+
+	// Read updated document
+	var readDoc account
+	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+		t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+	}
+	doc.User.Key = readDoc.User.Key
+	doc.User.Age = newUserAge
+	if !reflect.DeepEqual(doc, readDoc) {
+		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+}
+
+// TestUpdateDocumentKeepNullTrue creates a document, updates it with WithMerge(false) and then checks the update has succeeded.
+func TestUpdateDocumentWithMergeObjectsFalse(t *testing.T) {
+	ctx := context.Background()
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
+	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	col := ensureCollection(ctx, db, "document_test", nil, t)
+	type account struct {
+		ID   string                 `json:"id"`
+		User UserDocWithKeyWithOmit `json:"user"`
+	}
+	doc := account{
+		ID: "1234",
+		User: UserDocWithKeyWithOmit{
+			Name: "Mathilda",
+		},
+	}
+	meta, err := col.CreateDocument(ctx, doc)
+	if err != nil {
+		t.Fatalf("Failed to create new document: %s", describe(err))
+	}
+
+	// Update document
+	const newUserAge = 30
+	update := map[string]interface{}{
+		"user": UserDocWithKeyWithOmit{
+			Age: newUserAge,
+		},
+	}
+	if _, err := col.UpdateDocument(driver.WithMergeObjects(ctx, false), meta.Key, update); err != nil {
+		t.Fatalf("Failed to update document '%s': %s", meta.Key, describe(err))
+	}
+
+	// Read updated document
+	var readDoc account
+	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+		t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+	}
+	doc.User = UserDocWithKeyWithOmit{
+		Age: newUserAge,
+	}
+	if !reflect.DeepEqual(doc, readDoc) {
+		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+}
+
 // TestUpdateDocumentKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateDocumentKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
