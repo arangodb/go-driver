@@ -1,10 +1,19 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.3.0](https://github.com/arangodb/go-driver/tree/v1.3.0) (2022-03-17)
+- Disallow unknown fields feature
+- inBackground parameter in ArangoSearch links
+- ZKD indexes
+- Hybrid SmartGraphs
+- Segmentation and Collation Analyzers
+- Bypass caching for specific collections
+- Overload Control
 - [V2] Add support for streaming the response body by the caller.
 - [V2] Bugfix with escaping the URL path twice.
 - Bugfix for the satellites' collection shard info.
-- [V2] Support for satellites' collections. 
+- [V2] Support for satellites' collections.
 
 ## [1.2.1](https://github.com/arangodb/go-driver/tree/v1.2.1) (2021-09-21)
 - Add support for fetching shards' info by the given collection name.
