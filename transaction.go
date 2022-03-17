@@ -47,11 +47,14 @@ type TransactionOptions struct {
 	// performed automatically. Honored by the RocksDB storage engine only.
 	IntermediateCommitSize *int
 
-	// Collections that the transaction reads from.
+	// ReadCollections Collections that the transaction reads from.
 	ReadCollections []string
 
-	// Collections that the transaction writes to.
+	// WriteCollections Collections that the transaction writes to.
 	WriteCollections []string
+
+	// ExclusiveCollections Collections that the transaction write exclusively to.
+	ExclusiveCollections []string
 }
 
 type transactionRequest struct {
@@ -66,8 +69,9 @@ type transactionRequest struct {
 }
 
 type transactionCollectionsRequest struct {
-	Read  []string `json:"read,omitempty"`
-	Write []string `json:"write,omitempty"`
+	Read      []string `json:"read,omitempty"`
+	Write     []string `json:"write,omitempty"`
+	Exclusive []string `json:"exclusive,omitempty"`
 }
 
 type transactionResponse struct {
