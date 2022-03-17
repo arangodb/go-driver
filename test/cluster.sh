@@ -54,8 +54,8 @@ if [ "$CMD" == "start" ]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
         DOCKERPLATFORMARG="--platform linux/x86_64"
         DOCKERARGS="$DOCKERARGS $DOCKERPLATFORMARG"
-        STARTERARGS="--docker.container=$STARTERCONTAINER"
     fi
+    STARTERARGS="$STARTERARGS --docker.container=$STARTERCONTAINER"
 
     if [ -z "$STARTERPORT" ]; then
         STARTERPORT=7000
