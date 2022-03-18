@@ -197,6 +197,7 @@ func (d *database) Transaction(ctx context.Context, action string, options *Tran
 		input.IntermediateCommitSize = options.IntermediateCommitSize
 		input.Collections.Read = options.ReadCollections
 		input.Collections.Write = options.WriteCollections
+		input.Collections.Exclusive = options.ExclusiveCollections
 	}
 	if _, err = req.SetBody(input); err != nil {
 		return nil, WithStack(err)
