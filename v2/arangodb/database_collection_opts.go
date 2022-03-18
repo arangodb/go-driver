@@ -38,7 +38,7 @@ type CreateCollectionOptions struct {
 	// Changes are applied when the collection is loaded the next time.
 	IndexBuckets int `json:"indexBuckets,omitempty"`
 	// Available from 3.9 ArangoD version.
-	InternalValidatorType int `json:"internalValidatorType,omitempty"`
+	InternalValidatorType int `json:"internalValidatorType"`
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
 	IsDisjoint bool `json:"isDisjoint,omitempty"`
 	// Set to create a smart edge or vertex collection.
@@ -62,14 +62,14 @@ type CreateCollectionOptions struct {
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// In a cluster, this value determines the number of shards to create for the collection. In a single server setup, this option is meaningless. (default is 1)
-	NumberOfShards int `json:"numberOfShards,omitempty"`
+	NumberOfShards int `json:"numberOfShards"`
 	// ReplicationFactor in a cluster (default is 1), this attribute determines how many copies of each shard are kept on different DBServers.
 	// The value 1 means that only one copy (no synchronous replication) is kept.
 	// A value of k means that k-1 replicas are kept. Any two copies reside on different DBServers.
 	// Replication between them is synchronous, that is, every write operation to the "leader" copy will be replicated to all "follower" replicas,
 	// before the write operation is reported successful. If a server fails, this is detected automatically
 	// and one of the servers holding copies take over, usually without an error being reported.
-	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
+	ReplicationFactor ReplicationFactor `json:"replicationFactor"`
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 	// This attribute specifies the name of the sharding strategy to use for the collection.
@@ -101,7 +101,7 @@ type CreateCollectionOptions struct {
 	// It is required that 1 <= WriteConcern <= ReplicationFactor.
 	// Default is 1. Not available for satellite collections.
 	// Available from 3.6 ArangoDB version.
-	WriteConcern int `json:"writeConcern,omitempty"`
+	WriteConcern int `json:"writeConcern"`
 }
 
 // Init translate deprecated fields into current one for backward compatibility

@@ -106,7 +106,7 @@ type createCollectionOptionsInternal struct {
 	DistributeShardsLike  string                `json:"distributeShardsLike,omitempty"`
 	DoCompact             *bool                 `json:"doCompact,omitempty"`
 	IndexBuckets          int                   `json:"indexBuckets,omitempty"`
-	InternalValidatorType int                   `json:"internalValidatorType,omitempty"`
+	InternalValidatorType int                   `json:"internalValidatorType"`
 	IsDisjoint            bool                  `json:"isDisjoint,omitempty"`
 	IsSmart               bool                  `json:"isSmart,omitempty"`
 	IsSystem              bool                  `json:"isSystem,omitempty"`
@@ -116,8 +116,8 @@ type createCollectionOptionsInternal struct {
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int                      `json:"minReplicationFactor,omitempty"`
 	Name                 string                   `json:"name"`
-	NumberOfShards       int                      `json:"numberOfShards,omitempty"`
-	ReplicationFactor    replicationFactor        `json:"replicationFactor,omitempty"`
+	NumberOfShards       int                      `json:"numberOfShards"`
+	ReplicationFactor    replicationFactor        `json:"replicationFactor"`
 	Schema               *CollectionSchemaOptions `json:"schema,omitempty"`
 	ShardingStrategy     ShardingStrategy         `json:"shardingStrategy,omitempty"`
 	ShardKeys            []string                 `json:"shardKeys,omitempty"`
@@ -126,7 +126,7 @@ type createCollectionOptionsInternal struct {
 	SyncByRevision       bool                     `json:"syncByRevision,omitempty"`
 	Type                 CollectionType           `json:"type,omitempty"`
 	WaitForSync          bool                     `json:"waitForSync,omitempty"`
-	WriteConcern         int                      `json:"writeConcern,omitempty"`
+	WriteConcern         int                      `json:"writeConcern"`
 }
 
 // CreateCollection creates a new collection with given name and options, and opens a connection to it.
