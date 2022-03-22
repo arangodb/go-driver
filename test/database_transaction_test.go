@@ -36,6 +36,14 @@ func TestDatabaseTransaction(t *testing.T) {
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(nil, c, "transaction_test", nil, t)
 
+	const colName = "books"
+	ensureCollection(context.Background(), db, colName, nil, t)
+
+	txOptions := &driver.TransactionOptions{
+		ReadCollections:      []string{colName},
+		WriteCollections:     []string{colName},
+		ExclusiveCollections: []string{colName},
+	}
 	testCases := []struct {
 		name         string
 		action       string
@@ -43,8 +51,8 @@ func TestDatabaseTransaction(t *testing.T) {
 		expectResult interface{}
 		expectError  error
 	}{
-		{"ReturnValue", "function () { return 'worked!'; }", nil, "worked!", nil},
-		{"ReturnError", "function () { error error; }", nil, nil, fmt.Errorf("missing/invalid action definition for transaction - Uncaught SyntaxError: Unexpected identifier - SyntaxError: Unexpected identifier\n    at new Function (<anonymous>)")},
+		{"ReturnValue", "function () { return 'worked!'; }", txOptions, "worked!", nil},
+		{"ReturnError", "function () { error error; }", txOptions, nil, fmt.Errorf("missing/invalid action definition for transaction - Uncaught SyntaxError: Unexpected identifier - SyntaxError: Unexpected identifier\n    at new Function (<anonymous>)")},
 	}
 
 	for _, testCase := range testCases {
@@ -139,7 +147,7 @@ func TestTransactionAbort(t *testing.T) {
 	// document should exist with transaction
 	documentExists(tctx, col, meta1.Key, true, t)
 
-	// Now commit the transaction
+	// Now abort the transaction
 	if err := db.AbortTransaction(ctx, trxid, nil); err != nil {
 		t.Fatalf("Failed to abort transaction: %s", describe(err))
 	}

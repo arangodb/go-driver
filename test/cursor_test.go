@@ -28,8 +28,9 @@ import (
 	"testing"
 	"time"
 
-	driver "github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 func TestCreateCursorWithMaxRuntime(t *testing.T) {
@@ -288,6 +289,10 @@ func TestCreateCursor(t *testing.T) {
 						}
 					}
 				}
+
+				executionTime := cursor.Statistics().ExecutionTime()
+				require.Greaterf(t, executionTime.Nanoseconds(), int64(0), "execution time must be greater than 0")
+
 				// Close anyway (this tests calling Close more than once)
 				if err := cursor.Close(); err != nil {
 					t.Errorf("Expected success in Close of cursor from query %d (%s), got '%s'", i, test.Query, describe(err))

@@ -35,7 +35,7 @@ type BeginTransactionOptions struct {
 	MaxTransactionSize uint64
 }
 
-// TransactionCollections is used to specify which collecitions are accessed by
+// TransactionCollections is used to specify which collections are accessed by
 // a transaction and how
 type TransactionCollections struct {
 	Read      []string `json:"read,omitempty"`
