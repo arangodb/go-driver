@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Add support for `exclusive` field for transaction options
+- Fix cursor executionTime statistics getter
 
 ## [1.3.0](https://github.com/arangodb/go-driver/tree/v1.3.0) (2022-03-17)
 - Disallow unknown fields feature

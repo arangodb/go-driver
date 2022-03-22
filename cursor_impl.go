@@ -319,5 +319,5 @@ func (cs cursorStats) FullCount() int64 {
 
 // query execution time (wall-clock time). value will be set from the outside
 func (cs cursorStats) ExecutionTime() time.Duration {
-	return time.Duration(cs.ExecutionTimeInt) * time.Second
+	return time.Duration(cs.ExecutionTimeInt * float64(time.Second))
 }
