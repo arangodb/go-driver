@@ -188,7 +188,7 @@ func (c *edgeCollection) createDocument(ctx context.Context, document interface{
 // If a documents element already contains a `_key` field, this will be used as key of the new document,
 // otherwise a unique key is created.
 // If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
-// a ConflictError is returned in its inded in the errors slice.
+// a ConflictError is returned at its index in the errors slice.
 // To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
 // a slice with the same number of entries as the `documents` slice.
 // To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
