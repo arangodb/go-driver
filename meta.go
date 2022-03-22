@@ -24,7 +24,6 @@ package driver
 
 // DocumentMeta contains all meta data used to identifier a document.
 type DocumentMeta struct {
-	Name   string     `json:"name,omitempty"`
 	Key    string     `json:"_key,omitempty"`
 	ID     DocumentID `json:"_id,omitempty"`
 	Rev    string     `json:"_rev,omitempty"`

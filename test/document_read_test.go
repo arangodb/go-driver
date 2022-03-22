@@ -47,19 +47,24 @@ func TestReadDocumentWithIfMatch(t *testing.T) {
 	ctx := context.Background()
 	ctx = driver.WithRevision(ctx, meta.Rev)
 
-	meta2, err := col.ReadDocument(ctx, meta.Key, &doc)
+	docResult := UserDoc{}
+	meta2, err := col.ReadDocument(ctx, meta.Key, &docResult)
 	if err != nil {
 		t.Fatalf("Failed to read document: %s", describe(err))
 	}
 	if meta2.Key != meta.Key || meta2.Rev != meta.Rev || meta2.ID != meta.ID {
 		t.Error("Read wrong meta data.")
 	}
+	if doc.Name != docResult.Name || doc.Age != docResult.Age {
+		t.Error("Read wrong UserDoc data.")
+	}
 
 	var resp driver.Response
 	ctx2 := context.Background()
 	ctx2 = driver.WithRevision(ctx2, "nonsense")
 	ctx2 = driver.WithResponse(ctx2, &resp)
-	_, err = col.ReadDocument(ctx2, meta.Key, &doc)
+
+	_, err = col.ReadDocument(ctx2, meta.Key, &docResult)
 	if err == nil {
 		t.Error("Reading with wrong revision did not fail")
 	}
