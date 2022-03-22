@@ -92,7 +92,12 @@ type cursorExtra struct {
 	Stats    cursorStats   `json:"stats,omitempty"`
 	Profile  cursorProfile `json:"profile,omitempty"`
 	Plan     *cursorPlan   `json:"plan,omitempty"`
-	Warnings []string      `json:"warnings,omitempty"`
+	Warnings []warn        `json:"warnings,omitempty"`
+}
+
+type warn struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 func (c cursorExtra) GetStatistics() QueryStatistics {
