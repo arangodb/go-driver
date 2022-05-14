@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Fix selectivityEstimate Index field type
 
 ## [1.3.1](https://github.com/arangodb/go-driver/tree/v1.3.1) (2022-03-23)
 - Add support for `exclusive` field for transaction options
