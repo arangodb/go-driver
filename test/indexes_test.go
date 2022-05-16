@@ -29,6 +29,7 @@ import (
 	"time"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
 )
 
 // TestDefaultIndexes creates a collection without any custom index.
@@ -578,4 +579,34 @@ func TestTTLIndexesClusterInventory(t *testing.T) {
 		}
 	}
 
+}
+
+func TestPersistentIndexCreation(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.7", t)
+
+	db := ensureDatabase(nil, c, "index_test_creation", nil, t)
+	coll := ensureCollection(nil, db, "index_creation_test_col", nil, t)
+
+	for i := 0; i < 16; i++ {
+		_, err := coll.CreateDocument(context.Background(), map[string]interface{}{
+			"MyIndex": fmt.Sprintf("%d", i),
+			"Index":   i,
+		})
+		require.NoError(t, err)
+	}
+
+	for i := 0; i < 100; i++ {
+		index, _, err := coll.EnsurePersistentIndex(
+			context.Background(),
+			[]string{"sensitivity"},
+			&driver.EnsurePersistentIndexOptions{
+				Unique: false,
+				Sparse: false,
+				Name:   "idx_sensitivity",
+			},
+		)
+		require.NoError(t, err)
+		require.NotNil(t, index)
+	}
 }

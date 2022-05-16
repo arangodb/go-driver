@@ -43,7 +43,7 @@ type indexData struct {
 	Name                string   `json:"name,omitempty"`
 	FieldValueTypes     string   `json:"fieldValueTypes,omitempty"`
 	IsNewlyCreated      *bool    `json:"isNewlyCreated,omitempty"`
-	SelectivityEstimate int      `json:"selectivityEstimate,omitempty"`
+	SelectivityEstimate float64  `json:"selectivityEstimate,omitempty"`
 	BestIndexedLevel    int      `json:"bestIndexedLevel,omitempty"`
 	WorstIndexedLevel   int      `json:"worstIndexedLevel,omitempty"`
 
