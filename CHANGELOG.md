@@ -1,15 +1,20 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.3.2](https://github.com/arangodb/go-driver/tree/v1.3.2) (2022-05-16)
+
 - Fix selectivityEstimate Index field type
 
 ## [1.3.1](https://github.com/arangodb/go-driver/tree/v1.3.1) (2022-03-23)
+
 - Add support for `exclusive` field for transaction options
 - Fix cursor executionTime statistics getter
 - Fix cursor warnings field type
 - Fix for DocumentMeta name field overrides name field
 
 ## [1.3.0](https://github.com/arangodb/go-driver/tree/v1.3.0) (2022-03-17)
+
 - Disallow unknown fields feature
 - inBackground parameter in ArangoSearch links
 - ZKD indexes
