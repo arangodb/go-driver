@@ -256,9 +256,11 @@ type InventoryCollectionParameters struct {
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	JournalSize int64 `json:"journalSize,omitempty"`
 	KeyOptions  struct {
-		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
-		LastValue     int64  `json:"lastValue,omitempty"`
-		Type          string `json:"type,omitempty"`
+		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
+		// Deprecated: this field has wrong type and will be removed in the future. It is not used anymore since it can cause parsing issues.
+		LastValue   int64  `json:"-"`
+		LastValueV2 uint64 `json:"lastValue,omitempty"`
+		Type        string `json:"type,omitempty"`
 	} `json:"keyOptions"`
 	// Deprecated: use 'WriteConcern' instead.
 	MinReplicationFactor int    `json:"minReplicationFactor,omitempty"`

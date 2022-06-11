@@ -43,7 +43,7 @@ type cluster struct {
 	conn Connection
 }
 
-// LoggerState returns the state of the replication logger
+// Health returns the state of the cluster
 func (c *cluster) Health(ctx context.Context) (ClusterHealth, error) {
 	req, err := c.conn.NewRequest("GET", "_admin/cluster/health")
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *cluster) Health(ctx context.Context) (ClusterHealth, error) {
 	return result, nil
 }
 
-// Get the inventory of the cluster containing all collections (with entire details) of a database.
+// DatabaseInventory Get the inventory of the cluster containing all collections (with entire details) of a database.
 func (c *cluster) DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error) {
 	req, err := c.conn.NewRequest("GET", path.Join("_db", db.Name(), "_api/replication/clusterInventory"))
 	if err != nil {
@@ -290,7 +290,7 @@ type inventoryCollectionParametersInternal struct {
 	JournalSize int64 `json:"journalSize,omitempty"`
 	KeyOptions  struct {
 		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
-		LastValue     int64  `json:"lastValue,omitempty"`
+		LastValue     uint64 `json:"lastValue,omitempty"`
 		Type          string `json:"type,omitempty"`
 	} `json:"keyOptions"`
 	// Deprecated: use 'WriteConcern' instead
@@ -322,23 +322,35 @@ type inventoryCollectionParametersInternal struct {
 }
 
 func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParametersInternal {
+	lastValue := p.KeyOptions.LastValueV2
+	if lastValue == 0 && p.KeyOptions.LastValue != 0 {
+		lastValue = uint64(p.KeyOptions.LastValue)
+	}
+
 	return inventoryCollectionParametersInternal{
-		CacheEnabled:               p.CacheEnabled,
-		Deleted:                    p.Deleted,
-		DistributeShardsLike:       p.DistributeShardsLike,
-		DoCompact:                  p.DoCompact,
-		GloballyUniqueId:           p.GloballyUniqueId,
-		ID:                         p.ID,
-		IndexBuckets:               p.IndexBuckets,
-		Indexes:                    p.Indexes,
-		InternalValidatorType:      p.InternalValidatorType,
-		IsDisjoint:                 p.IsDisjoint,
-		IsSmart:                    p.IsSmart,
-		IsSmartChild:               p.IsSmartChild,
-		IsSystem:                   p.IsSystem,
-		IsVolatile:                 p.IsVolatile,
-		JournalSize:                p.JournalSize,
-		KeyOptions:                 p.KeyOptions,
+		CacheEnabled:          p.CacheEnabled,
+		Deleted:               p.Deleted,
+		DistributeShardsLike:  p.DistributeShardsLike,
+		DoCompact:             p.DoCompact,
+		GloballyUniqueId:      p.GloballyUniqueId,
+		ID:                    p.ID,
+		IndexBuckets:          p.IndexBuckets,
+		Indexes:               p.Indexes,
+		InternalValidatorType: p.InternalValidatorType,
+		IsDisjoint:            p.IsDisjoint,
+		IsSmart:               p.IsSmart,
+		IsSmartChild:          p.IsSmartChild,
+		IsSystem:              p.IsSystem,
+		IsVolatile:            p.IsVolatile,
+		JournalSize:           p.JournalSize,
+		KeyOptions: struct {
+			AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
+			LastValue     uint64 `json:"lastValue,omitempty"`
+			Type          string `json:"type,omitempty"`
+		}{
+			p.KeyOptions.AllowUserKeys,
+			lastValue,
+			p.KeyOptions.Type},
 		MinReplicationFactor:       p.MinReplicationFactor,
 		Name:                       p.Name,
 		NumberOfShards:             p.NumberOfShards,
@@ -367,22 +379,32 @@ func (p *InventoryCollectionParameters) fromInternal(i inventoryCollectionParame
 
 func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollectionParameters {
 	return InventoryCollectionParameters{
-		CacheEnabled:               p.CacheEnabled,
-		Deleted:                    p.Deleted,
-		DistributeShardsLike:       p.DistributeShardsLike,
-		DoCompact:                  p.DoCompact,
-		GloballyUniqueId:           p.GloballyUniqueId,
-		ID:                         p.ID,
-		IndexBuckets:               p.IndexBuckets,
-		Indexes:                    p.Indexes,
-		InternalValidatorType:      p.InternalValidatorType,
-		IsDisjoint:                 p.IsDisjoint,
-		IsSmart:                    p.IsSmart,
-		IsSmartChild:               p.IsSmartChild,
-		IsSystem:                   p.IsSystem,
-		IsVolatile:                 p.IsVolatile,
-		JournalSize:                p.JournalSize,
-		KeyOptions:                 p.KeyOptions,
+		CacheEnabled:          p.CacheEnabled,
+		Deleted:               p.Deleted,
+		DistributeShardsLike:  p.DistributeShardsLike,
+		DoCompact:             p.DoCompact,
+		GloballyUniqueId:      p.GloballyUniqueId,
+		ID:                    p.ID,
+		IndexBuckets:          p.IndexBuckets,
+		Indexes:               p.Indexes,
+		InternalValidatorType: p.InternalValidatorType,
+		IsDisjoint:            p.IsDisjoint,
+		IsSmart:               p.IsSmart,
+		IsSmartChild:          p.IsSmartChild,
+		IsSystem:              p.IsSystem,
+		IsVolatile:            p.IsVolatile,
+		JournalSize:           p.JournalSize,
+		KeyOptions: struct {
+			AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
+			LastValue     int64  `json:"-"`
+			LastValueV2   uint64 `json:"lastValue,omitempty"`
+			Type          string `json:"type,omitempty"`
+		}{
+			p.KeyOptions.AllowUserKeys,
+			// cast to int64 to keep backwards compatibility for most cases
+			int64(p.KeyOptions.LastValue),
+			p.KeyOptions.LastValue,
+			p.KeyOptions.Type},
 		MinReplicationFactor:       p.MinReplicationFactor,
 		Name:                       p.Name,
 		NumberOfShards:             p.NumberOfShards,
