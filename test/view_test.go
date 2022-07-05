@@ -548,9 +548,9 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, existed)
 
-	ensureArangoSearchView(ctx, db, "some_view", &driver.ArangoSearchViewProperties{
+	ensureArangoSearchView(ctx, db, "some_view_with_analyzer", &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
-			"some_collection": driver.ArangoSearchElementProperties{
+			"some_collection_with_analyzer": driver.ArangoSearchElementProperties{
 				Fields: driver.ArangoSearchFields{
 					"name": driver.ArangoSearchElementProperties{
 						Analyzers: []string{"custom_analyzer"},
@@ -584,7 +584,7 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 
 	// now access it via AQL with waitForSync
 	{
-		cur, err := db.Query(driver.WithQueryCount(ctx), `FOR doc IN some_view SEARCH NGRAM_MATCH(doc.name, 'john', 0.75, 'custom_analyzer')  OPTIONS {waitForSync:true} RETURN doc`, nil)
+		cur, err := db.Query(driver.WithQueryCount(ctx), `FOR doc IN some_view_with_analyzer SEARCH NGRAM_MATCH(doc.name, 'john', 0.75, 'custom_analyzer')  OPTIONS {waitForSync:true} RETURN doc`, nil)
 
 		if err != nil {
 			t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
