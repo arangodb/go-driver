@@ -52,9 +52,9 @@ func TestCreateUser(t *testing.T) {
 
 	tests := map[string]*driver.UserOptions{
 		"jan1":   nil,
-		"george": &driver.UserOptions{Password: "foo", Active: boolRef(false)},
-		"candy":  &driver.UserOptions{Password: "ARANGODB_DEFAULT_ROOT_PASSWORD", Active: boolRef(true)},
-		"joe":    &driver.UserOptions{Extra: map[string]interface{}{"key": "value", "x": 5}},
+		"george": {Password: "foo", Active: boolRef(false)},
+		"candy":  {Password: "ARANGODB_DEFAULT_ROOT_PASSWORD", Active: boolRef(true)},
+		"joe":    {Extra: map[string]interface{}{"key": "value", "x": 5}},
 		// Some strange names
 		"ewout/foo": nil,
 		"admin@api": nil,

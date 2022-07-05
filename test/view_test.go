@@ -444,15 +444,15 @@ func TestUseArangoSearchView(t *testing.T) {
 	}, t)
 
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"John",
 			23,
 		},
-		UserDoc{
+		{
 			"Alice",
 			43,
 		},
-		UserDoc{
+		{
 			"Helmut",
 			56,
 		},
@@ -736,7 +736,7 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 		Links: driver.ArangoSearchLinks{
 			colname: driver.ArangoSearchElementProperties{
 				AnalyzerDefinitions: []driver.ArangoSearchAnalyzerDefinition{
-					driver.ArangoSearchAnalyzerDefinition{
+					{
 						Name: analyzerName,
 						Type: driver.ArangoSearchAnalyzerTypeNorm,
 						Properties: driver.ArangoSearchAnalyzerProperties{

@@ -39,13 +39,13 @@ func TestCreateVertices(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Book1",
 		},
-		Book{
+		{
 			Title: "Book2",
 		},
-		Book{
+		{
 			Title: "Book3",
 		},
 	}
@@ -97,13 +97,13 @@ func TestCreateVerticesReturnNew(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Book1",
 		},
-		Book{
+		{
 			Title: "Book2",
 		},
-		Book{
+		{
 			Title: "Book3",
 		},
 	}
@@ -143,11 +143,11 @@ func TestCreateVerticesSilent(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "users", t)
 
 	docs := []UserDoc{
-		UserDoc{
+		{
 			Name: "Jan",
 			Age:  12,
 		},
-		UserDoc{
+		{
 			Name: "Piet",
 			Age:  2,
 		},

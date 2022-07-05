@@ -41,10 +41,10 @@ func TestUpdateVertices(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "relations", t)
 
 	docs := []UserDoc{
-		UserDoc{
+		{
 			Name: "Bob",
 		},
-		UserDoc{
+		{
 			Name: "Anna",
 		},
 	}
@@ -56,10 +56,10 @@ func TestUpdateVertices(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated2",
 		},
 	}
@@ -90,10 +90,10 @@ func TestUpdateVerticesReturnOld(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "books", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Pinkeltje op de maan",
 		},
-		Book{
+		{
 			Title: "Pinkeltje in het bos",
 		},
 	}
@@ -105,10 +105,10 @@ func TestUpdateVerticesReturnOld(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"Title": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"Title": "Updated2",
 		},
 	}
@@ -135,10 +135,10 @@ func TestUpdateVerticesReturnNew(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "users", t)
 
 	docs := []UserDoc{
-		UserDoc{
+		{
 			Name: "Tony",
 		},
-		UserDoc{
+		{
 			Name: "Parker",
 		},
 	}
@@ -150,10 +150,10 @@ func TestUpdateVerticesReturnNew(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated2",
 		},
 	}
@@ -182,14 +182,14 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "keepers", t)
 
 	docs := []Account{
-		Account{
+		{
 			ID: "123",
 			User: &UserDoc{
 				"Greata",
 				77,
 			},
 		},
-		Account{
+		{
 			ID: "456",
 			User: &UserDoc{
 				"Mathilda",
@@ -207,11 +207,11 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"id":   "abc",
 			"user": nil,
 		},
-		map[string]interface{}{
+		{
 			"id":   "def",
 			"user": nil,
 		},
@@ -259,14 +259,14 @@ func TestUpdateVerticesKeepNullFalse(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "accounts", t)
 
 	docs := []Account{
-		Account{
+		{
 			ID: "123",
 			User: &UserDoc{
 				"Greata",
 				77,
 			},
 		},
-		Account{
+		{
 			ID: "456",
 			User: &UserDoc{
 				"Mathilda",
@@ -283,11 +283,11 @@ func TestUpdateVerticesKeepNullFalse(t *testing.T) {
 	}
 	// Update document
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"id":   "abc",
 			"user": nil,
 		},
-		map[string]interface{}{
+		{
 			"id":   "def",
 			"user": nil,
 		},
@@ -316,10 +316,10 @@ func TestUpdateVerticesSilent(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "moments", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Foo",
 		},
-		Book{
+		{
 			Title: "Oops",
 		},
 	}
@@ -329,10 +329,10 @@ func TestUpdateVerticesSilent(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"Title": 61,
 		},
-		map[string]interface{}{
+		{
 			"Title": 16,
 		},
 	}
@@ -356,10 +356,10 @@ func TestUpdateVerticesRevision(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "revisions", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Roman age",
 		},
-		Book{
+		{
 			Title: "New age",
 		},
 	}
@@ -374,10 +374,10 @@ func TestUpdateVerticesRevision(t *testing.T) {
 
 	// Update documents with correct revisions
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"Title": 34,
 		},
-		map[string]interface{}{
+		{
 			"Title": 77,
 		},
 	}
@@ -422,7 +422,7 @@ func TestUpdateVerticesKeyEmpty(t *testing.T) {
 
 	// Update document
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated",
 		},
 	}
@@ -453,10 +453,10 @@ func TestUpdateVerticesUpdateLenDiff(t *testing.T) {
 	ec := ensureVertexCollection(ctx, g, "diffs", t)
 
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "name1",
 		},
-		map[string]interface{}{
+		{
 			"name": "name2",
 		},
 	}

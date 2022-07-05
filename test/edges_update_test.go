@@ -46,12 +46,12 @@ func TestUpdateEdges(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
@@ -65,10 +65,10 @@ func TestUpdateEdges(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"type": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"type": "Updated2",
 		},
 	}
@@ -104,12 +104,12 @@ func TestUpdateEdgesReturnOld(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
@@ -123,10 +123,10 @@ func TestUpdateEdgesReturnOld(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"type": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"type": "Updated2",
 		},
 	}
@@ -158,12 +158,12 @@ func TestUpdateEdgesReturnNew(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
@@ -177,10 +177,10 @@ func TestUpdateEdgesReturnNew(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"type": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"type": "Updated2",
 		},
 	}
@@ -214,7 +214,7 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []AccountEdge{
-		AccountEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			User: &UserDoc{
@@ -222,7 +222,7 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 				77,
 			},
 		},
-		AccountEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			User: &UserDoc{
@@ -241,11 +241,11 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"to":   from.ID.String(),
 			"user": nil,
 		},
-		map[string]interface{}{
+		{
 			"from": to.ID.String(),
 			"user": nil,
 		},
@@ -298,7 +298,7 @@ func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []AccountEdge{
-		AccountEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			User: &UserDoc{
@@ -306,7 +306,7 @@ func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 				77,
 			},
 		},
-		AccountEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			User: &UserDoc{
@@ -324,11 +324,11 @@ func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 	}
 	// Update document
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"to":   from.ID.String(),
 			"user": nil,
 		},
-		map[string]interface{}{
+		{
 			"from": to.ID.String(),
 			"user": nil,
 		},
@@ -362,12 +362,12 @@ func TestUpdateEdgesSilent(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 7,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 88,
@@ -379,10 +379,10 @@ func TestUpdateEdgesSilent(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"distance": 61,
 		},
-		map[string]interface{}{
+		{
 			"distance": 16,
 		},
 	}
@@ -411,12 +411,12 @@ func TestUpdateEdgesRevision(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 7,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 88,
@@ -433,10 +433,10 @@ func TestUpdateEdgesRevision(t *testing.T) {
 
 	// Update documents with correct revisions
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"distance": 34,
 		},
-		map[string]interface{}{
+		{
 			"distance": 77,
 		},
 	}
@@ -482,7 +482,7 @@ func TestUpdateEdgesKeyEmpty(t *testing.T) {
 
 	// Update document
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated",
 		},
 	}
@@ -515,10 +515,10 @@ func TestUpdateEdgesUpdateLenDiff(t *testing.T) {
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
 
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "name1",
 		},
-		map[string]interface{}{
+		{
 			"name": "name2",
 		},
 	}

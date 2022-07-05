@@ -1,4 +1,6 @@
+//go:build http2
 // +build http2
+
 //
 // DISCLAIMER
 //

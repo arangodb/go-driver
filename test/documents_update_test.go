@@ -29,7 +29,7 @@ import (
 	"strings"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // TestUpdateDocuments1 creates documents, updates them and then checks the updates have succeeded.
@@ -40,11 +40,11 @@ func TestUpdateDocuments1(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Piere",
 			23,
 		},
-		UserDoc{
+		{
 			"Otto",
 			43,
 		},
@@ -57,10 +57,10 @@ func TestUpdateDocuments1(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated2",
 		},
 	}
@@ -88,15 +88,15 @@ func TestUpdateDocumentsReturnOld(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Tim",
 			27,
 		},
-		UserDoc{
+		{
 			"Foo",
 			70,
 		},
-		UserDoc{
+		{
 			"Mindy",
 			70,
 		},
@@ -109,13 +109,13 @@ func TestUpdateDocumentsReturnOld(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated2",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated3",
 		},
 	}
@@ -139,15 +139,15 @@ func TestUpdateDocumentsReturnNew(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Tim",
 			27,
 		},
-		UserDoc{
+		{
 			"Duck",
 			21,
 		},
-		UserDoc{
+		{
 			"Donald",
 			53,
 		},
@@ -160,13 +160,13 @@ func TestUpdateDocumentsReturnNew(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated2",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated3",
 		},
 	}
@@ -194,14 +194,14 @@ func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []Account{
-		Account{
+		{
 			ID: "1234",
 			User: &UserDoc{
 				"Mathilda",
 				45,
 			},
 		},
-		Account{
+		{
 			ID: "432",
 			User: &UserDoc{
 				"Clair",
@@ -218,11 +218,11 @@ func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"id":   "5678",
 			"user": nil,
 		},
-		map[string]interface{}{
+		{
 			"id":   "742",
 			"user": nil,
 		},
@@ -260,14 +260,14 @@ func TestUpdateDocumentsKeepNullFalse(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []Account{
-		Account{
+		{
 			ID: "1234",
 			User: &UserDoc{
 				"Mathilda",
 				45,
 			},
 		},
-		Account{
+		{
 			ID: "364",
 			User: &UserDoc{
 				"Jo",
@@ -283,11 +283,11 @@ func TestUpdateDocumentsKeepNullFalse(t *testing.T) {
 	}
 	// Update document
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"id":   "5678",
 			"user": nil,
 		},
-		map[string]interface{}{
+		{
 			"id":   "753",
 			"user": nil,
 		},
@@ -314,11 +314,11 @@ func TestUpdateDocumentsSilent(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Angela",
 			91,
 		},
-		UserDoc{
+		{
 			"Jo",
 			19,
 		},
@@ -329,10 +329,10 @@ func TestUpdateDocumentsSilent(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"age": "61",
 		},
-		map[string]interface{}{
+		{
 			"age": "16",
 		},
 	}
@@ -354,11 +354,11 @@ func TestUpdateDocumentsRevision(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Revision",
 			33,
 		},
-		UserDoc{
+		{
 			"Revision2",
 			34,
 		},
@@ -374,10 +374,10 @@ func TestUpdateDocumentsRevision(t *testing.T) {
 
 	// Update documents with correct revisions
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"age": 34,
 		},
-		map[string]interface{}{
+		{
 			"age": 77,
 		},
 	}
@@ -419,7 +419,7 @@ func TestUpdateDocumentsKeyEmpty(t *testing.T) {
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	// Update document
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated",
 		},
 	}
@@ -444,10 +444,10 @@ func TestUpdateDocumentsUpdateLenDiff(t *testing.T) {
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "name1",
 		},
-		map[string]interface{}{
+		{
 			"name": "name2",
 		},
 	}
@@ -467,11 +467,11 @@ func TestUpdateDocumentsInWaitForSyncCollection(t *testing.T) {
 		WaitForSync: true,
 	}, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Piere",
 			23,
 		},
-		UserDoc{
+		{
 			"Otto",
 			43,
 		},
@@ -484,10 +484,10 @@ func TestUpdateDocumentsInWaitForSyncCollection(t *testing.T) {
 	}
 	// Update documents
 	updates := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "Updated1",
 		},
-		map[string]interface{}{
+		{
 			"name": "Updated2",
 		},
 	}

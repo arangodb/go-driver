@@ -40,10 +40,10 @@ func TestReplaceVertices(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "male", t)
 
 	docs := []UserDoc{
-		UserDoc{
+		{
 			Name: "Bob",
 		},
-		UserDoc{
+		{
 			Name: "Joe",
 		},
 	}
@@ -55,10 +55,10 @@ func TestReplaceVertices(t *testing.T) {
 	}
 	// Replacement docs
 	replacements := []Book{
-		Book{
+		{
 			Title: "For bob",
 		},
-		Book{
+		{
 			Title: "For joe",
 		},
 	}
@@ -87,10 +87,10 @@ func TestReplaceVerticesReturnOld(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "pensions", t)
 
 	docs := []UserDoc{
-		UserDoc{
+		{
 			Name: "Bob",
 		},
-		UserDoc{
+		{
 			Name: "Joe",
 		},
 	}
@@ -102,10 +102,10 @@ func TestReplaceVerticesReturnOld(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []Book{
-		Book{
+		{
 			Title: "For bob",
 		},
-		Book{
+		{
 			Title: "For joe",
 		},
 	}
@@ -132,10 +132,10 @@ func TestReplaceVerticesReturnNew(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "For bob",
 		},
-		Book{
+		{
 			Title: "For joe",
 		},
 	}
@@ -147,10 +147,10 @@ func TestReplaceVerticesReturnNew(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []Book{
-		Book{
+		{
 			Title: "For the new bob",
 		},
-		Book{
+		{
 			Title: "For the new joe",
 		},
 	}
@@ -177,10 +177,10 @@ func TestReplaceVerticesSilent(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "moments", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Fly me to the moon",
 		},
-		Book{
+		{
 			Title: "Fly me to the earth",
 		},
 	}
@@ -192,10 +192,10 @@ func TestReplaceVerticesSilent(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []UserDoc{
-		UserDoc{
+		{
 			Name: "Bob",
 		},
-		UserDoc{
+		{
 			Name: "Christal",
 		},
 	}
@@ -222,10 +222,10 @@ func TestReplaceVerticesRevision(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "planets", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Pluto",
 		},
-		Book{
+		{
 			Title: "Mars",
 		},
 	}
@@ -238,10 +238,10 @@ func TestReplaceVerticesRevision(t *testing.T) {
 
 	// Replace documents with correct revisions
 	replacements := []UserDoc{
-		UserDoc{
+		{
 			Name: "Bob",
 		},
-		UserDoc{
+		{
 			Name: "Christal",
 		},
 	}
@@ -320,10 +320,10 @@ func TestReplaceVerticesUpdateLenDiff(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "failures", t)
 
 	replacements := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "name1",
 		},
-		map[string]interface{}{
+		{
 			"name": "name2",
 		},
 	}

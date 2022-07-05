@@ -20,6 +20,7 @@
 // Author Ewout Prangsma
 //
 
+//go:build failover
 // +build failover
 
 package test
@@ -33,8 +34,9 @@ import (
 	"testing"
 	"time"
 
-	driver "github.com/arangodb/go-driver"
 	"github.com/coreos/go-iptables/iptables"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 const (

@@ -18,6 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 
+//go:build !auth
 // +build !auth
 
 // This example demonstrates how to create a graph, how to add vertices and edges and how to delete it again.
@@ -27,7 +28,7 @@ import (
 	"fmt"
 	"log"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
 
@@ -89,11 +90,11 @@ func Example_createGraph() {
 	}
 
 	myObjects := []MyObject{
-		MyObject{
+		{
 			"Homer",
 			38,
 		},
-		MyObject{
+		{
 			"Marge",
 			36,
 		},

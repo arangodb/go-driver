@@ -27,6 +27,7 @@ import (
 	"crypto/tls"
 	"log"
 	httplib "net/http"
+	_ "net/http/pprof"
 	"os"
 	"strconv"
 	"strings"
@@ -34,13 +35,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/util/connection/wrappers"
-
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	_ "net/http/pprof"
 
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
@@ -149,13 +145,6 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 		t.Fatalf("Unknown authentication: '%s'", parts[0])
 		return nil
 	}
-}
-
-// createConnectionFromEnvWitLog initializes a Connection from information specified in environment variables with logger.
-func createConnectionFromEnvWitLog(t testEnv, logger zerolog.Logger) driver.Connection {
-	conn := createConnectionFromEnv(t)
-
-	return wrappers.NewLoggerConnection(conn, wrappers.NewZeroLogLogger(logger), true)
 }
 
 // createConnectionFromEnv initializes a Connection from information specified in environment variables.

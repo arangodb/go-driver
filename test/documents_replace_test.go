@@ -28,7 +28,7 @@ import (
 	"strings"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // TestReplaceDocuments creates documents, replaces them and then checks the replacements have succeeded.
@@ -39,11 +39,11 @@ func TestReplaceDocuments(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Piere",
 			23,
 		},
-		UserDoc{
+		{
 			"Pioter",
 			45,
 		},
@@ -56,11 +56,11 @@ func TestReplaceDocuments(t *testing.T) {
 	}
 	// Replacement docs
 	replacements := []Account{
-		Account{
+		{
 			ID:   "foo",
 			User: &UserDoc{},
 		},
-		Account{
+		{
 			ID:   "foo2",
 			User: &UserDoc{},
 		},
@@ -87,11 +87,11 @@ func TestReplaceDocumentsReturnOld(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Tim",
 			27,
 		},
-		UserDoc{
+		{
 			"George",
 			32,
 		},
@@ -104,10 +104,10 @@ func TestReplaceDocumentsReturnOld(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []Book{
-		Book{
+		{
 			Title: "Golang 1.8",
 		},
-		Book{
+		{
 			Title: "Dart 1.0",
 		},
 	}
@@ -131,11 +131,11 @@ func TestReplaceDocumentsReturnNew(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Tim",
 			27,
 		},
-		UserDoc{
+		{
 			"Anna",
 			27,
 		},
@@ -148,10 +148,10 @@ func TestReplaceDocumentsReturnNew(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []Book{
-		Book{
+		{
 			Title: "Golang 1.8",
 		},
-		Book{
+		{
 			Title: "C++ made easy",
 		},
 	}
@@ -176,15 +176,15 @@ func TestReplaceDocumentsSilent(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Angela",
 			91,
 		},
-		UserDoc{
+		{
 			"Fiona",
 			12,
 		},
-		UserDoc{
+		{
 			"Roos",
 			54,
 		},
@@ -197,13 +197,13 @@ func TestReplaceDocumentsSilent(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []Book{
-		Book{
+		{
 			Title: "Jungle book",
 		},
-		Book{
+		{
 			Title: "Database book",
 		},
-		Book{
+		{
 			Title: "Raft book",
 		},
 	}
@@ -228,11 +228,11 @@ func TestReplaceDocumentsRevision(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Revision",
 			33,
 		},
-		UserDoc{
+		{
 			"Other revision",
 			33,
 		},
@@ -246,10 +246,10 @@ func TestReplaceDocumentsRevision(t *testing.T) {
 
 	// Replace documents with correct revisions
 	replacements := []Book{
-		Book{
+		{
 			Title: "Jungle book",
 		},
-		Book{
+		{
 			Title: "Portable book",
 		},
 	}
@@ -319,10 +319,10 @@ func TestReplaceDocumentsUpdateLenDiff(t *testing.T) {
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	replacements := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "name1",
 		},
-		map[string]interface{}{
+		{
 			"name": "name2",
 		},
 	}
@@ -342,11 +342,11 @@ func TestReplaceDocumentsInWaitForSyncCollection(t *testing.T) {
 		WaitForSync: true,
 	}, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Piere",
 			23,
 		},
-		UserDoc{
+		{
 			"Pioter",
 			45,
 		},
@@ -359,11 +359,11 @@ func TestReplaceDocumentsInWaitForSyncCollection(t *testing.T) {
 	}
 	// Replacement docs
 	replacements := []Account{
-		Account{
+		{
 			ID:   "foo",
 			User: &UserDoc{},
 		},
-		Account{
+		{
 			ID:   "foo2",
 			User: &UserDoc{},
 		},

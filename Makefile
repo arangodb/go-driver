@@ -136,7 +136,7 @@ else
     DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
 endif
 
-.PHONY: all build clean run-tests
+.PHONY: all build clean linter run-tests
 
 all: build
 
@@ -492,6 +492,8 @@ run-benchmarks-single-vpack-no-auth:
 
 .PHONY: tools
 tools:
+	@echo ">> Fetching golangci-lint linter"
+	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
 	@echo ">> Fetching goimports"
 	@go get -mod 'readonly' golang.org/x/tools/cmd/goimports
 	@echo ">> Fetching license check"
@@ -519,10 +521,7 @@ fmt-verify: license-verify
 
 .PHONY: linter
 linter: fmt
-	@golangci-lint run --no-config --issues-exit-code=1 --deadline=30m --disable-all \
-	                  $(foreach MODE,$(GOLANGCI_ENABLED),--enable $(MODE) ) \
-	                  --exclude-use-default=false \
-	                  $(SOURCES_PACKAGES)
+	$(TMPDIR)/bin/golangci-lint run ./...
 
 # V2
 

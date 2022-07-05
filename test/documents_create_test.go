@@ -27,7 +27,7 @@ import (
 	"reflect"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // TestCreateDocuments creates a document and then checks that it exists.
@@ -37,15 +37,15 @@ func TestCreateDocuments(t *testing.T) {
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Jan",
 			40,
 		},
-		UserDoc{
+		{
 			"Foo",
 			41,
 		},
-		UserDoc{
+		{
 			"Frank",
 			42,
 		},
@@ -96,11 +96,11 @@ func TestCreateDocumentsReturnNew(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Sjjjj",
 			1,
 		},
-		UserDoc{
+		{
 			"Mies",
 			2,
 		},
@@ -139,11 +139,11 @@ func TestCreateDocumentsSilent(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Sjjjj",
 			1,
 		},
-		UserDoc{
+		{
 			"Mies",
 			2,
 		},
@@ -194,15 +194,15 @@ func TestCreateDocumentsInWaitForSyncCollection(t *testing.T) {
 		WaitForSync: true,
 	}, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Jan",
 			40,
 		},
-		UserDoc{
+		{
 			"Foo",
 			41,
 		},
-		UserDoc{
+		{
 			"Frank",
 			42,
 		},

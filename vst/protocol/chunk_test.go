@@ -41,7 +41,7 @@ type readChunksTest struct {
 
 func TestReadChunk(t *testing.T) {
 	tests := []readChunksTest{
-		readChunksTest{
+		{
 			ChunkHex:       "1b0000000900000037020000000000000c00000000000000010203",
 			MessageID:      567,
 			MessageLength:  12,
@@ -50,7 +50,7 @@ func TestReadChunk(t *testing.T) {
 			NumberOfChunks: 4,
 			Data:           []byte{1, 2, 3},
 		},
-		readChunksTest{
+		{
 			ChunkHex:       "1b0000000200000037020000000000000c00000000000000040506",
 			MessageID:      567,
 			MessageLength:  12,
@@ -67,7 +67,9 @@ func TestReadChunk(t *testing.T) {
 			t.Fatalf("Hex decode failed: %#v", err)
 		}
 		r := bytes.NewReader(raw)
-		c, err := readChunk(r)
+		var c chunk
+		//nolint:typecheck
+		c, err = readChunk(r)
 		if err != nil {
 			t.Errorf("ReadChunk for '%s' failed: %#v", test.ChunkHex, err)
 		}
@@ -101,13 +103,13 @@ type buildChunksTest struct {
 
 func TestBuildChunks(t *testing.T) {
 	tests := []buildChunksTest{
-		buildChunksTest{
+		{
 			MessageID:    567,
 			MaxChunkSize: 24 + 3,
 			MessageParts: [][]byte{
-				[]byte{1, 2, 3},
-				[]byte{4, 5, 6},
-				[]byte{7, 8, 9, 10, 11, 12},
+				{1, 2, 3},
+				{4, 5, 6},
+				{7, 8, 9, 10, 11, 12},
 			},
 			ExpectedChunksHex: []string{
 				"1b0000000900000037020000000000000c00000000000000010203",
@@ -116,13 +118,13 @@ func TestBuildChunks(t *testing.T) {
 				"1b0000000600000037020000000000000c000000000000000a0b0c",
 			},
 		},
-		buildChunksTest{
+		{
 			MessageID:    567,
 			MaxChunkSize: 24 + 6,
 			MessageParts: [][]byte{
-				[]byte{1, 2, 3},
-				[]byte{4, 5, 6},
-				[]byte{7, 8, 9, 10, 11, 12},
+				{1, 2, 3},
+				{4, 5, 6},
+				{7, 8, 9, 10, 11, 12},
 			},
 			ExpectedChunksHex: []string{
 				"1b0000000700000037020000000000000c00000000000000010203",
@@ -146,6 +148,7 @@ func TestBuildChunks(t *testing.T) {
 				continue
 			}
 			var buf bytes.Buffer
+			//nolint:typecheck
 			if _, err := chunks[i].WriteTo(&buf); err != nil {
 				t.Errorf("Failed to write chunk %d: %#v", i, err)
 			}

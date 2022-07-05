@@ -25,7 +25,7 @@ package test
 import (
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // TestImportDocumentsWithKeys imports documents and then checks that it exists.
@@ -34,17 +34,17 @@ func TestImportDocumentsWithKeys(t *testing.T) {
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_withKeys_test", nil, t)
 	docs := []UserDocWithKey{
-		UserDocWithKey{
+		{
 			"jan",
 			"Jan",
 			40,
 		},
-		UserDocWithKey{
+		{
 			"foo",
 			"Foo",
 			41,
 		},
-		UserDocWithKey{
+		{
 			"frank",
 			"Frank",
 			42,
@@ -75,15 +75,15 @@ func TestImportDocumentsWithoutKeys(t *testing.T) {
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_withoutKeys_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Jan",
 			40,
 		},
-		UserDoc{
+		{
 			"Foo",
 			41,
 		},
-		UserDoc{
+		{
 			"Frank",
 			42,
 		},
@@ -117,18 +117,18 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "import_emptyEntries_test", nil, t)
 	docs := []*UserDocWithKey{
-		&UserDocWithKey{
+		{
 			"jan",
 			"Jan",
 			40,
 		},
-		&UserDocWithKey{
+		{
 			"foo",
 			"Foo",
 			41,
 		},
 		nil,
-		&UserDocWithKey{
+		{
 			"frank",
 			"Frank",
 			42,
@@ -576,17 +576,17 @@ func TestImportDocumentsWithKeysInWaitForSyncCollection(t *testing.T) {
 		WaitForSync: true,
 	}, t)
 	docs := []UserDocWithKey{
-		UserDocWithKey{
+		{
 			"jan",
 			"Jan",
 			40,
 		},
-		UserDocWithKey{
+		{
 			"foo",
 			"Foo",
 			41,
 		},
-		UserDocWithKey{
+		{
 			"frank",
 			"Frank",
 			42,

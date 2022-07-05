@@ -43,17 +43,17 @@ func TestRemoveEdges(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 40,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 68,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 21,
@@ -92,17 +92,17 @@ func TestRemoveEdgesReturnOld(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 40,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 68,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 21,
@@ -142,12 +142,12 @@ func TestRemoveEdgesSilent(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 40,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 21,
@@ -193,12 +193,12 @@ func TestRemoveEdgesRevision(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 40,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 21,
@@ -213,12 +213,12 @@ func TestRemoveEdgesRevision(t *testing.T) {
 
 	// Replace the documents to get another revision
 	replacements := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 880,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 210,

@@ -27,7 +27,7 @@ import (
 	"reflect"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // TestCreateEdges creates documents and then checks that it exists.
@@ -44,17 +44,17 @@ func TestCreateEdges(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 40,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 68,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 21,
@@ -113,17 +113,17 @@ func TestCreateEdgesReturnNew(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 40,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 68,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 21,
@@ -170,17 +170,17 @@ func TestCreateEdgesSilent(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdge{
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 40,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 68,
 		},
-		RouteEdge{
+		{
 			From:     from.ID.String(),
 			To:       to.ID.String(),
 			Distance: 21,

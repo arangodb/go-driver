@@ -27,7 +27,7 @@ import (
 	"reflect"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // TestReplaceDocuments creates documents, removes them and then checks the removal has succeeded.
@@ -37,7 +37,7 @@ func TestRemoveDocuments(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Piere",
 			23,
 		},
@@ -67,19 +67,19 @@ func TestRemoveDocumentsReturnOld(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Tim",
 			27,
 		},
-		UserDoc{
+		{
 			"Tom",
 			27,
 		},
-		UserDoc{
+		{
 			"Tam",
 			27,
 		},
-		UserDoc{
+		{
 			"Tum",
 			27,
 		},
@@ -115,11 +115,11 @@ func TestRemoveDocumentsSilent(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Angela",
 			91,
 		},
-		UserDoc{
+		{
 			"Tommy",
 			19,
 		},
@@ -157,11 +157,11 @@ func TestRemoveDocumentsRevision(t *testing.T) {
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"DryLake",
 			91,
 		},
-		UserDoc{
+		{
 			"DryBed",
 			91,
 		},
@@ -175,10 +175,10 @@ func TestRemoveDocumentsRevision(t *testing.T) {
 
 	// Replace the documents to get another revision
 	replacements := []Book{
-		Book{
+		{
 			Title: "Jungle book",
 		},
-		Book{
+		{
 			Title: "Another book",
 		},
 	}
@@ -238,7 +238,7 @@ func TestRemoveDocumentsInWaitForSyncCollection(t *testing.T) {
 		WaitForSync: true,
 	}, t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Piere",
 			23,
 		},
