@@ -27,10 +27,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/arangodb/go-driver/v2/utils"
-	"github.com/pkg/errors"
 )
 
 func newCollectionDocumentUpdate(collection *collection) *collectionDocumentUpdate {

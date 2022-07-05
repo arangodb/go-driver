@@ -28,8 +28,9 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
-	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/pkg/errors"
+
+	"github.com/arangodb/go-driver/v2/connection"
 )
 
 func newDatabaseCollection(db *database) *databaseCollection {

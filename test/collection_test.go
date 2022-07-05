@@ -29,9 +29,10 @@ import (
 	"testing"
 	"time"
 
-	driver "github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 func skipNoCluster(c driver.Client, t *testing.T) {

@@ -28,8 +28,9 @@ import (
 	"testing"
 	"time"
 
-	driver "github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 // TestDefaultIndexes creates a collection without any custom index.

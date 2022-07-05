@@ -8,8 +8,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-velocypack"
+
+	"github.com/arangodb/go-driver"
 )
 
 type connectionDebugWrapper struct {

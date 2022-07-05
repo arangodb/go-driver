@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Fix `lastValue` field type
+- Setup Go-lang linter with minimal configuration 
 
 ## [1.3.2](https://github.com/arangodb/go-driver/tree/v1.3.2) (2022-05-16)
 - Fix selectivityEstimate Index field type

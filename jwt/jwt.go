@@ -24,8 +24,9 @@
 package jwt
 
 import (
-	driver "github.com/arangodb/go-driver"
 	"github.com/golang-jwt/jwt"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 const (

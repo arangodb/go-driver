@@ -25,8 +25,9 @@ package vst
 import (
 	"fmt"
 
-	driver "github.com/arangodb/go-driver"
 	velocypack "github.com/arangodb/go-velocypack"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 // vstResponseElement implements driver.Response for an entry of an array response.

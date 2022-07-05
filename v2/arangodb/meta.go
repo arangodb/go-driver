@@ -24,8 +24,9 @@
 package arangodb
 
 import (
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/pkg/errors"
+
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 // ShardID is an internal identifier of a specific shard.

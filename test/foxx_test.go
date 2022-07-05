@@ -28,8 +28,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 func TestFoxxItzpapalotlService(t *testing.T) {

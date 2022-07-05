@@ -24,10 +24,9 @@ package test
 
 import (
 	"context"
-	"testing"
-
 	"os"
 	"strings"
+	"testing"
 
 	driver "github.com/arangodb/go-driver"
 )

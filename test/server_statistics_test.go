@@ -26,10 +26,9 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 	"time"
-
-	"strings"
 
 	driver "github.com/arangodb/go-driver"
 )

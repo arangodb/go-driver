@@ -28,8 +28,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 func jsonEqual(t *testing.T, a, b interface{}) {

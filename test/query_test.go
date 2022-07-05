@@ -27,8 +27,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 type validateQueryTest struct {

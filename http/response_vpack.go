@@ -26,8 +26,9 @@ import (
 	"fmt"
 	"net/http"
 
-	driver "github.com/arangodb/go-driver"
 	velocypack "github.com/arangodb/go-velocypack"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 // httpVPackResponse implements driver.Response for standard golang Velocypack encoded http responses.

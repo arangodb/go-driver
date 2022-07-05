@@ -28,8 +28,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/connection"
 )
 
 func createAuthenticationFromEnv(t testing.TB, conn connection.Connection) connection.Connection {
