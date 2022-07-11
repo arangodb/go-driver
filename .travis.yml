@@ -27,6 +27,7 @@ services:
 
 language: go
 
+
 env:
   - TEST_SUITE=run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 ALWAYS=1
   - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16
