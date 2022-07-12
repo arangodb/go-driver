@@ -15,6 +15,7 @@ podTemplate(
         container('worker') {
             stage('Find myself') {
                 sh 'docker ps'
+                sh 'env'
             }
 
             stage('Prepare ENV') {
