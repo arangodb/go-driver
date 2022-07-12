@@ -34,9 +34,9 @@ podTemplate(
                     sh 'cat ${AUTH_FILE} | docker login -u _json_key --password-stdin https://${AUTH_URL}'
                 }
             }
-//             stage('Enable dockerx') {
-//                 sh 'docker buildx create --name builder --driver docker-container --driver-opt network=host --use || echo "Do not recreate"'
-//             }
+            stage('Enable dockerx') {
+                sh 'docker buildx create --name builder --driver docker-container --driver-opt network=host --use || echo "Do not recreate"'
+            }
             stage('Configure GIT') {
                 withCredentials([
                     usernamePassword(credentialsId: 'github', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
