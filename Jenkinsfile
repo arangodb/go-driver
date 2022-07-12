@@ -66,7 +66,7 @@ podTemplate(
             stage('Run Test') {
                 sh 'pwd'
                 sh 'ls -l'
-                sh 'make run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch VERBOSE=1'
+                sh 'make run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6-stretch VERBOSE=1'
             }
         }
     }
