@@ -14,7 +14,7 @@ podTemplate(
 
         container('worker') {
             stage('Find myself') {
-                sh 'docker inspect $(docker ps | grep k8s_worker_${HOSTNAME} | rev | cut -d " " -f 1 | rev)'
+                sh ''
             }
 
             stage('Prepare ENV') {
@@ -40,7 +40,11 @@ podTemplate(
             }
 
             stage('Run Test') {
-                sh 'make run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16 VERBOSE=1'
+                sh '''
+                   export VOLUME_ROOT=$(docker inspect $(docker ps | grep k8s_worker_${HOSTNAME} | rev | cut -d " " -f 1 | rev) | jq '.[0].Mounts[] | select( .Destination == "/home/jenkins/agent") | .Source' -r)
+                   echo ${VOLUME_ROOT}
+                   make run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16 VERBOSE=1
+               '''
             }
         }
     }
