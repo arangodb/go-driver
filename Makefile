@@ -178,7 +178,7 @@ run-v2-unit-tests:
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
-		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
+		pwd; ls -la; go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
