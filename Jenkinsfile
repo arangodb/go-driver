@@ -1,6 +1,6 @@
 podTemplate(
   containers: [
-    containerTemplate(name: 'worker', image: 'eu.gcr.io/hale-ivy-241313/jenkins-worker:2022-02-01.10-15', command: 'sleep', args: '99d')
+    containerTemplate(name: 'worker', image: 'gcr.io/gcr-for-testing/kube-arangodb/cicd:2022-06-27.22-55', command: 'sleep', args: '99d')
   ],
   volumes: [
     hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock')
