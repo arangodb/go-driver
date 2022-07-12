@@ -3,22 +3,20 @@ podTemplate(
     containerTemplate(name: 'worker', image: 'gcr.io/gcr-for-testing/kube-arangodb/cicd:2022-06-27.22-55', command: 'sleep', args: '99d')
   ],
   volumes: [
-    persistentVolumeClaim(claimName: 'jenkins-go-ebs', mountPath: '/usr/code'),
+    //persistentVolumeClaim(claimName: 'jenkins-go-ebs', mountPath: '/usr/code'),
     hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock')
   ],
   serviceAccount: 'jenkins-agent',
   ) {
     node(POD_LABEL) {
         stage('Clone') {
-            dir('/usr/code') {
-                checkout scm
-            }
+            checkout scm
+//             dir('/usr/code') {
+//                 checkout scm
+//             }
         }
 
         container('worker') {
-            stage('Find myself') {
-                sh ''
-            }
 
             stage('Prepare ENV') {
                 sh '''
