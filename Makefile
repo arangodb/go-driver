@@ -172,13 +172,13 @@ run-unit-tests: run-v2-unit-tests
 		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
 
 run-v2-unit-tests:
-	$(DOCKER_CMD) \
+	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}"/v2:/usr/code \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
-		pwd; ls -la; sleep 900; go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
+		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
