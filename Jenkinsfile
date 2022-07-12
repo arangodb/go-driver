@@ -12,61 +12,33 @@ podTemplate(
         stage('Clone') {
             checkout scm
         }
-//         stage('Configure GIT') {
-//             withCredentials([
-//                 usernamePassword(credentialsId: 'github', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
-//             ]) {
-//                 sh 'git config --global --add url."https://${USERNAME}:${PASSWORD}@github.com/".insteadOf "https://github.com/"'
-//             }
-//         }
 
         container('worker') {
-//             stage('Docker Login') {
-//                 withCredentials([
-//                     file(credentialsId: 'kubernetes-registry-gke-auth', variable: 'AUTH_FILE'),
-//                     string(credentialsId: 'kubernetes-registry-gke-url', variable: 'AUTH_URL')
-//                 ]) {
-//                     sh 'cat ${AUTH_FILE} | docker login -u _json_key --password-stdin https://${AUTH_URL}'
-//                 }
-//             }
-//             stage('Enable dockerx') {
-//                 sh 'docker buildx create --name builder --driver docker-container --driver-opt network=host --use || echo "Do not recreate"'
-//             }
-//             stage('Configure GIT') {
-//                 withCredentials([
-//                     usernamePassword(credentialsId: 'github', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')
-//                 ]) {
-//                     sh 'git config --global --add url."https://${USERNAME}:${PASSWORD}@github.com/".insteadOf "https://github.com/"'
-//                 }
-//             }
 
             stage('Prepare ENV') {
                 sh '''
-                    mkdir -p $HOME/resources
+                    mkdir -p /.go/resources
                     for i in {0..3}
                     do
 
-                    if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-                      curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+                    if ! [ -f "/.go/resources/itzpapalotl-v1.2.0.zip" ]; then
+                      curl -L0 -o /.go/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
                     fi
 
-                    SHA=$(sha256sum $HOME/resources/itzpapalotl-v1.2.0.zip | cut -f 1 -d " ")
+                    SHA=$(sha256sum /.go/resources/itzpapalotl-v1.2.0.zip | cut -f 1 -d " ")
                     if [ "${SHA}" = "86117db897efe86cbbd20236abba127a08c2bdabbcd63683567ee5e84115d83a" ]; then
                       break
                     fi
-
-                    $HOME/resources/itzpapalotl-v1.2.0.zip
                     done
 
-                    if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
+                    if ! [ -f "/.go/resources/itzpapalotl-v1.2.0.zip" ]; then
                       exit 1
                     fi
                 '''
             }
+
             stage('Run Test') {
-                sh 'pwd'
-                sh 'ls -l'
-                sh 'make run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6-stretch VERBOSE=1'
+                sh 'make run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch TEST_RESOURCES="/.go/resources/" VERBOSE=1'
             }
         }
     }
