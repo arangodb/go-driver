@@ -180,6 +180,22 @@ run-v2-unit-tests:
 		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
 
+run-unit-tests-k8s: run-v2-unit-tests-k8s
+	@$(DOCKER_CMD) \
+		--rm \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
+		-w /usr/code/ \
+		$(GOIMAGE) \
+		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
+
+run-v2-unit-tests-k8s:
+	@$(DOCKER_CMD) \
+		--rm \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
+		-w /usr/code/v2 \
+		$(GOIMAGE) \
+		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
+
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
 
