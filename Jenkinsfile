@@ -14,7 +14,7 @@ podTemplate(
 
         container('worker') {
             stage('Find myself') {
-                sh 'docker ps | grep k8s_worker_${HOSTNAME}'
+                sh 'docker ps | grep k8s_worker_${HOSTNAME} | rev | cut -d " " -f 1 | rev'
                 sh 'env'
             }
 
