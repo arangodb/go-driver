@@ -13,6 +13,9 @@ podTemplate(
         }
 
         container('worker') {
+            stage('Find myself') {
+                sh 'docker ps'
+            }
 
             stage('Prepare ENV') {
                 sh '''
@@ -37,7 +40,7 @@ podTemplate(
             }
 
             stage('Run Test') {
-                sh 'GO111MODULE=off make run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16 VERBOSE=1'
+                sh 'make run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16 VERBOSE=1'
             }
         }
     }
