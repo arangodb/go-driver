@@ -28,17 +28,17 @@ services:
 language: go
 
 env:
-  - TEST_SUITE=run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch ALWAYS=1
-  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16
-  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.7.17
-  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.8.5.1
-  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.9.0 ALWAYS=1
-  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest TEST_DISALLOW_UNKNOWN_FIELDS=false
-  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16
-  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.7.17
-  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.8.5.1
-  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.9.0 ALWAYS=1
-  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.16.6-stretch STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest
+  - TEST_SUITE=run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 ALWAYS=1
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.7.17
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.8.5.1
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.9.0 ALWAYS=1
+  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest TEST_DISALLOW_UNKNOWN_FIELDS=false
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.6.16
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.7.17
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.8.5.1
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb:3.9.0 ALWAYS=1
+  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.17.6 STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:latest
 
 script:
   - |
