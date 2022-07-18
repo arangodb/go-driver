@@ -506,6 +506,104 @@ func TestUseArangoSearchView(t *testing.T) {
 	}
 }
 
+// TestUseArangoSearchViewWithPipelineAnalyzer tries to create a view and analyzer and then actually use it in an AQL query.
+func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
+	ctx := context.Background()
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
+	skipBelowVersion(c, "3.8", t)
+	db := ensureDatabase(nil, c, "view_with_pipeline_test", nil, t)
+	col := ensureCollection(ctx, db, "some_collection_with_analyzer", nil, t)
+
+	analyzer := driver.ArangoSearchAnalyzerDefinition{
+		Name: "custom_analyzer",
+		Type: driver.ArangoSearchAnalyzerTypePipeline,
+		Properties: driver.ArangoSearchAnalyzerProperties{
+			Pipeline: []driver.ArangoSearchAnalyzerPipeline{
+				{
+					Type: driver.ArangoSearchAnalyzerTypeNGram,
+					Properties: driver.ArangoSearchAnalyzerProperties{
+						Min:              newInt64(2),
+						Max:              newInt64(2),
+						PreserveOriginal: newBool(false),
+						StreamType:       newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamUTF8),
+					},
+				},
+				{
+					Type: driver.ArangoSearchAnalyzerTypeNorm,
+					Properties: driver.ArangoSearchAnalyzerProperties{
+						Locale: "en",
+						Case:   driver.ArangoSearchCaseLower,
+					},
+				},
+			},
+		},
+		Features: []driver.ArangoSearchAnalyzerFeature{
+			driver.ArangoSearchAnalyzerFeatureFrequency,
+			driver.ArangoSearchAnalyzerFeaturePosition,
+			driver.ArangoSearchAnalyzerFeatureNorm,
+		},
+	}
+	existed, _, err := db.EnsureAnalyzer(ctx, analyzer)
+	require.NoError(t, err)
+	require.False(t, existed)
+
+	ensureArangoSearchView(ctx, db, "some_view_with_analyzer", &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"some_collection_with_analyzer": driver.ArangoSearchElementProperties{
+				Fields: driver.ArangoSearchFields{
+					"name": driver.ArangoSearchElementProperties{
+						Analyzers: []string{"custom_analyzer"},
+					},
+				},
+			},
+		},
+	}, t)
+
+	docs := []UserDoc{
+		UserDoc{
+			"John",
+			23,
+		},
+		UserDoc{
+			"Alice",
+			12,
+		},
+		UserDoc{
+			"Helmut",
+			17,
+		},
+	}
+
+	_, errs, err := col.CreateDocuments(ctx, docs)
+	if err != nil {
+		t.Fatalf("Failed to create new documents: %s", describe(err))
+	} else if err := errs.FirstNonNil(); err != nil {
+		t.Fatalf("Expected no errors, got first: %s", describe(err))
+	}
+
+	// now access it via AQL with waitForSync
+	{
+		cur, err := db.Query(driver.WithQueryCount(ctx), `FOR doc IN some_view_with_analyzer SEARCH NGRAM_MATCH(doc.name, 'john', 0.75, 'custom_analyzer')  OPTIONS {waitForSync:true} RETURN doc`, nil)
+
+		if err != nil {
+			t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
+		} else if cur.Count() != 1 || !cur.HasMore() {
+			t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
+		}
+
+		var doc UserDoc
+		_, err = cur.ReadDocument(ctx, &doc)
+		if err != nil {
+			t.Fatalf("Failed to read document: %s", describe(err))
+		}
+
+		if doc.Name != "John" {
+			t.Fatalf("Expected result `John`, found `%s`", doc.Name)
+		}
+	}
+}
+
 // TestGetArangoSearchView creates an arangosearch view and then gets it again.
 func TestArangoSearchViewProperties35(t *testing.T) {
 	ctx := context.Background()

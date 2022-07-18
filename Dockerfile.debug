@@ -1,4 +1,4 @@
-FROM golang:1.16 as builder
+FROM golang:1.17.6 as builder
 
 ARG TESTS_DIRECTORY
 ARG TESTS_ROOT_PATH="."
