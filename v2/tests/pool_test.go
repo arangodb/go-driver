@@ -27,9 +27,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/connection"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_Pool(t *testing.T) {

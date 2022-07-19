@@ -27,9 +27,9 @@ import (
 	"testing"
 
 	"github.com/dchest/uniuri"
+	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
-	"github.com/stretchr/testify/require"
 )
 
 // TestDatabaseSharding test if proper sharding is passed to database

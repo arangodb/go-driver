@@ -27,9 +27,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/agency"
-	"github.com/stretchr/testify/require"
 )
 
 var (

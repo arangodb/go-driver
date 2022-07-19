@@ -30,9 +30,10 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
-	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
 func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDatabaseOptions, f func(db arangodb.Database)) {

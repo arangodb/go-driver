@@ -40,8 +40,8 @@ func TestEnsureFullTextIndex(t *testing.T) {
 
 	testOptions := []*driver.EnsureFullTextIndexOptions{
 		nil,
-		&driver.EnsureFullTextIndexOptions{MinLength: 2},
-		&driver.EnsureFullTextIndexOptions{MinLength: 20},
+		{MinLength: 2},
+		{MinLength: 20},
 	}
 
 	for i, options := range testOptions {
@@ -98,8 +98,8 @@ func TestEnsureGeoIndex(t *testing.T) {
 
 	testOptions := []*driver.EnsureGeoIndexOptions{
 		nil,
-		&driver.EnsureGeoIndexOptions{GeoJSON: true},
-		&driver.EnsureGeoIndexOptions{GeoJSON: false},
+		{GeoJSON: true},
+		{GeoJSON: false},
 	}
 
 	for i, options := range testOptions {
@@ -156,10 +156,10 @@ func TestEnsureHashIndex(t *testing.T) {
 
 	testOptions := []*driver.EnsureHashIndexOptions{
 		nil,
-		&driver.EnsureHashIndexOptions{Unique: true, Sparse: false},
-		&driver.EnsureHashIndexOptions{Unique: true, Sparse: true},
-		&driver.EnsureHashIndexOptions{Unique: false, Sparse: false},
-		&driver.EnsureHashIndexOptions{Unique: false, Sparse: true},
+		{Unique: true, Sparse: false},
+		{Unique: true, Sparse: true},
+		{Unique: false, Sparse: false},
+		{Unique: false, Sparse: true},
 	}
 
 	for i, options := range testOptions {
@@ -219,10 +219,10 @@ func TestEnsurePersistentIndex(t *testing.T) {
 
 	testOptions := []*driver.EnsurePersistentIndexOptions{
 		nil,
-		&driver.EnsurePersistentIndexOptions{Unique: true, Sparse: false},
-		&driver.EnsurePersistentIndexOptions{Unique: true, Sparse: true},
-		&driver.EnsurePersistentIndexOptions{Unique: false, Sparse: false},
-		&driver.EnsurePersistentIndexOptions{Unique: false, Sparse: true},
+		{Unique: true, Sparse: false},
+		{Unique: true, Sparse: true},
+		{Unique: false, Sparse: false},
+		{Unique: false, Sparse: true},
 	}
 
 	for i, options := range testOptions {
@@ -282,10 +282,10 @@ func TestEnsureSkipListIndex(t *testing.T) {
 
 	testOptions := []*driver.EnsureSkipListIndexOptions{
 		nil,
-		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: false, NoDeduplicate: true},
-		&driver.EnsureSkipListIndexOptions{Unique: true, Sparse: true, NoDeduplicate: true},
-		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: false, NoDeduplicate: false},
-		&driver.EnsureSkipListIndexOptions{Unique: false, Sparse: true, NoDeduplicate: false},
+		{Unique: true, Sparse: false, NoDeduplicate: true},
+		{Unique: true, Sparse: true, NoDeduplicate: true},
+		{Unique: false, Sparse: false, NoDeduplicate: false},
+		{Unique: false, Sparse: true, NoDeduplicate: false},
 	}
 
 	for i, options := range testOptions {

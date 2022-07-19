@@ -37,17 +37,17 @@ func TestImportVerticesWithKeys(t *testing.T) {
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_withKeys_test", t)
 	docs := []UserDocWithKey{
-		UserDocWithKey{
+		{
 			"jan",
 			"Jan",
 			40,
 		},
-		UserDocWithKey{
+		{
 			"foo",
 			"Foo",
 			41,
 		},
-		UserDocWithKey{
+		{
 			"frank",
 			"Frank",
 			42,
@@ -80,15 +80,15 @@ func TestImportVerticesWithoutKeys(t *testing.T) {
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_withoutKeys_test", t)
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"Jan",
 			40,
 		},
-		UserDoc{
+		{
 			"Foo",
 			41,
 		},
-		UserDoc{
+		{
 			"Frank",
 			42,
 		},
@@ -123,18 +123,18 @@ func TestImportVerticesEmptyEntries(t *testing.T) {
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_emptyEntries_test", t)
 	docs := []*UserDocWithKey{
-		&UserDocWithKey{
+		{
 			"jan",
 			"Jan",
 			40,
 		},
-		&UserDocWithKey{
+		{
 			"foo",
 			"Foo",
 			41,
 		},
 		nil,
-		&UserDocWithKey{
+		{
 			"frank",
 			"Frank",
 			42,

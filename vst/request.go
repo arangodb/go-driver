@@ -29,10 +29,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/arangodb/go-driver/http"
+	velocypack "github.com/arangodb/go-velocypack"
 
 	driver "github.com/arangodb/go-driver"
-	velocypack "github.com/arangodb/go-velocypack"
+	"github.com/arangodb/go-driver/http"
 )
 
 // vstRequest implements driver.Request using Velocystream.

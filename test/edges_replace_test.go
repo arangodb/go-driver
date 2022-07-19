@@ -45,12 +45,12 @@ func TestReplaceEdges(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
@@ -64,11 +64,11 @@ func TestReplaceEdges(t *testing.T) {
 	}
 	// Replacement docs
 	replacements := []driver.EdgeDocument{
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
@@ -103,12 +103,12 @@ func TestReplaceEdgesReturnOld(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "married",
@@ -122,11 +122,11 @@ func TestReplaceEdgesReturnOld(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []driver.EdgeDocument{
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
@@ -159,12 +159,12 @@ func TestReplaceEdgesReturnNew(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "married",
@@ -178,11 +178,11 @@ func TestReplaceEdgesReturnNew(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []driver.EdgeDocument{
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
@@ -215,12 +215,12 @@ func TestReplaceEdgesSilent(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "married",
@@ -234,11 +234,11 @@ func TestReplaceEdgesSilent(t *testing.T) {
 	}
 	// Replace documents
 	replacements := []driver.EdgeDocument{
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
-		driver.EdgeDocument{
+		{
 			From: to.ID,
 			To:   from.ID,
 		},
@@ -271,12 +271,12 @@ func TestReplaceEdgesRevision(t *testing.T) {
 	to := createDocument(ctx, female, map[string]interface{}{"name": "Alice"}, t)
 
 	docs := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "married",
@@ -291,12 +291,12 @@ func TestReplaceEdgesRevision(t *testing.T) {
 
 	// Replace documents with correct revisions
 	replacements := []RelationEdge{
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "old-friend",
 		},
-		RelationEdge{
+		{
 			From: from.ID.String(),
 			To:   to.ID.String(),
 			Type: "just-married",
@@ -379,10 +379,10 @@ func TestReplaceEdgesUpdateLenDiff(t *testing.T) {
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
 
 	replacements := []map[string]interface{}{
-		map[string]interface{}{
+		{
 			"name": "name1",
 		},
-		map[string]interface{}{
+		{
 			"name": "name2",
 		},
 	}

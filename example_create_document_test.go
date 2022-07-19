@@ -20,6 +20,7 @@
 // Author Ewout Prangsma
 //
 
+//go:build !auth
 // +build !auth
 
 // This example demonstrates how to create a single document.

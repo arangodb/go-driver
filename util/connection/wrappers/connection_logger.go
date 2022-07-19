@@ -28,8 +28,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/arangodb/go-driver"
 	"github.com/pkg/errors"
+
+	"github.com/arangodb/go-driver"
 )
 
 func NewLoggerConnection(c driver.Connection, l Logger, truncate bool) driver.Connection {

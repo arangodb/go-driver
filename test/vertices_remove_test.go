@@ -38,13 +38,13 @@ func TestRemoveVertices(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "places", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "For reading",
 		},
-		Book{
+		{
 			Title: "For sleeping",
 		},
-		Book{
+		{
 			Title: "For carrying monitors",
 		},
 	}
@@ -76,13 +76,13 @@ func TestRemoveVerticesReturnOld(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "For reading",
 		},
-		Book{
+		{
 			Title: "For sleeping",
 		},
-		Book{
+		{
 			Title: "For carrying monitors",
 		},
 	}
@@ -115,10 +115,10 @@ func TestRemoveVerticesSilent(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "silence", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Sleepy",
 		},
-		Book{
+		{
 			Title: "Sleeping",
 		},
 	}
@@ -157,10 +157,10 @@ func TestRemoveVerticesRevision(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
 	docs := []Book{
-		Book{
+		{
 			Title: "Old",
 		},
-		Book{
+		{
 			Title: "New",
 		},
 	}
@@ -173,10 +173,10 @@ func TestRemoveVerticesRevision(t *testing.T) {
 
 	// Replace the documents to get another revision
 	replacements := []UserDoc{
-		UserDoc{
+		{
 			Name: "Anna",
 		},
-		UserDoc{
+		{
 			Name: "Nicole",
 		},
 	}

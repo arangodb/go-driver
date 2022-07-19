@@ -33,13 +33,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/agency"
 	httpdriver "github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/jwt"
 	"github.com/arangodb/go-driver/util"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func checkAgencyEndpoints(ctx context.Context, c driver.Client) error {

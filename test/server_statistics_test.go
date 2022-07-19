@@ -26,11 +26,11 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	driver "github.com/arangodb/go-driver"
-	"strings"
 )
 
 func checkEnabled(t *testing.T, c driver.Client, ctx context.Context) {

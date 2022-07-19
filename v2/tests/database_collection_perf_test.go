@@ -29,8 +29,9 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
-	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
 func insertDocuments(t testing.TB, col arangodb.Collection, documents, batch int, factory func(i int) interface{}) {

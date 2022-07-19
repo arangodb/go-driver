@@ -27,8 +27,9 @@ import (
 	"strings"
 	"sync"
 
-	driver "github.com/arangodb/go-driver"
 	velocypack "github.com/arangodb/go-velocypack"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 // vstResponse implements driver.Response for Velocystream responses.

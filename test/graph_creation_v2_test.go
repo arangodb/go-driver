@@ -24,8 +24,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 // Test_Graph_AdvancedCreateV2 will check if graph created have properly set replication factor and write concern

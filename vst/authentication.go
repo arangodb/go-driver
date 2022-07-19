@@ -25,9 +25,10 @@ package vst
 import (
 	"context"
 
+	velocypack "github.com/arangodb/go-velocypack"
+
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/vst/protocol"
-	velocypack "github.com/arangodb/go-velocypack"
 )
 
 // Authentication implements a kind of authentication.

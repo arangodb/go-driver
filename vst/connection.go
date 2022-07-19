@@ -30,11 +30,12 @@ import (
 	"net/url"
 	"strings"
 
+	velocypack "github.com/arangodb/go-velocypack"
+
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/cluster"
 	"github.com/arangodb/go-driver/util"
 	"github.com/arangodb/go-driver/vst/protocol"
-	velocypack "github.com/arangodb/go-velocypack"
 )
 
 const (

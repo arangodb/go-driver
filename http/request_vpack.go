@@ -27,8 +27,9 @@ import (
 	"fmt"
 	"reflect"
 
-	driver "github.com/arangodb/go-driver"
 	velocypack "github.com/arangodb/go-velocypack"
+
+	driver "github.com/arangodb/go-driver"
 )
 
 type velocyPackBody struct {

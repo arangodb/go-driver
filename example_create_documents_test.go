@@ -20,6 +20,7 @@
 // Author Ewout Prangsma
 //
 
+//go:build !auth
 // +build !auth
 
 // This example demonstrates how to create multiple documents at once.
@@ -31,7 +32,7 @@ import (
 	"log"
 	"strings"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
 
@@ -66,15 +67,15 @@ func Example_createDocuments() {
 
 	// Create documents
 	users := []User{
-		User{
+		{
 			Name: "John",
 			Age:  65,
 		},
-		User{
+		{
 			Name: "Tina",
 			Age:  25,
 		},
-		User{
+		{
 			Name: "George",
 			Age:  31,
 		},

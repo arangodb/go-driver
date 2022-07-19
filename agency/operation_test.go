@@ -25,8 +25,9 @@ package agency_test
 import (
 	"testing"
 
-	"github.com/arangodb/go-driver/agency"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/agency"
 )
 
 func TestCreateSubKey(t *testing.T) {

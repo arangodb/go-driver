@@ -27,7 +27,7 @@ import (
 	"fmt"
 	"testing"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 // TestImportEdgesWithKeys imports documents and then checks that it exists.
@@ -44,19 +44,19 @@ func TestImportEdgesWithKeys(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdgeWithKey{
-		RouteEdgeWithKey{
+		{
 			"edge1",
 			from.ID.String(),
 			to.ID.String(),
 			40,
 		},
-		RouteEdgeWithKey{
+		{
 			"edge2",
 			from.ID.String(),
 			to.ID.String(),
 			50,
 		},
-		RouteEdgeWithKey{
+		{
 			"edge3",
 			from.ID.String(),
 			to.ID.String(),
@@ -96,19 +96,19 @@ func TestImportEdgesWithoutKeys(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []RouteEdgeWithKey{
-		RouteEdgeWithKey{
+		{
 			"edge1",
 			from.ID.String(),
 			to.ID.String(),
 			40,
 		},
-		RouteEdgeWithKey{
+		{
 			"edge2",
 			from.ID.String(),
 			to.ID.String(),
 			50,
 		},
-		RouteEdgeWithKey{
+		{
 			"edge3",
 			from.ID.String(),
 			to.ID.String(),
@@ -151,20 +151,20 @@ func TestImportEdgesEmptyEntries(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []*RouteEdgeWithKey{
-		&RouteEdgeWithKey{
+		{
 			"edge1",
 			from.ID.String(),
 			to.ID.String(),
 			40,
 		},
-		&RouteEdgeWithKey{
+		{
 			"edge2",
 			from.ID.String(),
 			to.ID.String(),
 			50,
 		},
 		nil,
-		&RouteEdgeWithKey{
+		{
 			"edge3",
 			from.ID.String(),
 			to.ID.String(),
@@ -262,13 +262,13 @@ func TestImportEdgesDuplicateEntries(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []*RouteEdgeWithKey{
-		&RouteEdgeWithKey{
+		{
 			"edge1",
 			from.ID.String(),
 			to.ID.String(),
 			40,
 		},
-		&RouteEdgeWithKey{
+		{
 			"edge1",
 			from.ID.String(),
 			to.ID.String(),
@@ -317,13 +317,13 @@ func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 	to := createDocument(ctx, states, map[string]interface{}{"name": "Limburg"}, t)
 
 	docs := []*RouteEdgeWithKey{
-		&RouteEdgeWithKey{
+		{
 			"edge1",
 			from.ID.String(),
 			to.ID.String(),
 			40,
 		},
-		&RouteEdgeWithKey{
+		{
 			"edge1",
 			from.ID.String(),
 			to.ID.String(),

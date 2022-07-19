@@ -42,6 +42,7 @@ env:
 
 script:
   - |
-    if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then 
+    if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
+      make linter
       make $TEST_SUITE TEST_RESOURCES="$HOME/resources/" VERBOSE=1;
     fi

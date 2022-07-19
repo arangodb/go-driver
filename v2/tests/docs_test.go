@@ -28,9 +28,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
-	"github.com/stretchr/testify/require"
 )
 
 type UserDoc struct {

@@ -24,11 +24,11 @@ package test
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
-	"os"
-	"strings"
 )
 
 // TestServerMode creates a database and checks the various server modes.

@@ -57,4 +57,3 @@ type client struct {
 func (c *client) Connection() connection.Connection {
 	return c.connection
 }
-

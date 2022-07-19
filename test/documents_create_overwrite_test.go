@@ -28,9 +28,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/arangodb/go-driver"
 	"github.com/dchest/uniuri"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 func generateIDs(count int) []string {

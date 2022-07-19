@@ -23,9 +23,10 @@
 package tests
 
 import (
-	log2 "github.com/arangodb/go-driver/v2/log"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	log2 "github.com/arangodb/go-driver/v2/log"
 )
 
 func init() {

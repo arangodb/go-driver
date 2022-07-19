@@ -37,10 +37,10 @@ func TestSetBodyImportArrayStructs(t *testing.T) {
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []Sample{
-		Sample{"Foo", 2},
-		Sample{"Dunn", 23},
-		Sample{"Short", 0},
-		Sample{"Sample", 45},
+		{"Foo", 2},
+		{"Dunn", 23},
+		{"Short", 0},
+		{"Sample", 45},
 	}
 	expected := strings.Join([]string{
 		`{"a":"Foo","b":2}`,
@@ -62,10 +62,10 @@ func TestSetBodyImportArrayStructPtrs(t *testing.T) {
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []*Sample{
-		&Sample{"Foo", 2},
-		&Sample{"Dunn", 23},
-		&Sample{"Short", 0},
-		&Sample{"Sample", 45},
+		{"Foo", 2},
+		{"Dunn", 23},
+		{"Short", 0},
+		{"Sample", 45},
 	}
 	expected := strings.Join([]string{
 		`{"a":"Foo","b":2}`,
@@ -87,12 +87,12 @@ func TestSetBodyImportArrayStructPtrsNil(t *testing.T) {
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []*Sample{
-		&Sample{"Foo", 2},
+		{"Foo", 2},
 		nil,
-		&Sample{"Dunn", 23},
-		&Sample{"Short", 0},
+		{"Dunn", 23},
+		{"Short", 0},
 		nil,
-		&Sample{"Sample", 45},
+		{"Sample", 45},
 	}
 	expected := strings.Join([]string{
 		`{"a":"Foo","b":2}`,
@@ -116,8 +116,8 @@ func TestSetBodyImportArrayMaps(t *testing.T) {
 		bodyBuilder: NewJsonBodyBuilder(),
 	}
 	docs := []map[string]interface{}{
-		map[string]interface{}{"a": 5, "b": "c", "c": true},
-		map[string]interface{}{"a": 77, "c": false},
+		{"a": 5, "b": "c", "c": true},
+		{"a": 77, "c": false},
 	}
 	expected := strings.Join([]string{
 		`{"a":5,"b":"c","c":true}`,

@@ -30,8 +30,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 func TestRevisionTree(t *testing.T) {
