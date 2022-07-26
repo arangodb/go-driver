@@ -213,12 +213,16 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 		Type:   string(PersistentIndex),
 		Fields: fields,
 	}
+	off := false
 	if options != nil {
 		input.InBackground = &options.InBackground
 		input.Name = options.Name
 		input.Unique = &options.Unique
 		input.Sparse = &options.Sparse
 		input.Estimates = options.Estimates
+		if options.NoDeduplicate {
+			input.Deduplicate = &off
+		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {

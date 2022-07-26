@@ -103,6 +103,7 @@ type EnsureGeoIndexOptions struct {
 }
 
 // EnsureHashIndexOptions contains specific options for creating a hash index.
+// Note: "hash" and "skiplist" are only aliases for "persistent" with the RocksDB storage engine which is only storage engine since 3.7
 type EnsureHashIndexOptions struct {
 	// If true, then create a unique index.
 	Unique bool
@@ -121,11 +122,16 @@ type EnsureHashIndexOptions struct {
 }
 
 // EnsurePersistentIndexOptions contains specific options for creating a persistent index.
+// Note: "hash" and "skiplist" are only aliases for "persistent" with the RocksDB storage engine which is only storage engine since 3.7
 type EnsurePersistentIndexOptions struct {
 	// If true, then create a unique index.
 	Unique bool
 	// If true, then create a sparse index.
 	Sparse bool
+	// If true, de-duplication of array-values, before being added to the index, will be turned off.
+	// This flag requires ArangoDB 3.2.
+	// Note: this setting is only relevant for indexes with array fields (e.g. "fieldName[*]")
+	NoDeduplicate bool
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
 	InBackground bool
 	// Name optional user defined name used for hints in AQL queries
@@ -135,6 +141,7 @@ type EnsurePersistentIndexOptions struct {
 }
 
 // EnsureSkipListIndexOptions contains specific options for creating a skip-list index.
+// Note: "hash" and "skiplist" are only aliases for "persistent" with the RocksDB storage engine which is only storage engine since 3.7
 type EnsureSkipListIndexOptions struct {
 	// If true, then create a unique index.
 	Unique bool
