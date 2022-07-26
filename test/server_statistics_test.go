@@ -257,11 +257,6 @@ func TestServerStatisticsForwarding(t *testing.T) {
 
 	time.Sleep(time.Second) // wait for statistics to settle
 
-	statsBefore, err := c.Statistics(ctx2)
-	if err != nil {
-		t.Fatalf("Error in statistics call: %s", describe(err))
-	}
-
 	// At least 5000 documents in the collection:
 	doSomeWrites(t, ctx1, c)
 	doSomeWrites(t, ctx1, c)
@@ -277,9 +272,12 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	}
 
 	// No traffic on second coordinator (besides statistics calls):
-	checkTrafficAtMost(t, &statsBefore, &statsAfter, all,
-		&limits{Recv: 400, Sent: 4000,
-			RecvCount: 2, SentCount: 2}, "Pear")
+	// UPDATE: since 3.10 there a lot more traffic between the servers (metrics scrape) than just the statistics calls - we don't want to check for that here.
+	/*
+		checkTrafficAtMost(t, &statsBefore, &statsAfter, all,
+			&limits{Recv: 400, Sent: 4000,
+				RecvCount: 2, SentCount: 2}, "Pear")
+	*/
 
 	if statsAfter.ClientUser.BytesReceived.Counts == nil {
 		t.Skip("Skipping ClientUser tests for statistics, since API is not present.")
@@ -313,10 +311,6 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in statistics call: %s", describe(err))
 	}
-	statsBefore2, err := c.Statistics(ctx2)
-	if err != nil {
-		t.Fatalf("Error in statistics call: %s", describe(err))
-	}
 
 	// Now issue a cursor continuation call to the second coordinator:
 	req, err = conn.NewRequest("PUT", "_db/statistics_test/_api/cursor/"+cursorBody.ID)
@@ -334,17 +328,16 @@ func TestServerStatisticsForwarding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in statistics call: %s", describe(err))
 	}
-	statsAfter2, err := c.Statistics(ctx2)
-	if err != nil {
-		t.Fatalf("Error in statistics call: %s", describe(err))
-	}
 
-	// Second coordinator should not count as user traffic (besides maybe
-	// the statistics calls):
-	t.Logf("Checking user traffic on coordinator2...")
-	checkTrafficAtMost(t, &statsBefore2, &statsAfter2, user,
-		&limits{Recv: 400, Sent: 4000,
-			RecvCount: 2, SentCount: 2}, "Apricot")
+	// @deprecated Second coordinator should not count as user traffic (besides maybe the statistics calls)
+	// UPDATE: since 3.10 there a lot more traffic between the servers (metrics scrape) than just the statistics calls - we don't want to check for that here.
+	/*
+		t.Logf("Checking user traffic on coordinator2...")
+		checkTrafficAtMost(t, &statsBefore2, &statsAfter2, user,
+			&limits{Recv: 400, Sent: 4000,
+				RecvCount: 2, SentCount: 2}, "Apricot")
+	*/
+
 	// However, first coordinator should have counted the user traffic,
 	// note: it was just a single request with nearly no upload but quite
 	// some download:
