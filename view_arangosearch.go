@@ -191,6 +191,11 @@ type ArangoSearchAnalyzerProperties struct {
 
 	// Break used by Segmentation
 	Break ArangoSearchBreakType `json:"break,omitempty"`
+
+	// Hex used by stopwords.
+	// If false then each string in stopwords is used verbatim.
+	// If true, then each string in stopwords needs to be hex-encoded.
+	Hex *bool `json:"hex,omitempty"`
 }
 
 // ArangoSearchAnalyzerGeoJSONType GeoJSON Type parameter.

@@ -282,6 +282,32 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:       "create-stopWords",
+			MinVersion: newVersion("3.9"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-stopWords",
+				Type: driver.ArangoSearchAnalyzerTypeStopwords,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Hex: newBool(true),
+					Stopwords: []string{
+						"616e64",
+						"746865",
+					},
+				},
+			},
+			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-stopWords",
+				Type: driver.ArangoSearchAnalyzerTypeStopwords,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Hex: newBool(true),
+					Stopwords: []string{
+						"616e64",
+						"746865",
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
