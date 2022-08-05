@@ -45,6 +45,8 @@ type DatabaseCollections interface {
 type CreateCollectionOptions struct {
 	// CacheEnabled set cacheEnabled option in collection properties
 	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
+	// ComputedValues set computedValues option in collection properties
+	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 	// This field is used for internal purposes only. DO NOT USE.
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
 	// DoCompact checks if the collection will be compacted (default is true)
@@ -141,6 +143,15 @@ const (
 	// CollectionTypeEdge specifies an edges collection
 	CollectionTypeEdge = CollectionType(3)
 )
+
+type ComputedValue struct {
+	Name          string   `json:"name"`
+	Expression    string   `json:"expression"`
+	ComputeOn     []string `json:"computeOn"`
+	Overwrite     *bool    `json:"overwrite,omitempty"`
+	FailOnWarning *bool    `json:"failOnWarning,omitempty"`
+	KeepNull      *bool    `json:"keepNull,omitempty"`
+}
 
 // CollectionKeyOptions specifies ways for creating keys of a collection.
 type CollectionKeyOptions struct {

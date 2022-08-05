@@ -168,6 +168,103 @@ func TestCollection_CacheEnabled(t *testing.T) {
 	})
 }
 
+// TestCollection_ComputedValues
+func TestCollection_ComputedValues(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.10", t)
+	db := ensureDatabase(nil, c, "collection_test_computed_values", nil, t)
+
+	t.Run("Create with ComputedValues", func(t *testing.T) {
+		name := "test_users_computed_values"
+
+		// Add an attribute with the creation timestamp to new documents
+		computedValue := driver.ComputedValue{
+			Name:       "createdAt",
+			Expression: "RETURN DATE_NOW()",
+			Overwrite:  newBool(true),
+			ComputeOn:  []string{"insert"},
+		}
+
+		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
+			ComputedValues: []driver.ComputedValue{computedValue},
+		})
+		require.NoError(t, err)
+
+		// Collection must exist now
+		col, err := db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err := col.Properties(nil)
+		require.NoError(t, err)
+
+		// Check if the computed value is in the list of computed values
+		require.Len(t, prop.ComputedValues, 1)
+		require.Equal(t, computedValue.Name, prop.ComputedValues[0].Name)
+		require.Equal(t, computedValue.Expression, prop.ComputedValues[0].Expression)
+
+		// Create a document
+		doc := UserDoc{Name: fmt.Sprintf("Jakub")}
+		meta, err := col.CreateDocument(nil, doc)
+		if err != nil {
+			t.Fatalf("Failed to create document: %s", describe(err))
+		}
+
+		// Read document
+		var readDoc map[string]interface{}
+		if _, err := col.ReadDocument(nil, meta.Key, &readDoc); err != nil {
+			t.Fatalf("Failed to read document '%s': %s", meta.Key, describe(err))
+		}
+
+		require.Equal(t, doc.Name, readDoc["name"])
+
+		// Verify that the computed value is set
+		createdAtValue, createdAtIsPresent := readDoc["createdAt"]
+		require.True(t, createdAtIsPresent)
+
+		// Verify that the computed value is a valid date
+		tm := time.Unix(int64(createdAtValue.(float64)), 0)
+		require.True(t, tm.After(time.Now().Add(-time.Second)))
+	})
+
+	t.Run("Update to ComputedValues", func(t *testing.T) {
+		name := "test_update_computed_values"
+
+		// Add an attribute with the creation timestamp to new documents
+		computedValue := driver.ComputedValue{
+			Name:       "createdAt",
+			Expression: "RETURN DATE_NOW()",
+			Overwrite:  newBool(true),
+			ComputeOn:  []string{"insert"},
+		}
+
+		_, err := db.CreateCollection(nil, name, nil)
+		require.NoError(t, err)
+
+		// Collection must exist now
+		col, err := db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err := col.Properties(nil)
+		require.NoError(t, err)
+
+		require.Len(t, prop.ComputedValues, 0)
+
+		err = col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+			ComputedValues: []driver.ComputedValue{computedValue},
+		})
+		require.NoError(t, err)
+
+		// Check if the computed value is in the list of computed values
+		col, err = db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err = col.Properties(nil)
+		require.NoError(t, err)
+
+		require.Len(t, prop.ComputedValues, 1)
+	})
+}
+
 // TestCreateSatelliteCollection create a satellite collection
 func TestCreateSatelliteCollection(t *testing.T) {
 	skipNoEnterprise(t)

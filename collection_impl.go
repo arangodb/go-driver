@@ -308,6 +308,7 @@ type setCollectionPropertiesOptionsInternal struct {
 	JournalSize       int64             `json:"journalSize,omitempty"`
 	ReplicationFactor replicationFactor `json:"replicationFactor,omitempty"`
 	CacheEnabled      *bool             `json:"cacheEnabled,omitempty"`
+	ComputedValues    []ComputedValue   `json:"computedValues,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 	// Available from 3.6 arangod version.
@@ -320,6 +321,7 @@ func (p *SetCollectionPropertiesOptions) asInternal() setCollectionPropertiesOpt
 		WaitForSync:          p.WaitForSync,
 		JournalSize:          p.JournalSize,
 		CacheEnabled:         p.CacheEnabled,
+		ComputedValues:       p.ComputedValues,
 		ReplicationFactor:    replicationFactor(p.ReplicationFactor),
 		MinReplicationFactor: p.MinReplicationFactor,
 		WriteConcern:         p.WriteConcern,
