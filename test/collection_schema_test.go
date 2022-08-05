@@ -49,7 +49,7 @@ func TestCollectionSchema(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0"))
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.10.0"))
 
 	name := "document_schema_validation_test"
 	db := ensureDatabase(nil, c, name, nil, t)
@@ -58,6 +58,7 @@ func TestCollectionSchema(t *testing.T) {
 			Schema: &driver.CollectionSchemaOptions{
 				Level:   driver.CollectionSchemaLevelStrict,
 				Message: "Validation Err",
+				Type:    "json",
 			},
 		}
 
@@ -91,6 +92,7 @@ func TestCollectionSchema(t *testing.T) {
 		schema := &driver.CollectionSchemaOptions{
 			Level:   driver.CollectionSchemaLevelStrict,
 			Message: "Validation Err",
+			Type:    "json",
 		}
 
 		require.NoError(t, schema.LoadRule([]byte(`{
@@ -127,6 +129,7 @@ func TestCollectionSchema(t *testing.T) {
 		schema := &driver.CollectionSchemaOptions{
 			Level:   driver.CollectionSchemaLevelStrict,
 			Message: "Validation Err",
+			Type:    "json",
 		}
 
 		require.NoError(t, schema.LoadRule([]byte(`{
@@ -150,6 +153,7 @@ func TestCollectionSchema(t *testing.T) {
 		schema := &driver.CollectionSchemaOptions{
 			Level:   driver.CollectionSchemaLevelStrict,
 			Message: "Validation Err",
+			Type:    "json",
 		}
 
 		require.NoError(t, schema.LoadRule([]byte(`{

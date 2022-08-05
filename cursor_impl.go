@@ -58,6 +58,7 @@ type cursor struct {
 	lastReadWasDirty bool
 }
 
+// CursorStats TODO: all these int64 should be changed into uint64
 type cursorStats struct {
 	// The total number of data-modification operations successfully executed.
 	WritesExecutedInt int64 `json:"writesExecuted,omitempty"`
@@ -76,6 +77,11 @@ type cursorStats struct {
 	Nodes            []cursorPlanNodes `json:"nodes,omitempty"`
 	HttpRequests     int64             `json:"httpRequests,omitempty"`
 	PeakMemoryUsage  int64             `json:"peakMemoryUsage,omitempty"`
+
+	CursorsCreated uint64 `json:"cursorsCreated,omitempty"`
+	CursorsRearmed uint64 `json:"cursorsRearmed,omitempty"`
+	CacheHits      uint64 `json:"cacheHits,omitempty"`
+	CacheMisses    uint64 `json:"cacheMisses,omitempty"`
 }
 
 type cursorPlan struct {
@@ -131,9 +137,10 @@ func (c cursorExtra) GetPlanRaw() ([]byte, bool, error) {
 }
 
 type cursorPlanVariable struct {
-	ID                   int    `json:"id"`
-	Name                 string `json:"name"`
-	IsDataFromCollection bool   `json:"isDataFromCollection"`
+	ID                           int    `json:"id"`
+	Name                         string `json:"name"`
+	IsDataFromCollection         bool   `json:"isDataFromCollection"`
+	IsFullDocumentFromCollection bool   `json:"isFullDocumentFromCollection"`
 }
 
 type cursorPlanCollection struct {

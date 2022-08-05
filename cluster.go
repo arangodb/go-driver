@@ -315,6 +315,7 @@ type InventoryIndex struct {
 	ExpireAfter     int      `json:"expireAfter,omitempty"`
 	Estimates       bool     `json:"estimates,omitempty"`
 	FieldValueTypes string   `json:"fieldValueTypes,omitempty"`
+	CacheEnabled    *bool    `json:"cacheEnabled,omitempty"`
 }
 
 // FieldsEqual returns true when the given fields list equals the

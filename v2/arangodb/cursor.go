@@ -54,6 +54,7 @@ type Cursor interface {
 	Statistics() CursorStats
 }
 
+// CursorStats TODO: all these int64 should be changed into uint64
 type CursorStats struct {
 	// The total number of data-modification operations successfully executed.
 	WritesExecutedInt int64 `json:"writesExecuted,omitempty"`
@@ -69,6 +70,14 @@ type CursorStats struct {
 	FullCountInt int64 `json:"fullCount,omitempty"`
 	// Query execution time (wall-clock time). value will be set from the outside
 	ExecutionTimeInt float64 `json:"executionTime,omitempty"`
+
+	HttpRequests    uint64 `json:"httpRequests,omitempty"`
+	PeakMemoryUsage uint64 `json:"peakMemoryUsage,omitempty"`
+
+	CursorsCreated uint64 `json:"cursorsCreated,omitempty"`
+	CursorsRearmed uint64 `json:"cursorsRearmed,omitempty"`
+	CacheHits      uint64 `json:"cacheHits,omitempty"`
+	CacheMisses    uint64 `json:"cacheMisses,omitempty"`
 }
 
 type cursorData struct {

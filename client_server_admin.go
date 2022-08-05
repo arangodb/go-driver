@@ -132,6 +132,7 @@ type TransactionStats struct {
 	Committed           int64 `json:"committed"`
 	IntermediateCommits int64 `json:"intermediateCommits"`
 	ReadOnly            int64 `json:"readOnly,omitempty"`
+	DirtyReadOnly       int64 `json:"dirtyReadOnly,omitempty"`
 }
 
 // MemoryStats contains statistics about memory usage.

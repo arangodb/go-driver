@@ -39,6 +39,7 @@ type CollectionSchemaOptions struct {
 	Rule    interface{}           `json:"rule,omitempty"`
 	Level   CollectionSchemaLevel `json:"level,omitempty"`
 	Message string                `json:"message,omitempty"`
+	Type    string                `json:"type,omitempty"`
 }
 
 func (d *CollectionSchemaOptions) LoadRule(data []byte) error {

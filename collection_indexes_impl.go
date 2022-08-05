@@ -46,6 +46,8 @@ type indexData struct {
 	SelectivityEstimate float64  `json:"selectivityEstimate,omitempty"`
 	BestIndexedLevel    int      `json:"bestIndexedLevel,omitempty"`
 	WorstIndexedLevel   int      `json:"worstIndexedLevel,omitempty"`
+	LegacyPolygons      *bool    `json:"legacyPolygons,omitempty"`
+	CacheEnabled        *bool    `json:"cacheEnabled,omitempty"`
 
 	ArangoError `json:",inline"`
 }
