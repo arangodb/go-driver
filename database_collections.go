@@ -45,7 +45,7 @@ type DatabaseCollections interface {
 type CreateCollectionOptions struct {
 	// CacheEnabled set cacheEnabled option in collection properties
 	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
-	// ComputedValues set computedValues option in collection properties
+	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
 	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 	// This field is used for internal purposes only. DO NOT USE.
 	DistributeShardsLike string `json:"distributeShardsLike,omitempty"`
@@ -145,13 +145,32 @@ const (
 )
 
 type ComputedValue struct {
-	Name          string   `json:"name"`
-	Expression    string   `json:"expression"`
-	ComputeOn     []string `json:"computeOn"`
-	Overwrite     *bool    `json:"overwrite,omitempty"`
-	FailOnWarning *bool    `json:"failOnWarning,omitempty"`
-	KeepNull      *bool    `json:"keepNull,omitempty"`
+	//  The name of the target attribute. Can only be a top-level attribute, but you
+	//   may return a nested object. Cannot be `_key`, `_id`, `_rev`, `_from`, `_to`,
+	//   or a shard key attribute.
+	Name string `json:"name"`
+	// An AQL `RETURN` operation with an expression that computes the desired value.
+	Expression string `json:"expression"`
+	// An array of strings to define on which write operations the value shall be
+	// computed. The possible values are `"insert"`, `"update"`, and `"replace"`.
+	// The default is `["insert", "update", "replace"]`.
+	ComputeOn []ComputeOn `json:"computeOn"`
+	// Whether the computed value shall take precedence over a user-provided or existing attribute.
+	Overwrite bool `json:"overwrite"`
+	// Whether to let the write operation fail if the expression produces a warning. The default is false.
+	FailOnWarning *bool `json:"failOnWarning,omitempty"`
+	// Whether the result of the expression shall be stored if it evaluates to `null`.
+	// This can be used to skip the value computation if any pre-conditions are not met.
+	KeepNull *bool `json:"keepNull,omitempty"`
 }
+
+type ComputeOn string
+
+const (
+	ComputeOnInsert  ComputeOn = "insert"
+	ComputeOnUpdate  ComputeOn = "update"
+	ComputeOnReplace ComputeOn = "replace"
+)
 
 // CollectionKeyOptions specifies ways for creating keys of a collection.
 type CollectionKeyOptions struct {

@@ -181,8 +181,8 @@ func TestCollection_ComputedValues(t *testing.T) {
 		computedValue := driver.ComputedValue{
 			Name:       "createdAt",
 			Expression: "RETURN DATE_NOW()",
-			Overwrite:  newBool(true),
-			ComputeOn:  []string{"insert"},
+			Overwrite:  true,
+			ComputeOn:  []driver.ComputeOn{driver.ComputeOnInsert},
 		}
 
 		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
@@ -233,8 +233,8 @@ func TestCollection_ComputedValues(t *testing.T) {
 		computedValue := driver.ComputedValue{
 			Name:       "createdAt",
 			Expression: "RETURN DATE_NOW()",
-			Overwrite:  newBool(true),
-			ComputeOn:  []string{"insert"},
+			Overwrite:  true,
+			ComputeOn:  []driver.ComputeOn{driver.ComputeOnInsert},
 		}
 
 		_, err := db.CreateCollection(nil, name, nil)

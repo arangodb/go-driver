@@ -110,7 +110,7 @@ type CollectionProperties struct {
 	JournalSize int64 `json:"journalSize,omitempty"`
 	// CacheEnabled set cacheEnabled option in collection properties
 	CacheEnabled bool `json:"cacheEnabled,omitempty"`
-	// ComputedValues set cacheEnabled option in collection properties
+	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
 	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 	// KeyOptions
 	KeyOptions struct {
@@ -206,7 +206,7 @@ type SetCollectionPropertiesOptions struct {
 	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
-	// ComputedValues set cacheEnabled option in collection properties
+	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
 	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 }
 
