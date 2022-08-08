@@ -103,6 +103,7 @@ func (d *database) Collections(ctx context.Context) ([]Collection, error) {
 
 type createCollectionOptionsInternal struct {
 	CacheEnabled          *bool                 `json:"cacheEnabled,omitempty"`
+	ComputedValues        []ComputedValue       `json:"computedValues,omitempty"`
 	DistributeShardsLike  string                `json:"distributeShardsLike,omitempty"`
 	DoCompact             *bool                 `json:"doCompact,omitempty"`
 	IndexBuckets          int                   `json:"indexBuckets,omitempty"`
@@ -163,6 +164,7 @@ func (d *database) CreateCollection(ctx context.Context, name string, options *C
 
 func (p *createCollectionOptionsInternal) fromExternal(i *CreateCollectionOptions) {
 	p.CacheEnabled = i.CacheEnabled
+	p.ComputedValues = i.ComputedValues
 	p.DistributeShardsLike = i.DistributeShardsLike
 	p.DoCompact = i.DoCompact
 	p.IndexBuckets = i.IndexBuckets

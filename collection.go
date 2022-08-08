@@ -110,7 +110,10 @@ type CollectionProperties struct {
 	JournalSize int64 `json:"journalSize,omitempty"`
 	// CacheEnabled set cacheEnabled option in collection properties
 	CacheEnabled bool `json:"cacheEnabled,omitempty"`
-	KeyOptions   struct {
+	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
+	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
+	// KeyOptions
+	KeyOptions struct {
 		// Type specifies the type of the key generator. The currently available generators are traditional and autoincrement.
 		Type KeyGeneratorType `json:"type,omitempty"`
 		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
@@ -203,6 +206,8 @@ type SetCollectionPropertiesOptions struct {
 	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
+	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 }
 
 // CollectionStatus indicates the status of a collection.

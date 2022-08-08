@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Add `hex` property to analyzer's properties
+- Add support for `computedValues`
 
 ## [1.3.3](https://github.com/arangodb/go-driver/tree/v1.3.3) (2022-07-27)
 - Fix `lastValue` field type
