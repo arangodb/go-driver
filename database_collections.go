@@ -154,7 +154,7 @@ type ComputedValue struct {
 	// An array of strings to define on which write operations the value shall be
 	// computed. The possible values are `"insert"`, `"update"`, and `"replace"`.
 	// The default is `["insert", "update", "replace"]`.
-	ComputeOn []ComputeOn `json:"computeOn"`
+	ComputeOn []ComputeOn `json:"computeOn,omitempty"`
 	// Whether the computed value shall take precedence over a user-provided or existing attribute.
 	Overwrite bool `json:"overwrite"`
 	// Whether to let the write operation fail if the expression produces a warning. The default is false.

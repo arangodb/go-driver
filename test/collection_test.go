@@ -200,6 +200,8 @@ func TestCollection_ComputedValues(t *testing.T) {
 		// Check if the computed value is in the list of computed values
 		require.Len(t, prop.ComputedValues, 1)
 		require.Equal(t, computedValue.Name, prop.ComputedValues[0].Name)
+		require.Len(t, prop.ComputedValues[0].ComputeOn, 1)
+		require.Equal(t, computedValue.ComputeOn[0], prop.ComputedValues[0].ComputeOn[0])
 		require.Equal(t, computedValue.Expression, prop.ComputedValues[0].Expression)
 
 		// Create a document
@@ -222,7 +224,20 @@ func TestCollection_ComputedValues(t *testing.T) {
 		require.True(t, createdAtIsPresent)
 
 		// Verify that the computed value is a valid date
-		tm := time.Unix(int64(createdAtValue.(float64)), 0)
+		var createdAtValueInt64 int64
+
+		switch cav := createdAtValue.(type) {
+		case int64:
+			createdAtValueInt64 = cav
+		case float64:
+			createdAtValueInt64 = int64(cav)
+		case uint64:
+			createdAtValueInt64 = int64(cav)
+		default:
+			t.Fatalf("Unexpected type of createdAt value: %T", createdAtValue)
+		}
+
+		tm := time.Unix(createdAtValueInt64, 0)
 		require.True(t, tm.After(time.Now().Add(-time.Second)))
 	})
 
@@ -262,6 +277,45 @@ func TestCollection_ComputedValues(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Len(t, prop.ComputedValues, 1)
+	})
+
+	t.Run("Use default ComputeOn values in ComputedValues", func(t *testing.T) {
+		name := "test_default_computeon_computed_values"
+
+		// Add an attribute with the creation timestamp to new documents
+		computedValue := driver.ComputedValue{
+			Name:       "createdAt",
+			Expression: "RETURN DATE_NOW()",
+			Overwrite:  true,
+		}
+
+		_, err := db.CreateCollection(nil, name, nil)
+		require.NoError(t, err)
+
+		// Collection must exist now
+		col, err := db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err := col.Properties(nil)
+		require.NoError(t, err)
+
+		require.Len(t, prop.ComputedValues, 0)
+
+		err = col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
+			ComputedValues: []driver.ComputedValue{computedValue},
+		})
+		require.NoError(t, err)
+
+		// Check if the computed value is in the list of computed values
+		col, err = db.Collection(nil, name)
+		require.NoError(t, err)
+
+		prop, err = col.Properties(nil)
+		require.NoError(t, err)
+
+		require.Len(t, prop.ComputedValues, 1)
+		// we should get the default value for ComputeOn - ["insert", "update", "replace"]
+		require.Len(t, prop.ComputedValues[0].ComputeOn, 3)
 	})
 }
 
