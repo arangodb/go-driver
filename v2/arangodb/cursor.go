@@ -71,7 +71,7 @@ type CursorStats struct {
 	// Query execution time (wall-clock time). value will be set from the outside
 	ExecutionTimeInt float64 `json:"executionTime,omitempty"`
 
-	HttpRequests    uint64 `json:"httpRequests,omitempty"`
+	HTTPRequests    uint64 `json:"httpRequests,omitempty"`
 	PeakMemoryUsage uint64 `json:"peakMemoryUsage,omitempty"`
 
 	CursorsCreated uint64 `json:"cursorsCreated,omitempty"`
