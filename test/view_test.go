@@ -429,7 +429,7 @@ func TestUseArangoSearchView(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, true, false)
-	skipBelowVersion(c, "3.4", t)
+	skipBelowVersion(c, "3.11", t)
 	db := ensureDatabase(nil, c, "view_test", nil, t)
 	col := ensureCollection(ctx, db, "some_collection", nil, t)
 
@@ -511,7 +511,7 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, true, false)
-	skipBelowVersion(c, "3.8", t)
+	skipBelowVersion(c, "3.11", t)
 	db := ensureDatabase(nil, c, "view_with_pipeline_test", nil, t)
 	col := ensureCollection(ctx, db, "some_collection_with_analyzer", nil, t)
 
