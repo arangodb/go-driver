@@ -319,6 +319,8 @@ type inventoryCollectionParametersInternal struct {
 	WaitForSync                bool `json:"waitForSync,omitempty"`
 	// Available from 3.6 ArangoD version.
 	WriteConcern int `json:"writeConcern,omitempty"`
+	// Available from 3.10 ArangoD version.
+	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 }
 
 func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParametersInternal {
@@ -370,6 +372,7 @@ func (p *InventoryCollectionParameters) asInternal() inventoryCollectionParamete
 		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
 		WaitForSync:                p.WaitForSync,
 		WriteConcern:               p.WriteConcern,
+		ComputedValues:             p.ComputedValues,
 	}
 }
 
@@ -424,6 +427,7 @@ func (p *inventoryCollectionParametersInternal) asExternal() InventoryCollection
 		UsesRevisionsAsDocumentIds: p.UsesRevisionsAsDocumentIds,
 		WaitForSync:                p.WaitForSync,
 		WriteConcern:               p.WriteConcern,
+		ComputedValues:             p.ComputedValues,
 	}
 }
 

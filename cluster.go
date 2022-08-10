@@ -289,6 +289,8 @@ type InventoryCollectionParameters struct {
 	WaitForSync                bool `json:"waitForSync,omitempty"`
 	// Available from 3.6 ArangoD version.
 	WriteConcern int `json:"writeConcern,omitempty"`
+	// Available from 3.10 ArangoD version.
+	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a satellite collection

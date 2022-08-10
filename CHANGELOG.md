@@ -4,6 +4,7 @@
 - Add `hex` property to analyzer's properties
 - Add support for `computedValues`
 - Optional `computeOn` field in `computedValues`
+- Add support for `computedValues` into collection inventory
 
 ## [1.3.3](https://github.com/arangodb/go-driver/tree/v1.3.3) (2022-07-27)
 - Fix `lastValue` field type
