@@ -351,3 +351,27 @@ func TestFillBlockCache(t *testing.T) {
 		}
 	})
 }
+
+// TestOptimizerRulesForQueries optimizer rules for AQL queries endpoint
+func TestOptimizerRulesForQueries(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.10", t)
+	db := ensureDatabase(ctx, c, "optimizer_rules_test", nil, t)
+
+	t.Run(fmt.Sprintf("Fake shards"), func(t *testing.T) {
+		rules, err := db.OptimizerRulesForQueries(ctx)
+		require.Nil(t, err)
+		require.Greater(t, len(rules), 0)
+
+		var ruleToFind *driver.QueryRule
+		for _, rule := range rules {
+			if rule.Name == "optimize-traversals" {
+				ruleToFind = &rule
+				break
+			}
+		}
+		require.NotNil(t, ruleToFind)
+		require.True(t, ruleToFind.Flags.CanBeDisabled)
+	})
+}

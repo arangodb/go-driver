@@ -67,6 +67,10 @@ type Database interface {
 	// The query is not executed.
 	ValidateQuery(ctx context.Context, query string) error
 
+	// OptimizerRulesForQueries returns the available optimizer rules for AQL queries
+	// returns an array of objects that contain the name of each available rule and its respective flags.
+	OptimizerRulesForQueries(ctx context.Context) ([]QueryRule, error)
+
 	// Transaction performs a javascript transaction. The result of the transaction function is returned.
 	Transaction(ctx context.Context, action string, options *TransactionOptions) (interface{}, error)
 }
@@ -105,4 +109,18 @@ func (t EngineType) String() string {
 type EngineInfo struct {
 	Type     EngineType             `json:"name"`
 	Supports map[string]interface{} `json:"supports,omitempty"`
+}
+
+type QueryRule struct {
+	Name  string     `json:"name"`
+	Flags QueryFlags `json:"flags,omitempty"`
+}
+
+type QueryFlags struct {
+	Hidden                   bool `json:"hidden,omitempty"`
+	ClusterOnly              bool `json:"clusterOnly,omitempty"`
+	CanBeDisabled            bool `json:"canBeDisabled,omitempty"`
+	CanCreateAdditionalPlans bool `json:"canCreateAdditionalPlans,omitempty"`
+	DisabledByDefault        bool `json:"disabledByDefault,omitempty"`
+	EnterpriseOnly           bool `json:"enterpriseOnly,omitempty"`
 }
