@@ -78,10 +78,20 @@ type cursorStats struct {
 	HttpRequests     int64             `json:"httpRequests,omitempty"`
 	PeakMemoryUsage  int64             `json:"peakMemoryUsage,omitempty"`
 
+	// CursorsCreated the total number of cursor objects created during query execution. Cursor objects are created for index lookups.
 	CursorsCreated uint64 `json:"cursorsCreated,omitempty"`
+	// CursorsRearmed the total number of times an existing cursor object was repurposed.
+	// Repurposing an existing cursor object is normally more efficient compared to destroying an existing cursor object
+	// and creating a new one from scratch.
 	CursorsRearmed uint64 `json:"cursorsRearmed,omitempty"`
-	CacheHits      uint64 `json:"cacheHits,omitempty"`
-	CacheMisses    uint64 `json:"cacheMisses,omitempty"`
+	// CacheHits the total number of index entries read from in-memory caches for indexes of type edge or persistent.
+	// This value will only be non-zero when reading from indexes that have an in-memory cache enabled,
+	// and when the query allows using the in-memory cache (i.e. using equality lookups on all index attributes).
+	CacheHits uint64 `json:"cacheHits,omitempty"`
+	// CacheMisses the total number of cache read attempts for index entries that could not be served from in-memory caches for indexes of type edge or persistent.
+	// This value will only be non-zero when reading from indexes that have an in-memory cache enabled,
+	// the query allows using the in-memory cache (i.e. using equality lookups on all index attributes) and the looked up values are not present in the cache.
+	CacheMisses uint64 `json:"cacheMisses,omitempty"`
 }
 
 type cursorPlan struct {
