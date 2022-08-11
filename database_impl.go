@@ -182,6 +182,37 @@ func (d *database) ValidateQuery(ctx context.Context, query string) error {
 	return nil
 }
 
+// OptimizerRulesForQueries returns the available optimizer rules for AQL query
+// returns an array of objects that contain the name of each available rule and its respective flags.
+func (d *database) OptimizerRulesForQueries(ctx context.Context) ([]QueryRule, error) {
+	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/query/rules"))
+	if err != nil {
+		return []QueryRule{}, WithStack(err)
+	}
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return []QueryRule{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return []QueryRule{}, WithStack(err)
+	}
+
+	var data []QueryRule
+	responses, err := resp.ParseArrayBody()
+	if err != nil {
+		return []QueryRule{}, WithStack(err)
+	}
+
+	for _, response := range responses {
+		var rule QueryRule
+		if err := response.ParseBody("", &rule); err != nil {
+			return []QueryRule{}, WithStack(err)
+		}
+		data = append(data, rule)
+	}
+	return data, nil
+}
+
 func (d *database) Transaction(ctx context.Context, action string, options *TransactionOptions) (interface{}, error) {
 	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/transaction"))
 	if err != nil {
