@@ -149,6 +149,35 @@ func TestEnsureGeoIndex(t *testing.T) {
 	}
 }
 
+// TestEnsureGeoIndexLegacyPolygons creates a collection with a Geo index and additional LegacyPolygons options.
+func TestEnsureGeoIndexLegacyPolygons(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.10", t)
+
+	db := ensureDatabase(ctx, c, "index_geo_LegacyPolygons_test", nil, t)
+	col := ensureCollection(ctx, db, fmt.Sprintf("persistent_index_options_test_"), nil, t)
+
+	options := &driver.EnsureGeoIndexOptions{
+		LegacyPolygons: true,
+	}
+	idx, created, err := col.EnsureGeoIndex(ctx, []string{"age"}, options)
+	if err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+	require.True(t, created)
+	require.Equal(t, driver.GeoIndex, idx.Type())
+	require.True(t, idx.LegacyPolygons())
+
+	idxDefault, created, err := col.EnsureGeoIndex(ctx, []string{"name"}, nil)
+	if err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+	require.True(t, created)
+	require.Equal(t, driver.GeoIndex, idx.Type())
+	require.False(t, idxDefault.LegacyPolygons())
+}
+
 // TestEnsureHashIndex creates a collection with a hash index.
 func TestEnsureHashIndex(t *testing.T) {
 	c := createClientFromEnv(t, true)

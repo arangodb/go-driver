@@ -173,6 +173,9 @@ func (c *collection) EnsureGeoIndex(ctx context.Context, fields []string, option
 		input.Name = options.Name
 		input.GeoJSON = &options.GeoJSON
 		input.Estimates = options.Estimates
+		if options.LegacyPolygons {
+			input.LegacyPolygons = &options.LegacyPolygons
+		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
 	if err != nil {

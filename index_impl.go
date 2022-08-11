@@ -176,6 +176,14 @@ func (i *index) ExpireAfter() int {
 	return i.indexData.ExpireAfter
 }
 
+// LegacyPolygons determines if the index uses legacy polygons or not - GeoIndex only
+func (i *index) LegacyPolygons() bool {
+	if i.indexData.LegacyPolygons == nil {
+		return false
+	}
+	return *i.indexData.LegacyPolygons
+}
+
 // Remove removes the entire index.
 // If the index does not exist, a NotFoundError is returned.
 func (i *index) Remove(ctx context.Context) error {

@@ -86,4 +86,7 @@ type Index interface {
 
 	// ExpireAfter returns an expire after for this index if set.
 	ExpireAfter() int
+
+	// LegacyPolygons determines if the index uses legacy polygons or not - GeoIndex only
+	LegacyPolygons() bool
 }
