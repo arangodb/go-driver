@@ -8,6 +8,7 @@
 - Update the structures to align them with the ArangoDB 3.10 release
 - Add `IsNotFoundGeneral` and `IsDataSourceOrDocumentNotFound` methods - deprecate `IsNotFound`
 - Add support for optimizer rules (AQL query)
+- New `LegacyPolygons` parameter for Geo Indexes
 
 ## [1.3.3](https://github.com/arangodb/go-driver/tree/v1.3.3) (2022-07-27)
 - Fix `lastValue` field type

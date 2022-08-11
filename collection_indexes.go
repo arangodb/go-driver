@@ -100,6 +100,12 @@ type EnsureGeoIndexOptions struct {
 	Name string
 	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
 	Estimates *bool
+	// LegacyPolygons determines if the to-be-created index should use legacy polygons or not.
+	// It is relevant for those that have geoJson set to true only.
+	// Old geo indexes from versions from below 3.10 will always implicitly have the legacyPolygons option set to true.
+	// Newly generated geo indexes from 3.10 on will have the legacyPolygons option by default set to false,
+	// however, it can still be explicitly overwritten with true to create a legacy index but is not recommended.
+	LegacyPolygons bool
 }
 
 // EnsureHashIndexOptions contains specific options for creating a hash index.
