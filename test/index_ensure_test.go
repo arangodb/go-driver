@@ -306,17 +306,18 @@ func TestEnsurePersistentIndex(t *testing.T) {
 
 // TestEnsurePersistentIndexOptions creates a collection with a persistent index and additional options.
 func TestEnsurePersistentIndexOptions(t *testing.T) {
+	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	db := ensureDatabase(nil, c, "index_persistent_options_test", nil, t)
+	skipBelowVersion(c, "3.10", t)
 
-	col := ensureCollection(nil, db, fmt.Sprintf("persistent_index_options_test_"), nil, t)
+	db := ensureDatabase(ctx, c, "index_persistent_options_test", nil, t)
+	col := ensureCollection(ctx, db, fmt.Sprintf("persistent_index_options_test_"), nil, t)
 
 	options := &driver.EnsurePersistentIndexOptions{
 		StoredValues: []string{"extra1", "extra2"},
 		CacheEnabled: true,
 	}
-
-	idx, created, err := col.EnsurePersistentIndex(nil, []string{"age", "name"}, options)
+	idx, created, err := col.EnsurePersistentIndex(ctx, []string{"age", "name"}, options)
 	if err != nil {
 		t.Fatalf("Failed to create new index: %s", describe(err))
 	}
