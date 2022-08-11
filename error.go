@@ -147,9 +147,23 @@ func IsForbidden(err error) bool {
 	return IsArangoErrorWithCode(err, http.StatusForbidden)
 }
 
+// Deprecated: Use IsNotFoundGeneral instead.
+// For ErrArangoDocumentNotFound error there is a chance that we get a different HTTP code if the API requires an existing document as input, which is not found.
+//
 // IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
 func IsNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, http.StatusNotFound) ||
+		IsArangoErrorWithErrorNum(err, ErrArangoDocumentNotFound, ErrArangoDataSourceNotFound)
+}
+
+// IsNotFoundGeneral returns true if the given error is an ArangoError with code 404, indicating an object is not found.
+func IsNotFoundGeneral(err error) bool {
+	return IsArangoErrorWithCode(err, http.StatusNotFound)
+}
+
+// IsDataSourceOrDocumentNotFound returns true if the given error is an Arango storage error, indicating an object is not found.
+func IsDataSourceOrDocumentNotFound(err error) bool {
+	return IsArangoErrorWithCode(err, http.StatusNotFound) &&
 		IsArangoErrorWithErrorNum(err, ErrArangoDocumentNotFound, ErrArangoDataSourceNotFound)
 }
 
