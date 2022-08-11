@@ -5,6 +5,7 @@
 - Add support for `computedValues`
 - Optional `computeOn` field in `computedValues`
 - Add support for `computedValues` into collection inventory
+- Update the structures to align them with the ArangoDB 3.10 release
 
 ## [1.3.3](https://github.com/arangodb/go-driver/tree/v1.3.3) (2022-07-27)
 - Fix `lastValue` field type

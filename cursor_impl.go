@@ -58,6 +58,7 @@ type cursor struct {
 	lastReadWasDirty bool
 }
 
+// CursorStats TODO: all these int64 should be changed into uint64
 type cursorStats struct {
 	// The total number of data-modification operations successfully executed.
 	WritesExecutedInt int64 `json:"writesExecuted,omitempty"`
@@ -76,6 +77,21 @@ type cursorStats struct {
 	Nodes            []cursorPlanNodes `json:"nodes,omitempty"`
 	HttpRequests     int64             `json:"httpRequests,omitempty"`
 	PeakMemoryUsage  int64             `json:"peakMemoryUsage,omitempty"`
+
+	// CursorsCreated the total number of cursor objects created during query execution. Cursor objects are created for index lookups.
+	CursorsCreated uint64 `json:"cursorsCreated,omitempty"`
+	// CursorsRearmed the total number of times an existing cursor object was repurposed.
+	// Repurposing an existing cursor object is normally more efficient compared to destroying an existing cursor object
+	// and creating a new one from scratch.
+	CursorsRearmed uint64 `json:"cursorsRearmed,omitempty"`
+	// CacheHits the total number of index entries read from in-memory caches for indexes of type edge or persistent.
+	// This value will only be non-zero when reading from indexes that have an in-memory cache enabled,
+	// and when the query allows using the in-memory cache (i.e. using equality lookups on all index attributes).
+	CacheHits uint64 `json:"cacheHits,omitempty"`
+	// CacheMisses the total number of cache read attempts for index entries that could not be served from in-memory caches for indexes of type edge or persistent.
+	// This value will only be non-zero when reading from indexes that have an in-memory cache enabled,
+	// the query allows using the in-memory cache (i.e. using equality lookups on all index attributes) and the looked up values are not present in the cache.
+	CacheMisses uint64 `json:"cacheMisses,omitempty"`
 }
 
 type cursorPlan struct {
@@ -131,9 +147,10 @@ func (c cursorExtra) GetPlanRaw() ([]byte, bool, error) {
 }
 
 type cursorPlanVariable struct {
-	ID                   int    `json:"id"`
-	Name                 string `json:"name"`
-	IsDataFromCollection bool   `json:"isDataFromCollection"`
+	ID                           int    `json:"id"`
+	Name                         string `json:"name"`
+	IsDataFromCollection         bool   `json:"isDataFromCollection"`
+	IsFullDocumentFromCollection bool   `json:"isFullDocumentFromCollection"`
 }
 
 type cursorPlanCollection struct {

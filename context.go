@@ -159,6 +159,7 @@ func WithWaitForSync(parent context.Context, value ...bool) context.Context {
 // You can pass a reference to a boolean that will set according to whether a potentially dirty read
 // happened or not. nil is allowed.
 // This is valid for document reads, aql queries, gharial vertex and edge reads.
+// Since 3.10 This feature is available in the Enterprise Edition for cluster deployments as well
 func WithAllowDirtyReads(parent context.Context, wasDirtyRead *bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAllowDirtyReads, wasDirtyRead)
 }
