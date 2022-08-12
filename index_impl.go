@@ -184,6 +184,19 @@ func (i *index) LegacyPolygons() bool {
 	return *i.indexData.LegacyPolygons
 }
 
+// CacheEnabled returns if the index is enabled for caching or not - PersistentIndex only
+func (i *index) CacheEnabled() bool {
+	if i.indexData.CacheEnabled == nil {
+		return false
+	}
+	return *i.indexData.CacheEnabled
+}
+
+// StoredValues returns a list of stored values for this index - PersistentIndex only
+func (i *index) StoredValues() []string {
+	return i.indexData.StoredValues
+}
+
 // Remove removes the entire index.
 // If the index does not exist, a NotFoundError is returned.
 func (i *index) Remove(ctx context.Context) error {

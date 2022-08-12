@@ -48,6 +48,7 @@ type indexData struct {
 	WorstIndexedLevel   int      `json:"worstIndexedLevel,omitempty"`
 	LegacyPolygons      *bool    `json:"legacyPolygons,omitempty"`
 	CacheEnabled        *bool    `json:"cacheEnabled,omitempty"`
+	StoredValues        []string `json:"storedValues,omitempty"`
 
 	ArangoError `json:",inline"`
 }
@@ -219,6 +220,7 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 		Fields: fields,
 	}
 	off := false
+	on := true
 	if options != nil {
 		input.InBackground = &options.InBackground
 		input.Name = options.Name
@@ -227,6 +229,12 @@ func (c *collection) EnsurePersistentIndex(ctx context.Context, fields []string,
 		input.Estimates = options.Estimates
 		if options.NoDeduplicate {
 			input.Deduplicate = &off
+		}
+		if options.CacheEnabled {
+			input.CacheEnabled = &on
+		}
+		if options.StoredValues != nil {
+			input.StoredValues = options.StoredValues
 		}
 	}
 	idx, created, err := c.ensureIndex(ctx, input)

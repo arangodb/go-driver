@@ -274,7 +274,7 @@ func TestEnsurePersistentIndex(t *testing.T) {
 			t.Errorf("Expected Sparse to be %t, found `%t`", options.Sparse, idx.Sparse())
 		}
 
-		// Index must exists now
+		// Index must exist now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
 			t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
 		} else if !found {
@@ -295,13 +295,42 @@ func TestEnsurePersistentIndex(t *testing.T) {
 			t.Fatalf("Failed to remove index '%s': %s", idx.Name(), describe(err))
 		}
 
-		// Index must not exists now
+		// Index must not exist now
 		if found, err := col.IndexExists(nil, idx.Name()); err != nil {
 			t.Fatalf("Failed to check index '%s' exists: %s", idx.Name(), describe(err))
 		} else if found {
 			t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 		}
 	}
+}
+
+// TestEnsurePersistentIndexOptions creates a collection with a persistent index and additional options.
+func TestEnsurePersistentIndexOptions(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.10", t)
+
+	db := ensureDatabase(ctx, c, "index_persistent_options_test", nil, t)
+	col := ensureCollection(ctx, db, fmt.Sprintf("persistent_index_options_test_"), nil, t)
+
+	options := &driver.EnsurePersistentIndexOptions{
+		StoredValues: []string{"extra1", "extra2"},
+		CacheEnabled: true,
+	}
+	idx, created, err := col.EnsurePersistentIndex(ctx, []string{"age", "name"}, options)
+	if err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+
+	require.True(t, created)
+	require.Equal(t, driver.PersistentIndex, idx.Type())
+
+	require.NotNil(t, idx.StoredValues())
+	require.Len(t, idx.StoredValues(), 2)
+	require.Equal(t, "extra1", idx.StoredValues()[0])
+	require.Equal(t, "extra2", idx.StoredValues()[1])
+
+	require.True(t, idx.CacheEnabled())
 }
 
 // TestEnsureSkipListIndex creates a collection with a skiplist index.

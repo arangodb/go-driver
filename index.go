@@ -89,4 +89,10 @@ type Index interface {
 
 	// LegacyPolygons determines if the index uses legacy polygons or not - GeoIndex only
 	LegacyPolygons() bool
+
+	// CacheEnabled returns if the index is enabled for caching or not - PersistentIndex only
+	CacheEnabled() bool
+
+	// StoredValues returns a list of stored values for this index - PersistentIndex only
+	StoredValues() []string
 }

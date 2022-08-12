@@ -144,6 +144,12 @@ type EnsurePersistentIndexOptions struct {
 	Name string
 	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
 	Estimates *bool
+	// CacheEnabled if true, then the index will be cached in memory. Caching is turned off by default.
+	CacheEnabled bool
+	// StoreValues if true, then the additional attributes will be included.
+	// These additional attributes cannot be used for index lookups or sorts, but they can be used for projections.
+	// There must be no overlap of attribute paths between `fields` and `storedValues`. The maximum number of values is 32.
+	StoredValues []string
 }
 
 // EnsureSkipListIndexOptions contains specific options for creating a skip-list index.
