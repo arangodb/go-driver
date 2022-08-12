@@ -38,6 +38,7 @@ const (
 	EdgeIndex       = IndexType("edge")
 	TTLIndex        = IndexType("ttl")
 	ZKDIndex        = IndexType("zkd")
+	InvertedIndex   = IndexType("inverted")
 )
 
 // Index provides access to a single index in a single collection.
@@ -95,4 +96,7 @@ type Index interface {
 
 	// StoredValues returns a list of stored values for this index - PersistentIndex only
 	StoredValues() []string
+
+	// InvertedIndexOptions returns the inverted index options for this index - InvertedIndex only
+	InvertedIndexOptions() EnsureInvertedIndexOptions
 }

@@ -79,12 +79,46 @@ func newIndex(data indexData, col *collection) (Index, error) {
 	}, nil
 }
 
+// newIndex creates a new Index implementation.
+func newIndexInverted(data invertedDataIndex, col *collection) (Index, error) {
+	if data.ID == "" {
+		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
+	}
+	parts := strings.Split(data.ID, "/")
+	if len(parts) != 2 {
+		return nil, WithStack(InvalidArgumentError{Message: "id must be `collection/name`"})
+	}
+	if col == nil {
+		return nil, WithStack(InvalidArgumentError{Message: "col is nil"})
+	}
+	indexType, err := indexStringToType(data.Type)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+
+	var dataIndex indexData = indexData{
+		ID:   data.ID,
+		Type: data.Type,
+		// todo
+		// InBackground: data.InBackground,
+	}
+	return &index{
+		indexData:         dataIndex,
+		invertedDataIndex: data,
+		indexType:         indexType,
+		col:               col,
+		db:                col.db,
+		conn:              col.conn,
+	}, nil
+}
+
 type index struct {
 	indexData
-	indexType IndexType
-	db        *database
-	col       *collection
-	conn      Connection
+	invertedDataIndex invertedDataIndex
+	indexType         IndexType
+	db                *database
+	col               *collection
+	conn              Connection
 }
 
 // relPath creates the relative path to this index (`_db/<db-name>/_api/index`)
@@ -195,6 +229,11 @@ func (i *index) CacheEnabled() bool {
 // StoredValues returns a list of stored values for this index - PersistentIndex only
 func (i *index) StoredValues() []string {
 	return i.indexData.StoredValues
+}
+
+// InvertedIndexOptions returns the inverted index options for this index - InvertedIndex only
+func (i *index) InvertedIndexOptions() EnsureInvertedIndexOptions {
+	return i.invertedDataIndex.EnsureInvertedIndexOptions
 }
 
 // Remove removes the entire index.

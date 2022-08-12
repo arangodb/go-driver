@@ -313,6 +313,41 @@ func (c *collection) EnsureZKDIndex(ctx context.Context, fields []string, option
 	return idx, created, nil
 }
 
+type invertedDataIndex struct {
+	EnsureInvertedIndexOptions
+	Type string `json:"type"`
+	ID   string `json:"id,omitempty"`
+}
+
+func (c *collection) EnsureInvertedIndex(ctx context.Context, options EnsureInvertedIndexOptions) (Index, bool, error) {
+	req, err := c.conn.NewRequest("POST", path.Join(c.db.relPath(), "_api/index"))
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	req.SetQuery("collection", c.name)
+	if _, err := req.SetBody(invertedDataIndex{EnsureInvertedIndexOptions: options, Type: string(InvertedIndex)}); err != nil {
+		return nil, false, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	if err := resp.CheckStatus(200, 201); err != nil {
+		return nil, false, WithStack(err)
+	}
+	created := resp.StatusCode() == 201
+
+	var data invertedDataIndex
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, false, WithStack(err)
+	}
+	idx, err := newIndexInverted(data, c)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return idx, created, nil
+}
+
 // ensureIndex creates a persistent index in the collection, if it does not already exist.
 // Fields is a slice of attribute paths.
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
