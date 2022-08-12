@@ -73,7 +73,7 @@ const (
 	ArangoSearchAnalyzerTypeClassification ArangoSearchAnalyzerType = "classification"
 	// ArangoSearchAnalyzerTypeNearestNeighbors An Analyzer capable of finding nearest neighbors of tokens in the input. (EE only)
 	ArangoSearchAnalyzerTypeNearestNeighbors ArangoSearchAnalyzerType = "nearest_neighbors"
-	// ArangoSearchAnalyzerTypeMinhash an analyzer ehich is capable of evaluating so called MinHash signatures as a stream of tokens. (EE only)
+	// ArangoSearchAnalyzerTypeMinhash an analyzer which is capable of evaluating so called MinHash signatures as a stream of tokens. (EE only)
 	ArangoSearchAnalyzerTypeMinhash ArangoSearchAnalyzerType = "minhash"
 )
 
