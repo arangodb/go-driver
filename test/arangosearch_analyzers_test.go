@@ -95,6 +95,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 		ExpectedDefinition *driver.ArangoSearchAnalyzerDefinition
 		Found              bool
 		HasError           bool
+		EnterpriseOnly     bool
 	}{
 
 		{
@@ -319,8 +320,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 			},
 		},
 		{
-			Name:       "my-classification",
-			MinVersion: newVersion("3.11"),
+			Name:           "my-classification",
+			MinVersion:     newVersion("3.11"),
+			EnterpriseOnly: true,
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-classification",
 				Type: driver.ArangoSearchAnalyzerTypeClassification,
@@ -341,8 +343,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 			},
 		},
 		{
-			Name:       "my-nearestNeighbors",
-			MinVersion: newVersion("3.11"),
+			Name:           "my-nearestNeighbors",
+			MinVersion:     newVersion("3.11"),
+			EnterpriseOnly: true,
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-nearestNeighbors",
 				Type: driver.ArangoSearchAnalyzerTypeNearestNeighbors,
@@ -361,8 +364,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 			},
 		},
 		{
-			Name:       "my-minhash",
-			MinVersion: newVersion("3.10"),
+			Name:           "my-minhash",
+			MinVersion:     newVersion("3.10"),
+			EnterpriseOnly: true,
 			Definition: driver.ArangoSearchAnalyzerDefinition{
 				Name: "my-minhash",
 				Type: driver.ArangoSearchAnalyzerTypeMinhash,
@@ -408,6 +412,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				} else {
 					skipBetweenVersion(c, *testCase.MinVersion, *testCase.MaxVersion, t)
 				}
+			}
+			if testCase.EnterpriseOnly {
+				skipNoEnterprise(t)
 			}
 
 			existed, a, err := db.EnsureAnalyzer(ctx, testCase.Definition)
