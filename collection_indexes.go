@@ -75,9 +75,9 @@ type CollectionIndexes interface {
 	// Note that zkd indexes are an experimental feature in ArangoDB 3.9.
 	EnsureZKDIndex(ctx context.Context, fields []string, options *EnsureZKDIndexOptions) (Index, bool, error)
 
-	// EnsureInvertedIndex creates a inverted index in the collection, if it does not already exist.
+	// EnsureInvertedIndex creates an inverted index in the collection, if it does not already exist.
 	// Available in ArangoDB 3.10 and later.
-	EnsureInvertedIndex(ctx context.Context, options EnsureInvertedIndexOptions) (Index, bool, error)
+	EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (Index, bool, error)
 }
 
 // EnsureFullTextIndexOptions contains specific options for creating a full text index.
@@ -201,20 +201,22 @@ type EnsureZKDIndexOptions struct {
 	// Sparse bool
 }
 
-// EnsureInvertedIndexOptions provides specific options for creating an inverted index
+// InvertedIndexOptions provides specific options for creating an inverted index
 // Available since ArangoDB 3.10
-type EnsureInvertedIndexOptions struct {
+type InvertedIndexOptions struct {
 	// Name optional user defined name used for hints in AQL queries
 	Name string `json:"name"`
 	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
-	InBackground bool `json:"inBackground,omitempty"`
+	InBackground   bool `json:"inBackground,omitempty"`
+	IsNewlyCreated bool `json:"isNewlyCreated,omitempty"`
 
-	Parallelism int                       `json:"parallelism,omitempty"`
-	PrimarySort *InvertedIndexPrimarySort `json:"primarySort,omitempty"`
+	Parallelism int `json:"parallelism,omitempty"`
+	// PrimarySort describes how individual fields are sorted
+	PrimarySort InvertedIndexPrimarySort `json:"primarySort,omitempty"`
 	// StoredValues these values specifies how the index should track values.
-	StoredValues []InvertedIndexStoredValue `json:"storedValues,omitempty"`
-	// Analyzer name to be used for indexing
-	Analyzer string `json:"analyzer,omitempty"`
+	StoredValues []StoredValue `json:"storedValues,omitempty"`
+	// Analyzer to be used for indexing
+	Analyzer ArangoSearchAnalyzerType `json:"analyzer,omitempty"`
 	// Features possible values [ "frequency", "position", "offset", "norm"], optional, default []
 	Features []string `json:"features,omitempty"`
 	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
@@ -226,28 +228,17 @@ type EnsureInvertedIndexOptions struct {
 	Fields []InvertedIndexField `json:"fields,omitempty"`
 }
 
-type InvertedIndexFieldSort struct {
-	// FieldName name of the field to be sorted
-	FieldName string `json:"fieldName"`
-	// Direction "asc" or "desc"
-	Direction string `json:"direction"`
-}
-
 type InvertedIndexPrimarySort struct {
-	Fields []InvertedIndexFieldSort `json:"fields"`
+	Fields []ArangoSearchPrimarySortEntry `json:"fields,omitempty"`
 	// Compression optional
-	Compression PrimarySortCompression `json:"compression,omitempty"`
+	Compression PrimarySortCompression `json:"primarySortCompression,omitempty"`
 }
-
-type InvertedIndexStoredValue StoredValue
-
-type InvertedIndexFieldNestedSearch map[string]interface{}
 
 type InvertedIndexField struct {
 	// Name of the field
 	Name string `json:"name"`
 	// Analyzer optional
-	Analyzer string `json:"analyzer,omitempty"`
+	Analyzer ArangoSearchAnalyzerType `json:"analyzer,omitempty"`
 	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
 	IncludeAllFields bool `json:"includeAllFields,omitempty"`
 	// TrackListPositions If set to true, values in a listed are treated as separate values. Defaults to false.
@@ -256,5 +247,5 @@ type InvertedIndexField struct {
 	Features []string `json:"features,omitempty"`
 	// Nested
 	// Enterprise-only feature
-	Nested []InvertedIndexFieldNestedSearch `json:"nested,omitempty"`
+	Nested []InvertedIndexField `json:"nested,omitempty"`
 }

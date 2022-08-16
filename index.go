@@ -98,5 +98,5 @@ type Index interface {
 	StoredValues() []string
 
 	// InvertedIndexOptions returns the inverted index options for this index - InvertedIndex only
-	InvertedIndexOptions() EnsureInvertedIndexOptions
+	InvertedIndexOptions() InvertedIndexOptions
 }

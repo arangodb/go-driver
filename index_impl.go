@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"path"
 	"strings"
 )
@@ -49,6 +50,8 @@ func indexStringToType(indexTypeString string) (IndexType, error) {
 		return TTLIndex, nil
 	case string(ZKDIndex):
 		return ZKDIndex, nil
+	case string(InvertedIndex):
+		return InvertedIndex, nil
 	default:
 		return "", WithStack(InvalidArgumentError{Message: "unknown index type"})
 	}
@@ -80,7 +83,7 @@ func newIndex(data indexData, col *collection) (Index, error) {
 }
 
 // newIndex creates a new Index implementation.
-func newIndexInverted(data invertedDataIndex, col *collection) (Index, error) {
+func newInvertedIndex(data invertedIndexData, col *collection) (Index, error) {
 	if data.ID == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "id is empty"})
 	}
@@ -96,11 +99,13 @@ func newIndexInverted(data invertedDataIndex, col *collection) (Index, error) {
 		return nil, WithStack(err)
 	}
 
-	var dataIndex indexData = indexData{
-		ID:   data.ID,
-		Type: data.Type,
-		// todo
-		// InBackground: data.InBackground,
+	dataIndex := indexData{
+		ID:             data.ID,
+		Type:           data.Type,
+		InBackground:   &data.InvertedIndexOptions.InBackground,
+		IsNewlyCreated: &data.InvertedIndexOptions.IsNewlyCreated,
+		Name:           data.InvertedIndexOptions.Name,
+		ArangoError:    data.ArangoError,
 	}
 	return &index{
 		indexData:         dataIndex,
@@ -112,9 +117,37 @@ func newIndexInverted(data invertedDataIndex, col *collection) (Index, error) {
 	}, nil
 }
 
+// newIndexFrom map returns Index implementation based on index type extracted from rawData
+func newIndexFromMap(rawData json.RawMessage, col *collection) (Index, error) {
+	type generalIndexData struct {
+		Type string `json:"type"`
+	}
+	var gen generalIndexData
+	err := json.Unmarshal(rawData, &gen)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+
+	if IndexType(gen.Type) == InvertedIndex {
+		var idxData invertedIndexData
+		err = json.Unmarshal(rawData, &idxData)
+		if err != nil {
+			return nil, WithStack(err)
+		}
+		return newInvertedIndex(idxData, col)
+	}
+
+	var idxData indexData
+	err = json.Unmarshal(rawData, &idxData)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	return newIndex(idxData, col)
+}
+
 type index struct {
 	indexData
-	invertedDataIndex invertedDataIndex
+	invertedDataIndex invertedIndexData
 	indexType         IndexType
 	db                *database
 	col               *collection
@@ -232,8 +265,8 @@ func (i *index) StoredValues() []string {
 }
 
 // InvertedIndexOptions returns the inverted index options for this index - InvertedIndex only
-func (i *index) InvertedIndexOptions() EnsureInvertedIndexOptions {
-	return i.invertedDataIndex.EnsureInvertedIndexOptions
+func (i *index) InvertedIndexOptions() InvertedIndexOptions {
+	return i.invertedDataIndex.InvertedIndexOptions
 }
 
 // Remove removes the entire index.
