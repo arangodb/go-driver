@@ -231,7 +231,7 @@ type InvertedIndexOptions struct {
 type InvertedIndexPrimarySort struct {
 	Fields []ArangoSearchPrimarySortEntry `json:"fields,omitempty"`
 	// Compression optional
-	Compression PrimarySortCompression `json:"primarySortCompression,omitempty"`
+	Compression PrimarySortCompression `json:"compression,omitempty"`
 }
 
 type InvertedIndexField struct {
