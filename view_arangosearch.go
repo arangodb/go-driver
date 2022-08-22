@@ -39,7 +39,7 @@ type ArangoSearchView interface {
 	SetProperties(ctx context.Context, options ArangoSearchViewProperties) error
 }
 
-// ArangoSearchAnalyzerType specifies type of an analyzer
+// ArangoSearchAnalyzerType specifies type of analyzer
 type ArangoSearchAnalyzerType string
 
 const (
@@ -69,6 +69,12 @@ const (
 	ArangoSearchAnalyzerTypeSegmentation ArangoSearchAnalyzerType = "segmentation"
 	// ArangoSearchAnalyzerTypeCollation an Analyzer capable of converting the input into a set of language-specific tokens
 	ArangoSearchAnalyzerTypeCollation ArangoSearchAnalyzerType = "collation"
+	// ArangoSearchAnalyzerTypeClassification An Analyzer capable of classifying tokens in the input text. (EE only)
+	ArangoSearchAnalyzerTypeClassification ArangoSearchAnalyzerType = "classification"
+	// ArangoSearchAnalyzerTypeNearestNeighbors An Analyzer capable of finding nearest neighbors of tokens in the input. (EE only)
+	ArangoSearchAnalyzerTypeNearestNeighbors ArangoSearchAnalyzerType = "nearest_neighbors"
+	// ArangoSearchAnalyzerTypeMinhash an analyzer which is capable of evaluating so called MinHash signatures as a stream of tokens. (EE only)
+	ArangoSearchAnalyzerTypeMinhash ArangoSearchAnalyzerType = "minhash"
 )
 
 // ArangoSearchAnalyzerFeature specifies a feature to an analyzer
@@ -81,6 +87,8 @@ const (
 	ArangoSearchAnalyzerFeatureNorm ArangoSearchAnalyzerFeature = "norm"
 	// ArangoSearchAnalyzerFeaturePosition sequentially increasing term position, required for PHRASE(). If present then the frequency feature is also required
 	ArangoSearchAnalyzerFeaturePosition ArangoSearchAnalyzerFeature = "position"
+	// ArangoSearchAnalyzerFeatureOffset can be specified if 'position' feature is set
+	ArangoSearchAnalyzerFeatureOffset ArangoSearchAnalyzerFeature = "offset"
 )
 
 type ArangoSearchCaseType string
@@ -196,6 +204,25 @@ type ArangoSearchAnalyzerProperties struct {
 	// If false then each string in stopwords is used verbatim.
 	// If true, then each string in stopwords needs to be hex-encoded.
 	Hex *bool `json:"hex,omitempty"`
+
+	// ModelLocation used by Classification, NearestNeighbors
+	// The on-disk path to the trained fastText supervised model.
+	// Note: if you are running this in an ArangoDB cluster, this model must exist on every machine in the cluster.
+	ModelLocation string `json:"model_location,omitempty"`
+	// TopK  used by Classification, NearestNeighbors
+	// The number of class labels that will be produced per input (default: 1)
+	TopK *uint64 `json:"top_k,omitempty"`
+	// Threshold  used by Classification
+	// The probability threshold for which a label will be assigned to an input.
+	// A fastText model produces a probability per class label, and this is what will be filtered (default: 0.99).
+	Threshold *float64 `json:"threshold,omitempty"`
+
+	// Analyzer used by Minhash
+	// Definition of inner analyzer to use for incoming data. In case if omitted field or empty object falls back to 'identity' analyzer.
+	Analyzer *ArangoSearchAnalyzerDefinition `json:"analyzer,omitempty"`
+	// NumHashes used by Minhash
+	// Size of min hash signature. Must be greater or equal to 1.
+	NumHashes *uint64 `json:"numHashes,omitempty"`
 }
 
 // ArangoSearchAnalyzerGeoJSONType GeoJSON Type parameter.
