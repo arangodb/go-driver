@@ -24,6 +24,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"path"
 )
 
@@ -54,8 +55,7 @@ type indexData struct {
 }
 
 type indexListResponse struct {
-	Indexes     []indexData          `json:"indexes,omitempty"`
-	Identifiers map[string]indexData `json:"identifiers,omitempty"`
+	Indexes []json.RawMessage `json:"indexes,omitempty"`
 	ArangoError
 }
 
@@ -123,7 +123,7 @@ func (c *collection) Indexes(ctx context.Context) ([]Index, error) {
 	}
 	result := make([]Index, 0, len(data.Indexes))
 	for _, x := range data.Indexes {
-		idx, err := newIndex(x, c)
+		idx, err := newIndexFromMap(x, c)
 		if err != nil {
 			return nil, WithStack(err)
 		}
@@ -307,6 +307,48 @@ func (c *collection) EnsureZKDIndex(ctx context.Context, fields []string, option
 		//input.Sparse = &options.Sparse
 	}
 	idx, created, err := c.ensureIndex(ctx, input)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return idx, created, nil
+}
+
+type invertedIndexData struct {
+	InvertedIndexOptions
+	Type string `json:"type"`
+	ID   string `json:"id,omitempty"`
+
+	ArangoError `json:",inline"`
+}
+
+// EnsureInvertedIndex creates an inverted index in the collection, if it does not already exist.
+// Available in ArangoDB 3.10 and later.
+func (c *collection) EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (Index, bool, error) {
+	req, err := c.conn.NewRequest("POST", path.Join(c.db.relPath(), "_api/index"))
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	if options == nil {
+		options = &InvertedIndexOptions{}
+	}
+	req.SetQuery("collection", c.name)
+	if _, err := req.SetBody(invertedIndexData{InvertedIndexOptions: *options, Type: string(InvertedIndex)}); err != nil {
+		return nil, false, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	if err := resp.CheckStatus(200, 201); err != nil {
+		return nil, false, WithStack(err)
+	}
+	created := resp.StatusCode() == 201
+
+	var data invertedIndexData
+	if err := resp.ParseBody("", &data); err != nil {
+		return nil, false, WithStack(err)
+	}
+	idx, err := newInvertedIndex(data, c)
 	if err != nil {
 		return nil, false, WithStack(err)
 	}

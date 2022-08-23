@@ -135,3 +135,13 @@ func (c *vertexCollection) EnsureZKDIndex(ctx context.Context, fields []string, 
 	}
 	return result, created, nil
 }
+
+// EnsureInvertedIndex creates an inverted index in the collection, if it does not already exist.
+// Available in ArangoDB 3.10 and later.
+func (c *vertexCollection) EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (Index, bool, error) {
+	result, created, err := c.rawCollection().EnsureInvertedIndex(ctx, options)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return result, created, nil
+}
