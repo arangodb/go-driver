@@ -321,6 +321,8 @@ type invertedIndexData struct {
 	ArangoError `json:",inline"`
 }
 
+// EnsureInvertedIndex creates an inverted index in the collection, if it does not already exist.
+// Available in ArangoDB 3.10 and later.
 func (c *collection) EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (Index, bool, error) {
 	req, err := c.conn.NewRequest("POST", path.Join(c.db.relPath(), "_api/index"))
 	if err != nil {

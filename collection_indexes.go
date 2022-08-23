@@ -217,8 +217,8 @@ type InvertedIndexOptions struct {
 	StoredValues []StoredValue `json:"storedValues,omitempty"`
 	// Analyzer to be used for indexing
 	Analyzer ArangoSearchAnalyzerType `json:"analyzer,omitempty"`
-	// Features possible values [ "frequency", "position", "offset", "norm"], optional, default []
-	Features []string `json:"features,omitempty"`
+	// Features list of analyzer features, default []
+	Features []ArangoSearchAnalyzerFeature `json:"features,omitempty"`
 	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
 	IncludeAllFields bool `json:"includeAllFields,omitempty"`
 	// TrackListPositions If set to true, values in a listed are treated as separate values. Defaults to false.
@@ -228,12 +228,14 @@ type InvertedIndexOptions struct {
 	Fields []InvertedIndexField `json:"fields,omitempty"`
 }
 
+// InvertedIndexPrimarySort defines compression and list of fields to be sorted.
 type InvertedIndexPrimarySort struct {
 	Fields []ArangoSearchPrimarySortEntry `json:"fields,omitempty"`
 	// Compression optional
 	Compression PrimarySortCompression `json:"compression,omitempty"`
 }
 
+// InvertedIndexField contains configuration for indexing of the field
 type InvertedIndexField struct {
 	// Name of the field
 	Name string `json:"name"`
@@ -243,8 +245,8 @@ type InvertedIndexField struct {
 	IncludeAllFields bool `json:"includeAllFields,omitempty"`
 	// TrackListPositions If set to true, values in a listed are treated as separate values. Defaults to false.
 	TrackListPositions bool `json:"trackListPositions,omitempty"`
-	// Features possible values [ "frequency", "position", "offset", "norm"], optional, default []
-	Features []string `json:"features,omitempty"`
+	// Features list of analyzer features, default [].
+	Features []ArangoSearchAnalyzerFeature `json:"features,omitempty"`
 	// Nested
 	// Enterprise-only feature
 	Nested []InvertedIndexField `json:"nested,omitempty"`

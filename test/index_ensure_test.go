@@ -528,11 +528,11 @@ func TestEnsureInvertedIndex(t *testing.T) {
 					},
 					Compression: driver.PrimarySortCompressionLz4,
 				},
-				Features:     []string{},
+				Features:     []driver.ArangoSearchAnalyzerFeature{},
 				StoredValues: []driver.StoredValue{},
 				Fields: []driver.InvertedIndexField{
-					{Name: "field1", Features: []string{"frequency"}, Nested: nil},
-					{Name: "field2", Features: []string{"position"}, TrackListPositions: false, Nested: nil},
+					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
+					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false, Nested: nil},
 				},
 			},
 		},
@@ -547,25 +547,27 @@ func TestEnsureInvertedIndex(t *testing.T) {
 					},
 					Compression: driver.PrimarySortCompressionLz4,
 				},
-				Features:     []string{},
+				Features:     []driver.ArangoSearchAnalyzerFeature{},
 				StoredValues: []driver.StoredValue{},
 				Fields: []driver.InvertedIndexField{
-					{Name: "field1", Features: []string{"frequency"}, Nested: nil},
-					{Name: "field2", Features: []string{"position"}, TrackListPositions: false, Nested: []driver.InvertedIndexField{
-						{
-							Name: "some-nested-field",
-							Nested: []driver.InvertedIndexField{
-								{Name: "test"},
-								{Name: "bas", Nested: []driver.InvertedIndexField{
-									{Name: "a", Features: nil},
-								}},
-								{Name: "kas", Nested: []driver.InvertedIndexField{
-									{Name: "b", TrackListPositions: true},
-									{Name: "c"},
-								}},
+					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
+					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false,
+						Nested: []driver.InvertedIndexField{
+							{
+								Name: "some-nested-field",
+								Nested: []driver.InvertedIndexField{
+									{Name: "test"},
+									{Name: "bas", Nested: []driver.InvertedIndexField{
+										{Name: "a", Features: nil},
+									}},
+									{Name: "kas", Nested: []driver.InvertedIndexField{
+										{Name: "b", TrackListPositions: true},
+										{Name: "c"},
+									}},
+								},
 							},
 						},
-					}},
+					},
 				},
 			},
 		},
