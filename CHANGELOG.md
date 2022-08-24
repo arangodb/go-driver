@@ -12,6 +12,7 @@
 - New parameters (`cacheEnabled` and `storedValues`) for Persistent Indexes
 - New analyzers: `classification`, `nearest neighbors`, `minhash`
 - Add support for Inverted index
+- Deprecate fulltext index
 
 ## [1.3.3](https://github.com/arangodb/go-driver/tree/v1.3.3) (2022-07-27)
 - Fix `lastValue` field type
