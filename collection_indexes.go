@@ -36,6 +36,7 @@ type CollectionIndexes interface {
 	// Indexes returns a list of all indexes in the collection.
 	Indexes(ctx context.Context) ([]Index, error)
 
+	// Deprecated: since 3.10 version. Use ArangoSearch view instead.
 	// EnsureFullTextIndex creates a fulltext index in the collection, if it does not already exist.
 	// Fields is a slice of attribute names. Currently, the slice is limited to exactly one attribute.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
@@ -74,8 +75,13 @@ type CollectionIndexes interface {
 	// EnsureZKDIndex creates a ZKD multi-dimensional index for the collection, if it does not already exist.
 	// Note that zkd indexes are an experimental feature in ArangoDB 3.9.
 	EnsureZKDIndex(ctx context.Context, fields []string, options *EnsureZKDIndexOptions) (Index, bool, error)
+
+	// EnsureInvertedIndex creates an inverted index in the collection, if it does not already exist.
+	// Available in ArangoDB 3.10 and later.
+	EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (Index, bool, error)
 }
 
+// Deprecated: since 3.10 version. Use ArangoSearch view instead.
 // EnsureFullTextIndexOptions contains specific options for creating a full text index.
 type EnsureFullTextIndexOptions struct {
 	// MinLength is the minimum character length of words to index. Will default to a server-defined
@@ -195,4 +201,55 @@ type EnsureZKDIndexOptions struct {
 	// If true, then create a sparse index.
 	// TODO: The sparse property is not supported yet
 	// Sparse bool
+}
+
+// InvertedIndexOptions provides specific options for creating an inverted index
+// Available since ArangoDB 3.10
+type InvertedIndexOptions struct {
+	// Name optional user defined name used for hints in AQL queries
+	Name string `json:"name"`
+	// InBackground if true will not hold an exclusive collection lock for the entire index creation period (rocksdb only).
+	InBackground   bool `json:"inBackground,omitempty"`
+	IsNewlyCreated bool `json:"isNewlyCreated,omitempty"`
+
+	Parallelism int `json:"parallelism,omitempty"`
+	// PrimarySort describes how individual fields are sorted
+	PrimarySort InvertedIndexPrimarySort `json:"primarySort,omitempty"`
+	// StoredValues these values specifies how the index should track values.
+	StoredValues []StoredValue `json:"storedValues,omitempty"`
+	// Analyzer to be used for indexing
+	Analyzer ArangoSearchAnalyzerType `json:"analyzer,omitempty"`
+	// Features list of analyzer features, default []
+	Features []ArangoSearchAnalyzerFeature `json:"features,omitempty"`
+	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
+	IncludeAllFields bool `json:"includeAllFields,omitempty"`
+	// TrackListPositions If set to true, values in a listed are treated as separate values. Defaults to false.
+	TrackListPositions bool `json:"trackListPositions,omitempty"`
+	// Fields contains the properties for individual fields of the element.
+	// The key of the map are field names.
+	Fields []InvertedIndexField `json:"fields,omitempty"`
+}
+
+// InvertedIndexPrimarySort defines compression and list of fields to be sorted.
+type InvertedIndexPrimarySort struct {
+	Fields []ArangoSearchPrimarySortEntry `json:"fields,omitempty"`
+	// Compression optional
+	Compression PrimarySortCompression `json:"compression,omitempty"`
+}
+
+// InvertedIndexField contains configuration for indexing of the field
+type InvertedIndexField struct {
+	// Name of the field
+	Name string `json:"name"`
+	// Analyzer optional
+	Analyzer ArangoSearchAnalyzerType `json:"analyzer,omitempty"`
+	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
+	IncludeAllFields bool `json:"includeAllFields,omitempty"`
+	// TrackListPositions If set to true, values in a listed are treated as separate values. Defaults to false.
+	TrackListPositions bool `json:"trackListPositions,omitempty"`
+	// Features list of analyzer features, default [].
+	Features []ArangoSearchAnalyzerFeature `json:"features,omitempty"`
+	// Nested
+	// Enterprise-only feature
+	Nested []InvertedIndexField `json:"nested,omitempty"`
 }

@@ -367,7 +367,8 @@ func TestOptimizerRulesForQueries(t *testing.T) {
 		var ruleToFind *driver.QueryRule
 		for _, rule := range rules {
 			if rule.Name == "optimize-traversals" {
-				ruleToFind = &rule
+				ruleCopy := rule
+				ruleToFind = &ruleCopy
 				break
 			}
 		}

@@ -40,6 +40,14 @@ func newInt64(v int64) *int64 {
 	return &v
 }
 
+func newUInt64(v uint64) *uint64 {
+	return &v
+}
+
+func newFloat64(v float64) *float64 {
+	return &v
+}
+
 func newVersion(s driver.Version) *driver.Version {
 	return &s
 }
@@ -70,6 +78,8 @@ func fillPropertiesDefaults(t *testing.T, c driver.Client, props *driver.ArangoS
 }
 
 func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
+	const sampleMLModel = "/model_cooking.bin"
+
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.5", t)
 	ctx := context.Background()
@@ -85,6 +95,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 		ExpectedDefinition *driver.ArangoSearchAnalyzerDefinition
 		Found              bool
 		HasError           bool
+		EnterpriseOnly     bool
 	}{
 
 		{
@@ -308,6 +319,89 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:           "my-classification",
+			MinVersion:     newVersion("3.11"),
+			EnterpriseOnly: true,
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-classification",
+				Type: driver.ArangoSearchAnalyzerTypeClassification,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					ModelLocation: sampleMLModel,
+					TopK:          newUInt64(2),
+					Threshold:     newFloat64(0.98),
+				},
+			},
+			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-classification",
+				Type: driver.ArangoSearchAnalyzerTypeClassification,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					ModelLocation: sampleMLModel,
+					TopK:          newUInt64(2),
+					Threshold:     newFloat64(0.98),
+				},
+			},
+		},
+		{
+			Name:           "my-nearestNeighbors",
+			MinVersion:     newVersion("3.11"),
+			EnterpriseOnly: true,
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-nearestNeighbors",
+				Type: driver.ArangoSearchAnalyzerTypeNearestNeighbors,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					ModelLocation: sampleMLModel,
+					TopK:          newUInt64(2),
+				},
+			},
+			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-nearestNeighbors",
+				Type: driver.ArangoSearchAnalyzerTypeNearestNeighbors,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					ModelLocation: sampleMLModel,
+					TopK:          newUInt64(2),
+				},
+			},
+		},
+		{
+			Name:           "my-minhash",
+			MinVersion:     newVersion("3.10"),
+			EnterpriseOnly: true,
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-minhash",
+				Type: driver.ArangoSearchAnalyzerTypeMinhash,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Analyzer: &driver.ArangoSearchAnalyzerDefinition{
+						Type: driver.ArangoSearchAnalyzerTypeStopwords,
+						Properties: driver.ArangoSearchAnalyzerProperties{
+							Hex: newBool(true),
+							Stopwords: []string{
+								"616e64",
+								"746865",
+							},
+						},
+					},
+					NumHashes: newUInt64(2),
+				},
+			},
+			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-minhash",
+				Type: driver.ArangoSearchAnalyzerTypeMinhash,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Analyzer: &driver.ArangoSearchAnalyzerDefinition{
+						Type: driver.ArangoSearchAnalyzerTypeStopwords,
+						Properties: driver.ArangoSearchAnalyzerProperties{
+							Hex: newBool(true),
+							Stopwords: []string{
+								"616e64",
+								"746865",
+							},
+						},
+					},
+					NumHashes: newUInt64(2),
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -318,6 +412,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				} else {
 					skipBetweenVersion(c, *testCase.MinVersion, *testCase.MaxVersion, t)
 				}
+			}
+			if testCase.EnterpriseOnly {
+				skipNoEnterprise(t)
 			}
 
 			existed, a, err := db.EnsureAnalyzer(ctx, testCase.Definition)
@@ -341,9 +438,11 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				require.Equal(t, a.Type(), def.Type)
 				require.Equal(t, a.UniqueName(), dbname+"::"+def.Name)
 				require.Equal(t, a.Database(), db)
-				d, err := json.Marshal(a.Properties())
+				aSerialized, err := json.Marshal(a.Properties())
 				require.NoError(t, err)
-				require.Equal(t, a.Properties(), def.Properties, string(d))
+				defSerialized, err := json.Marshal(def.Properties)
+				require.NoError(t, err)
+				require.Equalf(t, a.Properties(), def.Properties, "expected %s, got %s", string(aSerialized), string(defSerialized))
 			}
 		})
 	}

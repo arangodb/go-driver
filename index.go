@@ -30,7 +30,7 @@ type IndexType string
 // Symbolic constants for index types
 const (
 	PrimaryIndex    = IndexType("primary")
-	FullTextIndex   = IndexType("fulltext")
+	FullTextIndex   = IndexType("fulltext") // Deprecated: since 3.10 version. Use ArangoSearch view instead.
 	HashIndex       = IndexType("hash")
 	SkipListIndex   = IndexType("skiplist")
 	PersistentIndex = IndexType("persistent")
@@ -38,6 +38,7 @@ const (
 	EdgeIndex       = IndexType("edge")
 	TTLIndex        = IndexType("ttl")
 	ZKDIndex        = IndexType("zkd")
+	InvertedIndex   = IndexType("inverted")
 )
 
 // Index provides access to a single index in a single collection.
@@ -95,4 +96,7 @@ type Index interface {
 
 	// StoredValues returns a list of stored values for this index - PersistentIndex only
 	StoredValues() []string
+
+	// InvertedIndexOptions returns the inverted index options for this index - InvertedIndex only
+	InvertedIndexOptions() InvertedIndexOptions
 }

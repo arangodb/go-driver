@@ -52,6 +52,7 @@ func (c *edgeCollection) Indexes(ctx context.Context) ([]Index, error) {
 	return result, nil
 }
 
+// Deprecated: since 3.10 version. Use ArangoSearch view instead.
 // EnsureFullTextIndex creates a fulltext index in the collection, if it does not already exist.
 //
 // Fields is a slice of attribute names. Currently, the slice is limited to exactly one attribute.
@@ -130,6 +131,16 @@ func (c *edgeCollection) EnsureTTLIndex(ctx context.Context, field string, expir
 // The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 func (c *edgeCollection) EnsureZKDIndex(ctx context.Context, fields []string, options *EnsureZKDIndexOptions) (Index, bool, error) {
 	result, created, err := c.rawCollection().EnsureZKDIndex(ctx, fields, options)
+	if err != nil {
+		return nil, false, WithStack(err)
+	}
+	return result, created, nil
+}
+
+// EnsureInvertedIndex creates an inverted index in the collection, if it does not already exist.
+// Available in ArangoDB 3.10 and later.
+func (c *edgeCollection) EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (Index, bool, error) {
+	result, created, err := c.rawCollection().EnsureInvertedIndex(ctx, options)
 	if err != nil {
 		return nil, false, WithStack(err)
 	}

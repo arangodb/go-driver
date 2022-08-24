@@ -561,15 +561,15 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	}, t)
 
 	docs := []UserDoc{
-		UserDoc{
+		{
 			"John",
 			23,
 		},
-		UserDoc{
+		{
 			"Alice",
 			12,
 		},
-		UserDoc{
+		{
 			"Helmut",
 			17,
 		},

@@ -501,3 +501,106 @@ func TestEnsureZKDIndexWithOptions(t *testing.T) {
 	err = idx.Remove(nil)
 	require.NoError(t, err)
 }
+
+// TestEnsureInvertedIndex creates a collection with an inverted index
+func TestEnsureInvertedIndex(t *testing.T) {
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.10.0"))
+
+	db := ensureDatabase(ctx, c, "index_test", nil, t)
+	col := ensureCollection(ctx, db, fmt.Sprintf("inverted_index_opt_test"), nil, t)
+
+	type testCase struct {
+		IsEE    bool
+		Options driver.InvertedIndexOptions
+	}
+	testCases := []testCase{
+		{
+			IsEE: false,
+			Options: driver.InvertedIndexOptions{
+				Name: "inverted-opt",
+				PrimarySort: driver.InvertedIndexPrimarySort{
+					Fields: []driver.ArangoSearchPrimarySortEntry{
+						{Field: "test1", Ascending: newBool(true)},
+						{Field: "test2", Ascending: newBool(false)},
+					},
+					Compression: driver.PrimarySortCompressionLz4,
+				},
+				Features:     []driver.ArangoSearchAnalyzerFeature{},
+				StoredValues: []driver.StoredValue{},
+				Fields: []driver.InvertedIndexField{
+					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
+					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false, Nested: nil},
+				},
+			},
+		},
+		{
+			IsEE: true,
+			Options: driver.InvertedIndexOptions{
+				Name: "inverted-opt-nested",
+				PrimarySort: driver.InvertedIndexPrimarySort{
+					Fields: []driver.ArangoSearchPrimarySortEntry{
+						{Field: "test1", Ascending: newBool(true)},
+						{Field: "test2", Ascending: newBool(false)},
+					},
+					Compression: driver.PrimarySortCompressionLz4,
+				},
+				Features:     []driver.ArangoSearchAnalyzerFeature{},
+				StoredValues: []driver.StoredValue{},
+				Fields: []driver.InvertedIndexField{
+					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
+					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false,
+						Nested: []driver.InvertedIndexField{
+							{
+								Name: "some-nested-field",
+								Nested: []driver.InvertedIndexField{
+									{Name: "test"},
+									{Name: "bas", Nested: []driver.InvertedIndexField{
+										{Name: "a", Features: nil},
+									}},
+									{Name: "kas", Nested: []driver.InvertedIndexField{
+										{Name: "b", TrackListPositions: true},
+										{Name: "c"},
+									}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Options.Name, func(t *testing.T) {
+			if tc.IsEE {
+				skipNoEnterprise(t)
+			}
+
+			idx, created, err := col.EnsureInvertedIndex(ctx, &tc.Options)
+			require.NoError(t, err)
+			require.True(t, created)
+
+			tc.Options.IsNewlyCreated = true
+			tc.Options.Analyzer = driver.ArangoSearchAnalyzerTypeIdentity // default value for analyzer
+
+			requireIdxEquality := func(invertedIdx driver.Index) {
+				require.Equal(t, driver.InvertedIndex, idx.Type())
+				require.Equal(t, tc.Options.Name, idx.UserName())
+				require.Equal(t, tc.Options, idx.InvertedIndexOptions())
+			}
+			requireIdxEquality(idx)
+
+			indexes, err := col.Indexes(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, indexes)
+
+			requireIdxEquality(indexes[0])
+
+			err = idx.Remove(nil)
+			require.NoError(t, err)
+		})
+	}
+}
