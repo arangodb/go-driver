@@ -30,7 +30,7 @@ type IndexType string
 // Symbolic constants for index types
 const (
 	PrimaryIndex    = IndexType("primary")
-	FullTextIndex   = IndexType("fulltext")
+	FullTextIndex   = IndexType("fulltext") // Deprecated: since 3.10 version. Use ArangoSearch view instead.
 	HashIndex       = IndexType("hash")
 	SkipListIndex   = IndexType("skiplist")
 	PersistentIndex = IndexType("persistent")

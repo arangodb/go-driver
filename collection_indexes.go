@@ -36,6 +36,7 @@ type CollectionIndexes interface {
 	// Indexes returns a list of all indexes in the collection.
 	Indexes(ctx context.Context) ([]Index, error)
 
+	// Deprecated: since 3.10 version. Use ArangoSearch view instead.
 	// EnsureFullTextIndex creates a fulltext index in the collection, if it does not already exist.
 	// Fields is a slice of attribute names. Currently, the slice is limited to exactly one attribute.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
@@ -80,6 +81,7 @@ type CollectionIndexes interface {
 	EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (Index, bool, error)
 }
 
+// Deprecated: since 3.10 version. Use ArangoSearch view instead.
 // EnsureFullTextIndexOptions contains specific options for creating a full text index.
 type EnsureFullTextIndexOptions struct {
 	// MinLength is the minimum character length of words to index. Will default to a server-defined
