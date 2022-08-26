@@ -52,6 +52,9 @@ type Database interface {
 	// Graph functions
 	DatabaseGraphs
 
+	// Pregel functions
+	DatabasePregels
+
 	// Streaming Transactions functions
 	DatabaseStreamingTransactions
 
