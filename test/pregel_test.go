@@ -63,7 +63,7 @@ func TestCreatePregelJob(t *testing.T) {
 
 	job, err := db.GetJob(ctx, jobId)
 	require.Nilf(t, err, "Failed to get job: %s", describe(err))
-	require.Equal(t, jobId, job.Id, "JobId mismatch")
+	require.Equal(t, jobId, job.ID, "JobId mismatch")
 	//require.Equal(t, driver.PregelAlgorithmPageRank, job.Algorithm, "Algorithm mismatch")
 	require.Equal(t, driver.PregelJobStateStoring, job.State, "State mismatch")
 	require.NotEmpty(t, job.Detail, "Detail is empty")

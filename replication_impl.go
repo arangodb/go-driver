@@ -34,7 +34,7 @@ import (
 
 // Content of the create batch resp
 type batchMetadata struct {
-	// Id of the batch
+	// ID of the batch
 	ID string `json:"id"`
 	// Last Tick reported by the server
 	LastTickInt Tick `json:"lastTick,omitempty"`

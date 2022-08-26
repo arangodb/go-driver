@@ -69,10 +69,10 @@ type PregelJobOptions struct {
 type PregelJobState string
 
 const (
-	// PregelJobNone - The Pregel run did not yet start.
-	PregelJobNone PregelJobState = "none"
-	// PregelLoading - The graph is loaded from the database into memory before the execution of the algorithm.
-	PregelLoading PregelJobState = "loading"
+	// PregelJobStateNone - The Pregel run did not yet start.
+	PregelJobStateNone PregelJobState = "none"
+	// PregelJobStateLoading - The graph is loaded from the database into memory before the execution of the algorithm.
+	PregelJobStateLoading PregelJobState = "loading"
 	// PregelJobStateRunning - The algorithm is executing normally.
 	PregelJobStateRunning PregelJobState = "running"
 	// PregelJobStateStoring - The algorithm finished, but the results are still being written back into the collections. Occurs only if the store parameter is set to true.
@@ -93,7 +93,7 @@ const (
 
 type PregelJob struct {
 	// The ID of the Pregel job, as a string.
-	Id string `json:"id"`
+	ID string `json:"id"`
 	// The algorithm used by the job.
 	Algorithm PregelAlgorithm `json:"algorithm,omitempty"`
 	// The date and time when the job was created.
@@ -117,7 +117,7 @@ type PregelJob struct {
 	// The time for storing the results if the job includes results storage. Is shown when the storing started.
 	StorageTime float64 `json:"storageTime,omitempty"`
 	// Computation time of each global super step. Is shown when the computation started.
-	GssTimes []float64 `json:"gssTimes,omitempty"`
+	GSSTimes []float64 `json:"gssTimes,omitempty"`
 	// This attribute is used by Programmable Pregel Algorithms (air, experimental). The value is only populated once the algorithm has finished.
 	Reports []map[string]interface{} `json:"reports,omitempty"`
 	// The total number of vertices processed.
@@ -148,7 +148,7 @@ type AggregatedStatus struct {
 	// The status of the in memory graph.
 	GraphStoreStatus *GraphStoreStatus `json:"graphStoreStatus,omitempty"`
 	//  Information about the global supersteps.
-	AllGssStatus *AllGssStatus `json:"allGssStatus,omitempty"`
+	AllGSSStatus *AllGSSStatus `json:"allGssStatus,omitempty"`
 }
 
 // GraphStoreStatus The status of the in memory graph.
@@ -163,14 +163,14 @@ type GraphStoreStatus struct {
 	VerticesStored uint64 `json:"verticesStored,omitempty"`
 }
 
-// AllGssStatus Information about the global supersteps.
-type AllGssStatus struct {
+// AllGSSStatus Information about the global supersteps.
+type AllGSSStatus struct {
 	//  A list of objects with details for each global superstep.
-	Items []GssStatus `json:"items,omitempty"`
+	Items []GSSStatus `json:"items,omitempty"`
 }
 
-// GssStatus Information about the global superstep
-type GssStatus struct {
+// GSSStatus Information about the global superstep
+type GSSStatus struct {
 	// The number of vertices that have been processed in this step.
 	VerticesProcessed uint64 `json:"verticesProcessed,omitempty"`
 	// The number of messages sent in this step.
