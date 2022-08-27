@@ -138,7 +138,7 @@ type PregelRunDetails struct {
 	AggregatedStatus *AggregatedStatus `json:"aggregatedStatus,omitempty"`
 	// The details of the Pregel for every DB-Server. Each object key is a DB-Server ID, and each value is a nested object similar to the aggregatedStatus attribute.
 	// In a single server deployment, there is only a single entry with an empty string as key.
-	WorkerStatus map[string]interface{} `json:"workerStatus,omitempty"`
+	WorkerStatus map[string]*AggregatedStatus `json:"workerStatus,omitempty"`
 }
 
 // AggregatedStatus The aggregated details of the full Pregel run. The values are totals of all the DB-Server.
