@@ -13,6 +13,8 @@
 - New analyzers: `classification`, `nearest neighbors`, `minhash`
 - Add support for Inverted index
 - Deprecate fulltext index
+- Add support for Pregel API
+- Add tests to check support for Enterprise Graphs
 
 ## [1.3.3](https://github.com/arangodb/go-driver/tree/v1.3.3) (2022-07-27)
 - Fix `lastValue` field type

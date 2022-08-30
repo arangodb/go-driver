@@ -42,10 +42,10 @@ type Graph interface {
 	// IsDisjoint return information if graph have isDisjoint flag set to true
 	IsDisjoint() bool
 
-	// Edge collection functions
+	// GraphEdgeCollections Edge collection functions
 	GraphEdgeCollections
 
-	// Vertex collection functions
+	// GraphVertexCollections Vertex collection functions
 	GraphVertexCollections
 
 	// ID returns the id of the graph.

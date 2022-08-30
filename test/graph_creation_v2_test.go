@@ -304,3 +304,59 @@ func TestHybridSmartGraphCreationV2(t *testing.T) {
 		}
 	}
 }
+
+func TestHybridSmartGraphCreationConditions(t *testing.T) {
+	ctx := context.Background()
+
+	c := createClientFromEnv(t, true)
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.10.0")).Cluster().Enterprise()
+
+	db := ensureDatabase(ctx, c, databaseName("graph", "create", "hybrid", "options"), nil, t)
+
+	t.Run("General Graph - isSmart is False and no smartGraphAttribute", func(t *testing.T) {
+		graphID := db.Name() + "_graph_smart_no_conditions"
+
+		options := driver.CreateGraphOptions{
+			IsSmart:             false,
+			SmartGraphAttribute: "",
+		}
+		g, err := db.CreateGraphV2(ctx, graphID, &options)
+		require.NoErrorf(t, err, "Failed to create graph '%s': %s", graphID, describe(err))
+
+		require.Equal(t, g.Name(), graphID)
+		require.Empty(t, g.SmartGraphAttribute())
+		require.False(t, g.IsSmart())
+	})
+
+	t.Run("Smart Graph - isSmart is True and smartGraphAttribute exist", func(t *testing.T) {
+		graphID := db.Name() + "_graph_smart_conditions"
+
+		options := driver.CreateGraphOptions{
+			IsSmart:             true,
+			SmartGraphAttribute: "test",
+		}
+		g, err := db.CreateGraphV2(ctx, graphID, &options)
+		require.NoErrorf(t, err, "Failed to create graph '%s': %s", graphID, describe(err))
+
+		require.Equal(t, g.Name(), graphID)
+		require.NotEmpty(t, g.SmartGraphAttribute())
+		require.True(t, g.IsSmart())
+	})
+
+	t.Run("Enterprise Graph - isSmart is True and no smartGraphAttribute", func(t *testing.T) {
+		skipBelowVersion(c, "3.10", t)
+
+		graphID := db.Name() + "_graph_smart_conditions_no_attribute"
+
+		options := driver.CreateGraphOptions{
+			IsSmart:             true,
+			SmartGraphAttribute: "",
+		}
+		g, err := db.CreateGraphV2(ctx, graphID, &options)
+		require.NoErrorf(t, err, "Failed to create graph '%s': %s", graphID, describe(err))
+
+		require.Equal(t, g.Name(), graphID)
+		require.Empty(t, g.SmartGraphAttribute())
+		require.True(t, g.IsSmart())
+	})
+}
