@@ -131,6 +131,13 @@ func skipNoEnterprise(t *testing.T) {
 	}
 }
 
+// wait for data propagation in cluster mode
+func waitForDataPropagation() {
+	if getTestMode() == testModeCluster {
+		time.Sleep(time.Second)
+	}
+}
+
 type interrupt struct {
 }
 
