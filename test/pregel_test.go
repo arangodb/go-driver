@@ -35,8 +35,8 @@ func TestCreatePregelJob(t *testing.T) {
 	skipBelowVersion(c, "3.10", t)
 	skipNoCluster(c, t)
 
-	db := ensureDatabase(ctx, c, "pregel_job_test3", nil, t)
-	g := ensureGraph(ctx, db, "pregel_graph_test3", nil, t)
+	db := ensureDatabase(ctx, c, "pregel_job_test", nil, t)
+	g := ensureGraph(ctx, db, "pregel_graph_test", nil, t)
 
 	nameVertex := "test_pregel_vertex"
 	ensureCollection(nil, db, nameVertex, &driver.CreateCollectionOptions{
@@ -60,6 +60,8 @@ func TestCreatePregelJob(t *testing.T) {
 	})
 	require.Nilf(t, err, "Failed to start Pregel job: %s", describe(err))
 	require.NotEmpty(t, jobId, "JobId is empty")
+
+	waitForDataPropagation()
 
 	job, err := db.GetJob(ctx, jobId)
 	require.Nilf(t, err, "Failed to get job: %s", describe(err))
