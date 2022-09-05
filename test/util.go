@@ -131,7 +131,7 @@ func skipNoEnterprise(t *testing.T) {
 	}
 }
 
-// waitForDataPropagation waits for data propagation in cluster mode
+// waitForDataPropagation - waits for data propagation in cluster mode
 func waitForDataPropagation() {
 	if getTestMode() == testModeCluster {
 		time.Sleep(time.Second)
