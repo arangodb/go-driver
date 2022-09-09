@@ -61,7 +61,8 @@ func TestCreatePregelJob(t *testing.T) {
 	require.Nilf(t, err, "Failed to start Pregel job: %s", describe(err))
 	require.NotEmpty(t, jobId, "JobId is empty")
 
-	waitForDataPropagation()
+	// TOOD change me to test if job work has been done by checking changes in the collection
+	/*waitForDataPropagation()
 
 	job, err := db.GetJob(ctx, jobId)
 	require.Nilf(t, err, "Failed to get job: %s", describe(err))
@@ -73,5 +74,5 @@ func TestCreatePregelJob(t *testing.T) {
 	require.Len(t, jobs, 1, "Expected 1 job, got %d", len(jobs))
 
 	err = db.CancelJob(ctx, jobId)
-	require.Nilf(t, err, "Failed to cancel job: %s", describe(err))
+	require.Nilf(t, err, "Failed to cancel job: %s", describe(err))*/
 }
