@@ -78,8 +78,6 @@ func fillPropertiesDefaults(t *testing.T, c driver.Client, props *driver.ArangoS
 }
 
 func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
-	const sampleMLModel = "/model_cooking.bin"
-
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.5", t)
 	ctx := context.Background()
@@ -316,50 +314,6 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 						"616e64",
 						"746865",
 					},
-				},
-			},
-		},
-		{
-			Name:           "my-classification",
-			MinVersion:     newVersion("3.11"),
-			EnterpriseOnly: true,
-			Definition: driver.ArangoSearchAnalyzerDefinition{
-				Name: "my-classification",
-				Type: driver.ArangoSearchAnalyzerTypeClassification,
-				Properties: driver.ArangoSearchAnalyzerProperties{
-					ModelLocation: sampleMLModel,
-					TopK:          newUInt64(2),
-					Threshold:     newFloat64(0.98),
-				},
-			},
-			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
-				Name: "my-classification",
-				Type: driver.ArangoSearchAnalyzerTypeClassification,
-				Properties: driver.ArangoSearchAnalyzerProperties{
-					ModelLocation: sampleMLModel,
-					TopK:          newUInt64(2),
-					Threshold:     newFloat64(0.98),
-				},
-			},
-		},
-		{
-			Name:           "my-nearestNeighbors",
-			MinVersion:     newVersion("3.11"),
-			EnterpriseOnly: true,
-			Definition: driver.ArangoSearchAnalyzerDefinition{
-				Name: "my-nearestNeighbors",
-				Type: driver.ArangoSearchAnalyzerTypeNearestNeighbors,
-				Properties: driver.ArangoSearchAnalyzerProperties{
-					ModelLocation: sampleMLModel,
-					TopK:          newUInt64(2),
-				},
-			},
-			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
-				Name: "my-nearestNeighbors",
-				Type: driver.ArangoSearchAnalyzerTypeNearestNeighbors,
-				Properties: driver.ArangoSearchAnalyzerProperties{
-					ModelLocation: sampleMLModel,
-					TopK:          newUInt64(2),
 				},
 			},
 		},
