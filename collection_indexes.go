@@ -217,17 +217,56 @@ type InvertedIndexOptions struct {
 	PrimarySort InvertedIndexPrimarySort `json:"primarySort,omitempty"`
 	// StoredValues these values specifies how the index should track values.
 	StoredValues []StoredValue `json:"storedValues,omitempty"`
-	// Analyzer to be used for indexing
-	Analyzer ArangoSearchAnalyzerType `json:"analyzer,omitempty"`
+	// Analyzer indicating the name of an analyzer instance
+	Analyzer string `json:"analyzer,omitempty"`
 	// Features list of analyzer features, default []
 	Features []ArangoSearchAnalyzerFeature `json:"features,omitempty"`
 	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
 	IncludeAllFields bool `json:"includeAllFields,omitempty"`
 	// TrackListPositions If set to true, values in a listed are treated as separate values. Defaults to false.
 	TrackListPositions bool `json:"trackListPositions,omitempty"`
+	// SearchField
+	SearchField bool `json:"searchField,omitempty"`
 	// Fields contains the properties for individual fields of the element.
 	// The key of the map are field names.
 	Fields []InvertedIndexField `json:"fields,omitempty"`
+	// ConsolidationInterval specifies the minimum number of milliseconds that must be waited
+	// between committing index data changes and making them visible to queries.
+	// Defaults to 60000.
+	// Use 0 to disable.
+	// For the case where there are a lot of inserts/updates, a lower value,
+	// until commit, will cause the index not to account for them and memory usage
+	// would continue to grow.
+	// For the case where there are a few inserts/updates, a higher value will
+	// impact performance and waste disk space for each commit call without
+	// any added benefits.
+	ConsolidationIntervalMsec *int64 `json:"consolidationIntervalMsec,omitempty"`
+	// CommitInterval ArangoSearch waits at least this many milliseconds between committing view data store changes and making documents visible to queries
+	CommitIntervalMsec *int64 `json:"commitIntervalMsec,omitempty"`
+	// CleanupIntervalStep specifies the minimum number of commits to wait between
+	// removing unused files in the data directory.
+	// Defaults to 10.
+	// Use 0 to disable waiting.
+	// For the case where the consolidation policies merge segments often
+	// (i.e. a lot of commit+consolidate), a lower value will cause a lot of
+	// disk space to be wasted.
+	// For the case where the consolidation policies rarely merge segments
+	// (i.e. few inserts/deletes), a higher value will impact performance
+	// without any added benefits.
+	CleanupIntervalStep *int64 `json:"cleanupIntervalStep,omitempty"`
+	// ConsolidationPolicy specifies thresholds for consolidation.
+	ConsolidationPolicy *ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
+	// WriteBufferIdle specifies the maximum number of writers (segments) cached in the pool.
+	// 0 value turns off caching, default value is 64.
+	WriteBufferIdle *int64 `json:"writebufferIdle,omitempty"`
+	// WriteBufferActive specifies the maximum number of concurrent active writers (segments) performs (a transaction).
+	// Other writers (segments) are wait till current active writers (segments) finish.
+	// 0 value turns off this limit and used by default.
+	WriteBufferActive *int64 `json:"writebufferActive,omitempty"`
+	// WriteBufferSizeMax specifies maximum memory byte size per writer (segment) before a writer (segment) flush is triggered.
+	// 0 value turns off this limit fon any writer (buffer) and will be flushed only after a period defined for special thread during ArangoDB server startup.
+	// 0 value should be used with carefully due to high potential memory consumption.
+	WriteBufferSizeMax *int64 `json:"writebufferSizeMax,omitempty"`
 }
 
 // InvertedIndexPrimarySort defines compression and list of fields to be sorted.
@@ -241,10 +280,12 @@ type InvertedIndexPrimarySort struct {
 type InvertedIndexField struct {
 	// Name of the field
 	Name string `json:"name"`
-	// Analyzer optional
-	Analyzer ArangoSearchAnalyzerType `json:"analyzer,omitempty"`
+	// Analyzer indicating the name of an analyzer instance
+	Analyzer string `json:"analyzer,omitempty"`
 	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
 	IncludeAllFields bool `json:"includeAllFields,omitempty"`
+	// SearchField
+	SearchField bool `json:"searchField,omitempty"`
 	// TrackListPositions If set to true, values in a listed are treated as separate values. Defaults to false.
 	TrackListPositions bool `json:"trackListPositions,omitempty"`
 	// Features list of analyzer features, default [].

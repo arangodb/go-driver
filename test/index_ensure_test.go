@@ -584,7 +584,7 @@ func TestEnsureInvertedIndex(t *testing.T) {
 			require.True(t, created)
 
 			tc.Options.IsNewlyCreated = true
-			tc.Options.Analyzer = driver.ArangoSearchAnalyzerTypeIdentity // default value for analyzer
+			tc.Options.Analyzer = string(driver.ArangoSearchAnalyzerTypeIdentity) // default value for analyzer
 
 			requireIdxEquality := func(invertedIdx driver.Index) {
 				require.Equal(t, driver.InvertedIndex, idx.Type())
