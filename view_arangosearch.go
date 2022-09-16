@@ -319,7 +319,7 @@ type ArangoSearchViewProperties struct {
 	// CommitInterval ArangoSearch waits at least this many milliseconds between committing view data store changes and making documents visible to queries
 	CommitInterval *int64 `json:"commitIntervalMsec,omitempty"`
 
-	// WriteBufferIdel specifies the maximum number of writers (segments) cached in the pool.
+	// WriteBufferIdle specifies the maximum number of writers (segments) cached in the pool.
 	// 0 value turns off caching, default value is 64.
 	WriteBufferIdel *int64 `json:"writebufferIdle,omitempty"`
 
