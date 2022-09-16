@@ -528,8 +528,6 @@ func TestEnsureInvertedIndex(t *testing.T) {
 					},
 					Compression: driver.PrimarySortCompressionLz4,
 				},
-				Features:     []driver.ArangoSearchAnalyzerFeature{},
-				StoredValues: []driver.StoredValue{},
 				Fields: []driver.InvertedIndexField{
 					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
 					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false, Nested: nil},
@@ -547,8 +545,6 @@ func TestEnsureInvertedIndex(t *testing.T) {
 					},
 					Compression: driver.PrimarySortCompressionLz4,
 				},
-				Features:     []driver.ArangoSearchAnalyzerFeature{},
-				StoredValues: []driver.StoredValue{},
 				Fields: []driver.InvertedIndexField{
 					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
 					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false,
@@ -589,7 +585,8 @@ func TestEnsureInvertedIndex(t *testing.T) {
 			requireIdxEquality := func(invertedIdx driver.Index) {
 				require.Equal(t, driver.InvertedIndex, idx.Type())
 				require.Equal(t, tc.Options.Name, idx.UserName())
-				require.Equal(t, tc.Options, idx.InvertedIndexOptions())
+				require.Equal(t, tc.Options.PrimarySort, idx.InvertedIndexOptions().PrimarySort)
+				require.Equal(t, tc.Options.Fields, idx.InvertedIndexOptions().Fields)
 			}
 			requireIdxEquality(idx)
 
