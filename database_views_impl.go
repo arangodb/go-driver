@@ -158,3 +158,45 @@ func (d *database) CreateArangoSearchView(ctx context.Context, name string, opti
 
 	return result, nil
 }
+
+// CreateArangoSearchAliasView creates a new view of type search-alias,
+// with given name and options, and opens a connection to it.
+// If a view with given name already exists within the database, a ConflictError is returned.
+func (d *database) CreateArangoSearchAliasView(ctx context.Context, name string, options *ArangoSearchAliasViewProperties) (ArangoSearchViewAlias, error) {
+	input := struct {
+		Name string   `json:"name"`
+		Type ViewType `json:"type"`
+		ArangoSearchAliasViewProperties
+	}{
+		Name: name,
+		Type: ViewTypeArangoSearchAlias,
+	}
+	if options != nil {
+		input.ArangoSearchAliasViewProperties = *options
+	}
+	req, err := d.conn.NewRequest("POST", path.Join(d.relPath(), "_api/view"))
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return nil, WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := d.conn.Do(ctx, req)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	if err := resp.CheckStatus(201); err != nil {
+		return nil, WithStack(err)
+	}
+	view, err := newView(name, input.Type, d)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+	result, err := view.ArangoSearchViewAlias()
+	if err != nil {
+		return nil, WithStack(err)
+	}
+
+	return result, nil
+}
