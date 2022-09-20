@@ -80,6 +80,13 @@ func (v *view) ArangoSearchView() (ArangoSearchView, error) {
 	return &viewArangoSearch{view: *v}, nil
 }
 
+func (v *view) ArangoSearchViewAlias() (ArangoSearchViewAlias, error) {
+	if v.viewType != ViewTypeArangoSearchAlias {
+		return nil, WithStack(newArangoError(http.StatusConflict, 0, fmt.Sprintf("Type must be '%s', got '%s'", ViewTypeArangoSearchAlias, v.viewType)))
+	}
+	return &viewArangoSearchAlias{view: *v}, nil
+}
+
 // Database returns the database containing the view.
 func (v *view) Database() Database {
 	return v.db

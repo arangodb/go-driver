@@ -41,12 +41,18 @@ type DatabaseViews interface {
 	// with given name and options, and opens a connection to it.
 	// If a view with given name already exists within the database, a ConflictError is returned.
 	CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (ArangoSearchView, error)
+
+	// CreateArangoSearchAliasView creates ArangoSearch alias view with given name and options, and opens a connection to it.
+	// If a view with given name already exists within the database, a ConflictError is returned.
+	CreateArangoSearchAliasView(ctx context.Context, name string, options *ArangoSearchAliasViewProperties) (ArangoSearchViewAlias, error)
 }
 
-// ViewType is the type of a view.
+// ViewType is the type of view.
 type ViewType string
 
 const (
 	// ViewTypeArangoSearch specifies an ArangoSearch view type.
 	ViewTypeArangoSearch = ViewType("arangosearch")
+	// ViewTypeArangoSearchAlias specifies an ArangoSearch view type alias.
+	ViewTypeArangoSearchAlias = ViewType("search-alias")
 )

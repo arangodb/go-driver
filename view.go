@@ -39,6 +39,10 @@ type View interface {
 	// When the type of the view is not ArangoSearch, an error is returned.
 	ArangoSearchView() (ArangoSearchView, error)
 
+	// ArangoSearchViewAlias returns this view as an ArangoSearch view alias.
+	// When the type of the view is not ArangoSearch alias, an error is returned.
+	ArangoSearchViewAlias() (ArangoSearchViewAlias, error)
+
 	// Database returns the database containing the view.
 	Database() Database
 
