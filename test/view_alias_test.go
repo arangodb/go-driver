@@ -63,7 +63,7 @@ func TestSearchViewsAlias(t *testing.T) {
 		},
 		Fields: []driver.InvertedIndexField{
 			{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
-			{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false, Nested: nil},
+			{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency, driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false, Nested: nil},
 		},
 	}
 	idx, created, err := col.EnsureInvertedIndex(ctx, &indexOpt)
