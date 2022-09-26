@@ -529,8 +529,8 @@ func TestEnsureInvertedIndex(t *testing.T) {
 					Compression: driver.PrimarySortCompressionLz4,
 				},
 				Fields: []driver.InvertedIndexField{
-					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
-					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false, Nested: nil},
+					{Name: "test1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
+					{Name: "test2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency, driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false, Nested: nil},
 				},
 			},
 		},
@@ -547,7 +547,7 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				},
 				Fields: []driver.InvertedIndexField{
 					{Name: "field1", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency}, Nested: nil},
-					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false,
+					{Name: "field2", Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency, driver.ArangoSearchAnalyzerFeaturePosition}, TrackListPositions: false,
 						Nested: []driver.InvertedIndexField{
 							{
 								Name: "some-nested-field",
