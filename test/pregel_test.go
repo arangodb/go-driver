@@ -42,7 +42,15 @@ func TestCreatePregelJob(t *testing.T) {
 	ensureCollection(nil, db, nameVertex, &driver.CreateCollectionOptions{
 		NumberOfShards: 4,
 	}, t)
-	ensureVertexCollection(ctx, g, nameVertex, t)
+
+	colVertex := ensureVertexCollection(ctx, g, nameVertex, t)
+
+	doc := UserDoc{
+		Name: "Jan",
+		Age:  12,
+	}
+	meta, err := colVertex.CreateDocument(ctx, doc)
+	require.NoError(t, err)
 
 	nameEdge := "test_pregel_edge"
 	ensureCollection(ctx, db, nameEdge, &driver.CreateCollectionOptions{
@@ -57,22 +65,28 @@ func TestCreatePregelJob(t *testing.T) {
 	jobId, err := db.StartJob(ctx, driver.PregelJobOptions{
 		Algorithm: driver.PregelAlgorithmPageRank,
 		GraphName: g.Name(),
+		Params: map[string]interface{}{
+			"store":       true,
+			"resultField": "resultField",
+		},
 	})
 	require.Nilf(t, err, "Failed to start Pregel job: %s", describe(err))
 	require.NotEmpty(t, jobId, "JobId is empty")
 
-	// TOOD change me to test if job work has been done by checking changes in the collection
-	/*waitForDataPropagation()
+	waitForDataPropagation()
 
-	job, err := db.GetJob(ctx, jobId)
-	require.Nilf(t, err, "Failed to get job: %s", describe(err))
-	require.Equal(t, jobId, job.ID, "JobId mismatch")
-	require.NotEmpty(t, job.Detail, "Detail is empty")
+	type UserDocPregelResult struct {
+		UserDoc
+		ResultField float64 `json:"resultField"`
+	}
 
-	jobs, err := db.GetJobs(ctx)
-	require.Nilf(t, err, "Failed to get running jobs: %s", describe(err))
-	require.Len(t, jobs, 1, "Expected 1 job, got %d", len(jobs))
+	docResult := UserDocPregelResult{}
+	_, err = colVertex.ReadDocument(ctx, meta.Key, &docResult)
+	require.NoError(t, err)
+	require.Equal(t, doc.Name, docResult.Name)
+	require.Equal(t, doc.Age, docResult.Age)
+	require.NotEmpty(t, docResult.ResultField)
+	require.Greater(t, docResult.ResultField, 0.0)
 
-	err = db.CancelJob(ctx, jobId)
-	require.Nilf(t, err, "Failed to cancel job: %s", describe(err))*/
+	t.Logf("resultField value: %f", docResult.ResultField)
 }
