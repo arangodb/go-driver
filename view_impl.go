@@ -92,6 +92,34 @@ func (v *view) Database() Database {
 	return v.db
 }
 
+func (v *view) Rename(ctx context.Context, newName string) error {
+	if newName == "" {
+		return WithStack(InvalidArgumentError{Message: "newName is empty"})
+	}
+	req, err := v.conn.NewRequest("PUT", path.Join(v.relPath(), "rename"))
+	if err != nil {
+		return WithStack(err)
+	}
+	input := struct {
+		Name string `json:"name"`
+	}{
+		Name: newName,
+	}
+	if _, err := req.SetBody(input); err != nil {
+		return WithStack(err)
+	}
+	applyContextSettings(ctx, req)
+	resp, err := v.conn.Do(ctx, req)
+	if err != nil {
+		return WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return WithStack(err)
+	}
+	v.name = newName
+	return nil
+}
+
 // Remove removes the entire view.
 // If the view does not exist, a NotFoundError is returned.
 func (v *view) Remove(ctx context.Context) error {
