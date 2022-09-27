@@ -29,7 +29,7 @@ import (
 // ArangoSearchViewAlias provides access to the information of a view alias
 // Views aliases are only available in ArangoDB 3.10 and higher.
 type ArangoSearchViewAlias interface {
-	// View Include generic View functions
+	// View Includes generic View functions
 	View
 
 	// Properties fetches extended information about the view.

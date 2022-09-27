@@ -16,6 +16,7 @@
 - Add support for Pregel API
 - Add tests to check support for Enterprise Graphs
 - Search View v2 (`search-alias`)
+- Add Rename View support
 
 ## [1.3.3](https://github.com/arangodb/go-driver/tree/v1.3.3) (2022-07-27)
 - Fix `lastValue` field type

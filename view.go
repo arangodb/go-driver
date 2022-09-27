@@ -46,6 +46,9 @@ type View interface {
 	// Database returns the database containing the view.
 	Database() Database
 
+	// Rename renames the view.
+	Rename(ctx context.Context, newName string) error
+
 	// Remove removes the entire view.
 	// If the view does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error

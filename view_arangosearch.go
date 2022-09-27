@@ -29,7 +29,7 @@ import (
 // ArangoSearchView provides access to the information of a view.
 // Views are only available in ArangoDB 3.4 and higher.
 type ArangoSearchView interface {
-	// Include generic View functions
+	// View Includes generic View functions
 	View
 
 	// Properties fetches extended information about the view.
