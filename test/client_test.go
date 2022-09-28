@@ -60,6 +60,35 @@ func isK8S() bool {
 	return os.Getenv("TEST_MODE_K8S") == "k8s"
 }
 
+func skipNoCluster(c driver.Client, t *testing.T) {
+	_, err := c.Cluster(nil)
+	if driver.IsPreconditionFailed(err) {
+		t.Skipf("Not a cluster")
+	} else if err != nil {
+		t.Fatalf("Failed to get cluster: %s", describe(err))
+	}
+}
+
+func skipNoSingle(c driver.Client, t *testing.T) {
+	_, err := c.Cluster(nil)
+	if driver.IsPreconditionFailed(err) {
+		// this is a single server
+		return
+	} else if err != nil {
+		t.Fatalf("Failed to get cluster: %s", describe(err))
+	}
+	t.Skipf("Not a single server")
+}
+
+func skipNoEnterprise(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	if v, err := c.Version(nil); err != nil {
+		t.Errorf("Failed to get version: %s", describe(err))
+	} else if !v.IsEnterprise() {
+		t.Skipf("Enterprise only")
+	}
+}
+
 // skipBetweenVersion skips the test if the current server version is less than
 // the min version or higher/equal max version
 func skipBetweenVersion(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {

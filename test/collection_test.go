@@ -35,15 +35,6 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-func skipNoCluster(c driver.Client, t *testing.T) {
-	_, err := c.Cluster(nil)
-	if driver.IsPreconditionFailed(err) {
-		t.Skipf("Not a cluster")
-	} else if err != nil {
-		t.Fatalf("Failed to get cluster: %s", describe(err))
-	}
-}
-
 // ensureCollection is a helper to check if a collection exists and create if if needed.
 // It will fail the test when an error occurs.
 func ensureCollection(ctx context.Context, db driver.Database, name string, options *driver.CreateCollectionOptions, t testEnv) driver.Collection {

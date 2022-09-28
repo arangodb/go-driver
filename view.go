@@ -46,7 +46,7 @@ type View interface {
 	// Database returns the database containing the view.
 	Database() Database
 
-	// Rename renames the view.
+	// Rename renames the view (SINGLE server only).
 	Rename(ctx context.Context, newName string) error
 
 	// Remove removes the entire view.
