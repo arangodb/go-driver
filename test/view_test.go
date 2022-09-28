@@ -394,13 +394,15 @@ func TestGetArangoSearchViews(t *testing.T) {
 	}
 }
 
-// TestRenameAndRemoveArangoSearchView creates an arangosearch view and then removes it.
+// TestRenameAndRemoveArangoSearchView creates an arangosearch view, renames it and then removes it.
 func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.4", t)
+
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	name := "test_rename_view"
+	renamedView := "test_rename_view_new"
 	v, err := db.CreateArangoSearchView(ctx, name, nil)
 	require.NoError(t, err)
 
@@ -409,16 +411,19 @@ func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, found)
 
-	// Rename view
-	newName := "test_rename_view_new"
-	err = v.Rename(ctx, newName)
-	require.NoError(t, err)
-	require.Equal(t, newName, v.Name())
+	t.Run("rename view - single server only", func(t *testing.T) {
+		skipNoSingle(c, t)
 
-	// Renamed View must exist
-	found, err = db.ViewExists(ctx, newName)
-	require.NoError(t, err)
-	require.True(t, found)
+		// Rename view
+		err = v.Rename(ctx, renamedView)
+		require.NoError(t, err)
+		require.Equal(t, renamedView, v.Name())
+
+		// Renamed View must exist
+		found, err = db.ViewExists(ctx, renamedView)
+		require.NoError(t, err)
+		require.True(t, found)
+	})
 
 	// Now remove it
 	err = v.Remove(ctx)
@@ -429,9 +434,14 @@ func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, found)
 
-	found, err = db.ViewExists(ctx, newName)
-	require.NoError(t, err)
-	require.False(t, found)
+	t.Run("ensure renamed view not exist - single server only", func(t *testing.T) {
+		skipNoSingle(c, t)
+
+		found, err = db.ViewExists(ctx, renamedView)
+		require.NoError(t, err)
+		require.False(t, found)
+	})
+
 }
 
 // TestUseArangoSearchView tries to create a view and actually use it in
