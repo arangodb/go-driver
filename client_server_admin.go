@@ -48,14 +48,14 @@ type ClientServerAdmin interface {
 	Metrics(ctx context.Context) ([]byte, error)
 
 	// MetricsForSingleServer returns the metrics of the specific server in Prometheus format.
-	// This parameter 'coordinatorId' is only meaningful on Coordinators.
+	// This parameter 'serverID' is only meaningful on Coordinators.
 	// List of metrics: https://www.arangodb.com/docs/devel/http/administration-and-monitoring-metrics.html
 	// You can parse it using Prometheus client:
 	/*
 		var parser expfmt.TextParser
 		metricsProm, err := parser.TextToMetricFamilies(strings.NewReader(string(metrics)))
 	*/
-	MetricsForSingleServer(ctx context.Context, coordinatorId string) ([]byte, error)
+	MetricsForSingleServer(ctx context.Context, serverID string) ([]byte, error)
 
 	// Deprecated: Use Metrics instead.
 	// Statistics queries statistics from a specific server

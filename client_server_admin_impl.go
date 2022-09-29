@@ -148,13 +148,13 @@ func (c *client) Metrics(ctx context.Context) ([]byte, error) {
 }
 
 // MetricsForSingleServer returns the metrics of the specific server in Prometheus format.
-// This parameter 'coordinatorId' is only meaningful on Coordinators.
-func (c *client) MetricsForSingleServer(ctx context.Context, coordinatorId string) ([]byte, error) {
-	return c.getMetrics(ctx, coordinatorId)
+// This parameter 'serverID' is only meaningful on Coordinators.
+func (c *client) MetricsForSingleServer(ctx context.Context, serverID string) ([]byte, error) {
+	return c.getMetrics(ctx, serverID)
 }
 
 // Metrics returns the metrics of the server in Prometheus format.
-func (c *client) getMetrics(ctx context.Context, coordinatorId string) ([]byte, error) {
+func (c *client) getMetrics(ctx context.Context, serverID string) ([]byte, error) {
 	var rawResponse []byte
 	ctx = WithRawResponse(ctx, &rawResponse)
 
@@ -163,8 +163,8 @@ func (c *client) getMetrics(ctx context.Context, coordinatorId string) ([]byte, 
 		return rawResponse, WithStack(err)
 	}
 
-	if coordinatorId != "" {
-		req.SetQuery("serverId", coordinatorId)
+	if serverID != "" {
+		req.SetQuery("serverId", serverID)
 	}
 
 	resp, err := c.conn.Do(ctx, req)

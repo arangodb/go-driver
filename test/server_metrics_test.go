@@ -53,7 +53,7 @@ func TestGetServerMetricsForSingleServer(t *testing.T) {
 	require.NoError(t, err)
 
 	for id, sh := range h.Health {
-		if sh.Role == driver.ServerRoleCoordinator {
+		if sh.Role == driver.ServerRoleDBServer || sh.Role == driver.ServerRoleCoordinator {
 			metrics, err := c.MetricsForSingleServer(ctx, string(id))
 			require.NoError(t, err)
 			require.Contains(t, string(metrics), "arangodb_client_connection_statistics_total_time")
