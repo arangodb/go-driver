@@ -142,6 +142,25 @@ func (c *client) Shutdown(ctx context.Context, removeFromCluster bool) error {
 	return nil
 }
 
+// Metrics returns the metrics of the server in Prometheus format.
+func (c *client) Metrics(ctx context.Context) ([]byte, error) {
+	var rawResponse []byte
+	ctx = WithRawResponse(ctx, &rawResponse)
+
+	req, err := c.conn.NewRequest("GET", "_admin/metrics/v2")
+	if err != nil {
+		return rawResponse, WithStack(err)
+	}
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return rawResponse, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return rawResponse, WithStack(err)
+	}
+	return rawResponse, nil
+}
+
 // Statistics queries statistics from a specific server.
 func (c *client) Statistics(ctx context.Context) (ServerStatistics, error) {
 	req, err := c.conn.NewRequest("GET", "_admin/statistics")

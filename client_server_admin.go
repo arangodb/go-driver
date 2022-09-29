@@ -38,6 +38,16 @@ type ClientServerAdmin interface {
 	// Shutdown a specific server, optionally removing it from its cluster.
 	Shutdown(ctx context.Context, removeFromCluster bool) error
 
+	// Metrics returns the metrics of the server in Prometheus format.
+	// List of metrics: https://www.arangodb.com/docs/devel/http/administration-and-monitoring-metrics.html#statistics
+	// You can parse it using Prometheus client:
+	/*
+		var parser expfmt.TextParser
+		metricsProm, err := parser.TextToMetricFamilies(strings.NewReader(string(metrics)))
+	*/
+	Metrics(ctx context.Context) ([]byte, error)
+
+	// Deprecated: Use Metrics instead.
 	// Statistics queries statistics from a specific server
 	Statistics(ctx context.Context) (ServerStatistics, error)
 
