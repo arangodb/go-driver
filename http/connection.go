@@ -270,8 +270,10 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		return nil, driver.WithStack(err)
 	}
 	var rawResponse *[]byte
+	useRawResponse := false
 	if ctx != nil {
 		if v := ctx.Value(keyRawResponse); v != nil {
+			useRawResponse = true
 			if buf, ok := v.(*[]byte); ok {
 				rawResponse = buf
 			}
@@ -309,6 +311,8 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 			if rawResponse != nil {
 				*rawResponse = body
 			}
+			httpResp = &httpJSONResponse{resp: resp, rawResponse: body}
+		} else if useRawResponse {
 			httpResp = &httpJSONResponse{resp: resp, rawResponse: body}
 		} else {
 			return nil, driver.WithStack(fmt.Errorf("Unsupported content type '%s' with status %d and content '%s'", ct, resp.StatusCode, string(body)))

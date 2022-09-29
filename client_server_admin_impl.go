@@ -142,6 +142,41 @@ func (c *client) Shutdown(ctx context.Context, removeFromCluster bool) error {
 	return nil
 }
 
+// Metrics returns the metrics of the server in Prometheus format.
+func (c *client) Metrics(ctx context.Context) ([]byte, error) {
+	return c.getMetrics(ctx, "")
+}
+
+// MetricsForSingleServer returns the metrics of the specific server in Prometheus format.
+// This parameter 'serverID' is only meaningful on Coordinators.
+func (c *client) MetricsForSingleServer(ctx context.Context, serverID string) ([]byte, error) {
+	return c.getMetrics(ctx, serverID)
+}
+
+// Metrics returns the metrics of the server in Prometheus format.
+func (c *client) getMetrics(ctx context.Context, serverID string) ([]byte, error) {
+	var rawResponse []byte
+	ctx = WithRawResponse(ctx, &rawResponse)
+
+	req, err := c.conn.NewRequest("GET", "_admin/metrics/v2")
+	if err != nil {
+		return rawResponse, WithStack(err)
+	}
+
+	if serverID != "" {
+		req.SetQuery("serverId", serverID)
+	}
+
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return rawResponse, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return rawResponse, WithStack(err)
+	}
+	return rawResponse, nil
+}
+
 // Statistics queries statistics from a specific server.
 func (c *client) Statistics(ctx context.Context) (ServerStatistics, error) {
 	req, err := c.conn.NewRequest("GET", "_admin/statistics")
