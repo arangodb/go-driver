@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.4.0](https://github.com/arangodb/go-driver/tree/v1.4.0) (2022-10-04)
 - Add `hex` property to analyzer's properties
 - Add support for `computedValues`
 - Optional `computeOn` field in `computedValues`
