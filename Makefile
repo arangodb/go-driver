@@ -523,7 +523,7 @@ fmt-verify: license-verify
 
 .PHONY: linter
 linter: fmt-verify
-	$(TMPDIR)/bin/golangci-lint run ./...
+	@$(TMPDIR)/bin/golangci-lint run ./...
 
 # V2
 
