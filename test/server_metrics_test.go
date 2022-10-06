@@ -23,9 +23,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/arangodb/go-driver"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 // TestGetServerMetrics tests if Client.Metrics works at all
