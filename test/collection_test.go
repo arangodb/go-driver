@@ -761,6 +761,40 @@ func TestCollectionRevision(t *testing.T) {
 	}
 }
 
+// TestCollectionChecksum creates a collection, checks checksum after adding documents.
+func TestCollectionChecksum(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(nil, c, "collection_checksum", nil, t)
+	name := "test_collection_checksum"
+	col, err := db.CreateCollection(nil, name, nil)
+	require.NoError(t, err)
+
+	// create some documents
+	for i := 0; i < 5; i++ {
+		before, err := col.Checksum(nil, false, false)
+		require.NoError(t, err)
+
+		doc := Book{Title: fmt.Sprintf("Book %d", i)}
+		_, err = col.CreateDocument(nil, doc)
+		require.NoError(t, err)
+
+		after, err := col.Checksum(nil, false, false)
+		require.NoError(t, err)
+		require.NotEqual(t, before.Checksum, after.Checksum)
+
+		afterWithRevision, err := col.Checksum(nil, true, false)
+		require.NoError(t, err)
+		require.NotEqual(t, before.Checksum, afterWithRevision.Checksum)
+		require.NotEqual(t, after.Checksum, afterWithRevision.Checksum)
+
+		afterWithData, err := col.Checksum(nil, false, true)
+		require.NoError(t, err)
+		require.NotEqual(t, before.Checksum, afterWithData.Checksum)
+		require.NotEqual(t, after.Checksum, afterWithData.Checksum)
+		require.NotEqual(t, afterWithRevision.Checksum, afterWithData.Checksum)
+	}
+}
+
 // TestCollectionStatistics creates a collection, checks statistics after adding documents.
 func TestCollectionStatistics(t *testing.T) {
 	c := createClientFromEnv(t, true)
