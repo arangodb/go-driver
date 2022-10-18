@@ -153,8 +153,8 @@ func (c *collection) Revision(ctx context.Context) (string, error) {
 // Checksum returns a checksum for the specified collection
 // withRevisions - Whether to include document revision ids in the checksum calculation.
 // withData - Whether to include document body data in the checksum calculation.
-func (c *collection) Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionInfo, error) {
-	var data CollectionInfo
+func (c *collection) Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionChecksum, error) {
+	var data CollectionChecksum
 
 	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("collection"), "checksum"))
 	if err != nil {

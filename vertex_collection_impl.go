@@ -82,10 +82,10 @@ func (c *vertexCollection) Status(ctx context.Context) (CollectionStatus, error)
 }
 
 // Checksum returns a checksum for the specified collection
-func (c *vertexCollection) Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionInfo, error) {
+func (c *vertexCollection) Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionChecksum, error) {
 	result, err := c.rawCollection().Checksum(ctx, withRevisions, withData)
 	if err != nil {
-		return CollectionInfo{}, WithStack(err)
+		return CollectionChecksum{}, WithStack(err)
 	}
 	return result, nil
 }
