@@ -504,7 +504,7 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 	// DropCollections
 	if v := ctx.Value(keyDropCollections); v != nil {
 		if dropCollections, ok := v.(bool); ok {
-			req.SetQuery("dropCollections", string(dropCollections))
+			req.SetQuery("dropCollections", strconv.FormatBool(dropCollections))
 			result.DropCollections = &dropCollections
 		}
 	}
