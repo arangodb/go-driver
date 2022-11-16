@@ -80,21 +80,6 @@ func tryAddArangoSearchLink(ctx context.Context, db driver.Database, view driver
 	return checkLinkExists(ctx, view, colName, t)
 }
 
-// assertArangoSearchView is a helper to check if an arangosearch view exists and fail if it does not.
-func assertArangoSearchView(ctx context.Context, db driver.Database, name string, t *testing.T) driver.ArangoSearchView {
-	v, err := db.View(ctx, name)
-	if driver.IsNotFound(err) {
-		t.Fatalf("View '%s': does not exist", name)
-	} else if err != nil {
-		t.Fatalf("Failed to open view '%s': %s", name, describe(err))
-	}
-	result, err := v.ArangoSearchView()
-	if err != nil {
-		t.Fatalf("Failed to open view '%s' as arangosearch view: %s", name, describe(err))
-	}
-	return result
-}
-
 // TestCreateArangoSearchView creates an arangosearch view and then checks that it exists.
 func TestCreateArangoSearchView(t *testing.T) {
 	ctx := context.Background()
@@ -905,4 +890,57 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
 	require.Equal(t, newBool(true), link.IncludeAllFields)
+}
+
+func TestArangoSearchViewCaching(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	// feature was introduced in 3.9.5 and is not ported to 3.10+ yet:
+	skipBetweenVersion(c, "3.9.5", "3.10.0", t)
+	skipNoEnterprise(t)
+	db := ensureDatabase(ctx, c, "view_test_caching", nil, t)
+	linkedColName := "linkedColumn"
+	ensureCollection(ctx, db, linkedColName, nil, t)
+	name := "test_create_asview"
+	opts := &driver.ArangoSearchViewProperties{
+		StoredValues: []driver.StoredValue{
+			{
+				Fields: []string{"f1", "f2"},
+				Cache:  newBool(true),
+			},
+		},
+		Links: driver.ArangoSearchLinks{
+			linkedColName: driver.ArangoSearchElementProperties{
+				Cache: newBool(false),
+			},
+		},
+		PrimarySortCache: newBool(true),
+	}
+	v, err := db.CreateArangoSearchView(ctx, name, opts)
+	require.NoError(t, err)
+
+	// check props
+	p, err := v.Properties(ctx)
+	require.NoError(t, err)
+	require.Len(t, p.StoredValues, 1)
+	require.Equal(t, newBool(true), p.StoredValues[0].Cache)
+	linkedColumnProps := p.Links[linkedColName]
+	require.NotNil(t, linkedColumnProps)
+	require.Nil(t, linkedColumnProps.Cache)
+	// bug in arangod: the primarySortCache field is not returned in response
+	// require.Equal(t, newBool(true), p.PrimarySortCache)
+
+	// update props: set to cached
+	p.Links[linkedColName] = driver.ArangoSearchElementProperties{Cache: newBool(true)}
+	p.PrimarySortCache = newBool(false)
+	err = v.SetProperties(ctx, p)
+	require.NoError(t, err)
+
+	// check updates applied
+	p, err = v.Properties(ctx)
+	require.NoError(t, err)
+	linkedColumnProps = p.Links[linkedColName]
+	require.NotNil(t, linkedColumnProps)
+	require.Equal(t, newBool(true), linkedColumnProps.Cache)
+	require.Nil(t, p.PrimarySortCache)
 }
