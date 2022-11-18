@@ -892,13 +892,13 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.Equal(t, newBool(true), link.IncludeAllFields)
 }
 
-func TestArangoSearchViewCaching(t *testing.T) {
+func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	// feature was introduced in 3.9.5 and is not ported to 3.10+ yet:
-	skipBetweenVersion(c, "3.9.5", "3.10.0", t)
+	skipVersionNotInRange(c, "3.9.5", "3.10.0", t)
 	skipNoEnterprise(t)
-	db := ensureDatabase(ctx, c, "view_test_caching", nil, t)
+	db := ensureDatabase(ctx, c, "view_test_links_stored_value_cache", nil, t)
 	linkedColName := "linkedColumn"
 	ensureCollection(ctx, db, linkedColName, nil, t)
 	name := "test_create_asview"
@@ -914,7 +914,6 @@ func TestArangoSearchViewCaching(t *testing.T) {
 				Cache: newBool(false),
 			},
 		},
-		PrimarySortCache: newBool(true),
 	}
 	v, err := db.CreateArangoSearchView(ctx, name, opts)
 	require.NoError(t, err)
@@ -927,12 +926,8 @@ func TestArangoSearchViewCaching(t *testing.T) {
 	linkedColumnProps := p.Links[linkedColName]
 	require.NotNil(t, linkedColumnProps)
 	require.Nil(t, linkedColumnProps.Cache)
-	// bug in arangod: the primarySortCache field is not returned in response
-	// require.Equal(t, newBool(true), p.PrimarySortCache)
-
 	// update props: set to cached
 	p.Links[linkedColName] = driver.ArangoSearchElementProperties{Cache: newBool(true)}
-	p.PrimarySortCache = newBool(false)
 	err = v.SetProperties(ctx, p)
 	require.NoError(t, err)
 
@@ -942,5 +937,69 @@ func TestArangoSearchViewCaching(t *testing.T) {
 	linkedColumnProps = p.Links[linkedColName]
 	require.NotNil(t, linkedColumnProps)
 	require.Equal(t, newBool(true), linkedColumnProps.Cache)
-	require.Nil(t, p.PrimarySortCache)
+}
+
+func TestArangoSearchViewInMemoryCache(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+
+	skipNoEnterprise(t)
+	db := ensureDatabase(ctx, c, "view_test_in_memory_cache", nil, t)
+
+	t.Run("primarySortCache", func(t *testing.T) {
+		// feature was introduced in 3.9.5 and is not ported to 3.10+ yet:
+		skipVersionNotInRange(c, "3.9.5", "3.10.0", t)
+
+		name := "test_create_asview"
+		opts := &driver.ArangoSearchViewProperties{
+			PrimarySortCache: newBool(true),
+		}
+		v, err := db.CreateArangoSearchView(ctx, name, opts)
+		require.NoError(t, err)
+
+		p, err := v.Properties(ctx)
+		require.NoError(t, err)
+		// bug in arangod: the primarySortCache field is not returned in response. Fixed only in 3.9.6+:
+		t.Run("must-be-returned-in-response", func(t *testing.T) {
+			skipBelowVersion(c, "3.9.6", t)
+			require.Equal(t, newBool(true), p.PrimarySortCache)
+		})
+
+		// update props: set to cached
+		p.PrimarySortCache = newBool(false)
+		err = v.SetProperties(ctx, p)
+		require.NoError(t, err)
+
+		// check updates applied
+		p, err = v.Properties(ctx)
+		require.NoError(t, err)
+		require.Nil(t, p.PrimarySortCache)
+		require.Nil(t, p.PrimaryKeyCache)
+	})
+
+	t.Run("primaryKeyCache", func(t *testing.T) {
+		// feature was introduced in 3.9.6 and is not ported to 3.10+ yet:
+		skipVersionNotInRange(c, "3.9.6", "3.10.0", t)
+
+		name := "test_view_"
+		opts := &driver.ArangoSearchViewProperties{
+			PrimaryKeyCache: newBool(true),
+		}
+		v, err := db.CreateArangoSearchView(ctx, name, opts)
+		require.NoError(t, err)
+
+		p, err := v.Properties(ctx)
+		require.NoError(t, err)
+		require.Equal(t, newBool(true), p.PrimaryKeyCache)
+
+		// update props: set to cached
+		p.PrimaryKeyCache = newBool(false)
+		err = v.SetProperties(ctx, p)
+		require.NoError(t, err)
+
+		// check updates applied
+		p, err = v.Properties(ctx)
+		require.NoError(t, err)
+		require.Nil(t, p.PrimaryKeyCache)
+	})
 }

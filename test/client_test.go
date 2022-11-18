@@ -90,9 +90,9 @@ func skipNoEnterprise(t *testing.T) {
 	}
 }
 
-// skipBetweenVersion skips the test if the current server version is less than
+// skipVersionNotInRange skips the test if the current server version is less than
 // the min version or higher/equal max version
-func skipBetweenVersion(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {
+func skipVersionNotInRange(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {
 	x, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Failed to get version info: %s", describe(err))

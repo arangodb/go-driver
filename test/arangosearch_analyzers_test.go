@@ -364,7 +364,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				if testCase.MaxVersion == nil {
 					skipBelowVersion(c, *testCase.MinVersion, t)
 				} else {
-					skipBetweenVersion(c, *testCase.MinVersion, *testCase.MaxVersion, t)
+					skipVersionNotInRange(c, *testCase.MinVersion, *testCase.MaxVersion, t)
 				}
 			}
 			if testCase.EnterpriseOnly {

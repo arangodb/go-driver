@@ -349,6 +349,10 @@ type ArangoSearchViewProperties struct {
 	// Introduced in v3.9.5, Enterprise Edition only
 	PrimarySortCache *bool `json:"primarySortCache,omitempty"`
 
+	// PrimaryKeyCache If you enable this option, then the primary key columns are always cached in memory.
+	// Introduced in v3.9.6, Enterprise Edition only
+	PrimaryKeyCache *bool `json:"primaryKeyCache,omitempty"`
+
 	// StoredValues An array of objects to describe which document attributes to store in the View index (introduced in v3.7.1).
 	// It can then cover search queries, which means the data can be taken from the index directly and accessing the storage engine can be avoided.
 	// This option is immutable.
