@@ -41,6 +41,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/jwt"
+	"github.com/arangodb/go-driver/util/connection/wrappers"
 	"github.com/arangodb/go-driver/vst"
 	"github.com/arangodb/go-driver/vst/protocol"
 )
@@ -215,7 +216,7 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 			conn = http.NewConnectionDebugWrapper(conn, driver.ContentTypeVelocypack)
 		}
 		if getTestMode() == testModeResilientSingle {
-			conn = http.NewActiveFailoverWrapper(conn)
+			conn = wrappers.NewActiveFailoverWrapper(t, conn)
 		}
 		return conn
 
@@ -233,7 +234,7 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 			conn = http.NewConnectionDebugWrapper(conn, config.ContentType)
 		}
 		if getTestMode() == testModeResilientSingle {
-			conn = http.NewActiveFailoverWrapper(conn)
+			conn = wrappers.NewActiveFailoverWrapper(t, conn)
 		}
 		return conn
 
