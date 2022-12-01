@@ -78,7 +78,7 @@ func (af *activeFailoverWrapper) Do(ctx context.Context, req driver.Request) (dr
 
 		select {
 		case <-timeoutT.C:
-			return nil, fmt.Errorf("activeFailoverWrapper function timeouted waiting for the Leader")
+			return nil, fmt.Errorf("activeFailoverWrapper function time out (waiting for the Leader)")
 		case <-intervalT.C:
 			continue
 		}
