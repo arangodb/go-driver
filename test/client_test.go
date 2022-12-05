@@ -41,6 +41,7 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/jwt"
+	"github.com/arangodb/go-driver/util/connection/wrappers"
 	"github.com/arangodb/go-driver/vst"
 	"github.com/arangodb/go-driver/vst/protocol"
 )
@@ -212,7 +213,10 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 			t.Fatalf("Failed to create new vst connection: %s", describe(err))
 		}
 		if disallowUnknownFields {
-			return http.NewConnectionDebugWrapper(conn, driver.ContentTypeVelocypack)
+			conn = http.NewConnectionDebugWrapper(conn, driver.ContentTypeVelocypack)
+		}
+		if getTestMode() == testModeResilientSingle {
+			conn = wrappers.NewActiveFailoverWrapper(t, conn)
 		}
 		return conn
 
@@ -227,7 +231,10 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 			t.Fatalf("Failed to create new http connection: %s", describe(err))
 		}
 		if disallowUnknownFields {
-			return http.NewConnectionDebugWrapper(conn, config.ContentType)
+			conn = http.NewConnectionDebugWrapper(conn, config.ContentType)
+		}
+		if getTestMode() == testModeResilientSingle {
+			conn = wrappers.NewActiveFailoverWrapper(t, conn)
 		}
 		return conn
 
