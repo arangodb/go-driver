@@ -246,7 +246,7 @@ func (c *authenticatedConnection) UpdateEndpoints(endpoints []string) error {
 	return nil
 }
 
-// Configure the authentication used for this connection.
+// SetAuthentication configures the authentication used for this connection.
 func (c *authenticatedConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
 	result, err := c.conn.SetAuthentication(auth)
 	if err != nil {

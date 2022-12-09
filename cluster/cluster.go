@@ -285,7 +285,7 @@ func (c *clusterConnection) UpdateEndpoints(endpoints []string) error {
 	return nil
 }
 
-// Configure the authentication used for this connection.
+// SetAuthentication configures the authentication used for this connection.
 func (c *clusterConnection) SetAuthentication(auth driver.Authentication) (driver.Connection, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

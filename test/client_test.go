@@ -523,33 +523,36 @@ func TestClientConnectionReuse(t *testing.T) {
 	const clientsPerDB = 20
 	startTime := time.Now()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	const testDuration = time.Second * 10
+	if testing.Verbose() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		for {
-			stats, _ := c.Statistics(ctx)
-			t.Logf("goroutine count: %d,  server connections: %d", runtime.NumGoroutine(), stats.Client.HTTPConnections)
-			if time.Now().Sub(startTime) > time.Second*60 {
-				break
+			for {
+				stats, _ := c.Statistics(ctx)
+				t.Logf("goroutine count: %d, server connections: %d", runtime.NumGoroutine(), stats.Client.HTTPConnections)
+				if time.Now().Sub(startTime) > testDuration {
+					break
+				}
+				time.Sleep(1 * time.Second)
 			}
-			time.Sleep(2 * time.Second)
-		}
-	}()
+		}()
+	}
 
 	conn := createConnection(t, false)
 	for dbName, userOptions := range dbUsers {
 		t.Logf("Starting %d goroutines for DB %s ...", clientsPerDB, dbName)
 		for i := 0; i < clientsPerDB; i++ {
 			wg.Add(1)
-
 			go func(dbName string, userOptions driver.CreateDatabaseUserOptions, conn driver.Connection) {
 				defer wg.Done()
 				for {
-					if time.Now().Sub(startTime) > time.Second*10 {
+					if time.Now().Sub(startTime) > testDuration {
 						break
 					}
 
+					// the test will pass only if checkDBAccess is using mutex
 					err := checkDBAccess(ctx, conn, dbName, userOptions.UserName, userOptions.Password)
 					require.NoError(t, err)
 
@@ -561,7 +564,12 @@ func TestClientConnectionReuse(t *testing.T) {
 	wg.Wait()
 }
 
+var checkDBAccessMutex sync.Mutex
+
 func checkDBAccess(ctx context.Context, conn driver.Connection, dbName, username, password string) error {
+	checkDBAccessMutex.Lock()
+	defer checkDBAccessMutex.Unlock()
+
 	client, err := driver.NewClient(driver.ClientConfig{
 		Connection:     conn,
 		Authentication: driver.BasicAuthentication(username, password),

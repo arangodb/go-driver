@@ -31,6 +31,9 @@ import (
 )
 
 // NewClient creates a new Client based on the given config setting.
+// Warning: Using same Connection object with different ClientConfig.Authentication parameters is not thread-safe.
+// It is recommended to create new Connection for each different Authentication parameters.
+// See TestClientConnectionReuse test for example of reusing same connection in thread-safe manner.
 func NewClient(config ClientConfig) (Client, error) {
 	if config.Connection == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "Connection is not set"})
