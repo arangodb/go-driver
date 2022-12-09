@@ -47,7 +47,7 @@ type Connection interface {
 	// UpdateEndpoints reconfigures the connection to use the given endpoints.
 	UpdateEndpoints(endpoints []string) error
 
-	// SetAuthentication configures the authentication used for this connection.
+	// SetAuthentication creates a copy of connection wrapper for given auth parameters.
 	SetAuthentication(Authentication) (Connection, error)
 
 	// Protocols returns all protocols used by this connection.

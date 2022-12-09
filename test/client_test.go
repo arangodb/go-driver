@@ -504,13 +504,20 @@ func TestCreateClientHttpRepeatConnection(t *testing.T) {
 	assert.Equal(t, 2, requestRepeat.counter)
 }
 
+// TestClientConnectionReuse checks that reusing same connection with different auth parameters is possible using
 func TestClientConnectionReuse(t *testing.T) {
+	if os.Getenv("TEST_CONNECTION") == "vst" {
+		t.Skip("not possible with VST connections by design")
+		return
+	}
+
 	c := createClientFromEnv(t, true)
 	ctx := context.Background()
 
+	prefix := t.Name()
 	dbUsers := map[string]driver.CreateDatabaseUserOptions{
-		"db1": {UserName: "user1", Password: "password1"},
-		"db2": {UserName: "user2", Password: "password2"},
+		prefix + "-db1": {UserName: prefix + "-user1", Password: "password1"},
+		prefix + "-db2": {UserName: prefix + "-user2", Password: "password2"},
 	}
 	for dbName, userOptions := range dbUsers {
 		ensureDatabase(ctx, c, dbName, &driver.CreateDatabaseOptions{
@@ -564,12 +571,7 @@ func TestClientConnectionReuse(t *testing.T) {
 	wg.Wait()
 }
 
-var checkDBAccessMutex sync.Mutex
-
 func checkDBAccess(ctx context.Context, conn driver.Connection, dbName, username, password string) error {
-	checkDBAccessMutex.Lock()
-	defer checkDBAccessMutex.Unlock()
-
 	client, err := driver.NewClient(driver.ClientConfig{
 		Connection:     conn,
 		Authentication: driver.BasicAuthentication(username, password),
@@ -580,7 +582,7 @@ func checkDBAccess(ctx context.Context, conn driver.Connection, dbName, username
 
 	dbExists, err := client.DatabaseExists(ctx, dbName)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "DatabaseExists failed")
 	}
 	if !dbExists {
 		return fmt.Errorf("db %s must exist for any user", dbName)
