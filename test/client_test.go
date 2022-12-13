@@ -25,16 +25,19 @@ package test
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	httplib "net/http"
 	_ "net/http/pprof"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -499,4 +502,96 @@ func TestCreateClientHttpRepeatConnection(t *testing.T) {
 	_, err = c.Databases(nil)
 	require.NoError(t, err)
 	assert.Equal(t, 2, requestRepeat.counter)
+}
+
+// TestClientConnectionReuse checks that reusing same connection with different auth parameters is possible using
+func TestClientConnectionReuse(t *testing.T) {
+	if os.Getenv("TEST_CONNECTION") == "vst" {
+		t.Skip("not possible with VST connections by design")
+		return
+	}
+
+	c := createClientFromEnv(t, true)
+	ctx := context.Background()
+
+	prefix := t.Name()
+	dbUsers := map[string]driver.CreateDatabaseUserOptions{
+		prefix + "-db1": {UserName: prefix + "-user1", Password: "password1"},
+		prefix + "-db2": {UserName: prefix + "-user2", Password: "password2"},
+	}
+	for dbName, userOptions := range dbUsers {
+		ensureDatabase(ctx, c, dbName, &driver.CreateDatabaseOptions{
+			Users:   []driver.CreateDatabaseUserOptions{userOptions},
+			Options: driver.CreateDatabaseDefaultOptions{},
+		}, t)
+	}
+
+	var wg sync.WaitGroup
+	const clientsPerDB = 20
+	startTime := time.Now()
+
+	const testDuration = time.Second * 10
+	if testing.Verbose() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			for {
+				stats, _ := c.Statistics(ctx)
+				t.Logf("goroutine count: %d, server connections: %d", runtime.NumGoroutine(), stats.Client.HTTPConnections)
+				if time.Now().Sub(startTime) > testDuration {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+		}()
+	}
+
+	conn := createConnection(t, false)
+	for dbName, userOptions := range dbUsers {
+		t.Logf("Starting %d goroutines for DB %s ...", clientsPerDB, dbName)
+		for i := 0; i < clientsPerDB; i++ {
+			wg.Add(1)
+			go func(dbName string, userOptions driver.CreateDatabaseUserOptions, conn driver.Connection) {
+				defer wg.Done()
+				for {
+					if time.Now().Sub(startTime) > testDuration {
+						break
+					}
+
+					// the test will pass only if checkDBAccess is using mutex
+					err := checkDBAccess(ctx, conn, dbName, userOptions.UserName, userOptions.Password)
+					require.NoError(t, err)
+
+					time.Sleep(10 * time.Millisecond)
+				}
+			}(dbName, userOptions, conn)
+		}
+	}
+	wg.Wait()
+}
+
+func checkDBAccess(ctx context.Context, conn driver.Connection, dbName, username, password string) error {
+	client, err := driver.NewClient(driver.ClientConfig{
+		Connection:     conn,
+		Authentication: driver.BasicAuthentication(username, password),
+	})
+	if err != nil {
+		return err
+	}
+
+	dbExists, err := client.DatabaseExists(ctx, dbName)
+	if err != nil {
+		return errors.Wrapf(err, "DatabaseExists failed")
+	}
+	if !dbExists {
+		return fmt.Errorf("db %s must exist for any user", dbName)
+	}
+
+	_, err = client.Database(ctx, dbName)
+	if err != nil {
+		return errors.Wrapf(err, "db %s must be accessible for user %s", dbName, username)
+	}
+
+	return nil
 }
