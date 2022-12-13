@@ -895,8 +895,9 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	// feature was introduced in 3.9.5 and is not ported to 3.10+ yet:
-	skipVersionNotInRange(c, "3.9.5", "3.10.0", t)
+	// feature was introduced in 3.9.5 and in 3.10.2:
+	skipBelowVersion(c, "3.9.5", t)
+	skipBetweenVersions(c, "3.10.0", "3.10.1", t)
 	skipNoEnterprise(t)
 	db := ensureDatabase(ctx, c, "view_test_links_stored_value_cache", nil, t)
 	linkedColName := "linkedColumn"
@@ -947,8 +948,9 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 	db := ensureDatabase(ctx, c, "view_test_in_memory_cache", nil, t)
 
 	t.Run("primarySortCache", func(t *testing.T) {
-		// feature was introduced in 3.9.5 and is not ported to 3.10+ yet:
-		skipVersionNotInRange(c, "3.9.5", "3.10.0", t)
+		// feature was introduced in 3.9.5 and in 3.10.2:
+		skipBelowVersion(c, "3.9.5", t)
+		skipBetweenVersions(c, "3.10.0", "3.10.1", t)
 
 		name := "test_create_asview"
 		opts := &driver.ArangoSearchViewProperties{
@@ -964,22 +966,12 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 			skipBelowVersion(c, "3.9.6", t)
 			require.Equal(t, newBool(true), p.PrimarySortCache)
 		})
-
-		// update props: set to cached
-		p.PrimarySortCache = newBool(false)
-		err = v.SetProperties(ctx, p)
-		require.NoError(t, err)
-
-		// check updates applied
-		p, err = v.Properties(ctx)
-		require.NoError(t, err)
-		require.Nil(t, p.PrimarySortCache)
-		require.Nil(t, p.PrimaryKeyCache)
 	})
 
 	t.Run("primaryKeyCache", func(t *testing.T) {
-		// feature was introduced in 3.9.6 and is not ported to 3.10+ yet:
-		skipVersionNotInRange(c, "3.9.6", "3.10.0", t)
+		// feature was introduced in 3.9.6 and 3.10.2:
+		skipBelowVersion(c, "3.9.6", t)
+		skipBetweenVersions(c, "3.10.0", "3.10.1", t)
 
 		name := "test_view_"
 		opts := &driver.ArangoSearchViewProperties{
@@ -991,15 +983,5 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 		p, err := v.Properties(ctx)
 		require.NoError(t, err)
 		require.Equal(t, newBool(true), p.PrimaryKeyCache)
-
-		// update props: set to cached
-		p.PrimaryKeyCache = newBool(false)
-		err = v.SetProperties(ctx, p)
-		require.NoError(t, err)
-
-		// check updates applied
-		p, err = v.Properties(ctx)
-		require.NoError(t, err)
-		require.Nil(t, p.PrimaryKeyCache)
 	})
 }

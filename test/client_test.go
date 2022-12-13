@@ -106,6 +106,18 @@ func skipVersionNotInRange(c driver.Client, minVersion, maxVersion driver.Versio
 	return x
 }
 
+// skipBetweenVersions skips test if DB version is in interval (close-ended)
+func skipBetweenVersions(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
+	}
+	if x.Version.CompareTo(minVersion) >= 0 && x.Version.CompareTo(maxVersion) <= 0 {
+		t.Skipf("Skipping between version '%s' and '%s': got version '%s'", minVersion, maxVersion, x.Version)
+	}
+	return x
+}
+
 // skipBelowVersion skips the test if the current server version is less than
 // the given version.
 func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {

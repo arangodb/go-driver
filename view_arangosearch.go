@@ -346,11 +346,13 @@ type ArangoSearchViewProperties struct {
 	PrimarySortCompression PrimarySortCompression `json:"primarySortCompression,omitempty"`
 
 	// PrimarySortCache If you enable this option, then the primary sort columns are always cached in memory.
+	// Can't be changed after creating View.
 	// Introduced in v3.9.5, Enterprise Edition only
 	PrimarySortCache *bool `json:"primarySortCache,omitempty"`
 
 	// PrimaryKeyCache If you enable this option, then the primary key columns are always cached in memory.
 	// Introduced in v3.9.6, Enterprise Edition only
+	// Can't be changed after creating View.
 	PrimaryKeyCache *bool `json:"primaryKeyCache,omitempty"`
 
 	// StoredValues An array of objects to describe which document attributes to store in the View index (introduced in v3.7.1).
