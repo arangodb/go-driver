@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.4.1](https://github.com/arangodb/go-driver/tree/v1.4.1) (2022-12-14)
 - Add support for `checksum` in Collections
 - Fix reusing same connection with different Authentication parameters passed via driver.NewClient
 - Add `cache` for ArangoSearchView Link and StoredValue types and `primarySortCache`, `primaryKeyCache` for ArangoSearchView type
