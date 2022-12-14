@@ -93,6 +93,12 @@ func skipNoEnterprise(t *testing.T) {
 	}
 }
 
+func skipResilientSingle(t *testing.T) {
+	if getTestMode() == testModeResilientSingle {
+		t.Skip("Disabled in active failover mode")
+	}
+}
+
 // skipVersionNotInRange skips the test if the current server version is less than
 // the min version or higher/equal max version
 func skipVersionNotInRange(c driver.Client, minVersion, maxVersion driver.Version, t *testing.T) driver.VersionInfo {
@@ -522,6 +528,7 @@ func TestClientConnectionReuse(t *testing.T) {
 		t.Skip("not possible with VST connections by design")
 		return
 	}
+	skipResilientSingle(t)
 
 	c := createClientFromEnv(t, true)
 	ctx := context.Background()
