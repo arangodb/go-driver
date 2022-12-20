@@ -24,7 +24,7 @@ package tests
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -46,7 +46,7 @@ func Test_CallStream(t *testing.T) {
 
 		version := arangodb.VersionInfo{}
 		require.NoError(t, dec.Decode(body, &version))
-		data, err := ioutil.ReadAll(body)
+		data, err := io.ReadAll(body)
 		require.NoError(t, err)
 		require.Len(t, data, 0)
 		require.GreaterOrEqual(t, version.Version.Major(), 3)

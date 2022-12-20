@@ -4,7 +4,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.17.6
+GOVERSION ?= 1.19.4
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.14
@@ -495,7 +495,7 @@ run-benchmarks-single-vpack-no-auth:
 .PHONY: tools
 tools: __dir_setup
 	@echo ">> Fetching golangci-lint linter"
-	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
+	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
 	@echo ">> Fetching goimports"
 	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.1.12
 	@echo ">> Fetching license check"

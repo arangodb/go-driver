@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Use Go 1.19.4
 
 ## [1.4.1](https://github.com/arangodb/go-driver/tree/v1.4.1) (2022-12-14)
 - Add support for `checksum` in Collections

@@ -28,7 +28,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -334,7 +334,7 @@ func readBody(resp *http.Response) ([]byte, error) {
 	contentLength := resp.ContentLength
 	if contentLength < 0 {
 		// Don't know the content length, do it the slowest way
-		result, err := ioutil.ReadAll(resp.Body)
+		result, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, driver.WithStack(err)
 		}
