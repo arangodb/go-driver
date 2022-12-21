@@ -1,7 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- Add `IsExternalStorageError` to check for [external storage errors](https://www.arangodb.com/docs/stable/appendix-error-codes.html#external-arangodb-storage-errors). 
+- Use Go 1.19.4
+- Add `IsExternalStorageError` to check for [external storage errors](https://www.arangodb.com/docs/stable/appendix-error-codes.html#external-arangodb-storage-errors).
 
 ## [1.4.1](https://github.com/arangodb/go-driver/tree/v1.4.1) (2022-12-14)
 - Add support for `checksum` in Collections
