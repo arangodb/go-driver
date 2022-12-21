@@ -25,7 +25,6 @@ package connection
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -113,7 +112,7 @@ func (j *httpRequest) asRequest(ctx context.Context, bodyReader bodyReadFactory)
 		} else if c, ok := body.(io.ReadCloser); ok {
 			return c, nil
 		} else {
-			return ioutil.NopCloser(body), nil
+			return io.NopCloser(body), nil
 		}
 	}
 

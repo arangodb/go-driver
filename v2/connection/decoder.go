@@ -27,7 +27,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 
 	"github.com/arangodb/go-velocypack"
 )
@@ -107,7 +106,7 @@ type bytesDecoder struct {
 
 // Decode decodes bytes from the reader into the obj.
 func (j bytesDecoder) Decode(reader io.Reader, obj interface{}) error {
-	result, err := ioutil.ReadAll(reader)
+	result, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
