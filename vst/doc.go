@@ -26,7 +26,7 @@ Package vst implements driver.Connection using a VelocyStream connection.
 This connection uses VelocyStream (with optional TLS) to connect to the ArangoDB database.
 It encodes its contents as Velocypack.
 
-Creating an Insecure Connection
+# Creating an Insecure Connection
 
 To create a VST connection, use code like this.
 
@@ -49,7 +49,7 @@ for normal database requests.
 		// Handle error
 	}
 
-Creating a Secure Connection
+# Creating a Secure Connection
 
 To create a secure VST connection, use code like this.
 
@@ -63,6 +63,5 @@ To create a secure VST connection, use code like this.
 	if err != nil {
 		// Handle error
 	}
-
 */
 package vst
