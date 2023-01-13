@@ -488,6 +488,9 @@ type ArangoSearchElementProperties struct {
 	// Fields contains the properties for individual fields of the element.
 	// The key of the map are field names.
 	Fields ArangoSearchFields `json:"fields,omitempty"`
+	// Nested contains the properties for nested fields (sub-objects) of the element
+	// Enterprise Edition only
+	Nested ArangoSearchFields `json:"nested,omitempty"`
 	// If set to true, then no exclusive lock is used on the source collection during View index creation,
 	// so that it remains basically available. inBackground is an option that can be set when adding links.
 	// It does not get persisted as it is not a View property, but only a one-off option
