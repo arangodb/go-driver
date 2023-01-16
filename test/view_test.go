@@ -512,6 +512,74 @@ func TestUseArangoSearchView(t *testing.T) {
 	}
 }
 
+// TestUseArangoSearchViewWithNested tries to create a view with nested fields and actually use it in an AQL query.
+func TestUseArangoSearchViewWithNested(t *testing.T) {
+	ctx := context.Background()
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
+	skipBelowVersion(c, "3.10", t)
+	skipNoEnterprise(t)
+	db := ensureDatabase(nil, c, "view_nested_test", nil, t)
+	col := ensureCollection(ctx, db, "some_collection", nil, t)
+
+	ensureArangoSearchView(ctx, db, "some_nested_view", &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"some_collection": driver.ArangoSearchElementProperties{
+				Fields: driver.ArangoSearchFields{
+					"dimensions": driver.ArangoSearchElementProperties{
+						Nested: driver.ArangoSearchFields{
+							"type":  driver.ArangoSearchElementProperties{},
+							"value": driver.ArangoSearchElementProperties{},
+						},
+					},
+				},
+			},
+		},
+	}, t)
+
+	docs := []NestedFieldsDoc{
+		{
+			Name: "John",
+			Dimensions: []Dimension{
+				{"height", 10},
+				{"weight", 80},
+			},
+		},
+		{
+			Name: "Jakub",
+			Dimensions: []Dimension{
+				{"height", 25},
+				{"weight", 80},
+			},
+		},
+		{
+			Name: "Marek",
+			Dimensions: []Dimension{
+				{"height", 30},
+				{"weight", 80},
+			},
+		},
+	}
+
+	_, errs, err := col.CreateDocuments(ctx, docs)
+	if err != nil {
+		t.Fatalf("Failed to create new documents: %s", describe(err))
+	} else if err := errs.FirstNonNil(); err != nil {
+		t.Fatalf("Expected no errors, got first: %s", describe(err))
+	}
+
+	// now access it via AQL with waitForSync
+	{
+		query := "FOR doc IN some_nested_view SEARCH doc.dimensions[? FILTER CURRENT.type == \"height\" AND CURRENT.value > 20] OPTIONS {waitForSync:true} RETURN doc"
+		cur, err := db.Query(driver.WithQueryCount(ctx), query, nil)
+		if err != nil {
+			t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
+		} else if cur.Count() != 2 || !cur.HasMore() {
+			t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
+		}
+	}
+}
+
 // TestUseArangoSearchViewWithPipelineAnalyzer tries to create a view and analyzer and then actually use it in an AQL query.
 func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	ctx := context.Background()

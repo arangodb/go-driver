@@ -39,6 +39,16 @@ type UserDocWithKeyWithOmit struct {
 	Age  int    `json:"age,omitempty"`
 }
 
+type NestedFieldsDoc struct {
+	Name       string      `json:"name"`
+	Dimensions []Dimension `json:"dimensions,omitempty"`
+}
+
+type Dimension struct {
+	Type  string `json:"type"`
+	Value int    `json:"value"`
+}
+
 type Account struct {
 	ID   string   `json:"id"`
 	User *UserDoc `json:"user"`
