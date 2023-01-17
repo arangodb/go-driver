@@ -492,6 +492,9 @@ type ArangoSearchElementProperties struct {
 	// so that it remains basically available. inBackground is an option that can be set when adding links.
 	// It does not get persisted as it is not a View property, but only a one-off option
 	InBackground *bool `json:"inBackground,omitempty"`
+	// Nested contains the properties for nested fields (sub-objects) of the element
+	// Enterprise Edition only
+	Nested ArangoSearchFields `json:"nested,omitempty"`
 	// Cache If you enable this option, then field normalization values are always cached in memory.
 	// Introduced in v3.9.5, Enterprise Edition only
 	Cache *bool `json:"cache,omitempty"`
