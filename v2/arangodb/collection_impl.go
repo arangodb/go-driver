@@ -37,6 +37,7 @@ func newCollection(db *database, name string, modifiers ...connection.RequestMod
 	d := &collection{db: db, name: name, modifiers: append(db.modifiers, modifiers...)}
 
 	d.collectionDocuments = newCollectionDocuments(d)
+	d.collectionIndexes = newCollectionIndexes(d)
 
 	return d
 }
@@ -51,6 +52,7 @@ type collection struct {
 	modifiers []connection.RequestModifier
 
 	*collectionDocuments
+	*collectionIndexes
 }
 
 func (c collection) Remove(ctx context.Context) error {

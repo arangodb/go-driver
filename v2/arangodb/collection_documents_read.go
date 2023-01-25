@@ -34,7 +34,7 @@ type CollectionDocumentRead interface {
 	// If no document exists with given key, a NotFoundError is returned.
 	ReadDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, error)
 
-	// ReadDocument reads a single document with given key from the collection.
+	// ReadDocumentWithOptions reads a single document with given key from the collection.
 	// The document data is stored into result, the document meta data is returned.
 	// If no document exists with given key, a NotFoundError is returned.
 	ReadDocumentWithOptions(ctx context.Context, key string, result interface{}, opts *CollectionDocumentReadOptions) (DocumentMeta, error)
@@ -45,7 +45,7 @@ type CollectionDocumentRead interface {
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	ReadDocuments(ctx context.Context, keys []string) (CollectionDocumentReadResponseReader, error)
 
-	// ReadDocuments reads multiple documents with given keys from the collection.
+	// ReadDocumentsWithOptions reads multiple documents with given keys from the collection.
 	// The documents data is stored into elements of the given results slice,
 	// the documents meta data is returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
