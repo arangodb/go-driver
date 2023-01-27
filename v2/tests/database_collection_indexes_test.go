@@ -1,0 +1,288 @@
+//
+// DISCLAIMER
+//
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
+// Author Jakub Wierzbowski
+//
+
+package tests
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
+)
+
+func Test_DefaultIndexes(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContext(30*time.Second, func(ctx context.Context) error {
+
+					indexes, err := col.Indexes(ctx)
+					require.NoError(t, err)
+					require.NotNil(t, indexes)
+					require.Equal(t, 1, len(indexes))
+					assert.Equal(t, arangodb.PrimaryIndexType, indexes[0].Type)
+
+					return nil
+				})
+			})
+		})
+	})
+}
+
+func Test_DefaultEdgeIndexes(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, &arangodb.CreateCollectionOptions{Type: arangodb.CollectionTypeEdge}, func(col arangodb.Collection) {
+				withContext(30*time.Second, func(ctx context.Context) error {
+
+					indexes, err := col.Indexes(ctx)
+					require.NoError(t, err)
+					require.NotNil(t, indexes)
+					require.Equal(t, 2, len(indexes))
+					assert.Equal(t, arangodb.PrimaryIndexType, indexes[0].Type)
+
+					assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
+						return i.Type == arangodb.PrimaryIndexType
+					}))
+
+					assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
+						return i.Type == arangodb.EdgeIndexType
+					}))
+
+					return nil
+				})
+			})
+		})
+	})
+}
+
+func Test_EnsurePersistentIndexBasicOpts(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContext(30*time.Second, func(ctx context.Context) error {
+
+					var testOptions = []struct {
+						ShouldBeCreated bool
+						ExpectedNoIdx   int
+						Fields          []string
+						Opts            *arangodb.CreatePersistentIndexOptions
+					}{
+						// default options
+						{true, 2, []string{"age", "name"}, nil},
+						// same as default
+						{false, 2, []string{"age", "name"},
+							&arangodb.CreatePersistentIndexOptions{Unique: newBool(false), Sparse: newBool(false)}},
+
+						// unique
+						{true, 3, []string{"age", "name"},
+							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(false)}},
+						{false, 3, []string{"age", "name"},
+							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(false)}},
+
+						{true, 4, []string{"age", "name"},
+							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(true)}},
+						{false, 4, []string{"age", "name"},
+							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(true)}},
+
+						{true, 5, []string{"age", "name"},
+							&arangodb.CreatePersistentIndexOptions{Unique: newBool(false), Sparse: newBool(true)}},
+						{false, 5, []string{"age", "name"},
+							&arangodb.CreatePersistentIndexOptions{Unique: newBool(false), Sparse: newBool(true)}},
+					}
+
+					for _, testOpt := range testOptions {
+						idx, created, err := col.EnsurePersistentIndex(ctx, testOpt.Fields, testOpt.Opts)
+						require.NoError(t, err)
+						require.Equal(t, created, testOpt.ShouldBeCreated)
+						require.Equal(t, arangodb.PersistentIndexType, idx.Type)
+						if testOpt.Opts != nil {
+							require.Equal(t, testOpt.Opts.Unique, idx.Unique)
+							require.Equal(t, testOpt.Opts.Sparse, idx.Sparse)
+						} else {
+							require.False(t, *idx.Unique)
+							require.False(t, *idx.Sparse)
+						}
+
+						indexes, err := col.Indexes(ctx)
+						require.NoError(t, err)
+						require.NotNil(t, indexes)
+						require.Equal(t, testOpt.ExpectedNoIdx, len(indexes))
+						assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
+							return i.ID == idx.ID
+						}))
+					}
+
+					return nil
+				})
+			})
+		})
+	})
+}
+
+func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContext(30*time.Second, func(ctx context.Context) error {
+					doc := struct {
+						Tags []string `json:"tags"`
+					}{
+						Tags: []string{"a", "a", "b"},
+					}
+
+					t.Run("Create index with Deduplicate OFF", func(t *testing.T) {
+						idx, created, err := col.EnsurePersistentIndex(ctx, []string{"tags[*]"}, &arangodb.CreatePersistentIndexOptions{
+							Deduplicate: newBool(false),
+							Unique:      newBool(true),
+							Sparse:      newBool(false),
+						})
+						require.NoError(t, err)
+						require.True(t, created)
+						require.False(t, *idx.RegularIndex.Deduplicate)
+						require.Equal(t, arangodb.PersistentIndexType, idx.Type)
+
+						_, err = col.CreateDocument(ctx, doc)
+						require.Error(t, err)
+						require.True(t, shared.IsConflict(err))
+
+						err = col.DeleteIndexById(ctx, idx.ID)
+						require.NoError(t, err)
+					})
+
+					t.Run("Create index with Deduplicate ON", func(t *testing.T) {
+						idx, created, err := col.EnsurePersistentIndex(ctx, []string{"tags[*]"}, &arangodb.CreatePersistentIndexOptions{
+							Deduplicate: newBool(true),
+							Unique:      newBool(true),
+							Sparse:      newBool(false),
+						})
+						require.NoError(t, err)
+						require.True(t, created)
+						require.True(t, *idx.RegularIndex.Deduplicate)
+						require.Equal(t, arangodb.PersistentIndexType, idx.Type)
+
+						_, err = col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+
+						err = col.DeleteIndex(ctx, idx.Name)
+						require.NoError(t, err)
+					})
+
+					return nil
+				})
+			})
+		})
+	})
+}
+
+func Test_TTLIndex(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContext(120*time.Second, func(ctx context.Context) error {
+
+					t.Run("Removing documents at a fixed period after creation", func(t *testing.T) {
+						idx, created, err := col.EnsureTTLIndex(ctx, []string{"createdAt"}, 5, nil)
+						require.NoError(t, err)
+						require.True(t, created)
+						require.Equal(t, *idx.RegularIndex.ExpireAfter, 5)
+						require.Equal(t, arangodb.TTLIndexType, idx.Type)
+
+						doc := struct {
+							CreatedAt int64 `json:"createdAt,omitempty"`
+						}{
+							CreatedAt: time.Now().Unix(),
+						}
+
+						meta, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+
+						exist, err := col.DocumentExists(ctx, meta.Key)
+						require.NoError(t, err)
+						require.True(t, exist)
+
+						// cleanup is made every 30 seconds by default, so we need to wait for 35 seconds in worst case
+						withContext(35*time.Second, func(ctx context.Context) error {
+							for {
+								exist, err := col.DocumentExists(ctx, meta.Key)
+								require.NoError(t, err)
+								if !exist {
+									break
+								}
+								time.Sleep(1 * time.Second)
+							}
+							return nil
+						})
+
+						err = col.DeleteIndexById(ctx, idx.ID)
+						require.NoError(t, err)
+					})
+
+					t.Run("Removing documents at certain points in time", func(t *testing.T) {
+						idx, created, err := col.EnsureTTLIndex(ctx, []string{"expireDate"}, 0, nil)
+						require.NoError(t, err)
+						require.True(t, created)
+						require.Equal(t, *idx.RegularIndex.ExpireAfter, 0)
+						require.Equal(t, arangodb.TTLIndexType, idx.Type)
+
+						doc := struct {
+							ExpireDate int64 `json:"expireDate,omitempty"`
+						}{
+							ExpireDate: time.Now().Add(5 * time.Second).Unix(),
+						}
+
+						meta, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+
+						exist, err := col.DocumentExists(ctx, meta.Key)
+						require.NoError(t, err)
+						require.True(t, exist)
+
+						// cleanup is made every 30 seconds by default, so we need to wait for 35 seconds in worst case
+						withContext(35*time.Second, func(ctx context.Context) error {
+							for {
+								exist, err := col.DocumentExists(ctx, meta.Key)
+								require.NoError(t, err)
+								if !exist {
+									break
+								}
+								time.Sleep(1 * time.Second)
+							}
+							return nil
+						})
+
+						err = col.DeleteIndexById(ctx, idx.ID)
+						require.NoError(t, err)
+					})
+
+					return nil
+				})
+			})
+		})
+	})
+}

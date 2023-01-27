@@ -56,7 +56,9 @@ type CollectionIndexes interface {
 	EnsureGeoIndex(ctx context.Context, fields []string, options *CreateGeoIndexOptions) (IndexResponse, bool, error)
 
 	// EnsureTTLIndex creates a TLL collection, if it does not already exist.
-	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	// expireAfter is the time interval (in seconds) from the point in time stored in the fields attribute after which the documents count as expired.
+	// Can be set to 0 to let documents expire as soon as the server time passes the point in time stored in the document attribute, or to a higher number to delay the expiration.
+	// fields The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	EnsureTTLIndex(ctx context.Context, fields []string, expireAfter int, options *CreateTTLIndexOptions) (IndexResponse, bool, error)
 
 	// EnsureZKDIndex creates a ZKD multi-dimensional index for the collection, if it does not already exist.
@@ -230,7 +232,7 @@ type CreatePersistentIndexOptions struct {
 	// to determine the usefulness of different competing indexes in AQL queries when there are multiple candidate
 	// indexes to choose from. The estimates attribute is optional and defaults to true if not set.
 	// It will have no effect on indexes other than persistent (with hash and skiplist being mere aliases for the persistent index type nowadays).
-	Estimates *bool
+	Estimates *bool `json:"estimates,omitempty"`
 }
 
 // CreateGeoIndexOptions contains specific options for creating a geo index.
