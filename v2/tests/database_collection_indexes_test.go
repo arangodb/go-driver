@@ -288,6 +288,78 @@ func Test_TTLIndex(t *testing.T) {
 	})
 }
 
+func Test_EnsureGeoIndexIndex(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContext(30*time.Second, func(ctx context.Context) error {
+
+					t.Run("Test GeoJSON opts", func(t *testing.T) {
+						var testOptions = []arangodb.CreateGeoIndexOptions{
+							{GeoJSON: newBool(true)},
+							{GeoJSON: newBool(false)},
+						}
+						for _, testOpt := range testOptions {
+							idx, created, err := col.EnsureGeoIndex(ctx, []string{"geo"}, &testOpt)
+							require.NoError(t, err)
+							require.True(t, created)
+							require.Equal(t, arangodb.GeoIndexType, idx.Type)
+							require.Equal(t, testOpt.GeoJSON, idx.RegularIndex.GeoJSON)
+						}
+					})
+
+					t.Run("Test LegacyPolygons opts", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.10", t)
+						var testOptions = []struct {
+							ExpectedLegacyPolygons bool
+							ExpectedGeoJSON        bool
+							Fields                 []string
+							Opts                   *arangodb.CreateGeoIndexOptions
+						}{
+							{
+								true,
+								false,
+								[]string{"geoOld1"},
+								&arangodb.CreateGeoIndexOptions{LegacyPolygons: newBool(true)},
+							},
+							{
+								false,
+								false,
+								[]string{"geoOld2"},
+								&arangodb.CreateGeoIndexOptions{LegacyPolygons: newBool(false)},
+							},
+							{
+								false,
+								true,
+								[]string{"geoOld3"},
+								&arangodb.CreateGeoIndexOptions{GeoJSON: newBool(true), LegacyPolygons: newBool(false)},
+							},
+							{
+								false,
+								false,
+								[]string{"geoOld4"},
+								&arangodb.CreateGeoIndexOptions{GeoJSON: newBool(false), LegacyPolygons: newBool(false)},
+							},
+						}
+
+						for _, testOpt := range testOptions {
+							idx, created, err := col.EnsureGeoIndex(ctx, testOpt.Fields, testOpt.Opts)
+							require.NoError(t, err)
+							require.True(t, created)
+							require.Equal(t, arangodb.GeoIndexType, idx.Type)
+							assert.Equal(t, testOpt.ExpectedGeoJSON, *idx.RegularIndex.GeoJSON)
+							assert.Equal(t, testOpt.ExpectedLegacyPolygons, *idx.RegularIndex.LegacyPolygons)
+							assert.ElementsMatch(t, idx.RegularIndex.Fields, testOpt.Fields)
+						}
+					})
+
+					return nil
+				})
+			})
+		})
+	})
+}
+
 func Test_NamedIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {

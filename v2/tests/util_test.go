@@ -23,9 +23,12 @@
 package tests
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
 func getTestMode() string {
@@ -56,4 +59,15 @@ func requireSingleMode(t *testing.T) {
 
 func requireResilientSingleMode(t *testing.T) {
 	requireMode(t, testModeResilientSingle)
+}
+
+func skipBelowVersion(c arangodb.Client, ctx context.Context, version arangodb.Version, t *testing.T) arangodb.VersionInfo {
+	x, err := c.Version(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", err)
+	}
+	if x.Version.CompareTo(version) < 0 {
+		t.Skipf("Skipping below version '%s', got version '%s'", version, x.Version)
+	}
+	return x
 }
