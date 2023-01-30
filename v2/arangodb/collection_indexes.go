@@ -258,11 +258,15 @@ type CreateTTLIndexOptions struct {
 	Name string `json:"name,omitempty"`
 }
 
+type ZKDFieldType string
+
+const ZKDDoubleFieldType ZKDFieldType = "double"
+
 // CreateZKDIndexOptions provides specific options for creating a ZKD index
 type CreateZKDIndexOptions struct {
 	// Name optional user defined name used for hints in AQL queries
 	Name string `json:"name,omitempty"`
 
 	// FieldValueTypes is required and the only allowed value is "double". Future extensions of the index will allow other types.
-	FieldValueTypes string `json:"fieldValueTypes,required"`
+	FieldValueTypes ZKDFieldType `json:"fieldValueTypes,required"`
 }

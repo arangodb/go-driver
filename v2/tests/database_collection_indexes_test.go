@@ -128,6 +128,7 @@ func Test_EnsurePersistentIndexBasicOpts(t *testing.T) {
 							require.False(t, *idx.Unique)
 							require.False(t, *idx.Sparse)
 						}
+						assert.ElementsMatch(t, idx.RegularIndex.Fields, testOpt.Fields)
 
 						indexes, err := col.Indexes(ctx)
 						require.NoError(t, err)
@@ -279,6 +280,89 @@ func Test_TTLIndex(t *testing.T) {
 						err = col.DeleteIndexById(ctx, idx.ID)
 						require.NoError(t, err)
 					})
+
+					return nil
+				})
+			})
+		})
+	})
+}
+
+func Test_NamedIndexes(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContext(30*time.Second, func(ctx context.Context) error {
+
+					var namedIndexTestCases = []struct {
+						Name           string
+						CreateCallback func(col arangodb.Collection, name string) (arangodb.IndexResponse, error)
+					}{
+						{
+							Name: "Persistent",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								idx, _, err := col.EnsurePersistentIndex(ctx, []string{"pername"}, &arangodb.CreatePersistentIndexOptions{
+									Name: name,
+								})
+								return idx, err
+							},
+						},
+						{
+							Name: "Geo",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								idx, _, err := col.EnsureGeoIndex(ctx, []string{"geo"}, &arangodb.CreateGeoIndexOptions{
+									Name: name,
+								})
+								return idx, err
+							},
+						},
+						{
+							Name: "TTL",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								idx, _, err := col.EnsureTTLIndex(ctx, []string{"createdAt"}, 3600, &arangodb.CreateTTLIndexOptions{
+									Name: name,
+								})
+								return idx, err
+							},
+						},
+						{
+							Name: "ZKD",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								idx, _, err := col.EnsureZKDIndex(ctx, []string{"zkd"}, &arangodb.CreateZKDIndexOptions{
+									Name:            name,
+									FieldValueTypes: arangodb.ZKDDoubleFieldType,
+								})
+								return idx, err
+							},
+						},
+						{
+							Name: "Inverted",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								idx, _, err := col.EnsureInvertedIndex(ctx, &arangodb.InvertedIndexOptions{
+									Name: name,
+									Fields: []arangodb.InvertedIndexField{
+										{
+											Name: name,
+										},
+									},
+								})
+								return idx, err
+							},
+						},
+					}
+
+					for _, testCase := range namedIndexTestCases {
+						idx, err := testCase.CreateCallback(col, testCase.Name)
+						require.NoError(t, err)
+						require.Equal(t, testCase.Name, idx.Name)
+
+						indexes, err := col.Indexes(ctx)
+						require.NoError(t, err)
+						require.NotNil(t, indexes)
+						assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
+							return i.ID == idx.ID && i.Name == testCase.Name
+						}))
+					}
 
 					return nil
 				})
