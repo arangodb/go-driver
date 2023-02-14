@@ -40,7 +40,7 @@ type indexData struct {
 	Estimates           *bool    `json:"estimates,omitempty"`
 	MaxNumCoverCells    int      `json:"maxNumCoverCells,omitempty"`
 	MinLength           int      `json:"minLength,omitempty"`
-	ExpireAfter         int      `json:"expireAfter,omitempty"`
+	ExpireAfter         int      `json:"expireAfter"`
 	Name                string   `json:"name,omitempty"`
 	FieldValueTypes     string   `json:"fieldValueTypes,omitempty"`
 	IsNewlyCreated      *bool    `json:"isNewlyCreated,omitempty"`

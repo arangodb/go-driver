@@ -447,6 +447,21 @@ func TestEnsureTTLIndex(t *testing.T) {
 	} else if found {
 		t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 	}
+
+	// Create index with expireAfter = 0
+	idx, created, err = col.EnsureTTLIndex(nil, "createdAt", 0, nil)
+	if err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+	if !created {
+		t.Error("Expected created to be true, got false")
+	}
+	if idxType := idx.Type(); idxType != driver.TTLIndex {
+		t.Errorf("Expected TTLIndex, found `%s`", idxType)
+	}
+	if idx.ExpireAfter() != 0 {
+		t.Errorf("Expected ExpireAfter to be 0, found `%d`", idx.ExpireAfter())
+	}
 }
 
 // TestEnsureZKDIndex creates a collection with a ZKD index.
