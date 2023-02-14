@@ -81,7 +81,7 @@ func Test_DefaultEdgeIndexes(t *testing.T) {
 	})
 }
 
-func Test_EnsurePersistentIndexBasicOpts(t *testing.T) {
+func Test_EnsurePersistentIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
@@ -138,6 +138,27 @@ func Test_EnsurePersistentIndexBasicOpts(t *testing.T) {
 							return i.ID == idx.ID
 						}))
 					}
+
+					t.Run("Create Persistent index with Cache", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.10", t)
+
+						fields := []string{"year", "type"}
+						storedValues := []string{"extra1", "extra2"}
+
+						options := &arangodb.CreatePersistentIndexOptions{
+							StoredValues: storedValues,
+							CacheEnabled: newBool(true),
+						}
+
+						idx, created, err := col.EnsurePersistentIndex(ctx, fields, options)
+						require.NoError(t, err)
+						require.True(t, created)
+						require.Equal(t, arangodb.PersistentIndexType, idx.Type)
+						require.True(t, *idx.RegularIndex.CacheEnabled)
+						assert.ElementsMatch(t, idx.RegularIndex.Fields, fields)
+						assert.ElementsMatch(t, idx.RegularIndex.StoredValues, storedValues)
+
+					})
 
 					return nil
 				})
