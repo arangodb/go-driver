@@ -57,9 +57,39 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 									Compression: arangodb.PrimarySortCompressionLz4,
 								},
 								Fields: []arangodb.InvertedIndexField{
-									{Name: "test1", Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency}, Nested: nil},
-									{Name: "test2", Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition}, Nested: nil},
+									{
+										Name:     "test1",
+										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+										Nested:   nil},
+									{
+										Name:     "test2",
+										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition},
+										Nested:   nil},
 								},
+							},
+						},
+						{
+							IsEE: false,
+							Options: arangodb.InvertedIndexOptions{
+								Name: "inverted-overwrite-tracklistpositions",
+								PrimarySort: &arangodb.PrimarySort{
+									Fields: []arangodb.PrimarySortEntry{
+										{Field: "test1", Ascending: true},
+										{Field: "test2", Ascending: false},
+									},
+									Compression: arangodb.PrimarySortCompressionLz4,
+								},
+								Fields: []arangodb.InvertedIndexField{
+									{
+										Name:     "test1-overwrite",
+										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+										Nested:   nil, TrackListPositions: true},
+									{
+										Name:     "test2",
+										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition},
+										Nested:   nil},
+								},
+								TrackListPositions: false,
 							},
 						},
 						{
@@ -74,8 +104,13 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 									Compression: arangodb.PrimarySortCompressionLz4,
 								},
 								Fields: []arangodb.InvertedIndexField{
-									{Name: "field1", Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency}, Nested: nil},
-									{Name: "field2", Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition},
+									{
+										Name:     "field1",
+										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+										Nested:   nil},
+									{
+										Name:     "field2",
+										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition},
 										Nested: []arangodb.InvertedIndexNestedField{
 											{
 												Name: "some-nested-field",
@@ -111,6 +146,7 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								require.Equal(t, tc.Options.Name, idx.Name)
 								require.Equal(t, tc.Options.PrimarySort, idx.InvertedIndex.PrimarySort)
 								require.Equal(t, tc.Options.Fields, idx.InvertedIndex.Fields)
+								require.Equal(t, tc.Options.TrackListPositions, idx.InvertedIndex.TrackListPositions)
 							}
 							requireIdxEquality(idx)
 
