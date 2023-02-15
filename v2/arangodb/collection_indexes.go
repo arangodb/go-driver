@@ -75,7 +75,7 @@ type CollectionIndexes interface {
 	DeleteIndex(ctx context.Context, name string) error
 
 	// DeleteIndexById deletes an index from the collection.
-	DeleteIndexById(ctx context.Context, id string) error
+	DeleteIndexByID(ctx context.Context, id string) error
 }
 
 // IndexType represents an index type as string
