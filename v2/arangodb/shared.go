@@ -60,10 +60,10 @@ type PrimarySort struct {
 // PrimarySortEntry  field to sort the index by and the direction
 type PrimarySortEntry struct {
 	// Field An attribute path. The . character denotes sub-attributes.
-	Field string `json:"field,omitempty"`
+	Field string `json:"field,required"`
 
-	// Direction The sorting direction
-	Direction *SortDirection `json:"direction,omitempty"`
+	// Ascending The sorting direction
+	Ascending bool `json:"asc,required"`
 }
 
 // StoredValue defines the value stored in the index

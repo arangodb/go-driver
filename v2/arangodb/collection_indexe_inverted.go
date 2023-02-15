@@ -70,7 +70,7 @@ type InvertedIndexOptions struct {
 	IncludeAllFields *bool `json:"includeAllFields,omitempty"`
 
 	// TrackListPositions track the value position in arrays for array values.
-	TrackListPositions *bool `json:"trackListPositions,omitempty"`
+	TrackListPositions bool `json:"trackListPositions,omitempty"`
 
 	// Parallelism - The number of threads to use for indexing the fields. Default: 2
 	Parallelism *int `json:"parallelism,omitempty"`
@@ -130,7 +130,7 @@ type InvertedIndexField struct {
 	// If set to true, then track the value position in arrays for array values. For example, when querying a document like { attr: [ "valueX", "valueY", "valueZ" ] }, you need to specify the array element, e.g. doc.attr[1] == "valueY".
 	// If set to false, all values in an array are treated as equal alternatives. You don’t specify an array element in queries, e.g. doc.attr == "valueY", and all elements are searched for a match.
 	// Default: the value defined by the top-level trackListPositions option, or false if not set.
-	TrackListPositions *bool `json:"trackListPositions,omitempty"`
+	TrackListPositions bool `json:"trackListPositions,omitempty"`
 
 	// Cache - Enable this option to always cache the field normalization values in memory for this specific field
 	// Default: the value defined by the top-level 'cache' option.

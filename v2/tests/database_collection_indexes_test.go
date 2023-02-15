@@ -193,7 +193,7 @@ func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
 						require.Error(t, err)
 						require.True(t, shared.IsConflict(err))
 
-						err = col.DeleteIndexById(ctx, idx.ID)
+						err = col.DeleteIndexByID(ctx, idx.ID)
 						require.NoError(t, err)
 					})
 
@@ -261,7 +261,7 @@ func Test_TTLIndex(t *testing.T) {
 							return nil
 						})
 
-						err = col.DeleteIndexById(ctx, idx.ID)
+						err = col.DeleteIndexByID(ctx, idx.ID)
 						require.NoError(t, err)
 					})
 
@@ -298,7 +298,7 @@ func Test_TTLIndex(t *testing.T) {
 							return nil
 						})
 
-						err = col.DeleteIndexById(ctx, idx.ID)
+						err = col.DeleteIndexByID(ctx, idx.ID)
 						require.NoError(t, err)
 					})
 

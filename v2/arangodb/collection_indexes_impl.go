@@ -224,10 +224,10 @@ func (c *collectionIndexes) DeleteIndex(ctx context.Context, name string) error 
 		return errors.WithStack(err)
 	}
 
-	return c.DeleteIndexById(ctx, idx.ID)
+	return c.DeleteIndexByID(ctx, idx.ID)
 }
 
-func (c *collectionIndexes) DeleteIndexById(ctx context.Context, id string) error {
+func (c *collectionIndexes) DeleteIndexByID(ctx context.Context, id string) error {
 	url := c.collection.db.url("_api", "index", id)
 
 	response := shared.ResponseStruct{}
