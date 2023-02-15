@@ -24,13 +24,14 @@ package tests
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slices"
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
 func Test_EnsureInvertedIndex(t *testing.T) {
