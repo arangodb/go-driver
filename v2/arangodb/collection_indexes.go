@@ -224,7 +224,7 @@ type CreatePersistentIndexOptions struct {
 	// regardless of the value of this attribute.
 	Deduplicate *bool `json:"deduplicate,omitempty"`
 
-	// Estimates  determines if the to-be-created index should maintain selectivity estimates or not.
+	// Estimates determines if the to-be-created index should maintain selectivity estimates or not.
 	// Is supported by indexes of type persistent
 	// This attribute controls whether index selectivity estimates are maintained for the index.
 	// Not maintaining index selectivity estimates can have a slightly positive impact on write performance.
