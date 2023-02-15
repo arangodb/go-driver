@@ -39,6 +39,7 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
 				withContext(30*time.Second, func(ctx context.Context) error {
+					skipBelowVersion(client, ctx, "3.10", t)
 
 					type testCase struct {
 						IsEE    bool
