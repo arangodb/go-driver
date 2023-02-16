@@ -36,7 +36,7 @@ type CollectionDocumentUpdate interface {
 	// If no document exists with given key, a NotFoundError is returned.
 	UpdateDocument(ctx context.Context, key string, document interface{}) (CollectionDocumentUpdateResponse, error)
 
-	// UpdateDocument updates a single document with given key in the collection.
+	// UpdateDocumentWithOptions updates a single document with given key in the collection.
 	// The document meta data is returned.
 	// If no document exists with given key, a NotFoundError is returned.
 	UpdateDocumentWithOptions(ctx context.Context, key string, document interface{}, options *CollectionDocumentUpdateOptions) (CollectionDocumentUpdateResponse, error)
@@ -47,7 +47,7 @@ type CollectionDocumentUpdate interface {
 	// If keys is nil, each element in the updates slice must contain a `_key` field.
 	UpdateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentUpdateResponseReader, error)
 
-	// UpdateDocuments updates multiple document with given keys in the collection.
+	// UpdateDocumentsWithOptions updates multiple document with given keys in the collection.
 	// The updates are loaded from the given updates slice, the documents meta data are returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	// If keys is nil, each element in the updates slice must contain a `_key` field.

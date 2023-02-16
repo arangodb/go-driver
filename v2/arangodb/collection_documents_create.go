@@ -38,7 +38,7 @@ type CollectionDocumentCreate interface {
 	// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
 	CreateDocument(ctx context.Context, document interface{}) (CollectionDocumentCreateResponse, error)
 
-	// CreateDocument creates a single document in the collection.
+	// CreateDocumentWithOptions creates a single document in the collection.
 	// The document data is loaded from the given document, the document meta data is returned.
 	// If the document data already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
@@ -57,7 +57,7 @@ type CollectionDocumentCreate interface {
 	// If the create request itself fails or one of the arguments is invalid, an error is returned.
 	CreateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentCreateResponseReader, error)
 
-	// CreateDocuments creates multiple documents in the collection.
+	// CreateDocumentsWithOptions creates multiple documents in the collection.
 	// The document data is loaded from the given documents slice, the documents meta data is returned.
 	// If a documents element already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.

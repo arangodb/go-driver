@@ -66,6 +66,8 @@ func (c collectionDocuments) DocumentExists(ctx context.Context, key string) (bo
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return true, nil
+	case http.StatusNotFound:
+		return false, nil
 	default:
 		return false, shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}

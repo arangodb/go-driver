@@ -37,4 +37,5 @@ type Collection interface {
 	Remove(ctx context.Context) error
 
 	CollectionDocuments
+	CollectionIndexes
 }
