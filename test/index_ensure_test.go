@@ -590,28 +590,24 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				skipNoEnterprise(t)
 			}
 
+			requireIdxEquality := func(invertedIdx driver.Index) {
+				require.Equal(t, driver.InvertedIndex, invertedIdx.Type())
+				require.Equal(t, tc.Options.Name, invertedIdx.UserName())
+				require.Equal(t, tc.Options.PrimarySort, invertedIdx.InvertedIndexOptions().PrimarySort)
+				require.Equal(t, tc.Options.Fields, invertedIdx.InvertedIndexOptions().Fields)
+			}
+
 			idx, created, err := col.EnsureInvertedIndex(ctx, &tc.Options)
 			require.NoError(t, err)
 			require.True(t, created)
-
-			tc.Options.IsNewlyCreated = true
-			tc.Options.Analyzer = string(driver.ArangoSearchAnalyzerTypeIdentity) // default value for analyzer
-
-			requireIdxEquality := func(invertedIdx driver.Index) {
-				require.Equal(t, driver.InvertedIndex, idx.Type())
-				require.Equal(t, tc.Options.Name, idx.UserName())
-				require.Equal(t, tc.Options.PrimarySort, idx.InvertedIndexOptions().PrimarySort)
-				require.Equal(t, tc.Options.Fields, idx.InvertedIndexOptions().Fields)
-			}
 			requireIdxEquality(idx)
 
-			indexes, err := col.Indexes(ctx)
+			col.Indexes(ctx)
+			idx, err = col.Index(ctx, tc.Options.Name)
 			require.NoError(t, err)
-			require.NotEmpty(t, indexes)
+			requireIdxEquality(idx)
 
-			requireIdxEquality(indexes[0])
-
-			err = idx.Remove(nil)
+			err = idx.Remove(ctx)
 			require.NoError(t, err)
 		})
 	}
