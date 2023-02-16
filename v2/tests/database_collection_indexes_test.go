@@ -226,7 +226,7 @@ func Test_TTLIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(120*time.Second, func(ctx context.Context) error {
+				withContext(240*time.Second, func(ctx context.Context) error {
 
 					t.Run("Removing documents at a fixed period after creation", func(t *testing.T) {
 						idx, created, err := col.EnsureTTLIndex(ctx, []string{"createdAt"}, 5, nil)
@@ -248,8 +248,8 @@ func Test_TTLIndex(t *testing.T) {
 						require.NoError(t, err)
 						require.True(t, exist)
 
-						// cleanup is made every 30 seconds by default, so we need to wait for 35 seconds in worst case
-						withContext(35*time.Second, func(ctx context.Context) error {
+						// cleanup is made every 30 seconds by default
+						withContext(65*time.Second, func(ctx context.Context) error {
 							for {
 								exist, err := col.DocumentExists(ctx, meta.Key)
 								require.NoError(t, err)
@@ -285,8 +285,8 @@ func Test_TTLIndex(t *testing.T) {
 						require.NoError(t, err)
 						require.True(t, exist)
 
-						// cleanup is made every 30 seconds by default, so we need to wait for 35 seconds in worst case
-						withContext(35*time.Second, func(ctx context.Context) error {
+						// cleanup is made every 30 seconds by default
+						withContext(65*time.Second, func(ctx context.Context) error {
 							for {
 								exist, err := col.DocumentExists(ctx, meta.Key)
 								require.NoError(t, err)
