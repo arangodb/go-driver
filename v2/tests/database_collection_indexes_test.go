@@ -24,6 +24,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -390,6 +391,7 @@ func Test_NamedIndexes(t *testing.T) {
 					var namedIndexTestCases = []struct {
 						Name           string
 						CreateCallback func(col arangodb.Collection, name string) (arangodb.IndexResponse, error)
+						MinVersion     arangodb.Version
 					}{
 						{
 							Name: "Persistent",
@@ -429,7 +431,8 @@ func Test_NamedIndexes(t *testing.T) {
 							},
 						},
 						{
-							Name: "Inverted",
+							Name:       "Inverted",
+							MinVersion: "3.10",
 							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
 								idx, _, err := col.EnsureInvertedIndex(ctx, &arangodb.InvertedIndexOptions{
 									Name: name,
@@ -445,16 +448,22 @@ func Test_NamedIndexes(t *testing.T) {
 					}
 
 					for _, testCase := range namedIndexTestCases {
-						idx, err := testCase.CreateCallback(col, testCase.Name)
-						require.NoError(t, err)
-						require.Equal(t, testCase.Name, idx.Name)
+						t.Run(fmt.Sprintf("Test named index: %s", testCase.Name), func(t *testing.T) {
+							if testCase.MinVersion != "" {
+								skipBelowVersion(client, ctx, testCase.MinVersion, t)
+							}
 
-						indexes, err := col.Indexes(ctx)
-						require.NoError(t, err)
-						require.NotNil(t, indexes)
-						assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
-							return i.ID == idx.ID && i.Name == testCase.Name
-						}))
+							idx, err := testCase.CreateCallback(col, testCase.Name)
+							require.NoError(t, err)
+							require.Equal(t, testCase.Name, idx.Name)
+
+							indexes, err := col.Indexes(ctx)
+							require.NoError(t, err)
+							require.NotNil(t, indexes)
+							assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
+								return i.ID == idx.ID && i.Name == testCase.Name
+							}))
+						})
 					}
 
 					return nil
