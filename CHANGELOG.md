@@ -6,6 +6,7 @@
 - `nested` field in arangosearch type View
 - Fix: TTL index creation fails when expireAt is 0
 - [V2] Support for Collection Indexes
+- Fix: Fetching single InvertedIndex fails with Marshalling error
 
 ## [1.4.1](https://github.com/arangodb/go-driver/tree/v1.4.1) (2022-12-14)
 - Add support for `checksum` in Collections

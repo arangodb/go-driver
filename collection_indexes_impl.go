@@ -73,11 +73,17 @@ func (c *collection) Index(ctx context.Context, name string) (Index, error) {
 	if err := resp.CheckStatus(200); err != nil {
 		return nil, WithStack(err)
 	}
-	var data indexData
+	var data map[string]interface{}
 	if err := resp.ParseBody("", &data); err != nil {
 		return nil, WithStack(err)
 	}
-	idx, err := newIndex(data, c)
+
+	rawResponse, err := json.Marshal(data)
+	if err != nil {
+		return nil, WithStack(err)
+	}
+
+	idx, err := newIndexFromMap(rawResponse, c)
 	if err != nil {
 		return nil, WithStack(err)
 	}
