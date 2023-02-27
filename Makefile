@@ -571,4 +571,4 @@ run-v2-tests-resilientsingle-with-auth:
 apply-version:
 	@echo "Updating version to: $(DRIVER_VERSION)"
 	@VERSION=$(DRIVER_VERSION) go generate version-driver.go
-	@VERSION=$(DRIVER_VERSION) go generate ./v2/utils/version-driver.go
+	@VERSION=$(DRIVER_VERSION) go generate ./v2/connection/version-driver.go
