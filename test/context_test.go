@@ -51,6 +51,7 @@ func TestContextParentNil(t *testing.T) {
 	testValue(driver.WithRawResponse(nil, &[]byte{}))
 	testValue(driver.WithArangoQueueTimeout(nil, true))
 	testValue(driver.WithArangoQueueTime(nil, time.Second*5))
+	testValue(driver.WithDriverFlags(nil, []string{"foo", "bar"}))
 }
 
 func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
