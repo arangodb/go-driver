@@ -565,3 +565,8 @@ run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
 run-v2-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v2"
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" __run_v2_tests
+
+update-version:
+	@echo "Updating version"
+	@go generate version-driver.go
+	@go generate ./v2/utils/version-driver.go
