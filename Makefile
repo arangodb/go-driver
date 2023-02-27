@@ -1,3 +1,5 @@
+DRIVER_VERSION := 1.5.0
+
 PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
 
@@ -566,7 +568,7 @@ run-v2-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v2"
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" __run_v2_tests
 
-update-version:
-	@echo "Updating version"
-	@go generate version-driver.go
-	@go generate ./v2/utils/version-driver.go
+apply-version:
+	@echo "Updating version to: $(DRIVER_VERSION)"
+	@VERSION=$(DRIVER_VERSION) go generate version-driver.go
+	@VERSION=$(DRIVER_VERSION) go generate ./v2/utils/version-driver.go
