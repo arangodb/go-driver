@@ -32,6 +32,7 @@ type ContextKey string
 const (
 	keyUseQueueTimeout ContextKey = "arangodb-use-queue-timeout"
 	keyMaxQueueTime    ContextKey = "arangodb-max-queue-time-seconds"
+	keyDriverFlags     ContextKey = "arangodb-driver-flags"
 )
 
 // contextOrBackground returns the given context if it is not nil.
@@ -52,4 +53,9 @@ func WithArangoQueueTimeout(parent context.Context, useQueueTimeout bool) contex
 // WithArangoQueueTime defines max queue timeout on the server side.
 func WithArangoQueueTime(parent context.Context, duration time.Duration) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyMaxQueueTime, duration)
+}
+
+// WithDriverFlags is used to configure additional flags for the `x-arango-driver` header.
+func WithDriverFlags(parent context.Context, value []string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyDriverFlags, value)
 }

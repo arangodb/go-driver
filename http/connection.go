@@ -235,6 +235,8 @@ func (c *httpConnection) Do(ctx context.Context, req driver.Request) (driver.Res
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a httpRequest type"})
 	}
 
+	driver.ApplyVersionHeader(ctx, req)
+
 	r, err := request.createHTTPRequest(c.endpoint)
 	rctx := ctx
 	if rctx == nil {

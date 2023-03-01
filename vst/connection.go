@@ -149,6 +149,9 @@ func (c *vstConnection) do(ctx context.Context, req driver.Request, transport me
 	if ctx == nil {
 		ctx = context.Background()
 	}
+
+	driver.ApplyVersionHeader(ctx, req)
+
 	vstReq, ok := req.(*vstRequest)
 	if !ok {
 		return nil, driver.WithStack(driver.InvalidArgumentError{Message: "request is not a *vstRequest"})
