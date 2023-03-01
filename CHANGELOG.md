@@ -2,6 +2,9 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 
+## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
+- Bump `DRIVER_VERSION`
+
 ## [1.5.1](https://github.com/arangodb/go-driver/tree/v1.5.1) (2023-03-01)
 - Add `x-arango-driver` header flag
 
