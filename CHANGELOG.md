@@ -2,6 +2,9 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 
+## [1.5.1](https://github.com/arangodb/go-driver/tree/v1.5.1) (2023-03-01)
+- Add `x-arango-driver` header flag
+
 ## [1.5.0](https://github.com/arangodb/go-driver/tree/v1.5.0) (2023-02-17)
 - Use Go 1.19.4
 - Add `IsExternalStorageError` to check for [external storage errors](https://www.arangodb.com/docs/stable/appendix-error-codes.html#external-arangodb-storage-errors)
