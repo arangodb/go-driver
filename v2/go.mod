@@ -10,8 +10,8 @@ require (
 	github.com/rs/zerolog v1.19.0
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/exp v0.0.0-20230125214544-b3c2aaf6208d
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
-	golang.org/x/text v0.3.8
+	golang.org/x/net v0.7.0
+	golang.org/x/text v0.7.0
 )
 
 require (
