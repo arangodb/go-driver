@@ -30,18 +30,23 @@ type Wrapper func(c Connection) Connection
 type Factory func() (Connection, error)
 
 type Connection interface {
+	// NewRequest initializes Request object
 	NewRequest(method string, urls ...string) (Request, error)
+	// NewRequestWithEndpoint initializes Request object with specific endpoint
 	NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error)
-
+	// Do executes the given Request and parses the response into output
 	Do(ctx context.Context, request Request, output interface{}) (Response, error)
+	// Stream executes the given Request and returns a reader for Response body
 	Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error)
-
+	// GetEndpoint returns Endpoint which is currently used to execute requests
 	GetEndpoint() Endpoint
+	// SetEndpoint changes Endpoint which is used to execute requests
 	SetEndpoint(e Endpoint) error
-
+	// GetAuthentication returns Authentication
 	GetAuthentication() Authentication
+	// SetAuthentication returns Authentication parameters used to execute requests
 	SetAuthentication(a Authentication) error
-
+	// Decoder returns Decoder to use for Response body decoding
 	Decoder(contentType string) Decoder
 }
 
