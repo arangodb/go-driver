@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Tomasz Mielech
-//
 
 package connection
 
@@ -27,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_httpResponse_Content(t *testing.T) {
@@ -72,5 +71,21 @@ func Test_httpResponse_Content(t *testing.T) {
 		}
 
 		assert.Equal(t, "", j.Content())
+	})
+}
+
+func Test_httpResponse_CheckStatus(t *testing.T) {
+	j := httpResponse{
+		response: &http.Response{
+			StatusCode: http.StatusOK,
+		},
+	}
+
+	t.Run("code expected", func(t *testing.T) {
+		require.NoError(t, j.CheckStatus(http.StatusOK))
+	})
+
+	t.Run("code not expected", func(t *testing.T) {
+		require.Error(t, j.CheckStatus(http.StatusConflict, http.StatusInternalServerError))
 	})
 }

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package connection
@@ -41,11 +38,21 @@ func (j *httpResponse) Response() interface{} {
 	return j.response
 }
 
-func (j httpResponse) Code() int {
+func (j *httpResponse) CheckStatus(validStatusCodes ...int) error {
+	for _, x := range validStatusCodes {
+		if x == j.response.StatusCode {
+			// Found valid status code
+			return nil
+		}
+	}
+	return NewError(j.response.StatusCode, "Unexpected status code")
+}
+
+func (j *httpResponse) Code() int {
 	return j.response.StatusCode
 }
 
-func (j httpResponse) Content() string {
+func (j *httpResponse) Content() string {
 	value := strings.Split(j.response.Header.Get(ContentType), ";")
 	if len(value) > 0 {
 		// The header can be returned with arguments, e.g.: "Content-Type: text/html; charset=UTF-8".

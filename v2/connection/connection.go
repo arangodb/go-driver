@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package connection
@@ -65,8 +62,16 @@ type Request interface {
 }
 
 type Response interface {
+	// Code returns an HTTP compatible status code of the response.
 	Code() int
+	// CheckStatus checks if the status of the response equals to one of the given status codes.
+	// If so, nil is returned.
+	// If not, an attempt is made to parse an error response in the body and an error is returned.
+	CheckStatus(validStatusCodes ...int) error
+	// Response returns underlying response object
 	Response() interface{}
+	// Endpoint returns the endpoint that handled the request.
 	Endpoint() string
+	// Content returns Content-Type
 	Content() string
 }
