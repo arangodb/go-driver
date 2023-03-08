@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-// Author Tomasz Mielech
-//
 
 package connection
 
@@ -33,18 +30,23 @@ type Wrapper func(c Connection) Connection
 type Factory func() (Connection, error)
 
 type Connection interface {
+	// NewRequest initializes Request object
 	NewRequest(method string, urls ...string) (Request, error)
+	// NewRequestWithEndpoint initializes Request object with specific endpoint
 	NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error)
-
+	// Do executes the given Request and parses the response into output
 	Do(ctx context.Context, request Request, output interface{}) (Response, error)
+	// Stream executes the given Request and returns a reader for Response body
 	Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error)
-
+	// GetEndpoint returns Endpoint which is currently used to execute requests
 	GetEndpoint() Endpoint
+	// SetEndpoint changes Endpoint which is used to execute requests
 	SetEndpoint(e Endpoint) error
-
+	// GetAuthentication returns Authentication
 	GetAuthentication() Authentication
+	// SetAuthentication returns Authentication parameters used to execute requests
 	SetAuthentication(a Authentication) error
-
+	// Decoder returns Decoder to use for Response body decoding
 	Decoder(contentType string) Decoder
 }
 
@@ -65,8 +67,16 @@ type Request interface {
 }
 
 type Response interface {
+	// Code returns an HTTP compatible status code of the response.
 	Code() int
+	// CheckStatus checks if the status of the response equals to one of the given status codes.
+	// If so, nil is returned.
+	// If not, an attempt is made to parse an error response in the body and an error is returned.
+	CheckStatus(validStatusCodes ...int) error
+	// Response returns underlying response object
 	Response() interface{}
+	// Endpoint returns the endpoint that handled the request.
 	Endpoint() string
+	// Content returns Content-Type
 	Content() string
 }
