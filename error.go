@@ -56,6 +56,7 @@ const (
 	ErrArangoDocumentNotFound         = 1202
 	ErrArangoDataSourceNotFound       = 1203
 	ErrArangoUniqueConstraintViolated = 1210
+	ErrArangoDatabaseNotFound         = 1228
 	ErrArangoDatabaseNameInvalid      = 1229
 
 	// ArangoDB cluster errors

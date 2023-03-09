@@ -111,5 +111,5 @@ func (w *wrapAuthentication) reAuth(ctx context.Context) error {
 }
 
 func (w wrapAuthentication) SetAuthentication(_ Authentication) error {
-	return errors.Errorf("Unable to override authentication when it rapped by Authentication wrapper")
+	return errors.Errorf("Unable to override authentication when it wrapped by Authentication wrapper")
 }
