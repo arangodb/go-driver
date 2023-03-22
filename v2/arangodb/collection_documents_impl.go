@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -36,6 +34,7 @@ func newCollectionDocuments(collection *collection) *collectionDocuments {
 	d.collectionDocumentUpdate = newCollectionDocumentUpdate(d.collection)
 	d.collectionDocumentRead = newCollectionDocumentRead(d.collection)
 	d.collectionDocumentCreate = newCollectionDocumentCreate(d.collection)
+	d.collectionDocumentDelete = newCollectionDocumentDelete(d.collection)
 
 	return d
 }
@@ -50,6 +49,7 @@ type collectionDocuments struct {
 	*collectionDocumentUpdate
 	*collectionDocumentRead
 	*collectionDocumentCreate
+	*collectionDocumentDelete
 }
 
 func (c collectionDocuments) DocumentExists(ctx context.Context, key string) (bool, error) {
