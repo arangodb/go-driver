@@ -14,6 +14,7 @@ Implementation of Driver V2 make use of runtime JSON/VPACK serialization, reduci
 |  ✓          |  ✓            | Collection Document Creation               |
 |  +          |  -            | Collection Document Update                 |
 |  ✓          |  ✓            | Collection Document Read                   |
+|  ✓          |  ✓            | Collection Document Delete                 |
 |  ✓          |  ✓            | Collection Index                           |
 |  ✓          |  ✓            | Query Execution                            |
 |  +          |  -            | Transaction Execution                      |

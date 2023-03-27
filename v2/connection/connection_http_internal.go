@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package connection
@@ -222,7 +219,7 @@ func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResp
 		ctx = context.Background()
 	}
 
-	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch {
+	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch || req.Method() == http.MethodDelete {
 		decoder := j.Decoder(j.contentType)
 		reader := j.bodyReadFunc(decoder, req.body, j.streamSender)
 		r, err := req.asRequest(ctx, reader)
