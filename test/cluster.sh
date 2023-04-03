@@ -55,7 +55,7 @@ if [ "$CMD" == "start" ]; then
         DOCKERPLATFORMARG="--platform linux/x86_64"
         DOCKERARGS="$DOCKERARGS $DOCKERPLATFORMARG"
     fi
-    STARTERARGS="$STARTERARGS --docker.container=$STARTERCONTAINER --cluster.failed-write-concern-error-code=503"
+    STARTERARGS="$STARTERARGS --docker.container=$STARTERCONTAINER --cluster.failed-write-concern-status-code=503"
 
     if [ -z "$STARTERPORT" ]; then
         STARTERPORT=7000
@@ -69,6 +69,8 @@ if [ "$CMD" == "start" ]; then
 
     # Start network namespace
     docker run -d --name=${NAMESPACE} $DOCKERPLATFORMARG $DOCKER_DEBUG_PORT "${ALPINE_IMAGE}" sleep 365d
+
+    echo "Starting starter container: ${ARANGODB}"
 
     # Start starters 
     # arangodb/arangodb-starter 0.7.0 or higher is needed.
