@@ -55,7 +55,7 @@ if [ "$CMD" == "start" ]; then
         DOCKERPLATFORMARG="--platform linux/x86_64"
         DOCKERARGS="$DOCKERARGS $DOCKERPLATFORMARG"
     fi
-    STARTERARGS="$STARTERARGS --docker.container=$STARTERCONTAINER"
+    STARTERARGS="$STARTERARGS --docker.container=$STARTERCONTAINER --cluster.failed-write-concern-error-code=503"
 
     if [ -z "$STARTERPORT" ]; then
         STARTERPORT=7000
