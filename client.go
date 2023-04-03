@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-//
 
 package driver
 
@@ -54,28 +51,32 @@ type Client interface {
 	// Connection returns the connection used by this client
 	Connection() Connection
 
-	// Database functions
+	// ClientDatabases - Database functions
 	ClientDatabases
 
-	// User functions
+	// ClientUsers - User functions
 	ClientUsers
 
-	// Cluster functions
+	// ClientCluster - Cluster functions
 	ClientCluster
 
-	// Individual server information functions
+	// ClientServerInfo - Individual server information functions
 	ClientServerInfo
 
-	// Server/cluster administration functions
+	// ClientServerAdmin - Server/cluster administration functions
 	ClientServerAdmin
 
-	// Replication functions
+	// ClientReplication - Replication functions
 	ClientReplication
 
-	// Backup functions
+	// ClientAdminBackup - Backup functions
 	ClientAdminBackup
 
+	// ClientFoxx - Foxx functions
 	ClientFoxx
+
+	// ClientAsyncJob - Asynchronous job functions
+	ClientAsyncJob
 
 	ClientLog
 }

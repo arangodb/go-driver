@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -44,6 +41,8 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/jwt"
+	"github.com/arangodb/go-driver/util/connection/wrappers"
+	"github.com/arangodb/go-driver/util/connection/wrappers/async"
 	"github.com/arangodb/go-driver/vst"
 	"github.com/arangodb/go-driver/vst/protocol"
 )
@@ -264,6 +263,22 @@ func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
 		return createClient(t, waitUntilReady, true)
 	}
 	return createClient(t, waitUntilReady, false)
+}
+
+func createAsyncClientFromEnv(t *testing.T) driver.Client {
+	// wait for server to be ready
+	createClientFromEnv(t, true)
+
+	// now create the async client
+	conn := createConnectionFromEnv(t)
+	c, err := driver.NewClient(driver.ClientConfig{
+		Connection:     async.NewConnectionAsyncWrapper(conn),
+		Authentication: createAuthenticationFromEnv(t),
+	})
+	if err != nil {
+		t.Fatalf("Failed to create ASYNC client: %s", describe(err))
+	}
+	return c
 }
 
 // createClient initializes a Client from information specified in environment variables.
