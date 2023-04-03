@@ -395,8 +395,10 @@ __test_go_test:
 		-w /usr/code/ \
 		$(DOCKER_RUN_CMD) && echo "success!" || \
 			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
-			echo "failure! \n\nARANGODB-STARTER ENVS:"; docker inspect ${TESTCONTAINER}-s --format "{{.Config.Env}}"; \
-			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
+			echo "failure! \n\nARANGODB-STARTER IMAGE:"; docker inspect ${TESTCONTAINER}-s --format "{{.Config.Image}}"; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+			echo "\nARANGODB IMAGE:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker inspect --format "{{.Config.Image}}"; \
+			exit 1; }
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
 
@@ -419,8 +421,10 @@ __test_v2_go_test:
 		-w /usr/code/v2/ \
 		$(DOCKER_V2_RUN_CMD) && echo "success!" || \
 			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
-			echo "failure! \n\nARANGODB-STARTER ENVS:"; docker inspect ${TESTCONTAINER}-s --format "{{.Config.Env}}"; \
-			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
+			echo "failure! \n\nARANGODB-STARTER IMAGE:"; docker inspect ${TESTCONTAINER}-s --format "{{.Config.Image}}"; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+			echo "\nARANGODB IMAGE:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker inspect --format "{{.Config.Image}}"; \
+			exit 1; }
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
