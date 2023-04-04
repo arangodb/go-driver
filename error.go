@@ -60,8 +60,9 @@ const (
 	ErrArangoDatabaseNameInvalid      = 1229
 
 	// ArangoDB cluster errors
-	ErrClusterLeadershipChallengeOngoing = 1495
-	ErrClusterNotLeader                  = 1496
+	ErrClusterReplicationWriteConcernNotFulfilled = 1429
+	ErrClusterLeadershipChallengeOngoing          = 1495
+	ErrClusterNotLeader                           = 1496
 
 	// User management errors
 	ErrUserDuplicate = 1702
@@ -158,7 +159,7 @@ func IsForbidden(err error) bool {
 // Deprecated: Use IsNotFoundGeneral instead.
 // For ErrArangoDocumentNotFound error there is a chance that we get a different HTTP code if the API requires an existing document as input, which is not found.
 //
-// IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
+// IsNotFound returns true if the given error is an ArangoError with code 404, indicating an object not found.
 func IsNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, http.StatusNotFound) ||
 		IsArangoErrorWithErrorNum(err, ErrArangoDocumentNotFound, ErrArangoDataSourceNotFound)

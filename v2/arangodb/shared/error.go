@@ -58,8 +58,9 @@ const (
 	ErrArangoDatabaseNameInvalid      = 1229
 
 	// ArangoDB cluster errors
-	ErrClusterLeadershipChallengeOngoing = 1495
-	ErrClusterNotLeader                  = 1496
+	ErrClusterReplicationWriteConcernNotFulfilled = 1429
+	ErrClusterLeadershipChallengeOngoing          = 1495
+	ErrClusterNotLeader                           = 1496
 
 	// User management errors
 	ErrUserDuplicate = 1702
