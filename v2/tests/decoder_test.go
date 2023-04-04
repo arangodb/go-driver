@@ -42,7 +42,7 @@ func Test_DecoderBytesWithJSONConnection(t *testing.T) {
 
 	url := connection.NewUrl("_admin", "metrics")
 	_, err := connection.CallGet(context.Background(), conn, url, &output)
-	require.NoError(t, err)
+	require.NoErrorf(t, err, "can not fetch a version with a plain connection: `%v`", err)
 	require.NotNil(t, output)
 	// Check the e
 	assert.Contains(t, string(output), "arangodb_connection_pool")
@@ -56,7 +56,7 @@ func Test_DecoderBytesWithPlainConnection(t *testing.T) {
 
 	// Check if the JSON deserializer worked.
 	version, err := client.Version(context.Background())
-	require.NoError(t, err)
+	require.NoErrorf(t, err, "can not fetch a version with a plain connection: `%v`", err)
 	require.Equalf(t, true, version.Version.Major() > 0, "can not fetch a version with a plain connection")
 
 	var output []byte

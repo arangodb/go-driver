@@ -165,6 +165,7 @@ func TestDatabaseInfo(t *testing.T) {
 	}
 }
 
+// TEST ME
 func TestDatabaseNameUnicode(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	databaseExtendedNamesRequired(t, c)
