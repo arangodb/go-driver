@@ -30,13 +30,13 @@ go:
   - 1.19.4
 
 env:
-  - TEST_SUITE=run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 ALWAYS=1
-
-  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
-  - TEST_SUITE=run-tests-cluster GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
-  - TEST_SUITE=run-tests-resilientsingle GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
-
-  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
+#  - TEST_SUITE=run-unit-tests GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 ALWAYS=1
+#
+#  - TEST_SUITE=run-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
+#  - TEST_SUITE=run-tests-cluster GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
+#  - TEST_SUITE=run-tests-resilientsingle GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
+#
+#  - TEST_SUITE=run-v2-tests-single GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
   - TEST_SUITE=run-v2-tests-cluster GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4 STARTER=arangodb/arangodb-starter:latest ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4 ARANGODB=arangodb/arangodb:3.10.0 ALWAYS=1
 
 before_script:

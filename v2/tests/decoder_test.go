@@ -24,6 +24,8 @@ package tests
 
 import (
 	"context"
+	"io"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +43,18 @@ func Test_DecoderBytesWithJSONConnection(t *testing.T) {
 	var output []byte
 
 	url := connection.NewUrl("_admin", "metrics")
-	_, err := connection.CallGet(context.Background(), conn, url, &output)
+
+	/// TEST
+	request, err := conn.NewRequest(http.MethodGet, url)
+	require.NoError(t, err)
+	_, body, err := conn.Stream(context.Background(), request)
+	require.NoError(t, err)
+	defer body.Close()
+	b, err := io.ReadAll(body)
+	require.NoError(t, err)
+	t.Logf("JAKUB output: %s", string(b))
+
+	_, err = connection.CallGet(context.Background(), conn, url, &output)
 	require.NoErrorf(t, err, "can not fetch a version with a plain connection: `%v`", err)
 	require.NotNil(t, output)
 	// Check the e
