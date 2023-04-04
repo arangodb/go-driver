@@ -222,7 +222,7 @@ func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResp
 	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch || req.Method() == http.MethodDelete {
 		decoder := j.Decoder(j.contentType)
 		reader := j.bodyReadFunc(decoder, req.body, j.streamSender)
-		r, err := req.asRequest(ctx, reader)
+		r, err := req.asRequest(ctx, reader) // here is the problem
 		if err != nil {
 			return nil, nil, errors.WithStack(err)
 		}
@@ -276,6 +276,7 @@ func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bo
 		return func() (io.Reader, error) {
 			b := bytes.NewBuffer([]byte{})
 			if err := decoder.Encode(b, obj); err != nil {
+				log.Errorf(err, "JAKUB Unable to encode body")
 				return nil, err
 			}
 
@@ -287,6 +288,7 @@ func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bo
 			go func() {
 				defer writer.Close()
 				if err := decoder.Encode(writer, obj); err != nil {
+					log.Errorf(err, "JAKUB Unable to encode body - stream case")
 					writer.CloseWithError(err)
 				}
 			}()

@@ -24,6 +24,7 @@ package connection
 
 import (
 	"context"
+	"github.com/arangodb/go-driver/v2/log"
 	"io"
 	"net/http"
 	"net/url"
@@ -98,16 +99,19 @@ func (j *httpRequest) URL() string {
 func (j *httpRequest) asRequest(ctx context.Context, bodyReader bodyReadFactory) (*http.Request, error) {
 	body, err := bodyReader()
 	if err != nil {
+		log.Errorf(err, "JAKUB bodyReader")
 		return nil, err
 	}
 
 	r, err := http.NewRequestWithContext(ctx, j.Method(), j.URL(), body)
 	if err != nil {
+		log.Errorf(err, "JAKUB NewRequestWithContext")
 		return nil, err
 	}
 
 	r.GetBody = func() (io.ReadCloser, error) {
 		if body, err := bodyReader(); err != nil {
+			log.Errorf(err, "JAKUB r.GetBody")
 			return nil, err
 		} else if c, ok := body.(io.ReadCloser); ok {
 			return c, nil
