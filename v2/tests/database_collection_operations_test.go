@@ -435,6 +435,9 @@ func Test_DatabaseCollectionDelete(t *testing.T) {
 				})
 
 				t.Run("Delete single doc with options (silent)", func(t *testing.T) {
+					// TODO cluster mode is broken https://arangodb.atlassian.net/browse/BTS-1302
+					requireSingleMode(t)
+
 					key := docsIds[1]
 
 					var doc document
