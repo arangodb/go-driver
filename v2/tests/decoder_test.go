@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Tomasz Mielech
 //
 
 package tests
@@ -56,7 +54,7 @@ func Test_DecoderBytesWithPlainConnection(t *testing.T) {
 
 	// Check if the JSON deserializer worked.
 	version, err := client.Version(context.Background())
-	require.NoError(t, err)
+	require.NoErrorf(t, err, "can not fetch a version with a plain connection: `%v`", err)
 	require.Equalf(t, true, version.Version.Major() > 0, "can not fetch a version with a plain connection")
 
 	var output []byte
