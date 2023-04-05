@@ -219,23 +219,12 @@ func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResp
 		ctx = context.Background()
 	}
 
-	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch || req.Method() == http.MethodDelete {
-		decoder := j.Decoder(j.contentType)
-		reader := j.bodyReadFunc(decoder, req.body, j.streamSender)
-		r, err := req.asRequest(ctx, reader) // here is the problem
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		httpReq = r
-	} else {
-		r, err := req.asRequest(ctx, func() (io.Reader, error) {
-			return nil, nil
-		})
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		httpReq = r
+	reader := j.bodyReadFunc(j.Decoder(j.contentType), req.body, j.streamSender)
+	r, err := req.asRequest(ctx, reader)
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
 	}
+	httpReq = r
 
 	resp, err := j.client.Do(httpReq)
 	if err != nil {
@@ -275,6 +264,11 @@ func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bo
 	if !stream {
 		return func() (io.Reader, error) {
 			b := bytes.NewBuffer([]byte{})
+			if obj == nil {
+				log.Error(nil, "JAKUB EMPTY OBJ")
+				return b, nil
+			}
+
 			if err := decoder.Encode(b, obj); err != nil {
 				log.Errorf(err, "JAKUB Unable to encode body")
 				return nil, err
@@ -287,6 +281,10 @@ func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bo
 			reader, writer := io.Pipe()
 			go func() {
 				defer writer.Close()
+				if obj == nil {
+					log.Error(nil, "JAKUB EMPTY STREAM OBJ")
+					return
+				}
 				if err := decoder.Encode(writer, obj); err != nil {
 					log.Errorf(err, "JAKUB Unable to encode body - stream case")
 					writer.CloseWithError(err)
