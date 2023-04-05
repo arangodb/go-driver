@@ -38,7 +38,7 @@ func Test_DecoderBytesWithJSONConnection(t *testing.T) {
 
 	var output []byte
 
-	url := connection.NewUrl("_admin", "metrics")
+	url := connection.NewUrl("_admin", "metrics", "v2")
 	_, err := connection.CallGet(context.Background(), conn, url, &output)
 	require.NoError(t, err)
 	require.NotNil(t, output)
@@ -59,7 +59,7 @@ func Test_DecoderBytesWithPlainConnection(t *testing.T) {
 
 	var output []byte
 
-	url := connection.NewUrl("_admin", "metrics")
+	url := connection.NewUrl("_admin", "metrics", "v2")
 	_, err = connection.CallGet(context.Background(), conn, url, &output)
 	require.NoError(t, err)
 	require.NotNil(t, output)
