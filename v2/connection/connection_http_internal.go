@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 	"strings"
 
 	"github.com/google/uuid"
@@ -270,7 +271,7 @@ func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bo
 			}
 
 			if err := decoder.Encode(b, obj); err != nil {
-				log.Errorf(err, "JAKUB Unable to encode body")
+				log.Errorf(err, "JAKUB Unable to encode body - OBJ: %v, Type: %T", obj, reflect.TypeOf(obj))
 				return nil, err
 			}
 
