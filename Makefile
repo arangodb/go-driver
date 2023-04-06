@@ -396,7 +396,7 @@ __test_go_test:
 		$(DOCKER_RUN_CMD) && echo "success!" || \
 			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
 			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
-			echo "\nV1 Tests with args: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH}} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}" \
+			echo "\nV1 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n" \
 			exit 1; }
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
@@ -421,7 +421,7 @@ __test_v2_go_test:
 		$(DOCKER_V2_RUN_CMD) && echo "success!" || \
 			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
 			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
-			echo "\nV2 Tests with args: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH}} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}" \
+			echo "\nV2 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n" \
 			exit 1; }
 
 __test_debug__:
