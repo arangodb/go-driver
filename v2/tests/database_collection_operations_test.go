@@ -435,6 +435,9 @@ func Test_DatabaseCollectionDelete(t *testing.T) {
 				})
 
 				t.Run("Delete single doc with options (silent)", func(t *testing.T) {
+					// TODO cluster mode is broken https://arangodb.atlassian.net/browse/BTS-1302
+					requireSingleMode(t)
+
 					key := docsIds[1]
 
 					var doc document
@@ -513,9 +516,7 @@ func Test_DatabaseCollectionDelete(t *testing.T) {
 						if keys[i] == alreadyRemovedDoc {
 							require.NotNil(t, meta.Error)
 							require.True(t, *meta.Error)
-							require.Error(t, meta.ResponseStruct.AsArangoError())
-							require.NotNil(t, meta.ErrorMessage)
-							require.Equal(t, "document not found", *meta.ErrorMessage)
+							require.True(t, shared.IsNotFound(meta.AsArangoError()))
 							require.Empty(t, meta.Key)
 						} else {
 							require.Equal(t, keys[i], meta.Key)
