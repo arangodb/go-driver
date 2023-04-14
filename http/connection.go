@@ -86,6 +86,8 @@ type ConnectionConfig struct {
 	ConnLimit int
 }
 
+func HasVelocypackAPI() {}
+
 // NewConnection creates a new HTTP connection based on the given configuration settings.
 func NewConnection(config ConnectionConfig) (driver.Connection, error) {
 	c, err := cluster.NewConnection(config.ConnectionConfig, func(endpoint string) (driver.Connection, error) {
