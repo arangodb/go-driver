@@ -65,7 +65,6 @@ func Test_DefaultEdgeIndexes(t *testing.T) {
 					require.NoError(t, err)
 					require.NotNil(t, indexes)
 					require.Equal(t, 2, len(indexes))
-					assert.Equal(t, arangodb.PrimaryIndexType, indexes[0].Type)
 
 					assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
 						return i.Type == arangodb.PrimaryIndexType

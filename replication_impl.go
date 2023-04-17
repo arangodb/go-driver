@@ -79,7 +79,7 @@ func (c *client) CreateBatch(ctx context.Context, db Database, serverID int64, t
 	return &batch, nil
 }
 
-// Get the inventory of a server containing all collections (with entire details) of a database.
+// DatabaseInventory Get the inventory of a server containing all collections (with entire details) of a database.
 func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error) {
 	req, err := c.conn.NewRequest("GET", path.Join("_db", db.Name(), "_api/replication/inventory"))
 	if err != nil {
