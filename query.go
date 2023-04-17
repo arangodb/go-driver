@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package driver
@@ -58,7 +56,7 @@ func WithQueryBatchSize(parent context.Context, value int) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryBatchSize, value)
 }
 
-// WithQuerySharIds is used to configure a context that will set the ShardIds of a query request,
+// WithQueryShardIds is used to configure a context that will set the ShardIds of a query request,
 func WithQueryShardIds(parent context.Context, value []string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyQueryShardIds, value)
 }
