@@ -58,6 +58,13 @@ func (a asyncConnectionWrapper) Do(ctx context.Context, req driver.Request) (dri
 
 		switch resp.StatusCode() {
 		case http.StatusNoContent:
+			asyncID := resp.Header(ArangoHeaderAsyncIDKey)
+			if asyncID == id {
+				// Job is done
+				return resp, nil
+			}
+
+			// Job is in progress
 			return nil, ErrorAsyncJobInProgress{id}
 		default:
 			return resp, nil
