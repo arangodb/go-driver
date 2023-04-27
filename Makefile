@@ -6,10 +6,10 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.19.4
+GOVERSION ?= 1.20.3
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
-ALPINE_IMAGE ?= alpine:3.14
+ALPINE_IMAGE ?= alpine:3.17
 TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run
@@ -138,7 +138,7 @@ else
     DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
 endif
 
-.PHONY: all build clean linter run-tests
+.PHONY: all build clean linter run-tests vulncheck
 
 all: build
 
@@ -171,7 +171,7 @@ run-unit-tests: run-v2-unit-tests
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
-		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency
+		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency $(REPOPATH)/vst/protocol
 
 run-v2-unit-tests:
 	@$(DOCKER_CMD) \
@@ -500,11 +500,13 @@ run-benchmarks-single-vpack-no-auth:
 .PHONY: tools
 tools: __dir_setup
 	@echo ">> Fetching golangci-lint linter"
-	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 	@echo ">> Fetching goimports"
 	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.1.12
 	@echo ">> Fetching license check"
 	@GOBIN=$(TMPDIR)/bin go install github.com/google/addlicense@v1.0.0
+	@echo ">> Fetching govulncheck"
+	@GOBIN=$(TMPDIR)/bin go install golang.org/x/vuln/cmd/govulncheck@v0.1.0
 
 .PHONY: license
 license:
@@ -529,6 +531,10 @@ fmt-verify: license-verify
 .PHONY: linter
 linter: fmt-verify
 	@$(TMPDIR)/bin/golangci-lint run ./...
+
+.PHONY: vulncheck
+vulncheck:
+	$(GOPATH)/bin/govulncheck ./...
 
 # V2
 

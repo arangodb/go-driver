@@ -7,6 +7,7 @@
 - [V2] Fix: Plain Connection doesn't work with JWT authentication
 - Support for new error codes if write concern is not fulfilled
 - Support for geo_s2 analyzers
+- Use Go 1.20.3 for testing. Add govulncheck to pipeline
 
 ## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
 - Bump `DRIVER_VERSION`
