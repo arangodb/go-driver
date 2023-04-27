@@ -534,7 +534,7 @@ linter: fmt-verify
 
 .PHONY: vulncheck
 vulncheck:
-	$(GOPATH)/bin/govulncheck ./...
+	$(TMPDIR)/bin/govulncheck ./...
 
 # V2
 
