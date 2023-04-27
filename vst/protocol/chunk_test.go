@@ -181,7 +181,7 @@ func TestBuildChunks(t *testing.T) {
 				case Version1_1:
 					_, err = chunks[i].WriteToVST1_1(&buf)
 				default:
-					t.Fatalf("vst version %s not supported", test.VSTVersion)
+					t.Fatalf("vst version %d not supported", test.VSTVersion)
 					return
 				}
 				if err != nil {
