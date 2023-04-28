@@ -62,6 +62,9 @@ type CreateDatabaseOptions struct {
 	Options CreateDatabaseDefaultOptions `json:"options,omitempty"`
 }
 
+// DatabaseReplicationVersion defines replication protocol version to use for this database
+// Available since ArangoDB version 3.11
+// Note: this feature is still considered experimental and should not be used in production
 type DatabaseReplicationVersion string
 
 const (
@@ -78,6 +81,7 @@ type CreateDatabaseDefaultOptions struct {
 	// Default sharding for collections in database
 	Sharding DatabaseSharding `json:"sharding,omitempty"`
 	// Replication version to use for this database
+	// Available since ArangoDB version 3.11
 	ReplicationVersion DatabaseReplicationVersion `json:"replicationVersion,omitempty"`
 }
 
