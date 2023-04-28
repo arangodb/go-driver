@@ -35,6 +35,29 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
+func Test_DatabaseCreateReplicationV2(t *testing.T) {
+	client := newClient(t, connectionJsonHttp(t))
+	skipBelowVersion(client, context.Background(), "3.11.0", t)
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		opts := arangodb.CreateDatabaseOptions{
+			Users: nil,
+			Options: arangodb.CreateDatabaseDefaultOptions{
+				ReplicationVersion: arangodb.DatabaseReplicationVersionTwo,
+			},
+		}
+		WithDatabase(t, client, &opts, func(db arangodb.Database) {
+			t.Run("Transaction", func(t *testing.T) {
+				withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+					info, err := db.Info(ctx)
+					require.NoErrorf(t, err, "failed to get database info")
+					require.Equal(t, arangodb.DatabaseReplicationVersionTwo, info.ReplicationVersion)
+				})
+			})
+		})
+	})
+}
+
 func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
