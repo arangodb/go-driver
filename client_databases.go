@@ -62,6 +62,13 @@ type CreateDatabaseOptions struct {
 	Options CreateDatabaseDefaultOptions `json:"options,omitempty"`
 }
 
+type DatabaseReplicationVersion string
+
+const (
+	DatabaseReplicationVersionOne DatabaseReplicationVersion = "1"
+	DatabaseReplicationVersionTwo DatabaseReplicationVersion = "2"
+)
+
 // CreateDatabaseDefaultOptions contains options that change defaults for collections
 type CreateDatabaseDefaultOptions struct {
 	// Default replication factor for collections in database
@@ -70,6 +77,8 @@ type CreateDatabaseDefaultOptions struct {
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// Default sharding for collections in database
 	Sharding DatabaseSharding `json:"sharding,omitempty"`
+	// Replication version to use for this database
+	ReplicationVersion DatabaseReplicationVersion `json:"replicationVersion,omitempty"`
 }
 
 // CreateDatabaseUserOptions contains options for creating a single user for a database.

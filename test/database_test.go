@@ -204,6 +204,44 @@ func TestDatabaseNameUnicode(t *testing.T) {
 	require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
 }
 
+// TestCreateDatabaseReplication2 creates a database with replication version two.
+func TestCreateDatabaseReplication2(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	version, _ := c.Version(ctx)
+	if version.Version.CompareTo("3.11.0") < 0 {
+		t.Skipf("Version of the ArangoDB should be at least 3.11.0")
+	}
+
+	name := "create_test1"
+	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
+		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
+	}}
+	if _, err := c.CreateDatabase(nil, name, &opts); err != nil {
+		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
+	}
+	// Database must exist now
+	if found, err := c.DatabaseExists(nil, name); err != nil {
+		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
+	} else if !found {
+		t.Errorf("DatabaseExists('%s') return false, expected true", name)
+	}
+
+	// Read database properties
+	db, err := c.Database(nil, name)
+	if err != nil {
+		t.Fatal("Failed to get database ")
+	}
+	info, err := db.Info(nil)
+	if err != nil {
+		t.Fatal("Failed to get database name")
+	}
+
+	if info.ReplicationVersion != driver.DatabaseReplicationVersionTwo {
+		t.Errorf("Wrong replication version, expected %s, found %s", driver.DatabaseReplicationVersionTwo, info.ReplicationVersion)
+	}
+}
+
 // databaseExtendedNamesRequired skips test if the version is < 3.9.0 or the ArangoDB has not been launched
 // with the option --database.extended-names-databases=true.
 func databaseExtendedNamesRequired(t *testing.T, c driver.Client) {
