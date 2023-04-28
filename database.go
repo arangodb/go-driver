@@ -94,6 +94,8 @@ type DatabaseInfo struct {
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// Default sharding for collections in database
 	Sharding DatabaseSharding `json:"sharding,omitempty"`
+	// Replication version used for this database
+	ReplicationVersion DatabaseReplicationVersion `json:"replicationVersion,omitempty"`
 }
 
 // EngineType indicates type of database engine being used.
