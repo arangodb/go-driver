@@ -25,6 +25,7 @@ package connection
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -52,6 +53,17 @@ func WithQuery(s, value string) RequestModifier {
 // applyGlobalSettings applies the settings configured in the context to the given request.
 func applyGlobalSettings(ctx context.Context) RequestModifier {
 	return func(r Request) error {
+
+		// Set version header
+		val := fmt.Sprintf("go-driver-v2/%s", driverVersion)
+		if ctx != nil {
+			if v := ctx.Value(keyDriverFlags); v != nil {
+				if flags, ok := v.([]string); ok {
+					val = fmt.Sprintf("%s (%s)", val, strings.Join(flags, ","))
+				}
+			}
+		}
+		r.AddHeader("x-arango-driver", val)
 
 		// Enable Queue timeout
 		if v := ctx.Value(keyUseQueueTimeout); v != nil {

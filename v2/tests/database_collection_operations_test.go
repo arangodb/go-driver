@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -395,4 +395,157 @@ func databaseExtendedNamesRequired(t *testing.T) {
 
 	// Some other error which has not been expected.
 	require.NoError(t, err)
+}
+
+func Test_DatabaseCollectionDelete(t *testing.T) {
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				ctx, c := context.WithTimeout(context.Background(), 5*time.Minute)
+				defer c()
+
+				size := 10
+				docs := newDocs(size)
+				for i := 0; i < size; i++ {
+					docs[i].Fields = uuid.New().String()
+				}
+
+				docsIds := docs.asBasic().getKeys()
+				docsMeta, err := col.CreateDocuments(ctx, docs)
+				fmt.Print(docsMeta)
+				require.NoError(t, err)
+
+				t.Run("Delete single doc", func(t *testing.T) {
+					key := docsIds[0]
+
+					var doc document
+					meta, err := col.ReadDocument(ctx, key, &doc)
+					require.NoError(t, err)
+
+					require.Equal(t, docs[0].Key, meta.Key)
+					require.Equal(t, docs[0], doc)
+
+					metaDel, err := col.DeleteDocument(ctx, key)
+					require.NoError(t, err)
+					require.Equal(t, docs[0].Key, metaDel.Key)
+
+					_, err = col.DeleteDocument(ctx, key)
+					require.Error(t, err)
+				})
+
+				t.Run("Delete single doc with options (silent)", func(t *testing.T) {
+					// TODO cluster mode is broken https://arangodb.atlassian.net/browse/BTS-1302
+					requireSingleMode(t)
+
+					key := docsIds[1]
+
+					var doc document
+					meta, err := col.ReadDocument(ctx, key, &doc)
+					require.NoError(t, err)
+
+					require.Equal(t, docs[1].Key, meta.Key)
+					require.Equal(t, docs[1], doc)
+
+					opts := arangodb.CollectionDocumentDeleteOptions{
+						Silent: newBool(true),
+					}
+					resp, err := col.DeleteDocumentWithOptions(ctx, key, &opts)
+					require.NoError(t, err)
+					require.Equal(t, "", resp.Key, "response should be empty (silent)!")
+
+					_, err = col.DeleteDocumentWithOptions(ctx, key, &opts)
+					require.Error(t, err)
+				})
+
+				t.Run("Delete single doc with options (old)", func(t *testing.T) {
+					key := docsIds[2]
+
+					var doc document
+					meta, err := col.ReadDocument(ctx, key, &doc)
+					require.NoError(t, err)
+
+					require.Equal(t, docs[2].Key, meta.Key)
+					require.Equal(t, docs[2], doc)
+
+					opts := arangodb.CollectionDocumentDeleteOptions{
+						ReturnOld: newBool(true),
+					}
+					resp, err := col.DeleteDocumentWithOptions(ctx, key, &opts)
+					require.NoError(t, err)
+					require.NotEmpty(t, resp.Old)
+
+					_, err = col.DeleteDocumentWithOptions(ctx, key, &opts)
+					require.Error(t, err)
+				})
+
+				t.Run("Delete multiple docs", func(t *testing.T) {
+					keys := []string{docsIds[3], docsIds[4], docsIds[5]}
+
+					r, err := col.DeleteDocuments(ctx, keys)
+					require.NoError(t, err)
+
+					for i := 0; ; i++ {
+						var doc document
+
+						meta, err := r.Read(&doc)
+						if shared.IsNoMoreDocuments(err) {
+							break
+						}
+						require.NoError(t, err, meta)
+						require.Equal(t, keys[i], meta.Key)
+					}
+				})
+
+				t.Run("Delete multiple docs with error", func(t *testing.T) {
+					alreadyRemovedDoc := docsIds[4]
+					keys := []string{docsIds[6], docsIds[7], alreadyRemovedDoc}
+
+					r, err := col.DeleteDocuments(ctx, keys)
+					require.NoError(t, err)
+
+					for i := 0; ; i++ {
+						var doc document
+
+						meta, err := r.Read(&doc)
+						if shared.IsNoMoreDocuments(err) {
+							break
+						}
+						require.NoError(t, err, meta)
+
+						if keys[i] == alreadyRemovedDoc {
+							require.NotNil(t, meta.Error)
+							require.True(t, *meta.Error)
+							require.True(t, shared.IsNotFound(meta.AsArangoError()))
+							require.Empty(t, meta.Key)
+						} else {
+							require.Equal(t, keys[i], meta.Key)
+						}
+					}
+				})
+
+				t.Run("Delete multiple docs with options (old)", func(t *testing.T) {
+					keys := []string{docsIds[8], docsIds[9]}
+
+					opts := arangodb.CollectionDocumentDeleteOptions{
+						ReturnOld: newBool(true),
+					}
+					r, err := col.DeleteDocumentsWithOptions(ctx, keys, &opts)
+					require.NoError(t, err)
+
+					for i := 0; ; i++ {
+						var doc document
+
+						meta, err := r.Read(&doc)
+						if shared.IsNoMoreDocuments(err) {
+							break
+						}
+						require.NoError(t, err, meta)
+						require.Equal(t, keys[i], meta.Key)
+						require.NotEmpty(t, meta.Old)
+					}
+				})
+			})
+		})
+	})
 }

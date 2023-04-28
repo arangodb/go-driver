@@ -17,19 +17,24 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
+// Author Jakub Wierzbowski
+//
 
 package arangodb
 
-import (
-	"context"
+// AnalyzerFeature specifies a feature to an analyzer
+type AnalyzerFeature string
+
+const (
+	// AnalyzerFeatureFrequency how often a term is seen, required for PHRASE()
+	AnalyzerFeatureFrequency AnalyzerFeature = "frequency"
+
+	// AnalyzerFeatureNorm the field normalization factor
+	AnalyzerFeatureNorm AnalyzerFeature = "norm"
+
+	// AnalyzerFeaturePosition sequentially increasing term position, required for PHRASE(). If present then the frequency feature is also required
+	AnalyzerFeaturePosition AnalyzerFeature = "position"
+
+	// AnalyzerFeatureOffset can be specified if 'position' feature is set
+	AnalyzerFeatureOffset AnalyzerFeature = "offset"
 )
-
-type CollectionDocuments interface {
-	// DocumentExists checks if a document with given key exists in the collection.
-	DocumentExists(ctx context.Context, key string) (bool, error)
-
-	CollectionDocumentCreate
-	CollectionDocumentRead
-	CollectionDocumentUpdate
-	CollectionDocumentDelete
-}

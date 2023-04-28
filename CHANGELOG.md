@@ -1,7 +1,31 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- [V2] add Response.CheckStatus
+- Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2
+- [V2] Support for Collection Documents removal
+- [V2] Fix: Plain Connection doesn't work with JWT authentication
+- Support for new error codes if write concern is not fulfilled
+- Support for geo_s2 analyzers
+
+## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
+- Bump `DRIVER_VERSION`
+
+## [1.5.1](https://github.com/arangodb/go-driver/tree/v1.5.1) (2023-03-01)
+- Add `x-arango-driver` header flag
+
+## [1.5.0](https://github.com/arangodb/go-driver/tree/v1.5.0) (2023-02-17)
+- Use Go 1.19.4
+- Add `IsExternalStorageError` to check for [external storage errors](https://www.arangodb.com/docs/stable/appendix-error-codes.html#external-arangodb-storage-errors)
+- `nested` field in arangosearch type View
+- Fix: TTL index creation fails when expireAt is 0
+- [V2] Support for Collection Indexes
+- Fix: Fetching single InvertedIndex fails with Marshalling error
+
+## [1.4.1](https://github.com/arangodb/go-driver/tree/v1.4.1) (2022-12-14)
 - Add support for `checksum` in Collections
+- Fix reusing same connection with different Authentication parameters passed via driver.NewClient
+- Add `cache` for ArangoSearchView Link and StoredValue types and `primarySortCache`, `primaryKeyCache` for ArangoSearchView type
 
 ## [1.4.0](https://github.com/arangodb/go-driver/tree/v1.4.0) (2022-10-04)
 - Add `hex` property to analyzer's properties

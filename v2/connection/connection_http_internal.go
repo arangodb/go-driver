@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package connection
@@ -222,23 +219,19 @@ func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResp
 		ctx = context.Background()
 	}
 
-	if req.Method() == http.MethodPost || req.Method() == http.MethodPut || req.Method() == http.MethodPatch {
-		decoder := j.Decoder(j.contentType)
-		reader := j.bodyReadFunc(decoder, req.body, j.streamSender)
-		r, err := req.asRequest(ctx, reader)
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		httpReq = r
-	} else {
-		r, err := req.asRequest(ctx, func() (io.Reader, error) {
-			return nil, nil
-		})
-		if err != nil {
-			return nil, nil, errors.WithStack(err)
-		}
-		httpReq = r
+	ct := j.contentType
+
+	// for JWT auth requests we always use JSON
+	if _, isJWT := req.body.(jwtOpenRequest); isJWT {
+		ct = ApplicationJSON
 	}
+
+	reader := j.bodyReadFunc(j.Decoder(ct), req.body, j.streamSender)
+	r, err := req.asRequest(ctx, reader)
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+	httpReq = r
 
 	resp, err := j.client.Do(httpReq)
 	if err != nil {
@@ -275,10 +268,17 @@ func getDecoderByContentType(contentType string) Decoder {
 type bodyReadFactory func() (io.Reader, error)
 
 func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bool) bodyReadFactory {
+	if obj == nil {
+		return func() (io.Reader, error) {
+			return nil, nil
+		}
+	}
+
 	if !stream {
 		return func() (io.Reader, error) {
 			b := bytes.NewBuffer([]byte{})
 			if err := decoder.Encode(b, obj); err != nil {
+				log.Errorf(err, "error encoding body - OBJ: %v", obj)
 				return nil, err
 			}
 
@@ -290,6 +290,7 @@ func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bo
 			go func() {
 				defer writer.Close()
 				if err := decoder.Encode(writer, obj); err != nil {
+					log.Errorf(err, "error encoding body (stream) - OBJ: %v", obj)
 					writer.CloseWithError(err)
 				}
 			}()

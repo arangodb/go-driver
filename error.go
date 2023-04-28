@@ -44,16 +44,25 @@ const (
 	// Internal ArangoDB storage errors
 	ErrArangoReadOnly = 1004
 
+	// External ArangoDB storage errors
+	ErrArangoCorruptedDatafile    = 1100
+	ErrArangoIllegalParameterFile = 1101
+	ErrArangoCorruptedCollection  = 1102
+	ErrArangoFileSystemFull       = 1104
+	ErrArangoDataDirLocked        = 1107
+
 	// General ArangoDB storage errors
 	ErrArangoConflict                 = 1200
 	ErrArangoDocumentNotFound         = 1202
 	ErrArangoDataSourceNotFound       = 1203
 	ErrArangoUniqueConstraintViolated = 1210
+	ErrArangoDatabaseNotFound         = 1228
 	ErrArangoDatabaseNameInvalid      = 1229
 
 	// ArangoDB cluster errors
-	ErrClusterLeadershipChallengeOngoing = 1495
-	ErrClusterNotLeader                  = 1496
+	ErrClusterReplicationWriteConcernNotFulfilled = 1429
+	ErrClusterLeadershipChallengeOngoing          = 1495
+	ErrClusterNotLeader                           = 1496
 
 	// User management errors
 	ErrUserDuplicate = 1702
@@ -150,7 +159,7 @@ func IsForbidden(err error) bool {
 // Deprecated: Use IsNotFoundGeneral instead.
 // For ErrArangoDocumentNotFound error there is a chance that we get a different HTTP code if the API requires an existing document as input, which is not found.
 //
-// IsNotFound returns true if the given error is an ArangoError with code 404, indicating a object not found.
+// IsNotFound returns true if the given error is an ArangoError with code 404, indicating an object not found.
 func IsNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, http.StatusNotFound) ||
 		IsArangoErrorWithErrorNum(err, ErrArangoDocumentNotFound, ErrArangoDataSourceNotFound)
@@ -165,6 +174,18 @@ func IsNotFoundGeneral(err error) bool {
 func IsDataSourceOrDocumentNotFound(err error) bool {
 	return IsArangoErrorWithCode(err, http.StatusNotFound) &&
 		IsArangoErrorWithErrorNum(err, ErrArangoDocumentNotFound, ErrArangoDataSourceNotFound)
+}
+
+// IsExternalStorageError returns true if ArangoDB is having an error with accessing or writing to storage.
+func IsExternalStorageError(err error) bool {
+	return IsArangoErrorWithErrorNum(
+		err,
+		ErrArangoCorruptedDatafile,
+		ErrArangoIllegalParameterFile,
+		ErrArangoCorruptedCollection,
+		ErrArangoFileSystemFull,
+		ErrArangoDataDirLocked,
+	)
 }
 
 // IsConflict returns true if the given error is an ArangoError with code 409, indicating a conflict.

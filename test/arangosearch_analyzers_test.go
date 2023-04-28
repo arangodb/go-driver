@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -29,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 )
 
 func newInt(v int) *int {
@@ -95,7 +93,6 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 		HasError           bool
 		EnterpriseOnly     bool
 	}{
-
 		{
 			Name: "create-my-identity",
 			Definition: driver.ArangoSearchAnalyzerDefinition{
@@ -262,6 +259,37 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 			},
 		},
 		{
+			Name:       "create-geo_s2",
+			MinVersion: newVersion("3.10.5"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-geo_s2",
+				Type: driver.ArangoSearchAnalyzerTypeGeoS2,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Format: driver.FormatLatLngInt.New(),
+					Options: &driver.ArangoSearchAnalyzerGeoOptions{
+						MaxCells: newInt(20),
+						MinLevel: newInt(4),
+						MaxLevel: newInt(23),
+					},
+					Type: driver.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
+				},
+			},
+			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
+				Name: "my-geo_s2",
+				Type: driver.ArangoSearchAnalyzerTypeGeoS2,
+				Properties: driver.ArangoSearchAnalyzerProperties{
+					Format: driver.FormatLatLngInt.New(),
+					Options: &driver.ArangoSearchAnalyzerGeoOptions{
+						MaxCells: newInt(20),
+						MinLevel: newInt(4),
+						MaxLevel: newInt(23),
+					},
+					Type: driver.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
+				},
+			},
+			EnterpriseOnly: true,
+		},
+		{
 			Name:       "create-segmentation",
 			MinVersion: newVersion("3.9"),
 			Definition: driver.ArangoSearchAnalyzerDefinition{
@@ -364,7 +392,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				if testCase.MaxVersion == nil {
 					skipBelowVersion(c, *testCase.MinVersion, t)
 				} else {
-					skipBetweenVersion(c, *testCase.MinVersion, *testCase.MaxVersion, t)
+					skipVersionNotInRange(c, *testCase.MinVersion, *testCase.MaxVersion, t)
 				}
 			}
 			if testCase.EnterpriseOnly {

@@ -37,7 +37,7 @@ import (
 )
 
 func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDatabaseOptions, f func(db arangodb.Database)) {
-	name := fmt.Sprintf("test-%s", uuid.New().String())
+	name := fmt.Sprintf("test-DB-%s", uuid.New().String())
 
 	info(t)("Creating DB %s", name)
 
@@ -59,7 +59,7 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 }
 
 func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCollectionOptions, f func(col arangodb.Collection)) {
-	name := fmt.Sprintf("test-%s", uuid.New().String())
+	name := fmt.Sprintf("test-COL-%s", uuid.New().String())
 
 	info(t)("Creating COL %s", name)
 

@@ -447,6 +447,21 @@ func TestEnsureTTLIndex(t *testing.T) {
 	} else if found {
 		t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 	}
+
+	// Create index with expireAfter = 0
+	idx, created, err = col.EnsureTTLIndex(nil, "createdAt", 0, nil)
+	if err != nil {
+		t.Fatalf("Failed to create new index: %s", describe(err))
+	}
+	if !created {
+		t.Error("Expected created to be true, got false")
+	}
+	if idxType := idx.Type(); idxType != driver.TTLIndex {
+		t.Errorf("Expected TTLIndex, found `%s`", idxType)
+	}
+	if idx.ExpireAfter() != 0 {
+		t.Errorf("Expected ExpireAfter to be 0, found `%d`", idx.ExpireAfter())
+	}
 }
 
 // TestEnsureZKDIndex creates a collection with a ZKD index.
@@ -575,28 +590,24 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				skipNoEnterprise(t)
 			}
 
+			requireIdxEquality := func(invertedIdx driver.Index) {
+				require.Equal(t, driver.InvertedIndex, invertedIdx.Type())
+				require.Equal(t, tc.Options.Name, invertedIdx.UserName())
+				require.Equal(t, tc.Options.PrimarySort, invertedIdx.InvertedIndexOptions().PrimarySort)
+				require.Equal(t, tc.Options.Fields, invertedIdx.InvertedIndexOptions().Fields)
+			}
+
 			idx, created, err := col.EnsureInvertedIndex(ctx, &tc.Options)
 			require.NoError(t, err)
 			require.True(t, created)
-
-			tc.Options.IsNewlyCreated = true
-			tc.Options.Analyzer = string(driver.ArangoSearchAnalyzerTypeIdentity) // default value for analyzer
-
-			requireIdxEquality := func(invertedIdx driver.Index) {
-				require.Equal(t, driver.InvertedIndex, idx.Type())
-				require.Equal(t, tc.Options.Name, idx.UserName())
-				require.Equal(t, tc.Options.PrimarySort, idx.InvertedIndexOptions().PrimarySort)
-				require.Equal(t, tc.Options.Fields, idx.InvertedIndexOptions().Fields)
-			}
 			requireIdxEquality(idx)
 
-			indexes, err := col.Indexes(ctx)
+			col.Indexes(ctx)
+			idx, err = col.Index(ctx, tc.Options.Name)
 			require.NoError(t, err)
-			require.NotEmpty(t, indexes)
+			requireIdxEquality(idx)
 
-			requireIdxEquality(indexes[0])
-
-			err = idx.Remove(nil)
+			err = idx.Remove(ctx)
 			require.NoError(t, err)
 		})
 	}

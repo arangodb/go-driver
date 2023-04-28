@@ -42,16 +42,25 @@ const (
 	// Internal ArangoDB storage errors
 	ErrArangoReadOnly = 1004
 
+	// External ArangoDB storage errors
+	ErrArangoCorruptedDatafile    = 1100
+	ErrArangoIllegalParameterFile = 1101
+	ErrArangoCorruptedCollection  = 1102
+	ErrArangoFileSystemFull       = 1104
+	ErrArangoDataDirLocked        = 1107
+
 	// General ArangoDB storage errors
 	ErrArangoConflict                 = 1200
 	ErrArangoDocumentNotFound         = 1202
 	ErrArangoDataSourceNotFound       = 1203
 	ErrArangoUniqueConstraintViolated = 1210
+	ErrArangoDatabaseNotFound         = 1228
 	ErrArangoDatabaseNameInvalid      = 1229
 
 	// ArangoDB cluster errors
-	ErrClusterLeadershipChallengeOngoing = 1495
-	ErrClusterNotLeader                  = 1496
+	ErrClusterReplicationWriteConcernNotFulfilled = 1429
+	ErrClusterLeadershipChallengeOngoing          = 1495
+	ErrClusterNotLeader                           = 1496
 
 	// User management errors
 	ErrUserDuplicate = 1702
@@ -182,6 +191,18 @@ func IsNoLeader(err error) bool {
 func IsNoLeaderOrOngoing(err error) bool {
 	return IsArangoErrorWithCode(err, http.StatusServiceUnavailable) &&
 		IsArangoErrorWithErrorNum(err, ErrClusterLeadershipChallengeOngoing, ErrClusterNotLeader)
+}
+
+// IsExternalStorageError returns true if ArangoDB is having an error with accessing or writing to storage.
+func IsExternalStorageError(err error) bool {
+	return IsArangoErrorWithErrorNum(
+		err,
+		ErrArangoCorruptedDatafile,
+		ErrArangoIllegalParameterFile,
+		ErrArangoCorruptedCollection,
+		ErrArangoFileSystemFull,
+		ErrArangoDataDirLocked,
+	)
 }
 
 // InvalidArgumentError is returned when a go function argument is invalid.

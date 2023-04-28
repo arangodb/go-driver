@@ -80,21 +80,6 @@ func tryAddArangoSearchLink(ctx context.Context, db driver.Database, view driver
 	return checkLinkExists(ctx, view, colName, t)
 }
 
-// assertArangoSearchView is a helper to check if an arangosearch view exists and fail if it does not.
-func assertArangoSearchView(ctx context.Context, db driver.Database, name string, t *testing.T) driver.ArangoSearchView {
-	v, err := db.View(ctx, name)
-	if driver.IsNotFound(err) {
-		t.Fatalf("View '%s': does not exist", name)
-	} else if err != nil {
-		t.Fatalf("Failed to open view '%s': %s", name, describe(err))
-	}
-	result, err := v.ArangoSearchView()
-	if err != nil {
-		t.Fatalf("Failed to open view '%s' as arangosearch view: %s", name, describe(err))
-	}
-	return result
-}
-
 // TestCreateArangoSearchView creates an arangosearch view and then checks that it exists.
 func TestCreateArangoSearchView(t *testing.T) {
 	ctx := context.Background()
@@ -527,6 +512,74 @@ func TestUseArangoSearchView(t *testing.T) {
 	}
 }
 
+// TestUseArangoSearchViewWithNested tries to create a view with nested fields and actually use it in an AQL query.
+func TestUseArangoSearchViewWithNested(t *testing.T) {
+	ctx := context.Background()
+	// don't use disallowUnknownFields in this test - we have here custom structs defined
+	c := createClient(t, true, false)
+	skipBelowVersion(c, "3.10", t)
+	skipNoEnterprise(t)
+	db := ensureDatabase(nil, c, "view_nested_test", nil, t)
+	col := ensureCollection(ctx, db, "some_collection", nil, t)
+
+	ensureArangoSearchView(ctx, db, "some_nested_view", &driver.ArangoSearchViewProperties{
+		Links: driver.ArangoSearchLinks{
+			"some_collection": driver.ArangoSearchElementProperties{
+				Fields: driver.ArangoSearchFields{
+					"dimensions": driver.ArangoSearchElementProperties{
+						Nested: driver.ArangoSearchFields{
+							"type":  driver.ArangoSearchElementProperties{},
+							"value": driver.ArangoSearchElementProperties{},
+						},
+					},
+				},
+			},
+		},
+	}, t)
+
+	docs := []NestedFieldsDoc{
+		{
+			Name: "John",
+			Dimensions: []Dimension{
+				{"height", 10},
+				{"weight", 80},
+			},
+		},
+		{
+			Name: "Jakub",
+			Dimensions: []Dimension{
+				{"height", 25},
+				{"weight", 80},
+			},
+		},
+		{
+			Name: "Marek",
+			Dimensions: []Dimension{
+				{"height", 30},
+				{"weight", 80},
+			},
+		},
+	}
+
+	_, errs, err := col.CreateDocuments(ctx, docs)
+	if err != nil {
+		t.Fatalf("Failed to create new documents: %s", describe(err))
+	} else if err := errs.FirstNonNil(); err != nil {
+		t.Fatalf("Expected no errors, got first: %s", describe(err))
+	}
+
+	// now access it via AQL with waitForSync
+	{
+		query := "FOR doc IN some_nested_view SEARCH doc.dimensions[? FILTER CURRENT.type == \"height\" AND CURRENT.value > 20] OPTIONS {waitForSync:true} RETURN doc"
+		cur, err := db.Query(driver.WithQueryCount(ctx), query, nil)
+		if err != nil {
+			t.Fatalf("Failed to query data using arangodsearch: %s", describe(err))
+		} else if cur.Count() != 2 || !cur.HasMore() {
+			t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
+		}
+	}
+}
+
 // TestUseArangoSearchViewWithPipelineAnalyzer tries to create a view and analyzer and then actually use it in an AQL query.
 func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	ctx := context.Background()
@@ -905,4 +958,98 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
 	require.Equal(t, newBool(true), link.IncludeAllFields)
+}
+
+func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	// feature was introduced in 3.9.5 and in 3.10.2:
+	skipBelowVersion(c, "3.9.5", t)
+	skipBetweenVersions(c, "3.10.0", "3.10.1", t)
+	skipNoEnterprise(t)
+	db := ensureDatabase(ctx, c, "view_test_links_stored_value_cache", nil, t)
+	linkedColName := "linkedColumn"
+	ensureCollection(ctx, db, linkedColName, nil, t)
+	name := "test_create_asview"
+	opts := &driver.ArangoSearchViewProperties{
+		StoredValues: []driver.StoredValue{
+			{
+				Fields: []string{"f1", "f2"},
+				Cache:  newBool(true),
+			},
+		},
+		Links: driver.ArangoSearchLinks{
+			linkedColName: driver.ArangoSearchElementProperties{
+				Cache: newBool(false),
+			},
+		},
+	}
+	v, err := db.CreateArangoSearchView(ctx, name, opts)
+	require.NoError(t, err)
+
+	// check props
+	p, err := v.Properties(ctx)
+	require.NoError(t, err)
+	require.Len(t, p.StoredValues, 1)
+	require.Equal(t, newBool(true), p.StoredValues[0].Cache)
+	linkedColumnProps := p.Links[linkedColName]
+	require.NotNil(t, linkedColumnProps)
+	require.Nil(t, linkedColumnProps.Cache)
+	// update props: set to cached
+	p.Links[linkedColName] = driver.ArangoSearchElementProperties{Cache: newBool(true)}
+	err = v.SetProperties(ctx, p)
+	require.NoError(t, err)
+
+	// check updates applied
+	p, err = v.Properties(ctx)
+	require.NoError(t, err)
+	linkedColumnProps = p.Links[linkedColName]
+	require.NotNil(t, linkedColumnProps)
+	require.Equal(t, newBool(true), linkedColumnProps.Cache)
+}
+
+func TestArangoSearchViewInMemoryCache(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+
+	skipNoEnterprise(t)
+	db := ensureDatabase(ctx, c, "view_test_in_memory_cache", nil, t)
+
+	t.Run("primarySortCache", func(t *testing.T) {
+		// feature was introduced in 3.9.5 and in 3.10.2:
+		skipBelowVersion(c, "3.9.5", t)
+		skipBetweenVersions(c, "3.10.0", "3.10.1", t)
+
+		name := "test_create_asview"
+		opts := &driver.ArangoSearchViewProperties{
+			PrimarySortCache: newBool(true),
+		}
+		v, err := db.CreateArangoSearchView(ctx, name, opts)
+		require.NoError(t, err)
+
+		p, err := v.Properties(ctx)
+		require.NoError(t, err)
+		// bug in arangod: the primarySortCache field is not returned in response. Fixed only in 3.9.6+:
+		t.Run("must-be-returned-in-response", func(t *testing.T) {
+			skipBelowVersion(c, "3.9.6", t)
+			require.Equal(t, newBool(true), p.PrimarySortCache)
+		})
+	})
+
+	t.Run("primaryKeyCache", func(t *testing.T) {
+		// feature was introduced in 3.9.6 and 3.10.2:
+		skipBelowVersion(c, "3.9.6", t)
+		skipBetweenVersions(c, "3.10.0", "3.10.1", t)
+
+		name := "test_view_"
+		opts := &driver.ArangoSearchViewProperties{
+			PrimaryKeyCache: newBool(true),
+		}
+		v, err := db.CreateArangoSearchView(ctx, name, opts)
+		require.NoError(t, err)
+
+		p, err := v.Properties(ctx)
+		require.NoError(t, err)
+		require.Equal(t, newBool(true), p.PrimaryKeyCache)
+	})
 }

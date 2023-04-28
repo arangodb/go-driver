@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2022 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,7 +40,8 @@ func TestCreatePregelJob(t *testing.T) {
 
 	nameVertex := "test_pregel_vertex"
 	ensureCollection(nil, db, nameVertex, &driver.CreateCollectionOptions{
-		NumberOfShards: 4,
+		NumberOfShards:    4,
+		ReplicationFactor: 1,
 	}, t)
 
 	colVertex := ensureVertexCollection(ctx, g, nameVertex, t)

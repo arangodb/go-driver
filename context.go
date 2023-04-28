@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/arangodb/go-driver/util"
@@ -67,6 +68,7 @@ const (
 	keyUseQueueTimeout          ContextKey = "arangodb-use-queue-timeout"
 	keyMaxQueueTime             ContextKey = "arangodb-max-queue-time-seconds"
 	keyDropCollections          ContextKey = "arangodb-drop-collections"
+	keyDriverFlags              ContextKey = "arangodb-driver-flags"
 )
 
 type OverwriteMode string
@@ -285,6 +287,11 @@ func WithDropCollections(parent context.Context, value ...bool) context.Context 
 	return context.WithValue(contextOrBackground(parent), keyDropCollections, v)
 }
 
+// WithDriverFlags is used to configure additional flags for the `x-arango-driver` header.
+func WithDriverFlags(parent context.Context, value []string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyDriverFlags, value)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -332,6 +339,19 @@ func setDirtyReadFlagIfRequired(ctx context.Context, wasDirty bool) {
 			*ref = wasDirty
 		}
 	}
+}
+
+// ApplyVersionHeader adds the driver version to the request.
+func ApplyVersionHeader(ctx context.Context, req Request) {
+	val := fmt.Sprintf("go-driver-v1/%s", driverVersion)
+	if ctx != nil {
+		if v := ctx.Value(keyDriverFlags); v != nil {
+			if flags, ok := v.([]string); ok {
+				val = fmt.Sprintf("%s (%s)", val, strings.Join(flags, ","))
+			}
+		}
+	}
+	req.SetHeader("x-arango-driver", val)
 }
 
 // applyContextSettings returns the settings configured in the context in the given request.

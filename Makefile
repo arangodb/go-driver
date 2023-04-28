@@ -1,10 +1,12 @@
+DRIVER_VERSION := 1.5.2
+
 PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
 
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.17.6
+GOVERSION ?= 1.19.4
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.14
@@ -393,8 +395,9 @@ __test_go_test:
 		-w /usr/code/ \
 		$(DOCKER_RUN_CMD) && echo "success!" || \
 			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
-			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
-
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+			echo "\nV1 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n" \
+			exit 1; }
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
 
@@ -417,7 +420,9 @@ __test_v2_go_test:
 		-w /usr/code/v2/ \
 		$(DOCKER_V2_RUN_CMD) && echo "success!" || \
 			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
-			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; exit 1; }
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+			echo "\nV2 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n" \
+			exit 1; }
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
@@ -495,7 +500,7 @@ run-benchmarks-single-vpack-no-auth:
 .PHONY: tools
 tools: __dir_setup
 	@echo ">> Fetching golangci-lint linter"
-	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
+	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
 	@echo ">> Fetching goimports"
 	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.1.12
 	@echo ">> Fetching license check"
@@ -565,3 +570,8 @@ run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
 run-v2-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v2"
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" __run_v2_tests
+
+apply-version:
+	@echo "Updating version to: $(DRIVER_VERSION)"
+	@VERSION=$(DRIVER_VERSION) go generate version-driver.go
+	@VERSION=$(DRIVER_VERSION) go generate ./v2/connection/version-driver.go
