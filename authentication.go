@@ -31,6 +31,8 @@ const (
 	AuthenticationTypeJWT
 	// AuthenticationTypeRaw uses a raw value for the Authorization header
 	AuthenticationTypeRaw
+	// AuthenticationTypeRawJWT uses a pre-gathered JWT token for authentication
+	AuthenticationTypeRawJWT
 )
 
 // Authentication implements a kind of authentication.
@@ -108,6 +110,34 @@ func (a *rawAuthentication) Get(property string) string {
 	switch property {
 	case "value":
 		return a.value
+	default:
+		return ""
+	}
+}
+
+// RawJwtAuthentication creates a raw jwt authentication implementation based on a pre-generated JWT token
+func RawJwtAuthentication(token string) Authentication {
+	return &rawJwtAuthentication{
+		token: token,
+	}
+}
+
+// rawAuthentication implements Raw authentication.
+type rawJwtAuthentication struct {
+	token string
+}
+
+// Returns the type of authentication
+func (a *rawJwtAuthentication) Type() AuthenticationType {
+	return AuthenticationTypeRawJWT
+}
+
+// Get returns a configuration property of the authentication.
+// Supported properties depend on type of authentication.
+func (a *rawJwtAuthentication) Get(property string) string {
+	switch property {
+	case "token":
+		return a.token
 	default:
 		return ""
 	}
