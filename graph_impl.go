@@ -126,6 +126,7 @@ func (g *graph) Remove(ctx context.Context) error {
 	if err != nil {
 		return WithStack(err)
 	}
+	applyContextSettings(ctx, req)
 	resp, err := g.conn.Do(ctx, req)
 	if err != nil {
 		return WithStack(err)

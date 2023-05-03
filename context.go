@@ -67,6 +67,7 @@ const (
 	keyOverwrite                ContextKey = "arangodb-overwrite"
 	keyUseQueueTimeout          ContextKey = "arangodb-use-queue-timeout"
 	keyMaxQueueTime             ContextKey = "arangodb-max-queue-time-seconds"
+	keyDropCollections          ContextKey = "arangodb-drop-collections"
 	keyDriverFlags              ContextKey = "arangodb-driver-flags"
 )
 
@@ -276,6 +277,16 @@ func WithOverwrite(parent context.Context) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyOverwrite, true)
 }
 
+// WithDropCollections is used to configure a context to make graph removal functions to also drop the collections of the graph instead only the graph definition.
+// You can pass a single (optional) boolean. If that is set to true, you explicitly ask to also drop the collections of the graph.
+func WithDropCollections(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) == 1 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyDropCollections, v)
+}
+
 // WithDriverFlags is used to configure additional flags for the `x-arango-driver` header.
 func WithDriverFlags(parent context.Context, value []string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyDriverFlags, value)
@@ -304,6 +315,7 @@ type contextSettings struct {
 	Overwrite                bool
 	QueueTimeout             bool
 	MaxQueueTime             time.Duration
+	DropCollections          *bool
 }
 
 // loadContextResponseValue loads generic values from the response and puts it into variables specified
@@ -507,6 +519,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		if mode, ok := v.(OverwriteMode); ok {
 			req.SetQuery("overwriteMode", string(mode))
 			result.OverwriteMode = mode
+		}
+	}
+	// DropCollections
+	if v := ctx.Value(keyDropCollections); v != nil {
+		if dropCollections, ok := v.(bool); ok {
+			req.SetQuery("dropCollections", strconv.FormatBool(dropCollections))
+			result.DropCollections = &dropCollections
 		}
 	}
 
