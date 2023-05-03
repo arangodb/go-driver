@@ -27,12 +27,12 @@ services:
 
 language: go
 go:
-  - 1.19.4
+  - 1.20.3
 
 env:
   global:
-    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4
-    - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4
+    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.20.3
+    - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.17
     - STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:0.15.7
   jobs:
     - TEST_SUITE=run-unit-tests ALWAYS=1
@@ -52,7 +52,7 @@ before_script:
   - |
     if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
       make tools
-      make linter
+      make linter vulncheck
     fi
 
 script:
