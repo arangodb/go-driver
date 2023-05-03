@@ -50,6 +50,7 @@ env:
 
 before_script:
   - |
+    set -e
     if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
       make tools
       make linter vulncheck
@@ -57,6 +58,9 @@ before_script:
 
 script:
   - |
+    set -e
     if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
+      echo "quick exit: debug"
+      exit 1 
       make $TEST_SUITE TEST_RESOURCES="$HOME/resources/" VERBOSE=1;
     fi
