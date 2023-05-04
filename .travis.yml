@@ -37,13 +37,13 @@ env:
   jobs:
     - TEST_SUITE=run-unit-tests ALWAYS=1
 
-    - TEST_SUITE=run-tests-single ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb-preview:3.9.6
+    - TEST_SUITE=run-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:3.9.6
     - TEST_SUITE=run-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5 TEST_DISALLOW_UNKNOWN_FIELDS=false ALWAYS=1
     - TEST_SUITE=run-tests-resilientsingle ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5
     - TEST_SUITE=run-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5
     - TEST_SUITE=run-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise:3.10.5
 
-    - TEST_SUITE=run-v2-tests-single ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb-preview:3.9.6
+    - TEST_SUITE=run-v2-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:3.9.6
     - TEST_SUITE=run-v2-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5 ALWAYS=1
     - TEST_SUITE=run-v2-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5
     - TEST_SUITE=run-v2-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise:3.10.5
@@ -60,7 +60,5 @@ script:
   - |
     set -e
     if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
-      echo "quick exit: debug"
-      exit 1 
       make $TEST_SUITE TEST_RESOURCES="$HOME/resources/" VERBOSE=1;
     fi
