@@ -262,7 +262,7 @@ func databaseExtendedNamesRequired(t *testing.T, c driver.Client) {
 		return
 	}
 
-	if driver.IsArangoErrorWithErrorNum(err, driver.ErrArangoDatabaseNameInvalid) {
+	if driver.IsArangoErrorWithErrorNum(err, driver.ErrArangoDatabaseNameInvalid, driver.ErrArangoIllegalName) {
 		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
 	}
 

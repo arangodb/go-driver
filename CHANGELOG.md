@@ -9,6 +9,7 @@
 - Support for geo_s2 analyzers
 - Add replication V2 option for database creation
 - Use Go 1.20.3 for testing. Add govulncheck to pipeline
+- Fix test for extended names
 
 ## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
 - Bump `DRIVER_VERSION`

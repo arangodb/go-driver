@@ -55,6 +55,7 @@ const (
 	ErrArangoConflict                 = 1200
 	ErrArangoDocumentNotFound         = 1202
 	ErrArangoDataSourceNotFound       = 1203
+	ErrArangoIllegalName              = 1208
 	ErrArangoUniqueConstraintViolated = 1210
 	ErrArangoDatabaseNotFound         = 1228
 	ErrArangoDatabaseNameInvalid      = 1229
