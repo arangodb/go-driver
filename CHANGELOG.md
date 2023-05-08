@@ -1,7 +1,6 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- [V2] add Response.CheckStatus
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2
 - [V2] Support for Collection Documents removal
 - [V2] Fix: Plain Connection doesn't work with JWT authentication
