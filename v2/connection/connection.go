@@ -69,10 +69,6 @@ type Request interface {
 type Response interface {
 	// Code returns an HTTP compatible status code of the response.
 	Code() int
-	// CheckStatus checks if the status of the response equals to one of the given status codes.
-	// If so, nil is returned.
-	// If not, an attempt is made to parse an error response in the body and an error is returned.
-	CheckStatus(validStatusCodes ...int) error
 	// Response returns underlying response object
 	Response() interface{}
 	// Endpoint returns the endpoint that handled the request.
