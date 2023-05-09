@@ -27,36 +27,38 @@ services:
 
 language: go
 go:
-  - 1.19.4
+  - 1.20.3
 
 env:
   global:
-    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.19.4
-    - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.4
+    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.20.3
+    - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.17
     - STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:0.15.7
   jobs:
     - TEST_SUITE=run-unit-tests ALWAYS=1
 
-    - TEST_SUITE=run-tests-single ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb-preview:3.9.6
+    - TEST_SUITE=run-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:3.9.6
     - TEST_SUITE=run-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5 TEST_DISALLOW_UNKNOWN_FIELDS=false ALWAYS=1
     - TEST_SUITE=run-tests-resilientsingle ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5
     - TEST_SUITE=run-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5
     - TEST_SUITE=run-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise:3.10.5
 
-    - TEST_SUITE=run-v2-tests-single ARANGODB=eu.gcr.io/arangodb-ci/official/arangodb/arangodb-preview:3.9.6
+    - TEST_SUITE=run-v2-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb:3.9.6
     - TEST_SUITE=run-v2-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5 ALWAYS=1
     - TEST_SUITE=run-v2-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/arangodb-preview:3.10.5
     - TEST_SUITE=run-v2-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise:3.10.5
 
 before_script:
   - |
+    set -e
     if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
       make tools
-      make linter
+      make linter vulncheck
     fi
 
 script:
   - |
+    set -e
     if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
       make $TEST_SUITE TEST_RESOURCES="$HOME/resources/" VERBOSE=1;
     fi

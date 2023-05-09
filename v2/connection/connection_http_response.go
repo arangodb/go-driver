@@ -38,16 +38,6 @@ func (j *httpResponse) Response() interface{} {
 	return j.response
 }
 
-func (j *httpResponse) CheckStatus(validStatusCodes ...int) error {
-	for _, x := range validStatusCodes {
-		if x == j.response.StatusCode {
-			// Found valid status code
-			return nil
-		}
-	}
-	return NewError(j.response.StatusCode, "Unexpected status code")
-}
-
 func (j *httpResponse) Code() int {
 	return j.response.StatusCode
 }

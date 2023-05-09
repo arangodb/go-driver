@@ -1,13 +1,15 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- [V2] add Response.CheckStatus
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2
 - [V2] Support for Collection Documents removal
 - [V2] Fix: Plain Connection doesn't work with JWT authentication
 - Support for new error codes if write concern is not fulfilled
 - Support for geo_s2 analyzers
 - Add replication V2 option for database creation
+- Use Go 1.20.3 for testing. Add govulncheck to pipeline
+- Fix test for extended names
+- Fix potential bug with DB name escaping for URL when requesting replication-related API
 
 ## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
 - Bump `DRIVER_VERSION`
