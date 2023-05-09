@@ -187,11 +187,20 @@ func createAuthenticationFromEnv(t testEnv) driver.Authentication {
 		if len(parts) != 2 {
 			t.Fatalf("Expected 'super' and jwt secret")
 		}
-		header, err := jwt.CreateArangodJwtAuthorizationHeader(parts[1], "arangodb")
-		if err != nil {
-			t.Fatalf("Could not create JWT authentication header: %s", describe(err))
+		connSpec := os.Getenv("TEST_CONNECTION")
+		if connSpec == "vst" {
+			token, err := jwt.CreateArangodJwtAuthorizationToken(parts[1], "arangodb")
+			if err != nil {
+				t.Fatalf("Could not create JWT authentication token: %s", describe(err))
+			}
+			return driver.RawAuthentication(token)
+		} else {
+			header, err := jwt.CreateArangodJwtAuthorizationHeader(parts[1], "arangodb")
+			if err != nil {
+				t.Fatalf("Could not create JWT authentication header: %s", describe(err))
+			}
+			return driver.RawAuthentication(header)
 		}
-		return driver.RawAuthentication(header)
 	default:
 		t.Fatalf("Unknown authentication: '%s'", parts[0])
 		return nil
