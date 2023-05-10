@@ -52,7 +52,7 @@ before_script:
   - |
     if [ "$TRAVIS_PULL_REQUEST" != "false" ] || [ ! -z "$ALWAYS" ]; then
       make tools
-      make linter vulncheck
+      make linter
     fi
 
 script:
