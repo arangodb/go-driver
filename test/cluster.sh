@@ -63,12 +63,13 @@ if [ "$CMD" == "start" ]; then
 
     if [ -n "$DEBUG_PORT" ]; then
         DOCKER_DEBUG_PORT="-p $DEBUG_PORT:$DEBUG_PORT"
+        DOCKER_FWD_PORTS="-p 7001:7001 -p 7002:7002 -p 7003:7003 -p 7011:7011 -p 7012:7012 -p 7013:7013 -p 7021:7021 -p 7022:7022 -p 7023:7023"
     fi
 
     set -x
 
     # Start network namespace
-    docker run -d --name=${NAMESPACE} $DOCKERPLATFORMARG $DOCKER_DEBUG_PORT "${ALPINE_IMAGE}" sleep 365d
+    docker run -d --name=${NAMESPACE} $DOCKERPLATFORMARG $DOCKER_DEBUG_PORT $DOCKER_FWD_PORTS "${ALPINE_IMAGE}" sleep 365d
 
     # Start starters 
     # arangodb/arangodb-starter 0.7.0 or higher is needed.

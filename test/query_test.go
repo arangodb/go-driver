@@ -376,3 +376,123 @@ func TestOptimizerRulesForQueries(t *testing.T) {
 		require.True(t, ruleToFind.Flags.CanBeDisabled)
 	})
 }
+
+// TestRetryReadDocument test retry read document query attribute
+func TestRetryReadDocument(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c := createClientFromEnv(t, true)
+
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.0"))
+
+	db := ensureDatabase(ctx, c, "query_retry_test", nil, t)
+	db, clean := prepareQueryDatabase(t, ctx, c, "query_retry_test")
+	defer clean(t)
+
+	// Setup tests
+	tests := []profileQueryTest{
+		{
+			Query: "FOR d IN users SORT d.Title RETURN d",
+		},
+	}
+
+	t.Run("Test retry if batch size equals 1", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryAllowRetry(ctx, true)
+				nCtx = driver.WithQueryBatchSize(nCtx, 1)
+				nCtx = driver.WithQueryCount(nCtx, true)
+
+				cursor, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+
+				for {
+					if !cursor.HasMore() {
+						break
+					}
+					var result UserDoc
+					_, err = cursor.ReadDocument(nCtx, &result)
+					require.NoError(t, err)
+
+					var resultRetry UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry.Name)
+				}
+
+				err = cursor.Close()
+				require.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("Test retry if batch size equals more than 1", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryAllowRetry(ctx, true)
+				nCtx = driver.WithQueryBatchSize(nCtx, 2)
+				nCtx = driver.WithQueryCount(nCtx, true)
+
+				cursor, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+
+				for {
+					if !cursor.HasMore() {
+						break
+					}
+					var result UserDoc
+					_, err = cursor.ReadDocument(nCtx, &result)
+					require.NoError(t, err)
+
+					var resultRetry UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry.Name)
+				}
+
+				err = cursor.Close()
+				require.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("Test retry double retries to ensure that result is same in every try", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryAllowRetry(ctx, true)
+				nCtx = driver.WithQueryBatchSize(nCtx, 2)
+				nCtx = driver.WithQueryCount(nCtx, true)
+
+				cursor, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+
+				for {
+					if !cursor.HasMore() {
+						break
+					}
+					var result UserDoc
+					_, err = cursor.ReadDocument(nCtx, &result)
+					require.NoError(t, err)
+
+					var resultRetry UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry.Name)
+
+					var resultRetry2 UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry2)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry2.Name)
+				}
+
+				err = cursor.Close()
+				require.NoError(t, err)
+			})
+		}
+	})
+}
