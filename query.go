@@ -222,7 +222,7 @@ type queryRequest struct {
 		// the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
 		FillBlockCache bool `json:"fillBlockCache,omitempty"`
 
-		// AllowDirtyRead If set to `true`, cursor results will be stored by ArangoDB in such a way
+		// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
 		// that batch reads can be retried in the case of a communication error.
 		AllowRetry bool `json:"allowRetry,omitempty"`
 	} `json:"options,omitempty"`
