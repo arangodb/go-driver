@@ -425,7 +425,7 @@ __test_v2_go_test:
 		    docker logs ${TESTCONTAINER}-s; \
 			echo "\nARANGODB logs:"; \
 			docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
-			echo "\nV2 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n" \
+			echo "\nV2 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n"; \
 			exit 1)
 
 __test_debug__:
