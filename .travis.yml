@@ -39,8 +39,9 @@ env:
 
     - TEST_SUITE=run-tests-resilientsingle ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.10.5.4
     - TEST_SUITE=run-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.10.5.4
-    - TEST_SUITE=run-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.11.0-beta.1 TEST_DISALLOW_UNKNOWN_FIELDS=false ALWAYS=1
+    - TEST_SUITE=run-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.11.0-beta.1 TEST_DISALLOW_UNKNOWN_FIELDS=false
 
+    - TEST_SUITE=run-v2-tests-single ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.10.5.4
     - TEST_SUITE=run-v2-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.10.5.4
     - TEST_SUITE=run-v2-tests-cluster ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.11.0-beta.1
 
