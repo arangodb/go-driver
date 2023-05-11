@@ -198,33 +198,6 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 	return c
 }
 
-func connectionPlainHttp(t testing.TB) connection.Connection {
-	h := connection.HttpConfiguration{
-		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
-		ContentType: connection.PlainText,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 90 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-	}
-
-	c := connection.NewHttpConnection(h)
-
-	withContext(2*time.Minute, func(ctx context.Context) error {
-		c = createAuthenticationFromEnv(t, c)
-		return nil
-	})
-	return c
-}
-
 func connectionVPACKHttp(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
 		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),

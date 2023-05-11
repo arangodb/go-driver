@@ -171,6 +171,11 @@ func (j httpConnection) Do(ctx context.Context, request Request, output interfac
 	// The body should be closed at the end of the function.
 	defer dropBodyData(body)
 
+	if resp.Code() >= http.StatusBadRequest {
+		// The response is an error. Do not try to decode the body.
+		return resp, nil
+	}
+
 	if output != nil {
 		// The output should be stored in the output variable.
 		if err = j.Decoder(resp.Content()).Decode(body, output); err != nil {
@@ -219,14 +224,7 @@ func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResp
 		ctx = context.Background()
 	}
 
-	ct := j.contentType
-
-	/*// for JWT auth requests we always use JSON
-	if _, isJWT := req.body.(jwtOpenRequest); isJWT {
-		ct = ApplicationJSON
-	}*/
-
-	reader := j.bodyReadFunc(j.Decoder(ct), req.body, j.streamSender)
+	reader := j.bodyReadFunc(j.Decoder(j.contentType), req.body, j.streamSender)
 	r, err := req.asRequest(ctx, reader)
 	if err != nil {
 		return nil, nil, errors.WithStack(err)

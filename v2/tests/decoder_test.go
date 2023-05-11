@@ -31,39 +31,16 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
-// Test_DecoderBytesWithJSONConnection gets plain text response from the server using JSON connection.
-func Test_DecoderBytesWithJSONConnection(t *testing.T) {
-	conn := connectionJsonHttp(t)
-	waitForConnection(t, arangodb.NewClient(conn))
+// Test_DecoderBytes gets plain text response from the server
+func Test_DecoderBytes(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		var output []byte
 
-	var output []byte
+		url := connection.NewUrl("_admin", "metrics", "v2")
+		_, err := connection.CallGet(context.Background(), client.Connection(), url, &output)
 
-	url := connection.NewUrl("_admin", "metrics", "v2")
-	_, err := connection.CallGet(context.Background(), conn, url, &output)
-	require.NoError(t, err)
-	require.NotNil(t, output)
-	// Check the e
-	assert.Contains(t, string(output), "arangodb_connection_pool")
-	output = nil
-}
-
-// Test_DecoderBytesWithPlainConnection gets plain text response from the server using plain connection.
-func Test_DecoderBytesWithPlainConnection(t *testing.T) {
-	conn := connectionPlainHttp(t)
-	client := newClient(t, conn)
-
-	// Check if the JSON deserializer worked.
-	version, err := client.Version(context.Background())
-	require.NoErrorf(t, err, "can not fetch a version with a plain connection: `%v`", err)
-	require.Equalf(t, true, version.Version.Major() > 0, "can not fetch a version with a plain connection")
-
-	var output []byte
-
-	url := connection.NewUrl("_admin", "metrics", "v2")
-	_, err = connection.CallGet(context.Background(), conn, url, &output)
-	require.NoError(t, err)
-	require.NotNil(t, output)
-	// Check the e
-	assert.Contains(t, string(output), "arangodb_connection_pool")
-	output = nil
+		require.NoError(t, err)
+		require.NotNil(t, output)
+		assert.Contains(t, string(output), "arangodb_connection_pool")
+	})
 }
