@@ -137,6 +137,69 @@ func TestValidateQuery(t *testing.T) {
 	}
 }
 
+// TestExplainQuery tries to explain several AQL queries.
+func TestExplainQuery(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "explain_query_test", nil, t)
+
+	db, clean := prepareQueryDatabase(t, ctx, c, "explain_query_test")
+	defer clean(t)
+
+	// Setup tests
+	tests := []struct {
+		Query         string
+		BindVars      map[string]interface{}
+		Opts          *driver.ExplainQueryOptions
+		ExpectSuccess bool
+	}{
+		{
+			Query:         "FOR d IN books SORT d.Title RETURN d",
+			ExpectSuccess: true,
+		},
+		{
+			Query: "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars: map[string]interface{}{
+				"title": "Defending the Undefendable",
+			},
+			ExpectSuccess: true,
+		},
+		{
+			Query: "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars: map[string]interface{}{
+				"title": "Democracy: God That Failed",
+			},
+			Opts: &driver.ExplainQueryOptions{
+				AllPlans:  true,
+				Optimizer: driver.ExplainQueryOptimizerOptions{},
+			},
+			ExpectSuccess: true,
+		},
+		{
+			Query:         "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			ExpectSuccess: false, // bindVars not provided
+		},
+		{
+			Query:         "FOR u IN users FILTER u.age>>>100 SORT u.name RETURN u",
+			ExpectSuccess: false, // syntax error
+		},
+		{
+			Query:         "",
+			ExpectSuccess: false,
+		},
+	}
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("Case %d", i), func(t *testing.T) {
+			_, err := db.ExplainQuery(ctx, test.Query, test.BindVars, test.Opts)
+			if test.ExpectSuccess {
+				require.NoError(t, err, "case %d", i)
+			} else {
+				require.Error(t, err, "case %d", i)
+			}
+		})
+	}
+}
+
 // TestValidateQuery validates several AQL queries.
 func TestValidateQueryOptionShardIds(t *testing.T) {
 	ctx := context.Background()
