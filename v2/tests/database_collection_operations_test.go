@@ -389,7 +389,7 @@ func databaseExtendedNamesRequired(t *testing.T) {
 		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
 	}
 
-	if shared.IsArangoErrorWithErrorNum(err, shared.ErrArangoDatabaseNameInvalid) {
+	if shared.IsArangoErrorWithErrorNum(err, shared.ErrArangoDatabaseNameInvalid, shared.ErrArangoIllegalName) {
 		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
 	}
 
