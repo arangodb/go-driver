@@ -221,10 +221,10 @@ func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResp
 
 	ct := j.contentType
 
-	// for JWT auth requests we always use JSON
+	/*// for JWT auth requests we always use JSON
 	if _, isJWT := req.body.(jwtOpenRequest); isJWT {
 		ct = ApplicationJSON
-	}
+	}*/
 
 	reader := j.bodyReadFunc(j.Decoder(ct), req.body, j.streamSender)
 	r, err := req.asRequest(ctx, reader)
