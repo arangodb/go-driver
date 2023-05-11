@@ -52,10 +52,6 @@ type wrapAuthentication struct {
 func (w wrapAuthentication) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
 	r, err := w.Connection.Do(ctx, request, output)
 
-	if err != nil {
-		return nil, err
-	}
-
 	if r.Code() != http.StatusUnauthorized {
 		return r, err
 	}
