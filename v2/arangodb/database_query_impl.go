@@ -93,3 +93,32 @@ func (d databaseQuery) ValidateQuery(ctx context.Context, query string) error {
 		return response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (d databaseQuery) ExplainQuery(ctx context.Context, query string, bindVars map[string]interface{}, opts *ExplainQueryOptions) (ExplainQueryResult, error) {
+	url := d.db.url("_api", "explain")
+
+	var request = struct {
+		Query    string                 `json:"query"`
+		BindVars map[string]interface{} `json:"bindVars,omitempty"`
+		Opts     *ExplainQueryOptions   `json:"options,omitempty"`
+	}{
+		Query:    query,
+		BindVars: bindVars,
+		Opts:     opts,
+	}
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ExplainQueryResult
+	}
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, &request, d.db.modifiers...)
+	if err != nil {
+		return ExplainQueryResult{}, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ExplainQueryResult, nil
+	default:
+		return ExplainQueryResult{}, response.AsArangoErrorWithCode(code)
+	}
+}

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
 
 package driver
 
@@ -66,6 +67,9 @@ type Database interface {
 	// When the query is valid, nil returned, otherwise an error is returned.
 	// The query is not executed.
 	ValidateQuery(ctx context.Context, query string) error
+
+	// ExplainQuery explains an AQL query and return information about it.
+	ExplainQuery(ctx context.Context, query string, bindVars map[string]interface{}, opts *ExplainQueryOptions) (ExplainQueryResult, error)
 
 	// OptimizerRulesForQueries returns the available optimizer rules for AQL queries
 	// returns an array of objects that contain the name of each available rule and its respective flags.
