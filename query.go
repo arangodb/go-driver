@@ -39,6 +39,7 @@ const (
 	keyQueryOptMaxRuntime               = "arangodb-query-opt-maxRuntime"
 	keyQueryShardIds                    = "arangodb-query-opt-shardIds"
 	keyFillBlockCache                   = "arangodb-query-opt-fillBlockCache"
+	keyAllowRetry                       = "arangodb-query-opt-allowRetry"
 )
 
 // WithQueryCount is used to configure a context that will set the Count of a query request,
@@ -150,6 +151,14 @@ func WithQueryFillBlockCache(parent context.Context, value ...bool) context.Cont
 	return context.WithValue(contextOrBackground(parent), keyFillBlockCache, v)
 }
 
+func WithQueryAllowRetry(parent context.Context, value ...bool) context.Context {
+	v := true
+	if len(value) > 0 {
+		v = value[0]
+	}
+	return context.WithValue(contextOrBackground(parent), keyAllowRetry, v)
+}
+
 type queryRequest struct {
 	// indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
@@ -212,6 +221,10 @@ type queryRequest struct {
 		// or for queries that read data which are known to be outside of the hot set. By setting the option to false, data read by the query will not make it into
 		// the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
 		FillBlockCache bool `json:"fillBlockCache,omitempty"`
+
+		// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
+		// that batch reads can be retried in the case of a communication error.
+		AllowRetry bool `json:"allowRetry,omitempty"`
 	} `json:"options,omitempty"`
 }
 
@@ -285,6 +298,11 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyFillBlockCache); rawValue != nil {
 		if value, ok := rawValue.(bool); ok {
 			q.Options.FillBlockCache = value
+		}
+	}
+	if rawValue := ctx.Value(keyAllowRetry); rawValue != nil {
+		if value, ok := rawValue.(bool); ok {
+			q.Options.AllowRetry = value
 		}
 	}
 }
