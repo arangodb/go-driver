@@ -41,19 +41,19 @@ type ExplainQueryOptions struct {
 	Optimizer ExplainQueryOptimizerOptions `json:"optimizer,omitempty"`
 }
 
-type ExplainQueryResultExecutionNode map[string]interface{}
-type ExplainQueryResultExecutionCollection map[string]interface{}
-type ExplainQueryResultExecutionVariable map[string]interface{}
+type ExplainQueryResultExecutionNodeRaw map[string]interface{}
+type ExplainQueryResultExecutionCollection cursorPlanCollection
+type ExplainQueryResultExecutionVariable cursorPlanVariable
 
 type ExplainQueryResultPlan struct {
 	// Execution nodes of the plan.
-	NodesRaw []ExplainQueryResultExecutionNode `json:"nodes,omitempty"`
+	NodesRaw []ExplainQueryResultExecutionNodeRaw `json:"nodes,omitempty"`
 	// List of rules the optimizer applied
 	Rules []string `json:"rules,omitempty"`
 	// List of collections used in the query
-	CollectionsRaw []ExplainQueryResultExecutionCollection `json:"collections,omitempty"`
+	Collections []ExplainQueryResultExecutionCollection `json:"collections,omitempty"`
 	// List of variables used in the query (note: this may contain internal variables created by the optimizer)
-	VariablesRaw []ExplainQueryResultExecutionVariable `json:"variables,omitempty"`
+	Variables []ExplainQueryResultExecutionVariable `json:"variables,omitempty"`
 	// The total estimated cost for the plan. If there are multiple plans, the optimizer will choose the plan with the lowest total cost
 	EstimatedCost float64 `json:"estimatedCost,omitempty"`
 	// The estimated number of results.

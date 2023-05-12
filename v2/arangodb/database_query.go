@@ -124,13 +124,23 @@ type ExplainQueryOptions struct {
 	Optimizer ExplainQueryOptimizerOptions `json:"optimizer,omitempty"`
 }
 
-type ExplainQueryResultExecutionNode map[string]interface{}
-type ExplainQueryResultExecutionCollection map[string]interface{}
-type ExplainQueryResultExecutionVariable map[string]interface{}
+type ExplainQueryResultExecutionNodeRaw map[string]interface{}
+
+type ExplainQueryResultExecutionCollection struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type ExplainQueryResultExecutionVariable struct {
+	ID                           int    `json:"id"`
+	Name                         string `json:"name"`
+	IsDataFromCollection         bool   `json:"isDataFromCollection"`
+	IsFullDocumentFromCollection bool   `json:"isFullDocumentFromCollection"`
+}
 
 type ExplainQueryResultPlan struct {
 	// Execution nodes of the plan.
-	Nodes []ExplainQueryResultExecutionNode `json:"nodes,omitempty"`
+	NodesRaw []ExplainQueryResultExecutionNodeRaw `json:"nodes,omitempty"`
 	// List of rules the optimizer applied
 	Rules []string `json:"rules,omitempty"`
 	// List of collections used in the query
