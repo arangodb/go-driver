@@ -41,22 +41,22 @@ type Database interface {
 	// If the database does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
 
-	// Collection functions
+	// DatabaseCollections - Collection functions
 	DatabaseCollections
 
-	// View functions
+	// DatabaseViews - View functions
 	DatabaseViews
 
-	// Graph functions
+	// DatabaseGraphs - Graph functions
 	DatabaseGraphs
 
-	// Pregel functions
+	// DatabasePregels - Pregel functions
 	DatabasePregels
 
-	// Streaming Transactions functions
+	// DatabaseStreamingTransactions - Streaming Transactions functions
 	DatabaseStreamingTransactions
 
-	// ArangoSearch Analyzers API
+	// DatabaseArangoSearchAnalyzers - ArangoSearch Analyzers API
 	DatabaseArangoSearchAnalyzers
 
 	// Query performs an AQL query, returning a cursor used to iterate over the returned documents.
