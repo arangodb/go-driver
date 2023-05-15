@@ -12,6 +12,7 @@
 - Fix potential bug with DB name escaping for URL when requesting replication-related API
 - Retriable batch reads in AQL cursors
 - Add support for explain API ([v1] and [V2])
+- Search optimisation for inverted index and ArangoSearch
 
 ## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
 - Bump `DRIVER_VERSION`
