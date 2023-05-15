@@ -42,8 +42,9 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 					skipBelowVersion(client, ctx, "3.10", t)
 
 					type testCase struct {
-						IsEE    bool
-						Options arangodb.InvertedIndexOptions
+						IsEE       bool
+						minVersion arangodb.Version
+						Options    arangodb.InvertedIndexOptions
 					}
 
 					testCases := []testCase{
@@ -131,12 +132,35 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								},
 							},
 						},
+						{
+							IsEE:       true,
+							minVersion: arangodb.Version("3.11.0"),
+							Options: arangodb.InvertedIndexOptions{
+								Name: "inverted-opt-optimize-top-k",
+								PrimarySort: &arangodb.PrimarySort{
+									Fields: []arangodb.PrimarySortEntry{
+										{Field: "field1", Ascending: true},
+									},
+									Compression: arangodb.PrimarySortCompressionLz4,
+								},
+								Fields: []arangodb.InvertedIndexField{
+									{
+										Name:     "field1",
+										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+									},
+								},
+								OptimizeTopK: []string{"BM25(@doc) DESC", "TFIDF(@doc) DESC"},
+							},
+						},
 					}
 
 					for _, tc := range testCases {
 						t.Run(tc.Options.Name, func(t *testing.T) {
 							if tc.IsEE {
 								skipNoEnterprise(client, ctx, t)
+							}
+							if len(tc.minVersion) > 0 {
+								skipBelowVersion(client, ctx, tc.minVersion, t)
 							}
 
 							idx, created, err := col.EnsureInvertedIndex(ctx, &tc.Options)
@@ -149,6 +173,11 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								require.Equal(t, tc.Options.PrimarySort, idx.InvertedIndex.PrimarySort)
 								require.Equal(t, tc.Options.Fields, idx.InvertedIndex.Fields)
 								require.Equal(t, tc.Options.TrackListPositions, idx.InvertedIndex.TrackListPositions)
+								ptk := tc.Options.OptimizeTopK
+								if ptk == nil {
+									ptk = []string{}
+								}
+								require.Equal(t, ptk, idx.InvertedIndex.OptimizeTopK)
 							}
 							requireIdxEquality(idx)
 

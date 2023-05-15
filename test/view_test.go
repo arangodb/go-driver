@@ -288,7 +288,43 @@ func TestAddCollectionMultipleViewsViaCreate(t *testing.T) {
 	}
 }
 
-// TestGetArangoSearchView creates an arangosearch view and then gets it again.
+// TestGetArangoSearchOptimizeTopK creates an ArangoSearch view with OptimizeTopK and checks if it is set.
+func TestGetArangoSearchOptimizeTopK(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	skipBelowVersion(c, "3.11.0", t)
+	skipNoEnterprise(t)
+	db := ensureDatabase(ctx, c, "view_test_optimize_top_k", nil, t)
+	name := "test_get_asview"
+	optimizeTopK := []string{"BM25(@doc) DESC", "TFIDF(@doc) DESC"}
+	opts := &driver.ArangoSearchViewProperties{
+		OptimizeTopK: optimizeTopK,
+	}
+	if _, err := db.CreateArangoSearchView(ctx, name, opts); err != nil {
+		t.Fatalf("Failed to create view '%s': %s", name, describe(err))
+	}
+	// Get view
+	v, err := db.View(ctx, name)
+	if err != nil {
+		t.Fatalf("View('%s') failed: %s", name, describe(err))
+	}
+	asv, err := v.ArangoSearchView()
+	if err != nil {
+		t.Fatalf("ArangoSearchView() failed: %s", describe(err))
+	}
+	// Check v.Name
+	if actualName := v.Name(); actualName != name {
+		t.Errorf("Name() failed. Got '%s', expected '%s'", actualName, name)
+	}
+	// Check asv properties
+	p, err := asv.Properties(ctx)
+	if err != nil {
+		t.Fatalf("Properties failed: %s", describe(err))
+	}
+	assert.Equal(t, optimizeTopK, p.OptimizeTopK)
+}
+
+// TestGetArangoSearchView creates an ArangoSearch view and then gets it again.
 func TestGetArangoSearchView(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)

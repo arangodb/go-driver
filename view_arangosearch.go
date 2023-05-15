@@ -361,6 +361,10 @@ type ArangoSearchViewProperties struct {
 	// The key of the map are collection names.
 	Links ArangoSearchLinks `json:"links,omitempty"`
 
+	// OptimizeTopK is an array of strings defining optimized sort expressions.
+	// Introduced in v3.11.0, Enterprise Edition only.
+	OptimizeTopK []string `json:"optimizeTopK,omitempty"`
+
 	// PrimarySort describes how individual fields are sorted
 	PrimarySort []ArangoSearchPrimarySortEntry `json:"primarySort,omitempty"`
 
