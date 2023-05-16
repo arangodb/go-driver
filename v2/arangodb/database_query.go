@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -41,12 +39,14 @@ type DatabaseQuery interface {
 type QuerySubOptions struct {
 	// ShardId query option
 	ShardIds []string `json:"shardIds,omitempty"`
-	// If set to true, then the additional query profiling information will be returned in the sub-attribute profile of the
-	// extra return attribute if the query result is not served from the query cache.
-	Profile bool `json:"profile,omitempty"`
-	// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute, telling the optimizer to include or exclude specific rules.
-	// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +. There is also a pseudo-rule all, which will match all optimizer rules.
-	OptimizerRules string `json:"optimizer.rules,omitempty"`
+	// Profile If set to 1, then the additional query profiling information is returned in the profile sub-attribute
+	// of the extra return attribute, unless the query result is served from the query cache.
+	// If set to 2, the query includes execution stats per query plan node in stats.nodes
+	// sub-attribute of the extra return attribute.
+	// Additionally, the query plan is returned in the extra.plan sub-attribute.
+	Profile uint `json:"profile,omitempty"`
+	// Optimizer contains options related to the query optimizer.
+	Optimizer QuerySubOptionsOptimizer `json:"optimizer,omitempty"`
 	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
 	// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
 	SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
@@ -97,6 +97,15 @@ type QueryOptions struct {
 	// key/value pairs representing the bind parameters.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
 	Options  QuerySubOptions        `json:"options,omitempty"`
+}
+
+// QuerySubOptionsOptimizer describes optimization's settings for AQL queries.
+type QuerySubOptionsOptimizer struct {
+	// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute,
+	// telling the optimizer to include or exclude specific rules.
+	// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +.
+	// There is also a pseudo-rule all, which will match all optimizer rules.
+	Rules []string `json:"rules,omitempty"`
 }
 
 type QueryRequest struct {
