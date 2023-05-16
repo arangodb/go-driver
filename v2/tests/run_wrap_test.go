@@ -150,18 +150,41 @@ func newClient(t testing.TB, connection connection.Connection) arangodb.Client {
 	return waitForConnection(t, arangodb.NewClient(connection))
 }
 
+type clusterEndpointsResponse struct {
+	Endpoints []clusterEndpoint `json:"endpoints,omitempty"`
+}
+
+type clusterEndpoint struct {
+	Endpoint string `json:"endpoint,omitempty"`
+}
+
 func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 	NewTimeout(func() error {
 		return withContext(time.Second, func(ctx context.Context) error {
 
-			resp, err := client.Get(ctx, nil, "_admin", "server", "availability")
+			cer := clusterEndpointsResponse{}
+			resp, err := client.Get(ctx, &cer, "_api", "cluster", "endpoints")
 			if err != nil {
-				log.Warn().Err(err).Msgf("Unable to get cluster health")
+				log.Warn().Err(err).Msgf("Unable to get cluster endpoints")
 				return nil
 			}
 
 			if resp.Code() != http.StatusOK {
 				return nil
+			}
+
+			if getTestMode() == string(testModeResilientSingle) {
+				if len(cer.Endpoints) == 0 {
+					t.Fatal("No endpoints found")
+				}
+
+				// pick the first one which is always the leader in AF mode
+				endpoint := connection.NewEndpoints(connection.FixupEndpointURLScheme(cer.Endpoints[0].Endpoint))
+				err = client.Connection().SetEndpoint(endpoint)
+				if err != nil {
+					log.Warn().Err(err).Msgf("Unable to set endpoints")
+					return nil
+				}
 			}
 
 			return Interrupt{}
