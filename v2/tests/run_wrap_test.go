@@ -159,6 +159,9 @@ type clusterEndpoint struct {
 }
 
 func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
+	// For Active Failover, we need to track the leader endpoint
+	var nextEndpoint int = -1
+
 	NewTimeout(func() error {
 		return withContext(time.Second, func(ctx context.Context) error {
 			if getTestMode() != string(testModeSingle) {
@@ -177,9 +180,14 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 					t.Fatal("No endpoints found")
 				}
 
+				nextEndpoint++
+				if nextEndpoint >= len(cer.Endpoints) {
+					nextEndpoint = 0
+				}
+
 				// pick the first one endpoint which is always the leader in AF mode
 				// also for Cluster mode we only need one endpoint to avoid the problem with the data propagation in tests
-				endpoint := connection.NewEndpoints(connection.FixupEndpointURLScheme(cer.Endpoints[0].Endpoint))
+				endpoint := connection.NewEndpoints(connection.FixupEndpointURLScheme(cer.Endpoints[nextEndpoint].Endpoint))
 				err = client.Connection().SetEndpoint(endpoint)
 				if err != nil {
 					log.Warn().Err(err).Msgf("Unable to set endpoints")
@@ -196,6 +204,8 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 			if resp.Code() != http.StatusOK {
 				return nil
 			}
+
+			t.Logf("Found endpoints: %v", client.Connection().GetEndpoint())
 
 			return Interrupt{}
 		})

@@ -659,7 +659,7 @@ func waitForDatabaseAccess(authClient driver.Client, dbname string, t *testing.T
 
 func ensureSynchronizedEndpoints(authClient driver.Client, dbname string, t *testing.T) {
 	ctx, _ := context.WithTimeout(context.Background(), time.Second*10)
-	if err := waitUntilEndpointSynchronized(ctx, authClient, dbname, t); err != nil {
-		t.Fatalf("Failed to synchronize endpoint: %s", describe(err))
+	if upErr := waitUntilServerAvailable(ctx, authClient, t, dbname); upErr != nil {
+		t.Fatalf("Failed to synchronize endpoint: %s", describe(upErr))
 	}
 }

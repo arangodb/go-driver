@@ -44,13 +44,11 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/jwt"
-	"github.com/arangodb/go-driver/util/connection/wrappers"
 	"github.com/arangodb/go-driver/vst"
 	"github.com/arangodb/go-driver/vst/protocol"
 )
 
 var (
-	logEndpointsOnce   sync.Once
 	runPProfServerOnce sync.Once
 )
 
@@ -236,9 +234,6 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 		if disallowUnknownFields {
 			conn = http.NewConnectionDebugWrapper(conn, driver.ContentTypeVelocypack)
 		}
-		if getTestMode() == testModeResilientSingle {
-			conn = wrappers.NewActiveFailoverWrapper(t, conn)
-		}
 		return conn
 
 	case "http", "":
@@ -253,9 +248,6 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 		}
 		if disallowUnknownFields {
 			conn = http.NewConnectionDebugWrapper(conn, config.ContentType)
-		}
-		if getTestMode() == testModeResilientSingle {
-			conn = wrappers.NewActiveFailoverWrapper(t, conn)
 		}
 		return conn
 
@@ -308,30 +300,22 @@ func createClient(t testEnv, waitUntilReady bool, disallowUnknownFields bool) dr
 		timeout := time.Minute
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		if up := waitUntilServerAvailable(ctx, c, t); up != nil {
+		if up := waitUntilServerAvailable(ctx, c, t, "_system"); up != nil {
 			t.Fatalf("Connection is not available in %s: %s", timeout, describe(up))
-		}
-
-		if testModeSingle != getTestMode() {
-			// Synchronize endpoints
-			if err := waitUntilEndpointSynchronized(ctx, c, "", t); err != nil {
-				t.Errorf("Failed to synchronize endpoints: %s", describe(err))
-			} else {
-				logEndpointsOnce.Do(func() {
-					t.Logf("Found endpoints: %v", conn.Endpoints())
-				})
-			}
 		}
 	}
 	return c
 }
 
 // waitUntilServerAvailable keeps waiting until the server/cluster that the client is addressing is available.
-func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) error {
+func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv, dbname string) error {
+	// For Active Failover, we need to track the leader endpoint
+	var nextEndpoint int = -1
+
 	return driverErrorCheck(ctx, c, func(ctx context.Context, client driver.Client) error {
 		if getTestMode() != testModeSingle && !isK8S() {
 			// Refresh endpoints
-			if err := client.SynchronizeEndpoints2(ctx, "_system"); err != nil {
+			if err := client.SynchronizeEndpoints2(ctx, dbname); err != nil {
 				return err
 			}
 		}
@@ -339,7 +323,12 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 		// pick the first one endpoint which is always the leader in AF mode
 		// also for Cluster mode we only need one endpoint to avoid the problem with the data propagation in tests
 		if len(client.Connection().Endpoints()) > 0 {
-			err := client.Connection().UpdateEndpoints(client.Connection().Endpoints()[0:1])
+			nextEndpoint++
+			if nextEndpoint >= len(client.Connection().Endpoints()) {
+				nextEndpoint = 0
+			}
+
+			err := client.Connection().UpdateEndpoints(client.Connection().Endpoints()[nextEndpoint : nextEndpoint+1])
 			if err != nil {
 				return err
 			}
@@ -355,6 +344,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 			return err
 		}
 
+		t.Logf("Found endpoints: %v", client.Connection().Endpoints())
 		return nil
 	}, func(err error) (bool, error) {
 		if err == nil {
@@ -362,7 +352,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 		}
 
 		if driver.IsNoLeaderOrOngoing(err) {
-			t.Logf("Retry. Waiting for leader: %s", describe(err))
+			t.Logf("Retry. Waiting for leader: %s, endpoints: %v", describe(err), c.Connection().Endpoints())
 			return false, nil
 		}
 
@@ -413,40 +403,6 @@ func waitUntilClusterHealthy(c driver.Client) error {
 
 		return interrupt{}
 	})
-}
-
-// waitUntilEndpointSynchronized keeps waiting until the endpoints are synchronized. leadership might be ongoing.
-func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname string, t testEnv) error {
-	if isK8S() {
-		return nil
-	}
-
-	return driverErrorCheck(ctx, c, func(ctx context.Context, client driver.Client) error {
-		callCtx, cancel := context.WithTimeout(ctx, time.Second*5)
-		defer cancel()
-		if err := c.SynchronizeEndpoints2(callCtx, dbname); err != nil {
-			return err
-		}
-
-		// pick the first one endpoint which is always the leader in AF mode
-		// also for Cluster mode we only need one endpoint to avoid the problem with the data propagation in tests
-		if len(client.Connection().Endpoints()) > 0 {
-			err := client.Connection().UpdateEndpoints(client.Connection().Endpoints()[0:1])
-			if err != nil {
-				return err
-			}
-		} else {
-			t.Fatalf("No endpoints found")
-		}
-
-		return nil
-	}, func(err error) (bool, error) {
-		if err == nil {
-			return true, nil
-		} else {
-			return false, nil
-		}
-	}).Retry(3*time.Second, time.Minute)
 }
 
 // TestCreateClientHttpConnection creates an HTTP connection to the environment specified
