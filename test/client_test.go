@@ -339,6 +339,19 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 			}
 		}
 
+		if getTestMode() == testModeResilientSingle {
+			// pick the first one endpoint which is always the leader in AF mode
+			if len(client.Connection().Endpoints()) > 0 {
+				err := client.Connection().UpdateEndpoints(client.Connection().Endpoints()[0:1])
+				if err != nil {
+					return err
+				}
+			} else {
+				t.Fatalf("No endpoints found")
+			}
+
+		}
+
 		if _, err := client.Version(ctx); err != nil {
 			return err
 		}

@@ -178,7 +178,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 					t.Fatal("No endpoints found")
 				}
 
-				// pick the first one which is always the leader in AF mode
+				// pick the first one endpoint which is always the leader in AF mode
 				endpoint := connection.NewEndpoints(connection.FixupEndpointURLScheme(cer.Endpoints[0].Endpoint))
 				err = client.Connection().SetEndpoint(endpoint)
 				if err != nil {
