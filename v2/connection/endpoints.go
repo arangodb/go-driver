@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,26 +17,20 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
-package tests
+package connection
 
-import (
-	"os"
-	"strings"
-	"testing"
+import "strings"
+
+var (
+	urlFixer = strings.NewReplacer(
+		"tcp://", "http://",
+		"ssl://", "https://",
+	)
 )
 
-// getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS
-// environment variable.
-func getEndpointsFromEnv(t testing.TB) []string {
-	eps := strings.Split(os.Getenv("TEST_ENDPOINTS"), ",")
-	if len(eps) == 0 {
-		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
-	}
-	if getTestMode() == string(testModeSingle) {
-		return eps[:1]
-	}
-	return eps
+// FixupEndpointURLScheme changes endpoint URL schemes used by arangod to ones used by go.
+// E.g. "tcp://localhost:8529" -> "http://localhost:8529"
+func FixupEndpointURLScheme(u string) string {
+	return urlFixer.Replace(u)
 }

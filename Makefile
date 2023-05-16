@@ -72,7 +72,7 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 endif
 
 TEST_NET := --net=container:$(TESTCONTAINER)-ns
-TEST_ENDPOINTS := http://localhost:7001
+TEST_ENDPOINTS := http://127.0.0.1:7001,http://127.0.0.1:7011,http://127.0.0.1:7021
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
@@ -91,7 +91,7 @@ ifeq ("$(TEST_AUTH)", "jwtsuper")
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
-	TEST_ENDPOINTS = https://localhost:7001
+	TEST_ENDPOINTS := https://127.0.0.1:7001,https://127.0.0.1:7011,https://127.0.0.1:7021
 endif
 
 ifeq ("$(TEST_CONNECTION)", "vst")
@@ -465,30 +465,6 @@ else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
 	@sleep 3
-
-
-run-tests-cluster-failover: 
-	# Note that we use 127.0.0.1:7001.. as endpoints, so we force using IPv4
-	# This is essential since we only block IPv4 ports in the test.
-	@echo "Cluster server, failover, no authentication"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" start
-	go get github.com/coreos/go-iptables/iptables
-	$(DOCKER_CMD) \
-		--rm \
-		$(TEST_NET) \
-		--privileged \
-		-v "${ROOTDIR}":/usr/code \
-		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
-		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
-		-e TEST_AUTHENTICATION=basic:root: \
-		-e GODEBUG=tls13=1 \
-		-w /usr/code/ \
-		golang:$(GOVERSION) \
-		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
-
-run-tests-cluster-cleanup:
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 

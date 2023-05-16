@@ -325,10 +325,11 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 }
 
 func TestDatabaseNameUnicode(t *testing.T) {
-	databaseExtendedNamesRequired(t)
-
 	Wrap(t, func(t *testing.T, c arangodb.Client) {
 		withContext(30*time.Second, func(ctx context.Context) error {
+			skipBelowVersion(c, ctx, "3.9.0", t)
+			databaseExtendedNamesRequired(t, c, ctx)
+
 			random := uuid.New().String()
 			dbName := "\u006E\u0303\u00f1" + random
 			_, err := c.CreateDatabase(ctx, dbName, nil)
@@ -370,17 +371,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 
 // databaseExtendedNamesRequired skips test if the version is < 3.9.0 or the ArangoDB has not been launched
 // with the option --database.extended-names-databases=true.
-func databaseExtendedNamesRequired(t *testing.T) {
-	c := newClient(t, connectionJsonHttp(t))
-
-	ctx := context.Background()
-	version, err := c.Version(ctx)
-	require.NoError(t, err)
-
-	if version.Version.CompareTo("3.9.0") < 0 {
-		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
-	}
-
+func databaseExtendedNamesRequired(t *testing.T, c arangodb.Client, ctx context.Context) {
 	// If the database can be created with the below name then it means that it excepts unicode names.
 	dbName := "\u006E\u0303\u00f1"
 	normalized := norm.NFC.String(dbName)
