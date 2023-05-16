@@ -75,7 +75,7 @@ TEST_NET := --net=container:$(TESTCONTAINER)-ns
 
 # By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
 # e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
-TEST_ENDPOINTS := http://127.0.0.1:7001
+TEST_ENDPOINTS := http://localhost:7001
 
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
@@ -95,7 +95,7 @@ ifeq ("$(TEST_AUTH)", "jwtsuper")
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
-	TEST_ENDPOINTS := https://127.0.0.1:7001
+	TEST_ENDPOINTS = https://localhost:7001
 endif
 
 ifeq ("$(TEST_CONNECTION)", "vst")

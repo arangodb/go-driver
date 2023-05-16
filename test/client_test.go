@@ -336,17 +336,15 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv) e
 			}
 		}
 
-		if getTestMode() == testModeResilientSingle {
-			// pick the first one endpoint which is always the leader in AF mode
-			if len(client.Connection().Endpoints()) > 0 {
-				err := client.Connection().UpdateEndpoints(client.Connection().Endpoints()[0:1])
-				if err != nil {
-					return err
-				}
-			} else {
-				t.Fatalf("No endpoints found")
+		// pick the first one endpoint which is always the leader in AF mode
+		// also for Cluster mode we only need one endpoint to avoid the problem with the data propagation in tests
+		if len(client.Connection().Endpoints()) > 0 {
+			err := client.Connection().UpdateEndpoints(client.Connection().Endpoints()[0:1])
+			if err != nil {
+				return err
 			}
-
+		} else {
+			t.Fatalf("No endpoints found")
 		}
 
 		if _, err := client.Version(ctx); err != nil {
@@ -428,6 +426,17 @@ func waitUntilEndpointSynchronized(ctx context.Context, c driver.Client, dbname 
 		defer cancel()
 		if err := c.SynchronizeEndpoints2(callCtx, dbname); err != nil {
 			return err
+		}
+
+		// pick the first one endpoint which is always the leader in AF mode
+		// also for Cluster mode we only need one endpoint to avoid the problem with the data propagation in tests
+		if len(client.Connection().Endpoints()) > 0 {
+			err := client.Connection().UpdateEndpoints(client.Connection().Endpoints()[0:1])
+			if err != nil {
+				return err
+			}
+		} else {
+			t.Fatalf("No endpoints found")
 		}
 
 		return nil
