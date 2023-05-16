@@ -35,8 +35,5 @@ func getEndpointsFromEnv(t testing.TB) []string {
 	if len(eps) == 0 {
 		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
 	}
-	if getTestMode() == string(testModeSingle) {
-		return eps[:1]
-	}
 	return eps
 }

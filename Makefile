@@ -72,7 +72,11 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 endif
 
 TEST_NET := --net=container:$(TESTCONTAINER)-ns
-TEST_ENDPOINTS := http://127.0.0.1:7001,http://127.0.0.1:7011,http://127.0.0.1:7021
+
+# By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
+# e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
+TEST_ENDPOINTS := http://127.0.0.1:7001
+
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
@@ -91,7 +95,7 @@ ifeq ("$(TEST_AUTH)", "jwtsuper")
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
-	TEST_ENDPOINTS := https://127.0.0.1:7001,https://127.0.0.1:7011,https://127.0.0.1:7021
+	TEST_ENDPOINTS := https://127.0.0.1:7001
 endif
 
 ifeq ("$(TEST_CONNECTION)", "vst")
