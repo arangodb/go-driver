@@ -210,7 +210,7 @@ func TestCreateDatabaseReplication2(t *testing.T) {
 	c := createClientFromEnv(t, true)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0"))
 
-	name := "create_test1"
+	name := "create_test_replication2"
 	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
 		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
 	}}
