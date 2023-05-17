@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -79,6 +79,93 @@ func TestCreateCursorWithMaxRuntime(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestWithQueryOptimizerRules(t *testing.T) {
+	collectionName := "col_query_optimizer_rules"
+	fieldName := "value"
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(context.Background(), c, "query_optimizer_rules", nil, t)
+	col := ensureCollection(context.Background(), db, collectionName, nil, t)
+
+	tests := map[string]struct {
+		OptimizerRules   []string
+		ExpectedRules    []string
+		NotExpectedRules []string
+	}{
+		"include optimizer rule: use-indexes": {
+			OptimizerRules: []string{"+use-indexes"},
+			ExpectedRules:  []string{"use-indexes"},
+		},
+		"exclude optimizer rule: use-indexes": {
+			OptimizerRules:   []string{"-use-indexes"},
+			NotExpectedRules: []string{"use-indexes"},
+		},
+		"overwrite excluded optimizer rule: use-indexes": {
+			OptimizerRules: []string{"-use-indexes", "+use-indexes"},
+			ExpectedRules:  []string{"use-indexes"},
+		},
+		"overwrite included optimizer rule: use-indexes": {
+			OptimizerRules:   []string{"+use-indexes", "-use-indexes"},
+			NotExpectedRules: []string{"use-indexes"},
+		},
+		"turn off all optimizer rule": {
+			OptimizerRules:   []string{"-all"},        // some rules can not be disabled.
+			NotExpectedRules: []string{"use-indexes"}, // this rule will be disabled with all disabled rules.
+		},
+		"turn on all optimizer rule": {
+			OptimizerRules: []string{"+all"},
+			ExpectedRules:  []string{"use-indexes"}, // this rule will be enabled with all enabled rules.
+		},
+	}
+
+	ctxBackground := context.Background()
+	type testDoc struct {
+		Value int `json:"value"` // variable fieldName
+	}
+
+	err := CreateDocuments(ctxBackground, col, 100, func(index int) any {
+		return testDoc{Value: index}
+	})
+	require.NoErrorf(t, err, "failed to create exemplary documents")
+
+	_, _, err = col.EnsurePersistentIndex(ctxBackground, []string{fieldName}, &driver.EnsurePersistentIndexOptions{
+		Name: "index",
+	})
+	require.NoErrorf(t, err, "failed to index for collection \"%s\"", collectionName)
+
+	ctxWithProfile := driver.WithQueryProfile(ctxBackground, 2)
+	for testName, test := range tests {
+		t.Run(testName, func(t *testing.T) {
+			ctx := ctxWithProfile
+			if len(test.OptimizerRules) > 0 {
+				ctx = driver.WithQueryOptimizerRules(ctxWithProfile, test.OptimizerRules)
+			}
+
+			query := fmt.Sprintf("FOR i IN %s FILTER i.%s > 97 SORT i.%s RETURN i.%s", collectionName, fieldName,
+				fieldName, fieldName)
+			cursor, err := db.Query(ctx, query, nil)
+			require.NoError(t, err, "query \"%s\" failed", query)
+
+			planRaw, ok, err := cursor.Extra().GetPlanRaw()
+			require.NoErrorf(t, err, "failed to get query's plan")
+			require.True(t, ok)
+
+			type result struct {
+				Rules []string `json:"rules,omitempty"`
+			}
+			var r result
+			err = json.Unmarshal(planRaw, &r)
+
+			for _, rule := range test.ExpectedRules {
+				require.Contains(t, r.Rules, rule)
+			}
+
+			for _, rule := range test.NotExpectedRules {
+				require.NotContains(t, r.Rules, rule)
+			}
 		})
 	}
 }

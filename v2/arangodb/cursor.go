@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -52,6 +50,9 @@ type Cursor interface {
 	// Statistics returns the query execution statistics for this cursor.
 	// This might not be valid if the cursor has been created with `Stream`
 	Statistics() CursorStats
+
+	// Plan returns the query execution plan for this cursor.
+	Plan() CursorPlan
 }
 
 // CursorStats TODO: all these int64 should be changed into uint64
@@ -97,5 +98,48 @@ type cursorData struct {
 	HasMore bool       `json:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
 	Extra   struct {
 		Stats CursorStats `json:"stats,omitempty"`
+		// Plan describes plan for a cursor.
+		Plan CursorPlan `json:"plan,omitempty"`
 	} `json:"extra"`
+}
+
+// CursorPlan describes execution plan for a query.
+type CursorPlan struct {
+	// Nodes describes a nested list of the execution plan nodes.
+	Nodes []CursorPlanNodes `json:"nodes,omitempty"`
+	// Rules describes a list with the names of the applied optimizer rules.
+	Rules []string `json:"rules,omitempty"`
+	// Collections describes list of the collections involved in the query.
+	Collections []CursorPlanCollection `json:"collections,omitempty"`
+	// Variables describes list of variables involved in the query.
+	Variables []CursorPlanVariable `json:"variables,omitempty"`
+	// EstimatedCost is an estimated cost of the query.
+	EstimatedCost float64 `json:"estimatedCost,omitempty"`
+	// EstimatedNrItems is an estimated number of results.
+	EstimatedNrItems int `json:"estimatedNrItems,omitempty"`
+	// IsModificationQuery describes whether the query contains write operations.
+	IsModificationQuery bool `json:"isModificationQuery,omitempty"`
+}
+
+// CursorPlanNodes describes map of nodes which take part in the execution.
+type CursorPlanNodes map[string]interface{}
+
+// CursorPlanCollection describes a collection involved in the query.
+type CursorPlanCollection struct {
+	// Name is a name of collection.
+	Name string `json:"name"`
+	// Type describes how the collection is used: read, write or exclusive.
+	Type string `json:"type"`
+}
+
+// CursorPlanVariable describes variable's settings.
+type CursorPlanVariable struct {
+	// ID is a variable's id.
+	ID int `json:"id"`
+	// Name is a variable's name.
+	Name string `json:"name"`
+	// IsDataFromCollection is set to true when data comes from a collection.
+	IsDataFromCollection bool `json:"isDataFromCollection"`
+	// IsFullDocumentFromCollection is set to true when all data comes from a collection.
+	IsFullDocumentFromCollection bool `json:"isFullDocumentFromCollection"`
 }

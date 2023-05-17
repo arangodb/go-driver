@@ -37,6 +37,7 @@ const (
 	keyQueryOptStream                   = "arangodb-query-opt-stream"
 	keyQueryOptProfile                  = "arangodb-query-opt-profile"
 	keyQueryOptMaxRuntime               = "arangodb-query-opt-maxRuntime"
+	keyQueryOptOptimizerRules           = "arangodb-query-opt-optimizerRules"
 	keyQueryShardIds                    = "arangodb-query-opt-shardIds"
 	keyFillBlockCache                   = "arangodb-query-opt-fillBlockCache"
 	keyAllowRetry                       = "arangodb-query-opt-allowRetry"
@@ -139,6 +140,11 @@ func WithQueryMaxRuntime(parent context.Context, value ...float64) context.Conte
 	return context.WithValue(contextOrBackground(parent), keyQueryOptMaxRuntime, v)
 }
 
+// WithQueryOptimizerRules applies optimizer rules for a query.
+func WithQueryOptimizerRules(parent context.Context, value []string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyQueryOptOptimizerRules, value)
+}
+
 // WithQueryFillBlockCache if is set to true or not specified, this will make the query store the data it reads via the RocksDB storage engine in the RocksDB block cache.
 // This is usually the desired behavior. The option can be set to false for queries that are known to either read a lot of data which would thrash the block cache,
 // or for queries that read data which are known to be outside of the hot set. By setting the option to false, data read by the query will not make it into
@@ -185,13 +191,20 @@ type queryRequest struct {
 	Options  struct {
 		// ShardId query option
 		ShardIds []string `json:"shardIds,omitempty"`
-		// Profile If set to true or 1, then the additional query profiling information will be returned in the sub-attribute profile of the extra return attribute,
-		// if the query result is not served from the query cache. Set to 2 the query will include execution stats per query plan node in
-		// sub-attribute stats.nodes of the extra return attribute. Additionally the query plan is returned in the sub-attribute extra.plan.
+		// Profile If set to 1, then the additional query profiling information is returned in the profile sub-attribute
+		// of the extra return attribute, unless the query result is served from the query cache.
+		// If set to 2, the query includes execution stats per query plan node in stats.nodes
+		// sub-attribute of the extra return attribute.
+		// Additionally, the query plan is returned in the extra.plan sub-attribute.
 		Profile int `json:"profile,omitempty"`
-		// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute, telling the optimizer to include or exclude specific rules.
-		// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +. There is also a pseudo-rule all, which will match all optimizer rules.
-		OptimizerRules string `json:"optimizer.rules,omitempty"`
+		// Optimizer contains options related to the query optimizer.
+		Optimizer struct {
+			// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute,
+			// telling the optimizer to include or exclude specific rules.
+			// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +.
+			// There is also a pseudo-rule all, which will match all optimizer rules.
+			Rules []string `json:"rules,omitempty"`
+		} `json:"optimizer,omitempty"`
 		// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
 		// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
 		SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
@@ -293,6 +306,11 @@ func (q *queryRequest) applyContextSettings(ctx context.Context) {
 	if rawValue := ctx.Value(keyQueryOptMaxRuntime); rawValue != nil {
 		if value, ok := rawValue.(float64); ok {
 			q.Options.MaxRuntime = value
+		}
+	}
+	if rawValue := ctx.Value(keyQueryOptOptimizerRules); rawValue != nil {
+		if value, ok := rawValue.([]string); ok && len(value) > 0 {
+			q.Options.Optimizer.Rules = value
 		}
 	}
 	if rawValue := ctx.Value(keyFillBlockCache); rawValue != nil {
