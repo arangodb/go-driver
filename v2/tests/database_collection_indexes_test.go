@@ -133,10 +133,10 @@ func Test_EnsurePersistentIndex(t *testing.T) {
 						indexes, err := col.Indexes(ctx)
 						require.NoError(t, err)
 						require.NotNil(t, indexes)
-						require.Equal(t, testOpt.ExpectedNoIdx, len(indexes))
 						assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
 							return i.ID == idx.ID
 						}))
+						require.Equal(t, testOpt.ExpectedNoIdx, len(indexes))
 					}
 
 					t.Run("Create Persistent index with Cache", func(t *testing.T) {
