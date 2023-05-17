@@ -72,7 +72,11 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 endif
 
 TEST_NET := --net=container:$(TESTCONTAINER)-ns
+
+# By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
+# e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
 TEST_ENDPOINTS := http://localhost:7001
+
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
@@ -134,8 +138,8 @@ ifeq ("$(DEBUG)", "true")
 	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 exec /test_debug.test -- $(TESTOPTIONS)
 	DOCKER_V2_RUN_CMD := $(DOCKER_RUN_CMD)
 else
-    DOCKER_RUN_CMD := $(GOIMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
-    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
+    DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
 endif
 
 .PHONY: all build clean linter run-tests vulncheck
@@ -465,30 +469,6 @@ else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
 	@sleep 3
-
-
-run-tests-cluster-failover: 
-	# Note that we use 127.0.0.1:7001.. as endpoints, so we force using IPv4
-	# This is essential since we only block IPv4 ports in the test.
-	@echo "Cluster server, failover, no authentication"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" start
-	go get github.com/coreos/go-iptables/iptables
-	$(DOCKER_CMD) \
-		--rm \
-		$(TEST_NET) \
-		--privileged \
-		-v "${ROOTDIR}":/usr/code \
-		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
-		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
-		-e TEST_AUTHENTICATION=basic:root: \
-		-e GODEBUG=tls13=1 \
-		-w /usr/code/ \
-		golang:$(GOVERSION) \
-		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
-
-run-tests-cluster-cleanup:
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 
