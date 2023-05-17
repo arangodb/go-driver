@@ -364,7 +364,7 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv, d
 		t.Logf("Retry. Unknown error: %s", describe(err))
 
 		return false, nil
-	}).Retry(1*time.Second, time.Minute)
+	}).Retry(100*time.Millisecond, time.Minute)
 }
 
 // waitUntilClusterHealthy keeps waiting until the servers are healthy
