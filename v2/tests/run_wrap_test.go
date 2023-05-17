@@ -209,7 +209,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 
 			return Interrupt{}
 		})
-	}).TimeoutT(t, time.Minute, 2*time.Second)
+	}).TimeoutT(t, time.Minute, 100*time.Millisecond)
 
 	return client
 }
