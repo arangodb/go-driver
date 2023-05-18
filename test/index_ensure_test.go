@@ -605,9 +605,6 @@ func TestEnsureInvertedIndex(t *testing.T) {
 		},
 	}
 
-	version, err := c.Version(ctx)
-	require.NoError(t, err)
-
 	for _, tc := range testCases {
 		t.Run(tc.Options.Name, func(t *testing.T) {
 			if tc.IsEE {
@@ -623,12 +620,13 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				require.Equal(t, tc.Options.PrimarySort, invertedIdx.InvertedIndexOptions().PrimarySort)
 				require.Equal(t, tc.Options.Fields, invertedIdx.InvertedIndexOptions().Fields)
 
-				if version.Version.CompareTo("3.11.0") >= 0 {
+				t.Run("optimizeTopK", func(t *testing.T) {
+					skipBelowVersion(c, "3.11.0", t)
 					// OptimizeTopK can be nil or []string{} depends on the version, so it better to check length.
 					if len(tc.Options.OptimizeTopK) > 0 || len(invertedIdx.InvertedIndexOptions().OptimizeTopK) > 0 {
 						require.Equal(t, tc.Options.OptimizeTopK, invertedIdx.InvertedIndexOptions().OptimizeTopK)
 					}
-				}
+				})
 			}
 
 			idx, created, err := col.EnsureInvertedIndex(ctx, &tc.Options)

@@ -41,9 +41,6 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 				withContext(30*time.Second, func(ctx context.Context) error {
 					skipBelowVersion(client, ctx, "3.10", t)
 
-					version, err := client.Version(ctx)
-					require.NoError(t, err)
-
 					type testCase struct {
 						IsEE       bool
 						minVersion arangodb.Version
@@ -177,12 +174,13 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								require.Equal(t, tc.Options.Fields, idx.InvertedIndex.Fields)
 								require.Equal(t, tc.Options.TrackListPositions, idx.InvertedIndex.TrackListPositions)
 
-								if version.Version.CompareTo("3.11.0") >= 0 {
+								t.Run("optimizeTopK", func(t *testing.T) {
+									skipBelowVersion(client, ctx, "3.11.0", t)
 									// OptimizeTopK can be nil or []string{} depends on the version, so it better to check length.
 									if len(tc.Options.OptimizeTopK) > 0 || len(idx.InvertedIndex.OptimizeTopK) > 0 {
 										require.Equal(t, tc.Options.OptimizeTopK, idx.InvertedIndex.OptimizeTopK)
 									}
-								}
+								})
 							}
 							requireIdxEquality(idx)
 
