@@ -16,6 +16,7 @@
 - [V2] Fix AF mode in tests
 - Support for optimizer rules in AQL query
 - Add support for refilling index caches
+- [V2] Retriable batch reads in AQL cursors
 
 ## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
 - Bump `DRIVER_VERSION`

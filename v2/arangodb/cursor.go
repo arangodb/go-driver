@@ -55,6 +55,40 @@ type Cursor interface {
 	Plan() CursorPlan
 }
 
+// CursorBatch is returned from a query, used to iterate over a list of documents.
+// In contrast to Cursor, CursorBatch does not load all documents into memory, but returns them in batches and allows for retries in case of errors.
+// Note that a Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
+type CursorBatch interface {
+	io.Closer
+
+	// CloseWithContext run Close with specified Context
+	CloseWithContext(ctx context.Context) error
+
+	// HasMoreBatches returns true if the next call to ReadNextBatch does not return a NoMoreDocuments error.
+	HasMoreBatches() bool
+
+	// ReadNextBatch reads the next batch of documents from the cursor.
+	// The result must be a pointer to a slice of documents.
+	// E.g. `var result []MyStruct{}`.
+	ReadNextBatch(ctx context.Context, result interface{}) error
+
+	// RetryReadBatch retries the last batch read made by ReadNextBatch.
+	// The result must be a pointer to a slice of documents.
+	// E.g. `var result []MyStruct{}`.
+	RetryReadBatch(ctx context.Context, result interface{}) error
+
+	// Count returns the total number of result documents available.
+	// A valid return value is only available when the cursor has been created with `Count` and not with `Stream`.
+	Count() int64
+
+	// Statistics returns the query execution statistics for this cursor.
+	// This might not be valid if the cursor has been created with `Stream`
+	Statistics() CursorStats
+
+	// Plan returns the query execution plan for this cursor.
+	Plan() CursorPlan
+}
+
 // CursorStats TODO: all these int64 should be changed into uint64
 type CursorStats struct {
 	// The total number of data-modification operations successfully executed.
@@ -92,11 +126,12 @@ type CursorStats struct {
 }
 
 type cursorData struct {
-	Count   int64      `json:"count,omitempty"`   // the total number of result documents available (only available if the query was executed with the count attribute set)
-	ID      string     `json:"id"`                // id of temporary cursor created on the server (optional, see above)
-	Result  jsonReader `json:"result,omitempty"`  // a stream of result documents (might be empty if query has no results)
-	HasMore bool       `json:"hasMore,omitempty"` // A boolean indicator whether there are more results available for the cursor on the server
-	Extra   struct {
+	Count       int64      `json:"count,omitempty"`       // the total number of result documents available (only available if the query was executed with the count attribute set)
+	ID          string     `json:"id"`                    // id of temporary cursor created on the server (optional, see above)
+	Result      jsonReader `json:"result,omitempty"`      // a stream of result documents (might be empty if query has no results)
+	NextBatchID string     `json:"nextBatchId,omitempty"` // id of the next batch of the cursor on the server when `allowRetry` option is true
+	HasMore     bool       `json:"hasMore,omitempty"`     // A boolean indicator whether there are more results available for the cursor on the server
+	Extra       struct {
 		Stats CursorStats `json:"stats,omitempty"`
 		// Plan describes plan for a cursor.
 		Plan CursorPlan `json:"plan,omitempty"`
