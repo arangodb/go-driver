@@ -15,6 +15,7 @@
 - Search optimisation for inverted index and ArangoSearch
 - [V2] Fix AF mode in tests
 - Support for optimizer rules in AQL query
+- Add support for refilling index caches
 
 ## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
 - Bump `DRIVER_VERSION`
