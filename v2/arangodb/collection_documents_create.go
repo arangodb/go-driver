@@ -112,6 +112,8 @@ type CollectionDocumentCreateOptions struct {
 	OverwriteMode   *CollectionDocumentCreateOverwriteMode
 	NewObject       interface{}
 	OldObject       interface{}
+	// RefillIndexCaches if set to true then refills the in-memory index caches.
+	RefillIndexCaches *bool
 }
 
 func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) error {
@@ -141,6 +143,10 @@ func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) er
 
 	if c.OldObject != nil {
 		r.AddQuery("returnOld", "true")
+	}
+
+	if c.RefillIndexCaches != nil {
+		r.AddQuery("refillIndexCaches", boolToString(*c.RefillIndexCaches))
 	}
 
 	return nil
