@@ -24,6 +24,7 @@ package arangodb
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
@@ -44,6 +45,10 @@ type databaseQuery struct {
 }
 
 func (d databaseQuery) Query(ctx context.Context, query string, opts *QueryOptions) (Cursor, error) {
+	return d.getCursor(ctx, query, opts, nil)
+}
+
+func (d databaseQuery) getCursor(ctx context.Context, query string, opts *QueryOptions, result interface{}) (*cursor, error) {
 	url := d.db.url("_api", "cursor")
 
 	req := struct {
@@ -66,10 +71,19 @@ func (d databaseQuery) Query(ctx context.Context, query string, opts *QueryOptio
 
 	switch code := resp.Code(); code {
 	case http.StatusCreated:
+		if result != nil {
+			if err := json.Unmarshal(response.cursorData.Result.in, result); err != nil {
+				return nil, err
+			}
+		}
 		return newCursor(d.db, resp.Endpoint(), response.cursorData), nil
 	default:
 		return nil, response.AsArangoErrorWithCode(code)
 	}
+}
+
+func (d databaseQuery) QueryBatch(ctx context.Context, query string, opts *QueryOptions, result interface{}) (CursorBatch, error) {
+	return d.getCursor(ctx, query, opts, result)
 }
 
 func (d databaseQuery) ValidateQuery(ctx context.Context, query string) error {

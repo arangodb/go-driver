@@ -27,6 +27,11 @@ type DatabaseQuery interface {
 	// Note that the returned Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
 	Query(ctx context.Context, query string, opts *QueryOptions) (Cursor, error)
 
+	// QueryBatch performs an AQL query, returning a cursor used to iterate over the returned documents in batches.
+	// In contrast to Query, QueryBatch does not load all documents into memory, but returns them in batches and allows for retries in case of errors.
+	// Note that the returned Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed
+	QueryBatch(ctx context.Context, query string, opts *QueryOptions, result interface{}) (CursorBatch, error)
+
 	// ValidateQuery validates an AQL query.
 	// When the query is valid, nil returned, otherwise an error is returned.
 	// The query is not executed.
@@ -73,6 +78,9 @@ type QuerySubOptions struct {
 	// or for queries that read data which are known to be outside of the hot set. By setting the option to false, data read by the query will not make it into
 	// the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
 	FillBlockCache bool `json:"fillBlockCache,omitempty"`
+	// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
+	// that batch reads can be retried in the case of a communication error.
+	AllowRetry bool `json:"allowRetry,omitempty"`
 }
 
 type QueryOptions struct {

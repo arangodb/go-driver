@@ -22,36 +22,47 @@ package arangodb
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"sync"
 
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
-
 	"github.com/pkg/errors"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
 func newCursor(db *database, endpoint string, data cursorData) *cursor {
-	return &cursor{
+	c := &cursor{
 		db:       db,
 		endpoint: endpoint,
 		data:     data,
 	}
+
+	if data.NextBatchID != "" {
+		c.retryData = &retryData{
+			cursorID:       data.ID,
+			currentBatchID: "1",
+		}
+	}
+
+	return c
 }
 
 var _ Cursor = &cursor{}
 
 type cursor struct {
-	db *database
+	db        *database
+	endpoint  string
+	closed    bool
+	data      cursorData
+	lock      sync.Mutex
+	retryData *retryData
+}
 
-	endpoint string
-
-	closed bool
-
-	data cursorData
-
-	lock sync.Mutex
+type retryData struct {
+	cursorID       string
+	currentBatchID string
 }
 
 func (c *cursor) Close() error {
@@ -93,11 +104,33 @@ func (c *cursor) HasMore() bool {
 	return c.data.Result.HasMore() || c.data.HasMore
 }
 
+func (c *cursor) HasMoreBatches() bool {
+	return c.data.HasMore
+}
+
 func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	return c.readDocument(ctx, result)
+}
+
+func (c *cursor) ReadNextBatch(ctx context.Context, result interface{}) error {
+	err := c.getNextBatch(ctx, "")
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(c.data.Result.in, result)
+}
+
+func (c *cursor) RetryReadBatch(ctx context.Context, result interface{}) error {
+	err := c.getNextBatch(ctx, c.retryData.currentBatchID)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(c.data.Result.in, result)
 }
 
 func (c *cursor) readDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
@@ -106,7 +139,7 @@ func (c *cursor) readDocument(ctx context.Context, result interface{}) (Document
 	}
 
 	if !c.data.Result.HasMore() {
-		if err := c.getNextBatch(ctx); err != nil {
+		if err := c.getNextBatch(ctx, ""); err != nil {
 			return DocumentMeta{}, err
 		}
 	}
@@ -129,14 +162,27 @@ func (c *cursor) readDocument(ctx context.Context, result interface{}) (Document
 	return meta, nil
 }
 
-func (c *cursor) getNextBatch(ctx context.Context) error {
-	if !c.data.HasMore {
+func (c *cursor) getNextBatch(ctx context.Context, retryBatchID string) error {
+	if !c.data.HasMore && retryBatchID == "" {
 		return errors.WithStack(shared.NoMoreDocumentsError{})
 	}
 
 	url := c.db.url("_api", "cursor", c.data.ID)
+	// If we have a NextBatchID, use it
+	if c.data.NextBatchID != "" {
+		url = c.db.url("_api", "cursor", c.data.ID, c.data.NextBatchID)
+	}
+	// We have to retry the batch instead of fetching the next one
+	if retryBatchID != "" {
+		url = c.db.url("_api", "cursor", c.retryData.cursorID, retryBatchID)
+	}
 
-	resp, err := connection.CallPut(ctx, c.db.connection(), url, &c.data, nil, c.db.modifiers...)
+	// Update currentBatchID before fetching the next batch (no retry case)
+	if c.data.NextBatchID != "" && retryBatchID == "" {
+		c.retryData.currentBatchID = c.data.NextBatchID
+	}
+
+	resp, err := connection.CallPost(ctx, c.db.connection(), url, &c.data, nil, c.db.modifiers...)
 	if err != nil {
 		return err
 	}
