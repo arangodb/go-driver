@@ -33,6 +33,8 @@ type ClientServerInfo interface {
 	// Version returns version information from the connected database server.
 	// Use WithDetails to configure a context that will include additional details in the return VersionInfo.
 	Version(ctx context.Context) (VersionInfo, error)
+	// ServerRole returns the role of the server that answers the request.
+	ServerRole(ctx context.Context) (ServerRole, error)
 }
 
 // VersionInfo describes the version of a database server.

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package test
 
@@ -28,6 +26,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 )
 
 // TestServerLogs tests if logs are parsed.
@@ -49,4 +49,107 @@ func TestServerLogs(t *testing.T) {
 	}
 
 	t.Fatalf("Line `is ready for business` not found in logs")
+}
+
+// Test_LogLevels tests log levels.
+func Test_LogLevels(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	ctx := context.Background()
+
+	result, err := c.GetLogLevels(ctx, nil)
+	require.NoError(t, err)
+
+	if len(result) == 0 {
+		t.Skip("test can not proceed without log levels")
+	}
+	var topic, level string
+	for topic, level = range result {
+		// Get first topic from map of topics.
+		break
+	}
+
+	level = changeLogLevel(level)
+	result[topic] = level
+	err = c.SetLogLevels(ctx, result, nil)
+	require.NoError(t, err)
+
+	result1, err := c.GetLogLevels(ctx, nil)
+	require.NoError(t, err)
+	require.Equal(t, result, result1)
+}
+
+// Test_LogLevelsForServers tests log levels for on specific server.
+func Test_LogLevelsForServers(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	ctx := context.Background()
+	skipBelowVersion(c, "3.10.2", t)
+	skipNoCluster(c, t)
+
+	cl, err := c.Cluster(ctx)
+	require.NoError(t, err)
+
+	health, err := cl.Health(ctx)
+	require.NoError(t, err)
+
+	var changed int
+	servers := make(map[driver.ServerID]driver.LogLevels)
+	for serverID, health := range health.Health {
+		if health.Role == driver.ServerRoleAgent {
+			continue
+		}
+
+		opts := driver.LogLevelsGetOptions{
+			ServerID: serverID,
+		}
+
+		logLevels, err := c.GetLogLevels(ctx, &opts)
+		require.NoError(t, err)
+
+		if changed == 0 {
+			// Change log level for random topic, but only for one server.
+			changed++
+			for randomTopic, level := range logLevels {
+				logLevels[randomTopic] = changeLogLevel(level)
+				opts := driver.LogLevelsSetOptions{
+					ServerID: serverID,
+				}
+
+				err = c.SetLogLevels(ctx, logLevels, &opts)
+				require.NoError(t, err)
+
+				break
+			}
+		}
+
+		servers[serverID] = logLevels
+	}
+	require.Equal(t, 1, changed, "only one server should change log levels")
+
+	// Check if log levels have changed for a specific server.
+	for serverID, health := range health.Health {
+		if health.Role == driver.ServerRoleAgent {
+			continue
+		}
+
+		opts := driver.LogLevelsGetOptions{
+			ServerID: serverID,
+		}
+
+		result, err := c.GetLogLevels(ctx, &opts)
+		require.NoError(t, err)
+
+		s, ok := servers[serverID]
+		require.True(t, ok)
+
+		require.Equal(t, s, result)
+	}
+}
+
+// Change log level from DEBUG to INFO or from something else to DEBUG.
+func changeLogLevel(l string) string {
+	if l != "DEBUG" {
+		return "DEBUG"
+	}
+
+	return "INFO"
 }
