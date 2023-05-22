@@ -18,6 +18,7 @@
 - Add support for refilling index caches
 - [V2] Retriable batch reads in AQL cursors
 - Add log level support for a specific server
+- Allow for VPACK encoding in _api/gharial API
 
 ## [1.5.2](https://github.com/arangodb/go-driver/tree/v1.5.2) (2023-03-01)
 - Bump `DRIVER_VERSION`
