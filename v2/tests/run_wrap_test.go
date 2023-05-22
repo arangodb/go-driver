@@ -67,8 +67,9 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 		}
 	}
 
-	// This this is run parallelly, but internally sub-tests will be launched according to the `parallel` variable.
-	t.Parallel()
+	if parallel {
+		t.Parallel()
+	}
 
 	t.Run("HTTP JSON", func(t *testing.T) {
 		if parallel {
