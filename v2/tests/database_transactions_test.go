@@ -37,6 +37,7 @@ import (
 
 func Test_DatabaseCreateReplicationV2(t *testing.T) {
 	client := newClient(t, connectionJsonHttp(t))
+	requireClusterMode(t)
 	skipBelowVersion(client, context.Background(), "3.12.0", t)
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
