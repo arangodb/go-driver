@@ -37,6 +37,7 @@ func newClient(connection connection.Connection) *client {
 
 	c.clientDatabase = newClientDatabase(c)
 	c.clientServerInfo = newClientServerInfo(c)
+	c.clientAdmin = newClientAdmin(c)
 
 	c.Requests = NewRequests(connection)
 
@@ -50,6 +51,7 @@ type client struct {
 
 	*clientDatabase
 	*clientServerInfo
+	*clientAdmin
 
 	Requests
 }

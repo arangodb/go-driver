@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,19 +17,27 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
-func newClientAdminBackup(client *client) *clientAdminBackup {
-	return &clientAdminBackup{
-		client: client,
-	}
+import (
+	"context"
+)
+
+type ClientAdmin interface {
+	ClientAdminLog
+	ClientAdminBackup
+	// Health returns the cluster configuration & health.
+	// It works in cluster or active fail-over mode.
+	Health(ctx context.Context) (ClusterHealth, error)
 }
 
-var _ ClientAdminBackup = &clientAdminBackup{}
+type ClientAdminBackup interface {
+}
 
-type clientAdminBackup struct {
-	client *client
+type ClientAdminLog interface {
+	// GetLogLevels returns log levels for topics.
+	GetLogLevels(ctx context.Context, opts *LogLevelsGetOptions) (LogLevels, error)
+	// SetLogLevels sets log levels for a given topics.
+	SetLogLevels(ctx context.Context, logLevels LogLevels, opts *LogLevelsSetOptions) error
 }
