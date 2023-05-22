@@ -30,7 +30,7 @@ type Client interface {
 
 	Requests
 
-	ClientAdminBackup
 	ClientDatabase
 	ClientServerInfo
+	ClientAdmin
 }

@@ -47,17 +47,34 @@ type ConnectionFactory func(t *testing.T) connection.Connection
 
 type WrapperB func(t *testing.B, client arangodb.Client)
 
-func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
+// WrapOptions describes testing options for a wrapper.
+type WrapOptions struct {
+	// NoParallel describes if internal tests should be launched parallelly.
+	// If it is nil then by default, it is true.
+	Parallel *bool
+}
+
+func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapOptions) {
 	c := newClient(t, connectionJsonHttp(t))
 
 	version, err := c.Version(context.Background())
 	require.NoError(t, err)
-	// HTTP
 
-	t.Parallel()
+	parallel := true
+	if len(wo) > 0 {
+		if wo[0].Parallel != nil {
+			parallel = *wo[0].Parallel
+		}
+	}
+
+	if parallel {
+		t.Parallel()
+	}
 
 	t.Run("HTTP JSON", func(t *testing.T) {
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionJsonHttp(t)
@@ -67,7 +84,9 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 	})
 
 	t.Run("HTTP VPACK", func(t *testing.T) {
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionVPACKHttp(t)
@@ -80,7 +99,9 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 		if version.Version.CompareTo("3.7.1") < 1 {
 			t.Skipf("Not supported")
 		}
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionJsonHttp2(t)
@@ -93,7 +114,9 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 		if version.Version.CompareTo("3.7.1") < 1 {
 			t.Skipf("Not supported")
 		}
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionVPACKHttp2(t)
@@ -103,16 +126,16 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 	})
 }
 
-func WrapConnection(t *testing.T, w WrapperConnection) {
+func WrapConnection(t *testing.T, w WrapperConnection, wo ...WrapOptions) {
 	WrapConnectionFactory(t, func(t *testing.T, connFactory ConnectionFactory) {
 		w(t, connFactory(t))
-	})
+	}, wo...)
 }
 
-func Wrap(t *testing.T, w Wrapper) {
+func Wrap(t *testing.T, w Wrapper, wo ...WrapOptions) {
 	WrapConnection(t, func(t *testing.T, conn connection.Connection) {
 		w(t, arangodb.NewClient(conn))
-	})
+	}, wo...)
 }
 
 func WrapB(t *testing.B, w WrapperB) {
