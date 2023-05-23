@@ -140,6 +140,13 @@ func (c *client) echo(ctx context.Context) error {
 	if err != nil {
 		return WithStack(err)
 	}
+
+	// Velocypack requires non-empty body for versions < 3.11.
+	req, err = req.SetBody("echo")
+	if err != nil {
+		return WithStack(err)
+	}
+
 	applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {

@@ -22,7 +22,6 @@ package arangodb
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
@@ -128,7 +127,6 @@ func (c clientServerInfo) ServerRole(ctx context.Context) (ServerRole, error) {
 		return role, nil
 	}
 
-	fmt.Println(response.Mode)
 	if response.Mode != "resilient" {
 		// Single server mode.
 		return role, nil
@@ -154,7 +152,8 @@ func (c clientServerInfo) echo(ctx context.Context) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	// Velocypack requires non-empty body for versions < 3.11.
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, connection.WithBody("echo"))
 	if err != nil {
 		return errors.WithStack(err)
 	}

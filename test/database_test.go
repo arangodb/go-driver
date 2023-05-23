@@ -208,7 +208,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 func TestCreateDatabaseReplication2(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0"))
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
 
 	name := "create_test_replication2"
 	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
