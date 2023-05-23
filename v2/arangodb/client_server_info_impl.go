@@ -152,7 +152,7 @@ func (c clientServerInfo) echo(ctx context.Context) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	// Velocypack requires some non-empty body.
+	// Velocypack requires non-empty body for versions < 3.11.
 	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, connection.WithBody("echo"))
 	if err != nil {
 		return errors.WithStack(err)
