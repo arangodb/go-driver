@@ -136,10 +136,11 @@ func (c *client) ServerID(ctx context.Context) (string, error) {
 
 // echo returns what is sent to the server.
 func (c *client) echo(ctx context.Context) error {
-	req, err := c.conn.NewRequest("POST", "_admin/echo")
+	req, err := c.conn.NewRequest("GET", "_admin/echo")
 	if err != nil {
 		return WithStack(err)
 	}
+	// Velocypack requires non-empty body.
 	req, err = req.SetBody("echo")
 	if err != nil {
 		return WithStack(err)
