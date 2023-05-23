@@ -154,7 +154,7 @@ func (c clientServerInfo) echo(ctx context.Context) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, "echo")
 	if err != nil {
 		return errors.WithStack(err)
 	}

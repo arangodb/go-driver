@@ -136,10 +136,15 @@ func (c *client) ServerID(ctx context.Context) (string, error) {
 
 // echo returns what is sent to the server.
 func (c *client) echo(ctx context.Context) error {
-	req, err := c.conn.NewRequest("GET", "_admin/echo")
+	req, err := c.conn.NewRequest("POST", "_admin/echo")
 	if err != nil {
 		return WithStack(err)
 	}
+	req, err = req.SetBody("echo")
+	if err != nil {
+		return WithStack(err)
+	}
+
 	applyContextSettings(ctx, req)
 	resp, err := c.conn.Do(ctx, req)
 	if err != nil {

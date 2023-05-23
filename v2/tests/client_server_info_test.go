@@ -30,10 +30,10 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
-// Test_ServerRole tests server role for all instances.
+// Test_ServerRole tests a server role for all instances.
 func Test_ServerRole(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContext(time.Second*10, func(ctx context.Context) error {
+		withContextT(t, 10*time.Second, func(ctx context.Context, _ testing.TB) {
 			testMode := getTestMode()
 
 			t.Run("user endpoint", func(t *testing.T) {
@@ -48,8 +48,6 @@ func Test_ServerRole(t *testing.T) {
 					require.Equal(t, role, arangodb.ServerRoleSingleActive)
 				}
 			})
-
-			return nil
 		})
 	})
 }
