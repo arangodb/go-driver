@@ -585,7 +585,7 @@ func TestEnsureInvertedIndex(t *testing.T) {
 		},
 		{
 			IsEE:       true,
-			minVersion: driver.Version("3.11.0"),
+			minVersion: driver.Version("3.12.0"),
 			Options: driver.InvertedIndexOptions{
 				Name: "inverted-opt-optimize-top-k",
 				PrimarySort: driver.InvertedIndexPrimarySort{
@@ -621,7 +621,7 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				require.Equal(t, tc.Options.Fields, invertedIdx.InvertedIndexOptions().Fields)
 
 				t.Run("optimizeTopK", func(t *testing.T) {
-					skipBelowVersion(c, "3.11.0", t)
+					skipBelowVersion(c, "3.12.0", t)
 					// OptimizeTopK can be nil or []string{} depends on the version, so it better to check length.
 					if len(tc.Options.OptimizeTopK) > 0 || len(invertedIdx.InvertedIndexOptions().OptimizeTopK) > 0 {
 						require.Equal(t, tc.Options.OptimizeTopK, invertedIdx.InvertedIndexOptions().OptimizeTopK)
