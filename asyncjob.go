@@ -29,10 +29,15 @@ type ClientAsyncJob interface {
 	AsyncJob() AsyncJobService
 }
 
+// AsyncJobService https://www.arangodb.com/docs/devel/http/jobs.html
 type AsyncJobService interface {
+	// List Returns the ids of job results with a specific status
 	List(ctx context.Context, jobType AsyncJobStatusType, opts *AsyncJobListOptions) ([]string, error)
+	// Status Returns the status of a specific job
 	Status(ctx context.Context, jobID string) (AsyncJobStatusType, error)
+	// Cancel Cancels a specific async job
 	Cancel(ctx context.Context, jobID string) (bool, error)
+	// Delete Deletes async job result
 	Delete(ctx context.Context, deleteType AsyncJobDeleteType, opts *AsyncJobDeleteOptions) (bool, error)
 }
 
@@ -58,6 +63,9 @@ const (
 )
 
 type AsyncJobDeleteOptions struct {
-	JobID string    `json:"id,omitempty"`
+	// JobID The id of the job to delete. Works only if type is set to 'single'.
+	JobID string `json:"id,omitempty"`
+
+	// Stamp A Unix timestamp specifying the expiration threshold for when the type is set to 'expired'.
 	Stamp time.Time `json:"stamp,omitempty"`
 }
