@@ -613,6 +613,7 @@ func withDocumentAt(ctx context.Context, index int) (context.Context, error) {
 // READ METHODS
 //
 
+// IsAsyncIDSet returns the async Job ID from the given context.
 func IsAsyncIDSet(ctx context.Context) (string, bool) {
 	if ctx != nil {
 		if q := ctx.Value(keyAsyncID); q != nil {
