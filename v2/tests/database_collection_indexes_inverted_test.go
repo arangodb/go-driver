@@ -134,7 +134,7 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 						},
 						{
 							IsEE:       true,
-							minVersion: arangodb.Version("3.11.0"),
+							minVersion: arangodb.Version("3.12.0"),
 							Options: arangodb.InvertedIndexOptions{
 								Name: "inverted-opt-optimize-top-k",
 								PrimarySort: &arangodb.PrimarySort{
@@ -175,7 +175,7 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								require.Equal(t, tc.Options.TrackListPositions, idx.InvertedIndex.TrackListPositions)
 
 								t.Run("optimizeTopK", func(t *testing.T) {
-									skipBelowVersion(client, ctx, "3.11.0", t)
+									skipBelowVersion(client, ctx, "3.12.0", t)
 									// OptimizeTopK can be nil or []string{} depends on the version, so it better to check length.
 									if len(tc.Options.OptimizeTopK) > 0 || len(idx.InvertedIndex.OptimizeTopK) > 0 {
 										require.Equal(t, tc.Options.OptimizeTopK, idx.InvertedIndex.OptimizeTopK)
