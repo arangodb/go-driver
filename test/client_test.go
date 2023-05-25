@@ -41,7 +41,6 @@ import (
 	driver "github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/jwt"
-	"github.com/arangodb/go-driver/util/connection/wrappers"
 	"github.com/arangodb/go-driver/util/connection/wrappers/async"
 	"github.com/arangodb/go-driver/vst"
 	"github.com/arangodb/go-driver/vst/protocol"
