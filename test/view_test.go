@@ -292,7 +292,7 @@ func TestAddCollectionMultipleViewsViaCreate(t *testing.T) {
 func TestGetArangoSearchOptimizeTopK(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	skipBelowVersion(c, "3.11.0", t)
+	skipBelowVersion(c, "3.12.0", t)
 	skipNoEnterprise(t)
 	db := ensureDatabase(ctx, c, "view_test_optimize_top_k", nil, t)
 	name := "test_get_asview"
