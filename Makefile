@@ -1,4 +1,4 @@
-DRIVER_VERSION := 1.5.2
+DRIVER_VERSION := 1.6.0
 
 PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)

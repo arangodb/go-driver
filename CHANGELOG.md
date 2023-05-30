@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.6.0](https://github.com/arangodb/go-driver/tree/v1.6.0) (2023-05-30)
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2
 - [V2] Support for Collection Documents removal
 - [V2] Fix: Plain Connection doesn't work with JWT authentication
