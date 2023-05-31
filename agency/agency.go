@@ -30,6 +30,17 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+type LeaderElectionCell interface {
+	// Update checks the current leader cell and if no leader is present
+	// it ties to put itself in there. Will return the value currently present,
+	// wether we are leader and a duration after which Updated should be called again.
+	// If value is nil, we do not try to become leader.
+	Update(ctx context.Context, value interface{}) (interface{}, bool, time.Duration, error)
+
+	// Resign tries to resign leadership
+	Resign(ctx context.Context) error
+}
+
 // Agency provides API implemented by the ArangoDB agency.
 type Agency interface {
 	// Connection returns the connection used by this api.
@@ -74,6 +85,8 @@ type Agency interface {
 	// Deprecated: use 'WriteTransaction' instead
 	// Register a URL to receive notification callbacks when the value of the given key changes
 	UnregisterChangeCallback(ctx context.Context, key []string, cbURL string) error
+
+	LeaderElectionCell(key []string, ttl time.Duration) LeaderElectionCell
 }
 
 // Deprecated: use 'agency.KeyConditioner' instead
