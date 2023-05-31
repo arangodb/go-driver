@@ -409,12 +409,12 @@ func (l *leaderElectionCellData) Update(ctx context.Context, value interface{}) 
 				goto tryLeaderElection
 			}
 			assumeEmpty = false
-			return nil, false, 0, err
 		}
 
 		{
 			now := time.Now()
 			if result.TTL < now.Unix() {
+				l.lastTTL = result.TTL
 				goto tryLeaderElection
 			}
 
