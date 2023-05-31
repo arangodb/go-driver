@@ -397,6 +397,8 @@ func (l *leaderElectionCellData) tryBecomeLeader(ctx context.Context, value inte
 	} else {
 		return err
 	}
+
+	return nil
 }
 
 func (l *leaderElectionCellData) Update(ctx context.Context, value interface{}) (interface{}, bool, time.Duration, error) {
