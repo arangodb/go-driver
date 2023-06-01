@@ -839,7 +839,7 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	t.Run("immediate", func(t *testing.T) {
 		skipBelowVersion(c, "3.6", t)
 
-		if err := waitUntilClusterHealthy(c); err != nil {
+		if _, err := waitUntilClusterHealthy(c); err != nil {
 			t.Fatalf("Failed to wait for healthy cluster: %s", describe(err))
 		}
 		newRetryFunc(func() error {

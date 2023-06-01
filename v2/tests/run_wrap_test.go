@@ -31,6 +31,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/rs/zerolog/log"
@@ -345,4 +346,49 @@ func withContextT(t testing.TB, timeout time.Duration, f func(ctx context.Contex
 		f(ctx, t)
 		return nil
 	}))
+}
+
+type healthFunc func(*testing.T, context.Context, arangodb.ClusterHealth)
+
+// withHealth waits for health, and launches a given function when it is healthy.
+// When system is available then sometimes it needs more time to fetch healthiness.
+func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, f healthFunc) {
+	ctxInner := ctx
+	if _, ok := ctx.Deadline(); !ok {
+		// When caller does not provide timeout, wait for healthiness for 30 seconds.
+		var cancel context.CancelFunc
+
+		ctxInner, cancel = context.WithTimeout(ctx, time.Second*30)
+		defer cancel()
+	}
+
+	for {
+		health, err := client.Health(ctxInner)
+		if err == nil && len(health.Health) > 0 {
+			notGood := 0
+			for _, h := range health.Health {
+				if h.Status != arangodb.ServerStatusGood {
+					notGood++
+				}
+			}
+
+			if notGood == 0 {
+				f(t, ctxInner, health)
+				return
+			}
+		}
+
+		select {
+		case <-time.After(time.Second):
+			break
+		case <-ctxInner.Done():
+			if err == nil {
+				// It is not health error, but context error.
+				err = ctxInner.Err()
+			}
+
+			err = errors.WithMessagef(err, "health %#v", health)
+			require.NoError(t, err)
+		}
+	}
 }
