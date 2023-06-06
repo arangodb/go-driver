@@ -147,3 +147,35 @@ func (v VersionInfo) String() string {
 	}
 	return result
 }
+
+// LicenseFeatures describes license's features.
+type LicenseFeatures struct {
+	// Expires is expiry date as Unix timestamp (seconds since January 1st, 1970 UTC).
+	Expires int `json:"expires"`
+}
+
+// LicenseStatus describes license's status.
+type LicenseStatus string
+
+const (
+	// LicenseStatusGood - The license is valid for more than 2 weeks.
+	LicenseStatusGood LicenseStatus = "good"
+	// LicenseStatusExpired - The license has expired. In this situation, no new Enterprise Edition features can be utilized.
+	LicenseStatusExpired LicenseStatus = "expired"
+	// LicenseStatusExpiring - The license is valid for less than 2 weeks.
+	LicenseStatusExpiring LicenseStatus = "expiring"
+	// LicenseStatusReadOnly - The license is expired over 2 weeks. The instance is now restricted to read-only mode.
+	LicenseStatusReadOnly LicenseStatus = "read-only"
+)
+
+// License describes license information.
+type License struct {
+	// Features describes properties of the license.
+	Features LicenseFeatures `json:"features"`
+	// License is an encrypted license key in Base64 encoding.
+	License string `json:"license"`
+	// Status is a status of a license.
+	Status LicenseStatus `json:"status"`
+	// Version is a version of a license.
+	Version int `json:"version"`
+}

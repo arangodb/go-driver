@@ -69,6 +69,9 @@ type ClientServerAdmin interface {
 
 	// Logs retrieve logs from server in ArangoDB 3.8.0+ format
 	Logs(ctx context.Context) (ServerLogs, error)
+
+	// GetLicense returns license of an ArangoDB deployment.
+	GetLicense(ctx context.Context) (License, error)
 }
 
 type ServerLogs struct {
