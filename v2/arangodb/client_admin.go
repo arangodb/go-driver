@@ -27,6 +27,7 @@ import (
 type ClientAdmin interface {
 	ClientAdminLog
 	ClientAdminBackup
+	ClientAdminLicense
 	// Health returns the cluster configuration & health.
 	// It works in cluster or active fail-over mode.
 	Health(ctx context.Context) (ClusterHealth, error)
@@ -40,4 +41,9 @@ type ClientAdminLog interface {
 	GetLogLevels(ctx context.Context, opts *LogLevelsGetOptions) (LogLevels, error)
 	// SetLogLevels sets log levels for a given topics.
 	SetLogLevels(ctx context.Context, logLevels LogLevels, opts *LogLevelsSetOptions) error
+}
+
+type ClientAdminLicense interface {
+	// GetLicense returns license of an ArangoDB deployment.
+	GetLicense(ctx context.Context) (License, error)
 }
