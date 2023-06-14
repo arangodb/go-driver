@@ -89,7 +89,7 @@ const (
 	ArangoSearchAnalyzerFeatureNorm ArangoSearchAnalyzerFeature = "norm"
 	// ArangoSearchAnalyzerFeaturePosition sequentially increasing term position, required for PHRASE(). If present then the frequency feature is also required
 	ArangoSearchAnalyzerFeaturePosition ArangoSearchAnalyzerFeature = "position"
-	// ArangoSearchAnalyzerFeatureOffset can be specified if 'position' feature is set
+	// ArangoSearchAnalyzerFeatureOffset can be specified if 'position' and 'frequency' features are set (Enterprise Edition only)
 	ArangoSearchAnalyzerFeatureOffset ArangoSearchAnalyzerFeature = "offset"
 )
 

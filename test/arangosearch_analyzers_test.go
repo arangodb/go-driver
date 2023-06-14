@@ -384,6 +384,24 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:       "create-classificationPermalink",
+			MinVersion: newVersion("3.10.0"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "classification",
+				Type: driver.ArangoSearchAnalyzerTypeClassification,
+			},
+			EnterpriseOnly: true,
+		},
+		{
+			Name:       "create-NN",
+			MinVersion: newVersion("3.10.0"),
+			Definition: driver.ArangoSearchAnalyzerDefinition{
+				Name: "nearestNeighbors",
+				Type: driver.ArangoSearchAnalyzerTypeNearestNeighbors,
+			},
+			EnterpriseOnly: true,
+		},
 	}
 
 	for _, testCase := range testCases {
