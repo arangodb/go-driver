@@ -27,7 +27,7 @@ services:
 
 language: go
 go:
-  - 1.20.3
+  - 1.20.5
 
 env:
   jobs:
@@ -42,7 +42,7 @@ env:
     - TEST_SUITE=run-v2-tests-resilientsingle
   global:
     - ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.11.1
-    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.20.3
+    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.20.5
     - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.17
     - STARTER=gcr.io/gcr-for-testing/arangodb/arangodb-starter:0.15.7
     - TEST_DISALLOW_UNKNOWN_FIELDS=false
