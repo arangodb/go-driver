@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package driver
@@ -76,6 +74,31 @@ type Client interface {
 	ClientAdminBackup
 
 	ClientFoxx
+
+	ClientLog
+}
+
+// LogLevels is a map of topics to log level.
+type LogLevels map[string]string
+
+// ClientLog provides access to client logs' wide specific operations.
+type ClientLog interface {
+	// GetLogLevels returns log levels for topics.
+	GetLogLevels(ctx context.Context, opts *LogLevelsGetOptions) (LogLevels, error)
+	// SetLogLevels sets log levels for a given topics
+	SetLogLevels(ctx context.Context, logLevels LogLevels, opts *LogLevelsSetOptions) error
+}
+
+// LogLevelsGetOptions describes log levels get options.
+type LogLevelsGetOptions struct {
+	// serverID describes log levels for a specific server ID.
+	ServerID ServerID
+}
+
+// LogLevelsSetOptions describes log levels set options.
+type LogLevelsSetOptions struct {
+	// serverID describes log levels for a specific server ID.
+	ServerID ServerID
 }
 
 // ClientConfig contains all settings needed to create a client.
@@ -121,4 +144,36 @@ func (v VersionInfo) String() string {
 		result = result + "\n" + strings.Join(lines, "\n")
 	}
 	return result
+}
+
+// LicenseFeatures describes license's features.
+type LicenseFeatures struct {
+	// Expires is expiry date as Unix timestamp (seconds since January 1st, 1970 UTC).
+	Expires int `json:"expires"`
+}
+
+// LicenseStatus describes license's status.
+type LicenseStatus string
+
+const (
+	// LicenseStatusGood - The license is valid for more than 2 weeks.
+	LicenseStatusGood LicenseStatus = "good"
+	// LicenseStatusExpired - The license has expired. In this situation, no new Enterprise Edition features can be utilized.
+	LicenseStatusExpired LicenseStatus = "expired"
+	// LicenseStatusExpiring - The license is valid for less than 2 weeks.
+	LicenseStatusExpiring LicenseStatus = "expiring"
+	// LicenseStatusReadOnly - The license is expired over 2 weeks. The instance is now restricted to read-only mode.
+	LicenseStatusReadOnly LicenseStatus = "read-only"
+)
+
+// License describes license information.
+type License struct {
+	// Features describes properties of the license.
+	Features LicenseFeatures `json:"features"`
+	// License is an encrypted license key in Base64 encoding.
+	License string `json:"license"`
+	// Status is a status of a license.
+	Status LicenseStatus `json:"status"`
+	// Version is a version of a license.
+	Version int `json:"version"`
 }

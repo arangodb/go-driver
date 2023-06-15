@@ -23,24 +23,31 @@ package tests
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/arangodb/go-driver/v2/connection"
 )
 
-// Test_DecoderBytes gets plain text response from the server
-func Test_DecoderBytes(t *testing.T) {
+// Test_ServerRole tests a server role for all instances.
+func Test_ServerRole(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		var output []byte
+		withContextT(t, 10*time.Second, func(ctx context.Context, _ testing.TB) {
+			testMode := getTestMode()
 
-		url := connection.NewUrl("_admin", "metrics", "v2")
-		_, err := connection.CallGet(context.Background(), client.Connection(), url, &output)
+			t.Run("user endpoint", func(t *testing.T) {
+				role, err := client.ServerRole(ctx)
+				require.NoError(t, err)
 
-		require.NoError(t, err)
-		require.NotNil(t, output)
-		assert.Contains(t, string(output), "arangodb_connection_pool")
+				if testMode == string(testModeCluster) {
+					require.Equal(t, role, arangodb.ServerRoleCoordinator)
+				} else if testMode == string(testModeSingle) {
+					require.Equal(t, role, arangodb.ServerRoleSingle)
+				} else {
+					require.Equal(t, role, arangodb.ServerRoleSingleActive)
+				}
+			})
+		})
 	})
 }

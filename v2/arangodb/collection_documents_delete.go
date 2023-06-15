@@ -71,8 +71,7 @@ type CollectionDocumentDeleteOptions struct {
 	// You can use this option to save network traffic.
 	Silent *bool
 
-	// Whether to delete existing entries from in-memory index caches and refill them
-	// if document removals affect the edge index or cache-enabled persistent indexes.
+	// RefillIndexCaches if set to true then refills the in-memory index caches.
 	RefillIndexCaches *bool
 }
 

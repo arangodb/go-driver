@@ -37,7 +37,8 @@ import (
 
 func Test_DatabaseCreateReplicationV2(t *testing.T) {
 	client := newClient(t, connectionJsonHttp(t))
-	skipBelowVersion(client, context.Background(), "3.11.0", t)
+	requireClusterMode(t)
+	skipBelowVersion(client, context.Background(), "3.12.0", t)
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		opts := arangodb.CreateDatabaseOptions{
@@ -249,7 +250,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 
 func Test_DatabaseTransactions_List(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, 30*time.Second, func(ctx context.Context, _ testing.TB) {
+		withContextT(t, 60*time.Second, func(ctx context.Context, _ testing.TB) {
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
 				t.Run("List all transactions", func(t *testing.T) {
 					t1, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)

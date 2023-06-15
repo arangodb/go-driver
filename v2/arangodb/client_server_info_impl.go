@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -32,6 +30,42 @@ import (
 
 	"github.com/arangodb/go-driver/v2/connection"
 )
+
+// ServerRole is the role of an arangod server
+type ServerRole string
+
+const (
+	// ServerRoleSingle indicates that the server is a single-server instance
+	ServerRoleSingle ServerRole = "Single"
+	// ServerRoleSingleActive indicates that the server is a the leader of a single-server resilient pair
+	ServerRoleSingleActive ServerRole = "SingleActive"
+	// ServerRoleSinglePassive indicates that the server is a a follower of a single-server resilient pair
+	ServerRoleSinglePassive ServerRole = "SinglePassive"
+	// ServerRoleDBServer indicates that the server is a dbserver within a cluster
+	ServerRoleDBServer ServerRole = "DBServer"
+	// ServerRoleCoordinator indicates that the server is a coordinator within a cluster
+	ServerRoleCoordinator ServerRole = "Coordinator"
+	// ServerRoleAgent indicates that the server is an agent within a cluster
+	ServerRoleAgent ServerRole = "Agent"
+	// ServerRoleUndefined indicates that the role of the server cannot be determined
+	ServerRoleUndefined ServerRole = "Undefined"
+)
+
+// ConvertServerRole returns go-driver server role based on ArangoDB role.
+func ConvertServerRole(arangoDBRole string) ServerRole {
+	switch arangoDBRole {
+	case "SINGLE":
+		return ServerRoleSingle
+	case "PRIMARY":
+		return ServerRoleDBServer
+	case "COORDINATOR":
+		return ServerRoleCoordinator
+	case "AGENT":
+		return ServerRoleAgent
+	default:
+		return ServerRoleUndefined
+	}
+}
 
 func newClientServerInfo(client *client) *clientServerInfo {
 	return &clientServerInfo{
@@ -63,5 +97,71 @@ func (c clientServerInfo) Version(ctx context.Context) (VersionInfo, error) {
 		return response.VersionInfo, nil
 	default:
 		return VersionInfo{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// ServerRole returns the role of the server that answers the request.
+func (c clientServerInfo) ServerRole(ctx context.Context) (ServerRole, error) {
+	url := connection.NewUrl("_admin", "server", "role")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Role                  string `json:"role,omitempty"`
+		Mode                  string `json:"mode,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ServerRoleUndefined, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		// Fallthrough.
+	default:
+		return ServerRoleUndefined, response.AsArangoErrorWithCode(code)
+	}
+
+	role := ConvertServerRole(response.Role)
+	if role != ServerRoleSingle {
+		return role, nil
+	}
+
+	if response.Mode != "resilient" {
+		// Single server mode.
+		return role, nil
+	}
+
+	// Active fail-over mode.
+	if err := c.echo(ctx); err != nil {
+		if shared.IsNoLeader(err) {
+			return ServerRoleSinglePassive, nil
+		}
+
+		return ServerRoleUndefined, errors.WithStack(err)
+	}
+
+	return ServerRoleSingleActive, nil
+}
+
+// echo returns what is sent to the server.
+func (c clientServerInfo) echo(ctx context.Context) error {
+	url := connection.NewUrl("_admin", "echo")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	// Velocypack requires non-empty body for versions < 3.11.
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, connection.WithBody("echo"))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
 	}
 }

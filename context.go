@@ -69,6 +69,7 @@ const (
 	keyMaxQueueTime             ContextKey = "arangodb-max-queue-time-seconds"
 	keyDropCollections          ContextKey = "arangodb-drop-collections"
 	keyDriverFlags              ContextKey = "arangodb-driver-flags"
+	keyRefillIndexCaches        ContextKey = "arangodb-driver-refill-index-caches"
 )
 
 type OverwriteMode string
@@ -292,6 +293,11 @@ func WithDriverFlags(parent context.Context, value []string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyDriverFlags, value)
 }
 
+// WithRefillIndexCaches is used to refill index caches during AQL operations.
+func WithRefillIndexCaches(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyRefillIndexCaches, value)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -316,6 +322,7 @@ type contextSettings struct {
 	QueueTimeout             bool
 	MaxQueueTime             time.Duration
 	DropCollections          *bool
+	RefillIndexCaches        *bool
 }
 
 // loadContextResponseValue loads generic values from the response and puts it into variables specified
@@ -528,7 +535,14 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 			result.DropCollections = &dropCollections
 		}
 	}
-
+	// IndexCacheRefilling
+	if v := ctx.Value(keyRefillIndexCaches); v != nil {
+		if local, ok := v.(bool); ok {
+			req.SetQuery("refillIndexCaches", strconv.FormatBool(local))
+			result.RefillIndexCaches = &local
+		}
+	}
+	// Overwrite
 	if v := ctx.Value(keyOverwrite); v != nil {
 		if overwrite, ok := v.(bool); ok && overwrite {
 			req.SetQuery("overwrite", "true")

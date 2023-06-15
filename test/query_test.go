@@ -137,6 +137,69 @@ func TestValidateQuery(t *testing.T) {
 	}
 }
 
+// TestExplainQuery tries to explain several AQL queries.
+func TestExplainQuery(t *testing.T) {
+	ctx := context.Background()
+	c := createClientFromEnv(t, true)
+	db := ensureDatabase(ctx, c, "explain_query_test", nil, t)
+
+	db, clean := prepareQueryDatabase(t, ctx, c, "explain_query_test")
+	defer clean(t)
+
+	// Setup tests
+	tests := []struct {
+		Query         string
+		BindVars      map[string]interface{}
+		Opts          *driver.ExplainQueryOptions
+		ExpectSuccess bool
+	}{
+		{
+			Query:         "FOR d IN books SORT d.Title RETURN d",
+			ExpectSuccess: true,
+		},
+		{
+			Query: "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars: map[string]interface{}{
+				"title": "Defending the Undefendable",
+			},
+			ExpectSuccess: true,
+		},
+		{
+			Query: "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			BindVars: map[string]interface{}{
+				"title": "Democracy: God That Failed",
+			},
+			Opts: &driver.ExplainQueryOptions{
+				AllPlans:  true,
+				Optimizer: driver.ExplainQueryOptimizerOptions{},
+			},
+			ExpectSuccess: true,
+		},
+		{
+			Query:         "FOR d IN books FILTER d.Title==@title SORT d.Title RETURN d",
+			ExpectSuccess: false, // bindVars not provided
+		},
+		{
+			Query:         "FOR u IN users FILTER u.age>>>100 SORT u.name RETURN u",
+			ExpectSuccess: false, // syntax error
+		},
+		{
+			Query:         "",
+			ExpectSuccess: false,
+		},
+	}
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("Case %d", i), func(t *testing.T) {
+			_, err := db.ExplainQuery(ctx, test.Query, test.BindVars, test.Opts)
+			if test.ExpectSuccess {
+				require.NoError(t, err, "case %d", i)
+			} else {
+				require.Error(t, err, "case %d", i)
+			}
+		})
+	}
+}
+
 // TestValidateQuery validates several AQL queries.
 func TestValidateQueryOptionShardIds(t *testing.T) {
 	ctx := context.Background()
@@ -374,5 +437,125 @@ func TestOptimizerRulesForQueries(t *testing.T) {
 		}
 		require.NotNil(t, ruleToFind)
 		require.True(t, ruleToFind.Flags.CanBeDisabled)
+	})
+}
+
+// TestRetryReadDocument test retry read document query attribute
+func TestRetryReadDocument(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	c := createClientFromEnv(t, true)
+
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.0"))
+
+	db := ensureDatabase(ctx, c, "query_retry_test", nil, t)
+	db, clean := prepareQueryDatabase(t, ctx, c, "query_retry_test")
+	defer clean(t)
+
+	// Setup tests
+	tests := []profileQueryTest{
+		{
+			Query: "FOR d IN users SORT d.Title RETURN d",
+		},
+	}
+
+	t.Run("Test retry if batch size equals 1", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryAllowRetry(ctx, true)
+				nCtx = driver.WithQueryBatchSize(nCtx, 1)
+				nCtx = driver.WithQueryCount(nCtx, true)
+
+				cursor, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+
+				for {
+					if !cursor.HasMore() {
+						break
+					}
+					var result UserDoc
+					_, err = cursor.ReadDocument(nCtx, &result)
+					require.NoError(t, err)
+
+					var resultRetry UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry.Name)
+				}
+
+				err = cursor.Close()
+				require.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("Test retry if batch size equals more than 1", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryAllowRetry(ctx, true)
+				nCtx = driver.WithQueryBatchSize(nCtx, 2)
+				nCtx = driver.WithQueryCount(nCtx, true)
+
+				cursor, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+
+				for {
+					if !cursor.HasMore() {
+						break
+					}
+					var result UserDoc
+					_, err = cursor.ReadDocument(nCtx, &result)
+					require.NoError(t, err)
+
+					var resultRetry UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry.Name)
+				}
+
+				err = cursor.Close()
+				require.NoError(t, err)
+			})
+		}
+	})
+
+	t.Run("Test retry double retries to ensure that result is same in every try", func(t *testing.T) {
+		for i, test := range tests {
+			t.Run(fmt.Sprintf("Run %d", i), func(t *testing.T) {
+				nCtx := driver.WithQueryAllowRetry(ctx, true)
+				nCtx = driver.WithQueryBatchSize(nCtx, 2)
+				nCtx = driver.WithQueryCount(nCtx, true)
+
+				cursor, err := db.Query(nCtx, test.Query, test.BindVars)
+				require.NoError(t, err)
+
+				for {
+					if !cursor.HasMore() {
+						break
+					}
+					var result UserDoc
+					_, err = cursor.ReadDocument(nCtx, &result)
+					require.NoError(t, err)
+
+					var resultRetry UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry.Name)
+
+					var resultRetry2 UserDoc
+					_, err = cursor.RetryReadDocument(nCtx, &resultRetry2)
+					require.NoError(t, err)
+
+					require.Equal(t, result.Name, resultRetry2.Name)
+				}
+
+				err = cursor.Close()
+				require.NoError(t, err)
+			})
+		}
 	})
 }

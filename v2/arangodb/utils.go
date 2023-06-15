@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"reflect"
@@ -146,4 +145,25 @@ func (j *jsonReader) HasMore() bool {
 		return false
 	}
 	return j.inStream.More()
+}
+
+// CreateDocuments creates given number of documents for the provided collection.
+func CreateDocuments(ctx context.Context, col Collection, docCount int, generator func(i int) any) error {
+	if generator == nil {
+		return errors.New("document generator can not be nil")
+	}
+	if col == nil {
+		return errors.New("collection can not be nil")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	docs := make([]any, 0, docCount)
+	for i := 0; i < docCount; i++ {
+		docs = append(docs, generator(i))
+	}
+
+	_, err := col.CreateDocuments(ctx, docs)
+	return err
 }

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,19 +17,20 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
-package arangodb
+package connection
 
-func newClientAdminBackup(client *client) *clientAdminBackup {
-	return &clientAdminBackup{
-		client: client,
-	}
-}
+import "strings"
 
-var _ ClientAdminBackup = &clientAdminBackup{}
+var (
+	urlFixer = strings.NewReplacer(
+		"tcp://", "http://",
+		"ssl://", "https://",
+	)
+)
 
-type clientAdminBackup struct {
-	client *client
+// FixupEndpointURLScheme changes endpoint URL schemes used by arangod to ones used by go.
+// E.g. "tcp://localhost:8529" -> "http://localhost:8529"
+func FixupEndpointURLScheme(u string) string {
+	return urlFixer.Replace(u)
 }

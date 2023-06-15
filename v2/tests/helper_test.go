@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package tests
@@ -83,6 +81,23 @@ func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCol
 		f(col)
 
 		return nil
+	})
+}
+
+func WithUserDocs(t *testing.T, col arangodb.Collection, f func(users []UserDoc)) {
+	users := []UserDoc{
+		{Name: "John", Age: 13},
+		{Name: "Jake", Age: 25},
+		{Name: "Clair", Age: 12},
+		{Name: "Johnny", Age: 42},
+		{Name: "Blair", Age: 67},
+	}
+
+	withContextT(t, 2*time.Minute, func(ctx context.Context, tb testing.TB) {
+		_, err := col.CreateDocuments(ctx, users)
+		require.NoError(t, err)
+
+		f(users)
 	})
 }
 

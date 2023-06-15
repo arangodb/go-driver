@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -29,21 +27,31 @@ type DatabaseQuery interface {
 	// Note that the returned Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed.
 	Query(ctx context.Context, query string, opts *QueryOptions) (Cursor, error)
 
+	// QueryBatch performs an AQL query, returning a cursor used to iterate over the returned documents in batches.
+	// In contrast to Query, QueryBatch does not load all documents into memory, but returns them in batches and allows for retries in case of errors.
+	// Note that the returned Cursor must always be closed to avoid holding on to resources in the server while they are no longer needed
+	QueryBatch(ctx context.Context, query string, opts *QueryOptions, result interface{}) (CursorBatch, error)
+
 	// ValidateQuery validates an AQL query.
 	// When the query is valid, nil returned, otherwise an error is returned.
 	// The query is not executed.
 	ValidateQuery(ctx context.Context, query string) error
+
+	// ExplainQuery explains an AQL query and return information about it.
+	ExplainQuery(ctx context.Context, query string, bindVars map[string]interface{}, opts *ExplainQueryOptions) (ExplainQueryResult, error)
 }
 
 type QuerySubOptions struct {
 	// ShardId query option
 	ShardIds []string `json:"shardIds,omitempty"`
-	// If set to true, then the additional query profiling information will be returned in the sub-attribute profile of the
-	// extra return attribute if the query result is not served from the query cache.
-	Profile bool `json:"profile,omitempty"`
-	// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute, telling the optimizer to include or exclude specific rules.
-	// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +. There is also a pseudo-rule all, which will match all optimizer rules.
-	OptimizerRules string `json:"optimizer.rules,omitempty"`
+	// Profile If set to 1, then the additional query profiling information is returned in the profile sub-attribute
+	// of the extra return attribute, unless the query result is served from the query cache.
+	// If set to 2, the query includes execution stats per query plan node in stats.nodes
+	// sub-attribute of the extra return attribute.
+	// Additionally, the query plan is returned in the extra.plan sub-attribute.
+	Profile uint `json:"profile,omitempty"`
+	// Optimizer contains options related to the query optimizer.
+	Optimizer QuerySubOptionsOptimizer `json:"optimizer,omitempty"`
 	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
 	// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
 	SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
@@ -70,6 +78,9 @@ type QuerySubOptions struct {
 	// or for queries that read data which are known to be outside of the hot set. By setting the option to false, data read by the query will not make it into
 	// the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
 	FillBlockCache bool `json:"fillBlockCache,omitempty"`
+	// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
+	// that batch reads can be retried in the case of a communication error.
+	AllowRetry bool `json:"allowRetry,omitempty"`
 }
 
 type QueryOptions struct {
@@ -96,6 +107,85 @@ type QueryOptions struct {
 	Options  QuerySubOptions        `json:"options,omitempty"`
 }
 
+// QuerySubOptionsOptimizer describes optimization's settings for AQL queries.
+type QuerySubOptionsOptimizer struct {
+	// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute,
+	// telling the optimizer to include or exclude specific rules.
+	// To disable a rule, prefix its name with a -, to enable a rule, prefix it with a +.
+	// There is also a pseudo-rule all, which will match all optimizer rules.
+	Rules []string `json:"rules,omitempty"`
+}
+
 type QueryRequest struct {
 	Query string `json:"query"`
+}
+
+type ExplainQueryOptimizerOptions struct {
+	// A list of to-be-included or to-be-excluded optimizer rules can be put into this attribute,
+	// telling the optimizer to include or exclude specific rules.
+	//  To disable a rule, prefix its name with a "-", to enable a rule, prefix it with a "+".
+	// There is also a pseudo-rule "all", which matches all optimizer rules. "-all" disables all rules.
+	Rules []string `json:"rules,omitempty"`
+}
+
+type ExplainQueryOptions struct {
+	// If set to true, all possible execution plans will be returned.
+	// The default is false, meaning only the optimal plan will be returned.
+	AllPlans bool `json:"allPlans,omitempty"`
+
+	// An optional maximum number of plans that the optimizer is allowed to generate.
+	// Setting this attribute to a low value allows to put a cap on the amount of work the optimizer does.
+	MaxNumberOfPlans *int `json:"maxNumberOfPlans,omitempty"`
+
+	// Options related to the query optimizer.
+	Optimizer ExplainQueryOptimizerOptions `json:"optimizer,omitempty"`
+}
+
+type ExplainQueryResultExecutionNodeRaw map[string]interface{}
+
+type ExplainQueryResultExecutionCollection struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type ExplainQueryResultExecutionVariable struct {
+	ID                           int    `json:"id"`
+	Name                         string `json:"name"`
+	IsDataFromCollection         bool   `json:"isDataFromCollection"`
+	IsFullDocumentFromCollection bool   `json:"isFullDocumentFromCollection"`
+}
+
+type ExplainQueryResultPlan struct {
+	// Execution nodes of the plan.
+	NodesRaw []ExplainQueryResultExecutionNodeRaw `json:"nodes,omitempty"`
+	// List of rules the optimizer applied
+	Rules []string `json:"rules,omitempty"`
+	// List of collections used in the query
+	Collections []ExplainQueryResultExecutionCollection `json:"collections,omitempty"`
+	// List of variables used in the query (note: this may contain internal variables created by the optimizer)
+	Variables []ExplainQueryResultExecutionVariable `json:"variables,omitempty"`
+	// The total estimated cost for the plan. If there are multiple plans, the optimizer will choose the plan with the lowest total cost
+	EstimatedCost float64 `json:"estimatedCost,omitempty"`
+	// The estimated number of results.
+	EstimatedNrItems int `json:"estimatedNrItems,omitempty"`
+}
+
+type ExplainQueryResultExecutionStats struct {
+	RulesExecuted   int     `json:"rulesExecuted,omitempty"`
+	RulesSkipped    int     `json:"rulesSkipped,omitempty"`
+	PlansCreated    int     `json:"plansCreated,omitempty"`
+	PeakMemoryUsage uint64  `json:"peakMemoryUsage,omitempty"`
+	ExecutionTime   float64 `json:"executionTime,omitempty"`
+}
+
+type ExplainQueryResult struct {
+	Plan  ExplainQueryResultPlan   `json:"plan,omitempty"`
+	Plans []ExplainQueryResultPlan `json:"plans,omitempty"`
+	// List of warnings that occurred during optimization or execution plan creation
+	Warnings []string `json:"warnings,omitempty"`
+	// Info about optimizer statistics
+	Stats ExplainQueryResultExecutionStats `json:"stats,omitempty"`
+	// Cacheable states whether the query results can be cached on the server if the query result cache were used.
+	// This attribute is not present when allPlans is set to true.
+	Cacheable *bool `json:"cacheable,omitempty"`
 }

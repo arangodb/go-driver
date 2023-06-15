@@ -28,8 +28,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
 func getTestMode() string {
@@ -44,10 +45,16 @@ const (
 	testModeSingle          mode = "single"
 )
 
-func requireMode(t *testing.T, mode mode) {
-	if getTestMode() != string(mode) {
-		t.Skipf("the test requires %s mode", mode)
+// requireMode skips current test if it is not in given modes.
+func requireMode(t *testing.T, modes ...mode) {
+	testMode := getTestMode()
+	for _, mode := range modes {
+		if testMode == string(mode) {
+			return
+		}
 	}
+
+	t.Skipf("test is in \"%s\" mode, but it requires one of \"%s\"", testMode, modes)
 }
 
 func requireClusterMode(t *testing.T) {

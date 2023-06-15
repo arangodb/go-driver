@@ -31,6 +31,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/rs/zerolog/log"
@@ -47,17 +48,34 @@ type ConnectionFactory func(t *testing.T) connection.Connection
 
 type WrapperB func(t *testing.B, client arangodb.Client)
 
-func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
+// WrapOptions describes testing options for a wrapper.
+type WrapOptions struct {
+	// NoParallel describes if internal tests should be launched parallelly.
+	// If it is nil then by default, it is true.
+	Parallel *bool
+}
+
+func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapOptions) {
 	c := newClient(t, connectionJsonHttp(t))
 
 	version, err := c.Version(context.Background())
 	require.NoError(t, err)
-	// HTTP
 
-	t.Parallel()
+	parallel := true
+	if len(wo) > 0 {
+		if wo[0].Parallel != nil {
+			parallel = *wo[0].Parallel
+		}
+	}
+
+	if parallel {
+		t.Parallel()
+	}
 
 	t.Run("HTTP JSON", func(t *testing.T) {
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionJsonHttp(t)
@@ -67,7 +85,9 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 	})
 
 	t.Run("HTTP VPACK", func(t *testing.T) {
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionVPACKHttp(t)
@@ -80,7 +100,9 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 		if version.Version.CompareTo("3.7.1") < 1 {
 			t.Skipf("Not supported")
 		}
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionJsonHttp2(t)
@@ -93,7 +115,9 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 		if version.Version.CompareTo("3.7.1") < 1 {
 			t.Skipf("Not supported")
 		}
-		t.Parallel()
+		if parallel {
+			t.Parallel()
+		}
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionVPACKHttp2(t)
@@ -103,16 +127,16 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory) {
 	})
 }
 
-func WrapConnection(t *testing.T, w WrapperConnection) {
+func WrapConnection(t *testing.T, w WrapperConnection, wo ...WrapOptions) {
 	WrapConnectionFactory(t, func(t *testing.T, connFactory ConnectionFactory) {
 		w(t, connFactory(t))
-	})
+	}, wo...)
 }
 
-func Wrap(t *testing.T, w Wrapper) {
+func Wrap(t *testing.T, w Wrapper, wo ...WrapOptions) {
 	WrapConnection(t, func(t *testing.T, conn connection.Connection) {
 		w(t, arangodb.NewClient(conn))
-	})
+	}, wo...)
 }
 
 func WrapB(t *testing.B, w WrapperB) {
@@ -150,9 +174,50 @@ func newClient(t testing.TB, connection connection.Connection) arangodb.Client {
 	return waitForConnection(t, arangodb.NewClient(connection))
 }
 
+type clusterEndpointsResponse struct {
+	Endpoints []clusterEndpoint `json:"endpoints,omitempty"`
+}
+
+type clusterEndpoint struct {
+	Endpoint string `json:"endpoint,omitempty"`
+}
+
 func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
+	// For Active Failover, we need to track the leader endpoint
+	var nextEndpoint int = -1
+
 	NewTimeout(func() error {
 		return withContext(time.Second, func(ctx context.Context) error {
+			if getTestMode() != string(testModeSingle) {
+				cer := clusterEndpointsResponse{}
+				resp, err := client.Get(ctx, &cer, "_api", "cluster", "endpoints")
+				if err != nil {
+					log.Warn().Err(err).Msgf("Unable to get cluster endpoints")
+					return nil
+				}
+
+				if resp.Code() != http.StatusOK {
+					return nil
+				}
+
+				if len(cer.Endpoints) == 0 {
+					t.Fatal("No endpoints found")
+				}
+
+				nextEndpoint++
+				if nextEndpoint >= len(cer.Endpoints) {
+					nextEndpoint = 0
+				}
+
+				// pick the first one endpoint which is always the leader in AF mode
+				// also for Cluster mode we only need one endpoint to avoid the problem with the data propagation in tests
+				endpoint := connection.NewEndpoints(connection.FixupEndpointURLScheme(cer.Endpoints[nextEndpoint].Endpoint))
+				err = client.Connection().SetEndpoint(endpoint)
+				if err != nil {
+					log.Warn().Err(err).Msgf("Unable to set endpoints")
+					return nil
+				}
+			}
 
 			resp, err := client.Get(ctx, nil, "_admin", "server", "availability")
 			if err != nil {
@@ -164,9 +229,11 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 				return nil
 			}
 
+			t.Logf("Found endpoints: %v", client.Connection().GetEndpoint())
+
 			return Interrupt{}
 		})
-	}).TimeoutT(t, time.Minute, 2*time.Second)
+	}).TimeoutT(t, time.Minute, 100*time.Millisecond)
 
 	return client
 }
@@ -175,33 +242,6 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
 		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
 		ContentType: connection.ApplicationJSON,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 90 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-	}
-
-	c := connection.NewHttpConnection(h)
-
-	withContext(2*time.Minute, func(ctx context.Context) error {
-		c = createAuthenticationFromEnv(t, c)
-		return nil
-	})
-	return c
-}
-
-func connectionPlainHttp(t testing.TB) connection.Connection {
-	h := connection.HttpConfiguration{
-		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
-		ContentType: connection.PlainText,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			DialContext: (&net.Dialer{
@@ -306,4 +346,49 @@ func withContextT(t testing.TB, timeout time.Duration, f func(ctx context.Contex
 		f(ctx, t)
 		return nil
 	}))
+}
+
+type healthFunc func(*testing.T, context.Context, arangodb.ClusterHealth)
+
+// withHealth waits for health, and launches a given function when it is healthy.
+// When system is available then sometimes it needs more time to fetch healthiness.
+func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, f healthFunc) {
+	ctxInner := ctx
+	if _, ok := ctx.Deadline(); !ok {
+		// When caller does not provide timeout, wait for healthiness for 30 seconds.
+		var cancel context.CancelFunc
+
+		ctxInner, cancel = context.WithTimeout(ctx, time.Second*30)
+		defer cancel()
+	}
+
+	for {
+		health, err := client.Health(ctxInner)
+		if err == nil && len(health.Health) > 0 {
+			notGood := 0
+			for _, h := range health.Health {
+				if h.Status != arangodb.ServerStatusGood {
+					notGood++
+				}
+			}
+
+			if notGood == 0 {
+				f(t, ctxInner, health)
+				return
+			}
+		}
+
+		select {
+		case <-time.After(time.Second):
+			break
+		case <-ctxInner.Done():
+			if err == nil {
+				// It is not health error, but context error.
+				err = ctxInner.Err()
+			}
+
+			err = errors.WithMessagef(err, "health %#v", health)
+			require.NoError(t, err)
+		}
+	}
 }

@@ -208,12 +208,9 @@ func TestDatabaseNameUnicode(t *testing.T) {
 func TestCreateDatabaseReplication2(t *testing.T) {
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
-	version, _ := c.Version(ctx)
-	if version.Version.CompareTo("3.11.0") < 0 {
-		t.Skipf("Version of the ArangoDB should be at least 3.11.0")
-	}
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
 
-	name := "create_test1"
+	name := "create_test_replication2"
 	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
 		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
 	}}

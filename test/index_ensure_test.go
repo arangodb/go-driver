@@ -528,8 +528,9 @@ func TestEnsureInvertedIndex(t *testing.T) {
 	col := ensureCollection(ctx, db, fmt.Sprintf("inverted_index_opt_test"), nil, t)
 
 	type testCase struct {
-		IsEE    bool
-		Options driver.InvertedIndexOptions
+		IsEE       bool
+		minVersion driver.Version
+		Options    driver.InvertedIndexOptions
 	}
 	testCases := []testCase{
 		{
@@ -582,6 +583,26 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				},
 			},
 		},
+		{
+			IsEE:       true,
+			minVersion: driver.Version("3.12.0"),
+			Options: driver.InvertedIndexOptions{
+				Name: "inverted-opt-optimize-top-k",
+				PrimarySort: driver.InvertedIndexPrimarySort{
+					Fields: []driver.ArangoSearchPrimarySortEntry{
+						{Field: "field1", Ascending: newBool(true)},
+					},
+					Compression: driver.PrimarySortCompressionLz4,
+				},
+				Fields: []driver.InvertedIndexField{
+					{
+						Name:     "field1",
+						Features: []driver.ArangoSearchAnalyzerFeature{driver.ArangoSearchAnalyzerFeatureFrequency},
+					},
+				},
+				OptimizeTopK: []string{"BM25(@doc) DESC", "TFIDF(@doc) DESC"},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -589,12 +610,23 @@ func TestEnsureInvertedIndex(t *testing.T) {
 			if tc.IsEE {
 				skipNoEnterprise(t)
 			}
+			if len(tc.minVersion) > 0 {
+				skipBelowVersion(c, tc.minVersion, t)
+			}
 
 			requireIdxEquality := func(invertedIdx driver.Index) {
 				require.Equal(t, driver.InvertedIndex, invertedIdx.Type())
 				require.Equal(t, tc.Options.Name, invertedIdx.UserName())
 				require.Equal(t, tc.Options.PrimarySort, invertedIdx.InvertedIndexOptions().PrimarySort)
 				require.Equal(t, tc.Options.Fields, invertedIdx.InvertedIndexOptions().Fields)
+
+				t.Run("optimizeTopK", func(t *testing.T) {
+					skipBelowVersion(c, "3.12.0", t)
+					// OptimizeTopK can be nil or []string{} depends on the version, so it better to check length.
+					if len(tc.Options.OptimizeTopK) > 0 || len(invertedIdx.InvertedIndexOptions().OptimizeTopK) > 0 {
+						require.Equal(t, tc.Options.OptimizeTopK, invertedIdx.InvertedIndexOptions().OptimizeTopK)
+					}
+				})
 			}
 
 			idx, created, err := col.EnsureInvertedIndex(ctx, &tc.Options)

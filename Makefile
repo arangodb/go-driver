@@ -1,4 +1,4 @@
-DRIVER_VERSION := 1.5.2
+DRIVER_VERSION := 1.6.0
 
 PROJECT := go-driver
 SCRIPTDIR := $(shell pwd)
@@ -6,7 +6,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.20.3
+GOVERSION ?= 1.20.5
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.17
@@ -72,7 +72,11 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 endif
 
 TEST_NET := --net=container:$(TESTCONTAINER)-ns
+
+# By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
+# e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
 TEST_ENDPOINTS := http://localhost:7001
+
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
 	CLUSTERENV := JWTSECRET=testing
@@ -134,8 +138,8 @@ ifeq ("$(DEBUG)", "true")
 	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 exec /test_debug.test -- $(TESTOPTIONS)
 	DOCKER_V2_RUN_CMD := $(DOCKER_RUN_CMD)
 else
-    DOCKER_RUN_CMD := $(GOIMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
-    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
+    DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) ./tests
 endif
 
 .PHONY: all build clean linter run-tests vulncheck
@@ -180,7 +184,7 @@ run-v2-unit-tests:
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
-		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection
+		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection $(REPOPATH)/v2/arangodb/...
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
@@ -393,11 +397,13 @@ __test_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
-		$(DOCKER_RUN_CMD) && echo "success!" || \
-			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
-			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
-			echo "\nV1 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n" \
-			exit 1; }
+		$(DOCKER_RUN_CMD) && echo "success!" || ( \
+			echo "failure! \n\nARANGODB-STARTER logs:"; \
+			docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; \
+			docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+			echo "\nV1 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n"; \
+			exit 1)
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
 
@@ -418,20 +424,22 @@ __test_v2_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/v2/ \
-		$(DOCKER_V2_RUN_CMD) && echo "success!" || \
-			{ echo "failure! \n\nARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
-			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
-			echo "\nV2 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n" \
-			exit 1; }
+		$(DOCKER_V2_RUN_CMD) && echo "success!" || ( \
+		    echo "failure! \n\nARANGODB-STARTER logs:"; \
+		    docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; \
+			docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+			echo "\nV2 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n"; \
+			exit 1)
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
-	@docker build -f Dockerfile.debug --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
+	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
 endif
 
 __test_v2_debug__:
 ifeq ("$(DEBUG)", "true")
-	@docker build -f Dockerfile.debug --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
+	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
 endif
 
 __dir_setup:
@@ -461,30 +469,6 @@ else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
 	@sleep 3
-
-
-run-tests-cluster-failover: 
-	# Note that we use 127.0.0.1:7001.. as endpoints, so we force using IPv4
-	# This is essential since we only block IPv4 ports in the test.
-	@echo "Cluster server, failover, no authentication"
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" start
-	go get github.com/coreos/go-iptables/iptables
-	$(DOCKER_CMD) \
-		--rm \
-		$(TEST_NET) \
-		--privileged \
-		-v "${ROOTDIR}":/usr/code \
-		-e TEST_ENDPOINTS=http://127.0.0.1:7001,http://127.0.0.1:7006,http://127.0.0.1:7011 \
-		-e TEST_NOT_WAIT_UNTIL_READY=$(TEST_NOT_WAIT_UNTIL_READY) \
-		-e TEST_AUTHENTICATION=basic:root: \
-		-e GODEBUG=tls13=1 \
-		-w /usr/code/ \
-		golang:$(GOVERSION) \
-		go test -run ".*Failover.*" -tags failover $(TESTOPTIONS) $(REPOPATH)/test
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
-
-run-tests-cluster-cleanup:
-	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) "${ROOTDIR}/test/cluster.sh" cleanup
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 

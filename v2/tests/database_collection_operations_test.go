@@ -93,6 +93,96 @@ func Test_CollectionShards(t *testing.T) {
 	})
 }
 
+// Test_WithQueryOptimizerRules tests optimizer rules for query.
+func Test_WithQueryOptimizerRules(t *testing.T) {
+
+	tests := map[string]struct {
+		OptimizerRules   []string
+		ExpectedRules    []string
+		NotExpectedRules []string
+	}{
+		"include optimizer rule: use-indexes": {
+			OptimizerRules: []string{"+use-indexes"},
+			ExpectedRules:  []string{"use-indexes"},
+		},
+		"exclude optimizer rule: use-indexes": {
+			OptimizerRules:   []string{"-use-indexes"},
+			NotExpectedRules: []string{"use-indexes"},
+		},
+		"overwrite excluded optimizer rule: use-indexes": {
+			OptimizerRules: []string{"-use-indexes", "+use-indexes"},
+			ExpectedRules:  []string{"use-indexes"},
+		},
+		"overwrite included optimizer rule: use-indexes": {
+			OptimizerRules:   []string{"+use-indexes", "-use-indexes"},
+			NotExpectedRules: []string{"use-indexes"},
+		},
+		"turn off all optimizer rule": {
+			OptimizerRules:   []string{"-all"},        // some rules can not be disabled.
+			NotExpectedRules: []string{"use-indexes"}, // this rule will be disabled with all disabled rules.
+		},
+		"turn on all optimizer rule": {
+			OptimizerRules: []string{"+all"},
+			ExpectedRules:  []string{"use-indexes"}, // this rule will be enabled with all enabled rules.
+		},
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				t.Run("Cursor - optimizer rules", func(t *testing.T) {
+
+					ctx, c := context.WithTimeout(context.Background(), 1*time.Minute)
+					defer c()
+
+					col, err := db.CreateCollection(ctx, "test", nil)
+					require.NoError(t, err)
+
+					fieldName := "value"
+					_, _, err = col.EnsurePersistentIndex(ctx, []string{fieldName}, &arangodb.CreatePersistentIndexOptions{
+						Name: "index",
+					})
+					require.NoErrorf(t, err, "failed to index for collection \"%s\"", col.Name())
+
+					type testDoc struct {
+						Value int `json:"value"` // variable fieldName
+					}
+					err = arangodb.CreateDocuments(ctx, col, 100, func(index int) any {
+						return testDoc{Value: index}
+					})
+					require.NoErrorf(t, err, "failed to create exemplary documents")
+
+					query := fmt.Sprintf("FOR i IN %s FILTER i.%s > 97 SORT i.%s RETURN i.%s", col.Name(), fieldName,
+						fieldName, fieldName)
+					for testName, test := range tests {
+						t.Run(testName, func(t *testing.T) {
+							opts := &arangodb.QueryOptions{
+								Options: arangodb.QuerySubOptions{
+									Profile: 2,
+									Optimizer: arangodb.QuerySubOptionsOptimizer{
+										Rules: test.OptimizerRules,
+									},
+								},
+							}
+							q, err := db.Query(ctx, query, opts)
+							require.NoError(t, err)
+
+							plan := q.Plan()
+							for _, rule := range test.ExpectedRules {
+								require.Contains(t, plan.Rules, rule)
+							}
+
+							for _, rule := range test.NotExpectedRules {
+								require.NotContains(t, plan.Rules, rule)
+							}
+						})
+					}
+				})
+			})
+		})
+	})
+}
+
 func Test_DatabaseCollectionOperations(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -325,10 +415,11 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 }
 
 func TestDatabaseNameUnicode(t *testing.T) {
-	databaseExtendedNamesRequired(t)
-
 	Wrap(t, func(t *testing.T, c arangodb.Client) {
 		withContext(30*time.Second, func(ctx context.Context) error {
+			skipBelowVersion(c, ctx, "3.9.0", t)
+			databaseExtendedNamesRequired(t, c, ctx)
+
 			random := uuid.New().String()
 			dbName := "\u006E\u0303\u00f1" + random
 			_, err := c.CreateDatabase(ctx, dbName, nil)
@@ -370,17 +461,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 
 // databaseExtendedNamesRequired skips test if the version is < 3.9.0 or the ArangoDB has not been launched
 // with the option --database.extended-names-databases=true.
-func databaseExtendedNamesRequired(t *testing.T) {
-	c := newClient(t, connectionJsonHttp(t))
-
-	ctx := context.Background()
-	version, err := c.Version(ctx)
-	require.NoError(t, err)
-
-	if version.Version.CompareTo("3.9.0") < 0 {
-		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
-	}
-
+func databaseExtendedNamesRequired(t *testing.T, c arangodb.Client, ctx context.Context) {
 	// If the database can be created with the below name then it means that it excepts unicode names.
 	dbName := "\u006E\u0303\u00f1"
 	normalized := norm.NFC.String(dbName)
@@ -389,7 +470,7 @@ func databaseExtendedNamesRequired(t *testing.T) {
 		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
 	}
 
-	if shared.IsArangoErrorWithErrorNum(err, shared.ErrArangoDatabaseNameInvalid) {
+	if shared.IsArangoErrorWithErrorNum(err, shared.ErrArangoDatabaseNameInvalid, shared.ErrArangoIllegalName) {
 		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
 	}
 

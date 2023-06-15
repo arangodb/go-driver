@@ -18,7 +18,7 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 
-package tests
+package test
 
 import (
 	"context"
@@ -27,20 +27,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/arangodb/go-driver"
 )
 
-// Test_DecoderBytes gets plain text response from the server
-func Test_DecoderBytes(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		var output []byte
+// Test_License tests ArangoDB license.
+func Test_License(t *testing.T) {
+	c := createClientFromEnv(t, true)
+	ctx := context.Background()
+	skipBelowVersion(c, "3.10.0", t)
 
-		url := connection.NewUrl("_admin", "metrics", "v2")
-		_, err := connection.CallGet(context.Background(), client.Connection(), url, &output)
+	version, err := c.Version(ctx)
+	require.NoError(t, err)
 
-		require.NoError(t, err)
-		require.NotNil(t, output)
-		assert.Contains(t, string(output), "arangodb_connection_pool")
-	})
+	license, err := c.GetLicense(ctx)
+	require.NoError(t, err)
+
+	if version.IsEnterprise() {
+		assert.Equalf(t, driver.LicenseStatusExpiring, license.Status, "by default status should be expiring")
+		assert.Equalf(t, 1, license.Version, "excpected version should be 1")
+	} else {
+		assert.Equalf(t, driver.LicenseStatus(""), license.Status, "license status should be empty")
+		assert.Equalf(t, 0, license.Version, "license version should be empty")
+	}
 }
