@@ -85,11 +85,10 @@ func Test_LogLevelsForServers(t *testing.T) {
 	skipBelowVersion(c, "3.10.2", t)
 	skipNoCluster(c, t)
 
-	cl, err := c.Cluster(ctx)
-	require.NoError(t, err)
-
-	health, err := cl.Health(ctx)
-	require.NoError(t, err)
+	health, err := waitUntilClusterHealthy(c)
+	if err != nil {
+		t.Fatalf("Failed to wait for healthy cluster: %s", describe(err))
+	}
 
 	var changed int
 	servers := make(map[driver.ServerID]driver.LogLevels)

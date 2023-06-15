@@ -41,6 +41,7 @@ func Test_LogLevels(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContext(time.Minute, func(ctx context.Context) error {
+
 			logLevels, err := client.GetLogLevels(ctx, nil)
 			require.NoError(t, err)
 			if len(logLevels) == 0 {
@@ -76,64 +77,61 @@ func Test_LogLevelsForServers(t *testing.T) {
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContext(time.Minute, func(ctx context.Context) error {
+		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 			skipBelowVersion(client, ctx, "3.10.2", t)
-
-			health, err := client.Health(ctx)
-			require.NoError(t, err)
-
-			var changed int
-			servers := make(map[arangodb.ServerID]arangodb.LogLevels)
-			for serverID, health := range health.Health {
-				if health.Role == arangodb.ServerRoleAgent {
-					continue
-				}
-
-				opts := arangodb.LogLevelsGetOptions{
-					ServerID: serverID,
-				}
-
-				logLevels, err := client.GetLogLevels(ctx, &opts)
-				require.NoError(t, err)
-
-				if changed == 0 {
-					// Change log level for random topic, but only for one server.
-					changed++
-					for randomTopic, level := range logLevels {
-						logLevels[randomTopic] = changeLogLevel(level)
-						opts := arangodb.LogLevelsSetOptions{
-							ServerID: serverID,
-						}
-
-						err = client.SetLogLevels(ctx, logLevels, &opts)
-						require.NoError(t, err)
-
-						break
+			withHealthT(t, ctx, client, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
+				var changed int
+				servers := make(map[arangodb.ServerID]arangodb.LogLevels)
+				for serverID, health := range health.Health {
+					if health.Role == arangodb.ServerRoleAgent {
+						continue
 					}
+
+					opts := arangodb.LogLevelsGetOptions{
+						ServerID: serverID,
+					}
+
+					logLevels, err := client.GetLogLevels(ctx, &opts)
+					require.NoError(t, err)
+
+					if changed == 0 {
+						// Change log level for random topic, but only for one server.
+						changed++
+						for randomTopic, level := range logLevels {
+							logLevels[randomTopic] = changeLogLevel(level)
+							opts := arangodb.LogLevelsSetOptions{
+								ServerID: serverID,
+							}
+
+							err = client.SetLogLevels(ctx, logLevels, &opts)
+							require.NoError(t, err)
+
+							break
+						}
+					}
+
+					servers[serverID] = logLevels
 				}
+				require.Equal(t, 1, changed, "only one server should change log levels")
 
-				servers[serverID] = logLevels
-			}
-			require.Equal(t, 1, changed, "only one server should change log levels")
+				// Check if log levels have changed for a specific server.
+				for serverID, health := range health.Health {
+					if health.Role == arangodb.ServerRoleAgent {
+						continue
+					}
 
-			// Check if log levels have changed for a specific server.
-			for serverID, health := range health.Health {
-				if health.Role == arangodb.ServerRoleAgent {
-					continue
+					opts := arangodb.LogLevelsGetOptions{
+						ServerID: serverID,
+					}
+
+					result, err := client.GetLogLevels(ctx, &opts)
+					require.NoError(t, err)
+
+					s, ok := servers[serverID]
+					require.True(t, ok)
+					require.Equal(t, s, result)
 				}
-
-				opts := arangodb.LogLevelsGetOptions{
-					ServerID: serverID,
-				}
-
-				result, err := client.GetLogLevels(ctx, &opts)
-				require.NoError(t, err)
-
-				s, ok := servers[serverID]
-				require.True(t, ok)
-				require.Equal(t, s, result)
-			}
-			return nil
+			})
 		})
 	}, wrapOpts)
 }
