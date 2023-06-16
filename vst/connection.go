@@ -255,6 +255,9 @@ func (c *vstConnection) SetAuthentication(auth driver.Authentication) (driver.Co
 		userName := auth.Get("username")
 		password := auth.Get("password")
 		vstAuth = newJWTAuthentication(userName, password)
+	case driver.AuthenticationTypeRaw:
+		jwt := auth.Get("value")
+		vstAuth = newRawAuthentication(jwt)
 	default:
 		return nil, driver.WithStack(fmt.Errorf("Unsupported authentication type %d", int(auth.Type())))
 	}

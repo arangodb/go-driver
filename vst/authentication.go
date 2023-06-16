@@ -56,11 +56,21 @@ func newJWTAuthentication(userName, password string) vstAuthentication {
 	}
 }
 
+// newRawAuthentication creates a JWT token authentication implementation using a pre-gathered token.
+func newRawAuthentication(jwt string) vstAuthentication {
+	return &vstAuthenticationImpl{
+		encryption: "raw",
+		jwt:        jwt,
+	}
+}
+
 // vstAuthenticationImpl implements VST implementation for JWT & Plain.
 type vstAuthenticationImpl struct {
 	encryption string
 	userName   string
 	password   string
+
+	jwt string // used for raw authentication
 }
 
 type jwtOpenRequest struct {
@@ -79,7 +89,8 @@ func (a *vstAuthenticationImpl) PrepareFunc(vstConn *vstConnection) func(ctx con
 		var authReq velocypack.Slice
 		var err error
 
-		if a.encryption == "jwt" {
+		switch a.encryption {
+		case "jwt":
 			// Call _open/auth
 			// Prepare request
 			r, err := vstConn.NewRequest("POST", "/_open/auth")
@@ -118,7 +129,20 @@ func (a *vstAuthenticationImpl) PrepareFunc(vstConn *vstConnection) func(ctx con
 			if err != nil {
 				return driver.WithStack(err)
 			}
-		} else {
+		case "raw":
+			// Create request
+			var b velocypack.Builder
+			b.OpenArray()
+			b.AddValue(velocypack.NewIntValue(1))        // Version
+			b.AddValue(velocypack.NewIntValue(1000))     // Type (1000=Auth)
+			b.AddValue(velocypack.NewStringValue("jwt")) // Encryption type
+			b.AddValue(velocypack.NewStringValue(a.jwt)) // Token
+			b.Close()                                    // request
+			authReq, err = b.Slice()
+			if err != nil {
+				return driver.WithStack(err)
+			}
+		case "plain":
 			// Create request
 			var b velocypack.Builder
 			b.OpenArray()
