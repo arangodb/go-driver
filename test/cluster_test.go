@@ -175,6 +175,7 @@ func TestClusterDatabaseInventorySatellite(t *testing.T) {
 func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 	skipNoEnterprise(t)
 	name := "smart_join_collection_dbinv"
+	nameParent := "smart_join_collection_dbinv_parent"
 	ctx := context.Background()
 	c := createClientFromEnv(t, true)
 	skipBelowVersion(c, "3.4.5", t)
@@ -186,10 +187,17 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
+		colParent := ensureCollection(ctx, db, nameParent, &driver.CreateCollectionOptions{
+			ShardKeys:      []string{"_key:"},
+			NumberOfShards: 2,
+		}, t)
+		defer clean(t, ctx, colParent)
+
 		col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
-			ShardKeys:          []string{"_key:"},
-			SmartJoinAttribute: "smart",
-			NumberOfShards:     2,
+			DistributeShardsLike: nameParent,
+			ShardKeys:            []string{"_key:"},
+			SmartJoinAttribute:   "smart",
+			NumberOfShards:       2,
 		}, t)
 		defer clean(t, ctx, col)
 		inv, err := cl.DatabaseInventory(ctx, db)
