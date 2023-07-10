@@ -33,7 +33,7 @@ import (
 	"github.com/arangodb/go-driver/util/connection/wrappers/async"
 )
 
-func ExampleNewClientWithAsyncMode() {
+func ExampleNewConnectionAsyncWrapper() {
 	conn, err := http.NewConnection(http.ConnectionConfig{
 		Endpoints: []string{"http://localhost:8529"},
 	})
