@@ -44,7 +44,7 @@ func NewConnectionAsyncWrapper(conn driver.Connection) driver.Connection {
 }
 
 func (a asyncConnectionWrapper) Do(ctx context.Context, req driver.Request) (driver.Response, error) {
-	if id, ok := IsAsyncIDSet(ctx); ok {
+	if id, ok := driver.IsAsyncIDSet(ctx); ok {
 		// We have ID Set so a job is in progress, request should be done with job api
 		req, err := a.Connection.NewRequest(http.MethodPut, path.Join("/_api/job", id))
 		if err != nil {
@@ -92,16 +92,4 @@ func (a asyncConnectionWrapper) Do(ctx context.Context, req driver.Request) (dri
 	} else {
 		return a.Connection.Do(ctx, req)
 	}
-}
-
-func IsAsyncIDSet(ctx context.Context) (string, bool) {
-	if ctx != nil {
-		if q := ctx.Value("arangodb-async-id"); q != nil {
-			if v, ok := q.(string); ok {
-				return v, true
-			}
-		}
-	}
-
-	return "", false
 }
