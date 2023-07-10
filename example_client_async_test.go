@@ -41,8 +41,10 @@ func ExampleNewClientWithAsyncMode() {
 		log.Fatalf("Failed to create HTTP connection: %v", err)
 	}
 
-	// Create a client with optional async mode
-	c, err := driver.NewClientWithAsyncMode(driver.ClientConfig{Connection: conn}, true)
+	// Wrap connection with async wrapper
+	async.NewConnectionAsyncWrapper(conn)
+
+	c, err := driver.NewClient(driver.ClientConfig{Connection: conn})
 
 	// Trigger async request
 	info, err := c.Version(driver.WithAsync(context.Background()))
