@@ -300,12 +300,12 @@ func WithRefillIndexCaches(parent context.Context, value bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyRefillIndexCaches, value)
 }
 
-// WithAsync is used to configure a context to make an async operation - requires Connection with AsyncMode!
+// WithAsync is used to configure a context to make an async operation - requires Connection with Async wrapper!
 func WithAsync(parent context.Context) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAsyncRequest, true)
 }
 
-// WithAsyncId is used to configure a context to make an async operation
+// WithAsyncId is used to check an async operation result - requires Connection with Async wrapper!
 func WithAsyncId(parent context.Context, asyncID string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAsyncID, asyncID)
 }
