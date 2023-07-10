@@ -34,6 +34,9 @@ import (
 
 const (
 	minAgencyTimeout = time.Second * 2
+
+	keyRawResponse driver.ContextKey = "arangodb-rawResponse"
+	keyResponse    driver.ContextKey = "arangodb-response"
 )
 
 type agencyConnection struct {
@@ -132,6 +135,16 @@ func (c *agencyConnection) doOnce(ctx context.Context, req driver.Request) (driv
 		return nil, true, driver.WithStack(fmt.Errorf("no connections"))
 	}
 
+	parallelRequests := true
+	if ctx != nil {
+		if v := ctx.Value(keyResponse); v != nil {
+			parallelRequests = false
+		}
+		if v := ctx.Value(keyRawResponse); v != nil {
+			parallelRequests = false
+		}
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	results := make(chan driver.Response, len(connections))
 	errors := make(chan error, len(connections))
@@ -168,10 +181,17 @@ func (c *agencyConnection) doOnce(ctx context.Context, req driver.Request) (driv
 			}
 			// No permanent error, try next agent
 		}(epConn)
+		if !parallelRequests {
+			// Parallel requests not allowed so we should wait till routine finishes
+			wg.Wait()
+		}
 	}
 
-	// Wait for go routines to finished
-	wg.Wait()
+	if parallelRequests {
+		// Wait for go routines to be finished
+		wg.Wait()
+	}
+
 	cancel()
 	close(results)
 	close(errors)
