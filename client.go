@@ -52,28 +52,32 @@ type Client interface {
 	// Connection returns the connection used by this client
 	Connection() Connection
 
-	// Database functions
+	// ClientDatabases - Database functions
 	ClientDatabases
 
-	// User functions
+	// ClientUsers - User functions
 	ClientUsers
 
-	// Cluster functions
+	// ClientCluster - Cluster functions
 	ClientCluster
 
-	// Individual server information functions
+	// ClientServerInfo - Individual server information functions
 	ClientServerInfo
 
-	// Server/cluster administration functions
+	// ClientServerAdmin - Server/cluster administration functions
 	ClientServerAdmin
 
-	// Replication functions
+	// ClientReplication - Replication functions
 	ClientReplication
 
-	// Backup functions
+	// ClientAdminBackup - Backup functions
 	ClientAdminBackup
 
+	// ClientFoxx - Foxx functions
 	ClientFoxx
+
+	// ClientAsyncJob - Asynchronous job functions
+	ClientAsyncJob
 
 	ClientLog
 }

@@ -70,6 +70,8 @@ const (
 	keyDropCollections          ContextKey = "arangodb-drop-collections"
 	keyDriverFlags              ContextKey = "arangodb-driver-flags"
 	keyRefillIndexCaches        ContextKey = "arangodb-driver-refill-index-caches"
+	keyAsyncRequest             ContextKey = "arangodb-async-request"
+	keyAsyncID                  ContextKey = "arangodb-async-id"
 )
 
 type OverwriteMode string
@@ -298,6 +300,16 @@ func WithRefillIndexCaches(parent context.Context, value bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyRefillIndexCaches, value)
 }
 
+// WithAsync is used to configure a context to make an async operation - requires Connection with AsyncMode!
+func WithAsync(parent context.Context) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyAsyncRequest, true)
+}
+
+// WithAsyncId is used to configure a context to make an async operation
+func WithAsyncId(parent context.Context, asyncID string) context.Context {
+	return context.WithValue(contextOrBackground(parent), keyAsyncID, asyncID)
+}
+
 type contextSettings struct {
 	Silent                   bool
 	WaitForSync              bool
@@ -368,6 +380,7 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 	if ctx == nil {
 		return result
 	}
+
 	// Details
 	if v := ctx.Value(keyDetails); v != nil {
 		if details, ok := v.(bool); ok {
@@ -550,6 +563,13 @@ func applyContextSettings(ctx context.Context, req Request) contextSettings {
 		}
 	}
 
+	// AsyncID
+	if v := ctx.Value(keyAsyncID); v != nil {
+		if asyncID, ok := v.(string); ok {
+			req.SetHeader("x-arango-async-id", asyncID)
+		}
+	}
+
 	return result
 }
 
@@ -593,4 +613,34 @@ func withDocumentAt(ctx context.Context, index int) (context.Context, error) {
 	}
 
 	return ctx, nil
+}
+
+//
+// READ METHODS
+//
+
+// IsAsyncRequest returns true if the given context is an async request.
+func IsAsyncRequest(ctx context.Context) bool {
+	if ctx != nil {
+		if v := ctx.Value(keyAsyncRequest); v != nil {
+			if isAsync, ok := v.(bool); ok && isAsync {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// IsAsyncIDSet returns the async Job ID from the given context.
+func IsAsyncIDSet(ctx context.Context) (string, bool) {
+	if ctx != nil {
+		if q := ctx.Value(keyAsyncID); q != nil {
+			if v, ok := q.(string); ok {
+				return v, true
+			}
+		}
+	}
+
+	return "", false
 }

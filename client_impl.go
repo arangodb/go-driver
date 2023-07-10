@@ -27,10 +27,11 @@ import (
 	"time"
 
 	"github.com/arangodb/go-driver/util"
+	"github.com/arangodb/go-driver/util/connection/wrappers/async"
 )
 
-// NewClient creates a new Client based on the given config setting.
-func NewClient(config ClientConfig) (Client, error) {
+// NewClientWithAsyncMode creates a new Client with optional async mode (configured via the context)
+func NewClientWithAsyncMode(config ClientConfig, asyncMode bool) (Client, error) {
 	if config.Connection == nil {
 		return nil, WithStack(InvalidArgumentError{Message: "Connection is not set"})
 	}
@@ -42,6 +43,11 @@ func NewClient(config ClientConfig) (Client, error) {
 			return nil, WithStack(err)
 		}
 	}
+
+	if asyncMode {
+		conn = async.NewConnectionAsyncWrapper(conn)
+	}
+
 	c := &client{
 		conn: conn,
 	}
@@ -49,6 +55,11 @@ func NewClient(config ClientConfig) (Client, error) {
 		go c.autoSynchronizeEndpoints(config.SynchronizeEndpointsInterval)
 	}
 	return c, nil
+}
+
+// NewClient creates a new Client based on the given config setting.
+func NewClient(config ClientConfig) (Client, error) {
+	return NewClientWithAsyncMode(config, false)
 }
 
 // client implements the Client interface.
