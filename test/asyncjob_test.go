@@ -33,12 +33,14 @@ import (
 )
 
 func TestAsyncJobListDone(t *testing.T) {
-	client := createAsyncClientFromEnv(t)
+	c := createAsyncClientFromEnv(t)
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
 
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
+
 	// Trigger two async requests
-	info, err := client.Version(ctxAsync)
+	info, err := c.Version(ctxAsync)
 	require.Error(t, err)
 	require.Empty(t, info.Version)
 
@@ -46,7 +48,7 @@ func TestAsyncJobListDone(t *testing.T) {
 	require.True(t, isAsyncId)
 	require.NotEmpty(t, id)
 
-	info2, err2 := client.Version(ctxAsync)
+	info2, err2 := c.Version(ctxAsync)
 	require.Error(t, err2)
 	require.Empty(t, info2.Version)
 
@@ -58,45 +60,46 @@ func TestAsyncJobListDone(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	t.Run("AsyncJobs List Done jobs", func(t *testing.T) {
-		jobs, err := client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 2)
 	})
 
 	t.Run("AsyncJobs List with Count param", func(t *testing.T) {
-		jobs, err := client.AsyncJob().List(ctx, driver.JobDone, &driver.AsyncJobListOptions{Count: 1})
+		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, &driver.AsyncJobListOptions{Count: 1})
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 	})
 
 	t.Run("async request final result", func(t *testing.T) {
-		info, err = client.Version(driver.WithAsyncId(ctx, id))
+		info, err = c.Version(driver.WithAsyncId(ctx, id))
 		require.NoError(t, err)
 		require.NotEmpty(t, info.Version)
 	})
 
 	t.Run("List of Done jobs should decrease", func(t *testing.T) {
-		jobs, err := client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 
 		// finish the second job
-		info2, err2 = client.Version(driver.WithAsyncId(ctx, id2))
+		info2, err2 = c.Version(driver.WithAsyncId(ctx, id2))
 		require.NoError(t, err2)
 		require.NotEmpty(t, info2.Version)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
 }
 
 func TestAsyncJobListPending(t *testing.T) {
-	client := createAsyncClientFromEnv(t)
+	c := createAsyncClientFromEnv(t)
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
 
-	db := ensureDatabase(ctx, client, databaseName("db", "async"), nil, t)
+	db := ensureDatabase(ctx, c, databaseName("db", "async"), nil, t)
 	defer db.Remove(ctx)
 	col := ensureCollection(ctx, db, "frontend", nil, t)
 
@@ -104,7 +107,7 @@ func TestAsyncJobListPending(t *testing.T) {
 	require.NotEmpty(t, idTransaction)
 
 	t.Run("AsyncJobs List Pending jobs", func(t *testing.T) {
-		jobs, err := client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 	})
@@ -112,11 +115,11 @@ func TestAsyncJobListPending(t *testing.T) {
 	t.Run("wait fot the async jobs to be done", func(t *testing.T) {
 		time.Sleep(4 * time.Second)
 
-		jobs, err := client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 
@@ -126,18 +129,19 @@ func TestAsyncJobListPending(t *testing.T) {
 		idTransaction := runLongRequest(t, driver.WithAsyncId(ctx, idTransaction), db, 2, col.Name())
 		require.Empty(t, idTransaction)
 
-		jobs, err := client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
 }
 
 func TestAsyncJobCancel(t *testing.T) {
-	client := createAsyncClientFromEnv(t)
+	c := createAsyncClientFromEnv(t)
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
 
-	db := ensureDatabase(ctx, client, databaseName("db", "async", "cancel"), nil, t)
+	db := ensureDatabase(ctx, c, databaseName("db", "async", "cancel"), nil, t)
 	defer db.Remove(ctx)
 
 	aqlQuery := "FOR i IN 1..10 FOR j IN 1..10 LET x = sleep(1.0) FILTER i == 5 && j == 5 RETURN 42"
@@ -149,11 +153,11 @@ func TestAsyncJobCancel(t *testing.T) {
 	require.True(t, isAsyncId)
 
 	t.Run("cancel Pending job", func(t *testing.T) {
-		jobs, err := client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 
-		success, err := client.AsyncJob().Cancel(ctx, jobs[0])
+		success, err := c.AsyncJob().Cancel(ctx, jobs[0])
 		require.NoError(t, err)
 		require.True(t, success)
 
@@ -162,11 +166,11 @@ func TestAsyncJobCancel(t *testing.T) {
 	t.Run("cancelled job should move from pending to done state", func(t *testing.T) {
 		time.Sleep(5 * time.Second)
 
-		jobs, err := client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 		require.Equal(t, id, jobs[0])
@@ -178,53 +182,54 @@ func TestAsyncJobCancel(t *testing.T) {
 }
 
 func TestAsyncJobDelete(t *testing.T) {
-	client := createAsyncClientFromEnv(t)
+	c := createAsyncClientFromEnv(t)
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
 
-	db := ensureDatabase(ctx, client, databaseName("db", "async", "cancel"), nil, t)
+	db := ensureDatabase(ctx, c, databaseName("db", "async", "cancel"), nil, t)
 	defer db.Remove(ctx)
 	col := ensureCollection(ctx, db, "backend", nil, t)
 
 	t.Run("delete all jobs", func(t *testing.T) {
 		// Trigger async request
-		_, err := client.Version(ctxAsync)
+		_, err := c.Version(ctxAsync)
 		require.Error(t, err)
 
-		_, err2 := client.Version(ctxAsync)
+		_, err2 := c.Version(ctxAsync)
 		require.Error(t, err2)
 
 		time.Sleep(2 * time.Second)
 
-		jobs, err := client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 2)
 
-		success, err := client.AsyncJob().Delete(ctx, driver.DeleteAllJobs, nil)
+		success, err := c.AsyncJob().Delete(ctx, driver.DeleteAllJobs, nil)
 		require.NoError(t, err)
 		require.True(t, success)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
 
 	t.Run("delete specific job which is done", func(t *testing.T) {
 		// Trigger async request
-		_, err := client.Version(ctxAsync)
+		_, err := c.Version(ctxAsync)
 		require.Error(t, err)
 
 		time.Sleep(2 * time.Second)
 
-		jobs, err := client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 
-		success, err := client.AsyncJob().Delete(ctx, driver.DeleteSingleJob, &driver.AsyncJobDeleteOptions{JobID: jobs[0]})
+		success, err := c.AsyncJob().Delete(ctx, driver.DeleteSingleJob, &driver.AsyncJobDeleteOptions{JobID: jobs[0]})
 		require.NoError(t, err)
 		require.True(t, success)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
@@ -233,19 +238,19 @@ func TestAsyncJobDelete(t *testing.T) {
 		idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
 		require.NotEmpty(t, idTransaction)
 
-		jobs, err := client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 
-		success, err := client.AsyncJob().Delete(ctx, driver.DeleteSingleJob, &driver.AsyncJobDeleteOptions{JobID: jobs[0]})
+		success, err := c.AsyncJob().Delete(ctx, driver.DeleteSingleJob, &driver.AsyncJobDeleteOptions{JobID: jobs[0]})
 		require.NoError(t, err)
 		require.True(t, success)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
@@ -254,20 +259,20 @@ func TestAsyncJobDelete(t *testing.T) {
 		idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
 		require.NotEmpty(t, idTransaction)
 
-		jobs, err := client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 1)
 
-		success, err := client.AsyncJob().Delete(ctx, driver.DeleteExpiredJobs,
+		success, err := c.AsyncJob().Delete(ctx, driver.DeleteExpiredJobs,
 			&driver.AsyncJobDeleteOptions{Stamp: time.Now().Add(24 * time.Hour)})
 		require.NoError(t, err)
 		require.True(t, success)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobPending, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 
-		jobs, err = client.AsyncJob().List(ctx, driver.JobDone, nil)
+		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
