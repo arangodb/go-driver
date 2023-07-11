@@ -93,3 +93,12 @@ func (a asyncConnectionWrapper) Do(ctx context.Context, req driver.Request) (dri
 		return a.Connection.Do(ctx, req)
 	}
 }
+
+func (a asyncConnectionWrapper) SetAuthentication(authentication driver.Authentication) (driver.Connection, error) {
+	conn, err := a.Connection.SetAuthentication(authentication)
+	if err != nil {
+		return nil, err
+	}
+	a.Connection = conn
+	return a, nil
+}

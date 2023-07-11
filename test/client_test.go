@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -279,8 +279,10 @@ func createAsyncClientFromEnv(t *testing.T) driver.Client {
 
 	// now create the async client
 	conn := createConnectionFromEnv(t)
+	asyncConn := async.NewConnectionAsyncWrapper(conn)
+
 	c, err := driver.NewClient(driver.ClientConfig{
-		Connection:     async.NewConnectionAsyncWrapper(conn),
+		Connection:     asyncConn,
 		Authentication: createAuthenticationFromEnv(t),
 	})
 	if err != nil {
