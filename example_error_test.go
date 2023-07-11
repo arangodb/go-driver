@@ -28,17 +28,21 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-func ExampleIsNotFound(collection driver.Collection) {
+func ExampleIsNotFound() {
+	var sampleCollection driver.Collection
 	var result Book
-	if _, err := collection.ReadDocument(nil, "keyDoesNotExist", &result); driver.IsNotFound(err) {
+
+	if _, err := sampleCollection.ReadDocument(nil, "keyDoesNotExist", &result); driver.IsNotFound(err) {
 		// No document with given key exists
 	}
 }
 
-func ExampleIsPreconditionFailed(collection driver.Collection) {
+func ExampleIsPreconditionFailed() {
+	var sampleCollection driver.Collection
 	var result Book
+
 	ctx := driver.WithRevision(context.Background(), "an-old-revision")
-	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); driver.IsPreconditionFailed(err) {
-		// Document is found, but its revision is incorrect
+	if _, err := sampleCollection.ReadDocument(ctx, "someValidKey", &result); driver.IsPreconditionFailed(err) {
+		// The Document is found, but its revision is incorrect
 	}
 }
