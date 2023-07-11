@@ -35,7 +35,7 @@ type mode string
 const (
 	cluster         mode = "cluster"
 	single          mode = "single"
-	resilientSingle      = "resilientsingle"
+	resilientSingle mode = "resilientsingle"
 )
 
 func EnsureVersion(t *testing.T, ctx context.Context, c driver.Client) VersionCheck {
