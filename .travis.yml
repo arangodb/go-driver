@@ -46,6 +46,7 @@ env:
     - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.17
     - STARTER=arangodb/arangodb-starter:latest
     - TEST_DISALLOW_UNKNOWN_FIELDS=false
+    - TESTOPTIONS="-test.run TestAsync -test.v"
 
 before_script:
   - |
