@@ -35,6 +35,7 @@ import (
 	"github.com/pkg/errors"
 	_ "golang.org/x/net/http2"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/log"
 )
 
@@ -162,14 +163,30 @@ func (j httpConnection) newRequestWithEndpoint(endpoint string, method string, u
 
 // Do performs HTTP request and returns the response.
 // If `output` is provided then it is populated from response body and the response is automatically freed.
-func (j httpConnection) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
+func (j httpConnection) Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error) {
 	resp, body, err := j.Stream(ctx, request)
 	if err != nil {
-		return nil, err
+		return resp, err
 	}
 
 	// The body should be closed at the end of the function.
 	defer dropBodyData(body)
+
+	if len(allowedStatusCodes) > 0 {
+		found := false
+		for _, e := range allowedStatusCodes {
+			if resp.Code() == e {
+				found = true
+				break
+			}
+		}
+		if !found {
+			var respStruct shared.Response
+			// try parse as ArangoDB error response
+			_ = j.Decoder(resp.Content()).Decode(body, &respStruct)
+			return resp, respStruct.AsArangoErrorWithCode(resp.Code())
+		}
+	}
 
 	if output != nil {
 		// The output should be stored in the output variable.

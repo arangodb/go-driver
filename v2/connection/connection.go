@@ -35,7 +35,9 @@ type Connection interface {
 	// NewRequestWithEndpoint initializes Request object with specific endpoint
 	NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error)
 	// Do executes the given Request and parses the response into output
-	Do(ctx context.Context, request Request, output interface{}) (Response, error)
+	// If allowed status codes are provided, they will be checked before decoding the response body.
+	// In case of mismatch shared.ArangoError will be returned
+	Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error)
 	// Stream executes the given Request and returns a reader for Response body
 	Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error)
 	// GetEndpoint returns Endpoint which is currently used to execute requests

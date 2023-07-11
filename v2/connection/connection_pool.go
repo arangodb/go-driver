@@ -65,8 +65,8 @@ func (c *connectionPool) NewRequestWithEndpoint(endpoint string, method string, 
 	return c.connections[0].NewRequestWithEndpoint(endpoint, method, urls...)
 }
 
-func (c *connectionPool) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
-	return c.connection().Do(ctx, request, output)
+func (c *connectionPool) Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error) {
+	return c.connection().Do(ctx, request, output, allowedStatusCodes...)
 }
 
 func (c *connectionPool) GetEndpoint() Endpoint {

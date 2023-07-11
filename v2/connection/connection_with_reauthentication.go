@@ -49,10 +49,10 @@ type wrapAuthentication struct {
 	lock sync.Mutex
 }
 
-func (w wrapAuthentication) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
-	r, err := w.Connection.Do(ctx, request, output)
+func (w wrapAuthentication) Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error) {
+	r, err := w.Connection.Do(ctx, request, output, allowedStatusCodes...)
 	if err != nil {
-		return nil, err
+		return r, err
 	}
 
 	if r.Code() != http.StatusUnauthorized {
@@ -63,7 +63,7 @@ func (w wrapAuthentication) Do(ctx context.Context, request Request, output inte
 		return nil, err
 	}
 
-	return w.Connection.Do(ctx, request, output)
+	return w.Connection.Do(ctx, request, output, allowedStatusCodes...)
 }
 
 // Stream performs HTTP request.
