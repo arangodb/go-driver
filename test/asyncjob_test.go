@@ -41,8 +41,8 @@ func TestAsyncJobListDone(t *testing.T) {
 
 	// Trigger two async requests
 	info, err := c.Version(ctxAsync)
-	require.Error(t, err)
 	require.Empty(t, info.Version)
+	require.Error(t, err)
 
 	id, isAsyncId := async.IsAsyncJobInProgress(err)
 	require.True(t, isAsyncId)
