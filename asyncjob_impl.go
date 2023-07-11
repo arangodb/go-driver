@@ -22,7 +22,6 @@ package driver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path"
 )
@@ -61,7 +60,7 @@ func (c *clientAsyncJob) List(ctx context.Context, jobType AsyncJobStatusType, o
 	}
 
 	var result []string
-	if err = json.Unmarshal(rawResponse, &result); err != nil {
+	if err = c.conn.Unmarshal(rawResponse, &result); err != nil {
 		return nil, err
 	}
 
