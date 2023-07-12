@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
@@ -50,5 +51,37 @@ func Test_CallStream(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, data, 0)
 		require.GreaterOrEqual(t, version.Version.Major(), 3)
+	})
+}
+
+func Test_CallWithChecks(t *testing.T) {
+	t.Run("code-allowed", func(t *testing.T) {
+		Wrap(t, func(t *testing.T, client arangodb.Client) {
+			url := connection.NewUrl("_api", "version")
+
+			version := arangodb.VersionInfo{}
+
+			resp, err := connection.CallWithChecks(context.Background(), client.Connection(), http.MethodGet, url, &version, []int{http.StatusOK})
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, resp.Code())
+			require.GreaterOrEqual(t, version.Version.Major(), 3)
+		})
+	})
+
+	t.Run("code-disallowed", func(t *testing.T) {
+		Wrap(t, func(t *testing.T, client arangodb.Client) {
+			url := connection.NewUrl("_api", "non-such-endpoint")
+
+			version := arangodb.VersionInfo{}
+
+			resp, err := connection.CallWithChecks(context.Background(), client.Connection(), http.MethodGet, url, &version, []int{http.StatusOK, http.StatusNoContent})
+			require.Error(t, err)
+
+			arangoErr, ok := err.(shared.ArangoError)
+			require.True(t, ok)
+			require.True(t, arangoErr.HasError)
+			require.True(t, shared.IsArangoError(arangoErr))
+			require.Equal(t, http.StatusNotFound, resp.Code())
+		})
 	})
 }

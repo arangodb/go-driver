@@ -33,6 +33,10 @@ import (
 type RequestModifier func(r Request) error
 
 func Call(ctx context.Context, c Connection, method, url string, output interface{}, modifiers ...RequestModifier) (Response, error) {
+	return CallWithChecks(ctx, c, method, url, output, []int{}, modifiers...)
+}
+
+func CallWithChecks(ctx context.Context, c Connection, method, url string, output interface{}, allowedStatusCodes []int, modifiers ...RequestModifier) (Response, error) {
 	req, err := c.NewRequest(method, url)
 	if err != nil {
 		return nil, err
@@ -46,7 +50,7 @@ func Call(ctx context.Context, c Connection, method, url string, output interfac
 		}
 	}
 
-	return c.Do(ctx, req, output)
+	return c.Do(ctx, req, output, allowedStatusCodes...)
 }
 
 // CallStream performs HTTP request with the given method and URL.

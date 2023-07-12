@@ -56,11 +56,11 @@ type retryWrapper struct {
 	retries int
 }
 
-func (w retryWrapper) Do(ctx context.Context, request Request, output interface{}) (Response, error) {
+func (w retryWrapper) Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error) {
 	var r Response
 	var err error
 	for i := 0; i < w.retries; i++ {
-		r, err = w.Connection.Do(ctx, request, output)
+		r, err = w.Connection.Do(ctx, request, output, allowedStatusCodes...)
 
 		if w.wrapper(r, err) {
 			continue
