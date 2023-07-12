@@ -27,7 +27,7 @@ services:
 
 language: go
 go:
-  - 1.20.5
+  - 1.20.6
 
 env:
   jobs:
