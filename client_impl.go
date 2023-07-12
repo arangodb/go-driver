@@ -42,6 +42,7 @@ func NewClient(config ClientConfig) (Client, error) {
 			return nil, WithStack(err)
 		}
 	}
+
 	c := &client{
 		conn: conn,
 	}

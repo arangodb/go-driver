@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,8 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 //go:build !auth
-// +build !auth
 
 package driver_test
 
@@ -32,31 +29,37 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-func ExampleWithRevision(collection driver.Collection) {
+func ExampleWithRevision() {
+	var sampleCollection driver.Collection
 	var result Book
+
 	// Using WithRevision we get an error when the current revision of the document is different.
 	ctx := driver.WithRevision(context.Background(), "a-specific-revision")
-	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); err != nil {
+	if _, err := sampleCollection.ReadDocument(ctx, "someValidKey", &result); err != nil {
 		// This call will fail when a document does not exist, or when its current revision is different.
 	}
 }
 
-func ExampleWithSilent(collection driver.Collection) {
+func ExampleWithSilent() {
+	var sampleCollection driver.Collection
 	var result Book
+
 	// Using WithSilent we do not care about any returned meta data.
 	ctx := driver.WithSilent(context.Background())
-	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); err != nil {
+	if _, err := sampleCollection.ReadDocument(ctx, "someValidKey", &result); err != nil {
 		// No meta data is returned
 	}
 }
 
-func ExampleWithQueueTimeout(collection driver.Collection) {
+func ExampleWithArangoQueueTime() {
+	var sampleCollection driver.Collection
 	var result Book
+
 	// Using WithArangoQueueTimeout we get Timout error if not response after time specified in WithArangoQueueTime
 	ctx := driver.WithArangoQueueTimeout(context.Background(), true)
 	ctx = driver.WithArangoQueueTime(ctx, time.Second*5)
 
-	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); err != nil {
+	if _, err := sampleCollection.ReadDocument(ctx, "someValidKey", &result); err != nil {
 		// This call will fail if no response after 5 sec
 	}
 }

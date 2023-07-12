@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,8 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 //go:build !auth
-// +build !auth
 
 package driver_test
 
@@ -31,17 +28,21 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
-func ExampleIsNotFound(collection driver.Collection) {
+func ExampleIsNotFound() {
+	var sampleCollection driver.Collection
 	var result Book
-	if _, err := collection.ReadDocument(nil, "keyDoesNotExist", &result); driver.IsNotFound(err) {
+
+	if _, err := sampleCollection.ReadDocument(nil, "keyDoesNotExist", &result); driver.IsNotFound(err) {
 		// No document with given key exists
 	}
 }
 
-func ExampleIsPreconditionFailed(collection driver.Collection) {
+func ExampleIsPreconditionFailed() {
+	var sampleCollection driver.Collection
 	var result Book
+
 	ctx := driver.WithRevision(context.Background(), "an-old-revision")
-	if _, err := collection.ReadDocument(ctx, "someValidKey", &result); driver.IsPreconditionFailed(err) {
-		// Document is found, but its revision is incorrect
+	if _, err := sampleCollection.ReadDocument(ctx, "someValidKey", &result); driver.IsPreconditionFailed(err) {
+		// The Document is found, but its revision is incorrect
 	}
 }
