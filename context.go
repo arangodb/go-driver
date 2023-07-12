@@ -629,8 +629,8 @@ func IsAsyncRequest(ctx context.Context) bool {
 	return false
 }
 
-// IsAsyncIDSet returns the async Job ID from the given context.
-func IsAsyncIDSet(ctx context.Context) (string, bool) {
+// HasAsyncID returns the async Job ID from the given context.
+func HasAsyncID(ctx context.Context) (string, bool) {
 	if ctx != nil {
 		if q := ctx.Value(keyAsyncID); q != nil {
 			if v, ok := q.(string); ok {

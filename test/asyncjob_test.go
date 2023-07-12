@@ -37,7 +37,8 @@ func TestAsyncJobListDone(t *testing.T) {
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
 
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1")).NotResilientSingle()
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
+	skipResilientSingle(t)
 
 	// Trigger two async requests
 	info, err := c.Version(ctxAsync)
@@ -97,7 +98,8 @@ func TestAsyncJobListPending(t *testing.T) {
 	c := createAsyncClientFromEnv(t)
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1")).NotResilientSingle()
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
+	skipResilientSingle(t)
 
 	db := ensureDatabase(ctx, c, databaseName("db", "async"), nil, t)
 	defer db.Remove(ctx)
@@ -139,7 +141,8 @@ func TestAsyncJobCancel(t *testing.T) {
 	c := createAsyncClientFromEnv(t)
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1")).NotResilientSingle()
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
+	skipResilientSingle(t)
 
 	db := ensureDatabase(ctx, c, databaseName("db", "async", "cancel"), nil, t)
 	defer db.Remove(ctx)
@@ -185,7 +188,8 @@ func TestAsyncJobDelete(t *testing.T) {
 	c := createAsyncClientFromEnv(t)
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1")).NotResilientSingle()
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
+	skipResilientSingle(t)
 
 	db := ensureDatabase(ctx, c, databaseName("db", "async", "cancel"), nil, t)
 	defer db.Remove(ctx)

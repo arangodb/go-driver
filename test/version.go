@@ -33,9 +33,8 @@ import (
 type mode string
 
 const (
-	cluster         mode = "cluster"
-	single          mode = "single"
-	resilientSingle mode = "resilientsingle"
+	cluster mode = "cluster"
+	single  mode = "single"
 )
 
 func EnsureVersion(t *testing.T, ctx context.Context, c driver.Client) VersionCheck {
@@ -125,14 +124,6 @@ func (v VersionCheck) NotCluster() VersionCheck {
 	v.t.Logf("Skipping cluster mode")
 	if v.mode == cluster {
 		v.t.Skipf("Test should not run on cluster")
-	}
-	return v
-}
-
-func (v VersionCheck) NotResilientSingle() VersionCheck {
-	v.t.Logf("Skipping resilientsingle mode")
-	if v.mode == resilientSingle {
-		v.t.Skipf("Test should not run in ActiveFailover mode")
 	}
 	return v
 }
