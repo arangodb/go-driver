@@ -302,7 +302,7 @@ func WithAsync(parent context.Context) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAsyncRequest, true)
 }
 
-// WithAsyncId is used to check an async operation result - requires Connection with Async wrapper!
+// WithAsyncID is used to check an async operation result - requires Connection with Async wrapper!
 func WithAsyncID(parent context.Context, asyncID string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAsyncID, asyncID)
 }

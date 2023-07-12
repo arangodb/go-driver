@@ -73,7 +73,7 @@ func TestAsyncJobListDone(t *testing.T) {
 	})
 
 	t.Run("async request final result", func(t *testing.T) {
-		info, err = c.Version(driver.WithAsyncId(ctx, id))
+		info, err = c.Version(driver.WithAsyncID(ctx, id))
 		require.NoError(t, err)
 		require.NotEmpty(t, info.Version)
 	})
@@ -84,7 +84,7 @@ func TestAsyncJobListDone(t *testing.T) {
 		require.Len(t, jobs, 1)
 
 		// finish the second job
-		info2, err2 = c.Version(driver.WithAsyncId(ctx, id2))
+		info2, err2 = c.Version(driver.WithAsyncID(ctx, id2))
 		require.NoError(t, err2)
 		require.NotEmpty(t, info2.Version)
 
@@ -128,7 +128,7 @@ func TestAsyncJobListPending(t *testing.T) {
 	})
 
 	t.Run("read async result", func(t *testing.T) {
-		idTransaction := runLongRequest(t, driver.WithAsyncId(ctx, idTransaction), db, 2, col.Name())
+		idTransaction := runLongRequest(t, driver.WithAsyncID(ctx, idTransaction), db, 2, col.Name())
 		require.Empty(t, idTransaction)
 
 		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
@@ -178,7 +178,7 @@ func TestAsyncJobCancel(t *testing.T) {
 		require.Len(t, jobs, 1)
 		require.Equal(t, id, jobs[0])
 
-		_, err = db.Query(driver.WithAsyncId(ctx, id), aqlQuery, nil)
+		_, err = db.Query(driver.WithAsyncID(ctx, id), aqlQuery, nil)
 		require.Error(t, err)
 		require.Equal(t, "canceled request", err.Error())
 	})

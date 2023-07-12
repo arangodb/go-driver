@@ -74,7 +74,7 @@ func ExampleNewConnectionAsyncWrapper() {
 	}
 
 	// Fetch an async job result
-	info, err = c.Version(driver.WithAsyncId(context.Background(), id))
+	info, err = c.Version(driver.WithAsyncID(context.Background(), id))
 	if err != nil {
 		log.Fatalf("Failed to fetch async job result: %v", err)
 	}
