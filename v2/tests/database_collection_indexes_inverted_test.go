@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Jakub Wierzbowski
-//
 
 package tests
 
@@ -38,7 +36,7 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(30*time.Second, func(ctx context.Context) error {
+				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 					skipBelowVersion(client, ctx, "3.10", t)
 
 					type testCase struct {
@@ -195,8 +193,6 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 							require.NoError(t, err)
 						})
 					}
-
-					return nil
 				})
 			})
 		})

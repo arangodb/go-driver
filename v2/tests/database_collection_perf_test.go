@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package tests
 
@@ -26,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
@@ -82,54 +81,58 @@ func Test_BatchInsert(t *testing.T) {
 	})
 }
 
-func _b_insert(b *testing.B, db arangodb.Database, threads int) {
+func bInsert(b *testing.B, db arangodb.Database, threads int) {
 	WithCollection(b, db, nil, func(col arangodb.Collection) {
-		b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
-			b.SetParallelism(threads)
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for {
-					if !pb.Next() {
-						return
+		withContextT(b, time.Minute, func(ctx context.Context, _ testing.TB) {
+			b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
+				b.SetParallelism(threads)
+				b.ResetTimer()
+				b.RunParallel(func(pb *testing.PB) {
+					for {
+						if !pb.Next() {
+							return
+						}
+
+						d := newBasicDocument()
+
+						_, err := col.CreateDocument(ctx, d)
+						require.NoError(b, err)
 					}
-
-					d := newBasicDocument()
-
-					_, err := col.CreateDocument(context.Background(), d)
-					require.NoError(b, err)
-				}
+				})
+				b.ReportAllocs()
 			})
-			b.ReportAllocs()
 		})
 	})
 }
 
-func _b_batchInsert(b *testing.B, db arangodb.Database, threads int) {
+func bBatchInsert(b *testing.B, db arangodb.Database, threads int) {
 	WithCollection(b, db, nil, func(col arangodb.Collection) {
-		b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
-			b.SetParallelism(threads)
-			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for {
-					if !pb.Next() {
-						return
-					}
-
-					d := newDocs(512)
-
-					r, err := col.CreateDocuments(context.Background(), d)
-					require.NoError(b, err)
-
+		withContextT(b, time.Minute, func(ctx context.Context, _ testing.TB) {
+			b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
+				b.SetParallelism(threads)
+				b.ResetTimer()
+				b.RunParallel(func(pb *testing.PB) {
 					for {
-						_, err := r.Read()
-						if shared.IsNoMoreDocuments(err) {
-							break
+						if !pb.Next() {
+							return
 						}
+
+						d := newDocs(512)
+
+						r, err := col.CreateDocuments(ctx, d)
 						require.NoError(b, err)
+
+						for {
+							_, err := r.Read()
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(b, err)
+						}
 					}
-				}
+				})
+				b.ReportAllocs()
 			})
-			b.ReportAllocs()
 		})
 	})
 }
@@ -137,8 +140,8 @@ func _b_batchInsert(b *testing.B, db arangodb.Database, threads int) {
 func Benchmark_Insert(b *testing.B) {
 	WrapB(b, func(b *testing.B, client arangodb.Client) {
 		WithDatabase(b, client, nil, func(db arangodb.Database) {
-			_b_insert(b, db, 1)
-			_b_insert(b, db, 4)
+			bInsert(b, db, 1)
+			bInsert(b, db, 4)
 		})
 	})
 }
@@ -146,8 +149,8 @@ func Benchmark_Insert(b *testing.B) {
 func Benchmark_BatchInsert(b *testing.B) {
 	WrapB(b, func(b *testing.B, client arangodb.Client) {
 		WithDatabase(b, client, nil, func(db arangodb.Database) {
-			_b_batchInsert(b, db, 1)
-			_b_batchInsert(b, db, 4)
+			bBatchInsert(b, db, 1)
+			bBatchInsert(b, db, 4)
 		})
 	})
 }

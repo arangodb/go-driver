@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,39 +17,35 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Jakub Wierzbowski
-//
 
 package tests
 
 import (
 	"context"
 	"testing"
-
-	"github.com/arangodb/go-driver/v2/connection"
+	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/connection"
 )
 
 func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
-	c := newClient(t, connectionJsonHttp(t))
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+			skipBelowVersion(client, ctx, "3.9", t)
+			t.Run("without timout", func(t *testing.T) {
+				_, err := client.Version(context.Background())
+				require.NoError(t, err)
+			})
 
-	version, err := c.Version(context.Background())
-	require.NoError(t, err)
-	if version.Version.CompareTo("3.9.0") < 0 {
-		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
-	}
+			t.Run("without timeout - if no queue timeout and no context deadline set", func(t *testing.T) {
+				ctx := connection.WithArangoQueueTimeout(context.Background(), true)
 
-	t.Run("without timout", func(t *testing.T) {
-		_, err := c.Version(context.Background())
-		require.NoError(t, err)
+				_, err := client.Version(ctx)
+				require.NoError(t, err)
+			})
+		})
 	})
-
-	t.Run("without timeout - if no queue timeout and no context deadline set", func(t *testing.T) {
-		ctx := connection.WithArangoQueueTimeout(context.Background(), true)
-
-		_, err := c.Version(ctx)
-		require.NoError(t, err)
-	})
-
 }

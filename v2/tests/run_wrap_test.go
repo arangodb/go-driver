@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-// Author Tomasz Mielech
-//
 
 package tests
 
@@ -32,9 +29,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/require"
-
 	"github.com/rs/zerolog/log"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/net/http2"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -258,9 +254,8 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 
 	c := connection.NewHttpConnection(h)
 
-	withContext(2*time.Minute, func(ctx context.Context) error {
+	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
-		return nil
 	})
 	return c
 }
@@ -285,9 +280,8 @@ func connectionVPACKHttp(t testing.TB) connection.Connection {
 
 	c := connection.NewHttpConnection(h)
 
-	withContext(2*time.Minute, func(ctx context.Context) error {
+	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
-		return nil
 	})
 	return c
 }
@@ -306,9 +300,8 @@ func connectionJsonHttp2(t testing.TB) connection.Connection {
 
 	c := connection.NewHttp2Connection(h)
 
-	withContext(2*time.Minute, func(ctx context.Context) error {
+	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
-		return nil
 	})
 	return c
 }
@@ -327,9 +320,8 @@ func connectionVPACKHttp2(t testing.TB) connection.Connection {
 
 	c := connection.NewHttp2Connection(h)
 
-	withContext(2*time.Minute, func(ctx context.Context) error {
+	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
-		return nil
 	})
 	return c
 }

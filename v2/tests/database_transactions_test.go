@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package tests
@@ -36,11 +34,11 @@ import (
 )
 
 func Test_DatabaseCreateReplicationV2(t *testing.T) {
-	client := newClient(t, connectionJsonHttp(t))
 	requireClusterMode(t)
-	skipBelowVersion(client, context.Background(), "3.12.0", t)
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		skipBelowVersion(client, context.Background(), "3.12.0", t)
+
 		opts := arangodb.CreateDatabaseOptions{
 			Users: nil,
 			Options: arangodb.CreateDatabaseDefaultOptions{

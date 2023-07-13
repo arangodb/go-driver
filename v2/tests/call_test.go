@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Tomasz Mielech
-//
 
 package tests
 
@@ -27,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -37,51 +36,59 @@ import (
 
 func Test_CallStream(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		url := connection.NewUrl("_api", "version")
+		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+			url := connection.NewUrl("_api", "version")
 
-		resp, body, err := connection.CallStream(context.Background(), client.Connection(), http.MethodGet, url)
-		require.NoError(t, err)
-		defer body.Close()
-		require.Equal(t, http.StatusOK, resp.Code())
-		dec := client.Connection().Decoder(resp.Content())
+			resp, body, err := connection.CallStream(ctx, client.Connection(), http.MethodGet, url)
+			require.NoError(t, err)
+			defer body.Close()
+			require.Equal(t, http.StatusOK, resp.Code())
+			dec := client.Connection().Decoder(resp.Content())
 
-		version := arangodb.VersionInfo{}
-		require.NoError(t, dec.Decode(body, &version))
-		data, err := io.ReadAll(body)
-		require.NoError(t, err)
-		require.Len(t, data, 0)
-		require.GreaterOrEqual(t, version.Version.Major(), 3)
+			version := arangodb.VersionInfo{}
+			require.NoError(t, dec.Decode(body, &version))
+			data, err := io.ReadAll(body)
+			require.NoError(t, err)
+			require.Len(t, data, 0)
+			require.GreaterOrEqual(t, version.Version.Major(), 3)
+		})
 	})
 }
 
 func Test_CallWithChecks(t *testing.T) {
 	t.Run("code-allowed", func(t *testing.T) {
 		Wrap(t, func(t *testing.T, client arangodb.Client) {
-			url := connection.NewUrl("_api", "version")
+			withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+				url := connection.NewUrl("_api", "version")
 
-			version := arangodb.VersionInfo{}
+				version := arangodb.VersionInfo{}
 
-			resp, err := connection.CallWithChecks(context.Background(), client.Connection(), http.MethodGet, url, &version, []int{http.StatusOK})
-			require.NoError(t, err)
-			require.Equal(t, http.StatusOK, resp.Code())
-			require.GreaterOrEqual(t, version.Version.Major(), 3)
+				resp, err := connection.CallWithChecks(ctx, client.Connection(),
+					http.MethodGet, url, &version, []int{http.StatusOK})
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, resp.Code())
+				require.GreaterOrEqual(t, version.Version.Major(), 3)
+			})
 		})
 	})
 
 	t.Run("code-disallowed", func(t *testing.T) {
 		Wrap(t, func(t *testing.T, client arangodb.Client) {
-			url := connection.NewUrl("_api", "non-such-endpoint")
+			withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+				url := connection.NewUrl("_api", "non-such-endpoint")
 
-			version := arangodb.VersionInfo{}
+				version := arangodb.VersionInfo{}
 
-			resp, err := connection.CallWithChecks(context.Background(), client.Connection(), http.MethodGet, url, &version, []int{http.StatusOK, http.StatusNoContent})
-			require.Error(t, err)
+				resp, err := connection.CallWithChecks(ctx, client.Connection(), http.MethodGet, url, &version,
+					[]int{http.StatusOK, http.StatusNoContent})
+				require.Error(t, err)
 
-			arangoErr, ok := err.(shared.ArangoError)
-			require.True(t, ok)
-			require.True(t, arangoErr.HasError)
-			require.True(t, shared.IsArangoError(arangoErr))
-			require.Equal(t, http.StatusNotFound, resp.Code())
+				arangoErr, ok := err.(shared.ArangoError)
+				require.True(t, ok)
+				require.True(t, arangoErr.HasError)
+				require.True(t, shared.IsArangoError(arangoErr))
+				require.Equal(t, http.StatusNotFound, resp.Code())
+			})
 		})
 	})
 }
