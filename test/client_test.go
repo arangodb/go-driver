@@ -274,12 +274,8 @@ func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
 }
 
 func createAsyncClientFromEnv(t *testing.T) driver.Client {
-	// wait for server to be ready
-	createClientFromEnv(t, true)
-
-	// now create the async client
-	conn := createConnectionFromEnv(t)
-	asyncConn := async.NewConnectionAsyncWrapper(conn)
+	cle := createClientFromEnv(t, true)
+	asyncConn := async.NewConnectionAsyncWrapper(cle.Connection())
 
 	c, err := driver.NewClient(driver.ClientConfig{
 		Connection:     asyncConn,
