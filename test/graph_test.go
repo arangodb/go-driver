@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -47,7 +45,7 @@ func ensureGraph(ctx context.Context, db driver.Database, name string, options *
 // TestCreateGraph creates a graph and then checks that it exists.
 func TestCreateGraph(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
 	name := "test_create_graph"
 
@@ -86,7 +84,7 @@ func TestCreateGraph(t *testing.T) {
 // TestCreateGraphWithOptions creates a graph with options then checks if each options is set correctly.
 func TestCreateGraphWithOptions(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)
 
@@ -167,7 +165,7 @@ func TestCreateGraphWithOptions(t *testing.T) {
 // TestRemoveGraph creates a graph and then removes it.
 func TestRemoveGraph(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
 	name := "test_remove_graph"
 	g, err := db.CreateGraphV2(ctx, name, nil)

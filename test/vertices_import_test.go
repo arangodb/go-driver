@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -32,7 +30,7 @@ import (
 // TestImportVerticesWithKeys imports documents and then checks that it exists.
 func TestImportVerticesWithKeys(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_withKeys_test", t)
@@ -75,7 +73,7 @@ func TestImportVerticesWithKeys(t *testing.T) {
 // TestImportVerticesWithoutKeys imports documents and then checks that it exists.
 func TestImportVerticesWithoutKeys(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_withoutKeys_test", t)
@@ -118,7 +116,7 @@ func TestImportVerticesEmptyEntries(t *testing.T) {
 		t.Skip("Not supported on vpack")
 	}
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_emptyEntries_test", t)
@@ -165,7 +163,7 @@ func TestImportVerticesInvalidEntries(t *testing.T) {
 		t.Skip("Not supported on vpack")
 	}
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_invalidEntries_test", t)
@@ -211,7 +209,7 @@ func TestImportVerticesInvalidEntries(t *testing.T) {
 // TestImportVerticesDuplicateEntries imports documents and then checks that it exists.
 func TestImportVerticesDuplicateEntries(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntries_test", t)
@@ -255,7 +253,7 @@ func TestImportVerticesDuplicateEntries(t *testing.T) {
 // TestImportVerticesDuplicateEntriesComplete imports documents and then checks that it exists.
 func TestImportVerticesDuplicateEntriesComplete(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesComplete_test", t)
@@ -284,7 +282,7 @@ func TestImportVerticesDuplicateEntriesComplete(t *testing.T) {
 // TestImportVerticesDuplicateEntriesUpdate imports documents and then checks that it exists.
 func TestImportVerticesDuplicateEntriesUpdate(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesUpdate_test", t)
@@ -341,7 +339,7 @@ func TestImportVerticesDuplicateEntriesUpdate(t *testing.T) {
 // TestImportVerticesDuplicateEntriesReplace imports documents and then checks that it exists.
 func TestImportVerticesDuplicateEntriesReplace(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesReplace_test", t)
@@ -398,7 +396,7 @@ func TestImportVerticesDuplicateEntriesReplace(t *testing.T) {
 // TestImportVerticesDuplicateEntriesIgnore imports documents and then checks that it exists.
 func TestImportVerticesDuplicateEntriesIgnore(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesIgnore_test", t)
@@ -455,7 +453,7 @@ func TestImportVerticesDuplicateEntriesIgnore(t *testing.T) {
 // TestImportVerticesDetails imports documents and then checks that it exists.
 func TestImportVerticesDetails(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_details_test", t)
@@ -507,7 +505,7 @@ func TestImportVerticesDetails(t *testing.T) {
 func TestImportVerticesOverwriteYes(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_overwriteYes_test", t)
@@ -549,7 +547,7 @@ func TestImportVerticesOverwriteYes(t *testing.T) {
 func TestImportVerticesOverwriteNo(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_overwriteNo_test", t)

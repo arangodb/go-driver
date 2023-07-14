@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -35,7 +33,7 @@ import (
 
 // TestDefaultIndexes creates a collection without any custom index.
 func TestDefaultIndexes(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 	col := ensureCollection(nil, db, "def_indexes_test", nil, t)
 
@@ -52,7 +50,7 @@ func TestDefaultIndexes(t *testing.T) {
 
 // TestDefaultEdgeIndexes creates a edge collection without any custom index.
 func TestDefaultEdgeIndexes(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 	col := ensureCollection(nil, db, "def_indexes_edge_test", &driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge}, t)
 
@@ -82,7 +80,7 @@ func TestDefaultEdgeIndexes(t *testing.T) {
 
 // TestCreateFullTextIndex creates a collection with a full text index.
 func TestIndexes(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 	col := ensureCollection(nil, db, "indexes_test", nil, t)
 
@@ -133,7 +131,7 @@ func TestIndexes(t *testing.T) {
 
 // TestMultipleIndexes creates a collection with a full text index.
 func TestMultipleIndexes(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 	col := ensureCollection(nil, db, "multiple_indexes_test", nil, t)
 
@@ -175,7 +173,7 @@ func TestMultipleIndexes(t *testing.T) {
 
 // TestIndexesDeduplicateHash tests no-deduplicate on hash index.
 func TestIndexesDeduplicateHash(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
@@ -232,7 +230,7 @@ func TestIndexesDeduplicateHash(t *testing.T) {
 
 // TestIndexesDeduplicateSkipList tests no-deduplicate on skiplist index.
 func TestIndexesDeduplicateSkipList(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
@@ -289,7 +287,7 @@ func TestIndexesDeduplicateSkipList(t *testing.T) {
 
 // TestIndexesTTL tests TTL index.
 func TestIndexesTTL(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 
 	db := ensureDatabase(nil, c, "index_test", nil, t)
@@ -413,7 +411,7 @@ var namedIndexTestCases = []struct {
 }
 
 func TestNamedIndexes(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 
 	db := ensureDatabase(nil, c, "named_index_test", nil, t)
@@ -470,7 +468,7 @@ func TestNamedIndexes(t *testing.T) {
 }
 
 func TestNamedIndexesClusterInventory(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	colname := "named_index_test_col_inv"
@@ -522,7 +520,7 @@ func TestNamedIndexesClusterInventory(t *testing.T) {
 }
 
 func TestTTLIndexesClusterInventory(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	ttl := 3600
@@ -583,7 +581,7 @@ func TestTTLIndexesClusterInventory(t *testing.T) {
 }
 
 func TestPersistentIndexCreation(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.7", t)
 
 	db := ensureDatabase(nil, c, "index_test_creation", nil, t)

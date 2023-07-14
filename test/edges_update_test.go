@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -35,7 +33,7 @@ import (
 // TestUpdateEdges creates documents, updates them and then checks the updates have succeeded.
 func TestUpdateEdges(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -92,7 +90,7 @@ func TestUpdateEdges(t *testing.T) {
 // TestUpdateEdgesReturnOld creates documents, updates them checks the ReturnOld values.
 func TestUpdateEdgesReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_returnOld_"
@@ -146,7 +144,7 @@ func TestUpdateEdgesReturnOld(t *testing.T) {
 // TestUpdateEdgesReturnNew creates documents, updates them checks the ReturnNew values.
 func TestUpdateEdgesReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_returnOld_"
@@ -202,7 +200,7 @@ func TestUpdateEdgesReturnNew(t *testing.T) {
 // TestUpdateEdgesKeepNullTrue creates documents, updates them with KeepNull(true) and then checks the updates have succeeded.
 func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_keepNullTrue_"
@@ -287,7 +285,7 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 // TestUpdateEdgesKeepNullFalse creates documents, updates them with KeepNull(false) and then checks the updates have succeeded.
 func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_keepNullFalse_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -351,7 +349,7 @@ func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 // TestUpdateEdgesSilent creates documents, updates them with Silent() and then checks the metas are indeed empty.
 func TestUpdateEdgesSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -400,7 +398,7 @@ func TestUpdateEdgesSilent(t *testing.T) {
 // Then it attempts an update with an incorrect revisions which must fail.
 func TestUpdateEdgesRevision(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_revision_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -474,7 +472,7 @@ func TestUpdateEdgesRevision(t *testing.T) {
 // TestUpdateEdgesKeyEmpty updates documents with an empty key.
 func TestUpdateEdgesKeyEmpty(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_keyEmpty_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -494,7 +492,7 @@ func TestUpdateEdgesKeyEmpty(t *testing.T) {
 // TestUpdateEdgesUpdateNil updates documents it with a nil update.
 func TestUpdateEdgesUpdateNil(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_updateNil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -508,7 +506,7 @@ func TestUpdateEdgesUpdateNil(t *testing.T) {
 // TestUpdateEdgesUpdateLenDiff updates documents with a different number of updates, keys.
 func TestUpdateEdgesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "update_edges_updateLenDiff_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

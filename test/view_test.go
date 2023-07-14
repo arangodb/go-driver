@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -83,7 +81,7 @@ func tryAddArangoSearchLink(ctx context.Context, db driver.Database, view driver
 // TestCreateArangoSearchView creates an arangosearch view and then checks that it exists.
 func TestCreateArangoSearchView(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	ensureCollection(ctx, db, "someCol", nil, t)
@@ -120,7 +118,7 @@ func TestCreateArangoSearchView(t *testing.T) {
 // TestCreateArangoSearchViewInvalidLinks attempts to create an arangosearch view with invalid links and then checks that it does not exists.
 func TestCreateArangoSearchViewInvalidLinks(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	name := "test_create_inv_view"
@@ -148,7 +146,7 @@ func TestCreateArangoSearchViewInvalidLinks(t *testing.T) {
 // TestCreateEmptyArangoSearchView creates an arangosearch view without any links.
 func TestCreateEmptyArangoSearchView(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	name := "test_create_empty_asview"
@@ -175,7 +173,7 @@ func TestCreateEmptyArangoSearchView(t *testing.T) {
 // TestCreateDuplicateArangoSearchView creates an arangosearch view twice and then checks that it exists.
 func TestCreateDuplicateArangoSearchView(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	name := "test_create_dup_asview"
@@ -198,7 +196,7 @@ func TestCreateDuplicateArangoSearchView(t *testing.T) {
 // with a link to an existing collection and the removes that collection.
 func TestCreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	col := ensureCollection(ctx, db, "someViewTmpCol", nil, t)
@@ -251,7 +249,7 @@ func TestCreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 // and checks if the links exist. The links are set via modifying properties.
 func TestAddCollectionMultipleViews(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "col_in_multi_view_test", nil, t)
 	ensureCollection(ctx, db, "col_in_multi_view", nil, t)
@@ -269,7 +267,7 @@ func TestAddCollectionMultipleViews(t *testing.T) {
 // and checks if the links exist. The links are set when creating the view.
 func TestAddCollectionMultipleViewsViaCreate(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "col_in_multi_view_create_test", nil, t)
 	ensureCollection(ctx, db, "col_in_multi_view_create", nil, t)
@@ -291,7 +289,7 @@ func TestAddCollectionMultipleViewsViaCreate(t *testing.T) {
 // TestGetArangoSearchOptimizeTopK creates an ArangoSearch view with OptimizeTopK and checks if it is set.
 func TestGetArangoSearchOptimizeTopK(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.12.0", t)
 	skipNoEnterprise(t)
 	db := ensureDatabase(ctx, c, "view_test_optimize_top_k", nil, t)
@@ -327,7 +325,7 @@ func TestGetArangoSearchOptimizeTopK(t *testing.T) {
 // TestGetArangoSearchView creates an ArangoSearch view and then gets it again.
 func TestGetArangoSearchView(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	col := ensureCollection(ctx, db, "someCol", nil, t)
@@ -375,7 +373,7 @@ func TestGetArangoSearchView(t *testing.T) {
 // TestGetArangoSearchViews creates several arangosearch views and then gets all of them.
 func TestGetArangoSearchViews(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	// Get views before adding some
@@ -418,7 +416,7 @@ func TestGetArangoSearchViews(t *testing.T) {
 // TestRenameAndRemoveArangoSearchView creates an arangosearch view, renames it and then removes it.
 func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
@@ -470,7 +468,7 @@ func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 func TestUseArangoSearchView(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(nil, c, "view_test", nil, t)
 	col := ensureCollection(ctx, db, "some_collection", nil, t)
@@ -552,7 +550,7 @@ func TestUseArangoSearchView(t *testing.T) {
 func TestUseArangoSearchViewWithNested(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	skipBelowVersion(c, "3.10", t)
 	skipNoEnterprise(t)
 	db := ensureDatabase(nil, c, "view_nested_test", nil, t)
@@ -620,7 +618,7 @@ func TestUseArangoSearchViewWithNested(t *testing.T) {
 func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	skipBelowVersion(c, "3.8", t)
 	db := ensureDatabase(nil, c, "view_with_pipeline_test", nil, t)
 	col := ensureCollection(ctx, db, "some_collection_with_analyzer", nil, t)
@@ -717,7 +715,7 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 // TestGetArangoSearchView creates an arangosearch view and then gets it again.
 func TestArangoSearchViewProperties35(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.7.1", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	ensureCollection(ctx, db, "someCol", nil, t)
@@ -785,7 +783,7 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 // TestArangoSearchPrimarySort
 func TestArangoSearchPrimarySort(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
 	ensureCollection(ctx, db, "primary_col_sort", nil, t)
@@ -932,7 +930,7 @@ func newBool(v bool) *bool {
 // TestArangoSearchViewProperties353 tests for custom analyzers.
 func TestArangoSearchViewProperties353(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5.3", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
@@ -998,7 +996,7 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 
 func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	// feature was introduced in 3.9.5 and in 3.10.2:
 	skipBelowVersion(c, "3.9.5", t)
 	skipBetweenVersions(c, "3.10.0", "3.10.1", t)
@@ -1046,7 +1044,7 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 
 func TestArangoSearchViewInMemoryCache(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	skipNoEnterprise(t)
 	db := ensureDatabase(ctx, c, "view_test_in_memory_cache", nil, t)

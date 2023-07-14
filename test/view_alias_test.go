@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
 
 package test
 
@@ -50,7 +51,7 @@ func ensureArangoSearchAliasView(ctx context.Context, db driver.Database, name s
 // TestSearchViewsAlias tests the arangosearch view alias methods
 func TestSearchViewsAlias(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
 	skipBelowVersion(c, "3.10", t)
 	db := ensureDatabase(ctx, c, "search_view_test_basic", nil, t)

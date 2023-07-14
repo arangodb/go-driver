@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-// Author Adam Janikowski
 //
 
 package test
@@ -137,7 +134,7 @@ func hasBackup(ctx context.Context, id driver.BackupID, b driver.ClientBackup, t
 }
 
 func TestBackupCreate(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -159,7 +156,7 @@ func TestBackupCreate(t *testing.T) {
 }
 
 func TestBackupCreateWithLabel(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -178,7 +175,7 @@ func TestBackupCreateWithLabel(t *testing.T) {
 }
 
 func TestBackupCreateWithAllowInconsistent(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 
 	EnsureVersion(t, context.Background(), c).Enterprise().NotCluster().
@@ -223,7 +220,7 @@ func TestBackupCreateWithAllowInconsistent(t *testing.T) {
 }
 
 func TestBackupListWithID(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -252,7 +249,7 @@ func TestBackupListWithID(t *testing.T) {
 }
 
 func TestBackupListWithNonExistingID(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -271,7 +268,7 @@ func TestBackupListWithNonExistingID(t *testing.T) {
 }
 
 func TestBackupList(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -314,7 +311,7 @@ func TestBackupList(t *testing.T) {
 }
 
 func TestBackupDelete(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -334,7 +331,7 @@ func TestBackupDelete(t *testing.T) {
 }
 
 func TestBackupDeleteNonExisting(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -351,7 +348,7 @@ func TestBackupDeleteNonExisting(t *testing.T) {
 func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) driver.Client {
 	// Wait for server to go down
 	newRetryFunc(func() error {
-		c = createClientFromEnv(t, false)
+		c = createClient(t, &testsClientConfig{skipWaitUntilReady: true})
 		nCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
@@ -364,7 +361,7 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) dr
 
 	// Wait for secret to start
 	newRetryFunc(func() error {
-		c = createClientFromEnv(t, false)
+		c = createClient(t, &testsClientConfig{skipWaitUntilReady: true})
 		nCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
@@ -379,7 +376,7 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) dr
 }
 
 func TestBackupRestore(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()
@@ -448,7 +445,7 @@ func TestBackupRestore(t *testing.T) {
 }
 
 func TestBackupUploadNonExisting(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -544,7 +541,7 @@ func uploadBackupWaitForCompletion(ctx context.Context, id driver.BackupID, b dr
 }
 
 func TestBackupUpload(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
 	getTransferConfigFromEnv(t)
@@ -557,7 +554,7 @@ func TestBackupUpload(t *testing.T) {
 }
 
 func TestBackupUploadAbort(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	skipNoEnterprise(t)
 	repo, conf := getTransferConfigFromEnv(t)
@@ -606,7 +603,7 @@ func TestBackupUploadAbort(t *testing.T) {
 
 func TestBackupCompleteCycle(t *testing.T) {
 	skipNoEnterprise(t)
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	repo, conf := getTransferConfigFromEnv(t)
 
@@ -705,7 +702,7 @@ type backupResult struct {
 }
 
 func TestBackupCreateManyBackupsFast(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 
 	numTries := 5
@@ -767,7 +764,7 @@ func TestBackupCreateManyBackupsFast(t *testing.T) {
 }
 
 func TestBackupRestoreWithViews(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
 	b := c.Backup()

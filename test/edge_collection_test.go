@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -47,7 +45,7 @@ func ensureEdgeCollection(ctx context.Context, g driver.Graph, collection string
 
 // TestCreateEdgeCollection creates a graph and then adds an edge collection in it
 func TestCreateEdgeCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
 	name := "test_create_edge_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
@@ -113,7 +111,7 @@ func TestCreateEdgeCollection(t *testing.T) {
 func TestCreateSatelliteEdgeCollection(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
@@ -185,7 +183,7 @@ func TestCreateSatelliteEdgeCollection(t *testing.T) {
 
 // TestRemoveEdgeCollection creates a graph and then adds an edge collection in it and then removes the edge collection.
 func TestRemoveEdgeCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
 	name := "test_remove_edge_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
@@ -227,7 +225,7 @@ func TestRemoveEdgeCollection(t *testing.T) {
 
 // TestSetVertexConstraints creates a graph and then adds an edge collection in it and then removes the edge collection.
 func TestSetVertexConstraints(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
 	name := "set_vertex_constraints"
 	g, err := db.CreateGraphV2(nil, name, nil)

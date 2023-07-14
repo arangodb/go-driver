@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -32,7 +30,7 @@ import (
 // TestRemoveVertices creates documents, removes them and then checks the removal has succeeded.
 func TestRemoveVertices(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "remove_vertices_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "places", t)
@@ -69,7 +67,7 @@ func TestRemoveVertices(t *testing.T) {
 // TestRemoveVerticesReturnOld creates documents, removes them checks the ReturnOld value.
 func TestRemoveVerticesReturnOld(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	g := ensureGraph(ctx, db, "remove_vertices_returnOld_test", nil, t)
@@ -109,7 +107,7 @@ func TestRemoveVerticesReturnOld(t *testing.T) {
 // TestRemoveVerticesSilent creates documents, removes them with Silent() and then checks the meta is indeed empty.
 func TestRemoveVerticesSilent(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "remove_vertices_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "silence", t)
@@ -151,7 +149,7 @@ func TestRemoveVerticesSilent(t *testing.T) {
 // TestRemoveVerticesRevision creates documents, removes them with an incorrect revisions.
 func TestRemoveVerticesRevision(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "remove_vertices_revision_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
@@ -219,7 +217,7 @@ func TestRemoveVerticesRevision(t *testing.T) {
 // TestRemoveVerticesKeyEmpty removes a document it with an empty key.
 func TestRemoveVerticesKeyEmpty(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "remove_vertices_keyEmpty_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "failures", t)

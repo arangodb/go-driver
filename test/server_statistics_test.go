@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2019 ArangoDB GmbH, Cologne, Germany
+// Copyright 2019-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Max neunhoeffer
 //
 
 package test
@@ -61,7 +59,7 @@ func doSomeWrites(t *testing.T, ctx context.Context, c driver.Client) {
 
 // TestServerStatisticsWorks tests if Client.Statistics works at all
 func TestServerStatisticsWorks(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 
 	checkEnabled(t, c, ctx)
@@ -168,7 +166,7 @@ func checkTrafficAtMost(t *testing.T, statsBefore *driver.ServerStatistics, stat
 // TestServerStatisticsTraffic tests if Client.Statistics increase
 // with traffic in the correct way
 func TestServerStatisticsTraffic(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 
 	checkEnabled(t, c, ctx)
@@ -230,7 +228,7 @@ type myCursorData struct {
 // with traffic in the correct way if queries are forwarded between
 // coordinators.
 func TestServerStatisticsForwarding(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 
 	_, err := c.Cluster(ctx)

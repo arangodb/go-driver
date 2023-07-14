@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -185,7 +183,7 @@ func getIndividualAgencyConnections(ctx context.Context, t testEnv, c driver.Cli
 // TestAgencyRead tests the Agency.ReadKey method.
 func TestAgencyRead(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -204,7 +202,7 @@ func TestAgencyRead(t *testing.T) {
 // TestAgencyWrite tests the Agency.WriteKey method.
 func TestAgencyWrite(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -233,7 +231,7 @@ func TestAgencyWrite(t *testing.T) {
 // TestAgencyWriteIfEmpty tests the Agency.WriteKeyIfEmpty method.
 func TestAgencyWriteIfEmpty(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -265,7 +263,7 @@ func TestAgencyWriteIfEmpty(t *testing.T) {
 // TestAgencyWriteIfEqualTo tests the Agency.WriteIfEqualTo method.
 func TestAgencyWriteIfEqualTo(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -306,7 +304,7 @@ func TestAgencyWriteIfEqualTo(t *testing.T) {
 // TestAgencyRemove tests the Agency.RemoveKey method.
 func TestAgencyRemove(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -332,7 +330,7 @@ func TestAgencyRemove(t *testing.T) {
 // TestAgencyRemoveIfEqualTo tests the Agency.RemoveKeyIfEqualTo method.
 func TestAgencyRemoveIfEqualTo(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -368,7 +366,7 @@ func TestAgencyCallbacks(t *testing.T) {
 
 	rootKeyAgency := "TestAgencyCallbacks"
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	a, err := getAgencyConnection(ctx, t, c)
 	if driver.IsPreconditionFailed(err) {
@@ -457,7 +455,7 @@ func writeTransaction(t *testing.T, transient bool) {
 
 	rootKeyAgency := "TestAgencyWriteTransaction"
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	a, err := getAgencyConnection(ctx, t, c)
 	if driver.IsPreconditionFailed(err) {

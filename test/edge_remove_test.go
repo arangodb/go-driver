@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -32,7 +30,7 @@ import (
 // TestRemoveEdge creates a document, remove it and then checks the removal has succeeded.
 func TestRemoveEdge(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "remove_edge_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -64,7 +62,7 @@ func TestRemoveEdge(t *testing.T) {
 // TestRemoveEdgeReturnOld creates a document, removes it with ReturnOld, which is an invalid argument.
 func TestRemoveEdgeReturnOld(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "remove_edge_returnOld_"
@@ -94,7 +92,7 @@ func TestRemoveEdgeReturnOld(t *testing.T) {
 // TestRemoveEdgeSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.
 func TestRemoveEdgeSilent(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "remove_edge_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -129,7 +127,7 @@ func TestRemoveEdgeSilent(t *testing.T) {
 // TestRemoveEdgeRevision creates a document, removes it with an incorrect revision.
 func TestRemoveEdgeRevision(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "remove_edge_revision_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -189,7 +187,7 @@ func TestRemoveEdgeRevision(t *testing.T) {
 // TestRemoveEdgeKeyEmpty removes a document it with an empty key.
 func TestRemoveEdgeKeyEmpty(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "remove_edge_nil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

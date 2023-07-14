@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-// Author Tomasz Mielech
 //
 
 package test
@@ -63,7 +60,7 @@ func assertCollection(ctx context.Context, db driver.Database, name string, t *t
 
 // TestCreateCollection creates a collection and then checks that it exists.
 func TestCreateCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_create_collection"
 	if _, err := db.CreateCollection(nil, name, nil); err != nil {
@@ -79,7 +76,7 @@ func TestCreateCollection(t *testing.T) {
 
 // TestCollection_CacheEnabled with cacheEnabled and check if exists
 func TestCollection_CacheEnabled(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test_cache_enabled", nil, t)
 
 	t.Run("Default value", func(t *testing.T) {
@@ -161,7 +158,7 @@ func TestCollection_CacheEnabled(t *testing.T) {
 
 // TestCollection_ComputedValues
 func TestCollection_ComputedValues(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
 	db := ensureDatabase(nil, c, "collection_test_computed_values", nil, t)
 
@@ -313,7 +310,7 @@ func TestCollection_ComputedValues(t *testing.T) {
 // TestCreateSatelliteCollection create a satellite collection
 func TestCreateSatelliteCollection(t *testing.T) {
 	skipNoEnterprise(t)
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_create_collection_satellite"
@@ -346,7 +343,7 @@ func TestCreateSatelliteCollection(t *testing.T) {
 // TestCreateSmartJoinCollection create a collection with smart join attribute
 func TestCreateSmartJoinCollection(t *testing.T) {
 	skipNoEnterprise(t)
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
@@ -382,7 +379,7 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 // TestCreateCollectionWithShardingStrategy create a collection with non default sharding strategy
 func TestCreateCollectionWithShardingStrategy(t *testing.T) {
 	skipNoEnterprise(t)
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
@@ -415,7 +412,7 @@ func TestCreateCollectionWithShardingStrategy(t *testing.T) {
 
 // TestRemoveCollection creates a collection and then removes it.
 func TestRemoveCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_remove_collection"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -442,7 +439,7 @@ func TestRemoveCollection(t *testing.T) {
 
 // TestLoadUnloadCollection creates a collection and unloads, loads & unloads it.
 func TestLoadUnloadCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	// we are not able to unload RocksDB
 	skipIfEngineTypeRocksDB(t, db)
@@ -505,7 +502,7 @@ func TestLoadUnloadCollection(t *testing.T) {
 
 // TestCollectionName creates a collection and checks its name
 func TestCollectionName(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_name"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -520,7 +517,7 @@ func TestCollectionName(t *testing.T) {
 // TestCollectionTruncate creates a collection, adds some documents and truncates it.
 func TestCollectionTruncate(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_truncate"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -558,7 +555,7 @@ func TestCollectionTruncate(t *testing.T) {
 
 // TestCollectionProperties creates a collection and checks its properties
 func TestCollectionProperties(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_properties"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -592,7 +589,7 @@ func TestCollectionProperties(t *testing.T) {
 
 // TestCollectionSetProperties creates a collection and modifies its properties
 func TestCollectionSetProperties(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_set_properties"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -699,7 +696,7 @@ func TestCollectionSetProperties(t *testing.T) {
 
 func TestCollectionSetPropertiesSatellite(t *testing.T) {
 	skipNoEnterprise(t)
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	// Test replication factor
 	if _, err := c.Cluster(nil); err == nil {
@@ -733,7 +730,7 @@ func TestCollectionSetPropertiesSatellite(t *testing.T) {
 
 // TestCollectionRevision creates a collection, checks revision after adding documents.
 func TestCollectionRevision(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_revision"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -763,7 +760,7 @@ func TestCollectionRevision(t *testing.T) {
 
 // TestCollectionChecksum creates a collection, checks checksum after adding documents.
 func TestCollectionChecksum(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_checksum", nil, t)
 	name := "test_collection_checksum"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -797,7 +794,7 @@ func TestCollectionChecksum(t *testing.T) {
 
 // TestCollectionStatistics creates a collection, checks statistics after adding documents.
 func TestCollectionStatistics(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
 	name := "test_collection_statistics"
 	col, err := db.CreateCollection(nil, name, nil)
@@ -830,7 +827,7 @@ func TestCollectionStatistics(t *testing.T) {
 
 // TestCollectionMinReplFactDeprecatedCreate creates a collection with minReplicationFactor != 1
 func TestCollectionMinReplFactDeprecatedCreate(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
@@ -873,7 +870,7 @@ func TestCollectionMinReplFactDeprecatedCreate(t *testing.T) {
 
 // TestCollectionMinReplFactDeprecatedInvalid creates a collection with minReplicationFactor > replicationFactor
 func TestCollectionMinReplFactDeprecatedInvalid(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
@@ -896,7 +893,7 @@ func TestCollectionMinReplFactDeprecatedInvalid(t *testing.T) {
 
 // TestCollectionMinReplFactDeprecatedClusterInv tests if minReplicationFactor is forwarded to ClusterInfo
 func TestCollectionMinReplFactDeprecatedClusterInv(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
@@ -936,7 +933,7 @@ func TestCollectionMinReplFactDeprecatedClusterInv(t *testing.T) {
 
 // TestCollectionMinReplFactDeprecatedSetProp updates the minimal replication factor using SetProperties
 func TestCollectionMinReplFactDeprecatedSetProp(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
@@ -972,7 +969,7 @@ func TestCollectionMinReplFactDeprecatedSetProp(t *testing.T) {
 // TestCollectionMinReplFactDeprecatedSetPropInvalid updates the minimal replication factor
 // to an invalid value using SetProperties.
 func TestCollectionMinReplFactDeprecatedSetPropInvalid(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version := skipBelowVersion(c, "3.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_min_repl_test", nil, t)
@@ -1006,7 +1003,7 @@ func TestCollectionMinReplFactDeprecatedSetPropInvalid(t *testing.T) {
 
 // TestCollectionWriteConcernCreate creates a collection with WriteConcern != 1.
 func TestCollectionWriteConcernCreate(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
@@ -1043,7 +1040,7 @@ func TestCollectionWriteConcernCreate(t *testing.T) {
 
 // TestCollectionWriteConcernInvalid creates a collection with WriteConcern > replicationFactor
 func TestCollectionWriteConcernInvalid(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)
 
@@ -1066,7 +1063,7 @@ func TestCollectionWriteConcernInvalid(t *testing.T) {
 
 // TestCollectionWriteConcernClusterInv tests if WriteConcern is forwarded to ClusterInfo
 func TestCollectionWriteConcernClusterInv(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
@@ -1093,7 +1090,7 @@ func TestCollectionWriteConcernClusterInv(t *testing.T) {
 
 // TestCollectionWriteConcernSetProp updates the WriteConcern using SetProperties
 func TestCollectionWriteConcernSetProp(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
@@ -1118,7 +1115,7 @@ func TestCollectionWriteConcernSetProp(t *testing.T) {
 
 // TestCollectionWriteConcernSetPropInvalid updates the writeConcern to an invalid value using SetProperties.
 func TestCollectionWriteConcernSetPropInvalid(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_write_concern_test", nil, t)
@@ -1151,7 +1148,7 @@ func Test_CollectionShards(t *testing.T) {
 	}
 
 	databaseName := getCallerFunctionName()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, databaseName, nil, t)
 	name := "test_collection_set_properties"
 	col, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{

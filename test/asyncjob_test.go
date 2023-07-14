@@ -33,7 +33,7 @@ import (
 )
 
 func TestAsyncJobListDone(t *testing.T) {
-	c := createAsyncClientFromEnv(t)
+	c := createClient(t, &testsClientConfig{asyncMode: true})
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
 
@@ -95,7 +95,7 @@ func TestAsyncJobListDone(t *testing.T) {
 }
 
 func TestAsyncJobListPending(t *testing.T) {
-	c := createAsyncClientFromEnv(t)
+	c := createClient(t, &testsClientConfig{asyncMode: true})
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
@@ -138,7 +138,7 @@ func TestAsyncJobListPending(t *testing.T) {
 }
 
 func TestAsyncJobCancel(t *testing.T) {
-	c := createAsyncClientFromEnv(t)
+	c := createClient(t, &testsClientConfig{asyncMode: true})
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))
@@ -185,7 +185,7 @@ func TestAsyncJobCancel(t *testing.T) {
 }
 
 func TestAsyncJobDelete(t *testing.T) {
-	c := createAsyncClientFromEnv(t)
+	c := createClient(t, &testsClientConfig{asyncMode: true})
 	ctx := context.Background()
 	ctxAsync := driver.WithAsync(context.Background())
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.1"))

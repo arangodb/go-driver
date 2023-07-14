@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestCreateVertex creates an vertex and then checks that it exists.
 func TestCreateVertex(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertex_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
@@ -64,7 +62,7 @@ func TestCreateVertex(t *testing.T) {
 // TestCreateVertexReturnNew creates a document and checks the document returned in in ReturnNew.
 func TestCreateVertexReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertex_return_new_est", nil, t)
@@ -96,7 +94,7 @@ func TestCreateVertexReturnNew(t *testing.T) {
 // TestCreateVertexSilent creates a document with WithSilent.
 func TestCreateVertexSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertex_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "users", t)
@@ -115,7 +113,7 @@ func TestCreateVertexSilent(t *testing.T) {
 // TestCreateVertexNil creates a document with a nil document.
 func TestCreateVertexNil(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertex_nil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "users", t)

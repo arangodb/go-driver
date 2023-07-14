@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestImportEdgesWithKeys imports documents and then checks that it exists.
 func TestImportEdgesWithKeys(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -85,7 +83,7 @@ func TestImportEdgesWithKeys(t *testing.T) {
 // TestImportEdgesWithoutKeys imports documents and then checks that it exists.
 func TestImportEdgesWithoutKeys(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_withhoutKeys_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -140,7 +138,7 @@ func TestImportEdgesEmptyEntries(t *testing.T) {
 		t.Skip("Not supported on vpack")
 	}
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_emptyEntries_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -196,7 +194,7 @@ func TestImportEdgesInvalidEntries(t *testing.T) {
 		t.Skip("Not supported on vpack")
 	}
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_invalidEntries_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -251,7 +249,7 @@ func TestImportEdgesInvalidEntries(t *testing.T) {
 // TestImportEdgesDuplicateEntries imports documents and then checks that it exists.
 func TestImportEdgesDuplicateEntries(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_duplicateEntries_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -306,7 +304,7 @@ func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 		t.Skip("Not supported on vpack")
 	}
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_duplicateEntriesComplete_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -344,7 +342,7 @@ func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 // TestImportEdgesDuplicateEntriesUpdate imports documents and then checks that it exists.
 func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_duplicateEntriesUpdate_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -409,7 +407,7 @@ func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 // TestImportEdgesDuplicateEntriesReplace imports documents and then checks that it exists.
 func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_duplicateEntriesReplace_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -474,7 +472,7 @@ func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 // TestImportEdgesDuplicateEntriesIgnore imports documents and then checks that it exists.
 func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_duplicateEntriesIgnore_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -539,7 +537,7 @@ func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 // TestImportEdgesDetails imports documents and then checks that it exists.
 func TestImportEdgesDetails(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_details_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -599,7 +597,7 @@ func TestImportEdgesDetails(t *testing.T) {
 func TestImportEdgesOverwriteYes(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_overwriteYes_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -649,7 +647,7 @@ func TestImportEdgesOverwriteYes(t *testing.T) {
 func TestImportEdgesOverwriteNo(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_overwriteNo_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -699,7 +697,7 @@ func TestImportEdgesOverwriteNo(t *testing.T) {
 func TestImportEdgesPrefix(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "import_edges_prefix_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

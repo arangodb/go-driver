@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -42,7 +40,7 @@ func createDocument(ctx context.Context, col driver.Collection, document interfa
 // TestCreateDocument creates a document and then checks that it exists.
 func TestCreateDocument(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -72,7 +70,7 @@ func TestCreateDocument(t *testing.T) {
 // TestCreateDocumentWithKey creates a document with given key and then checks that it exists.
 func TestCreateDocumentWithKey(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "document_withKey_test", nil, t)
 	doc := UserDocWithKey{
@@ -107,7 +105,7 @@ func TestCreateDocumentWithKey(t *testing.T) {
 func TestCreateDocumentReturnNew(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -136,7 +134,7 @@ func TestCreateDocumentReturnNew(t *testing.T) {
 // TestCreateDocumentSilent creates a document with WithSilent.
 func TestCreateDocumentSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -152,7 +150,7 @@ func TestCreateDocumentSilent(t *testing.T) {
 
 // TestCreateDocumentNil creates a document with a nil document.
 func TestCreateDocumentNil(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	if _, err := col.CreateDocument(nil, nil); !driver.IsInvalidArgument(err) {
@@ -164,7 +162,7 @@ func TestCreateDocumentNil(t *testing.T) {
 // and then checks that it exists.
 func TestCreateDocumentInWaitForSyncCollection(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "TestCreateDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

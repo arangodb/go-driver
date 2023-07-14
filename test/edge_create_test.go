@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestCreateEdge creates an edge and then checks that it exists.
 func TestCreateEdge(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "create_edge_test_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -70,7 +68,7 @@ func TestCreateEdge(t *testing.T) {
 // TestCreateCustomEdge creates an edge with a custom type and then checks that it exists.
 func TestCreateCustomEdge(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "create_custom_edge_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -101,7 +99,7 @@ func TestCreateCustomEdge(t *testing.T) {
 // TestCreateEdgeReturnNew creates a document and checks the document returned in in ReturnNew.
 func TestCreateEdgeReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "create_edge_return_new_"
@@ -139,7 +137,7 @@ func TestCreateEdgeReturnNew(t *testing.T) {
 // TestCreateEdgeSilent creates a document with WithSilent.
 func TestCreateEdgeSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "create_edge_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -164,7 +162,7 @@ func TestCreateEdgeSilent(t *testing.T) {
 // TestCreateEdgeNil creates a document with a nil document.
 func TestCreateEdgeNil(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "create_edge_nil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

@@ -34,7 +34,7 @@ import (
 // TestAgencyLock tests the agency.Lock interface.
 func TestAgencyLock(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {

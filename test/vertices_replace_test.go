@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -34,7 +32,7 @@ import (
 // TestReplaceVertices creates documents, replaces them and then checks the replacements have succeeded.
 func TestReplaceVertices(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "male", t)
@@ -80,7 +78,7 @@ func TestReplaceVertices(t *testing.T) {
 // TestReplaceVerticesReturnOld creates documents, replaces them checks the ReturnOld values.
 func TestReplaceVerticesReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_returnOld_test", nil, t)
@@ -125,7 +123,7 @@ func TestReplaceVerticesReturnOld(t *testing.T) {
 // TestReplaceVerticesReturnNew creates documents, replaces them checks the ReturnNew values.
 func TestReplaceVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_returnNew_test", nil, t)
@@ -171,7 +169,7 @@ func TestReplaceVerticesReturnNew(t *testing.T) {
 // TestReplaceVerticesSilent creates documents, replaces them with Silent() and then checks the meta is indeed empty.
 func TestReplaceVerticesSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "moments", t)
@@ -216,7 +214,7 @@ func TestReplaceVerticesSilent(t *testing.T) {
 // Then it attempts replacements with incorrect revisions which must fail.
 func TestReplaceVerticesRevision(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_revision_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "planets", t)
@@ -284,7 +282,7 @@ func TestReplaceVerticesRevision(t *testing.T) {
 // TestReplaceVerticesKeyEmpty replaces a document it with an empty key.
 func TestReplaceVerticesKeyEmpty(t *testing.T) {
 	ctx := context.TODO()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_keyEmpty_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "planets", t)
@@ -301,7 +299,7 @@ func TestReplaceVerticesKeyEmpty(t *testing.T) {
 // TestReplaceVerticesUpdateNil replaces a document it with a nil update.
 func TestReplaceVerticesUpdateNil(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_updateNil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "relations", t)
@@ -314,7 +312,7 @@ func TestReplaceVerticesUpdateNil(t *testing.T) {
 // TestReplaceVerticesUpdateLenDiff replacements documents with a different number of documents, keys.
 func TestReplaceVerticesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertices_updateNil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "failures", t)

@@ -32,7 +32,7 @@ import (
 
 // TestServerLogs tests if logs are parsed.
 func TestServerLogs(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -53,7 +53,7 @@ func TestServerLogs(t *testing.T) {
 
 // Test_LogLevels tests log levels.
 func Test_LogLevels(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 
 	result, err := c.GetLogLevels(ctx, nil)
@@ -80,7 +80,7 @@ func Test_LogLevels(t *testing.T) {
 
 // Test_LogLevelsForServers tests log levels for on specific server.
 func Test_LogLevelsForServers(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 	skipBelowVersion(c, "3.10.2", t)
 	skipNoCluster(c, t)

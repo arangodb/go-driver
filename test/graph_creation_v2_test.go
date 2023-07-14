@@ -34,7 +34,7 @@ func Test_Graph_AdvancedCreateV2(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	v, err := c.Version(nil)
 	require.NoError(t, err)
 
@@ -78,7 +78,7 @@ func Test_Graph_AdvancedCreateV2_Defaults(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	v, err := c.Version(nil)
 	require.NoError(t, err)
 
@@ -117,7 +117,7 @@ func TestGraphCreationV2(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0")).Cluster().Enterprise()
 
 	t.Run("Satellite", func(t *testing.T) {
@@ -255,7 +255,7 @@ func TestGraphCreationV2(t *testing.T) {
 func TestHybridSmartGraphCreationV2(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "hybrid"), nil, t)
@@ -308,7 +308,7 @@ func TestHybridSmartGraphCreationV2(t *testing.T) {
 func TestHybridSmartGraphCreationConditions(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.10.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "hybrid", "options"), nil, t)

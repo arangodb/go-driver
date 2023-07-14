@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -46,7 +44,7 @@ func ensureVertexCollection(ctx context.Context, g driver.Graph, collection stri
 
 // TestCreateVertexCollection creates a graph and then adds a vertex collection in it
 func TestCreateVertexCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
 	name := "test_create_vertex_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
@@ -96,7 +94,7 @@ func TestCreateVertexCollection(t *testing.T) {
 func TestCreateSatelliteVertexCollection(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, "vertex_collection_test", nil, t)
@@ -151,7 +149,7 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 
 // TestRemoveVertexCollection creates a graph and then adds an vertex collection in it and then removes the vertex collection.
 func TestRemoveVertexCollection(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
 	name := "test_remove_vertex_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)

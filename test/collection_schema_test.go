@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package test
@@ -44,7 +42,7 @@ func jsonEqual(t *testing.T, a, b interface{}) {
 
 // TestCreateOverwriteDocument creates a document and then checks that it exists. Check with overwrite flag
 func TestCollectionSchema(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

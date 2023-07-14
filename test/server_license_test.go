@@ -32,7 +32,7 @@ import (
 
 // Test_License tests ArangoDB license.
 func Test_License(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 	skipBelowVersion(c, "3.10.0", t)
 

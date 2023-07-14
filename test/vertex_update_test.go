@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestUpdateVertex creates a document, updates it and then checks the update has succeeded.
 func TestUpdateVertex(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "user", t)
@@ -67,7 +65,7 @@ func TestUpdateVertex(t *testing.T) {
 // TestUpdateVertexReturnOld creates a document, updates it checks the ReturnOld value.
 func TestUpdateVertexReturnOld(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_returnOld_test", nil, t)
@@ -98,7 +96,7 @@ func TestUpdateVertexReturnOld(t *testing.T) {
 // TestUpdateVertexReturnNew creates a document, updates it checks the ReturnNew value.
 func TestUpdateVertexReturnNew(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_returnNew_test", nil, t)
@@ -132,7 +130,7 @@ func TestUpdateVertexReturnNew(t *testing.T) {
 // TestUpdateVertexKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateVertexKeepNullTrue(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_keepNullTrue_test", nil, t)
@@ -189,7 +187,7 @@ func TestUpdateVertexKeepNullTrue(t *testing.T) {
 // TestUpdateVertexKeepNullFalse creates a document, updates it with KeepNull(false) and then checks the update has succeeded.
 func TestUpdateVertexKeepNullFalse(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_keepNullFalse_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "accounts", t)
@@ -226,7 +224,7 @@ func TestUpdateVertexKeepNullFalse(t *testing.T) {
 // TestUpdateVertexSilent creates a document, updates it with Silent() and then checks the meta is indeed empty.
 func TestUpdateVertexSilent(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "moments", t)
@@ -254,7 +252,7 @@ func TestUpdateVertexSilent(t *testing.T) {
 // Then it attempts an update with an incorrect revision which must fail.
 func TestUpdateVertexRevision(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_revision_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
@@ -298,7 +296,7 @@ func TestUpdateVertexRevision(t *testing.T) {
 // TestUpdateVertexKeyEmpty updates a document it with an empty key.
 func TestUpdateVertexKeyEmpty(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_keyEmpty_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "tests", t)
@@ -315,7 +313,7 @@ func TestUpdateVertexKeyEmpty(t *testing.T) {
 // TestUpdateVertexUpdateNil updates a document it with a nil update.
 func TestUpdateVertexUpdateNil(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "update_vertex_updateNil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "errors", t)

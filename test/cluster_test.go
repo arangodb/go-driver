@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestClusterHealth tests the Cluster.Health method.
 func TestClusterHealth(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
 		t.Skip("Not a cluster")
@@ -84,7 +82,7 @@ func TestClusterHealth(t *testing.T) {
 // TestClusterDatabaseInventory tests the Cluster.DatabaseInventory method.
 func TestClusterDatabaseInventory(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
 		t.Skip("Not a cluster")
@@ -124,7 +122,7 @@ func TestClusterDatabaseInventorySatellite(t *testing.T) {
 	skipNoEnterprise(t)
 	name := "satellite_collection_dbinv"
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
 		t.Skip("Not a cluster")
@@ -177,7 +175,7 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 	name := "smart_join_collection_dbinv"
 	nameParent := "smart_join_collection_dbinv_parent"
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4.5", t)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
@@ -225,7 +223,7 @@ func TestClusterDatabaseInventoryShardingStrategy(t *testing.T) {
 	skipNoEnterprise(t)
 	name := "shard_strat_collection_dbinv"
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
@@ -260,7 +258,7 @@ func TestClusterDatabaseInventoryShardingStrategy(t *testing.T) {
 // TestClusterMoveShard tests the Cluster.MoveShard method.
 func TestClusterMoveShard(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
 		t.Skip("Not a cluster")
@@ -359,7 +357,7 @@ func TestClusterMoveShard(t *testing.T) {
 
 func TestClusterResignLeadership(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5.1", t)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {
@@ -448,7 +446,7 @@ func TestClusterResignLeadership(t *testing.T) {
 // that are being used in views.
 func TestClusterMoveShardWithViews(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	cl, err := c.Cluster(ctx)
 	if driver.IsPreconditionFailed(err) {

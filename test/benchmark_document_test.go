@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -26,7 +24,7 @@ import "testing"
 
 // BenchmarkCreateDocument measures the CreateDocument operation for a simple document.
 func BenchmarkCreateDocument(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	col := ensureCollection(nil, db, "document_test", nil, b)
 
@@ -44,7 +42,7 @@ func BenchmarkCreateDocument(b *testing.B) {
 
 // BenchmarkCreateDocumentParallel measures parallel CreateDocument operations for a simple document.
 func BenchmarkCreateDocumentParallel(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	col := ensureCollection(nil, db, "document_test", nil, b)
 
@@ -64,7 +62,7 @@ func BenchmarkCreateDocumentParallel(b *testing.B) {
 
 // BenchmarkReadDocument measures the ReadDocument operation for a simple document.
 func BenchmarkReadDocument(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	col := ensureCollection(nil, db, "document_test", nil, b)
 	doc := UserDoc{
@@ -87,7 +85,7 @@ func BenchmarkReadDocument(b *testing.B) {
 
 // BenchmarkReadDocumentParallel measures parallel ReadDocument operations for a simple document.
 func BenchmarkReadDocumentParallel(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	col := ensureCollection(nil, db, "document_test", nil, b)
 	doc := UserDoc{
@@ -112,7 +110,7 @@ func BenchmarkReadDocumentParallel(b *testing.B) {
 
 // BenchmarkRemoveDocument measures the RemoveDocument operation for a simple document.
 func BenchmarkRemoveDocument(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	col := ensureCollection(nil, db, "document_test", nil, b)
 

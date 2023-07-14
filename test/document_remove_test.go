@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestReplaceDocument creates a document, remove it and then checks the removal has succeeded.
 func TestRemoveDocument(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -64,7 +62,7 @@ func TestRemoveDocument(t *testing.T) {
 func TestRemoveDocumentReturnOld(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -94,7 +92,7 @@ func TestRemoveDocumentReturnOld(t *testing.T) {
 // TestRemoveDocumentSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.
 func TestRemoveDocumentSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -121,7 +119,7 @@ func TestRemoveDocumentSilent(t *testing.T) {
 // TestRemoveDocumentRevision creates a document, removes it with an incorrect revision.
 func TestRemoveDocumentRevision(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
@@ -163,7 +161,7 @@ func TestRemoveDocumentRevision(t *testing.T) {
 
 // TestRemoveDocumentKeyEmpty removes a document it with an empty key.
 func TestRemoveDocumentKeyEmpty(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	if _, err := col.RemoveDocument(nil, ""); !driver.IsInvalidArgument(err) {
@@ -176,7 +174,7 @@ func TestRemoveDocumentKeyEmpty(t *testing.T) {
 func TestRemoveDocumentInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestRemoveDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestCreateVertices creates documents and then checks that it exists.
 func TestCreateVertices(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertices_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
@@ -90,7 +88,7 @@ func TestCreateVertices(t *testing.T) {
 // TestCreateVerticesReturnNew creates documents and checks the document returned in in ReturnNew.
 func TestCreateVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertices_returnNew_test", nil, t)
@@ -137,7 +135,7 @@ func TestCreateVerticesReturnNew(t *testing.T) {
 // TestCreateVerticesSilent creates documents with WithSilent.
 func TestCreateVerticesSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertices_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "users", t)
@@ -167,7 +165,7 @@ func TestCreateVerticesSilent(t *testing.T) {
 // TestCreateVerticesNil creates multiple documents with a nil documents input.
 func TestCreateVerticesNil(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertices_nil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "rivers", t)
@@ -179,7 +177,7 @@ func TestCreateVerticesNil(t *testing.T) {
 // TestCreateVerticesNonSlice creates multiple documents with a non-slice documents input.
 func TestCreateVerticesNonSlice(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
 	g := ensureGraph(ctx, db, "create_vertices_nonSlice_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "failures", t)

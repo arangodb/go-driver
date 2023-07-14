@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestReplaceDocuments creates documents, removes them and then checks the removal has succeeded.
 func TestRemoveDocuments(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -63,7 +61,7 @@ func TestRemoveDocuments(t *testing.T) {
 // TestRemoveDocumentsReturnOld creates documents, removes them checks the ReturnOld value.
 func TestRemoveDocumentsReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -111,7 +109,7 @@ func TestRemoveDocumentsReturnOld(t *testing.T) {
 // TestRemoveDocumentsSilent creates documents, removes them with Silent() and then checks the meta is indeed empty.
 func TestRemoveDocumentsSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -153,7 +151,7 @@ func TestRemoveDocumentsSilent(t *testing.T) {
 // TestRemoveDocumentsRevision creates documents, removes them with an incorrect revisions.
 func TestRemoveDocumentsRevision(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -220,7 +218,7 @@ func TestRemoveDocumentsRevision(t *testing.T) {
 
 // TestRemoveDocumentsKeyEmpty removes a document it with an empty key.
 func TestRemoveDocumentsKeyEmpty(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	if _, _, err := col.RemoveDocuments(nil, []string{""}); !driver.IsInvalidArgument(err) {
@@ -232,7 +230,7 @@ func TestRemoveDocumentsKeyEmpty(t *testing.T) {
 // removes them and then checks the removal has succeeded.
 func TestRemoveDocumentsInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestRemoveDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,
