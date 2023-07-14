@@ -283,9 +283,15 @@ func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
 	asyncMode := false
 
 	if cfg != nil {
-		waitUntilReady = !cfg.skipWaitUntilReady
-		disallowUnknownFields = !cfg.skipDisallowUnknownFields
-		asyncMode = cfg.asyncMode
+		if cfg.skipWaitUntilReady {
+			waitUntilReady = false
+		}
+		if cfg.skipDisallowUnknownFields {
+			disallowUnknownFields = false
+		}
+		if cfg.asyncMode {
+			asyncMode = true
+		}
 	}
 
 	runPProfServerOnce.Do(func() {
