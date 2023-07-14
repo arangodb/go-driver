@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Tomasz Mielech
 //
 
 package tests
@@ -46,7 +44,7 @@ const (
 )
 
 // requireMode skips current test if it is not in given modes.
-func requireMode(t *testing.T, modes ...mode) {
+func requireMode(t testing.TB, modes ...mode) {
 	testMode := getTestMode()
 	for _, mode := range modes {
 		if testMode == string(mode) {
@@ -57,19 +55,19 @@ func requireMode(t *testing.T, modes ...mode) {
 	t.Skipf("test is in \"%s\" mode, but it requires one of \"%s\"", testMode, modes)
 }
 
-func requireClusterMode(t *testing.T) {
+func requireClusterMode(t testing.TB) {
 	requireMode(t, testModeCluster)
 }
 
-func requireSingleMode(t *testing.T) {
+func requireSingleMode(t testing.TB) {
 	requireMode(t, testModeSingle)
 }
 
-func requireResilientSingleMode(t *testing.T) {
+func requireResilientSingleMode(t testing.TB) {
 	requireMode(t, testModeResilientSingle)
 }
 
-func skipNoEnterprise(c arangodb.Client, ctx context.Context, t *testing.T) {
+func skipNoEnterprise(c arangodb.Client, ctx context.Context, t testing.TB) {
 	version, err := c.Version(ctx)
 	require.NoError(t, err)
 
@@ -78,7 +76,7 @@ func skipNoEnterprise(c arangodb.Client, ctx context.Context, t *testing.T) {
 	}
 }
 
-func skipBelowVersion(c arangodb.Client, ctx context.Context, version arangodb.Version, t *testing.T) arangodb.VersionInfo {
+func skipBelowVersion(c arangodb.Client, ctx context.Context, version arangodb.Version, t testing.TB) arangodb.VersionInfo {
 	x, err := c.Version(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get version info: %s", err)

@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Tomasz Mielech
-//
 
 package tests
 
@@ -40,7 +38,7 @@ func Test_LogLevels(t *testing.T) {
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContext(time.Minute, func(ctx context.Context) error {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 
 			logLevels, err := client.GetLogLevels(ctx, nil)
 			require.NoError(t, err)
@@ -62,7 +60,6 @@ func Test_LogLevels(t *testing.T) {
 			newLogLevels, err := client.GetLogLevels(ctx, nil)
 			require.NoError(t, err)
 			require.Equal(t, logLevels, newLogLevels)
-			return nil
 		})
 	}, wrapOpts)
 }

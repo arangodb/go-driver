@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
 
 package test
 
@@ -30,7 +31,7 @@ import (
 
 // TestGetServerMetrics tests if Client.Metrics works at all
 func TestGetServerMetrics(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 	skipBelowVersion(c, "3.8", t)
 
@@ -41,7 +42,7 @@ func TestGetServerMetrics(t *testing.T) {
 
 // TestGetServerMetricsForSingleServer tests if Client.MetricsForSingleServer works at all
 func TestGetServerMetricsForSingleServer(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 	skipBelowVersion(c, "3.8", t)
 	skipNoCluster(c, t)

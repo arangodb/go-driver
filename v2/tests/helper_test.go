@@ -26,12 +26,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDatabaseOptions, f func(db arangodb.Database)) {
@@ -39,20 +38,17 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 	info(t)("Creating DB %s", name)
 
-	withContext(2*time.Minute, func(ctx context.Context) error {
+	withContextT(t, 2*time.Minute, func(ctx context.Context, _ testing.TB) {
 		db, err := client.CreateDatabase(ctx, name, opts)
 		require.NoError(t, err)
 
 		defer func() {
-			withContext(2*time.Minute, func(ctx context.Context) error {
+			withContextT(t, 2*time.Minute, func(ctx context.Context, _ testing.TB) {
 				info(t)("Removing DB %s", db.Name())
-				return nil
 			})
 		}()
 
 		f(db)
-
-		return nil
 	})
 }
 
@@ -61,7 +57,7 @@ func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCol
 
 	info(t)("Creating COL %s", name)
 
-	withContext(2*time.Minute, func(ctx context.Context) error {
+	withContextT(t, 2*time.Minute, func(ctx context.Context, _ testing.TB) {
 		col, err := db.CreateCollection(ctx, name, opts)
 		require.NoError(t, err)
 
@@ -79,8 +75,6 @@ func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCol
 		}).TimeoutT(t, 15*time.Second, 125*time.Millisecond)
 
 		f(col)
-
-		return nil
 	})
 }
 

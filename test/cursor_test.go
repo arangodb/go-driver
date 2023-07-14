@@ -36,7 +36,7 @@ import (
 func TestCreateCursorWithMaxRuntime(t *testing.T) {
 	// Arrange
 	collectionName := "cursor_max_retry_test"
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
 	db := ensureDatabase(context.Background(), c, "cursor_test", nil, t)
 	ensureCollection(context.Background(), db, collectionName, nil, t)
@@ -86,7 +86,7 @@ func TestCreateCursorWithMaxRuntime(t *testing.T) {
 func TestWithQueryOptimizerRules(t *testing.T) {
 	collectionName := "col_query_optimizer_rules"
 	fieldName := "value"
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(context.Background(), c, "query_optimizer_rules", nil, t)
 	col := ensureCollection(context.Background(), db, collectionName, nil, t)
 
@@ -174,7 +174,7 @@ func TestWithQueryOptimizerRules(t *testing.T) {
 func TestCreateCursor(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "cursor_test", nil, t)
 
 	// Create data set
@@ -397,7 +397,7 @@ func TestCreateCursor(t *testing.T) {
 // TestCreateCursorReturnNull creates a cursor with a `RETURN NULL` query.
 func TestCreateCursorReturnNull(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "cursor_test", nil, t)
 
 	var result interface{}
@@ -421,7 +421,7 @@ func TestCreateStreamCursor(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 
 	version, err := c.Version(nil)
 	if err != nil {

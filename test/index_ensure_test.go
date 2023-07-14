@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -35,7 +33,7 @@ import (
 
 // TestEnsureFullTextIndex creates a collection with a full text index.
 func TestEnsureFullTextIndex(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
 	testOptions := []*driver.EnsureFullTextIndexOptions{
@@ -93,7 +91,7 @@ func TestEnsureFullTextIndex(t *testing.T) {
 
 // TestEnsureGeoIndex creates a collection with a geo index.
 func TestEnsureGeoIndex(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
 	testOptions := []*driver.EnsureGeoIndexOptions{
@@ -152,7 +150,7 @@ func TestEnsureGeoIndex(t *testing.T) {
 // TestEnsureGeoIndexLegacyPolygons creates a collection with a Geo index and additional LegacyPolygons options.
 func TestEnsureGeoIndexLegacyPolygons(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
 
 	db := ensureDatabase(ctx, c, "index_geo_LegacyPolygons_test", nil, t)
@@ -180,7 +178,7 @@ func TestEnsureGeoIndexLegacyPolygons(t *testing.T) {
 
 // TestEnsureHashIndex creates a collection with a hash index.
 func TestEnsureHashIndex(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
 	testOptions := []*driver.EnsureHashIndexOptions{
@@ -243,7 +241,7 @@ func TestEnsureHashIndex(t *testing.T) {
 
 // TestEnsurePersistentIndex creates a collection with a persistent index.
 func TestEnsurePersistentIndex(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
 	testOptions := []*driver.EnsurePersistentIndexOptions{
@@ -307,7 +305,7 @@ func TestEnsurePersistentIndex(t *testing.T) {
 // TestEnsurePersistentIndexOptions creates a collection with a persistent index and additional options.
 func TestEnsurePersistentIndexOptions(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
 
 	db := ensureDatabase(ctx, c, "index_persistent_options_test", nil, t)
@@ -335,7 +333,7 @@ func TestEnsurePersistentIndexOptions(t *testing.T) {
 
 // TestEnsureSkipListIndex creates a collection with a skiplist index.
 func TestEnsureSkipListIndex(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 
 	testOptions := []*driver.EnsureSkipListIndexOptions{
@@ -401,7 +399,7 @@ func TestEnsureSkipListIndex(t *testing.T) {
 
 // TestEnsureTTLIndex creates a collection with a ttl index.
 func TestEnsureTTLIndex(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
 	skipBelowVersion(c, "3.5", t)
 
@@ -468,7 +466,7 @@ func TestEnsureTTLIndex(t *testing.T) {
 func TestEnsureZKDIndex(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0"))
 
 	db := ensureDatabase(ctx, c, "index_test", nil, t)
@@ -492,7 +490,7 @@ func TestEnsureZKDIndex(t *testing.T) {
 func TestEnsureZKDIndexWithOptions(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0"))
 
 	db := ensureDatabase(ctx, c, "index_test", nil, t)
@@ -521,7 +519,7 @@ func TestEnsureZKDIndexWithOptions(t *testing.T) {
 func TestEnsureInvertedIndex(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.10.0"))
 
 	db := ensureDatabase(ctx, c, "index_test", nil, t)

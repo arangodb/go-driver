@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -78,7 +76,7 @@ func skipIfEngineType(t *testing.T, db driver.Database, engineType driver.Engine
 
 // TestCreateDatabase creates a database and then checks that it exists.
 func TestCreateDatabase(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	name := "create_test1"
 	if _, err := c.CreateDatabase(nil, name, nil); err != nil {
 		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
@@ -93,7 +91,7 @@ func TestCreateDatabase(t *testing.T) {
 
 // TestRemoveDatabase creates a database and then removes it.
 func TestRemoveDatabase(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	name := "remove_test1"
 	d, err := c.CreateDatabase(nil, name, nil)
 	if err != nil {
@@ -122,7 +120,7 @@ func TestRemoveDatabase(t *testing.T) {
 // TestDatabaseInfo tests Database.Info.
 func TestDatabaseInfo(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	// Test system DB
 	db := ensureDatabase(ctx, c, "_system", nil, t)
@@ -166,7 +164,7 @@ func TestDatabaseInfo(t *testing.T) {
 }
 
 func TestDatabaseNameUnicode(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	databaseExtendedNamesRequired(t, c)
 
 	dbName := "\u006E\u0303\u00f1"
@@ -207,7 +205,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 // TestCreateDatabaseReplication2 creates a database with replication version two.
 func TestCreateDatabaseReplication2(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
 
 	name := "create_test_replication2"

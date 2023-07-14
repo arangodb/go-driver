@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -48,7 +46,7 @@ func ensureUser(ctx context.Context, c driver.Client, name string, options *driv
 
 // TestCreateUser creates a user and then checks that it exists.
 func TestCreateUser(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	tests := map[string]*driver.UserOptions{
 		"jan1":   nil,
@@ -157,7 +155,7 @@ func TestCreateUser(t *testing.T) {
 
 // TestUpdateUser creates a user and performs various updates.
 func TestUpdateUser(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	u := ensureUser(nil, c, "update_user", nil, t)
 
 	if err := u.Update(context.TODO(), driver.UserOptions{}); err != nil {
@@ -201,7 +199,7 @@ func TestUpdateUser(t *testing.T) {
 
 // TestReplaceUser creates a user and performs various replacements.
 func TestReplaceUser(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	u := ensureUser(nil, c, "replace_user", nil, t)
 
 	if err := u.Replace(context.TODO(), driver.UserOptions{}); err != nil {

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -34,7 +32,7 @@ import (
 // TestReplaceEdges creates documents, replaces them and then checks the replacements have succeeded.
 func TestReplaceEdges(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -91,7 +89,7 @@ func TestReplaceEdges(t *testing.T) {
 // TestReplaceEdgesReturnOld creates documents, replaces them checks the ReturnOld values.
 func TestReplaceEdgesReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_returnOld_"
@@ -147,7 +145,7 @@ func TestReplaceEdgesReturnOld(t *testing.T) {
 // TestReplaceEdgesReturnNew creates documents, replaces them checks the ReturnNew values.
 func TestReplaceEdgesReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_returnNew_"
@@ -204,7 +202,7 @@ func TestReplaceEdgesReturnNew(t *testing.T) {
 // TestReplaceEdgesSilent creates documents, replaces them with Silent() and then checks the meta is indeed empty.
 func TestReplaceEdgesSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -260,7 +258,7 @@ func TestReplaceEdgesSilent(t *testing.T) {
 // Then it attempts replacements with incorrect revisions which must fail.
 func TestReplaceEdgesRevision(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_revision_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -341,7 +339,7 @@ func TestReplaceEdgesRevision(t *testing.T) {
 // TestReplaceEdgesKeyEmpty replaces a document it with an empty key.
 func TestReplaceEdgesKeyEmpty(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_updateNil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -358,7 +356,7 @@ func TestReplaceEdgesKeyEmpty(t *testing.T) {
 // TestReplaceEdgesUpdateNil replaces a document it with a nil update.
 func TestReplaceEdgesUpdateNil(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_updateNil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -372,7 +370,7 @@ func TestReplaceEdgesUpdateNil(t *testing.T) {
 // TestReplaceEdgesUpdateLenDiff replacements documents with a different number of documents, keys.
 func TestReplaceEdgesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "replace_edges_updateNil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

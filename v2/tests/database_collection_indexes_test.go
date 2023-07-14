@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Jakub Wierzbowski
-//
 
 package tests
 
@@ -40,15 +38,12 @@ func Test_DefaultIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(30*time.Second, func(ctx context.Context) error {
-
+				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 					indexes, err := col.Indexes(ctx)
 					require.NoError(t, err)
 					require.NotNil(t, indexes)
 					require.Equal(t, 1, len(indexes))
 					assert.Equal(t, arangodb.PrimaryIndexType, indexes[0].Type)
-
-					return nil
 				})
 			})
 		})
@@ -59,8 +54,7 @@ func Test_DefaultEdgeIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, &arangodb.CreateCollectionOptions{Type: arangodb.CollectionTypeEdge}, func(col arangodb.Collection) {
-				withContext(30*time.Second, func(ctx context.Context) error {
-
+				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 					indexes, err := col.Indexes(ctx)
 					require.NoError(t, err)
 					require.NotNil(t, indexes)
@@ -73,8 +67,6 @@ func Test_DefaultEdgeIndexes(t *testing.T) {
 					assert.True(t, slices.ContainsFunc(indexes, func(i arangodb.IndexResponse) bool {
 						return i.Type == arangodb.EdgeIndexType
 					}))
-
-					return nil
 				})
 			})
 		})
@@ -85,8 +77,7 @@ func Test_EnsurePersistentIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(30*time.Second, func(ctx context.Context) error {
-
+				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 					var testOptions = []struct {
 						ShouldBeCreated bool
 						ExpectedNoIdx   int
@@ -159,8 +150,6 @@ func Test_EnsurePersistentIndex(t *testing.T) {
 						assert.ElementsMatch(t, idx.RegularIndex.StoredValues, storedValues)
 
 					})
-
-					return nil
 				})
 			})
 		})
@@ -171,7 +160,7 @@ func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(30*time.Second, func(ctx context.Context) error {
+				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 					doc := struct {
 						Tags []string `json:"tags"`
 					}{
@@ -214,8 +203,6 @@ func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
 						err = col.DeleteIndex(ctx, idx.Name)
 						require.NoError(t, err)
 					})
-
-					return nil
 				})
 			})
 		})
@@ -226,8 +213,7 @@ func Test_TTLIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(240*time.Second, func(ctx context.Context) error {
-
+				withContextT(t, 4*time.Minute, func(ctx context.Context, _ testing.TB) {
 					t.Run("Removing documents at a fixed period after creation", func(t *testing.T) {
 						idx, created, err := col.EnsureTTLIndex(ctx, []string{"createdAt"}, 5, nil)
 						require.NoError(t, err)
@@ -249,7 +235,7 @@ func Test_TTLIndex(t *testing.T) {
 						require.True(t, exist)
 
 						// cleanup is made every 30 seconds by default
-						withContext(65*time.Second, func(ctx context.Context) error {
+						withContextT(t, 65*time.Second, func(ctx context.Context, _ testing.TB) {
 							for {
 								exist, err := col.DocumentExists(ctx, meta.Key)
 								require.NoError(t, err)
@@ -258,7 +244,6 @@ func Test_TTLIndex(t *testing.T) {
 								}
 								time.Sleep(1 * time.Second)
 							}
-							return nil
 						})
 
 						err = col.DeleteIndexByID(ctx, idx.ID)
@@ -286,7 +271,7 @@ func Test_TTLIndex(t *testing.T) {
 						require.True(t, exist)
 
 						// cleanup is made every 30 seconds by default
-						withContext(65*time.Second, func(ctx context.Context) error {
+						withContextT(t, 65*time.Second, func(ctx context.Context, _ testing.TB) {
 							for {
 								exist, err := col.DocumentExists(ctx, meta.Key)
 								require.NoError(t, err)
@@ -295,14 +280,11 @@ func Test_TTLIndex(t *testing.T) {
 								}
 								time.Sleep(1 * time.Second)
 							}
-							return nil
 						})
 
 						err = col.DeleteIndexByID(ctx, idx.ID)
 						require.NoError(t, err)
 					})
-
-					return nil
 				})
 			})
 		})
@@ -313,7 +295,7 @@ func Test_EnsureGeoIndexIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(30*time.Second, func(ctx context.Context) error {
+				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 
 					t.Run("Test GeoJSON opts", func(t *testing.T) {
 						var testOptions = []arangodb.CreateGeoIndexOptions{
@@ -373,8 +355,6 @@ func Test_EnsureGeoIndexIndex(t *testing.T) {
 							assert.ElementsMatch(t, idx.RegularIndex.Fields, testOpt.Fields)
 						}
 					})
-
-					return nil
 				})
 			})
 		})
@@ -385,7 +365,7 @@ func Test_NamedIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContext(30*time.Second, func(ctx context.Context) error {
+				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 
 					var namedIndexTestCases = []struct {
 						Name           string
@@ -464,8 +444,6 @@ func Test_NamedIndexes(t *testing.T) {
 							}))
 						})
 					}
-
-					return nil
 				})
 			})
 		})

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestReplaceVertex creates a document, replaces it and then checks the replacement has succeeded.
 func TestReplaceVertex(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertex_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "friend", t)
@@ -66,7 +64,7 @@ func TestReplaceVertex(t *testing.T) {
 // TestReplaceVertexReturnOld creates a document, replaces it checks the ReturnOld value.
 func TestReplaceVertexReturnOld(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertex_returnOld_test", nil, t)
@@ -98,7 +96,7 @@ func TestReplaceVertexReturnOld(t *testing.T) {
 // TestReplaceVertexReturnNew creates a document, replaces it checks the ReturnNew value.
 func TestReplaceVertexReturnNew(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertex_returnNew_test", nil, t)
@@ -131,7 +129,7 @@ func TestReplaceVertexReturnNew(t *testing.T) {
 // TestReplaceVertexSilent creates a document, replaces it with Silent() and then checks the meta is indeed empty.
 func TestReplaceVertexSilent(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertex_returnNew_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "person", t)
@@ -159,7 +157,7 @@ func TestReplaceVertexSilent(t *testing.T) {
 // Then it attempts a replacement with an incorrect revision which must fail.
 func TestReplaceVertexRevision(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertex_revision_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
@@ -203,7 +201,7 @@ func TestReplaceVertexRevision(t *testing.T) {
 // TestReplaceVertexKeyEmpty replaces a document it with an empty key.
 func TestReplaceVertexKeyEmpty(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertex_keyEmpty_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "names", t)
@@ -220,7 +218,7 @@ func TestReplaceVertexKeyEmpty(t *testing.T) {
 // TestReplaceVertexUpdateNil replaces a document it with a nil update.
 func TestReplaceVertexUpdateNil(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
 	g := ensureGraph(ctx, db, "replace_vertex_updateNil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "names", t)

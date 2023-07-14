@@ -93,7 +93,7 @@ type httpConnection struct {
 	streamSender bool
 }
 
-func (j httpConnection) GetAuthentication() Authentication {
+func (j *httpConnection) GetAuthentication() Authentication {
 	return j.authentication
 }
 
@@ -104,7 +104,7 @@ func (j *httpConnection) SetAuthentication(a Authentication) error {
 
 // Decoder returns the decoder according to the response content type or HTTP connection request content type.
 // If the content type is unknown then it returns default JSON decoder.
-func (j httpConnection) Decoder(contentType string) Decoder {
+func (j *httpConnection) Decoder(contentType string) Decoder {
 	// First try to get decoder by the content type of the response.
 	if decoder := getDecoderByContentType(contentType); decoder != nil {
 		return decoder
@@ -119,7 +119,7 @@ func (j httpConnection) Decoder(contentType string) Decoder {
 	return getJsonDecoder()
 }
 
-func (j httpConnection) GetEndpoint() Endpoint {
+func (j *httpConnection) GetEndpoint() Endpoint {
 	return j.endpoint
 }
 
@@ -128,19 +128,19 @@ func (j *httpConnection) SetEndpoint(e Endpoint) error {
 	return nil
 }
 
-func (j httpConnection) NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error) {
+func (j *httpConnection) NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error) {
 	return j.newRequestWithEndpoint(endpoint, method, urls...)
 }
 
-func (j httpConnection) NewRequest(method string, urls ...string) (Request, error) {
+func (j *httpConnection) NewRequest(method string, urls ...string) (Request, error) {
 	return j.newRequest(method, urls...)
 }
 
-func (j httpConnection) newRequest(method string, urls ...string) (*httpRequest, error) {
+func (j *httpConnection) newRequest(method string, urls ...string) (*httpRequest, error) {
 	return j.newRequestWithEndpoint("", method, urls...)
 }
 
-func (j httpConnection) newRequestWithEndpoint(endpoint string, method string, urls ...string) (*httpRequest, error) {
+func (j *httpConnection) newRequestWithEndpoint(endpoint string, method string, urls ...string) (*httpRequest, error) {
 	e, ok := j.endpoint.Get(endpoint)
 	if !ok {
 		return nil, errors.Errorf("Unable to resolve endpoint for %s", e)
@@ -163,7 +163,7 @@ func (j httpConnection) newRequestWithEndpoint(endpoint string, method string, u
 
 // Do performs HTTP request and returns the response.
 // If `output` is provided then it is populated from response body and the response is automatically freed.
-func (j httpConnection) Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error) {
+func (j *httpConnection) Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error) {
 	resp, body, err := j.Stream(ctx, request)
 	if err != nil {
 		return resp, err
@@ -203,7 +203,7 @@ func (j httpConnection) Do(ctx context.Context, request Request, output interfac
 // Stream performs HTTP request.
 // It returns the response and body reader to read the data from there.
 // The caller is responsible to free the response body.
-func (j httpConnection) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
+func (j *httpConnection) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
 	req, ok := request.(*httpRequest)
 	if !ok {
 		return nil, nil, errors.Errorf("unable to parse request into JSON Request")
@@ -214,7 +214,7 @@ func (j httpConnection) Stream(ctx context.Context, request Request) (Response, 
 
 // stream performs the HTTP request.
 // It returns HTTP response and body reader to read the data from there.
-func (j httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResponse, io.ReadCloser, error) {
+func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResponse, io.ReadCloser, error) {
 	id := uuid.New().String()
 	log.Debugf("(%s) Sending request to %s/%s", id, req.Method(), req.URL())
 	if v, ok := req.GetHeader(ContentType); !ok || v == "" {
@@ -277,7 +277,7 @@ func getDecoderByContentType(contentType string) Decoder {
 
 type bodyReadFactory func() (io.Reader, error)
 
-func (j httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bool) bodyReadFactory {
+func (j *httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bool) bodyReadFactory {
 	if obj == nil {
 		return func() (io.Reader, error) {
 			return nil, nil

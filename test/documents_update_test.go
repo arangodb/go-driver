@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -36,7 +34,7 @@ import (
 func TestUpdateDocuments1(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -84,7 +82,7 @@ func TestUpdateDocuments1(t *testing.T) {
 // TestUpdateDocumentsReturnOld creates documents, updates them checks the ReturnOld values.
 func TestUpdateDocumentsReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -135,7 +133,7 @@ func TestUpdateDocumentsReturnOld(t *testing.T) {
 // TestUpdateDocumentsReturnNew creates documents, updates them checks the ReturnNew values.
 func TestUpdateDocumentsReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -189,7 +187,7 @@ func TestUpdateDocumentsReturnNew(t *testing.T) {
 func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
@@ -256,7 +254,7 @@ func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 func TestUpdateDocumentsKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []Account{
@@ -310,7 +308,7 @@ func TestUpdateDocumentsKeepNullFalse(t *testing.T) {
 // TestUpdateDocumentsSilent creates documents, updates them with Silent() and then checks the metas are indeed empty.
 func TestUpdateDocumentsSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -350,7 +348,7 @@ func TestUpdateDocumentsSilent(t *testing.T) {
 // Then it attempts an update with an incorrect revisions which must fail.
 func TestUpdateDocumentsRevision(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -414,7 +412,7 @@ func TestUpdateDocumentsRevision(t *testing.T) {
 
 // TestUpdateDocumentsKeyEmpty updates documents with an empty key.
 func TestUpdateDocumentsKeyEmpty(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	// Update document
@@ -430,7 +428,7 @@ func TestUpdateDocumentsKeyEmpty(t *testing.T) {
 
 // TestUpdateDocumentsUpdateNil updates documents it with a nil update.
 func TestUpdateDocumentsUpdateNil(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	if _, _, err := col.UpdateDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
@@ -440,7 +438,7 @@ func TestUpdateDocumentsUpdateNil(t *testing.T) {
 
 // TestUpdateDocumentsUpdateLenDiff updates documents with a different number of updates, keys.
 func TestUpdateDocumentsUpdateLenDiff(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	updates := []map[string]interface{}{
@@ -461,7 +459,7 @@ func TestUpdateDocumentsUpdateLenDiff(t *testing.T) {
 func TestUpdateDocumentsInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestUpdateDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -92,7 +90,7 @@ func prepareQueryDatabase(t *testing.T, ctx context.Context, c driver.Client, na
 // TestValidateQuery validates several AQL queries.
 func TestValidateQuery(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "validate_query_test", nil, t)
 
 	db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_test")
@@ -140,7 +138,7 @@ func TestValidateQuery(t *testing.T) {
 // TestExplainQuery tries to explain several AQL queries.
 func TestExplainQuery(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "explain_query_test", nil, t)
 
 	db, clean := prepareQueryDatabase(t, ctx, c, "explain_query_test")
@@ -203,7 +201,7 @@ func TestExplainQuery(t *testing.T) {
 // TestValidateQuery validates several AQL queries.
 func TestValidateQueryOptionShardIds(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	_, err := c.Cluster(ctx)
 
 	if driver.IsPreconditionFailed(err) {
@@ -238,7 +236,7 @@ func TestValidateQueryOptionShardIds(t *testing.T) {
 // TestProfileQuery profile several AQL queries.
 func TestProfileQuery(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "validate_query_test", nil, t)
 
 	db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_test")
@@ -334,7 +332,7 @@ func TestForceOneShardAttributeValue(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
@@ -372,7 +370,7 @@ func TestFillBlockCache(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.8.1")).Cluster().Enterprise()
 
@@ -418,7 +416,7 @@ func TestFillBlockCache(t *testing.T) {
 // TestOptimizerRulesForQueries optimizer rules for AQL queries endpoint
 func TestOptimizerRulesForQueries(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
 	db := ensureDatabase(ctx, c, "optimizer_rules_test", nil, t)
 
@@ -445,7 +443,7 @@ func TestRetryReadDocument(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.0"))
 

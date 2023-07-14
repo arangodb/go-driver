@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Tomasz Mielech
 //
 
 package test
@@ -39,7 +37,7 @@ func TestServerShutdown(t *testing.T) {
 		t.Skipf("TEST_ENABLE_SHUTDOWN is not set")
 	}
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 	testing.Short()
 

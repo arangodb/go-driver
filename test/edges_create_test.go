@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestCreateEdges creates documents and then checks that it exists.
 func TestCreateEdges(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "create_edges_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -101,7 +99,8 @@ func TestCreateEdges(t *testing.T) {
 // TestCreateEdgesReturnNew creates documents and checks the document returned in in ReturnNew.
 func TestCreateEdgesReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
+	// TODO refactor ME
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "create_edges_returnNew_"
@@ -159,7 +158,7 @@ func TestCreateEdgesReturnNew(t *testing.T) {
 // TestCreateEdgesSilent creates documents with WithSilent.
 func TestCreateEdgesSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "create_edges_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -201,7 +200,7 @@ func TestCreateEdgesSilent(t *testing.T) {
 // TestCreateEdgesNil creates multiple documents with a nil documents input.
 func TestCreateEdgesNil(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "create_edges_nil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -214,7 +213,7 @@ func TestCreateEdgesNil(t *testing.T) {
 // TestCreateEdgesNonSlice creates multiple documents with a non-slice documents input.
 func TestCreateEdgesNonSlice(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
 	prefix := "create_edges_nonSlice_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

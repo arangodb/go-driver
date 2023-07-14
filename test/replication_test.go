@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-// Author Tomasz Mielech
 //
 
 package test
@@ -38,7 +35,7 @@ import (
 // TestReplicationDatabaseInventory tests the Replication.DatabaseInventory method.
 func TestReplicationDatabaseInventory(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if _, err := c.Cluster(ctx); err == nil {
 		// Cluster, not supported for this test
 		t.Skip("Skipping in cluster")
@@ -93,7 +90,7 @@ func TestReplicationDatabaseInventory(t *testing.T) {
 
 func TestReplicationBatch(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	if _, err := c.Cluster(ctx); err == nil {
 		// Cluster, not supported for this test

@@ -76,7 +76,7 @@ func fillPropertiesDefaults(t *testing.T, c driver.Client, props *driver.ArangoS
 }
 
 func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	ctx := context.Background()
 
@@ -437,7 +437,7 @@ func ensureAnalyzer(ctx context.Context, db driver.Database, definition driver.A
 }
 
 func TestArangoSearchAnalyzerGet(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	ctx := context.Background()
 
@@ -471,7 +471,7 @@ func TestArangoSearchAnalyzerGet(t *testing.T) {
 }
 
 func TestArangoSearchAnalyzerGetAll(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	ctx := context.Background()
 
@@ -511,7 +511,7 @@ func TestArangoSearchAnalyzerGetAll(t *testing.T) {
 }
 
 func TestArangoSearchAnalyzerRemove(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	ctx := context.Background()
 

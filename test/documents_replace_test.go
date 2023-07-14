@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package test
@@ -35,7 +33,7 @@ import (
 func TestReplaceDocuments(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -83,7 +81,7 @@ func TestReplaceDocuments(t *testing.T) {
 // TestReplaceDocumentsReturnOld creates documents, replaces them checks the ReturnOld values.
 func TestReplaceDocumentsReturnOld(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -127,7 +125,7 @@ func TestReplaceDocumentsReturnOld(t *testing.T) {
 // TestReplaceDocumentsReturnNew creates documents, replaces them checks the ReturnNew values.
 func TestReplaceDocumentsReturnNew(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -172,7 +170,7 @@ func TestReplaceDocumentsReturnNew(t *testing.T) {
 // TestReplaceDocumentsSilent creates documents, replaces them with Silent() and then checks the meta is indeed empty.
 func TestReplaceDocumentsSilent(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -224,7 +222,7 @@ func TestReplaceDocumentsSilent(t *testing.T) {
 // Then it attempts replacements with incorrect revisions which must fail.
 func TestReplaceDocumentsRevision(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "documents_test", nil, t)
 	docs := []UserDoc{
@@ -291,7 +289,7 @@ func TestReplaceDocumentsRevision(t *testing.T) {
 
 // TestReplaceDocumentsKeyEmpty replaces a document it with an empty key.
 func TestReplaceDocumentsKeyEmpty(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	// Replacement document
@@ -305,7 +303,7 @@ func TestReplaceDocumentsKeyEmpty(t *testing.T) {
 
 // TestReplaceDocumentsUpdateNil replaces a document it with a nil update.
 func TestReplaceDocumentsUpdateNil(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	if _, _, err := col.ReplaceDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
@@ -315,7 +313,7 @@ func TestReplaceDocumentsUpdateNil(t *testing.T) {
 
 // TestReplaceDocumentsUpdateLenDiff replacements documents with a different number of documents, keys.
 func TestReplaceDocumentsUpdateLenDiff(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	replacements := []map[string]interface{}{
@@ -336,7 +334,7 @@ func TestReplaceDocumentsUpdateLenDiff(t *testing.T) {
 func TestReplaceDocumentsInWaitForSyncCollection(t *testing.T) {
 	ctx := context.Background()
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
-	c := createClient(t, true, false)
+	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
 	col := ensureCollection(ctx, db, "TestReplaceDocumentsInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,

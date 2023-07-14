@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 //go:build auth
@@ -39,7 +37,7 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	conn := c.Connection()
 	version, err := c.Version(nil)
 	if err != nil {
@@ -77,7 +75,7 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	conn := c.Connection()
 	version, err := c.Version(nil)
 	if err != nil {
@@ -132,7 +130,7 @@ func TestGrantUserDatabase(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
@@ -217,7 +215,7 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
@@ -344,7 +342,7 @@ func TestGrantUserCollection(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))
@@ -536,7 +534,7 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	if getTestMode() == testModeResilientSingle {
 		t.Skip("Disabled in active failover mode")
 	}
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	version, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Version failed: %s", describe(err))

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package tests
@@ -58,4 +55,13 @@ func createAuthenticationFromEnv(t testing.TB, conn connection.Connection) conne
 		t.Fatalf("Unknown authentication: '%s'", parts[0])
 		return nil
 	}
+}
+
+// getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS environment variable.
+func getEndpointsFromEnv(t testing.TB) []string {
+	eps := strings.Split(os.Getenv("TEST_ENDPOINTS"), ",")
+	if len(eps) == 0 {
+		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
+	}
+	return eps
 }

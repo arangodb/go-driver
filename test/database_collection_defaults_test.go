@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2019 ArangoDB GmbH, Cologne, Germany
+// Copyright 2019-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package test
@@ -34,7 +32,7 @@ import (
 
 // TestDatabaseSharding test if proper sharding is passed to database
 func TestDatabaseSharding(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)
@@ -82,7 +80,7 @@ func TestDatabaseSharding(t *testing.T) {
 }
 
 func TestDatabaseDefaults(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 
 	skipBelowVersion(c, "3.6", t)
 	skipNoCluster(c, t)

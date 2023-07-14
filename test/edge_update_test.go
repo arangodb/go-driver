@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -33,7 +31,7 @@ import (
 // TestUpdateEdge creates a document, updates it and then checks the update has succeeded.
 func TestUpdateEdge(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -73,7 +71,7 @@ func TestUpdateEdge(t *testing.T) {
 // TestUpdateEdgeReturnOld creates a document, updates it checks the ReturnOld value.
 func TestUpdateEdgeReturnOld(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_returnOld_"
@@ -111,7 +109,7 @@ func TestUpdateEdgeReturnOld(t *testing.T) {
 // TestUpdateEdgeReturnNew creates a document, updates it checks the ReturnNew value.
 func TestUpdateEdgeReturnNew(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_returnNew_"
@@ -151,7 +149,7 @@ func TestUpdateEdgeReturnNew(t *testing.T) {
 // TestUpdateEdgeKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
 func TestUpdateEdgeKeepNullTrue(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_keepNullTrue_"
@@ -214,7 +212,7 @@ func TestUpdateEdgeKeepNullTrue(t *testing.T) {
 // TestUpdateEdgeKeepNullFalse creates a document, updates it with KeepNull(false) and then checks the update has succeeded.
 func TestUpdateEdgeKeepNullFalse(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_keepNullFalse_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -257,7 +255,7 @@ func TestUpdateEdgeKeepNullFalse(t *testing.T) {
 // TestUpdateEdgeSilent creates a document, updates it with Silent() and then checks the meta is indeed empty.
 func TestUpdateEdgeSilent(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -292,7 +290,7 @@ func TestUpdateEdgeSilent(t *testing.T) {
 // Then it attempts an update with an incorrect revision which must fail.
 func TestUpdateEdgeRevision(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_revision_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -343,7 +341,7 @@ func TestUpdateEdgeRevision(t *testing.T) {
 // TestUpdateEdgeKeyEmpty updates a document it with an empty key.
 func TestUpdateEdgeKeyEmpty(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_keyEmpty_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -361,7 +359,7 @@ func TestUpdateEdgeKeyEmpty(t *testing.T) {
 // TestUpdateEdgeUpdateNil updates a document it with a nil update.
 func TestUpdateEdgeUpdateNil(t *testing.T) {
 	var ctx context.Context
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
 	prefix := "update_edge_updateNil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)

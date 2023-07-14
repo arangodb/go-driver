@@ -81,7 +81,7 @@ func skipNoSingle(c driver.Client, t *testing.T) {
 }
 
 func skipNoEnterprise(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	if v, err := c.Version(nil); err != nil {
 		t.Errorf("Failed to get version: %s", describe(err))
 	} else if !v.IsEnterprise() {
@@ -264,35 +264,36 @@ func createConnection(t testEnv, disallowUnknownFields bool) driver.Connection {
 	}
 }
 
-// createClientFromEnv initializes a Client from information specified in environment variables.
-func createClientFromEnv(t testEnv, waitUntilReady bool) driver.Client {
-	disallowUnknownFields := os.Getenv("TEST_DISALLOW_UNKNOWN_FIELDS")
-	if disallowUnknownFields == "true" {
-		return createClient(t, waitUntilReady, true)
-	}
-	return createClient(t, waitUntilReady, false)
-}
-
-func createAsyncClientFromEnv(t *testing.T) driver.Client {
-	// wait for server to be ready
-	createClientFromEnv(t, true)
-
-	// now create the async client
-	conn := createConnectionFromEnv(t)
-	asyncConn := async.NewConnectionAsyncWrapper(conn)
-
-	c, err := driver.NewClient(driver.ClientConfig{
-		Connection:     asyncConn,
-		Authentication: createAuthenticationFromEnv(t),
-	})
-	if err != nil {
-		t.Fatalf("Failed to create ASYNC client: %s", describe(err))
-	}
-	return c
+type testsClientConfig struct {
+	// skipWaitUntilReady do not wait for cluster to be ready
+	skipWaitUntilReady bool
+	// skipDisallowUnknownFields do not wrap connection with debug wrapper (use with custom structs)
+	skipDisallowUnknownFields bool
+	// asyncMode use async mode wrapper
+	asyncMode bool
 }
 
 // createClient initializes a Client from information specified in environment variables.
-func createClient(t testEnv, waitUntilReady bool, disallowUnknownFields bool) driver.Client {
+func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
+	waitUntilReady := true
+	disallowUnknownFields := false
+	if os.Getenv("TEST_DISALLOW_UNKNOWN_FIELDS") == "true" {
+		disallowUnknownFields = true
+	}
+	asyncMode := false
+
+	if cfg != nil {
+		if cfg.skipWaitUntilReady {
+			waitUntilReady = false
+		}
+		if cfg.skipDisallowUnknownFields {
+			disallowUnknownFields = false
+		}
+		if cfg.asyncMode {
+			asyncMode = true
+		}
+	}
+
 	runPProfServerOnce.Do(func() {
 		if os.Getenv("TEST_PPROF") != "" {
 			go func() {
@@ -307,6 +308,10 @@ func createClient(t testEnv, waitUntilReady bool, disallowUnknownFields bool) dr
 	conn := createConnection(t, disallowUnknownFields)
 	if os.Getenv("TEST_REQUEST_LOG") != "" {
 		conn = WrapLogger(t, conn)
+	}
+
+	if asyncMode {
+		conn = async.NewConnectionAsyncWrapper(conn)
 	}
 
 	c, err := driver.NewClient(driver.ClientConfig{
@@ -455,7 +460,7 @@ func TestCreateClientHttpConnection(t *testing.T) {
 
 // TestResponseHeader checks the Response.Header function.
 func TestResponseHeader(t *testing.T) {
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 
 	version, err := c.Version(nil)
@@ -512,7 +517,7 @@ func TestCreateClientHttpRepeatConnection(t *testing.T) {
 	if getTestMode() != testModeSingle {
 		t.Skipf("Not a single")
 	}
-	createClientFromEnv(t, true)
+	createClient(t, nil)
 
 	requestRepeat := dummyRequestRepeat{}
 	conn := createConnectionFromEnv(t)
@@ -537,7 +542,7 @@ func TestClientConnectionReuse(t *testing.T) {
 	}
 	skipResilientSingle(t)
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	ctx := context.Background()
 
 	prefix := t.Name()

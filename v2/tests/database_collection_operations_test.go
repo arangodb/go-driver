@@ -95,7 +95,6 @@ func Test_CollectionShards(t *testing.T) {
 
 // Test_WithQueryOptimizerRules tests optimizer rules for query.
 func Test_WithQueryOptimizerRules(t *testing.T) {
-
 	tests := map[string]struct {
 		OptimizerRules   []string
 		ExpectedRules    []string
@@ -184,7 +183,6 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 }
 
 func Test_DatabaseCollectionOperations(t *testing.T) {
-
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
@@ -416,7 +414,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 
 func TestDatabaseNameUnicode(t *testing.T) {
 	Wrap(t, func(t *testing.T, c arangodb.Client) {
-		withContext(30*time.Second, func(ctx context.Context) error {
+		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
 			skipBelowVersion(c, ctx, "3.9.0", t)
 			databaseExtendedNamesRequired(t, c, ctx)
 
@@ -453,8 +451,6 @@ func TestDatabaseNameUnicode(t *testing.T) {
 			db, err := c.Database(ctx, normalized)
 			require.NoError(t, err)
 			require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
-
-			return nil
 		})
 	})
 }
@@ -479,7 +475,6 @@ func databaseExtendedNamesRequired(t *testing.T, c arangodb.Client, ctx context.
 }
 
 func Test_DatabaseCollectionDelete(t *testing.T) {
-
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {

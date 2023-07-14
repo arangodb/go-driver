@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package test
@@ -100,7 +98,7 @@ func Test_Graph_AdvancedCreate(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	v, err := c.Version(nil)
 	require.NoError(t, err)
 
@@ -145,7 +143,7 @@ func Test_Graph_AdvancedCreate_Defaults(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	v, err := c.Version(nil)
 	require.NoError(t, err)
 
@@ -184,7 +182,7 @@ func TestGraphCreation(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0")).Cluster().Enterprise()
 
 	t.Run("Satellite", func(t *testing.T) {
@@ -320,7 +318,7 @@ func TestGraphCreation(t *testing.T) {
 func TestHybridSmartGraphCreation(t *testing.T) {
 	ctx := context.Background()
 
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "hybrid"), nil, t)

@@ -34,7 +34,7 @@ import (
 // Test_License tests ArangoDB license.
 func Test_License(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContext(time.Minute, func(ctx context.Context) error {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			skipBelowVersion(client, ctx, "3.10.0", t)
 
 			version, err := client.Version(ctx)
@@ -49,8 +49,6 @@ func Test_License(t *testing.T) {
 				assert.Equalf(t, arangodb.LicenseStatus(""), license.Status, "license status should be empty")
 				assert.Equalf(t, 0, license.Version, "license version should be empty")
 			}
-
-			return nil
 		})
 	})
 }

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package test
 
@@ -29,7 +27,7 @@ import (
 
 // BenchmarkCollectionExists measures the CollectionExists operation.
 func BenchmarkCollectionExists(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, b)
 	col := ensureCollection(nil, db, "collection_exist_test", nil, b)
 
@@ -43,7 +41,7 @@ func BenchmarkCollectionExists(b *testing.B) {
 
 // BenchmarkCollection measures the Collection operation.
 func BenchmarkCollection(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, b)
 	col := ensureCollection(nil, db, "collection_test", nil, b)
 
@@ -57,7 +55,7 @@ func BenchmarkCollection(b *testing.B) {
 
 // BenchmarkCollections measures the Collections operation.
 func BenchmarkCollections(b *testing.B) {
-	c := createClientFromEnv(b, true)
+	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, b)
 	for i := 0; i < 10; i++ {
 		ensureCollection(nil, db, fmt.Sprintf("col%d", i), nil, b)

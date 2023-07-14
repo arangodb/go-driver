@@ -31,7 +31,7 @@ import (
 
 func TestCreatePregelJob(t *testing.T) {
 	ctx := context.Background()
-	c := createClientFromEnv(t, true)
+	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
 	skipNoCluster(c, t)
 
