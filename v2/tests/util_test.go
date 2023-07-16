@@ -67,6 +67,10 @@ func requireResilientSingleMode(t testing.TB) {
 	requireMode(t, testModeResilientSingle)
 }
 
+func skipResilientSingleMode(t testing.TB) {
+	requireMode(t, testModeCluster, testModeSingle)
+}
+
 func skipNoEnterprise(c arangodb.Client, ctx context.Context, t testing.TB) {
 	version, err := c.Version(ctx)
 	require.NoError(t, err)

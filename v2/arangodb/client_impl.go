@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -38,6 +36,7 @@ func newClient(connection connection.Connection) *client {
 	c.clientDatabase = newClientDatabase(c)
 	c.clientServerInfo = newClientServerInfo(c)
 	c.clientAdmin = newClientAdmin(c)
+	c.clientAsyncJob = newClientAsyncJob(c)
 
 	c.Requests = NewRequests(connection)
 
@@ -52,6 +51,7 @@ type client struct {
 	*clientDatabase
 	*clientServerInfo
 	*clientAdmin
+	*clientAsyncJob
 
 	Requests
 }

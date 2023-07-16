@@ -51,3 +51,10 @@ func (j *httpResponse) Content() string {
 
 	return ""
 }
+
+func (j *httpResponse) Header(name string) string {
+	if j.response.Header == nil {
+		return ""
+	}
+	return j.response.Header.Get(name)
+}

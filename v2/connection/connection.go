@@ -77,4 +77,7 @@ type Response interface {
 	Endpoint() string
 	// Content returns Content-Type
 	Content() string
+	// Header gets the first value associated with the given key.
+	// If there are no values associated with the key, Get returns "".
+	Header(name string) string
 }
