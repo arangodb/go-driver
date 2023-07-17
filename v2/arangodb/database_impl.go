@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -28,6 +26,7 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/pkg/errors"
 )
 
 func newDatabase(c *client, name string, modifiers ...connection.RequestModifier) *database {
@@ -98,5 +97,26 @@ func (d database) Info(ctx context.Context) (DatabaseInfo, error) {
 		return response.Database, nil
 	default:
 		return DatabaseInfo{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (d database) TransactionJS(ctx context.Context, options TransactionJSOptions) (interface{}, error) {
+	url := d.url("_api", "transaction")
+
+	var transactionResponse struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                interface{} `json:"result"`
+	}
+
+	resp, err := connection.CallPost(ctx, d.client.connection, url, &transactionResponse, &options)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return transactionResponse.Result, nil
+	default:
+		return nil, transactionResponse.AsArangoError()
 	}
 }
