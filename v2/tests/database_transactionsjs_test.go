@@ -33,9 +33,9 @@ import (
 func Test_DatabaseTransactionsJS(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
 
-			t.Run("Transaction ReturnValue", func(t *testing.T) {
-				WithCollection(t, db, nil, func(col arangodb.Collection) {
+				t.Run("Transaction ReturnValue", func(t *testing.T) {
 					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
 						txJSOptions := arangodb.TransactionJSOptions{
 							Action: "function () { return 'worked!'; }",
@@ -51,10 +51,8 @@ func Test_DatabaseTransactionsJS(t *testing.T) {
 						require.Equal(t, "worked!", result)
 					})
 				})
-			})
 
-			t.Run("Transaction ReturnError", func(t *testing.T) {
-				WithCollection(t, db, nil, func(col arangodb.Collection) {
+				t.Run("Transaction ReturnError", func(t *testing.T) {
 					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
 						txJSOptions := arangodb.TransactionJSOptions{
 							Action: "function () { error error; }",
@@ -69,6 +67,27 @@ func Test_DatabaseTransactionsJS(t *testing.T) {
 						require.Error(t, err)
 						require.Equal(t, "missing/invalid action definition for transaction - Uncaught SyntaxError: Unexpected identifier - SyntaxError: Unexpected identifier\n    at new Function (<anonymous>)", err.Error())
 					})
+				})
+
+				t.Run("Transaction - fetching command line options ", func(t *testing.T) {
+					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+						txJSOptions := arangodb.TransactionJSOptions{
+							Action: `function () { return require("internal").options(); }`,
+							Collections: arangodb.TransactionCollections{
+								Read:      []string{col.Name()},
+								Write:     []string{col.Name()},
+								Exclusive: []string{col.Name()},
+							},
+						}
+
+						result, err := db.TransactionJS(ctx, txJSOptions)
+						require.NoError(t, err)
+
+						optionsMap, ok := result.(map[string]interface{})
+						require.True(t, ok)
+						require.Equal(t, false, optionsMap["cluster.force-one-shard"])
+					})
+
 				})
 			})
 		})
