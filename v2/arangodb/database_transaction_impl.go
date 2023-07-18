@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -63,9 +61,9 @@ func (d databaseTransaction) listTransactionsWithStatuses(ctx context.Context, s
 		} `json:"transactions,omitempty"`
 	}
 
-	var respose shared.ResponseStruct
+	var response shared.ResponseStruct
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, newMultiUnmarshaller(&result, &respose), d.db.modifiers...)
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, newMultiUnmarshaller(&result, &response), d.db.modifiers...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -83,7 +81,7 @@ func (d databaseTransaction) listTransactionsWithStatuses(ctx context.Context, s
 
 		return t, nil
 	default:
-		return nil, respose.AsArangoErrorWithCode(code)
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 

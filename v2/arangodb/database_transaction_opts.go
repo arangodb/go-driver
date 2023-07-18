@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Lars Maier
-//
 
 package arangodb
 
 import (
-	"context"
 	"time"
 )
 
@@ -44,11 +41,13 @@ func (b *BeginTransactionOptions) set() *BeginTransactionOptions {
 	return b
 }
 
-// TransactionCollections is used to specify which collecitions are accessed by
-// a transaction and how
+// TransactionCollections is used to specify which collections are accessed by a transaction and how
 type TransactionCollections struct {
-	Read      []string `json:"read,omitempty"`
-	Write     []string `json:"write,omitempty"`
+	// Collections that the transaction reads from.
+	Read []string `json:"read,omitempty"`
+	// Collections that the transaction writes to.
+	Write []string `json:"write,omitempty"`
+	// Collections that the transaction writes exclusively to.
 	Exclusive []string `json:"exclusive,omitempty"`
 }
 
@@ -87,11 +86,28 @@ type TransactionStatusRecord struct {
 	Status TransactionStatus
 }
 
-// DatabaseStreamingTransactions provides access to the Streaming Transactions API
-type DatabaseStreamingTransactions interface {
-	BeginTransaction(ctx context.Context, cols TransactionCollections, opts *BeginTransactionOptions) (TransactionID, error)
-	CommitTransaction(ctx context.Context, tid TransactionID, opts *CommitTransactionOptions) error
-	AbortTransaction(ctx context.Context, tid TransactionID, opts *AbortTransactionOptions) error
+// TransactionJSOptions contains options that customize the JavaScript transaction
+type TransactionJSOptions struct {
+	// The actual transaction operations to be executed, in the form of stringified JavaScript code
+	Action string `json:"action"`
 
-	TransactionStatus(ctx context.Context, tid TransactionID) (TransactionStatusRecord, error)
+	// An optional boolean flag that, if set, will force the transaction to write
+	// all data to disk before returning.
+	WaitForSync *bool `json:"waitForSync,omitempty"`
+
+	// Allow reading from undeclared collections.
+	AllowImplicit *bool `json:"allowImplicit,omitempty"`
+
+	// An optional numeric value that can be used to set a timeout for waiting on collection locks.
+	// If not specified, a default value will be used.
+	// Setting lockTimeout to 0 will make ArangoDB not time out waiting for a lock.
+	LockTimeout *int `json:"lockTimeout,omitempty"`
+
+	// Optional arguments passed to action.
+	Params []string `json:"params,omitempty"`
+
+	// Transaction size limit in bytes. Honored by the RocksDB storage engine only.
+	MaxTransactionSize *int `json:"maxTransactionSize,omitempty"`
+
+	Collections TransactionCollections `json:"collections"`
 }

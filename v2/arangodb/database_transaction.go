@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -26,6 +24,8 @@ import (
 	"context"
 )
 
+// DatabaseTransaction contains Streaming Transactions functions
+// https://www.arangodb.com/docs/stable/http/transaction-stream-transaction.html
 type DatabaseTransaction interface {
 	ListTransactions(ctx context.Context) ([]Transaction, error)
 	ListTransactionsWithStatuses(ctx context.Context, statuses ...TransactionStatus) ([]Transaction, error)

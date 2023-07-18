@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -36,6 +34,9 @@ type Database interface {
 	// Remove removes the entire database.
 	// If the database does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+
+	// TransactionJS performs a javascript transaction. The result of the transaction function is returned.
+	TransactionJS(ctx context.Context, options TransactionJSOptions) (interface{}, error)
 
 	DatabaseCollection
 	DatabaseTransaction
