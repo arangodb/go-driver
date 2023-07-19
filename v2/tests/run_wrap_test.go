@@ -46,7 +46,7 @@ type WrapperB func(t *testing.B, client arangodb.Client)
 
 // WrapOptions describes testing options for a wrapper.
 type WrapOptions struct {
-	// NoParallel describes if internal tests should be launched parallel.
+	// Parallel describes if internal tests should be launched in parallel.
 	// If it is nil then by default, it is true.
 	Parallel *bool
 
