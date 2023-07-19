@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,55 +17,30 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package connection
 
-import "sync"
+import (
+	"strings"
+)
 
 type Endpoint interface {
-	// Get return one of endpoints if is valid, if no default one is returned
-	Get(endpoints ...string) (string, bool)
-
+	// Get returns provided endpoint if it is known, otherwise chooses one endpoint from existing list
+	// Endpoint implementation might use the Request method and path values to determine which endpoint to return
+	Get(endpoint, method, path string) (string, error)
+	// List returns known endpoints
 	List() []string
 }
 
-func NewEndpoints(e ...string) Endpoint {
-	return &endpoints{
-		endpoints: e,
-	}
-}
+var (
+	urlFixer = strings.NewReplacer(
+		"tcp://", "http://",
+		"ssl://", "https://",
+	)
+)
 
-type endpoints struct {
-	lock sync.Mutex
-
-	endpoints []string
-
-	index int
-}
-
-func (e *endpoints) List() []string {
-	return e.endpoints
-}
-
-func (e *endpoints) Get(endpoints ...string) (string, bool) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-
-	if len(e.endpoints) == 0 {
-		return "", false
-	}
-
-	//return e.endpoints[0], true
-
-	if e.index >= len(e.endpoints) {
-		e.index = 0
-	}
-
-	r := e.endpoints[e.index]
-
-	e.index++
-
-	return r, true
+// FixupEndpointURLScheme changes endpoint URL schemes used by arangod to ones used by go.
+// E.g. "tcp://localhost:8529" -> "http://localhost:8529"
+func FixupEndpointURLScheme(u string) string {
+	return urlFixer.Replace(u)
 }

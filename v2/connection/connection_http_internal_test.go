@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Tomasz Mielech
-//
 
 package connection
 
 import (
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,5 +77,42 @@ func Test_httpConnection_Decoder(t *testing.T) {
 			require.NotNil(t, decoder)
 			assert.Equal(t, test.wantDecoder, decoder)
 		})
+	}
+}
+
+func Test_httpConnection_NewRequest(t *testing.T) {
+	eps := []string{
+		"https://a:8529", "https://a:8539", "https://b:8529",
+	}
+
+	c := httpConnection{
+		endpoint: NewRoundRobinEndpoints(eps),
+	}
+
+	j := 0
+	for i := 0; i < 10; i++ {
+		expectedEp := eps[j]
+		req, err := c.NewRequest(http.MethodGet, "_api/version")
+		require.NoError(t, err)
+		require.Equal(t, expectedEp, req.Endpoint())
+		require.True(t, strings.HasPrefix(req.URL(), expectedEp))
+		j++
+		if j >= len(eps) {
+			j = 0
+		}
+	}
+}
+
+func Test_httpConnection_NewRequestWithEndpoint(t *testing.T) {
+	c := httpConnection{
+		endpoint: NewRoundRobinEndpoints([]string{"https://a:8529", "https://a:8539", "https://b:8529"}),
+	}
+
+	for i := 0; i < 10; i++ {
+		ep := "https://a:8539"
+		req, err := c.NewRequestWithEndpoint(ep, http.MethodGet, "_api/version")
+		require.NoError(t, err)
+		require.Equal(t, ep, req.Endpoint())
+		require.True(t, strings.HasPrefix(req.URL(), ep))
 	}
 }
