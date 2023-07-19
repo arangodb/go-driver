@@ -46,9 +46,12 @@ type WrapperB func(t *testing.B, client arangodb.Client)
 
 // WrapOptions describes testing options for a wrapper.
 type WrapOptions struct {
-	// NoParallel describes if internal tests should be launched parallelly.
+	// Parallel describes if internal tests should be launched in parallel.
 	// If it is nil then by default, it is true.
 	Parallel *bool
+
+	// Async describes if the client should be created with async mode (controlled within the context).
+	Async *bool
 }
 
 func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapOptions) {
@@ -58,9 +61,14 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 	require.NoError(t, err)
 
 	parallel := true
+	async := false
+
 	if len(wo) > 0 {
 		if wo[0].Parallel != nil {
 			parallel = *wo[0].Parallel
+		}
+		if wo[0].Async != nil {
+			async = *wo[0].Async
 		}
 	}
 
@@ -75,6 +83,10 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionJsonHttp(t)
+			if async {
+				conn = connection.NewConnectionAsyncWrapper(conn)
+			}
+
 			waitForConnection(t, arangodb.NewClient(conn))
 			return conn
 		})
@@ -87,6 +99,10 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionVPACKHttp(t)
+			if async {
+				conn = connection.NewConnectionAsyncWrapper(conn)
+			}
+
 			waitForConnection(t, arangodb.NewClient(conn))
 			return conn
 		})
@@ -102,6 +118,10 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionJsonHttp2(t)
+			if async {
+				conn = connection.NewConnectionAsyncWrapper(conn)
+			}
+
 			waitForConnection(t, arangodb.NewClient(conn))
 			return conn
 		})
@@ -117,6 +137,10 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionVPACKHttp2(t)
+			if async {
+				conn = connection.NewConnectionAsyncWrapper(conn)
+			}
+
 			waitForConnection(t, arangodb.NewClient(conn))
 			return conn
 		})

@@ -269,7 +269,7 @@ type testsClientConfig struct {
 	skipWaitUntilReady bool
 	// skipDisallowUnknownFields do not wrap connection with debug wrapper (use with custom structs)
 	skipDisallowUnknownFields bool
-	// asyncMode use async mode wrapper
+	// asyncMode use async mode wrapper (controlled within the context).
 	asyncMode bool
 }
 
