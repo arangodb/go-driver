@@ -87,7 +87,7 @@ func Test_maglevHashEndpoints_Get(t *testing.T) {
 		{"POST", "/_db/mydb_c/_api/indexes", 2},
 		{"POST", "/_db/mydb_c/_api/views", 2},
 	}
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 3; i++ {
 		// Try three times to ensure requests order does not affect the result
 		rand.Shuffle(len(testCases), func(i, j int) {
 			temp := testCases[j]
