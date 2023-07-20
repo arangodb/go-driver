@@ -8,6 +8,8 @@
 - [V2] Add optional status code checks. Consistent return of response
 - [V2] JavaScript Transactions API
 - [V2] Async Client
+- [V2] Fix connection.NewRequestWithEndpoint()
+- [V2] Add support for MaglevHashEndpoints
 
 ## [1.6.0](https://github.com/arangodb/go-driver/tree/v1.6.0) (2023-05-30)
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2

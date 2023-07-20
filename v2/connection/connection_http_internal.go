@@ -128,34 +128,31 @@ func (j *httpConnection) SetEndpoint(e Endpoint) error {
 	return nil
 }
 
-func (j *httpConnection) NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error) {
-	return j.newRequestWithEndpoint(endpoint, method, urls...)
+func (j *httpConnection) NewRequestWithEndpoint(endpoint string, method string, urlParts ...string) (Request, error) {
+	return j.newRequestWithEndpoint(endpoint, method, urlParts...)
 }
 
-func (j *httpConnection) NewRequest(method string, urls ...string) (Request, error) {
-	return j.newRequest(method, urls...)
+func (j *httpConnection) NewRequest(method string, urlParts ...string) (Request, error) {
+	return j.newRequestWithEndpoint("", method, urlParts...)
 }
 
-func (j *httpConnection) newRequest(method string, urls ...string) (*httpRequest, error) {
-	return j.newRequestWithEndpoint("", method, urls...)
-}
+func (j *httpConnection) newRequestWithEndpoint(endpoint string, method string, urlParts ...string) (*httpRequest, error) {
+	urlPath := path.Join(urlParts...)
 
-func (j *httpConnection) newRequestWithEndpoint(endpoint string, method string, urls ...string) (*httpRequest, error) {
-	e, ok := j.endpoint.Get(endpoint)
-	if !ok {
-		return nil, errors.Errorf("Unable to resolve endpoint for %s", e)
+	e, err := j.endpoint.Get(endpoint, method, urlPath)
+	if err != nil {
+		return nil, errors.Errorf("Unable to resolve endpoint for %s", endpoint)
 	}
-	url, err := url.Parse(e)
+	u, err := url.Parse(e)
 	if err != nil {
 		return nil, err
 	}
-
-	url.Path = path.Join(url.Path, path.Join(urls...))
+	u.Path = path.Join(u.Path, urlPath)
 
 	r := &httpRequest{
 		method:   method,
-		url:      url,
-		endpoint: endpoint,
+		url:      u,
+		endpoint: e,
 	}
 
 	return r, nil

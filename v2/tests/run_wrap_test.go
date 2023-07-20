@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"crypto/tls"
+	"math/rand"
 	"net"
 	"net/http"
 	"testing"
@@ -258,9 +259,23 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 	return client
 }
 
+// getRandomEndpointsManager returns random endpoints manager
+func getRandomEndpointsManager(t testing.TB) connection.Endpoint {
+	eps := getEndpointsFromEnv(t)
+	rand.Seed(time.Now().Unix())
+	if rand.Int()%2 == 0 {
+		t.Log("Using MaglevHashEndpoints")
+		ep, err := connection.NewMaglevHashEndpoints(eps, connection.RequestDBNameValueExtractor)
+		require.NoError(t, err)
+		return ep
+	}
+	t.Log("Using RoundRobinEndpoints")
+	return connection.NewRoundRobinEndpoints(eps)
+}
+
 func connectionJsonHttp(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
-		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
+		Endpoint:    getRandomEndpointsManager(t),
 		ContentType: connection.ApplicationJSON,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -286,7 +301,7 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 
 func connectionVPACKHttp(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
-		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
+		Endpoint:    getRandomEndpointsManager(t),
 		ContentType: connection.ApplicationVPack,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -311,14 +326,15 @@ func connectionVPACKHttp(t testing.TB) connection.Connection {
 }
 
 func connectionJsonHttp2(t testing.TB) connection.Connection {
+	endpoints := getRandomEndpointsManager(t)
 	h := connection.Http2Configuration{
-		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
+		Endpoint:    endpoints,
 		ContentType: connection.ApplicationJSON,
 		Transport: &http2.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			AllowHTTP:       true,
 
-			DialTLS: connection.NewHTTP2DialForEndpoint(connection.NewEndpoints(getEndpointsFromEnv(t)...)),
+			DialTLS: connection.NewHTTP2DialForEndpoint(endpoints),
 		},
 	}
 
@@ -331,14 +347,15 @@ func connectionJsonHttp2(t testing.TB) connection.Connection {
 }
 
 func connectionVPACKHttp2(t testing.TB) connection.Connection {
+	endpoints := getRandomEndpointsManager(t)
 	h := connection.Http2Configuration{
-		Endpoint:    connection.NewEndpoints(getEndpointsFromEnv(t)...),
+		Endpoint:    endpoints,
 		ContentType: connection.ApplicationVPack,
 		Transport: &http2.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			AllowHTTP:       true,
 
-			DialTLS: connection.NewHTTP2DialForEndpoint(connection.NewEndpoints(getEndpointsFromEnv(t)...)),
+			DialTLS: connection.NewHTTP2DialForEndpoint(endpoints),
 		},
 	}
 
