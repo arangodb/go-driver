@@ -517,6 +517,37 @@ func databaseExtendedNamesRequired(t *testing.T, c arangodb.Client, ctx context.
 	require.NoError(t, err)
 }
 
+func Test_DatabaseCollectionTruncate(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				ctx, c := context.WithTimeout(context.Background(), 5*time.Minute)
+				defer c()
+
+				size := 10
+				docs := newDocs(size)
+				for i := 0; i < size; i++ {
+					docs[i].Fields = uuid.New().String()
+				}
+
+				_, err := col.CreateDocuments(ctx, docs)
+				require.NoError(t, err)
+
+				beforeCount, err := col.Count(ctx)
+				require.NoError(t, err)
+				require.Equal(t, int64(size), beforeCount)
+
+				err = col.Truncate(ctx)
+				require.NoError(t, err)
+
+				afterCount, err := col.Count(ctx)
+				require.NoError(t, err)
+				require.Equal(t, int64(0), afterCount)
+			})
+		})
+	})
+}
+
 func Test_DatabaseCollectionDelete(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
@@ -531,8 +562,7 @@ func Test_DatabaseCollectionDelete(t *testing.T) {
 				}
 
 				docsIds := docs.asBasic().getKeys()
-				docsMeta, err := col.CreateDocuments(ctx, docs)
-				fmt.Print(docsMeta)
+				_, err := col.CreateDocuments(ctx, docs)
 				require.NoError(t, err)
 
 				t.Run("Delete single doc", func(t *testing.T) {

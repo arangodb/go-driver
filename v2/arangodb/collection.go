@@ -42,6 +42,9 @@ type Collection interface {
 	// SetProperties allows modifying collection parameters
 	SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error
 
+	// Count fetches the number of document in the collection.
+	Count(ctx context.Context) (int64, error)
+
 	CollectionDocuments
 	CollectionIndexes
 }

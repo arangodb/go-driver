@@ -82,7 +82,7 @@ func (c collection) Truncate(ctx context.Context) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, nil)
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{})
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -92,6 +92,27 @@ func (c collection) Truncate(ctx context.Context) error {
 		return nil
 	default:
 		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c collection) Count(ctx context.Context) (int64, error) {
+	url := c.url("collection", "count")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Count                 int64 `json:"count,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Count, nil
+	default:
+		return 0, response.AsArangoErrorWithCode(code)
 	}
 }
 
