@@ -35,7 +35,16 @@ func Test_ServerMode(t *testing.T) {
 			serverMode, err = client.ServerMode(ctx)
 			require.NoError(t, err)
 			require.Equal(t, arangodb.ServerModeDefault, serverMode)
-
 		})
 	}, wrapOpts)
+}
+
+func Test_ServerID(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			id, err := client.ServerID(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, id)
+		})
+	})
 }
