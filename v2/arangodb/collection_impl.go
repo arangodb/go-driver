@@ -76,7 +76,7 @@ func (c collection) Remove(ctx context.Context) error {
 }
 
 func (c collection) Truncate(ctx context.Context) error {
-	url := c.url("_api", "collection", c.Name(), "truncate")
+	url := c.url("collection", "truncate")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
@@ -96,7 +96,7 @@ func (c collection) Truncate(ctx context.Context) error {
 }
 
 func (c collection) Properties(ctx context.Context) (CollectionProperties, error) {
-	url := c.url("_api", "collection", c.Name(), "properties")
+	url := c.url("collection", "properties")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
@@ -117,7 +117,7 @@ func (c collection) Properties(ctx context.Context) (CollectionProperties, error
 }
 
 func (c collection) SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error {
-	url := c.url("_api", "collection", c.Name(), "properties")
+	url := c.url("collection", "properties")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`

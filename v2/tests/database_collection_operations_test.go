@@ -112,13 +112,11 @@ func Test_CollectionSetProperties(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, createOpts.WaitForSync, props.WaitForSync)
 				require.Equal(t, createOpts.ReplicationFactor, props.ReplicationFactor)
-				require.Equal(t, int64(createOpts.JournalSize), props.JournalSize)
 				require.Equal(t, createOpts.NumberOfShards, props.NumberOfShards)
 				require.Equal(t, *createOpts.CacheEnabled, props.CacheEnabled)
 
 				newProps := arangodb.SetCollectionPropertiesOptions{
 					WaitForSync:       newBool(true),
-					JournalSize:       1048576 * 4,
 					ReplicationFactor: 3,
 					WriteConcern:      2,
 					CacheEnabled:      newBool(true),
@@ -129,7 +127,7 @@ func Test_CollectionSetProperties(t *testing.T) {
 
 				props, err = col.Properties(ctx)
 				require.NoError(t, err)
-				require.Equal(t, newProps.WaitForSync, props.WaitForSync)
+				require.Equal(t, *newProps.WaitForSync, props.WaitForSync)
 				require.Equal(t, newProps.ReplicationFactor, props.ReplicationFactor)
 				require.Equal(t, newProps.JournalSize, props.JournalSize)
 				require.Equal(t, *newProps.CacheEnabled, props.CacheEnabled)
