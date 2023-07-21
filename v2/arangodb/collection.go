@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package arangodb
@@ -35,6 +32,15 @@ type Collection interface {
 	// Remove removes the entire collection.
 	// If the collection does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+
+	// Truncate removes all documents from the collection, but leaves the indexes intact.
+	Truncate(ctx context.Context) error
+
+	// Properties fetches extended information about the collection.
+	Properties(ctx context.Context) (CollectionProperties, error)
+
+	// SetProperties allows modifying collection parameters
+	SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error
 
 	CollectionDocuments
 	CollectionIndexes

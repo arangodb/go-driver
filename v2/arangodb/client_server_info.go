@@ -35,6 +35,9 @@ type ClientServerInfo interface {
 	Version(ctx context.Context) (VersionInfo, error)
 	// ServerRole returns the role of the server that answers the request.
 	ServerRole(ctx context.Context) (ServerRole, error)
+	// ServerID Gets the ID of this server in the cluster.
+	// An error is returned when calling this to a server that is not part of a cluster.
+	ServerID(ctx context.Context) (string, error)
 }
 
 // VersionInfo describes the version of a database server.
@@ -50,7 +53,7 @@ type VersionInfo struct {
 	Details map[string]interface{} `json:"details,omitempty"`
 }
 
-func (v *VersionInfo) IsEnterprise() bool {
+func (v VersionInfo) IsEnterprise() bool {
 	return v.License == "enterprise"
 }
 

@@ -93,6 +93,51 @@ func Test_CollectionShards(t *testing.T) {
 	})
 }
 
+// Test_CollectionSetProperties tries to set properties to collection
+func Test_CollectionSetProperties(t *testing.T) {
+	createOpts := arangodb.CreateCollectionOptions{
+		WaitForSync:       false,
+		ReplicationFactor: 2,
+		JournalSize:       1048576 * 2,
+		NumberOfShards:    2,
+		CacheEnabled:      newBool(false),
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, &createOpts, func(col arangodb.Collection) {
+				ctx := context.Background()
+
+				props, err := col.Properties(ctx)
+				require.NoError(t, err)
+				require.Equal(t, createOpts.WaitForSync, props.WaitForSync)
+				require.Equal(t, createOpts.ReplicationFactor, props.ReplicationFactor)
+				require.Equal(t, int64(createOpts.JournalSize), props.JournalSize)
+				require.Equal(t, createOpts.NumberOfShards, props.NumberOfShards)
+				require.Equal(t, *createOpts.CacheEnabled, props.CacheEnabled)
+
+				newProps := arangodb.SetCollectionPropertiesOptions{
+					WaitForSync:       newBool(true),
+					JournalSize:       1048576 * 4,
+					ReplicationFactor: 3,
+					WriteConcern:      2,
+					CacheEnabled:      newBool(true),
+					Schema:            nil,
+				}
+				err = col.SetProperties(ctx, newProps)
+				require.NoError(t, err)
+
+				props, err = col.Properties(ctx)
+				require.NoError(t, err)
+				require.Equal(t, newProps.WaitForSync, props.WaitForSync)
+				require.Equal(t, newProps.ReplicationFactor, props.ReplicationFactor)
+				require.Equal(t, newProps.JournalSize, props.JournalSize)
+				require.Equal(t, *newProps.CacheEnabled, props.CacheEnabled)
+			})
+		})
+	})
+}
+
 // Test_WithQueryOptimizerRules tests optimizer rules for query.
 func Test_WithQueryOptimizerRules(t *testing.T) {
 	tests := map[string]struct {

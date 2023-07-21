@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,27 +20,13 @@
 
 package arangodb
 
-import (
-	"context"
-)
+import "context"
 
-type Database interface {
-	// Name returns the name of the database.
+type View interface {
 	Name() string
+	Database() Database
 
-	// Info fetches information about the database.
-	Info(ctx context.Context) (DatabaseInfo, error)
-
-	// Remove removes the entire database.
-	// If the database does not exist, a NotFoundError is returned.
+	// Remove removes the entire view.
+	// If the view does not exist, ArangoError is returned.
 	Remove(ctx context.Context) error
-
-	// TransactionJS performs a javascript transaction. The result of the transaction function is returned.
-	TransactionJS(ctx context.Context, options TransactionJSOptions) (interface{}, error)
-
-	DatabaseCollection
-	DatabaseTransaction
-	DatabaseQuery
-	DatabaseView
-	DatabaseAnalyzer
 }
