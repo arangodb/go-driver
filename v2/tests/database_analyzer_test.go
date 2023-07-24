@@ -378,6 +378,34 @@ func Test_Analyzers(t *testing.T) {
 	})
 }
 
+func Test_AnalyzerRemove(t *testing.T) {
+	def := arangodb.AnalyzerDefinition{
+		Name: "my-delimiter",
+		Type: arangodb.ArangoSearchAnalyzerTypeDelimiter,
+		Properties: arangodb.ArangoSearchAnalyzerProperties{
+			Delimiter: "äöü",
+		},
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			ctx := context.Background()
+
+			_, a, err := db.EnsureAnalyzer(ctx, &def)
+			require.NoError(t, err)
+
+			// delete and check it was deleted
+			err = a.Remove(ctx, false)
+			require.NoError(t, err)
+
+			shouldBeRemoved, err := db.Analyzer(ctx, a.Name())
+			require.Error(t, err)
+			require.True(t, shared.IsNotFound(err))
+			require.Nil(t, shouldBeRemoved)
+		})
+	})
+}
+
 func readAllAnalyzersT(ctx context.Context, t *testing.T, db arangodb.Database) []arangodb.Analyzer {
 	t.Helper()
 
