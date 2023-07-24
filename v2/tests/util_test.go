@@ -90,3 +90,15 @@ func skipBelowVersion(c arangodb.Client, ctx context.Context, version arangodb.V
 	}
 	return x
 }
+
+// skipBetweenVersions skips test if DB version is in interval (close-ended)
+func skipBetweenVersions(c arangodb.Client, ctx context.Context, minVersion, maxVersion arangodb.Version, t *testing.T) arangodb.VersionInfo {
+	x, err := c.Version(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", err)
+	}
+	if x.Version.CompareTo(minVersion) >= 0 && x.Version.CompareTo(maxVersion) <= 0 {
+		t.Skipf("Skipping between version '%s' and '%s': got version '%s'", minVersion, maxVersion, x.Version)
+	}
+	return x
+}

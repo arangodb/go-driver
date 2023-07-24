@@ -24,6 +24,26 @@ import "context"
 
 type DatabaseView interface {
 	// View opens a connection to an existing view within the database.
-	// If no collection with given name exists, an NotFoundError is returned.
+	// If no view with given name exists, an NotFoundError is returned.
 	View(ctx context.Context, name string) (View, error)
+
+	// ViewExists returns true if a view with given name exists within the database.
+	ViewExists(ctx context.Context, name string) (bool, error)
+
+	// Views returns a list of all views in the database.
+	Views(ctx context.Context) (ViewsResponseReader, error)
+
+	// CreateArangoSearchView creates a new view of type ArangoSearch,
+	// with given name and options, and opens a connection to it.
+	// If a view with given name already exists within the database, a ConflictError is returned.
+	CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (ArangoSearchView, error)
+
+	// CreateArangoSearchAliasView creates ArangoSearch alias view with given name and options, and opens a connection to it.
+	// If a view with given name already exists within the database, a ConflictError is returned.
+	CreateArangoSearchAliasView(ctx context.Context, name string, options *ArangoSearchAliasViewProperties) (ArangoSearchViewAlias, error)
+}
+
+type ViewsResponseReader interface {
+	// Read returns next View. If no Views left, shared.NoMoreDocumentsError returned
+	Read() (View, error)
 }

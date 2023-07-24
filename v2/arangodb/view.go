@@ -20,13 +20,49 @@
 
 package arangodb
 
-import "context"
+import (
+	"context"
+)
 
 type View interface {
+	// Name returns the name of the view.
 	Name() string
+
+	// Type returns the type of this view.
+	Type() ViewType
+
+	// ArangoSearchView returns this view as an ArangoSearch view.
+	// When the type of the view is not ArangoSearch, an error is returned.
+	ArangoSearchView() (ArangoSearchView, error)
+
+	// ArangoSearchViewAlias returns this view as an ArangoSearch view alias.
+	// When the type of the view is not ArangoSearch alias, an error is returned.
+	ArangoSearchViewAlias() (ArangoSearchViewAlias, error)
+
+	// Database returns the database containing the view.
 	Database() Database
 
+	// Rename renames the view (SINGLE server only).
+	Rename(ctx context.Context, newName string) error
+
 	// Remove removes the entire view.
-	// If the view does not exist, ArangoError is returned.
+	// If the view does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+}
+
+// ViewType is the type of view.
+type ViewType string
+
+const (
+	// ViewTypeArangoSearch specifies an ArangoSearch view type.
+	ViewTypeArangoSearch = ViewType("arangosearch")
+	// ViewTypeSearchAlias specifies an ArangoSearch view type alias.
+	ViewTypeSearchAlias = ViewType("search-alias")
+)
+
+type ViewBase struct {
+	ID               string   `json:"id,omitempty"`
+	GloballyUniqueId string   `json:"globallyUniqueId,omitempty"`
+	Type             ViewType `json:"type,omitempty"`
+	Name             string   `json:"name,omitempty"`
 }
