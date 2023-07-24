@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -75,7 +73,7 @@ func (c collectionDocumentCreate) CreateDocumentsWithOptions(ctx context.Context
 	case http.StatusCreated:
 		fallthrough
 	case http.StatusAccepted:
-		return newCollectionDocumentCreateResponseReader(arr, opts), nil
+		return newCollectionDocumentCreateResponseReader(&arr, opts), nil
 	default:
 		return nil, shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}
@@ -127,7 +125,7 @@ func (c collectionDocumentCreate) CreateDocument(ctx context.Context, document i
 	return c.CreateDocumentWithOptions(ctx, document, nil)
 }
 
-func newCollectionDocumentCreateResponseReader(array connection.Array, options *CollectionDocumentCreateOptions) *collectionDocumentCreateResponseReader {
+func newCollectionDocumentCreateResponseReader(array *connection.Array, options *CollectionDocumentCreateOptions) *collectionDocumentCreateResponseReader {
 	c := &collectionDocumentCreateResponseReader{array: array, options: options}
 
 	if c.options != nil {
@@ -141,7 +139,7 @@ func newCollectionDocumentCreateResponseReader(array connection.Array, options *
 var _ CollectionDocumentCreateResponseReader = &collectionDocumentCreateResponseReader{}
 
 type collectionDocumentCreateResponseReader struct {
-	array    connection.Array
+	array    *connection.Array
 	options  *CollectionDocumentCreateOptions
 	response struct {
 		*DocumentMeta
@@ -171,6 +169,10 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 			return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
 		}
 		return CollectionDocumentCreateResponse{}, err
+	}
+
+	if meta.Error != nil && *meta.Error {
+		return meta, meta.AsArangoError()
 	}
 
 	return meta, nil

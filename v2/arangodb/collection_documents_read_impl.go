@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -43,7 +42,7 @@ type collectionDocumentRead struct {
 	collection *collection
 }
 
-func (c collectionDocumentRead) ReadDocumentsWithOptions(ctx context.Context, keys []string, opts *CollectionDocumentReadOptions) (CollectionDocumentReadResponseReader, error) {
+func (c collectionDocumentRead) ReadDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentReadOptions) (CollectionDocumentReadResponseReader, error) {
 	url := c.collection.url("document")
 
 	req, err := c.collection.connection().NewRequest(http.MethodPut, url)
@@ -51,7 +50,8 @@ func (c collectionDocumentRead) ReadDocumentsWithOptions(ctx context.Context, ke
 		return nil, err
 	}
 
-	for _, modifier := range c.collection.withModifiers(opts.modifyRequest, connection.WithBody(keys), connection.WithFragment("get"), connection.WithQuery("onlyget", "true")) {
+	for _, modifier := range c.collection.withModifiers(opts.modifyRequest, connection.WithBody(documents),
+		connection.WithFragment("get"), connection.WithQuery("onlyget", "true")) {
 		if err = modifier(req); err != nil {
 			return nil, err
 		}
@@ -59,17 +59,12 @@ func (c collectionDocumentRead) ReadDocumentsWithOptions(ctx context.Context, ke
 
 	var arr connection.Array
 
-	resp, err := c.collection.connection().Do(ctx, req, &arr)
+	r, err := c.collection.connection().Do(ctx, req, &arr, http.StatusOK)
 	if err != nil {
 		return nil, err
 	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		return newCollectionDocumentReadResponseReader(arr, opts), nil
-	default:
-		return nil, shared.NewResponseStruct().AsArangoErrorWithCode(code)
-	}
+	fmt.Println("r: ", r)
+	return newCollectionDocumentReadResponseReader(&arr, opts), nil
 }
 
 func (c collectionDocumentRead) ReadDocuments(ctx context.Context, keys []string) (CollectionDocumentReadResponseReader, error) {
@@ -90,7 +85,7 @@ func (c collectionDocumentRead) ReadDocumentWithOptions(ctx context.Context, key
 
 	data := newUnmarshalInto(result)
 
-	resp, err := connection.CallGet(ctx, c.collection.connection(), url, newMultiUnmarshaller(&response, data), c.collection.modifiers...)
+	resp, err := connection.CallGet(ctx, c.collection.connection(), url, newMultiUnmarshaller(&response, data), c.collection.withModifiers(opts.modifyRequest)...)
 	if err != nil {
 		return DocumentMeta{}, err
 	}
@@ -103,7 +98,7 @@ func (c collectionDocumentRead) ReadDocumentWithOptions(ctx context.Context, key
 	}
 }
 
-func newCollectionDocumentReadResponseReader(array connection.Array, options *CollectionDocumentReadOptions) *collectionDocumentReadResponseReader {
+func newCollectionDocumentReadResponseReader(array *connection.Array, options *CollectionDocumentReadOptions) *collectionDocumentReadResponseReader {
 	c := &collectionDocumentReadResponseReader{array: array, options: options}
 
 	return c
@@ -112,7 +107,7 @@ func newCollectionDocumentReadResponseReader(array connection.Array, options *Co
 var _ CollectionDocumentReadResponseReader = &collectionDocumentReadResponseReader{}
 
 type collectionDocumentReadResponseReader struct {
-	array   connection.Array
+	array   *connection.Array
 	options *CollectionDocumentReadOptions
 }
 
@@ -123,11 +118,15 @@ func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDo
 
 	var meta CollectionDocumentReadResponse
 
-	if err := c.array.Unmarshal(newMultiUnmarshaller(&meta.DocumentMeta, newUnmarshalInto(i))); err != nil {
+	if err := c.array.Unmarshal(newMultiUnmarshaller(&meta, newUnmarshalInto(i))); err != nil {
 		if err == io.EOF {
 			return CollectionDocumentReadResponse{}, shared.NoMoreDocumentsError{}
 		}
 		return CollectionDocumentReadResponse{}, err
+	}
+
+	if meta.Error != nil && *meta.Error {
+		return meta, meta.AsArangoError()
 	}
 
 	return meta, nil

@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -38,7 +37,7 @@ func Test_LogLevels(t *testing.T) {
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 
 			logLevels, err := client.GetLogLevels(ctx, nil)
 			require.NoError(t, err)
@@ -74,7 +73,7 @@ func Test_LogLevelsForServers(t *testing.T) {
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			skipBelowVersion(client, ctx, "3.10.2", t)
 			withHealthT(t, ctx, client, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
 				var changed int

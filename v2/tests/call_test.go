@@ -25,7 +25,6 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -36,7 +35,7 @@ import (
 
 func Test_CallStream(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			url := connection.NewUrl("_api", "version")
 
 			resp, body, err := connection.CallStream(ctx, client.Connection(), http.MethodGet, url)
@@ -58,7 +57,7 @@ func Test_CallStream(t *testing.T) {
 func Test_CallWithChecks(t *testing.T) {
 	t.Run("code-allowed", func(t *testing.T) {
 		Wrap(t, func(t *testing.T, client arangodb.Client) {
-			withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 				url := connection.NewUrl("_api", "version")
 
 				version := arangodb.VersionInfo{}
@@ -74,7 +73,7 @@ func Test_CallWithChecks(t *testing.T) {
 
 	t.Run("code-disallowed", func(t *testing.T) {
 		Wrap(t, func(t *testing.T, client arangodb.Client) {
-			withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 				url := connection.NewUrl("_api", "non-such-endpoint")
 
 				version := arangodb.VersionInfo{}

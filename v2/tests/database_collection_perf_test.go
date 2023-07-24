@@ -24,13 +24,11 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
-
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 func insertDocuments(t testing.TB, col arangodb.Collection, documents, batch int, factory func(i int) interface{}) {
@@ -83,7 +81,7 @@ func Test_BatchInsert(t *testing.T) {
 
 func bInsert(b *testing.B, db arangodb.Database, threads int) {
 	WithCollection(b, db, nil, func(col arangodb.Collection) {
-		withContextT(b, time.Minute, func(ctx context.Context, _ testing.TB) {
+		withContextT(b, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
 				b.SetParallelism(threads)
 				b.ResetTimer()
@@ -107,7 +105,7 @@ func bInsert(b *testing.B, db arangodb.Database, threads int) {
 
 func bBatchInsert(b *testing.B, db arangodb.Database, threads int) {
 	WithCollection(b, db, nil, func(col arangodb.Collection) {
-		withContextT(b, time.Minute, func(ctx context.Context, _ testing.TB) {
+		withContextT(b, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
 				b.SetParallelism(threads)
 				b.ResetTimer()

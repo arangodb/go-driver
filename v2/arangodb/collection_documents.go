@@ -31,5 +31,6 @@ type CollectionDocuments interface {
 	CollectionDocumentCreate
 	CollectionDocumentRead
 	CollectionDocumentUpdate
+	CollectionDocumentReplace
 	CollectionDocumentDelete
 }

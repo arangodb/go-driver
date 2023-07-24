@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,7 +33,7 @@ import (
 // Test_License tests ArangoDB license.
 func Test_License(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 			skipBelowVersion(client, ctx, "3.10.0", t)
 
 			version, err := client.Version(ctx)

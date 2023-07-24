@@ -24,7 +24,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -104,7 +103,7 @@ func Test_QueryBatchWithRetries(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
 				WithUserDocs(t, col, func(docs []UserDoc) {
-					withContextT(t, 2*time.Minute, func(ctx context.Context, tb testing.TB) {
+					withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 						skipBelowVersion(client, ctx, "3.11", t)
 
 						query := fmt.Sprintf("FOR d IN `%s` SORT d.Title RETURN d", col.Name())

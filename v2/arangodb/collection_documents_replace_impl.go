@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,26 +32,26 @@ import (
 	"github.com/arangodb/go-driver/v2/utils"
 )
 
-func newCollectionDocumentUpdate(collection *collection) *collectionDocumentUpdate {
-	return &collectionDocumentUpdate{
+func newCollectionDocumentReplace(collection *collection) *collectionDocumentReplace {
+	return &collectionDocumentReplace{
 		collection: collection,
 	}
 }
 
-var _ CollectionDocumentUpdate = &collectionDocumentUpdate{}
+var _ CollectionDocumentReplace = &collectionDocumentReplace{}
 
-type collectionDocumentUpdate struct {
+type collectionDocumentReplace struct {
 	collection *collection
 }
 
-func (c collectionDocumentUpdate) UpdateDocument(ctx context.Context, key string, document interface{}) (CollectionDocumentUpdateResponse, error) {
-	return c.UpdateDocumentWithOptions(ctx, key, document, nil)
+func (c collectionDocumentReplace) ReplaceDocument(ctx context.Context, key string, document interface{}) (CollectionDocumentReplaceResponse, error) {
+	return c.ReplaceDocumentWithOptions(ctx, key, document, nil)
 }
 
-func (c collectionDocumentUpdate) UpdateDocumentWithOptions(ctx context.Context, key string, document interface{}, options *CollectionDocumentUpdateOptions) (CollectionDocumentUpdateResponse, error) {
+func (c collectionDocumentReplace) ReplaceDocumentWithOptions(ctx context.Context, key string, document interface{}, options *CollectionDocumentReplaceOptions) (CollectionDocumentReplaceResponse, error) {
 	url := c.collection.url("document", key)
 
-	var meta CollectionDocumentUpdateResponse
+	var meta CollectionDocumentReplaceResponse
 
 	if options != nil {
 		meta.Old = options.OldObject
@@ -71,9 +71,9 @@ func (c collectionDocumentUpdate) UpdateDocumentWithOptions(ctx context.Context,
 		New: newUnmarshalInto(meta.New),
 	}
 
-	resp, err := connection.CallPatch(ctx, c.collection.connection(), url, &response, document, c.collection.withModifiers(options.modifyRequest)...)
+	resp, err := connection.CallPut(ctx, c.collection.connection(), url, &response, document, c.collection.withModifiers(options.modifyRequest)...)
 	if err != nil {
-		return CollectionDocumentUpdateResponse{}, err
+		return CollectionDocumentReplaceResponse{}, err
 	}
 
 	switch code := resp.Code(); code {
@@ -82,15 +82,15 @@ func (c collectionDocumentUpdate) UpdateDocumentWithOptions(ctx context.Context,
 	case http.StatusAccepted:
 		return meta, nil
 	default:
-		return CollectionDocumentUpdateResponse{}, response.AsArangoErrorWithCode(code)
+		return CollectionDocumentReplaceResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
 
-func (c collectionDocumentUpdate) UpdateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentUpdateResponseReader, error) {
-	return c.UpdateDocumentsWithOptions(ctx, documents, nil)
+func (c collectionDocumentReplace) ReplaceDocuments(ctx context.Context, documents interface{}) (CollectionDocumentReplaceResponseReader, error) {
+	return c.ReplaceDocumentsWithOptions(ctx, documents, nil)
 }
 
-func (c collectionDocumentUpdate) UpdateDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentUpdateOptions) (CollectionDocumentUpdateResponseReader, error) {
+func (c collectionDocumentReplace) ReplaceDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentReplaceOptions) (CollectionDocumentReplaceResponseReader, error) {
 	if !utils.IsListPtr(documents) && !utils.IsList(documents) {
 		return nil, errors.Errorf("Input documents should be list")
 	}
@@ -119,14 +119,14 @@ func (c collectionDocumentUpdate) UpdateDocumentsWithOptions(ctx context.Context
 	case http.StatusCreated:
 		fallthrough
 	case http.StatusAccepted:
-		return newCollectionDocumentUpdateResponseReader(&arr, opts), nil
+		return newCollectionDocumentReplaceResponseReader(&arr, opts), nil
 	default:
 		return nil, shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}
 }
 
-func newCollectionDocumentUpdateResponseReader(array *connection.Array, options *CollectionDocumentUpdateOptions) *collectionDocumentUpdateResponseReader {
-	c := &collectionDocumentUpdateResponseReader{array: array, options: options}
+func newCollectionDocumentReplaceResponseReader(array *connection.Array, options *CollectionDocumentReplaceOptions) *collectionDocumentReplaceResponseReader {
+	c := &collectionDocumentReplaceResponseReader{array: array, options: options}
 
 	if c.options != nil {
 		c.response.Old = newUnmarshalInto(c.options.OldObject)
@@ -136,11 +136,11 @@ func newCollectionDocumentUpdateResponseReader(array *connection.Array, options 
 	return c
 }
 
-var _ CollectionDocumentUpdateResponseReader = &collectionDocumentUpdateResponseReader{}
+var _ CollectionDocumentReplaceResponseReader = &collectionDocumentReplaceResponseReader{}
 
-type collectionDocumentUpdateResponseReader struct {
+type collectionDocumentReplaceResponseReader struct {
 	array    *connection.Array
-	options  *CollectionDocumentUpdateOptions
+	options  *CollectionDocumentReplaceOptions
 	response struct {
 		*DocumentMeta
 		*shared.ResponseStruct `json:",inline"`
@@ -149,12 +149,12 @@ type collectionDocumentUpdateResponseReader struct {
 	}
 }
 
-func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdateResponse, error) {
+func (c *collectionDocumentReplaceResponseReader) Read() (CollectionDocumentReplaceResponse, error) {
 	if !c.array.More() {
-		return CollectionDocumentUpdateResponse{}, shared.NoMoreDocumentsError{}
+		return CollectionDocumentReplaceResponse{}, shared.NoMoreDocumentsError{}
 	}
 
-	var meta CollectionDocumentUpdateResponse
+	var meta CollectionDocumentReplaceResponse
 
 	if c.options != nil {
 		meta.Old = c.options.OldObject
@@ -166,9 +166,9 @@ func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdat
 
 	if err := c.array.Unmarshal(&c.response); err != nil {
 		if err == io.EOF {
-			return CollectionDocumentUpdateResponse{}, shared.NoMoreDocumentsError{}
+			return CollectionDocumentReplaceResponse{}, shared.NoMoreDocumentsError{}
 		}
-		return CollectionDocumentUpdateResponse{}, err
+		return CollectionDocumentReplaceResponse{}, err
 	}
 
 	if meta.Error != nil && *meta.Error {

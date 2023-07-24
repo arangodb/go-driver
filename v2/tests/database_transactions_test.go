@@ -47,7 +47,7 @@ func Test_DatabaseCreateReplicationV2(t *testing.T) {
 		}
 		WithDatabase(t, client, &opts, func(db arangodb.Database) {
 			t.Run("Transaction", func(t *testing.T) {
-				withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 					info, err := db.Info(ctx)
 					require.NoErrorf(t, err, "failed to get database info")
 					require.Equal(t, arangodb.DatabaseReplicationVersionTwo, info.ReplicationVersion)
@@ -62,7 +62,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			t.Run("Transaction", func(t *testing.T) {
 				WithCollection(t, db, nil, func(col arangodb.Collection) {
-					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						d := document{
 							basicDocument: basicDocument{Key: "uniq_key"},
 							Fields:        "DOC",
@@ -105,7 +105,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 
 			t.Run("Transaction - With Error", func(t *testing.T) {
 				WithCollection(t, db, nil, func(col arangodb.Collection) {
-					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						d := document{
 							basicDocument: basicDocument{Key: "uniq_key"},
 							Fields:        "DOC",
@@ -150,7 +150,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 			t.Run("Transaction - With Panic", func(t *testing.T) {
 				t.Skipf("")
 				WithCollection(t, db, nil, func(col arangodb.Collection) {
-					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						d := document{
 							basicDocument: basicDocument{Key: "uniq_key"},
 							Fields:        "DOC",
@@ -200,7 +200,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 				WithCollection(t, db, nil, func(col arangodb.Collection) {
 					d := document{
 						basicDocument: basicDocument{Key: uuid.New().String()},
@@ -248,7 +248,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 
 func Test_DatabaseTransactions_List(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, 60*time.Second, func(ctx context.Context, _ testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
 				t.Run("List all transactions", func(t *testing.T) {
 					t1, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)

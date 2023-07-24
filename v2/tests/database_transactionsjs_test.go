@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -36,7 +35,7 @@ func Test_DatabaseTransactionsJS(t *testing.T) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
 
 				t.Run("Transaction ReturnValue", func(t *testing.T) {
-					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						txJSOptions := arangodb.TransactionJSOptions{
 							Action: "function () { return 'worked!'; }",
 							Collections: arangodb.TransactionCollections{
@@ -53,7 +52,7 @@ func Test_DatabaseTransactionsJS(t *testing.T) {
 				})
 
 				t.Run("Transaction ReturnError", func(t *testing.T) {
-					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						txJSOptions := arangodb.TransactionJSOptions{
 							Action: "function () { error error; }",
 							Collections: arangodb.TransactionCollections{
@@ -70,7 +69,7 @@ func Test_DatabaseTransactionsJS(t *testing.T) {
 				})
 
 				t.Run("Transaction - fetching command line options ", func(t *testing.T) {
-					withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						txJSOptions := arangodb.TransactionJSOptions{
 							Action: `function () { return require("internal").options(); }`,
 							Collections: arangodb.TransactionCollections{

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -29,28 +27,30 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
+// CollectionDocumentCreate interface for creating documents in a collection.
+// https://www.arangodb.com/docs/devel/http/document.html#create-a-document
 type CollectionDocumentCreate interface {
 
 	// CreateDocument creates a single document in the collection.
-	// The document data is loaded from the given document, the document meta data is returned.
+	// The document data is loaded from the given document, the document metadata is returned.
 	// If the document data already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
 	// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
 	CreateDocument(ctx context.Context, document interface{}) (CollectionDocumentCreateResponse, error)
 
 	// CreateDocumentWithOptions creates a single document in the collection.
-	// The document data is loaded from the given document, the document meta data is returned.
+	// The document data is loaded from the given document, the document metadata is returned.
 	// If the document data already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
 	// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
 	CreateDocumentWithOptions(ctx context.Context, document interface{}, options *CollectionDocumentCreateOptions) (CollectionDocumentCreateResponse, error)
 
 	// CreateDocuments creates multiple documents in the collection.
-	// The document data is loaded from the given documents slice, the documents meta data is returned.
+	// The document data is loaded from the given documents slice, the documents metadata is returned.
 	// If a documents element already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
 	// If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
-	// a ConflictError is returned in its inded in the errors slice.
+	// a ConflictError is returned in its indeed in the errors slice.
 	// To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
 	// a slice with the same number of entries as the `documents` slice.
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
@@ -58,11 +58,11 @@ type CollectionDocumentCreate interface {
 	CreateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentCreateResponseReader, error)
 
 	// CreateDocumentsWithOptions creates multiple documents in the collection.
-	// The document data is loaded from the given documents slice, the documents meta data is returned.
+	// The document data is loaded from the given documents slice, the documents metadata is returned.
 	// If a documents element already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
 	// If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
-	// a ConflictError is returned in its inded in the errors slice.
+	// a ConflictError is returned in its indeed in the errors slice.
 	// To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
 	// a slice with the same number of entries as the `documents` slice.
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
@@ -82,8 +82,8 @@ type CollectionDocumentCreateResponse struct {
 
 type CollectionDocumentCreateOverwriteMode string
 
-func (c CollectionDocumentCreateOverwriteMode) New() *CollectionDocumentCreateOverwriteMode {
-	return &c
+func (c *CollectionDocumentCreateOverwriteMode) New() *CollectionDocumentCreateOverwriteMode {
+	return c
 }
 
 func (c *CollectionDocumentCreateOverwriteMode) Get() CollectionDocumentCreateOverwriteMode {
@@ -106,14 +106,46 @@ const (
 )
 
 type CollectionDocumentCreateOptions struct {
+	// Wait until document has been synced to disk.
 	WithWaitForSync *bool
-	Overwrite       *bool
-	Silent          *bool
-	OverwriteMode   *CollectionDocumentCreateOverwriteMode
-	NewObject       interface{}
-	OldObject       interface{}
+
+	// If set to true, the insert becomes a replace-insert.
+	// If a document with the same _key already exists,
+	// the new document is not rejected with unique constraint violation error but replaces the old document.
+	// Note that operations with overwrite parameter require a _key attribute in the request payload,
+	// therefore they can only be performed on collections sharded by _key.
+	Overwrite *bool
+
+	// This option supersedes `overwrite` option.
+	OverwriteMode *CollectionDocumentCreateOverwriteMode
+
+	// If set to true, an empty object is returned as response if the document operation succeeds.
+	// No meta-data is returned for the created document. If the operation raises an error, an error object is returned.
+	// You can use this option to save network traffic.
+	Silent *bool
+
+	// Additionally return the complete new document
+	NewObject interface{}
+
+	// Additionally return the complete old document under the attribute.
+	// Only available if the overwrite option is used.
+	OldObject interface{}
+
 	// RefillIndexCaches if set to true then refills the in-memory index caches.
 	RefillIndexCaches *bool
+
+	// If the intention is to delete existing attributes with the update-insert command, set it to false.
+	// This modifies the behavior of the patch command to remove top-level attributes and sub-attributes from
+	// the existing document that are contained in the patch document with an attribute value of null
+	// (but not attributes of objects that are nested inside of arrays).
+	// This option controls the update-insert behavior only (CollectionDocumentCreateOverwriteModeUpdate).
+	KeepNull *bool
+
+	// Controls whether objects (not arrays) are merged if present in both, the existing and the update-insert document.
+	// If set to false, the value in the patch document overwrites the existing document’s value.
+	// If set to true, objects are merged. The default is true. This option controls the update-insert behavior only.
+	// This option controls the update-insert behavior only (CollectionDocumentCreateOverwriteModeUpdate).
+	MergeObjects *bool
 }
 
 func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) error {
@@ -147,6 +179,14 @@ func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) er
 
 	if c.RefillIndexCaches != nil {
 		r.AddQuery("refillIndexCaches", boolToString(*c.RefillIndexCaches))
+	}
+
+	if c.KeepNull != nil {
+		r.AddQuery("keepNull", boolToString(*c.KeepNull))
+	}
+
+	if c.MergeObjects != nil {
+		r.AddQuery("mergeObjects", boolToString(*c.MergeObjects))
 	}
 
 	return nil
