@@ -26,6 +26,22 @@ type Analyzer interface {
 	Name() string
 	Database() Database
 
+	// Type returns the analyzer type
+	Type() ArangoSearchAnalyzerType
+
+	// UniqueName returns the unique name: <database>::<analyzer-name>
+	UniqueName() string
+
+	// Definition returns the analyzer definition
+	Definition() AnalyzerDefinition
+
 	// Remove the analyzer
 	Remove(ctx context.Context, force bool) error
+}
+
+type AnalyzerDefinition struct {
+	Name       string                         `json:"name,omitempty"`
+	Type       ArangoSearchAnalyzerType       `json:"type,omitempty"`
+	Properties ArangoSearchAnalyzerProperties `json:"properties,omitempty"`
+	Features   []ArangoSearchFeature          `json:"features,omitempty"`
 }

@@ -104,5 +104,13 @@ func getBool(b *bool, d bool) bool {
 }
 
 func newBool(b bool) *bool {
-	return &b
+	return newT(b)
+}
+
+func newT[T any](val T) *T {
+	return &val
+}
+
+func newVersion(val string) *arangodb.Version {
+	return newT(arangodb.Version(val))
 }

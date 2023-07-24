@@ -22,7 +22,6 @@ package arangodb
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 
@@ -44,11 +43,32 @@ type databaseAnalyzer struct {
 	db *database
 }
 
+func (d databaseAnalyzer) EnsureAnalyzer(ctx context.Context, analyzer *AnalyzerDefinition) (bool, Analyzer, error) {
+	url := d.db.url("_api", "analyzer")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		AnalyzerDefinition
+	}
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, analyzer)
+	if err != nil {
+		return false, nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusCreated, http.StatusOK:
+		return code == http.StatusOK, newAnalyzer(d.db, response.AnalyzerDefinition), nil
+	default:
+		return false, nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
 func (d databaseAnalyzer) Analyzer(ctx context.Context, name string) (Analyzer, error) {
 	url := d.db.url("_api", "analyzer", name)
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
+		AnalyzerDefinition
 	}
 	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
 	if err != nil {
@@ -57,11 +77,10 @@ func (d databaseAnalyzer) Analyzer(ctx context.Context, name string) (Analyzer, 
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return newAnalyzer(d.db, name), nil
+		return newAnalyzer(d.db, response.AnalyzerDefinition), nil
 	default:
 		return nil, response.AsArangoErrorWithCode(code)
 	}
-
 }
 
 // Analyzers lists returns a list of all analyzers
@@ -103,19 +122,14 @@ func (reader *analyzerResponseReader) Read() (Analyzer, error) {
 		return nil, shared.NoMoreDocumentsError{}
 	}
 
-	analyzerResponse := struct {
-		Name       string          `json:"name"`
-		Type       string          `json:"type,omitempty"`
-		Properties json.RawMessage `json:"properties,omitempty"`
-		Features   []string        `json:"features,omitempty"`
-	}{}
+	analyzerResponse := AnalyzerDefinition{}
 
-	if err := reader.array.Unmarshal(newUnmarshalInto(analyzerResponse)); err != nil {
+	if err := reader.array.Unmarshal(newUnmarshalInto(&analyzerResponse)); err != nil {
 		if err == io.EOF {
 			return nil, shared.NoMoreDocumentsError{}
 		}
 		return nil, err
 	}
 
-	return newAnalyzer(reader.db, analyzerResponse.Name), nil
+	return newAnalyzer(reader.db, analyzerResponse), nil
 }

@@ -22,6 +22,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -29,8 +30,8 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
-func newAnalyzer(db *database, name string, modifiers ...connection.RequestModifier) *analyzer {
-	d := &analyzer{db: db, name: name, modifiers: append(db.modifiers, modifiers...)}
+func newAnalyzer(db *database, def AnalyzerDefinition, modifiers ...connection.RequestModifier) *analyzer {
+	d := &analyzer{db: db, definition: def, modifiers: append(db.modifiers, modifiers...)}
 
 	return d
 }
@@ -38,15 +39,28 @@ func newAnalyzer(db *database, name string, modifiers ...connection.RequestModif
 var _ Analyzer = &analyzer{}
 
 type analyzer struct {
-	name string
-
 	db *database
+
+	definition AnalyzerDefinition
 
 	modifiers []connection.RequestModifier
 }
 
-func (v analyzer) Name() string {
-	return v.name
+func (a analyzer) Name() string {
+	split := strings.Split(a.definition.Name, "::")
+	return split[len(split)-1]
+}
+
+func (a analyzer) UniqueName() string {
+	return a.definition.Name
+}
+
+func (a analyzer) Type() ArangoSearchAnalyzerType {
+	return a.definition.Type
+}
+
+func (a analyzer) Definition() AnalyzerDefinition {
+	return a.definition
 }
 
 func (v analyzer) Database() Database {
@@ -54,7 +68,7 @@ func (v analyzer) Database() Database {
 }
 
 func (v analyzer) Remove(ctx context.Context, force bool) error {
-	url := v.db.url("_api", "analyzer", v.name)
+	url := v.db.url("_api", "analyzer", v.Name())
 
 	reqBody := struct {
 		Force bool `json:"force,omitempty"`

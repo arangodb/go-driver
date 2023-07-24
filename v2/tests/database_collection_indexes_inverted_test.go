@@ -60,11 +60,11 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								Fields: []arangodb.InvertedIndexField{
 									{
 										Name:     "test1",
-										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+										Features: []arangodb.ArangoSearchFeature{arangodb.ArangoSearchFeatureFrequency},
 										Nested:   nil},
 									{
 										Name:     "test2",
-										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition},
+										Features: []arangodb.ArangoSearchFeature{arangodb.ArangoSearchFeatureFrequency, arangodb.ArangoSearchFeaturePosition},
 										Nested:   nil},
 								},
 							},
@@ -83,11 +83,11 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								Fields: []arangodb.InvertedIndexField{
 									{
 										Name:     "test1-overwrite",
-										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+										Features: []arangodb.ArangoSearchFeature{arangodb.ArangoSearchFeatureFrequency},
 										Nested:   nil, TrackListPositions: true},
 									{
 										Name:     "test2",
-										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition},
+										Features: []arangodb.ArangoSearchFeature{arangodb.ArangoSearchFeatureFrequency, arangodb.ArangoSearchFeaturePosition},
 										Nested:   nil},
 								},
 								TrackListPositions: false,
@@ -107,11 +107,11 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								Fields: []arangodb.InvertedIndexField{
 									{
 										Name:     "field1",
-										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+										Features: []arangodb.ArangoSearchFeature{arangodb.ArangoSearchFeatureFrequency},
 										Nested:   nil},
 									{
 										Name:     "field2",
-										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency, arangodb.AnalyzerFeaturePosition},
+										Features: []arangodb.ArangoSearchFeature{arangodb.ArangoSearchFeatureFrequency, arangodb.ArangoSearchFeaturePosition},
 										Nested: []arangodb.InvertedIndexNestedField{
 											{
 												Name: "some-nested-field",
@@ -144,7 +144,7 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 								Fields: []arangodb.InvertedIndexField{
 									{
 										Name:     "field1",
-										Features: []arangodb.AnalyzerFeature{arangodb.AnalyzerFeatureFrequency},
+										Features: []arangodb.ArangoSearchFeature{arangodb.ArangoSearchFeatureFrequency},
 									},
 								},
 								OptimizeTopK: []string{"BM25(@doc) DESC", "TFIDF(@doc) DESC"},
