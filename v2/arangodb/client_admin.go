@@ -28,9 +28,19 @@ type ClientAdmin interface {
 	ClientAdminLog
 	ClientAdminBackup
 	ClientAdminLicense
+
 	// Health returns the cluster configuration & health.
 	// It works in cluster or active fail-over mode.
 	Health(ctx context.Context) (ClusterHealth, error)
+
+	// ServerMode returns the current mode in which the server/cluster is operating.
+	// This call needs ArangoDB 3.3 and up.
+	ServerMode(ctx context.Context) (ServerMode, error)
+
+	// SetServerMode changes the current mode in which the server/cluster is operating.
+	// This call needs a client that uses JWT authentication.
+	// This call needs ArangoDB 3.3 and up.
+	SetServerMode(ctx context.Context, mode ServerMode) error
 }
 
 type ClientAdminBackup interface {

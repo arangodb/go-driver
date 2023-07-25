@@ -41,4 +41,6 @@ type Database interface {
 	DatabaseCollection
 	DatabaseTransaction
 	DatabaseQuery
+	DatabaseView
+	DatabaseAnalyzer
 }

@@ -17,24 +17,5 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Jakub Wierzbowski
-//
 
 package arangodb
-
-// AnalyzerFeature specifies a feature to an analyzer
-type AnalyzerFeature string
-
-const (
-	// AnalyzerFeatureFrequency how often a term is seen, required for PHRASE()
-	AnalyzerFeatureFrequency AnalyzerFeature = "frequency"
-
-	// AnalyzerFeatureNorm the field normalization factor
-	AnalyzerFeatureNorm AnalyzerFeature = "norm"
-
-	// AnalyzerFeaturePosition sequentially increasing term position, required for PHRASE(). If present then the frequency feature is also required
-	AnalyzerFeaturePosition AnalyzerFeature = "position"
-
-	// AnalyzerFeatureOffset can be specified if 'position' feature is set
-	AnalyzerFeatureOffset AnalyzerFeature = "offset"
-)

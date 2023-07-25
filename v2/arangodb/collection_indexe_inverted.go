@@ -62,7 +62,7 @@ type InvertedIndexOptions struct {
 	Analyzer string `json:"analyzer,omitempty"`
 
 	// Features list of analyzer features. You can set this option to overwrite what features are enabled for the default analyzer
-	Features []AnalyzerFeature `json:"features,omitempty"`
+	Features []ArangoSearchFeature `json:"features,omitempty"`
 
 	// IncludeAllFields If set to true, all fields of this element will be indexed. Defaults to false.
 	// Warning: Using includeAllFields for a lot of attributes in combination with complex Analyzers
@@ -117,7 +117,7 @@ type InvertedIndexField struct {
 	Analyzer string `json:"analyzer,omitempty"`
 
 	// Features is a list of Analyzer features to use for this field. They define what features are enabled for the analyzer
-	Features []AnalyzerFeature `json:"features,omitempty"`
+	Features []ArangoSearchFeature `json:"features,omitempty"`
 
 	// IncludeAllFields This option only applies if you use the inverted index in a search-alias Views.
 	// If set to true, then all sub-attributes of this field are indexed, excluding any sub-attributes that are configured separately by other elements in the fields array (and their sub-attributes). The analyzer and features properties apply to the sub-attributes.
@@ -157,7 +157,7 @@ type InvertedIndexNestedField struct {
 	Analyzer string `json:"analyzer,omitempty"`
 
 	// Features is a list of Analyzer features to use for this field. They define what features are enabled for the analyzer
-	Features []AnalyzerFeature `json:"features,omitempty"`
+	Features []ArangoSearchFeature `json:"features,omitempty"`
 
 	// SearchField This option only applies if you use the inverted index in a search-alias Views.
 	// You can set the option to true to get the same behavior as with arangosearch Views regarding the indexing of array values for this field. If enabled, both, array and primitive values (strings, numbers, etc.) are accepted. Every element of an array is indexed according to the trackListPositions option.

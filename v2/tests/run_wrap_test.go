@@ -250,7 +250,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 				return nil
 			}
 
-			t.Logf("Found endpoints: %v", client.Connection().GetEndpoint())
+			t.Logf("Found endpoints: %v", client.Connection().GetEndpoint().List())
 
 			return Interrupt{}
 		})
@@ -262,8 +262,8 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 // getRandomEndpointsManager returns random endpoints manager
 func getRandomEndpointsManager(t testing.TB) connection.Endpoint {
 	eps := getEndpointsFromEnv(t)
-	rand.Seed(time.Now().Unix())
-	if rand.Int()%2 == 0 {
+	rand.Seed(time.Now().UnixNano())
+	if rand.Intn(2) == 1 {
 		t.Log("Using MaglevHashEndpoints")
 		ep, err := connection.NewMaglevHashEndpoints(eps, connection.RequestDBNameValueExtractor)
 		require.NoError(t, err)

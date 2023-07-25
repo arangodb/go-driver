@@ -144,6 +144,27 @@ func (c clientServerInfo) ServerRole(ctx context.Context) (ServerRole, error) {
 	return ServerRoleSingleActive, nil
 }
 
+func (c clientServerInfo) ServerID(ctx context.Context) (string, error) {
+	url := connection.NewUrl("_admin", "server", "id")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ID                    string `json:"id,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ID, nil
+	default:
+		return "", response.AsArangoErrorWithCode(code)
+	}
+}
+
 // echo returns what is sent to the server.
 func (c clientServerInfo) echo(ctx context.Context) error {
 	url := connection.NewUrl("_admin", "echo")

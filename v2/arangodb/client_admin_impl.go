@@ -88,6 +88,17 @@ type ServerHealth struct {
 	Leading *bool   `json:"Leading,omitempty"`
 }
 
+type ServerMode string
+
+const (
+	// ServerModeDefault is the normal mode of the database in which read and write requests
+	// are allowed.
+	ServerModeDefault ServerMode = "default"
+	// ServerModeReadOnly is the mode in which all modifications to th database are blocked.
+	// Behavior is the same as user that has read-only access to all databases & collections.
+	ServerModeReadOnly ServerMode = "readonly"
+)
+
 type clientAdmin struct {
 	client *client
 }
@@ -120,5 +131,51 @@ func (c clientAdmin) Health(ctx context.Context) (ClusterHealth, error) {
 		return response.ClusterHealth, nil
 	default:
 		return ClusterHealth{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c clientAdmin) ServerMode(ctx context.Context) (ServerMode, error) {
+	url := connection.NewUrl("_admin", "server", "mode")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Mode                  ServerMode `json:"mode,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Mode, nil
+	default:
+		return "", response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c clientAdmin) SetServerMode(ctx context.Context, mode ServerMode) error {
+	url := connection.NewUrl("_admin", "server", "mode")
+
+	reqBody := struct {
+		Mode ServerMode `json:"mode"`
+	}{
+		Mode: mode,
+	}
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, reqBody)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
 	}
 }

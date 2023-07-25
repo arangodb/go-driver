@@ -24,9 +24,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
-	"github.com/pkg/errors"
 )
 
 func newDatabase(c *client, name string, modifiers ...connection.RequestModifier) *database {
@@ -35,6 +36,8 @@ func newDatabase(c *client, name string, modifiers ...connection.RequestModifier
 	d.databaseCollection = newDatabaseCollection(d)
 	d.databaseTransaction = newDatabaseTransaction(d)
 	d.databaseQuery = newDatabaseQuery(d)
+	d.databaseView = newDatabaseView(d)
+	d.databaseAnalyzer = newDatabaseAnalyzer(d)
 
 	return d
 }
@@ -49,6 +52,8 @@ type database struct {
 	*databaseCollection
 	*databaseTransaction
 	*databaseQuery
+	*databaseView
+	*databaseAnalyzer
 }
 
 func (d database) Remove(ctx context.Context) error {

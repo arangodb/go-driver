@@ -75,6 +75,88 @@ func (c collection) Remove(ctx context.Context) error {
 	}
 }
 
+func (c collection) Truncate(ctx context.Context) error {
+	url := c.url("collection", "truncate")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c collection) Count(ctx context.Context) (int64, error) {
+	url := c.url("collection", "count")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Count                 int64 `json:"count,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Count, nil
+	default:
+		return 0, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c collection) Properties(ctx context.Context) (CollectionProperties, error) {
+	url := c.url("collection", "properties")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		CollectionProperties  `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response)
+	if err != nil {
+		return CollectionProperties{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.CollectionProperties, nil
+	default:
+		return CollectionProperties{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c collection) SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error {
+	url := c.url("collection", "properties")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
+
 func (c collection) Name() string {
 	return c.name
 }
