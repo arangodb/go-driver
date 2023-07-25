@@ -45,19 +45,19 @@ type view struct {
 	modifiers []connection.RequestModifier
 }
 
-func (v view) Name() string {
+func (v *view) Name() string {
 	return v.name
 }
 
-func (v view) Database() Database {
+func (v *view) Database() Database {
 	return v.db
 }
 
-func (v view) Type() ViewType {
+func (v *view) Type() ViewType {
 	return v.viewType
 }
 
-func (v view) Rename(ctx context.Context, newName string) error {
+func (v *view) Rename(ctx context.Context, newName string) error {
 	if newName == "" {
 		return errors.WithStack(shared.InvalidArgumentError{Message: "newName is empty"})
 	}
@@ -87,7 +87,7 @@ func (v view) Rename(ctx context.Context, newName string) error {
 	}
 }
 
-func (v view) Remove(ctx context.Context) error {
+func (v *view) Remove(ctx context.Context) error {
 	url := v.db.url("_api", "view", v.name)
 
 	var response struct {
@@ -107,7 +107,7 @@ func (v view) Remove(ctx context.Context) error {
 	}
 }
 
-func (v view) ArangoSearchView() (ArangoSearchView, error) {
+func (v *view) ArangoSearchView() (ArangoSearchView, error) {
 	if v.viewType != ViewTypeArangoSearch {
 		err := shared.ArangoError{
 			HasError:     true,
@@ -120,7 +120,7 @@ func (v view) ArangoSearchView() (ArangoSearchView, error) {
 	return &viewArangoSearch{view: v}, nil
 }
 
-func (v view) ArangoSearchViewAlias() (ArangoSearchViewAlias, error) {
+func (v *view) ArangoSearchViewAlias() (ArangoSearchViewAlias, error) {
 	if v.viewType != ViewTypeSearchAlias {
 		err := shared.ArangoError{
 			HasError:     true,

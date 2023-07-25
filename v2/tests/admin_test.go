@@ -61,14 +61,13 @@ func Test_ServerMode(t *testing.T) {
 func Test_ServerID(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			if getTestMode() == string(testModeSingle) {
-				_, err := client.ServerID(ctx)
-				require.Error(t, err, "ServerID succeeded, expected error")
-
-			} else {
+			if getTestMode() == string(testModeCluster) {
 				id, err := client.ServerID(ctx)
 				require.NoError(t, err, "ServerID failed")
 				require.NotEmpty(t, id, "Expected ID to be non-empty")
+			} else {
+				_, err := client.ServerID(ctx)
+				require.Error(t, err, "ServerID succeeded, expected error")
 			}
 		})
 	})

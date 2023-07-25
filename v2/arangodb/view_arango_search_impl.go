@@ -31,7 +31,7 @@ import (
 
 // viewArangoSearch implements ArangoSearchView
 type viewArangoSearch struct {
-	view
+	*view
 }
 
 // Properties fetches extended information about the view.

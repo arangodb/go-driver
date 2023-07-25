@@ -137,7 +137,7 @@ func Test_CollectionSetProperties(t *testing.T) {
 
 				t.Run("rf-check-after", func(t *testing.T) {
 					requireClusterMode(t)
-					require.Equal(t, createOpts.ReplicationFactor, props.ReplicationFactor)
+					require.Equal(t, newProps.ReplicationFactor, props.ReplicationFactor)
 					require.Equal(t, createOpts.NumberOfShards, props.NumberOfShards)
 				})
 			})

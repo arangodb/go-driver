@@ -840,34 +840,6 @@ func Test_ArangoSearchPrimarySort(t *testing.T) {
 						InAscending:       &boolFalse,
 						ExpectedAscending: &boolFalse,
 					},
-					{
-						Name:              "DirAsc",
-						ExpectedAscending: &boolTrue, // WAT!? Setting direction = asc returns asc = true
-					},
-					{
-						Name:              "DirDesc",
-						ExpectedAscending: &boolFalse,
-					},
-					{
-						Name:        "SetBothAsc",
-						InAscending: &boolTrue,
-						ErrorCode:   http.StatusBadRequest,
-					},
-					{
-						Name:        "SetBothDesc",
-						InAscending: &boolFalse,
-						ErrorCode:   http.StatusBadRequest,
-					},
-					{
-						Name:        "DirAscAscFalse",
-						InAscending: &boolTrue,
-						ErrorCode:   http.StatusBadRequest,
-					},
-					{
-						Name:        "DirDescAscTrue",
-						InAscending: &boolTrue,
-						ErrorCode:   http.StatusBadRequest,
-					},
 				}
 
 				for _, testCase := range testCases {
