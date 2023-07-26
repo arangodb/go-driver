@@ -73,7 +73,7 @@ func (v *view) Rename(ctx context.Context, newName string) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, input)
+	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, input, v.db.modifiers...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -98,7 +98,7 @@ func (v *view) RemoveWithOptions(ctx context.Context, opts *RemoveViewOptions) e
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallDelete(ctx, v.db.connection(), url, &response, opts.modifyRequest)
+	resp, err := connection.CallDelete(ctx, v.db.connection(), url, &response, append(v.db.modifiers, opts.modifyRequest)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}

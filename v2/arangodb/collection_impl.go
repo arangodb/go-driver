@@ -63,7 +63,7 @@ func (c collection) RemoveWithOptions(ctx context.Context, opts *RemoveCollectio
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallDelete(ctx, c.connection(), url, &response, opts.modifyRequest)
+	resp, err := connection.CallDelete(ctx, c.connection(), url, &response, c.withModifiers(opts.modifyRequest)...)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (c collection) Truncate(ctx context.Context) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{})
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{}, c.withModifiers(nil)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -104,7 +104,7 @@ func (c collection) Count(ctx context.Context) (int64, error) {
 		Count                 int64 `json:"count,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers(nil)...)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
@@ -125,7 +125,7 @@ func (c collection) Properties(ctx context.Context) (CollectionProperties, error
 		CollectionProperties  `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers(nil)...)
 	if err != nil {
 		return CollectionProperties{}, errors.WithStack(err)
 	}
@@ -145,7 +145,7 @@ func (c collection) SetProperties(ctx context.Context, options SetCollectionProp
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options)
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options, c.withModifiers(nil)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -199,8 +199,10 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 		CollectionShards      `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), c.url("collection", "shards"), &body,
-		connection.WithQuery("details", "true"))
+	resp, err := connection.CallGet(
+		ctx, c.connection(), c.url("collection", "shards"), &body,
+		c.withModifiers(connection.WithQuery("details", boolToString(details)))...,
+	)
 	if err != nil {
 		return CollectionShards{}, errors.WithStack(err)
 	}
