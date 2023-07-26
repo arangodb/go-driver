@@ -83,7 +83,7 @@ func (c collection) Truncate(ctx context.Context) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{}, c.withModifiers(nil)...)
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{}, c.withModifiers()...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -104,7 +104,7 @@ func (c collection) Count(ctx context.Context) (int64, error) {
 		Count                 int64 `json:"count,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers(nil)...)
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers()...)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
@@ -125,7 +125,7 @@ func (c collection) Properties(ctx context.Context) (CollectionProperties, error
 		CollectionProperties  `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers(nil)...)
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers()...)
 	if err != nil {
 		return CollectionProperties{}, errors.WithStack(err)
 	}
@@ -145,7 +145,7 @@ func (c collection) SetProperties(ctx context.Context, options SetCollectionProp
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options, c.withModifiers(nil)...)
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options, c.withModifiers()...)
 	if err != nil {
 		return errors.WithStack(err)
 	}

@@ -72,3 +72,18 @@ func Test_ServerID(t *testing.T) {
 		})
 	})
 }
+
+func Test_Version(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			v, err := client.VersionWithOptions(context.Background(), &arangodb.GetVersionOptions{
+				Details: newBool(true),
+			})
+			require.NoError(t, err)
+			require.NotEmpty(t, v.Version)
+			require.NotEmpty(t, v.Server)
+			require.NotEmpty(t, v.License)
+			require.NotZero(t, len(v.Details))
+		})
+	})
+}
