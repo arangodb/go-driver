@@ -665,14 +665,15 @@ func Test_DatabaseCollectionDelete(t *testing.T) {
 							if shared.IsNoMoreDocuments(err) {
 								break
 							}
-							require.NoError(t, err, meta)
 
 							if keys[i] == alreadyRemovedDoc {
+								require.Error(t, err)
 								require.NotNil(t, meta.Error)
 								require.True(t, *meta.Error)
 								require.True(t, shared.IsNotFound(meta.AsArangoError()))
 								require.Empty(t, meta.Key)
 							} else {
+								require.NoError(t, err, meta)
 								require.Equal(t, keys[i], meta.Key)
 							}
 						}
