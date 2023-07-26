@@ -27,6 +27,8 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
+// CollectionDocumentDelete removes document(s) with given key(s) from the collection
+// https://www.arangodb.com/docs/devel/http/document.html#remove-a-document
 type CollectionDocumentDelete interface {
 	// DeleteDocument removes a single document with given key from the collection.
 	// The document metadata is returned.
@@ -46,7 +48,8 @@ type CollectionDocumentDelete interface {
 	// DeleteDocumentsWithOptions removes multiple documents with given keys from the collection.
 	// The document metadata are returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
-	DeleteDocumentsWithOptions(ctx context.Context, keys []string, opts *CollectionDocumentDeleteOptions) (CollectionDocumentDeleteResponseReader, error)
+	// 'documents' must be a slice of structs with a `_key` field or a slice of keys.
+	DeleteDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentDeleteOptions) (CollectionDocumentDeleteResponseReader, error)
 }
 
 type CollectionDocumentDeleteResponse struct {
@@ -60,6 +63,17 @@ type CollectionDocumentDeleteResponseReader interface {
 }
 
 type CollectionDocumentDeleteOptions struct {
+	// Conditionally delete a document based on a target revision id
+	// IMPORTANT: This will work only for single document delete operations (CollectionDocumentDelete.DeleteDocument,
+	// CollectionDocumentDelete.DeleteDocumentWithOptions)
+	IfMatch string
+
+	// By default, or if this is set to true, the _rev attributes in the given document are ignored.
+	// If this is set to false, then the _rev attribute given in the body document is taken as a precondition.
+	// The document is only removed if the current revision is the one specified.
+	// This works only with multiple documents removal method CollectionDocumentDelete.DeleteDocumentsWithOptions
+	IgnoreRevs *bool
+
 	// Wait until deletion operation has been synced to disk.
 	WithWaitForSync *bool
 
@@ -78,6 +92,14 @@ type CollectionDocumentDeleteOptions struct {
 func (c *CollectionDocumentDeleteOptions) modifyRequest(r connection.Request) error {
 	if c == nil {
 		return nil
+	}
+
+	if c.IfMatch != "" {
+		r.AddHeader("If-Match", c.IfMatch)
+	}
+
+	if c.IgnoreRevs != nil {
+		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
 	}
 
 	if c.WithWaitForSync != nil {

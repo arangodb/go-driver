@@ -26,7 +26,6 @@ import (
 	"context"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -91,7 +90,7 @@ type AccountEdge struct {
 }
 
 func DocumentExists(t testing.TB, col arangodb.Collection, doc DocIDGetter) {
-	withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 		z := reflect.New(reflect.TypeOf(doc))
 
 		_, err := col.ReadDocument(ctx, doc.GetKey(), z.Interface())
@@ -101,7 +100,7 @@ func DocumentExists(t testing.TB, col arangodb.Collection, doc DocIDGetter) {
 }
 
 func DocumentNotExists(t testing.TB, col arangodb.Collection, doc DocIDGetter) {
-	withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 		z := reflect.New(reflect.TypeOf(doc))
 
 		_, err := col.ReadDocument(ctx, doc.GetKey(), z.Interface())

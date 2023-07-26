@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +35,7 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					skipBelowVersion(client, ctx, "3.10", t)
 
 					type testCase struct {

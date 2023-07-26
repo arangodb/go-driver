@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,18 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package tests
 
 import "github.com/google/uuid"
+
+type DocWithRev struct {
+	Rev       string         `json:"_rev,omitempty"`
+	Key       string         `json:"_key,omitempty"`
+	Name      string         `json:"name"`
+	Age       *int           `json:"age"`
+	Countries map[string]int `json:"countries"`
+}
 
 type DocIDGetter interface {
 	GetKey() string

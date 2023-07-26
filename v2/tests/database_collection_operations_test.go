@@ -238,151 +238,119 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				ctx, c := context.WithTimeout(context.Background(), 5*time.Minute)
-				defer c()
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					size := 512
 
-				size := 512
+					docs := newDocs(size)
 
-				docs := newDocs(size)
-
-				for i := 0; i < size; i++ {
-					docs[i].Fields = uuid.New().String()
-				}
-
-				docsIds := docs.asBasic().getKeys()
-
-				t.Run("Create", func(t *testing.T) {
-					_, err := col.CreateDocuments(ctx, docs)
-					require.NoError(t, err)
-
-					r, err := col.ReadDocuments(ctx, docsIds)
-
-					nd := docs
-
-					for {
-						var doc document
-
-						meta, err := r.Read(&doc)
-						if shared.IsNoMoreDocuments(err) {
-							break
-						}
-						require.NoError(t, err)
-
-						require.True(t, len(nd) > 0)
-
-						require.Equal(t, nd[0].Key, meta.Key)
-						require.Equal(t, nd[0], doc)
-
-						if len(nd) == 1 {
-							nd = nil
-						} else {
-							nd = nd[1:]
-						}
+					for i := 0; i < size; i++ {
+						docs[i].Fields = uuid.New().String()
 					}
 
-					require.Len(t, nd, 0)
-				})
+					docsIds := docs.asBasic().getKeys()
 
-				t.Run("Cursor - single", func(t *testing.T) {
-					nd := docs
+					t.Run("Create", func(t *testing.T) {
+						_, err := col.CreateDocuments(ctx, docs)
+						require.NoError(t, err)
 
-					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
+						r, err := col.ReadDocuments(ctx, docsIds)
 
-					q, err := db.Query(ctx, query, &arangodb.QueryOptions{
-						BatchSize: size,
+						nd := docs
+
+						for {
+							var doc document
+
+							meta, err := r.Read(&doc)
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err)
+
+							require.True(t, len(nd) > 0)
+
+							require.Equal(t, nd[0].Key, meta.Key)
+							require.Equal(t, nd[0], doc)
+
+							if len(nd) == 1 {
+								nd = nil
+							} else {
+								nd = nd[1:]
+							}
+						}
+
+						require.Len(t, nd, 0)
 					})
-					require.NoError(t, err)
 
-					for {
-						var doc document
-						meta, err := q.ReadDocument(ctx, &doc)
-						if shared.IsNoMoreDocuments(err) {
-							break
-						}
-						require.NoError(t, err)
+					t.Run("Cursor - single", func(t *testing.T) {
+						nd := docs
 
-						require.True(t, len(nd) > 0)
+						query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
 
-						require.Equal(t, nd[0].Key, meta.Key)
-						require.Equal(t, nd[0], doc)
-
-						if len(nd) == 1 {
-							nd = nil
-						} else {
-							nd = nd[1:]
-						}
-					}
-				})
-
-				t.Run("Cursor - batches", func(t *testing.T) {
-					nd := docs
-
-					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
-
-					q, err := db.Query(ctx, query, &arangodb.QueryOptions{
-						BatchSize: size / 10,
-					})
-					require.NoError(t, err)
-
-					for {
-						var doc document
-						meta, err := q.ReadDocument(ctx, &doc)
-						if shared.IsNoMoreDocuments(err) {
-							break
-						}
-						require.NoError(t, err)
-
-						require.True(t, len(nd) > 0)
-
-						require.Equal(t, nd[0].Key, meta.Key)
-						require.Equal(t, nd[0], doc)
-
-						if len(nd) == 1 {
-							nd = nil
-						} else {
-							nd = nd[1:]
-						}
-					}
-				})
-
-				t.Run("Cursor - shardIds", func(t *testing.T) {
-					requireClusterMode(t)
-
-					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
-
-					q, err := db.Query(ctx, query, &arangodb.QueryOptions{})
-					require.NoError(t, err)
-					i := 0
-					for {
-						var doc document
-						_, err := q.ReadDocument(ctx, &doc)
-						if shared.IsNoMoreDocuments(err) {
-							break
-						}
-						require.NoError(t, err)
-						i++
-					}
-
-					// Non existing shard should error
-					q, err = db.Query(ctx, query, &arangodb.QueryOptions{
-						Options: arangodb.QuerySubOptions{
-							ShardIds: []string{"ss1"},
-						},
-					})
-					require.NotNil(t, err)
-
-					// collect all docs from all shards
-					s, err := col.Shards(context.Background(), true)
-					j := 0
-					for sk := range s.Shards {
-						shardIds := []string{string(sk)}
-						q, err = db.Query(ctx, query, &arangodb.QueryOptions{
-							Options: arangodb.QuerySubOptions{
-								ShardIds: shardIds,
-							},
+						q, err := db.Query(ctx, query, &arangodb.QueryOptions{
+							BatchSize: size,
 						})
 						require.NoError(t, err)
 
+						for {
+							var doc document
+							meta, err := q.ReadDocument(ctx, &doc)
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err)
+
+							require.True(t, len(nd) > 0)
+
+							require.Equal(t, nd[0].Key, meta.Key)
+							require.Equal(t, nd[0], doc)
+
+							if len(nd) == 1 {
+								nd = nil
+							} else {
+								nd = nd[1:]
+							}
+						}
+					})
+
+					t.Run("Cursor - batches", func(t *testing.T) {
+						nd := docs
+
+						query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
+
+						q, err := db.Query(ctx, query, &arangodb.QueryOptions{
+							BatchSize: size / 10,
+						})
+						require.NoError(t, err)
+
+						for {
+							var doc document
+							meta, err := q.ReadDocument(ctx, &doc)
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err)
+
+							require.True(t, len(nd) > 0)
+
+							require.Equal(t, nd[0].Key, meta.Key)
+							require.Equal(t, nd[0], doc)
+
+							if len(nd) == 1 {
+								nd = nil
+							} else {
+								nd = nd[1:]
+							}
+						}
+					})
+
+					t.Run("Cursor - shardIds", func(t *testing.T) {
+						requireClusterMode(t)
+
+						query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
+
+						q, err := db.Query(ctx, query, &arangodb.QueryOptions{})
+						require.NoError(t, err)
+						i := 0
 						for {
 							var doc document
 							_, err := q.ReadDocument(ctx, &doc)
@@ -390,74 +358,105 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 								break
 							}
 							require.NoError(t, err)
-							j++
+							i++
 						}
-					}
-					require.Equal(t, i, j)
 
-				})
+						// Non existing shard should error
+						q, err = db.Query(ctx, query, &arangodb.QueryOptions{
+							Options: arangodb.QuerySubOptions{
+								ShardIds: []string{"ss1"},
+							},
+						})
+						require.NotNil(t, err)
 
-				t.Run("Cursor - close", func(t *testing.T) {
-					query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
+						// collect all docs from all shards
+						s, err := col.Shards(context.Background(), true)
+						j := 0
+						for sk := range s.Shards {
+							shardIds := []string{string(sk)}
+							q, err = db.Query(ctx, query, &arangodb.QueryOptions{
+								Options: arangodb.QuerySubOptions{
+									ShardIds: shardIds,
+								},
+							})
+							require.NoError(t, err)
 
-					q, err := db.Query(ctx, query, nil)
-					require.NoError(t, err)
+							for {
+								var doc document
+								_, err := q.ReadDocument(ctx, &doc)
+								if shared.IsNoMoreDocuments(err) {
+									break
+								}
+								require.NoError(t, err)
+								j++
+							}
+						}
+						require.Equal(t, i, j)
 
-					require.NoError(t, q.CloseWithContext(ctx))
-
-					var doc document
-					_, err = q.ReadDocument(ctx, &doc)
-					require.True(t, shared.IsNoMoreDocuments(err))
-				})
-
-				t.Run("Update", func(t *testing.T) {
-					newDocs := make([]document, size)
-					defer func() {
-						docs = newDocs
-					}()
-
-					for i := 0; i < size; i++ {
-						newDocs[i] = docs[i]
-						newDocs[i].Fields = uuid.New().String()
-					}
-
-					ng := newDocs
-					nd := docs
-
-					var old document
-					var new document
-
-					r, err := col.UpdateDocumentsWithOptions(ctx, newDocs, &arangodb.CollectionDocumentUpdateOptions{
-						OldObject: &old,
-						NewObject: &new,
 					})
-					require.NoError(t, err)
 
-					for {
+					t.Run("Cursor - close", func(t *testing.T) {
+						query := fmt.Sprintf("FOR doc IN `%s` RETURN doc", col.Name())
 
-						meta, err := r.Read()
-						if shared.IsNoMoreDocuments(err) {
-							break
-						}
+						q, err := db.Query(ctx, query, nil)
 						require.NoError(t, err)
 
-						require.True(t, len(nd) > 0)
+						require.NoError(t, q.CloseWithContext(ctx))
 
-						require.Equal(t, nd[0].Key, meta.Key)
-						require.Equal(t, ng[0].Key, meta.Key)
-						require.Equal(t, ng[0], new)
-						require.Equal(t, nd[0], old)
+						var doc document
+						_, err = q.ReadDocument(ctx, &doc)
+						require.True(t, shared.IsNoMoreDocuments(err))
+					})
 
-						if len(nd) == 1 {
-							nd = nil
-							ng = nil
-						} else {
-							nd = nd[1:]
-							ng = ng[1:]
+					t.Run("Update", func(t *testing.T) {
+						newDocs := make([]document, size)
+						defer func() {
+							docs = newDocs
+						}()
+
+						for i := 0; i < size; i++ {
+							newDocs[i] = docs[i]
+							newDocs[i].Fields = uuid.New().String()
 						}
-					}
 
-					require.Len(t, nd, 0)
+						ng := newDocs
+						nd := docs
+
+						var old document
+						var new document
+
+						r, err := col.UpdateDocumentsWithOptions(ctx, newDocs, &arangodb.CollectionDocumentUpdateOptions{
+							OldObject: &old,
+							NewObject: &new,
+						})
+						require.NoError(t, err)
+
+						for {
+
+							meta, err := r.Read()
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err)
+
+							require.True(t, len(nd) > 0)
+
+							require.Equal(t, nd[0].Key, meta.Key)
+							require.Equal(t, ng[0].Key, meta.Key)
+							require.Equal(t, ng[0], new)
+							require.Equal(t, nd[0], old)
+
+							if len(nd) == 1 {
+								nd = nil
+								ng = nil
+							} else {
+								nd = nd[1:]
+								ng = ng[1:]
+							}
+						}
+
+						require.Len(t, nd, 0)
+					})
 				})
 			})
 		})
@@ -466,7 +465,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 
 func TestDatabaseNameUnicode(t *testing.T) {
 	Wrap(t, func(t *testing.T, c arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			skipBelowVersion(c, ctx, "3.9.0", t)
 			databaseExtendedNamesRequired(t, c, ctx)
 
@@ -530,28 +529,27 @@ func Test_DatabaseCollectionTruncate(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				ctx, c := context.WithTimeout(context.Background(), 5*time.Minute)
-				defer c()
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					size := 10
+					docs := newDocs(size)
+					for i := 0; i < size; i++ {
+						docs[i].Fields = uuid.New().String()
+					}
 
-				size := 10
-				docs := newDocs(size)
-				for i := 0; i < size; i++ {
-					docs[i].Fields = uuid.New().String()
-				}
+					_, err := col.CreateDocuments(ctx, docs)
+					require.NoError(t, err)
 
-				_, err := col.CreateDocuments(ctx, docs)
-				require.NoError(t, err)
+					beforeCount, err := col.Count(ctx)
+					require.NoError(t, err)
+					require.Equal(t, int64(size), beforeCount)
 
-				beforeCount, err := col.Count(ctx)
-				require.NoError(t, err)
-				require.Equal(t, int64(size), beforeCount)
+					err = col.Truncate(ctx)
+					require.NoError(t, err)
 
-				err = col.Truncate(ctx)
-				require.NoError(t, err)
-
-				afterCount, err := col.Count(ctx)
-				require.NoError(t, err)
-				require.Equal(t, int64(0), afterCount)
+					afterCount, err := col.Count(ctx)
+					require.NoError(t, err)
+					require.Equal(t, int64(0), afterCount)
+				})
 			})
 		})
 	})
@@ -561,147 +559,147 @@ func Test_DatabaseCollectionDelete(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				ctx, c := context.WithTimeout(context.Background(), 5*time.Minute)
-				defer c()
-
-				size := 10
-				docs := newDocs(size)
-				for i := 0; i < size; i++ {
-					docs[i].Fields = uuid.New().String()
-				}
-
-				docsIds := docs.asBasic().getKeys()
-				_, err := col.CreateDocuments(ctx, docs)
-				require.NoError(t, err)
-
-				t.Run("Delete single doc", func(t *testing.T) {
-					key := docsIds[0]
-
-					var doc document
-					meta, err := col.ReadDocument(ctx, key, &doc)
-					require.NoError(t, err)
-
-					require.Equal(t, docs[0].Key, meta.Key)
-					require.Equal(t, docs[0], doc)
-
-					metaDel, err := col.DeleteDocument(ctx, key)
-					require.NoError(t, err)
-					require.Equal(t, docs[0].Key, metaDel.Key)
-
-					_, err = col.DeleteDocument(ctx, key)
-					require.Error(t, err)
-				})
-
-				t.Run("Delete single doc with options (silent)", func(t *testing.T) {
-					// TODO cluster mode is broken https://arangodb.atlassian.net/browse/BTS-1302
-					requireSingleMode(t)
-
-					key := docsIds[1]
-
-					var doc document
-					meta, err := col.ReadDocument(ctx, key, &doc)
-					require.NoError(t, err)
-
-					require.Equal(t, docs[1].Key, meta.Key)
-					require.Equal(t, docs[1], doc)
-
-					opts := arangodb.CollectionDocumentDeleteOptions{
-						Silent: newBool(true),
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					size := 10
+					docs := newDocs(size)
+					for i := 0; i < size; i++ {
+						docs[i].Fields = uuid.New().String()
 					}
-					resp, err := col.DeleteDocumentWithOptions(ctx, key, &opts)
-					require.NoError(t, err)
-					require.Equal(t, "", resp.Key, "response should be empty (silent)!")
 
-					_, err = col.DeleteDocumentWithOptions(ctx, key, &opts)
-					require.Error(t, err)
-				})
-
-				t.Run("Delete single doc with options (old)", func(t *testing.T) {
-					key := docsIds[2]
-
-					var doc document
-					meta, err := col.ReadDocument(ctx, key, &doc)
+					docsIds := docs.asBasic().getKeys()
+					_, err := col.CreateDocuments(ctx, docs)
 					require.NoError(t, err)
 
-					require.Equal(t, docs[2].Key, meta.Key)
-					require.Equal(t, docs[2], doc)
+					t.Run("Delete single doc", func(t *testing.T) {
+						key := docsIds[0]
 
-					opts := arangodb.CollectionDocumentDeleteOptions{
-						ReturnOld: newBool(true),
-					}
-					resp, err := col.DeleteDocumentWithOptions(ctx, key, &opts)
-					require.NoError(t, err)
-					require.NotEmpty(t, resp.Old)
-
-					_, err = col.DeleteDocumentWithOptions(ctx, key, &opts)
-					require.Error(t, err)
-				})
-
-				t.Run("Delete multiple docs", func(t *testing.T) {
-					keys := []string{docsIds[3], docsIds[4], docsIds[5]}
-
-					r, err := col.DeleteDocuments(ctx, keys)
-					require.NoError(t, err)
-
-					for i := 0; ; i++ {
 						var doc document
+						meta, err := col.ReadDocument(ctx, key, &doc)
+						require.NoError(t, err)
 
-						meta, err := r.Read(&doc)
-						if shared.IsNoMoreDocuments(err) {
-							break
-						}
-						require.NoError(t, err, meta)
-						require.Equal(t, keys[i], meta.Key)
-					}
-				})
+						require.Equal(t, docs[0].Key, meta.Key)
+						require.Equal(t, docs[0], doc)
 
-				t.Run("Delete multiple docs with error", func(t *testing.T) {
-					alreadyRemovedDoc := docsIds[4]
-					keys := []string{docsIds[6], docsIds[7], alreadyRemovedDoc}
+						metaDel, err := col.DeleteDocument(ctx, key)
+						require.NoError(t, err)
+						require.Equal(t, docs[0].Key, metaDel.Key)
 
-					r, err := col.DeleteDocuments(ctx, keys)
-					require.NoError(t, err)
+						_, err = col.DeleteDocument(ctx, key)
+						require.Error(t, err)
+					})
 
-					for i := 0; ; i++ {
+					t.Run("Delete single doc with options (silent)", func(t *testing.T) {
+						// TODO cluster mode is broken https://arangodb.atlassian.net/browse/BTS-1302
+						requireSingleMode(t)
+
+						key := docsIds[1]
+
 						var doc document
+						meta, err := col.ReadDocument(ctx, key, &doc)
+						require.NoError(t, err)
 
-						meta, err := r.Read(&doc)
-						if shared.IsNoMoreDocuments(err) {
-							break
+						require.Equal(t, docs[1].Key, meta.Key)
+						require.Equal(t, docs[1], doc)
+
+						opts := arangodb.CollectionDocumentDeleteOptions{
+							Silent: newBool(true),
 						}
-						require.NoError(t, err, meta)
+						resp, err := col.DeleteDocumentWithOptions(ctx, key, &opts)
+						require.NoError(t, err)
+						require.Equal(t, "", resp.Key, "response should be empty (silent)!")
 
-						if keys[i] == alreadyRemovedDoc {
-							require.NotNil(t, meta.Error)
-							require.True(t, *meta.Error)
-							require.True(t, shared.IsNotFound(meta.AsArangoError()))
-							require.Empty(t, meta.Key)
-						} else {
+						_, err = col.DeleteDocumentWithOptions(ctx, key, &opts)
+						require.Error(t, err)
+					})
+
+					t.Run("Delete single doc with options (old)", func(t *testing.T) {
+						key := docsIds[2]
+
+						var doc document
+						meta, err := col.ReadDocument(ctx, key, &doc)
+						require.NoError(t, err)
+
+						require.Equal(t, docs[2].Key, meta.Key)
+						require.Equal(t, docs[2], doc)
+
+						opts := arangodb.CollectionDocumentDeleteOptions{
+							ReturnOld: newBool(true),
+						}
+						resp, err := col.DeleteDocumentWithOptions(ctx, key, &opts)
+						require.NoError(t, err)
+						require.NotEmpty(t, resp.Old)
+
+						_, err = col.DeleteDocumentWithOptions(ctx, key, &opts)
+						require.Error(t, err)
+					})
+
+					t.Run("Delete multiple docs", func(t *testing.T) {
+						keys := []string{docsIds[3], docsIds[4], docsIds[5]}
+
+						r, err := col.DeleteDocuments(ctx, keys)
+						require.NoError(t, err)
+
+						for i := 0; ; i++ {
+							var doc document
+
+							meta, err := r.Read(&doc)
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err, meta)
 							require.Equal(t, keys[i], meta.Key)
 						}
-					}
-				})
+					})
 
-				t.Run("Delete multiple docs with options (old)", func(t *testing.T) {
-					keys := []string{docsIds[8], docsIds[9]}
+					t.Run("Delete multiple docs with error", func(t *testing.T) {
+						alreadyRemovedDoc := docsIds[4]
+						keys := []string{docsIds[6], docsIds[7], alreadyRemovedDoc}
 
-					opts := arangodb.CollectionDocumentDeleteOptions{
-						ReturnOld: newBool(true),
-					}
-					r, err := col.DeleteDocumentsWithOptions(ctx, keys, &opts)
-					require.NoError(t, err)
+						r, err := col.DeleteDocuments(ctx, keys)
+						require.NoError(t, err)
 
-					for i := 0; ; i++ {
-						var doc document
+						for i := 0; ; i++ {
+							var doc document
 
-						meta, err := r.Read(&doc)
-						if shared.IsNoMoreDocuments(err) {
-							break
+							meta, err := r.Read(&doc)
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+
+							if keys[i] == alreadyRemovedDoc {
+								require.Error(t, err)
+								require.NotNil(t, meta.Error)
+								require.True(t, *meta.Error)
+								require.True(t, shared.IsNotFound(meta.AsArangoError()))
+								require.Empty(t, meta.Key)
+							} else {
+								require.NoError(t, err, meta)
+								require.Equal(t, keys[i], meta.Key)
+							}
 						}
-						require.NoError(t, err, meta)
-						require.Equal(t, keys[i], meta.Key)
-						require.NotEmpty(t, meta.Old)
-					}
+					})
+
+					t.Run("Delete multiple docs with options (old)", func(t *testing.T) {
+						keys := []string{docsIds[8], docsIds[9]}
+
+						opts := arangodb.CollectionDocumentDeleteOptions{
+							ReturnOld: newBool(true),
+						}
+						r, err := col.DeleteDocumentsWithOptions(ctx, keys, &opts)
+						require.NoError(t, err)
+
+						for i := 0; ; i++ {
+							var doc document
+
+							meta, err := r.Read(&doc)
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err, meta)
+							require.Equal(t, keys[i], meta.Key)
+							require.NotEmpty(t, meta.Old)
+						}
+					})
 				})
 			})
 		})

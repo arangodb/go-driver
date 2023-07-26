@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -33,7 +32,7 @@ import (
 
 func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, _ testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			skipBelowVersion(client, ctx, "3.9", t)
 			t.Run("without timout", func(t *testing.T) {
 				_, err := client.Version(context.Background())

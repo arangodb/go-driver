@@ -39,7 +39,7 @@ var asyncTestOpt = WrapOptions{
 
 func TestAsyncJobListDone(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, 2*time.Minute, func(ctx context.Context, tb testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			skipBelowVersion(client, ctx, "3.11.1", t)
 			skipResilientSingleMode(t)
 
@@ -105,7 +105,7 @@ func TestAsyncJobListPending(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContextT(t, 2*time.Minute, func(ctx context.Context, tb testing.TB) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
 
@@ -152,7 +152,7 @@ func TestAsyncJobCancel(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContextT(t, 2*time.Minute, func(ctx context.Context, tb testing.TB) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
 
@@ -202,7 +202,7 @@ func TestAsyncJobDelete(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
-				withContextT(t, 2*time.Minute, func(ctx context.Context, tb testing.TB) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
 

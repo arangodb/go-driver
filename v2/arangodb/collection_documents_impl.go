@@ -32,6 +32,7 @@ func newCollectionDocuments(collection *collection) *collectionDocuments {
 	d := &collectionDocuments{collection: collection}
 
 	d.collectionDocumentUpdate = newCollectionDocumentUpdate(d.collection)
+	d.collectionDocumentReplace = newCollectionDocumentReplace(d.collection)
 	d.collectionDocumentRead = newCollectionDocumentRead(d.collection)
 	d.collectionDocumentCreate = newCollectionDocumentCreate(d.collection)
 	d.collectionDocumentDelete = newCollectionDocumentDelete(d.collection)
@@ -47,6 +48,7 @@ type collectionDocuments struct {
 	collection *collection
 
 	*collectionDocumentUpdate
+	*collectionDocumentReplace
 	*collectionDocumentRead
 	*collectionDocumentCreate
 	*collectionDocumentDelete

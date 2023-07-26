@@ -38,12 +38,12 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 	info(t)("Creating DB %s", name)
 
-	withContextT(t, 2*time.Minute, func(ctx context.Context, _ testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		db, err := client.CreateDatabase(ctx, name, opts)
 		require.NoError(t, err)
 
 		defer func() {
-			withContextT(t, 2*time.Minute, func(ctx context.Context, _ testing.TB) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 				info(t)("Removing DB %s", db.Name())
 			})
 		}()
@@ -57,7 +57,7 @@ func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCol
 
 	info(t)("Creating COL %s", name)
 
-	withContextT(t, 2*time.Minute, func(ctx context.Context, _ testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		col, err := db.CreateCollection(ctx, name, opts)
 		require.NoError(t, err)
 
@@ -87,7 +87,7 @@ func WithUserDocs(t *testing.T, col arangodb.Collection, f func(users []UserDoc)
 		{Name: "Blair", Age: 67},
 	}
 
-	withContextT(t, 2*time.Minute, func(ctx context.Context, tb testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 		_, err := col.CreateDocuments(ctx, users)
 		require.NoError(t, err)
 
@@ -113,4 +113,8 @@ func newT[T any](val T) *T {
 
 func newVersion(val string) *arangodb.Version {
 	return newT(arangodb.Version(val))
+}
+
+func newInt(i int) *int {
+	return &i
 }

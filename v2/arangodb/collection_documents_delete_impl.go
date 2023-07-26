@@ -67,7 +67,7 @@ func (c collectionDocumentDelete) DeleteDocuments(ctx context.Context, keys []st
 	return c.DeleteDocumentsWithOptions(ctx, keys, nil)
 }
 
-func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context, keys []string, opts *CollectionDocumentDeleteOptions) (CollectionDocumentDeleteResponseReader, error) {
+func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentDeleteOptions) (CollectionDocumentDeleteResponseReader, error) {
 	url := c.collection.url("document")
 
 	req, err := c.collection.connection().NewRequest(http.MethodDelete, url)
@@ -75,7 +75,7 @@ func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context
 		return nil, err
 	}
 
-	for _, modifier := range c.collection.withModifiers(opts.modifyRequest, connection.WithBody(keys)) {
+	for _, modifier := range c.collection.withModifiers(opts.modifyRequest, connection.WithBody(documents)) {
 		if err = modifier(req); err != nil {
 			return nil, err
 		}
@@ -83,20 +83,14 @@ func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context
 
 	var arr connection.Array
 
-	resp, err := c.collection.connection().Do(ctx, req, &arr)
+	_, err = c.collection.connection().Do(ctx, req, &arr, http.StatusOK, http.StatusAccepted)
 	if err != nil {
 		return nil, err
 	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK, http.StatusAccepted:
-		return newCollectionDocumentDeleteResponseReader(arr, opts), nil
-	default:
-		return nil, shared.NewResponseStruct().AsArangoErrorWithCode(code)
-	}
+	return newCollectionDocumentDeleteResponseReader(&arr, opts), nil
 }
 
-func newCollectionDocumentDeleteResponseReader(array connection.Array, options *CollectionDocumentDeleteOptions) *collectionDocumentDeleteResponseReader {
+func newCollectionDocumentDeleteResponseReader(array *connection.Array, options *CollectionDocumentDeleteOptions) *collectionDocumentDeleteResponseReader {
 	c := &collectionDocumentDeleteResponseReader{array: array, options: options}
 
 	return c
@@ -105,7 +99,7 @@ func newCollectionDocumentDeleteResponseReader(array connection.Array, options *
 var _ CollectionDocumentDeleteResponseReader = &collectionDocumentDeleteResponseReader{}
 
 type collectionDocumentDeleteResponseReader struct {
-	array   connection.Array
+	array   *connection.Array
 	options *CollectionDocumentDeleteOptions
 }
 
@@ -121,6 +115,10 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 			return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
 		}
 		return CollectionDocumentDeleteResponse{}, err
+	}
+
+	if meta.Error != nil && *meta.Error {
+		return meta, meta.AsArangoError()
 	}
 
 	return meta, nil

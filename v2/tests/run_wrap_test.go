@@ -293,7 +293,7 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 
 	c := connection.NewHttpConnection(h)
 
-	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
 	})
 	return c
@@ -319,7 +319,7 @@ func connectionVPACKHttp(t testing.TB) connection.Connection {
 
 	c := connection.NewHttpConnection(h)
 
-	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
 	})
 	return c
@@ -340,7 +340,7 @@ func connectionJsonHttp2(t testing.TB) connection.Connection {
 
 	c := connection.NewHttp2Connection(h)
 
-	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
 	})
 	return c
@@ -361,7 +361,7 @@ func connectionVPACKHttp2(t testing.TB) connection.Connection {
 
 	c := connection.NewHttp2Connection(h)
 
-	withContextT(t, 2*time.Minute, func(ctx context.Context, t testing.TB) {
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 		c = createAuthenticationFromEnv(t, c)
 	})
 	return c
