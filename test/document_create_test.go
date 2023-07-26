@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 )
 
@@ -113,7 +115,9 @@ func TestCreateDocumentReturnNew(t *testing.T) {
 		1,
 	}
 	var newDoc UserDoc
-	meta, err := col.CreateDocument(driver.WithReturnNew(ctx, &newDoc), doc)
+
+	withNewDocCtx := driver.WithReturnNew(ctx, &newDoc)
+	meta, err := col.CreateDocument(withNewDocCtx, doc)
 	if err != nil {
 		t.Fatalf("Failed to create new document: %s", describe(err))
 	}
@@ -121,6 +125,15 @@ func TestCreateDocumentReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(doc, newDoc) {
 		t.Errorf("Got wrong ReturnNew document. Expected %+v, got %+v", doc, newDoc)
 	}
+
+	returnNew, exist := driver.HasReturnNew(withNewDocCtx)
+	require.True(t, exist, "ReturnNew not set")
+
+	newDoc2, ok := returnNew.(*UserDoc)
+	require.True(t, ok, "ReturnNew not set correctly")
+	require.Equal(t, newDoc.Age, newDoc2.Age, "ReturnNew not set correctly")
+	require.Equal(t, newDoc.Name, newDoc2.Name, "ReturnNew not set correctly")
+
 	// Document must exists now
 	var readDoc UserDoc
 	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); err != nil {

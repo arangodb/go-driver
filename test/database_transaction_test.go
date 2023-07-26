@@ -26,6 +26,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 )
 
@@ -113,6 +115,10 @@ func TestTransactionCommit(t *testing.T) {
 
 	// document should exist with transaction
 	documentExists(tctx, col, meta1.Key, true, t)
+
+	trxidRead, exist := driver.HasTransactionID(tctx)
+	require.True(t, exist, "Transaction ID should be set")
+	require.Equal(t, trxid, trxidRead, "Transaction ID should be the same")
 
 	// Now commit the transaction
 	if err := db.CommitTransaction(ctx, trxid, nil); err != nil {

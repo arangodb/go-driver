@@ -27,6 +27,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver"
 )
 
@@ -122,6 +124,16 @@ func TestUpdateDocumentsReturnOld(t *testing.T) {
 	if _, _, err := col.UpdateDocuments(ctx, metas.Keys(), updates); err != nil {
 		t.Fatalf("Failed to update documents: %s", describe(err))
 	}
+
+	returnOld, exist := driver.HasReturnOld(ctx)
+	require.True(t, exist, "ReturnOld not set")
+
+	oldDocs2, ok := returnOld.([]UserDoc)
+	require.True(t, ok, "ReturnOld not set correctly")
+	require.Len(t, oldDocs2, len(oldDocs), "ReturnOld not set correctly")
+	require.Equal(t, oldDocs[0].Age, oldDocs2[0].Age, "ReturnOld not set correctly")
+	require.Equal(t, oldDocs[1].Name, oldDocs2[1].Name, "ReturnOld not set correctly")
+
 	// Check old documents
 	for i, doc := range docs {
 		if !reflect.DeepEqual(doc, oldDocs[i]) {

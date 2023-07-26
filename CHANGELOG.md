@@ -14,6 +14,7 @@
 - [V2] Add ServerMode/SetServerMode/ServerID
 - [V2] Add collection Truncate, Count, Properties, SetProperties
 - [V2] Add and re-organize missing collection properties fields
+- [V1] Expose getters for Context values
 
 ## [1.6.0](https://github.com/arangodb/go-driver/tree/v1.6.0) (2023-05-30)
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2

@@ -611,33 +611,3 @@ func withDocumentAt(ctx context.Context, index int) (context.Context, error) {
 
 	return ctx, nil
 }
-
-//
-// READ METHODS
-//
-
-// IsAsyncRequest returns true if the given context is an async request.
-func IsAsyncRequest(ctx context.Context) bool {
-	if ctx != nil {
-		if v := ctx.Value(keyAsyncRequest); v != nil {
-			if isAsync, ok := v.(bool); ok && isAsync {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// HasAsyncID returns the async Job ID from the given context.
-func HasAsyncID(ctx context.Context) (string, bool) {
-	if ctx != nil {
-		if q := ctx.Value(keyAsyncID); q != nil {
-			if v, ok := q.(string); ok {
-				return v, true
-			}
-		}
-	}
-
-	return "", false
-}
