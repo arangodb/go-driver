@@ -80,6 +80,10 @@ type clientServerInfo struct {
 }
 
 func (c clientServerInfo) Version(ctx context.Context) (VersionInfo, error) {
+	return c.VersionWithOptions(ctx, nil)
+}
+
+func (c clientServerInfo) VersionWithOptions(ctx context.Context, opts *GetVersionOptions) (VersionInfo, error) {
 	url := connection.NewUrl("_api", "version")
 
 	var response struct {
@@ -87,7 +91,7 @@ func (c clientServerInfo) Version(ctx context.Context) (VersionInfo, error) {
 		VersionInfo
 	}
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, opts.modifyRequest)
 	if err != nil {
 		return VersionInfo{}, errors.WithStack(err)
 	}
@@ -185,4 +189,20 @@ func (c clientServerInfo) echo(ctx context.Context) error {
 	default:
 		return response.AsArangoErrorWithCode(code)
 	}
+}
+
+type GetVersionOptions struct {
+	// If true, additional details will be returned in response
+	// Default false
+	Details *bool
+}
+
+func (o *GetVersionOptions) modifyRequest(r connection.Request) error {
+	if o == nil {
+		return nil
+	}
+	if o.Details != nil {
+		r.AddQuery("details", boolToString(*o.Details))
+	}
+	return nil
 }

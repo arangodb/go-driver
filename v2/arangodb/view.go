@@ -48,6 +48,10 @@ type View interface {
 	// Remove removes the entire view.
 	// If the view does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+
+	// RemoveWithOptions removes the entire view.
+	// If the view does not exist, a NotFoundError is returned.
+	RemoveWithOptions(ctx context.Context, opts *RemoveViewOptions) error
 }
 
 // ViewType is the type of view.

@@ -146,6 +146,17 @@ type CollectionDocumentCreateOptions struct {
 	// If set to true, objects are merged. The default is true. This option controls the update-insert behavior only.
 	// This option controls the update-insert behavior only (CollectionDocumentCreateOverwriteModeUpdate).
 	MergeObjects *bool
+
+	// By default, or if this is set to true, the _rev attributes in the given document are ignored.
+	// If this is set to false, then the _rev attribute given in the body document is taken as a precondition.
+	// The document is only removed if the current revision is the one specified.
+	// This works only with multiple documents removal method CollectionDocumentDelete.DeleteDocumentsWithOptions
+	IgnoreRevs *bool
+
+	// IsRestore is used to make insert functions use the "isRestore=<value>" setting.
+	// Note: This option is intended for internal (replication) use.
+	// It is NOT intended to be used by normal client. Use on your own risk!
+	IsRestore *bool
 }
 
 func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) error {
@@ -187,6 +198,14 @@ func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) er
 
 	if c.MergeObjects != nil {
 		r.AddQuery("mergeObjects", boolToString(*c.MergeObjects))
+	}
+
+	if c.IgnoreRevs != nil {
+		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
+	}
+
+	if c.IsRestore != nil {
+		r.AddQuery("isRestore", boolToString(*c.IsRestore))
 	}
 
 	return nil

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package arangodb
@@ -56,13 +53,17 @@ type collection struct {
 }
 
 func (c collection) Remove(ctx context.Context) error {
+	return c.RemoveWithOptions(ctx, nil)
+}
+
+func (c collection) RemoveWithOptions(ctx context.Context, opts *RemoveCollectionOptions) error {
 	url := c.url("collection")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallDelete(ctx, c.connection(), url, &response)
+	resp, err := connection.CallDelete(ctx, c.connection(), url, &response, opts.modifyRequest)
 	if err != nil {
 		return err
 	}
@@ -210,4 +211,20 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 	default:
 		return CollectionShards{}, body.AsArangoErrorWithCode(code)
 	}
+}
+
+type RemoveCollectionOptions struct {
+	// IsSystem when set to true allows to remove system collections.
+	// Use on your own risk!
+	IsSystem *bool
+}
+
+func (o *RemoveCollectionOptions) modifyRequest(r connection.Request) error {
+	if o == nil {
+		return nil
+	}
+	if o.IsSystem != nil {
+		r.AddQuery("isSystem", boolToString(*o.IsSystem))
+	}
+	return nil
 }

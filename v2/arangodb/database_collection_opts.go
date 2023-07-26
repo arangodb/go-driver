@@ -20,8 +20,12 @@
 
 package arangodb
 
-// CreateCollectionOptions contains options that customize the creating of a collection.
-type CreateCollectionOptions struct {
+import (
+	"github.com/arangodb/go-driver/v2/connection"
+)
+
+// CreateCollectionProperties contains options that customize the creating of a collection.
+type CreateCollectionProperties struct {
 	// CacheEnabled set cacheEnabled option in collection properties
 	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
 	// This field is used for internal purposes only. DO NOT USE.
@@ -105,12 +109,29 @@ type CreateCollectionOptions struct {
 }
 
 // Init translate deprecated fields into current one for backward compatibility
-func (c *CreateCollectionOptions) Init() {
+func (c *CreateCollectionProperties) Init() {
 	if c == nil {
 		return
 	}
 
 	c.KeyOptions.Init()
+}
+
+// CreateCollectionOptions specifies additional options to be provided while creating collection
+type CreateCollectionOptions struct {
+	// EnforceReplicationFactor the default is true, which means the server checks if there are enough replicas available
+	// at creation time and bail out otherwise. Set it to false to disable this extra check.
+	EnforceReplicationFactor *bool
+}
+
+func (o *CreateCollectionOptions) modifyRequest(r connection.Request) error {
+	if o == nil {
+		return nil
+	}
+	if o.EnforceReplicationFactor != nil {
+		r.AddQuery("enforceReplicationFactor", boolToString(*o.EnforceReplicationFactor))
+	}
+	return nil
 }
 
 // CollectionType is the type of a collection.

@@ -105,20 +105,24 @@ func (d databaseCollection) Collections(ctx context.Context) ([]Collection, erro
 	}
 }
 
-func (d databaseCollection) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
-	options.Init()
+func (d databaseCollection) CreateCollection(ctx context.Context, name string, props *CreateCollectionProperties) (Collection, error) {
+	return d.CreateCollectionWithOptions(ctx, name, props, nil)
+}
+
+func (d databaseCollection) CreateCollectionWithOptions(ctx context.Context, name string, props *CreateCollectionProperties, options *CreateCollectionOptions) (Collection, error) {
+	props.Init()
 
 	url := d.db.url("_api", "collection")
 	reqData := struct {
 		shared.ResponseStruct `json:",inline"`
 		Name                  string `json:"name"`
-		*CreateCollectionOptions
+		*CreateCollectionProperties
 	}{
-		Name:                    name,
-		CreateCollectionOptions: options,
+		Name:                       name,
+		CreateCollectionProperties: props,
 	}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, nil, &reqData)
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, nil, &reqData, options.modifyRequest)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

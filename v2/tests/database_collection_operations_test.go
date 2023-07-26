@@ -40,7 +40,7 @@ func Test_CollectionShards(t *testing.T) {
 	requireClusterMode(t)
 
 	rf := arangodb.ReplicationFactor(2)
-	options := arangodb.CreateCollectionOptions{
+	options := arangodb.CreateCollectionProperties{
 		ReplicationFactor: rf,
 		NumberOfShards:    2,
 	}
@@ -80,7 +80,7 @@ func Test_CollectionShards(t *testing.T) {
 			require.NoError(t, err)
 
 			if version.IsEnterprise() {
-				optionsSatellite := arangodb.CreateCollectionOptions{
+				optionsSatellite := arangodb.CreateCollectionProperties{
 					ReplicationFactor: arangodb.ReplicationFactorSatellite,
 				}
 				WithCollection(t, db, &optionsSatellite, func(col arangodb.Collection) {
@@ -95,7 +95,7 @@ func Test_CollectionShards(t *testing.T) {
 
 // Test_CollectionSetProperties tries to set properties to collection
 func Test_CollectionSetProperties(t *testing.T) {
-	createOpts := arangodb.CreateCollectionOptions{
+	createOpts := arangodb.CreateCollectionProperties{
 		WaitForSync:       false,
 		ReplicationFactor: 2,
 		JournalSize:       1048576 * 2,
@@ -186,7 +186,9 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 					ctx, c := context.WithTimeout(context.Background(), 1*time.Minute)
 					defer c()
 
-					col, err := db.CreateCollection(ctx, "test", nil)
+					col, err := db.CreateCollectionWithOptions(ctx, "test", nil, &arangodb.CreateCollectionOptions{
+						EnforceReplicationFactor: newBool(false),
+					})
 					require.NoError(t, err)
 
 					fieldName := "value"

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -39,5 +37,9 @@ type DatabaseCollection interface {
 
 	// CreateCollection creates a new collection with given name and options, and opens a connection to it.
 	// If a collection with given name already exists within the database, a DuplicateError is returned.
-	CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error)
+	CreateCollection(ctx context.Context, name string, props *CreateCollectionProperties) (Collection, error)
+
+	// CreateCollectionWithOptions creates a new collection with given name and options, and opens a connection to it.
+	// If a collection with given name already exists within the database, a DuplicateError is returned.
+	CreateCollectionWithOptions(ctx context.Context, name string, props *CreateCollectionProperties, options *CreateCollectionOptions) (Collection, error)
 }

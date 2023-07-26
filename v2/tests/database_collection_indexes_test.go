@@ -53,7 +53,7 @@ func Test_DefaultIndexes(t *testing.T) {
 func Test_DefaultEdgeIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, &arangodb.CreateCollectionOptions{Type: arangodb.CollectionTypeEdge}, func(col arangodb.Collection) {
+			WithCollection(t, db, &arangodb.CreateCollectionProperties{Type: arangodb.CollectionTypeEdge}, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					indexes, err := col.Indexes(ctx)
 					require.NoError(t, err)
