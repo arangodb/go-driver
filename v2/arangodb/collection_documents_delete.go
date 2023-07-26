@@ -68,7 +68,7 @@ type CollectionDocumentDeleteOptions struct {
 	// CollectionDocumentDelete.DeleteDocumentWithOptions)
 	IfMatch string
 
-	// By default, or if this is set to true, the _rev attributes in the given document is ignored.
+	// By default, or if this is set to true, the _rev attributes in the given document are ignored.
 	// If this is set to false, then the _rev attribute given in the body document is taken as a precondition.
 	// The document is only removed if the current revision is the one specified.
 	// This works only with multiple documents removal method CollectionDocumentDelete.DeleteDocumentsWithOptions
