@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
-// Author Tomasz Mielech
 //
 
 package arangodb
@@ -56,13 +53,17 @@ type collection struct {
 }
 
 func (c collection) Remove(ctx context.Context) error {
+	return c.RemoveWithOptions(ctx, nil)
+}
+
+func (c collection) RemoveWithOptions(ctx context.Context, opts *RemoveCollectionOptions) error {
 	url := c.url("collection")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallDelete(ctx, c.connection(), url, &response)
+	resp, err := connection.CallDelete(ctx, c.connection(), url, &response, c.withModifiers(opts.modifyRequest)...)
 	if err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func (c collection) Truncate(ctx context.Context) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{})
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{}, c.withModifiers()...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -103,7 +104,7 @@ func (c collection) Count(ctx context.Context) (int64, error) {
 		Count                 int64 `json:"count,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers()...)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
@@ -124,7 +125,7 @@ func (c collection) Properties(ctx context.Context) (CollectionProperties, error
 		CollectionProperties  `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers()...)
 	if err != nil {
 		return CollectionProperties{}, errors.WithStack(err)
 	}
@@ -144,7 +145,7 @@ func (c collection) SetProperties(ctx context.Context, options SetCollectionProp
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options)
+	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options, c.withModifiers()...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -198,8 +199,10 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 		CollectionShards      `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), c.url("collection", "shards"), &body,
-		connection.WithQuery("details", "true"))
+	resp, err := connection.CallGet(
+		ctx, c.connection(), c.url("collection", "shards"), &body,
+		c.withModifiers(connection.WithQuery("details", boolToString(details)))...,
+	)
 	if err != nil {
 		return CollectionShards{}, errors.WithStack(err)
 	}
@@ -210,4 +213,20 @@ func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards
 	default:
 		return CollectionShards{}, body.AsArangoErrorWithCode(code)
 	}
+}
+
+type RemoveCollectionOptions struct {
+	// IsSystem when set to true allows to remove system collections.
+	// Use on your own risk!
+	IsSystem *bool
+}
+
+func (o *RemoveCollectionOptions) modifyRequest(r connection.Request) error {
+	if o == nil {
+		return nil
+	}
+	if o.IsSystem != nil {
+		r.AddQuery("isSystem", boolToString(*o.IsSystem))
+	}
+	return nil
 }

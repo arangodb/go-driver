@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -31,8 +29,9 @@ import (
 
 type ClientServerInfo interface {
 	// Version returns version information from the connected database server.
-	// Use WithDetails to configure a context that will include additional details in the return VersionInfo.
 	Version(ctx context.Context) (VersionInfo, error)
+	// VersionWithOptions returns version information from the connected database server.
+	VersionWithOptions(ctx context.Context, opts *GetVersionOptions) (VersionInfo, error)
 	// ServerRole returns the role of the server that answers the request.
 	ServerRole(ctx context.Context) (ServerRole, error)
 	// ServerID Gets the ID of this server in the cluster.
@@ -49,7 +48,7 @@ type VersionInfo struct {
 	Version Version `json:"version,omitempty"`
 	// Type of license of the server
 	License string `json:"license,omitempty"`
-	// Optional additional details. This is returned only if the context is configured using WithDetails.
+	// Optional additional details. This is returned only if details were requested
 	Details map[string]interface{} `json:"details,omitempty"`
 }
 

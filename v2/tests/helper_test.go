@@ -52,13 +52,13 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 	})
 }
 
-func WithCollection(t testing.TB, db arangodb.Database, opts *arangodb.CreateCollectionOptions, f func(col arangodb.Collection)) {
+func WithCollection(t testing.TB, db arangodb.Database, props *arangodb.CreateCollectionProperties, f func(col arangodb.Collection)) {
 	name := fmt.Sprintf("test-COL-%s", uuid.New().String())
 
 	info(t)("Creating COL %s", name)
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-		col, err := db.CreateCollection(ctx, name, opts)
+		col, err := db.CreateCollection(ctx, name, props)
 		require.NoError(t, err)
 
 		NewTimeout(func() error {

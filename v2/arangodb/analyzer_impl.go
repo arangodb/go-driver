@@ -63,12 +63,12 @@ func (a analyzer) Definition() AnalyzerDefinition {
 	return a.definition
 }
 
-func (v analyzer) Database() Database {
-	return v.db
+func (a analyzer) Database() Database {
+	return a.db
 }
 
-func (v analyzer) Remove(ctx context.Context, force bool) error {
-	url := v.db.url("_api", "analyzer", v.Name())
+func (a analyzer) Remove(ctx context.Context, force bool) error {
+	url := a.db.url("_api", "analyzer", a.Name())
 
 	reqBody := struct {
 		Force bool `json:"force,omitempty"`
@@ -78,7 +78,7 @@ func (v analyzer) Remove(ctx context.Context, force bool) error {
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
-	resp, err := connection.CallDelete(ctx, v.db.connection(), url, &response, connection.WithBody(reqBody))
+	resp, err := connection.CallDelete(ctx, a.db.connection(), url, &response, append(a.db.modifiers, connection.WithBody(reqBody))...)
 	if err != nil {
 		return errors.WithStack(err)
 	}

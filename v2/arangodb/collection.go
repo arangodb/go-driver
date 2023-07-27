@@ -20,7 +20,9 @@
 
 package arangodb
 
-import "context"
+import (
+	"context"
+)
 
 type Collection interface {
 	Name() string
@@ -32,6 +34,10 @@ type Collection interface {
 	// Remove removes the entire collection.
 	// If the collection does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
+
+	// RemoveWithOptions removes the entire collection.
+	// If the collection does not exist, a NotFoundError is returned.
+	RemoveWithOptions(ctx context.Context, opts *RemoveCollectionOptions) error
 
 	// Truncate removes all documents from the collection, but leaves the indexes intact.
 	Truncate(ctx context.Context) error

@@ -90,6 +90,11 @@ type CollectionDocumentReplaceOptions struct {
 
 	// RefillIndexCaches if set to true then refills the in-memory index caches.
 	RefillIndexCaches *bool
+
+	// IsRestore is used to make insert functions use the "isRestore=<value>" setting.
+	// Note: This option is intended for internal (replication) use.
+	// It is NOT intended to be used by normal client. Use on your own risk!
+	IsRestore *bool
 }
 
 func (c *CollectionDocumentReplaceOptions) modifyRequest(r connection.Request) error {
@@ -123,6 +128,10 @@ func (c *CollectionDocumentReplaceOptions) modifyRequest(r connection.Request) e
 
 	if c.IgnoreRevs != nil {
 		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
+	}
+
+	if c.IsRestore != nil {
+		r.AddQuery("isRestore", boolToString(*c.IsRestore))
 	}
 
 	return nil

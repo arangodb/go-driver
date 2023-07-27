@@ -73,7 +73,7 @@ func (v *view) Rename(ctx context.Context, newName string) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, input)
+	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, input, v.db.modifiers...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -88,13 +88,17 @@ func (v *view) Rename(ctx context.Context, newName string) error {
 }
 
 func (v *view) Remove(ctx context.Context) error {
+	return v.RemoveWithOptions(ctx, nil)
+}
+
+func (v *view) RemoveWithOptions(ctx context.Context, opts *RemoveViewOptions) error {
 	url := v.db.url("_api", "view", v.name)
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallDelete(ctx, v.db.connection(), url, &response)
+	resp, err := connection.CallDelete(ctx, v.db.connection(), url, &response, append(v.db.modifiers, opts.modifyRequest)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -131,4 +135,20 @@ func (v *view) ArangoSearchViewAlias() (ArangoSearchViewAlias, error) {
 		return nil, err
 	}
 	return &viewArangoSearchAlias{view: v}, nil
+}
+
+type RemoveViewOptions struct {
+	// IsSystem when set to true allows to remove system views.
+	// Use on your own risk!
+	IsSystem *bool
+}
+
+func (o *RemoveViewOptions) modifyRequest(r connection.Request) error {
+	if o == nil {
+		return nil
+	}
+	if o.IsSystem != nil {
+		r.AddQuery("isSystem", boolToString(*o.IsSystem))
+	}
+	return nil
 }

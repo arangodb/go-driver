@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -105,20 +103,24 @@ func (d databaseCollection) Collections(ctx context.Context) ([]Collection, erro
 	}
 }
 
-func (d databaseCollection) CreateCollection(ctx context.Context, name string, options *CreateCollectionOptions) (Collection, error) {
-	options.Init()
+func (d databaseCollection) CreateCollection(ctx context.Context, name string, props *CreateCollectionProperties) (Collection, error) {
+	return d.CreateCollectionWithOptions(ctx, name, props, nil)
+}
+
+func (d databaseCollection) CreateCollectionWithOptions(ctx context.Context, name string, props *CreateCollectionProperties, options *CreateCollectionOptions) (Collection, error) {
+	props.Init()
 
 	url := d.db.url("_api", "collection")
 	reqData := struct {
 		shared.ResponseStruct `json:",inline"`
 		Name                  string `json:"name"`
-		*CreateCollectionOptions
+		*CreateCollectionProperties
 	}{
-		Name:                    name,
-		CreateCollectionOptions: options,
+		Name:                       name,
+		CreateCollectionProperties: props,
 	}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, nil, &reqData)
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, nil, &reqData, append(d.db.modifiers, options.modifyRequest)...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

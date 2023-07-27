@@ -33,7 +33,7 @@ import (
 // Test_ExplainQuery tries to explain several AQL queries.
 func Test_ExplainQuery(t *testing.T) {
 	rf := arangodb.ReplicationFactor(2)
-	options := arangodb.CreateCollectionOptions{
+	options := arangodb.CreateCollectionProperties{
 		ReplicationFactor: rf,
 		NumberOfShards:    2,
 	}
