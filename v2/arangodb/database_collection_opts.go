@@ -58,7 +58,7 @@ type CreateCollectionProperties struct {
 	// and not for data that cannot be re-created otherwise. (The default is false)
 	IsVolatile bool `json:"isVolatile,omitempty"`
 	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MiB). (The default is a configuration parameter)
-	JournalSize int `json:"journalSize,omitempty"`
+	JournalSize int64 `json:"journalSize,omitempty"`
 	// Specifies how keys in the collection are created.
 	KeyOptions *CollectionKeyOptions `json:"keyOptions,omitempty"`
 	// Deprecated: use 'WriteConcern' instead
