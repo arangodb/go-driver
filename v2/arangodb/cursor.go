@@ -89,20 +89,19 @@ type CursorBatch interface {
 	Plan() CursorPlan
 }
 
-// CursorStats TODO: all these int64 should be changed into uint64
 type CursorStats struct {
 	// The total number of data-modification operations successfully executed.
-	WritesExecutedInt int64 `json:"writesExecuted,omitempty"`
+	WritesExecutedInt uint64 `json:"writesExecuted,omitempty"`
 	// The total number of data-modification operations that were unsuccessful
-	WritesIgnoredInt int64 `json:"writesIgnored,omitempty"`
+	WritesIgnoredInt uint64 `json:"writesIgnored,omitempty"`
 	// The total number of documents iterated over when scanning a collection without an index.
-	ScannedFullInt int64 `json:"scannedFull,omitempty"`
+	ScannedFullInt uint64 `json:"scannedFull,omitempty"`
 	// The total number of documents iterated over when scanning a collection using an index.
-	ScannedIndexInt int64 `json:"scannedIndex,omitempty"`
+	ScannedIndexInt uint64 `json:"scannedIndex,omitempty"`
 	// The total number of documents that were removed after executing a filter condition in a FilterNode
-	FilteredInt int64 `json:"filtered,omitempty"`
+	FilteredInt uint64 `json:"filtered,omitempty"`
 	// The total number of documents that matched the search condition if the query's final LIMIT statement were not present.
-	FullCountInt int64 `json:"fullCount,omitempty"`
+	FullCountInt uint64 `json:"fullCount,omitempty"`
 	// Query execution time (wall-clock time). value will be set from the outside
 	ExecutionTimeInt float64 `json:"executionTime,omitempty"`
 

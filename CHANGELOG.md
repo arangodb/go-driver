@@ -17,6 +17,7 @@
 - [V1] Expose getters for Context values
 - [V2] Rename CreateCollectionOptions to CreateCollectionProperties
 - [V2] Add support for missing query options (create documents, remove collection, remove view)
+- [V2] Adjust CursorStats and JournalSize types
 
 ## [1.6.0](https://github.com/arangodb/go-driver/tree/v1.6.0) (2023-05-30)
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2
