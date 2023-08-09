@@ -22,23 +22,21 @@ package examples
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
-	"log"
+	"net"
+	"net/http"
 	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
-// ExampleNewConnectionAsyncWrapper shows how to create a connection wrapper for async requests
-// It lets use async requests on demand
-func ExampleNewConnectionAsyncWrapper() {
+// ExampleNewClient shows how to create the simple client with a single endpoint
+func ExampleNewClient() {
 	// Create an HTTP connection to the database
 	endpoint := connection.NewRoundRobinEndpoints([]string{"http://localhost:8529"})
 	conn := connection.NewHttpConnection(exampleJSONHTTPConnectionConfig(endpoint))
-
-	// Create ASYNC wrapper for the connection
-	conn = connection.NewConnectionAsyncWrapper(conn)
 
 	// Create a client
 	client := arangodb.NewClient(conn)
@@ -50,37 +48,22 @@ func ExampleNewConnectionAsyncWrapper() {
 	} else {
 		fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 	}
+}
 
-	// Trigger async request
-	info, err := client.Version(connection.WithAsync(context.Background()))
-	if err != nil {
-		fmt.Printf("this is expected error since we are using async mode and response is not ready yet: %v", err)
-	}
-	if info.Version != "" {
-		fmt.Printf("Expected empty version if async request is in progress, got %s", info.Version)
-	}
-
-	// Fetch an async job id from the error
-	id, isAsyncId := connection.IsAsyncJobInProgress(err)
-	if !isAsyncId {
-		fmt.Printf("Expected async job id, got %v", id)
-	}
-
-	// Wait for an async result
-	time.Sleep(3 * time.Second)
-
-	// List async jobs - there should be one, till the result is fetched
-	jobs, err := client.AsyncJobList(context.Background(), arangodb.JobDone, nil)
-	if err != nil {
-		log.Fatalf("Failed to list async jobs: %v", err)
-	}
-	if len(jobs) != 1 {
-		log.Fatalf("Expected 1 async job, got %d", len(jobs))
-	}
-
-	// Fetch an async job result
-	info, err = client.Version(connection.WithAsyncID(context.Background(), id))
-	if err != nil {
-		log.Fatalf("Failed to fetch async job result: %v", err)
+func exampleJSONHTTPConnectionConfig(endpoint connection.Endpoint) connection.HttpConfiguration {
+	return connection.HttpConfiguration{
+		Endpoint:    endpoint,
+		ContentType: connection.ApplicationJSON,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 90 * time.Second,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
 }

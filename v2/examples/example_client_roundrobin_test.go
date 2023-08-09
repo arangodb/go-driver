@@ -22,19 +22,17 @@ package examples
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net"
-	"net/http"
-	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
-func ExampleNewClient() {
+// ExampleNewRoundRobinEndpoints shows how to create a client with round-robin endpoint list
+func ExampleNewRoundRobinEndpoints() {
 	// Create an HTTP connection to the database
-	conn := connection.NewHttpConnection(exampleJSONHTTPConnectionConfig())
+	endpoints := connection.NewRoundRobinEndpoints([]string{"https://a:8529", "https://a:8539", "https://b:8529"})
+	conn := connection.NewHttpConnection(exampleJSONHTTPConnectionConfig(endpoints))
 
 	// Create a client
 	client := arangodb.NewClient(conn)
@@ -45,23 +43,5 @@ func ExampleNewClient() {
 		fmt.Printf("Failed to get version info: %v", err)
 	} else {
 		fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
-	}
-}
-
-func exampleJSONHTTPConnectionConfig() connection.HttpConfiguration {
-	return connection.HttpConfiguration{
-		Endpoint:    connection.NewEndpoints("http://localhost:8529"),
-		ContentType: connection.ApplicationJSON,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 90 * time.Second,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
 	}
 }

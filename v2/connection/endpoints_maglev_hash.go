@@ -33,7 +33,9 @@ import (
 // RequestHashValueExtractor accepts request method and full request path and must return a value which will be used for hash calculation
 type RequestHashValueExtractor func(requestMethod, requestPath string) (string, error)
 
-// NewMaglevHashEndpoints returns Endpoint manager which runs round-robin
+// NewMaglevHashEndpoints returns Endpoint manager which consistently returns the same endpoint based on value
+// extracted from request using provided RequestHashValueExtractor
+// e.g. if you want to use DB name from URL for hashing you can use RequestDBNameValueExtractor
 func NewMaglevHashEndpoints(eps []string, extractor RequestHashValueExtractor) (Endpoint, error) {
 	// order of endpoints affects hashing result
 	sort.Strings(eps)

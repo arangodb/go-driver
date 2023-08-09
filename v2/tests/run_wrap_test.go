@@ -232,7 +232,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 
 				// pick the first one endpoint which is always the leader in AF mode
 				// also for Cluster mode we only need one endpoint to avoid the problem with the data propagation in tests
-				endpoint := connection.NewEndpoints(connection.FixupEndpointURLScheme(cer.Endpoints[nextEndpoint].Endpoint))
+				endpoint := connection.NewRoundRobinEndpoints([]string{connection.FixupEndpointURLScheme(cer.Endpoints[nextEndpoint].Endpoint)})
 				err = client.Connection().SetEndpoint(endpoint)
 				if err != nil {
 					log.Warn().Err(err).Msgf("Unable to set endpoints")
@@ -282,7 +282,6 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 90 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,
@@ -308,7 +307,6 @@ func connectionVPACKHttp(t testing.TB) connection.Connection {
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 90 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			MaxIdleConns:          100,
 			IdleConnTimeout:       90 * time.Second,
