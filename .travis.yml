@@ -1,10 +1,9 @@
+# Ubuntu 20.04 (Focal Fossa)
+dist: focal
+
 sudo: required
 
 before_install:
-  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-  - sudo apt-get update
-  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
   - |
     mkdir -p $HOME/resources
     for i in {0..3}
@@ -25,6 +24,9 @@ before_install:
     if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
       travis_terminate 1
     fi
+
+services:
+  - docker
 
 language: go
 go:
