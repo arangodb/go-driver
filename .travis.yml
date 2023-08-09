@@ -29,7 +29,7 @@ before_install:
 
 language: go
 go:
-  - 1.20.6
+  - 1.20.7
 
 env:
   jobs:
@@ -43,8 +43,8 @@ env:
     - TEST_SUITE=run-v2-tests-cluster
     - TEST_SUITE=run-v2-tests-resilientsingle
   global:
-    - ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.11.1
-    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.20.5
+    - ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.11.2
+    - GOIMAGE=gcr.io/gcr-for-testing/golang:1.20.7
     - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.17
     - STARTER=arangodb/arangodb-starter:latest
     - TEST_DISALLOW_UNKNOWN_FIELDS=false
