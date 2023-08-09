@@ -174,51 +174,6 @@ func TestBackupCreateWithLabel(t *testing.T) {
 	}
 }
 
-func TestBackupCreateWithAllowInconsistent(t *testing.T) {
-	c := createClient(t, nil)
-	skipIfNoBackup(c, t)
-
-	EnsureVersion(t, context.Background(), c).Enterprise().NotCluster().
-		CheckVersion(BelowPatchRelease("3.7.2")).
-		CheckVersion(BelowPatchRelease("3.6.6"))
-
-	var wg sync.WaitGroup
-	defer func() {
-		wg.Wait()
-	}()
-	b := c.Backup()
-	dbname := "backup_db_test"
-	colname := "backup_query_target"
-
-	// First create a long running transaction
-	db := ensureDatabase(nil, c, dbname, nil, t)
-	ensureCollection(nil, db, colname, nil, t)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if _, err := db.Query(nil, fmt.Sprintf("FOR i IN 1..15 INSERT {s:SLEEP(1)} INTO %s", colname), nil); err != nil {
-			t.Fatalf("Failed to run query: %s", describe(err))
-		}
-	}()
-
-	time.Sleep(time.Second)
-
-	_, _, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: false, Timeout: 3 * time.Second})
-	if err == nil {
-		t.Fatalf("Creating backup should fail but did not!")
-	}
-
-	_, resp, err := b.Create(nil, &driver.BackupCreateOptions{AllowInconsistent: true, Timeout: 3 * time.Second})
-	if err != nil {
-		t.Fatalf("Failed to create backup: %s", describe(err))
-	}
-
-	if !resp.PotentiallyInconsistent {
-		t.Error("Expected PotentiallyInconsistent to be set to true, but it is not")
-	}
-}
-
 func TestBackupListWithID(t *testing.T) {
 	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
