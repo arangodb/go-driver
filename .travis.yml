@@ -1,5 +1,10 @@
 sudo: required
 
+addons:
+  apt:
+    packages:
+      - docker-ce
+
 before_install:
   - |
     mkdir -p $HOME/resources
@@ -21,9 +26,6 @@ before_install:
     if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
       travis_terminate 1
     fi
-
-services:
-  - docker
 
 language: go
 go:
