@@ -4,6 +4,7 @@ dist: focal
 sudo: required
 
 before_install:
+  - docker version
   - |
     mkdir -p $HOME/resources
     for i in {0..3}
