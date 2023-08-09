@@ -62,7 +62,7 @@ type BackupCreateOptions struct {
 
 	Timeout time.Duration `json:"timeout,omitempty"`
 
-	// @deprecated - since 3.10 it exists only for backwards compatibility
+	// @deprecated - since 3.10.10 it exists only for backwards compatibility
 	AllowInconsistent bool `json:"allowInconsistent,omitempty"`
 }
 
