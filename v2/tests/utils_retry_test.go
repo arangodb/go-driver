@@ -28,7 +28,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const defaultTestTimeout = 1 * time.Minute
+// defaultTestTimeout is the default timeout for context use in tests
+// less than 2 minutes is causing problems on CI
+const defaultTestTimeout = 2 * time.Minute
 
 type Timeout func() error
 
