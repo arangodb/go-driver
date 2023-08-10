@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 )
 
@@ -79,14 +81,16 @@ func TestRemoveEdgeReturnOld(t *testing.T) {
 		Distance: 32,
 	}
 	meta, err := ec.CreateDocument(ctx, doc)
-	if err != nil {
-		t.Fatalf("Failed to create new document: %s", describe(err))
-	}
+	require.NoError(t, err)
+
 	var old RouteEdge
 	ctx = driver.WithReturnOld(ctx, &old)
-	if _, err := ec.RemoveDocument(ctx, meta.Key); !driver.IsInvalidArgument(err) {
-		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
+
+	_, err = ec.RemoveDocument(ctx, meta.Key)
+	require.NoError(t, err)
+
+	// Check an old document
+	require.Equal(t, doc, old)
 }
 
 // TestRemoveEdgeSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.

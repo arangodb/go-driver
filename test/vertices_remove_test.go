@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 )
 
@@ -85,22 +87,18 @@ func TestRemoveVerticesReturnOld(t *testing.T) {
 		},
 	}
 	metas, errs, err := vc.CreateDocuments(ctx, docs)
-	if err != nil {
-		t.Fatalf("Failed to create new document: %s", describe(err))
-	} else if err := errs.FirstNonNil(); err != nil {
-		t.Fatalf("Expected no errors, got first: %s", describe(err))
-	}
+	require.NoError(t, err)
+	require.NoError(t, errs.FirstNonNil())
+
 	oldDocs := make([]Book, len(docs))
 	ctx = driver.WithReturnOld(ctx, oldDocs)
 	_, errs, err = vc.RemoveDocuments(ctx, metas.Keys())
-	if err != nil {
-		t.Fatalf("Failed to remove documents: %s", describe(err))
-	}
-	// Check errors
-	for i, err := range errs {
-		if !driver.IsInvalidArgument(err) {
-			t.Fatalf("Expected InvalidArgumentError at %d, got  %s", i, describe(err))
-		}
+	require.NoError(t, err)
+	require.NoError(t, errs.FirstNonNil())
+
+	// Check old documents
+	for i, doc := range docs {
+		require.Equal(t, doc, oldDocs[i])
 	}
 }
 

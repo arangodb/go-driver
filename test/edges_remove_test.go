@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 )
 
@@ -115,14 +117,12 @@ func TestRemoveEdgesReturnOld(t *testing.T) {
 	oldDocs := make([]RouteEdge, len(docs))
 	ctx = driver.WithReturnOld(ctx, oldDocs)
 	_, errs, err = ec.RemoveDocuments(ctx, metas.Keys())
-	if err != nil {
-		t.Fatalf("Failed to remove documents: %s", describe(err))
-	}
-	// Check errors
-	for i, err := range errs {
-		if !driver.IsInvalidArgument(err) {
-			t.Fatalf("Expected InvalidArgumentError at %d, got  %s", i, describe(err))
-		}
+	require.Nil(t, err)
+	require.NoError(t, errs.FirstNonNil())
+
+	// Check old documents
+	for i, doc := range docs {
+		require.Equal(t, doc, oldDocs[i])
 	}
 }
 
