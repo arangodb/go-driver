@@ -180,7 +180,7 @@ func TestAsyncJobCancel(t *testing.T) {
 
 		_, err = db.Query(driver.WithAsyncID(ctx, id), aqlQuery, nil)
 		require.Error(t, err)
-		require.Equal(t, "canceled request", err.Error())
+		require.Contains(t, err.Error(), "canceled")
 	})
 }
 

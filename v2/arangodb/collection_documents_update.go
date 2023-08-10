@@ -68,7 +68,7 @@ type CollectionDocumentUpdateOptions struct {
 	// Conditionally update a document based on a target revision id
 	// IMPORTANT: This will work only for single document updates operations (CollectionDocumentUpdate.UpdateDocument,
 	// CollectionDocumentUpdate.UpdateDocumentWithOptions)
-	IfMatch string `json:"ifMatch,omitempty"`
+	IfMatch string
 
 	// By default, or if this is set to true, the _rev attributes in the given document is ignored.
 	// If this is set to false, then the _rev attribute given in the body document is taken as a precondition.

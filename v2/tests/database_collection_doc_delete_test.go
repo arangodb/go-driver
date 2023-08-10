@@ -69,6 +69,7 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 						key := docsIds[2]
 
 						var doc document
+						var oldDoc document
 						meta, err := col.ReadDocument(ctx, key, &doc)
 						require.NoError(t, err)
 
@@ -76,11 +77,12 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 						require.Equal(t, docs[2], doc)
 
 						opts := arangodb.CollectionDocumentDeleteOptions{
-							ReturnOld: newBool(true),
+							OldObject: &oldDoc,
 						}
 						resp, err := col.DeleteDocumentWithOptions(ctx, key, &opts)
 						require.NoError(t, err)
 						require.NotEmpty(t, resp.Old)
+						require.Equal(t, docs[2], oldDoc)
 
 						_, err = col.DeleteDocumentWithOptions(ctx, key, &opts)
 						require.Error(t, err)
@@ -131,9 +133,10 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 
 					t.Run("Delete multiple docs with options: old", func(t *testing.T) {
 						keys := []string{docsIds[8], docsIds[9]}
+						var oldDoc document
 
 						opts := arangodb.CollectionDocumentDeleteOptions{
-							ReturnOld: newBool(true),
+							OldObject: &oldDoc,
 						}
 						r, err := col.DeleteDocumentsWithOptions(ctx, keys, &opts)
 						require.NoError(t, err)
@@ -147,7 +150,7 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 							}
 							require.NoError(t, err, meta)
 							require.Equal(t, keys[i], meta.Key)
-							require.NotEmpty(t, meta.Old)
+							require.Equal(t, keys[i], oldDoc.Key)
 						}
 					})
 				})
