@@ -55,7 +55,7 @@ type CollectionDocumentDelete interface {
 type CollectionDocumentDeleteResponse struct {
 	DocumentMeta          `json:",inline"`
 	shared.ResponseStruct `json:",inline"`
-	Old                   interface{}
+	Old                   interface{} `json:"old,omitempty"`
 }
 
 type CollectionDocumentDeleteResponseReader interface {
@@ -74,11 +74,11 @@ type CollectionDocumentDeleteOptions struct {
 	// This works only with multiple documents removal method CollectionDocumentDelete.DeleteDocumentsWithOptions
 	IgnoreRevs *bool
 
-	// Wait until deletion operation has been synced to disk.
+	// Wait until the deletion operation has been synced to disk.
 	WithWaitForSync *bool
 
 	// Return additionally the complete previous revision of the changed document
-	ReturnOld *bool
+	OldObject interface{}
 
 	// If set to true, an empty object is returned as response if the document operation succeeds.
 	// No meta-data is returned for the deleted document. If the operation raises an error, an error object is returned.
@@ -106,8 +106,8 @@ func (c *CollectionDocumentDeleteOptions) modifyRequest(r connection.Request) er
 		r.AddQuery("waitForSync", boolToString(*c.WithWaitForSync))
 	}
 
-	if c.ReturnOld != nil {
-		r.AddQuery("returnOld", boolToString(*c.ReturnOld))
+	if c.OldObject != nil {
+		r.AddQuery("returnOld", "true")
 	}
 
 	if c.Silent != nil {

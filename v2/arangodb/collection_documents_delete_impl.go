@@ -25,8 +25,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func newCollectionDocumentDelete(collection *collection) *collectionDocumentDelete {
@@ -49,6 +52,9 @@ func (c collectionDocumentDelete) DeleteDocumentWithOptions(ctx context.Context,
 	url := c.collection.url("document", key)
 
 	var meta CollectionDocumentDeleteResponse
+	if opts != nil {
+		meta.Old = opts.OldObject
+	}
 
 	resp, err := connection.CallDelete(ctx, c.collection.connection(), url, &meta, c.collection.withModifiers(opts.modifyRequest)...)
 	if err != nil {
@@ -68,6 +74,10 @@ func (c collectionDocumentDelete) DeleteDocuments(ctx context.Context, keys []st
 }
 
 func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentDeleteOptions) (CollectionDocumentDeleteResponseReader, error) {
+	if !utils.IsListPtr(documents) && !utils.IsList(documents) {
+		return nil, errors.Errorf("Input documents should be list")
+	}
+
 	url := c.collection.url("document")
 
 	req, err := c.collection.connection().NewRequest(http.MethodDelete, url)
@@ -109,6 +119,10 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 	}
 
 	var meta CollectionDocumentDeleteResponse
+
+	if c.options != nil {
+		meta.Old = c.options.OldObject
+	}
 
 	if err := c.array.Unmarshal(newMultiUnmarshaller(&meta, newUnmarshalInto(i))); err != nil {
 		if err == io.EOF {
