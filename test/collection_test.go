@@ -359,7 +359,7 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 
 	options := driver.CreateCollectionOptions{
 		DistributeShardsLike: nameParent,
-		ShardKeys:            []string{"_key"},
+		ShardKeys:            []string{"_key:"},
 		SmartJoinAttribute:   "smart",
 		NumberOfShards:       2,
 	}

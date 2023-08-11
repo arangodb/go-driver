@@ -193,7 +193,7 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 
 		col := ensureCollection(ctx, db, name, &driver.CreateCollectionOptions{
 			DistributeShardsLike: nameParent,
-			ShardKeys:            []string{"_key"},
+			ShardKeys:            []string{"_key:"},
 			SmartJoinAttribute:   "smart",
 			NumberOfShards:       2,
 		}, t)
