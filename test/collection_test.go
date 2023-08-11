@@ -347,11 +347,21 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 	skipBelowVersion(c, "3.4.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
+
 	name := "test_create_collection_smart_join"
+	nameParent := "test_create_collection_smart_join_parent"
+
+	colParent := ensureCollection(nil, db, nameParent, &driver.CreateCollectionOptions{
+		ShardKeys:      []string{"_key"},
+		NumberOfShards: 2,
+	}, t)
+	defer clean(t, nil, colParent)
+
 	options := driver.CreateCollectionOptions{
-		ShardKeys:          []string{"_key:"},
-		SmartJoinAttribute: "smart",
-		NumberOfShards:     2,
+		DistributeShardsLike: nameParent,
+		ShardKeys:            []string{"_key"},
+		SmartJoinAttribute:   "smart",
+		NumberOfShards:       2,
 	}
 	if _, err := db.CreateCollection(nil, name, &options); err != nil {
 		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
