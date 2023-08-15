@@ -363,24 +363,22 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 		SmartJoinAttribute:   "smart",
 		NumberOfShards:       2,
 	}
-	if _, err := db.CreateCollection(nil, name, &options); err != nil {
-		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
-	}
+	col, err := db.CreateCollection(nil, name, &options)
+	require.NoError(t, err)
+	defer clean(t, nil, col)
+
 	// Collection must exist now
 	found, err := db.CollectionExists(nil, name)
 	require.NoError(t, err)
 	require.True(t, found, "CollectionExists('%s') return false, expected true", name)
 
 	// Check if the collection has a smart join attribute
-	col, err := db.Collection(nil, name)
+	colRead, err := db.Collection(nil, name)
 	require.NoError(t, err)
 
-	prop, err := col.Properties(nil)
+	prop, err := colRead.Properties(nil)
 	require.NoError(t, err)
-
-	if prop.SmartJoinAttribute != "smart" {
-		t.Errorf("Collection does not have the correct smart join attribute value, expected `smart`, found `%s`", prop.SmartJoinAttribute)
-	}
+	require.Equal(t, "smart", prop.SmartJoinAttribute)
 }
 
 // TestCreateCollectionWithShardingStrategy create a collection with non default sharding strategy
