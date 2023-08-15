@@ -22,6 +22,7 @@
 - [V1] Revert ReturnOld for edge/vertex operations
 - [V2] Improve returning old doc handling in CollectionDocumentDelete
 - [V1] Agency: Deprecate TTL and observe features
+- [V2] Agency: Supply ClientID with agency transactions
 
 ## [1.6.0](https://github.com/arangodb/go-driver/tree/v1.6.0) (2023-05-30)
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2

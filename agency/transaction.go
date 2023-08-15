@@ -42,8 +42,12 @@ type Transaction struct {
 }
 
 // NewTransaction creates new transaction.
-// The argument 'clientID' can be used to mark that transaction uniquely.
+// The argument 'clientID' should be used to mark that transaction sender uniquely.
 func NewTransaction(clientID string, options TransactionOptions) Transaction {
+	if clientID == "" {
+		clientID = fmt.Sprintf("go-driver/%s", driver.DriverVersion)
+	}
+
 	return Transaction{
 		clientID: clientID,
 		options:  options,
