@@ -367,22 +367,19 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
 	}
 	// Collection must exist now
-	if found, err := db.CollectionExists(nil, name); err != nil {
-		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
-	} else if !found {
-		t.Errorf("CollectionExists('%s') return false, expected true", name)
-	}
+	found, err := db.CollectionExists(nil, name)
+	require.NoError(t, err)
+	require.True(t, found, "CollectionExists('%s') return false, expected true", name)
+
 	// Check if the collection has a smart join attribute
-	if col, err := db.Collection(nil, name); err != nil {
-		t.Errorf("Collection('%s') failed: %s", name, describe(err))
-	} else {
-		if prop, err := col.Properties(nil); err != nil {
-			t.Errorf("Properties() failed: %s", describe(err))
-		} else {
-			if prop.SmartJoinAttribute != "smart" {
-				t.Errorf("Collection does not have the correct smart join attribute value, expected `smart`, found `%s`", prop.SmartJoinAttribute)
-			}
-		}
+	col, err := db.Collection(nil, name)
+	require.NoError(t, err)
+
+	prop, err := col.Properties(nil)
+	require.NoError(t, err)
+
+	if prop.SmartJoinAttribute != "smart" {
+		t.Errorf("Collection does not have the correct smart join attribute value, expected `smart`, found `%s`", prop.SmartJoinAttribute)
 	}
 }
 
