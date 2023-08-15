@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Tomasz Mielech <tomasz@arangodb.com>
-//
 
 package agency
 
@@ -32,14 +30,16 @@ type KeyChanger interface {
 	GetKey() string
 	// GetOperation returns what type of operation must be performed on a key
 	GetOperation() string
-	// GetTTL returns how long (in seconds) a key will live in the agency
-	GetTTL() time.Duration
 	// GetURL returns URL address where must be sent callback in case of some changes on key
 	GetURL() string
 	// GetNew returns new value for a key in the agency
 	GetNew() interface{}
 	// GetVal returns new value for a key in the agency
 	GetVal() interface{}
+
+	// Deprecated: removed since 3.12
+	// GetTTL returns how long (in seconds) a key will live in the agency
+	GetTTL() time.Duration
 }
 
 type keyCommon struct {
@@ -102,7 +102,18 @@ func NewKeyDelete(key []string) KeyChanger {
 	}
 }
 
+// NewKeySetV2 returns a new key operation which must be set in the agency
+func NewKeySetV2(key []string, value interface{}) KeyChanger {
+	return &keySet{
+		keyCommon: keyCommon{
+			key: key,
+		},
+		value: value,
+	}
+}
+
 // NewKeySet returns a new key operation which must be set in the agency
+// Deprecated: TTL param is removed since 3.12, use NewKeySetV2 instead
 func NewKeySet(key []string, value interface{}, TTL time.Duration) KeyChanger {
 	return &keySet{
 		keyCommon: keyCommon{
@@ -116,6 +127,7 @@ func NewKeySet(key []string, value interface{}, TTL time.Duration) KeyChanger {
 // NewKeyObserve returns a new key callback operation which must be written in the agency.
 // URL parameter describes where callback must be sent in case of changes on a key.
 // When 'observe' is false then we want to stop observing a key.
+// Deprecated: observe param is removed since 3.12
 func NewKeyObserve(key []string, URL string, observe bool) KeyChanger {
 	return &keyObserve{
 		keyCommon: keyCommon{

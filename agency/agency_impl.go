@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-// Author Tomasz Mielech <tomasz@arangodb.com>
 //
 
 package agency
@@ -129,7 +126,6 @@ func (c *agency) ReadKey(ctx context.Context, key []string, value interface{}) e
 type writeUpdate struct {
 	Operation string      `json:"op,omitempty"`
 	New       interface{} `json:"new,omitempty"`
-	TTL       int64       `json:"ttl,omitempty"`
 	URL       string      `json:"url,omitempty"`
 	Val       interface{} `json:"val,omitempty"`
 }
@@ -228,7 +224,6 @@ func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction) 
 		keysToChange[v.GetKey()] = writeUpdate{
 			Operation: v.GetOperation(),
 			New:       v.GetNew(),
-			TTL:       int64(v.GetTTL().Seconds()),
 			URL:       v.GetURL(),
 			Val:       v.GetVal(),
 		}

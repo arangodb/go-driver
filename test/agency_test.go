@@ -203,6 +203,8 @@ func TestAgencyRead(t *testing.T) {
 func TestAgencyWrite(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
+	skipVersionNotInRange(c, "3.5", "3.11", t)
+
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -232,6 +234,8 @@ func TestAgencyWrite(t *testing.T) {
 func TestAgencyWriteIfEmpty(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
+	skipVersionNotInRange(c, "3.5", "3.11", t)
+
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -264,6 +268,8 @@ func TestAgencyWriteIfEmpty(t *testing.T) {
 func TestAgencyWriteIfEqualTo(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
+	skipVersionNotInRange(c, "3.5", "3.11", t)
+
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -305,6 +311,8 @@ func TestAgencyWriteIfEqualTo(t *testing.T) {
 func TestAgencyRemove(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
+	skipVersionNotInRange(c, "3.5", "3.11", t)
+
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -331,6 +339,8 @@ func TestAgencyRemove(t *testing.T) {
 func TestAgencyRemoveIfEqualTo(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
+	skipVersionNotInRange(c, "3.5", "3.11", t)
+
 	if a, err := getAgencyConnection(ctx, t, c); driver.IsPreconditionFailed(err) {
 		t.Skipf("Skip agency test: %s", describe(err))
 	} else if err != nil {
@@ -367,6 +377,7 @@ func TestAgencyCallbacks(t *testing.T) {
 	rootKeyAgency := "TestAgencyCallbacks"
 	ctx := context.Background()
 	c := createClient(t, nil)
+	skipVersionNotInRange(c, "3.5", "3.11", t)
 
 	a, err := getAgencyConnection(ctx, t, c)
 	if driver.IsPreconditionFailed(err) {
@@ -485,8 +496,8 @@ func writeTransaction(t *testing.T, transient bool) {
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
-							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "1"),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "2"}, "2"),
 						},
 					},
 				},
@@ -506,14 +517,14 @@ func writeTransaction(t *testing.T, transient bool) {
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "1"),
 						},
 					},
 				},
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "2"}, "2"),
 						},
 					},
 				},
@@ -533,8 +544,8 @@ func writeTransaction(t *testing.T, transient bool) {
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
-							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "1"),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "2"}, "2"),
 						},
 					},
 				},
@@ -555,25 +566,6 @@ func writeTransaction(t *testing.T, transient bool) {
 			},
 		},
 		{
-			name: "Register and unregister callback",
-			requests: []Request{
-				{
-					transaction: TransactionTest{
-						keys: []agency.KeyChanger{
-							agency.NewKeyObserve([]string{rootKeyAgency, "test", "1"}, "localhost:2345", true),
-						},
-					},
-				},
-				{
-					transaction: TransactionTest{
-						keys: []agency.KeyChanger{
-							agency.NewKeyObserve([]string{rootKeyAgency, "test", "1"}, "localhost:2345", false),
-						},
-					},
-				},
-			},
-		},
-		{
 			name: "Delete non-existing keys",
 			requests: []Request{
 				{
@@ -582,7 +574,7 @@ func writeTransaction(t *testing.T, transient bool) {
 							agency.NewKeyDelete([]string{rootKeyAgency, "test", "1"}),
 							agency.NewKeyDelete([]string{rootKeyAgency, "test", "2"}),
 							agency.NewKeyDelete([]string{rootKeyAgency, "test", "3"}),
-							agency.NewKeySet([]string{rootKeyAgency, "test", "4"}, "2", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "4"}, "2"),
 						},
 					},
 				},
@@ -601,38 +593,20 @@ func writeTransaction(t *testing.T, transient bool) {
 			},
 		},
 		{
-			name:  "TTL of Key is expired",
-			sleep: time.Second * 2,
-			requests: []Request{
-				{
-					transaction: TransactionTest{
-						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "4", time.Second),
-						},
-					},
-				},
-			},
-			expectedResult: map[string]interface{}{
-				rootKeyAgency: map[string]interface{}{
-					"test": map[string]interface{}{},
-				},
-			},
-		},
-		{
 			name: "Conditions 'ifEqual' and 'ifNotEqual' allow to crate two keys",
 			requests: []Request{
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
-							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "1"),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "2"}, "2"),
 						},
 					},
 				},
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "3"),
 						},
 						conditions: map[string]agency.KeyConditioner{
 							rootKeyAgency + "/test/1": agency.NewConditionIfEqual("1"),
@@ -656,15 +630,15 @@ func writeTransaction(t *testing.T, transient bool) {
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
-							agency.NewKeySet([]string{rootKeyAgency, "test", "2"}, "2", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "1"),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "2"}, "2"),
 						},
 					},
 				},
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "3"),
 						},
 						conditions: map[string]agency.KeyConditioner{
 							rootKeyAgency + "/test/1": agency.NewConditionIfEqual("1"),
@@ -679,7 +653,7 @@ func writeTransaction(t *testing.T, transient bool) {
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "4", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "4"),
 						},
 					},
 				},
@@ -699,7 +673,7 @@ func writeTransaction(t *testing.T, transient bool) {
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "1", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "1"),
 						},
 						conditions: map[string]agency.KeyConditioner{
 							rootKeyAgency + "/test/1": agency.NewConditionOldEmpty(true),
@@ -710,7 +684,7 @@ func writeTransaction(t *testing.T, transient bool) {
 					transaction: TransactionTest{
 
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "3"),
 						},
 						conditions: map[string]agency.KeyConditioner{
 							rootKeyAgency + "/test/1": agency.NewConditionOldEmpty(true),
@@ -736,7 +710,7 @@ func writeTransaction(t *testing.T, transient bool) {
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, 1, 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, 1),
 						},
 					},
 				},
@@ -744,7 +718,7 @@ func writeTransaction(t *testing.T, transient bool) {
 					transaction: TransactionTest{
 
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "3", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "3"),
 						},
 						conditions: map[string]agency.KeyConditioner{
 							rootKeyAgency + "/test/1": agency.NewConditionIsArray(true),
@@ -759,14 +733,14 @@ func writeTransaction(t *testing.T, transient bool) {
 					transaction: TransactionTest{
 
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, []int{1, 2}, 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, []int{1, 2}),
 						},
 					},
 				},
 				{
 					transaction: TransactionTest{
 						keys: []agency.KeyChanger{
-							agency.NewKeySet([]string{rootKeyAgency, "test", "1"}, "8", 0),
+							agency.NewKeySetV2([]string{rootKeyAgency, "test", "1"}, "8"),
 						},
 						conditions: map[string]agency.KeyConditioner{
 							rootKeyAgency + "/test/1": agency.NewConditionIsArray(true),

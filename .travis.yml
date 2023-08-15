@@ -45,7 +45,7 @@ env:
     - TEST_SUITE=run-v2-tests-cluster
     - TEST_SUITE=run-v2-tests-resilientsingle
   global:
-    - ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:3.11.2
+    - ARANGODB=gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly
     - GOIMAGE=gcr.io/gcr-for-testing/golang:1.20.7
     - ALPINE_IMAGE=gcr.io/gcr-for-testing/alpine:3.17
     - STARTER=arangodb/arangodb-starter:latest

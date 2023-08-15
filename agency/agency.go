@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-// Author Tomasz Mielech <tomasz@arangodb.com>
 //
 
 package agency
@@ -39,10 +36,15 @@ type Agency interface {
 	ReadKey(ctx context.Context, key []string, value interface{}) error
 
 	// WriteTransaction performs transaction in the agency.
-	// Transaction can have list of operations to perform like e.g. delete, set, observe...
+	// Transaction can have a list of operations to perform like e.g. delete, set, observe...
 	// Transaction can have preconditions which must be fulfilled to perform transaction.
 	WriteTransaction(ctx context.Context, transaction Transaction) error
 
+	/***
+		All below methods are deprecated and will be removed in future versions
+	***/
+
+	// Deprecated: TTL param is removed since 3.12, use WriteTransaction instead
 	// WriteKey writes the given value with the given key with a given TTL (unless TTL is zero).
 	// If you pass a condition (only 1 allowed), this condition has to be true,
 	// otherwise the write will fail with a ConditionFailed error.
@@ -57,6 +59,7 @@ type Agency interface {
 	// to the given old value.
 	WriteKeyIfEqualTo(ctx context.Context, key []string, newValue, oldValue interface{}, ttl time.Duration) error
 
+	// Deprecated: use 'WriteTransaction' instead
 	// RemoveKey removes the given key.
 	// If you pass a condition (only 1 allowed), this condition has to be true,
 	// otherwise the remove will fail with a ConditionFailed error.

@@ -347,33 +347,38 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 	skipBelowVersion(c, "3.4.5", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(nil, c, "collection_test", nil, t)
+
 	name := "test_create_collection_smart_join"
+	nameParent := "test_create_collection_smart_join_parent"
+
+	colParent := ensureCollection(nil, db, nameParent, &driver.CreateCollectionOptions{
+		ShardKeys:      []string{"_key"},
+		NumberOfShards: 2,
+	}, t)
+	defer clean(t, nil, colParent)
+
 	options := driver.CreateCollectionOptions{
-		ShardKeys:          []string{"_key:"},
-		SmartJoinAttribute: "smart",
-		NumberOfShards:     2,
+		DistributeShardsLike: nameParent,
+		ShardKeys:            []string{"_key:"},
+		SmartJoinAttribute:   "smart",
+		NumberOfShards:       2,
 	}
-	if _, err := db.CreateCollection(nil, name, &options); err != nil {
-		t.Fatalf("Failed to create collection '%s': %s", name, describe(err))
-	}
+	col, err := db.CreateCollection(nil, name, &options)
+	require.NoError(t, err)
+	defer clean(t, nil, col)
+
 	// Collection must exist now
-	if found, err := db.CollectionExists(nil, name); err != nil {
-		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
-	} else if !found {
-		t.Errorf("CollectionExists('%s') return false, expected true", name)
-	}
+	found, err := db.CollectionExists(nil, name)
+	require.NoError(t, err)
+	require.True(t, found, "CollectionExists('%s') return false, expected true", name)
+
 	// Check if the collection has a smart join attribute
-	if col, err := db.Collection(nil, name); err != nil {
-		t.Errorf("Collection('%s') failed: %s", name, describe(err))
-	} else {
-		if prop, err := col.Properties(nil); err != nil {
-			t.Errorf("Properties() failed: %s", describe(err))
-		} else {
-			if prop.SmartJoinAttribute != "smart" {
-				t.Errorf("Collection does not have the correct smart join attribute value, expected `smart`, found `%s`", prop.SmartJoinAttribute)
-			}
-		}
-	}
+	colRead, err := db.Collection(nil, name)
+	require.NoError(t, err)
+
+	prop, err := colRead.Properties(nil)
+	require.NoError(t, err)
+	require.Equal(t, "smart", prop.SmartJoinAttribute)
 }
 
 // TestCreateCollectionWithShardingStrategy create a collection with non default sharding strategy

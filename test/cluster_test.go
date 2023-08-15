@@ -186,7 +186,7 @@ func TestClusterDatabaseInventorySmartJoin(t *testing.T) {
 			t.Fatalf("Failed to open _system database: %s", describe(err))
 		}
 		colParent := ensureCollection(ctx, db, nameParent, &driver.CreateCollectionOptions{
-			ShardKeys:      []string{"_key:"},
+			ShardKeys:      []string{"_key"},
 			NumberOfShards: 2,
 		}, t)
 		defer clean(t, ctx, colParent)
