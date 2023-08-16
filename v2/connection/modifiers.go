@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package connection
@@ -55,7 +53,7 @@ func applyGlobalSettings(ctx context.Context) RequestModifier {
 	return func(r Request) error {
 
 		// Set version header
-		val := fmt.Sprintf("go-driver-v2/%s", driverVersion)
+		val := fmt.Sprintf("go-driver-v2/%s", DriverVersion)
 		if ctx != nil {
 			if v := ctx.Value(keyDriverFlags); v != nil {
 				if flags, ok := v.([]string); ok {

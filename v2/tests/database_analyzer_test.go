@@ -394,8 +394,8 @@ func Test_AnalyzerRemove(t *testing.T) {
 			_, a, err := db.EnsureAnalyzer(ctx, &def)
 			require.NoError(t, err)
 
-			// delete and check it was deleted
-			err = a.Remove(ctx, false)
+			// delete and check it was deleted (use force to delete it even if it is in use)
+			err = a.Remove(ctx, true)
 			require.NoError(t, err)
 
 			shouldBeRemoved, err := db.Analyzer(ctx, a.Name())

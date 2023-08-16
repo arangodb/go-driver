@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Tomasz Mielech <tomasz@arangodb.com>
 //
 
 package agency
@@ -42,8 +40,12 @@ type Transaction struct {
 }
 
 // NewTransaction creates new transaction.
-// The argument 'clientID' can be used to mark that transaction uniquely.
+// The argument 'clientID' should be used to mark that transaction sender uniquely.
 func NewTransaction(clientID string, options TransactionOptions) Transaction {
+	if clientID == "" {
+		clientID = fmt.Sprintf("go-driver/%s", driver.DriverVersion)
+	}
+
 	return Transaction{
 		clientID: clientID,
 		options:  options,

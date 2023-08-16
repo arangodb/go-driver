@@ -3,5 +3,5 @@ cat << EOF > ../connection/version-driver.go
 package connection
 
 //go:generate bash ../scripts/update-version.sh
-var driverVersion = "$VERSION"
+const DriverVersion = "$VERSION"
 EOF

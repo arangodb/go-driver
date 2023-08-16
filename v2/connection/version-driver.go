@@ -2,4 +2,4 @@
 package connection
 
 //go:generate bash ../scripts/update-version.sh
-var driverVersion = "1.6.0"
+const DriverVersion = "1.6.0"

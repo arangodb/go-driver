@@ -219,6 +219,7 @@ func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction) 
 
 	writeTxs := make([]writeTransaction, 0, 1)
 	f := make(writeTransaction, 0, 3)
+
 	keysToChange := make(map[string]interface{})
 	for _, v := range transaction.keys {
 		keysToChange[v.GetKey()] = writeUpdate{
@@ -238,7 +239,11 @@ func (c *agency) WriteTransaction(ctx context.Context, transaction Transaction) 
 		}
 	}
 
+	// operations (keys to change) must be first parameter
+	// conditions must be second parameter
 	f = append(f, keysToChange, conditions)
+
+	// clientID must be third parameter
 	if len(transaction.clientID) > 0 {
 		f = append(f, transaction.clientID)
 	}
