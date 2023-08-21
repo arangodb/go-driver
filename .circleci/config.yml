@@ -55,6 +55,7 @@ jobs:
   download-demo-data:
     executor: machine-executor
     steps:
+      - run: mkdir -p $HOME/resources
       - run:
           name: Download itzpapalotl demo foxx service
           command: |
