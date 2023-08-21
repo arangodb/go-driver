@@ -42,7 +42,7 @@ jobs:
         default: "run-unit-tests"
     steps:
       - checkout
-      - run: make << pipeline.parameters.test-to-run >>
+      - run: make << parameters.test-to-run >>
     environment:
       TEST_RESOURCES: "$HOME/resources/"
       ARANGODB: gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly
@@ -65,6 +65,7 @@ jobs:
 workflows:
   run_tests:
     jobs:
+      - download-demo-data
       - run-tests:
           name: Test V1 single
           requires:
