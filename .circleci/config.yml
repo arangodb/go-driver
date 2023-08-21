@@ -90,9 +90,20 @@ jobs:
               curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
 
+  vulncheck:
+    executor: golang-executor
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run: make tools
+      - run: make vulncheck
+      - *notify_slack_on_fail
+
 workflows:
   version: 2
 
+  # Default workflow
   run_tests:
     jobs:
       - check-code
@@ -134,3 +145,17 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-resilientsingle
+
+  # Monthly vulnerability check
+  monthly_vulncheck:
+    jobs:
+      - vulncheck:
+          context:
+            - slack
+    triggers:
+      - schedule:
+          # 8:00 at 1st day of month
+          cron: 0 8 1 * *
+          filters:
+            branches:
+              only: master
