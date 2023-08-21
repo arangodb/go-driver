@@ -4,7 +4,7 @@ orbs:
 executors:
   golang-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.20.5
+      - image: gcr.io/gcr-for-testing/golang:1.20.7
   machine-executor:
     machine:
       image: ubuntu-2204:current
@@ -44,7 +44,7 @@ jobs:
       - checkout
       - run: make << parameters.test-to-run >>
     environment:
-      TEST_RESOURCES: "$HOME/resources/"
+      TEST_RESOURCES: "${HOME}/resources/"
       ARANGODB: gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly
       VERBOSE: 1
       GOIMAGE: gcr.io/gcr-for-testing/golang:1.20.7
