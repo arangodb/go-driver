@@ -17,22 +17,37 @@ aliases:
       template: basic_fail_1
 
 parameters:
-  run-tests:
-    type: boolean
-    default: false
-  run-migration-tests:
-    type: boolean
-    default: false
+  goImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/golang:1.20.7"
+  arangodbImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly"
+  alpineImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/alpine:3.17"
+  starterImage:
+    type: string
+    default: "arangodb/arangodb-starter:latest"
 
 jobs:
+
   check-code:
     executor: golang-executor
     steps:
       - setup_remote_docker:
           docker_layer_caching: true
       - checkout
-      - run: make tools fmt license linter
-      - *notify_slack_on_fail
+      - run: make tools
+      - run: make linter
+
+  run-unit-tests:
+    executor: machine-executor
+    steps:
+      - checkout
+      - run: make run-unit-tests
+    environment:
+      GOIMAGE: << pipeline.parameters.goImage >>
 
   run-tests:
     executor: machine-executor
@@ -42,15 +57,23 @@ jobs:
         default: "run-unit-tests"
     steps:
       - checkout
-      - run: make << parameters.test-to-run >>
+      - run:
+          name: make << parameters.test-to-run >>
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping..."
+              exit 0
+            fi
+            make << parameters.test-to-run >>
+
     environment:
       TEST_RESOURCES: "${HOME}/resources/"
-      ARANGODB: gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly
-      VERBOSE: 1
-      GOIMAGE: gcr.io/gcr-for-testing/golang:1.20.7
-      ALPINE_IMAGE: gcr.io/gcr-for-testing/alpine:3.17
-      STARTER: arangodb/arangodb-starter:latest
+      ARANGODB: << pipeline.parameters.arangodbImage >>
+      GOIMAGE: << pipeline.parameters.goImage >>
+      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
+      STARTER: << pipeline.parameters.starterImage >>
       TEST_DISALLOW_UNKNOWN_FIELDS: false
+      VERBOSE: 1
 
   download-demo-data:
     executor: machine-executor
@@ -59,23 +82,55 @@ jobs:
       - run:
           name: Download itzpapalotl demo foxx service
           command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping..."
+              exit 0
+            fi
             if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
               curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
 
 workflows:
+  version: 2
+
   run_tests:
     jobs:
-      - download-demo-data
+      - check-code
+      - run-unit-tests:
+          requires:
+            - check-code
+      - download-demo-data:
+          requires:
+            - run-unit-tests
+
       - run-tests:
           name: Test V1 single
           requires:
             - download-demo-data
           test-to-run: run-tests-single
       - run-tests:
+          name: Test V1 cluster
+          requires:
+            - download-demo-data
+          test-to-run: run-tests-cluster
+      - run-tests:
+          name: Test V1 resilientsingle
+          requires:
+            - download-demo-data
+          test-to-run: run-tests-resilientsingle
+
+      - run-tests:
           name: Test V2 single
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
-
-  version: 2
+      - run-tests:
+          name: Test V2 cluster
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster
+      - run-tests:
+          name: Test V2 resilientsingle
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-resilientsingle
