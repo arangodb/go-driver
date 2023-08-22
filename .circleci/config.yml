@@ -49,12 +49,12 @@ jobs:
     environment:
       GOIMAGE: << pipeline.parameters.goImage >>
 
-  run-tests:
+  run-integration-tests:
     executor: machine-executor
     parameters:
       test-to-run:
         type: string
-        default: "run-unit-tests"
+        default: "run-tests-single"
     steps:
       - checkout
       - run:
@@ -65,7 +65,6 @@ jobs:
               exit 0
             fi
             make << parameters.test-to-run >>
-
     environment:
       TEST_RESOURCES: "${HOME}/resources/"
       ARANGODB: << pipeline.parameters.arangodbImage >>
@@ -114,33 +113,33 @@ workflows:
           requires:
             - run-unit-tests
 
-      - run-tests:
+      - run-integration-tests:
           name: Test V1 single
           requires:
             - download-demo-data
           test-to-run: run-tests-single
-      - run-tests:
+      - run-integration-tests:
           name: Test V1 cluster
           requires:
             - download-demo-data
           test-to-run: run-tests-cluster
-      - run-tests:
+      - run-integration-tests:
           name: Test V1 resilientsingle
           requires:
             - download-demo-data
           test-to-run: run-tests-resilientsingle
 
-      - run-tests:
+      - run-integration-tests:
           name: Test V2 single
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
-      - run-tests:
+      - run-integration-tests:
           name: Test V2 cluster
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
-      - run-tests:
+      - run-integration-tests:
           name: Test V2 resilientsingle
           requires:
             - download-demo-data
