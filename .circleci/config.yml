@@ -1,0 +1,161 @@
+version: 2.1
+orbs:
+  slack: circleci/slack@4.1
+executors:
+  golang-executor:
+    docker:
+      - image: gcr.io/gcr-for-testing/golang:1.20.7
+  machine-executor:
+    machine:
+      image: ubuntu-2204:current
+      docker_layer_caching: true
+aliases:
+  - &notify_slack_on_fail
+    slack/notify:
+      channel: 'C056RL4BXG9' #status-go channel
+      event: fail
+      template: basic_fail_1
+
+parameters:
+  goImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/golang:1.20.7"
+  arangodbImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly"
+  alpineImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/alpine:3.17"
+  starterImage:
+    type: string
+    default: "arangodb/arangodb-starter:latest"
+
+jobs:
+
+  check-code:
+    executor: golang-executor
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run: make tools
+      - run: make linter
+
+  run-unit-tests:
+    executor: machine-executor
+    steps:
+      - checkout
+      - run: make run-unit-tests
+    environment:
+      GOIMAGE: << pipeline.parameters.goImage >>
+
+  run-tests:
+    executor: machine-executor
+    parameters:
+      test-to-run:
+        type: string
+        default: "run-unit-tests"
+    steps:
+      - checkout
+      - run:
+          name: make << parameters.test-to-run >>
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping..."
+              exit 0
+            fi
+            make << parameters.test-to-run >>
+
+    environment:
+      TEST_RESOURCES: "${HOME}/resources/"
+      ARANGODB: << pipeline.parameters.arangodbImage >>
+      GOIMAGE: << pipeline.parameters.goImage >>
+      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
+      STARTER: << pipeline.parameters.starterImage >>
+      TEST_DISALLOW_UNKNOWN_FIELDS: false
+      VERBOSE: 1
+
+  download-demo-data:
+    executor: machine-executor
+    steps:
+      - run: mkdir -p $HOME/resources
+      - run:
+          name: Download itzpapalotl demo foxx service
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping..."
+              exit 0
+            fi
+            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
+              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+            fi
+
+  vulncheck:
+    executor: golang-executor
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run: make tools
+      - run: make vulncheck
+      - *notify_slack_on_fail
+
+workflows:
+  version: 2
+
+  # Default workflow
+  run_tests:
+    jobs:
+      - check-code
+      - run-unit-tests:
+          requires:
+            - check-code
+      - download-demo-data:
+          requires:
+            - run-unit-tests
+
+      - run-tests:
+          name: Test V1 single
+          requires:
+            - download-demo-data
+          test-to-run: run-tests-single
+      - run-tests:
+          name: Test V1 cluster
+          requires:
+            - download-demo-data
+          test-to-run: run-tests-cluster
+      - run-tests:
+          name: Test V1 resilientsingle
+          requires:
+            - download-demo-data
+          test-to-run: run-tests-resilientsingle
+
+      - run-tests:
+          name: Test V2 single
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-single
+      - run-tests:
+          name: Test V2 cluster
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster
+      - run-tests:
+          name: Test V2 resilientsingle
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-resilientsingle
+
+  # Monthly vulnerability check
+  monthly_vulncheck:
+    jobs:
+      - vulncheck:
+          context:
+            - slack
+    triggers:
+      - schedule:
+          # 8:00 at 1st day of month
+          cron: 0 8 1 * *
+          filters:
+            branches:
+              only: master
