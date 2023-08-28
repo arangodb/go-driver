@@ -69,16 +69,16 @@ func (a analyzer) Database() Database {
 
 func (a analyzer) Remove(ctx context.Context, force bool) error {
 	url := a.db.url("_api", "analyzer", a.Name())
-
-	reqBody := struct {
-		Force bool `json:"force,omitempty"`
-	}{
-		Force: force,
+	var mods []connection.RequestModifier
+	if force {
+		mods = append(mods, connection.WithQuery("force", "true"))
 	}
+
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
-	resp, err := connection.CallDelete(ctx, a.db.connection(), url, &response, append(a.db.modifiers, connection.WithBody(reqBody))...)
+
+	resp, err := connection.CallDelete(ctx, a.db.connection(), url, &response, append(a.db.modifiers, mods...)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
