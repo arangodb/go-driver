@@ -77,7 +77,8 @@ func (a analyzer) Remove(ctx context.Context, force bool) error {
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
-	resp, err := connection.CallDelete(ctx, a.db.connection(), url, &response, append(a.db.modifiers, connection.WithBody(mods))...)
+
+	resp, err := connection.CallDelete(ctx, a.db.connection(), url, &response, append(a.db.modifiers, mods...)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
