@@ -20,32 +20,29 @@
 
 //go:build !auth
 
-package driver_test
+package examples
 
 import (
-	"fmt"
-	"log"
+	"context"
 
 	driver "github.com/arangodb/go-driver"
-	"github.com/arangodb/go-driver/http"
 )
 
-func ExampleNewClient() {
-	// Create an HTTP connection to the database
-	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: []string{"http://localhost:8529"},
-	})
-	if err != nil {
-		log.Fatalf("Failed to create HTTP connection: %v", err)
+func ExampleIsNotFound() {
+	var sampleCollection driver.Collection
+	var result Book
+
+	if _, err := sampleCollection.ReadDocument(nil, "keyDoesNotExist", &result); driver.IsNotFound(err) {
+		// No document with given key exists
 	}
-	// Create a client
-	c, err := driver.NewClient(driver.ClientConfig{
-		Connection: conn,
-	})
-	// Ask the version of the server
-	versionInfo, err := c.Version(nil)
-	if err != nil {
-		log.Fatalf("Failed to get version info: %v", err)
+}
+
+func ExampleIsPreconditionFailed() {
+	var sampleCollection driver.Collection
+	var result Book
+
+	ctx := driver.WithRevision(context.Background(), "an-old-revision")
+	if _, err := sampleCollection.ReadDocument(ctx, "someValidKey", &result); driver.IsPreconditionFailed(err) {
+		// The Document is found, but its revision is incorrect
 	}
-	fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 }

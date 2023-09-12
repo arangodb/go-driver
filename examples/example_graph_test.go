@@ -21,7 +21,7 @@
 //go:build !auth
 
 // This example demonstrates how to create a graph, how to add vertices and edges and how to delete it again.
-package driver_test
+package examples
 
 import (
 	"fmt"
