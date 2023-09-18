@@ -23,16 +23,22 @@
 package examples
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
+	"time"
 
-	driver "github.com/arangodb/go-driver"
-	"github.com/arangodb/go-driver/http"
+	"github.com/arangodb/go-driver"
+	drviverHttp "github.com/arangodb/go-driver/http"
 )
 
+// ExampleNewClient shows how to create the simple client with a single endpoint
+// By default, the client will use the http.DefaultTransport configuration
 func ExampleNewClient() {
 	// Create an HTTP connection to the database
-	conn, err := http.NewConnection(http.ConnectionConfig{
+	conn, err := drviverHttp.NewConnection(drviverHttp.ConnectionConfig{
 		Endpoints: []string{"http://localhost:8529"},
 	})
 	if err != nil {
@@ -48,4 +54,42 @@ func ExampleNewClient() {
 		log.Fatalf("Failed to get version info: %v", err)
 	}
 	fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
+}
+
+// ExampleNewClientWithAuthentication shows how to create the client with custom connection configuration
+func ExampleNewConnection() {
+	// Create an HTTP connection to the database
+	conn, err := drviverHttp.NewConnection(drviverHttp.ConnectionConfig{
+		Endpoints: []string{"http://localhost:8529"},
+		Transport: NewConnectionTransport(),
+	})
+	if err != nil {
+		log.Fatalf("Failed to create HTTP connection: %v", err)
+	}
+	// Create a client
+	c, err := driver.NewClient(driver.ClientConfig{
+		Connection: conn,
+	})
+	// Ask the version of the server
+	versionInfo, err := c.Version(nil)
+	if err != nil {
+		log.Fatalf("Failed to get version info: %v", err)
+	}
+	fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
+}
+
+// NewConnectionTransport creates a new http.RoundTripper (values are copied from http.DefaultTransport)
+func NewConnectionTransport() http.RoundTripper {
+	return &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 }
