@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,34 +18,40 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 
-//go:build !auth
-
 package driver_test
 
 import (
-	"fmt"
-	"log"
+	"runtime"
+	"testing"
+	"time"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
 
-func ExampleNewClient() {
-	// Create an HTTP connection to the database
-	conn, err := http.NewConnection(http.ConnectionConfig{
-		Endpoints: []string{"http://localhost:8529"},
+func TestNewClient(t *testing.T) {
+	mockConn, err := http.NewConnection(http.ConnectionConfig{
+		Endpoints: []string{"localhost"},
 	})
-	if err != nil {
-		log.Fatalf("Failed to create HTTP connection: %v", err)
+	require.NoError(t, err)
+
+	cfg := driver.ClientConfig{
+		Connection:                   mockConn,
+		SynchronizeEndpointsInterval: time.Second * 20,
 	}
-	// Create a client
-	c, err := driver.NewClient(driver.ClientConfig{
-		Connection: conn,
-	})
-	// Ask the version of the server
-	versionInfo, err := c.Version(nil)
-	if err != nil {
-		log.Fatalf("Failed to get version info: %v", err)
+
+	var clients = make(map[int]driver.Client)
+
+	before := runtime.NumGoroutine()
+	for i := 0; i < 30; i++ {
+		c, err := driver.NewClient(cfg)
+		require.NoError(t, err, "iter %d", i)
+
+		clients[i] = c
 	}
-	fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
+
+	after := runtime.NumGoroutine()
+	require.Less(t, after-before, 32)
 }

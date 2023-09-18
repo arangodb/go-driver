@@ -20,7 +20,7 @@
 
 //go:build !auth
 
-package driver_test
+package examples
 
 import (
 	"context"

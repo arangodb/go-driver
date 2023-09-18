@@ -175,7 +175,7 @@ run-unit-tests: run-v2-unit-tests
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
-		go test $(TESTOPTIONS) $(REPOPATH)/http $(REPOPATH)/agency $(REPOPATH)/vst/protocol
+		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/agency $(REPOPATH)/vst/protocol
 
 run-v2-unit-tests:
 	@$(DOCKER_CMD) \

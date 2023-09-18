@@ -20,23 +20,26 @@
 
 //go:build !auth
 
-// This example demonstrates how to create a single document.
-package driver_test
+// This example demonstrates how to create multiple documents at once.
+package examples
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	"strings"
 
-	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 )
 
-type Book struct {
-	Title   string `json:"title"`
-	NoPages int    `json:"no_pages"`
+type User struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
 }
 
-func Example_createDocument() {
+func Example_createDocuments() {
+	flag.Parse()
 	conn, err := http.NewConnection(http.ConnectionConfig{
 		Endpoints: []string{"http://localhost:8529"},
 	})
@@ -48,36 +51,38 @@ func Example_createDocument() {
 	})
 
 	// Create database
-	db, err := c.CreateDatabase(nil, "examples_books", nil)
+	db, err := c.CreateDatabase(nil, "examples_users", nil)
 	if err != nil {
 		log.Fatalf("Failed to create database: %v", err)
 	}
 
 	// Create collection
-	col, err := db.CreateCollection(nil, "books", nil)
+	col, err := db.CreateCollection(nil, "users", nil)
 	if err != nil {
 		log.Fatalf("Failed to create collection: %v", err)
 	}
 
-	// Create document
-	book := Book{
-		Title:   "ArangoDB Cookbook",
-		NoPages: 257,
+	// Create documents
+	users := []User{
+		{
+			Name: "John",
+			Age:  65,
+		},
+		{
+			Name: "Tina",
+			Age:  25,
+		},
+		{
+			Name: "George",
+			Age:  31,
+		},
 	}
-	meta, err := col.CreateDocument(nil, book)
+	metas, errs, err := col.CreateDocuments(nil, users)
 	if err != nil {
-		log.Fatalf("Failed to create document: %v", err)
+		log.Fatalf("Failed to create documents: %v", err)
+	} else if err := errs.FirstNonNil(); err != nil {
+		log.Fatalf("Failed to create documents: first error: %v", err)
 	}
-	fmt.Printf("Created document in collection '%s' in database '%s'\n", col.Name(), db.Name())
 
-	// Read the document back
-	var result Book
-	if _, err := col.ReadDocument(nil, meta.Key, &result); err != nil {
-		log.Fatalf("Failed to read document: %v", err)
-	}
-	fmt.Printf("Read book '%+v'\n", result)
-
-	// Output:
-	// Created document in collection 'books' in database 'examples_books'
-	// Read book '{Title:ArangoDB Cookbook NoPages:257}'
+	fmt.Printf("Created documents with keys '%s' in collection '%s' in database '%s'\n", strings.Join(metas.Keys(), ","), col.Name(), db.Name())
 }
