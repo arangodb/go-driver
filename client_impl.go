@@ -106,6 +106,7 @@ func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error
 	return nil
 }
 
+// Deprecated: should not be called in new code.
 // autoSynchronizeEndpoints performs automatic endpoint synchronization.
 func (c *client) autoSynchronizeEndpoints(interval time.Duration) {
 	for {
