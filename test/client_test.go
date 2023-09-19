@@ -386,6 +386,11 @@ func waitUntilServerAvailable(ctx context.Context, c driver.Client, t testEnv, d
 			return false, nil
 		}
 
+		if driver.IsUnauthorized(err) {
+			t.Logf("Unauthorised: %s, endpoints: %v", describe(err), c.Connection().Endpoints())
+			return false, nil
+		}
+
 		if driver.IsArangoErrorWithCode(err, 503) {
 			t.Logf("Retry. Service not ready: %s", describe(err))
 			return false, nil
