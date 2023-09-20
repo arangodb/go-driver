@@ -45,7 +45,8 @@ func TestNewClient(t *testing.T) {
 	var clients = make(map[int]driver.Client)
 
 	before := runtime.NumGoroutine()
-	for i := 0; i < 30; i++ {
+	const iterations = 30
+	for i := 0; i < iterations; i++ {
 		c, err := driver.NewClient(cfg)
 		require.NoError(t, err, "iter %d", i)
 
@@ -53,5 +54,8 @@ func TestNewClient(t *testing.T) {
 	}
 
 	after := runtime.NumGoroutine()
-	require.Less(t, after-before, 32)
+
+	// SynchronizeEndpointsInterval feature has a bug where new go-routine would be created per each call to NewClient
+	// This feature should not be used. The test is present here only to document this behaviour.
+	require.Equal(t, after-before, iterations)
 }
