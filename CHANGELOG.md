@@ -26,6 +26,7 @@
 - Bugfix: Force analyzer removal
 - Move examples to separate package
 - Deprecate ClientConfig.SynchronizeEndpointsInterval due to bug in implementation
+- Provide protocol info via ALPN when using VST connection
 
 ## [1.6.0](https://github.com/arangodb/go-driver/tree/v1.6.0) (2023-05-30)
 - Add ErrArangoDatabaseNotFound and IsExternalStorageError helper to v2

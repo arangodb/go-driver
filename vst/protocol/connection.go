@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package protocol
 
@@ -28,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -53,10 +52,10 @@ const (
 	maxRecentErrors     = 64
 )
 
-var (
-	vstProtocolHeader1_0 = []byte("VST/1.0\r\n\r\n")
-	vstProtocolHeader1_1 = []byte("VST/1.1\r\n\r\n")
-)
+func getProtocolHeader(p string) []byte {
+	p = strings.ToUpper(p)
+	return []byte(p + "\r\n\r\n")
+}
 
 // dial opens a new connection to the server on the given address.
 func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, error) {
@@ -72,24 +71,21 @@ func dial(version Version, addr string, tlsConfig *tls.Config) (*Connection, err
 		tcpConn.SetNoDelay(true)
 	}
 
+	proto, err := version.asString()
+	if err != nil {
+		return nil, driver.WithStack(err)
+	}
+
 	// Add TLS if needed
 	if tlsConfig != nil {
+		tlsConfig.NextProtos = append(tlsConfig.NextProtos, proto)
 		tlsConn := tls.Client(conn, tlsConfig)
 		conn = tlsConn
 	}
 
 	// Send protocol header
-	switch version {
-	case Version1_0:
-		if _, err := conn.Write(vstProtocolHeader1_0); err != nil {
-			return nil, driver.WithStack(err)
-		}
-	case Version1_1:
-		if _, err := conn.Write(vstProtocolHeader1_1); err != nil {
-			return nil, driver.WithStack(err)
-		}
-	default:
-		return nil, driver.WithStack(fmt.Errorf("Unknown protocol version %d", int(version)))
+	if _, err := conn.Write(getProtocolHeader(proto)); err != nil {
+		return nil, driver.WithStack(err)
 	}
 
 	// prepare connection
