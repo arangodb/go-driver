@@ -3,6 +3,8 @@
 
 #Temporary tests files
 .tmp
+junit-v1.xml
+junit-v2.xml
 
 #IDE's files
 .idea

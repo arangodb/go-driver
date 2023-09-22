@@ -397,13 +397,13 @@ __test_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/ \
-		$(DOCKER_RUN_CMD) && echo "success!" || ( \
-			echo "failure! \n\nARANGODB-STARTER logs:"; \
-			docker logs ${TESTCONTAINER}-s; \
-			echo "\nARANGODB logs:"; \
-			docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+		$(DOCKER_RUN_CMD) | $(TMPDIR)/bin/go-junit-report -iocopy -set-exit-code -out junit-v1.xml && echo "success!" || ( \
+			echo "failure!\n\n"; \
+			echo "ARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
 			echo "\nV1 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n"; \
 			exit 1)
+
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
 
@@ -424,11 +424,10 @@ __test_v2_go_test:
 		-e GODEBUG=tls13=1 \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
 		-w /usr/code/v2/ \
-		$(DOCKER_V2_RUN_CMD) && echo "success!" || ( \
-		    echo "failure! \n\nARANGODB-STARTER logs:"; \
-		    docker logs ${TESTCONTAINER}-s; \
-			echo "\nARANGODB logs:"; \
-			docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
+		$(DOCKER_V2_RUN_CMD) | $(TMPDIR)/bin/go-junit-report -iocopy -set-exit-code -out junit-v2.xml && echo "success!" || ( \
+		    echo "failure! \n\n"; \
+		    echo "ARANGODB-STARTER logs:"; docker logs ${TESTCONTAINER}-s; \
+			echo "\nARANGODB logs:"; docker ps -f name=${TESTCONTAINER}-s- -q | xargs -L 1 docker logs; \
 			echo "\nV2 Tests with ARGS: TEST_MODE=${TEST_MODE} TEST_AUTH=${TEST_AUTH} TEST_CONTENT_TYPE=${TEST_CONTENT_TYPE} TEST_SSL=${TEST_SSL} TEST_CONNECTION=${TEST_CONNECTION} TEST_CVERSION=${TEST_CVERSION}\n\n"; \
 			exit 1)
 
@@ -483,6 +482,8 @@ run-benchmarks-single-vpack-no-auth:
 
 .PHONY: tools
 tools: __dir_setup
+	@echo ">> Fetching go-junit-report"
+	@GOBIN=$(TMPDIR)/bin go install github.com/jstemmer/go-junit-report/v2@v2.0.0
 	@echo ">> Fetching golangci-lint linter"
 	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 	@echo ">> Fetching goimports"
