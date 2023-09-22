@@ -57,6 +57,7 @@ jobs:
         default: "run-tests-single"
     steps:
       - checkout
+      - run: make tools
       - run:
           name: make << parameters.test-to-run >>
           command: |
