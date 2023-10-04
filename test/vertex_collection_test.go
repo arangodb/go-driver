@@ -188,3 +188,51 @@ func TestRemoveVertexCollection(t *testing.T) {
 	assertCollection(nil, db, "friends", t)
 
 }
+
+// TestRenameVertexCollection creates a graph and then adds an vertex collection in it and then renames the vertex collection.
+func TestRenameVertexCollection(t *testing.T) {
+	c := createClient(t, nil)
+
+	//Run only in single server
+	skipNoSingle(c, t)
+
+	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
+	name := "test_rename_vertex_collection"
+	g, err := db.CreateGraphV2(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
+	}
+
+	// Now create an vertex collection
+	colName := "friends"
+	vc, err := g.CreateVertexCollection(nil, colName)
+	if err != nil {
+		t.Errorf("CreateVertexCollection failed: %s", describe(err))
+	} else if vc.Name() != "friends" {
+		t.Errorf("Invalid name, expected 'friends', got '%s'", vc.Name())
+	}
+
+	// Friends vertex collection must exits
+	if found, err := g.VertexCollectionExists(nil, colName); err != nil {
+		t.Errorf("VertexCollectionExists failed: %s", describe(err))
+	} else if !found {
+		t.Errorf("VertexCollectionExists return false, expected true")
+	}
+
+	// Rename vertex collection
+	newName := "old_friends"
+	if err := vc.Rename(nil, newName); err != nil {
+		t.Errorf("Rename failed: %s", describe(err))
+	}
+
+	// Friends vertex collection must NOT exits
+	if found, err := g.VertexCollectionExists(nil, colName); err != nil {
+		t.Errorf("VertexCollectionExists failed: %s", describe(err))
+	} else if found {
+		t.Errorf("VertexCollectionExists return true, expected false")
+	}
+
+	// Collection must still exist in database
+	assertCollection(nil, db, newName, t)
+
+}
