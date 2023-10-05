@@ -112,6 +112,8 @@ type ClientConfig struct {
 	Connection Connection
 	// Authentication implements authentication on the server.
 	Authentication Authentication
+
+	// Deprecated: using non-zero duration causes routine leak. Please create your own implementation using Client.SynchronizeEndpoints2
 	// SynchronizeEndpointsInterval is the interval between automatic synchronization of endpoints.
 	// If this value is 0, no automatic synchronization is performed.
 	// If this value is > 0, automatic synchronization is started on a go routine.

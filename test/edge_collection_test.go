@@ -278,3 +278,50 @@ func TestSetVertexConstraints(t *testing.T) {
 		}
 	}
 }
+
+// TestRenameEdgeCollection creates a graph and then adds an edge collection in it and then renames the edge collection.
+func TestRenameEdgeCollection(t *testing.T) {
+	c := createClient(t, nil)
+
+	//Run only in single server
+	skipNoSingle(c, t)
+
+	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
+	name := "test_rename_edge_collection"
+	g, err := db.CreateGraphV2(nil, name, nil)
+	if err != nil {
+		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
+	}
+
+	// Now create an edge collection
+	colName := "rename_edge_collection"
+	ec, err := g.CreateEdgeCollection(nil, colName, driver.VertexConstraints{From: []string{"person"}, To: []string{"person"}})
+	if err != nil {
+		t.Fatalf("CreateEdgeCollection failed: %s", describe(err))
+	} else if ec.Name() != colName {
+		t.Errorf("Invalid name, expected '%s', got '%s'", colName, ec.Name())
+	}
+
+	// Collection must exist
+	if found, err := g.EdgeCollectionExists(nil, colName); err != nil {
+		t.Errorf("EdgeCollectionExists failed: %s", describe(err))
+	} else if !found {
+		t.Errorf("EdgeCollectionExists return false, expected true")
+	}
+
+	// Rename edge collection to new name
+	newColName := "rename_edge_collection_new"
+	if err := ec.Rename(nil, newColName); err != nil {
+		t.Errorf("Rename failed: %s", describe(err))
+	}
+
+	// Original edge collection must NOT exits
+	if found, err := g.EdgeCollectionExists(nil, colName); err != nil {
+		t.Errorf("EdgeCollectionExists failed: %s", describe(err))
+	} else if found {
+		t.Errorf("EdgeCollectionExists return true, expected false")
+	}
+
+	// Collection must still exist in database
+	assertCollection(nil, db, newColName, t)
+}
