@@ -129,8 +129,7 @@ func Test_DatabaseCollectionDocReplaceSilent(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					// TODO cluster mode is broken https://arangodb.atlassian.net/browse/BTS-1302
-					requireSingleMode(t)
+					skipBelowVersion(client, ctx, "3.12", t)
 
 					doc := DocWithRev{
 						Name: "test-silent",
