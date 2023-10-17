@@ -23,6 +23,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"strings"
 	"testing"
 
@@ -167,7 +168,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 	c := createClient(t, nil)
 	databaseExtendedNamesRequired(t, c)
 
-	dbName := "\u006E\u0303\u00f1"
+	dbName := "\u006E\u0303\u00f1" + uuid.New().String()
 	normalized := norm.NFC.String(dbName)
 	ctx := context.Background()
 	_, err := c.CreateDatabase(ctx, dbName, nil)
