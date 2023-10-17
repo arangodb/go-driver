@@ -23,11 +23,11 @@ package test
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"strings"
 	"testing"
 
 	"github.com/dchest/uniuri"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/unicode/norm"
 
