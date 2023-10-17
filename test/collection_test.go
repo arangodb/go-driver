@@ -23,6 +23,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -211,19 +212,10 @@ func TestCollection_ComputedValues(t *testing.T) {
 		createdAtValue, createdAtIsPresent := readDoc["createdAt"]
 		require.True(t, createdAtIsPresent)
 
-		// Verify that the computed value is a valid date
-		var createdAtValueInt64 int64
-
-		switch cav := createdAtValue.(type) {
-		case int64:
-			createdAtValueInt64 = cav
-		case float64:
-			createdAtValueInt64 = int64(cav)
-		case uint64:
-			createdAtValueInt64 = int64(cav)
-		default:
-			t.Fatalf("Unexpected type of createdAt value: %T", createdAtValue)
-		}
+		t.Logf("createdAtValue raw value: %v", createdAtValue)
+		createdAtValueInt64, err := parseInt64FromInterface(createdAtValue)
+		require.NoError(t, err)
+		t.Logf("createdAtValue parsed value: %v", createdAtValueInt64)
 
 		tm := time.Unix(createdAtValueInt64, 0)
 		require.True(t, tm.After(time.Now().Add(-time.Second)))
@@ -412,6 +404,23 @@ func TestCreateCollectionWithShardingStrategy(t *testing.T) {
 				t.Errorf("Collection does not have the correct sharding strategy value, expected `%s`, found `%s`", driver.ShardingStrategyCommunityCompat, prop.ShardingStrategy)
 			}
 		}
+	}
+}
+
+func parseInt64FromInterface(value interface{}) (int64, error) {
+	switch v := value.(type) {
+	case int:
+		return int64(v), nil
+	case int8, int16, int32, int64:
+		return v.(int64), nil
+	case uint, uint8, uint16, uint32, uint64:
+		return int64(v.(uint64)), nil
+	case float32, float64:
+		return int64(v.(float64)), nil
+	case string:
+		return strconv.ParseInt(v, 10, 64)
+	default:
+		return 0, fmt.Errorf("value is of type %T, not convertible to int64", v)
 	}
 }
 
