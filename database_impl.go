@@ -50,7 +50,7 @@ type database struct {
 
 // relPath creates the relative path to this database (`_db/<name>`)
 func (d *database) relPath() string {
-	escapedName := pathEscape(d.name, d.conn)
+	escapedName := PathEscape(d.name, d.conn)
 	return path.Join("_db", escapedName)
 }
 
@@ -111,7 +111,7 @@ func (d *database) EngineInfo(ctx context.Context) (EngineInfo, error) {
 // Remove removes the entire database.
 // If the database does not exist, a NotFoundError is returned.
 func (d *database) Remove(ctx context.Context) error {
-	req, err := d.conn.NewRequest("DELETE", path.Join("_db/_system/_api/database", pathEscape(d.name, d.conn)))
+	req, err := d.conn.NewRequest("DELETE", path.Join("_db/_system/_api/database", PathEscape(d.name, d.conn)))
 	if err != nil {
 		return WithStack(err)
 	}

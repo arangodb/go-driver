@@ -24,20 +24,26 @@ package driver
 
 import "net/url"
 
-// pathEscape the given value for use in a URL path.
-func pathEscape(s string, c Connection) string {
+// PathEscape the given value for use in a URL path.
+func PathEscape(s string, c Connection) string {
 	if c != nil {
-		if c.Protocols().Contains(ProtocolHTTP) {
-			return url.PathEscape(s)
+		if c.Protocols().ContainsAny(ProtocolVST1_0, ProtocolVST1_1) {
+			// For VST we do not escape the URL params
+			return s
 		}
 	}
 
-	// For VST we do not escape the URL params
-	return s
+	return url.PathEscape(s)
 }
 
-// pathUnescape unescapes the given value for use in a URL path.
-func pathUnescape(s string) string {
+// PathUnescape unescapes the given value for use in a URL path.
+func PathUnescape(s string, c Connection) string {
+	if c != nil {
+		if c.Protocols().ContainsAny(ProtocolVST1_0, ProtocolVST1_1) {
+			// For VST we do not escape the URL params
+			return s
+		}
+	}
 	r, _ := url.PathUnescape(s)
 	return r
 }

@@ -78,14 +78,14 @@ func (id DocumentID) IsEmpty() bool {
 // Collection returns the collection part of the ID.
 func (id DocumentID) Collection() string {
 	parts := strings.Split(string(id), "/")
-	return pathUnescape(parts[0])
+	return PathUnescape(parts[0], nil)
 }
 
 // Key returns the key part of the ID.
 func (id DocumentID) Key() string {
 	parts := strings.Split(string(id), "/")
 	if len(parts) == 2 {
-		return pathUnescape(parts[1])
+		return PathUnescape(parts[1], nil)
 	}
 	return ""
 }

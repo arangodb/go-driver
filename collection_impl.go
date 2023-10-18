@@ -52,7 +52,7 @@ type collection struct {
 
 // relPath creates the relative path to this collection (`_db/<db-name>/_api/<api-name>/<col-name>`)
 func (c *collection) relPath(apiName string) string {
-	escapedName := pathEscape(c.name, c.conn)
+	escapedName := PathEscape(c.name, c.conn)
 	return path.Join(c.db.relPath(), "_api", apiName, escapedName)
 }
 

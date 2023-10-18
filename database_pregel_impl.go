@@ -51,7 +51,7 @@ func (d *database) StartJob(ctx context.Context, options PregelJobOptions) (stri
 }
 
 func (d *database) GetJob(ctx context.Context, id string) (*PregelJob, error) {
-	escapedId := pathEscape(id, d.conn)
+	escapedId := PathEscape(id, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/control_pregel", escapedId))
 	if err != nil {
 		return nil, WithStack(err)
@@ -100,7 +100,7 @@ func (d *database) GetJobs(ctx context.Context) ([]*PregelJob, error) {
 }
 
 func (d *database) CancelJob(ctx context.Context, id string) error {
-	escapedId := pathEscape(id, d.conn)
+	escapedId := PathEscape(id, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/control_pregel", escapedId))
 	if err != nil {
 		return WithStack(err)

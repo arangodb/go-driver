@@ -32,7 +32,7 @@ func (c *collection) DocumentExists(ctx context.Context, key string) (bool, erro
 	if err := validateKey(key); err != nil {
 		return false, WithStack(err)
 	}
-	escapedKey := pathEscape(key, c.conn)
+	escapedKey := PathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("HEAD", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return false, WithStack(err)
@@ -53,7 +53,7 @@ func (c *collection) ReadDocument(ctx context.Context, key string, result interf
 	if err := validateKey(key); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	escapedKey := pathEscape(key, c.conn)
+	escapedKey := PathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("GET", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -238,7 +238,7 @@ func (c *collection) UpdateDocument(ctx context.Context, key string, update inte
 	if update == nil {
 		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "update nil"})
 	}
-	escapedKey := pathEscape(key, c.conn)
+	escapedKey := PathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("PATCH", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -347,7 +347,7 @@ func (c *collection) ReplaceDocument(ctx context.Context, key string, document i
 	if document == nil {
 		return DocumentMeta{}, WithStack(InvalidArgumentError{Message: "document nil"})
 	}
-	escapedKey := pathEscape(key, c.conn)
+	escapedKey := PathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)
@@ -452,7 +452,7 @@ func (c *collection) RemoveDocument(ctx context.Context, key string) (DocumentMe
 	if err := validateKey(key); err != nil {
 		return DocumentMeta{}, WithStack(err)
 	}
-	escapedKey := pathEscape(key, c.conn)
+	escapedKey := PathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath("document"), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, WithStack(err)

@@ -39,7 +39,7 @@ func (c *client) AsyncJob() AsyncJobService {
 }
 
 func (c *clientAsyncJob) List(ctx context.Context, jobType AsyncJobStatusType, opts *AsyncJobListOptions) ([]string, error) {
-	req, err := c.conn.NewRequest("GET", path.Join(asyncJobAPI, pathEscape(string(jobType), c.conn)))
+	req, err := c.conn.NewRequest("GET", path.Join(asyncJobAPI, PathEscape(string(jobType), c.conn)))
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -68,7 +68,7 @@ func (c *clientAsyncJob) List(ctx context.Context, jobType AsyncJobStatusType, o
 }
 
 func (c *clientAsyncJob) Status(ctx context.Context, jobID string) (AsyncJobStatusType, error) {
-	req, err := c.conn.NewRequest("GET", path.Join(asyncJobAPI, pathEscape(jobID, c.conn)))
+	req, err := c.conn.NewRequest("GET", path.Join(asyncJobAPI, PathEscape(jobID, c.conn)))
 	if err != nil {
 		return "nil", WithStack(err)
 	}
@@ -93,7 +93,7 @@ type cancelResponse struct {
 }
 
 func (c *clientAsyncJob) Cancel(ctx context.Context, jobID string) (bool, error) {
-	req, err := c.conn.NewRequest("PUT", path.Join(asyncJobAPI, pathEscape(jobID, c.conn), "cancel"))
+	req, err := c.conn.NewRequest("PUT", path.Join(asyncJobAPI, PathEscape(jobID, c.conn), "cancel"))
 	if err != nil {
 		return false, WithStack(err)
 	}
@@ -122,17 +122,17 @@ func (c *clientAsyncJob) Delete(ctx context.Context, deleteType AsyncJobDeleteTy
 	p := ""
 	switch deleteType {
 	case DeleteAllJobs:
-		p = path.Join(asyncJobAPI, pathEscape(string(deleteType), c.conn))
+		p = path.Join(asyncJobAPI, PathEscape(string(deleteType), c.conn))
 	case DeleteExpiredJobs:
 		if opts == nil || opts.Stamp.IsZero() {
 			return false, WithStack(InvalidArgumentError{Message: "stamp must be set when deleting expired jobs"})
 		}
-		p = path.Join(asyncJobAPI, pathEscape(string(deleteType), c.conn))
+		p = path.Join(asyncJobAPI, PathEscape(string(deleteType), c.conn))
 	case DeleteSingleJob:
 		if opts == nil || opts.JobID == "" {
 			return false, WithStack(InvalidArgumentError{Message: "jobID must be set when deleting a single job"})
 		}
-		p = path.Join(asyncJobAPI, pathEscape(opts.JobID, c.conn))
+		p = path.Join(asyncJobAPI, PathEscape(opts.JobID, c.conn))
 	}
 
 	req, err := c.conn.NewRequest("DELETE", p)

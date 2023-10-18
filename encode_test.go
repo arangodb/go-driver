@@ -18,17 +18,16 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 
-package driver
+package driver_test
 
 import (
-	"crypto/tls"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/vst"
-	"github.com/arangodb/go-driver/vst/protocol"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPathEscape(t *testing.T) {
@@ -38,7 +37,7 @@ func TestPathEscape(t *testing.T) {
 			"The Donald": "The%20Donald",
 		}
 		for input, expected := range tests {
-			result := pathEscape(input, prepareHTTPConnection())
+			result := driver.PathEscape(input, prepareHTTPConnection())
 			require.Equal(t, expected, result)
 		}
 	})
@@ -48,30 +47,25 @@ func TestPathEscape(t *testing.T) {
 			"The Donald": "The Donald",
 		}
 		for input, expected := range tests {
-			result := pathEscape(input, prepareVSTConnection())
+			result := driver.PathEscape(input, prepareVSTConnection())
 			require.Equal(t, expected, result)
 		}
+
 	})
 }
 
-func prepareVSTConnection() Connection {
-	config := vst.ConnectionConfig{
+func prepareHTTPConnection() driver.Connection {
+	config := http.ConnectionConfig{
 		Endpoints: []string{"http://localhost:8529"},
-		TLSConfig: &tls.Config{InsecureSkipVerify: true},
-		Transport: protocol.TransportConfig{
-			Version: protocol.Version1_0,
-		},
 	}
-	conn, _ := vst.NewConnection(config)
+	conn, _ := http.NewConnection(config)
 	return conn
 }
 
-func prepareHTTPConnection() Connection {
-	config := http.ConnectionConfig{
-		Endpoints:   []string{"http://localhost:8529"},
-		TLSConfig:   &tls.Config{InsecureSkipVerify: true},
-		ContentType: ContentTypeJSON,
+func prepareVSTConnection() driver.Connection {
+	config := vst.ConnectionConfig{
+		Endpoints: []string{"http://localhost:8529"},
 	}
-	conn, _ := http.NewConnection(config)
+	conn, _ := vst.NewConnection(config)
 	return conn
 }

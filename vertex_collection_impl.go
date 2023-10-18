@@ -48,7 +48,7 @@ type vertexCollection struct {
 
 // relPath creates the relative path to this edge collection (`_db/<db-name>/_api/gharial/<graph-name>/vertex/<collection-name>`)
 func (c *vertexCollection) relPath() string {
-	escapedName := pathEscape(c.name, c.conn)
+	escapedName := PathEscape(c.name, c.conn)
 	return path.Join(c.g.relPath(), "vertex", escapedName)
 }
 

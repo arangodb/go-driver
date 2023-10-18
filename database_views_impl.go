@@ -41,7 +41,7 @@ type getViewResponse struct {
 // View opens a connection to an existing view within the database.
 // If no collection with given name exists, an NotFoundError is returned.
 func (d *database) View(ctx context.Context, name string) (View, error) {
-	escapedName := pathEscape(name, d.conn)
+	escapedName := PathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/view", escapedName))
 	if err != nil {
 		return nil, WithStack(err)
@@ -67,7 +67,7 @@ func (d *database) View(ctx context.Context, name string) (View, error) {
 
 // ViewExists returns true if a view with given name exists within the database.
 func (d *database) ViewExists(ctx context.Context, name string) (bool, error) {
-	escapedName := pathEscape(name, d.conn)
+	escapedName := PathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/view", escapedName))
 	if err != nil {
 		return false, WithStack(err)

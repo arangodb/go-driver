@@ -31,7 +31,7 @@ import (
 // Graph opens a connection to an existing graph within the database.
 // If no graph with given name exists, an NotFoundError is returned.
 func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
-	escapedName := pathEscape(name, d.conn)
+	escapedName := PathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/gharial", escapedName))
 	if err != nil {
 		return nil, WithStack(err)
@@ -56,7 +56,7 @@ func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
 
 // GraphExists returns true if a graph with given name exists within the database.
 func (d *database) GraphExists(ctx context.Context, name string) (bool, error) {
-	escapedName := pathEscape(name, d.conn)
+	escapedName := PathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/gharial", escapedName))
 	if err != nil {
 		return false, WithStack(err)

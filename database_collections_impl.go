@@ -28,7 +28,7 @@ import (
 // Collection opens a connection to an existing collection within the database.
 // If no collection with given name exists, an NotFoundError is returned.
 func (d *database) Collection(ctx context.Context, name string) (Collection, error) {
-	escapedName := pathEscape(name, d.conn)
+	escapedName := PathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/collection", escapedName))
 	if err != nil {
 		return nil, WithStack(err)
@@ -49,7 +49,7 @@ func (d *database) Collection(ctx context.Context, name string) (Collection, err
 
 // CollectionExists returns true if a collection with given name exists within the database.
 func (d *database) CollectionExists(ctx context.Context, name string) (bool, error) {
-	escapedName := pathEscape(name, d.conn)
+	escapedName := PathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/collection", escapedName))
 	if err != nil {
 		return false, WithStack(err)

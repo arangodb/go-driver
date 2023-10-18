@@ -48,7 +48,7 @@ type edgeCollection struct {
 
 // relPath creates the relative path to this edge collection (`_db/<db-name>/_api/gharial/<graph-name>/edge/<collection-name>`)
 func (c *edgeCollection) relPath() string {
-	escapedName := pathEscape(c.name, c.conn)
+	escapedName := PathEscape(c.name, c.conn)
 	return path.Join(c.g.relPath(), "edge", escapedName)
 }
 

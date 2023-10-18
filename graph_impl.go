@@ -60,7 +60,7 @@ func (g *graph) IsSatellite() bool {
 
 // relPath creates the relative path to this graph (`_db/<db-name>/_api/gharial/<graph-name>`)
 func (g *graph) relPath() string {
-	escapedName := pathEscape(g.Name(), g.conn)
+	escapedName := PathEscape(g.Name(), g.conn)
 	return path.Join(g.db.relPath(), "_api", "gharial", escapedName)
 }
 

@@ -55,7 +55,7 @@ type view struct {
 
 // relPath creates the relative path to this view (`_db/<db-name>/_api/view/<view-name>`)
 func (v *view) relPath() string {
-	escapedName := pathEscape(v.name, v.conn)
+	escapedName := PathEscape(v.name, v.conn)
 	return path.Join(v.db.relPath(), "_api", "view", escapedName)
 }
 
