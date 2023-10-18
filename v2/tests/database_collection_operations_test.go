@@ -512,7 +512,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 // with the option --database.extended-names-databases=true.
 func databaseExtendedNamesRequired(t *testing.T, c arangodb.Client, ctx context.Context) {
 	// If the database can be created with the below name then it means that it excepts unicode names.
-	dbName := "\u006E\u0303\u00f1"
+	dbName := "\u006E\u0303\u00f1" + uuid.New().String()
 	normalized := norm.NFC.String(dbName)
 	db, err := c.CreateDatabase(ctx, normalized, nil)
 	if err == nil {

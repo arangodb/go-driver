@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package vst
@@ -149,11 +147,17 @@ func (r *vstRequest) createMessageParts() ([][]byte, error) {
 	if strings.HasPrefix(path, "_db/") {
 		path = path[4:] // Remove '_db/'
 		parts := strings.SplitN(path, "/", 2)
+
+		// ensure database name is not URL-encoded
+		dbName, err := url.QueryUnescape(parts[0])
+		if err != nil {
+			return nil, driver.WithStack(err)
+		}
+		databaseValue = velocypack.NewStringValue(dbName)
+
 		if len(parts) == 1 {
-			databaseValue = velocypack.NewStringValue(parts[0])
 			path = ""
 		} else {
-			databaseValue = velocypack.NewStringValue(parts[0])
 			path = parts[1]
 		}
 	}
@@ -162,18 +166,34 @@ func (r *vstRequest) createMessageParts() ([][]byte, error) {
 	// Create header
 	var b velocypack.Builder
 	b.OpenArray()
-	b.AddValue(velocypack.NewIntValue(1))               // Version
-	b.AddValue(velocypack.NewIntValue(1))               // Type (1=Req)
-	b.AddValue(databaseValue)                           // Database name
-	b.AddValue(velocypack.NewIntValue(r.requestType())) // Request type
-	b.AddValue(velocypack.NewStringValue(path))         // Request
-	b.OpenObject()                                      // Parameters
+
+	// member 0: numeric version of the velocypack protocol. Must always be 1 at the moment.
+	b.AddValue(velocypack.NewIntValue(1))
+
+	// member 1: numeric representation of the VST request type. Must always be 1 at the moment.
+	b.AddValue(velocypack.NewIntValue(1))
+
+	// member 2: string with the database name - this must be the normalized database name, but not URL-encoded in any way!
+	b.AddValue(databaseValue) // Database name
+
+	// member 3: numeric representation of the request type (GET, POST, PUT etc.)
+	b.AddValue(velocypack.NewIntValue(r.requestType()))
+
+	// member 4: string with a relative request path, starting at /
+	// There is no need for this path to contain the database name, as the database name is already transferred in member 2.
+	// There is also no need for the path to contain request parameters (e.g. key=value), as they should be transferred in member 5.
+	b.AddValue(velocypack.NewStringValue(path))
+
+	// member 5:  object with request parameters (e.g. { "foo": "bar", "baz": "qux" }
+	b.OpenObject()
 	for k, v := range r.q {
 		if len(v) > 0 {
 			b.AddKeyValue(k, velocypack.NewStringValue(v[0]))
 		}
 	}
-	b.Close()      // Parameters
+	b.Close()
+
+	// member 6: object with “HTTP” headers (e.g. { "x-arango-async" : "store" }
 	b.OpenObject() // Meta
 	for k, v := range r.hdr {
 		b.AddKeyValue(k, velocypack.NewStringValue(v))
