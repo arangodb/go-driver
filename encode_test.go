@@ -23,11 +23,11 @@ package driver_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
 	"github.com/arangodb/go-driver/vst"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestPathEscape(t *testing.T) {
