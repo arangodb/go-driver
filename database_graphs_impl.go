@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package driver
 
@@ -33,7 +31,7 @@ import (
 // Graph opens a connection to an existing graph within the database.
 // If no graph with given name exists, an NotFoundError is returned.
 func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
-	escapedName := pathEscape(name)
+	escapedName := pathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/gharial", escapedName))
 	if err != nil {
 		return nil, WithStack(err)
@@ -58,7 +56,7 @@ func (d *database) Graph(ctx context.Context, name string) (Graph, error) {
 
 // GraphExists returns true if a graph with given name exists within the database.
 func (d *database) GraphExists(ctx context.Context, name string) (bool, error) {
-	escapedName := pathEscape(name)
+	escapedName := pathEscape(name, d.conn)
 	req, err := d.conn.NewRequest("GET", path.Join(d.relPath(), "_api/gharial", escapedName))
 	if err != nil {
 		return false, WithStack(err)

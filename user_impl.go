@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package driver
@@ -56,7 +54,7 @@ type userData struct {
 
 // relPath creates the relative path to this index (`_api/user/<name>`)
 func (u *user) relPath() string {
-	escapedName := pathEscape(u.data.Name)
+	escapedName := pathEscape(u.data.Name, u.conn)
 	return path.Join("_api", "user", escapedName)
 }
 
@@ -193,7 +191,7 @@ func (u *user) SetDatabaseAccess(ctx context.Context, db Database, access Grant)
 	if err != nil {
 		return WithStack(err)
 	}
-	escapedDbName := pathEscape(dbName)
+	escapedDbName := pathEscape(dbName, u.conn)
 	req, err := u.conn.NewRequest("PUT", path.Join(u.relPath(), "database", escapedDbName))
 	if err != nil {
 		return WithStack(err)
@@ -228,7 +226,7 @@ func (u *user) GetDatabaseAccess(ctx context.Context, db Database) (Grant, error
 	if err != nil {
 		return GrantNone, WithStack(err)
 	}
-	escapedDbName := pathEscape(dbName)
+	escapedDbName := pathEscape(dbName, u.conn)
 	req, err := u.conn.NewRequest("GET", path.Join(u.relPath(), "database", escapedDbName))
 	if err != nil {
 		return GrantNone, WithStack(err)
@@ -260,7 +258,7 @@ func (u *user) RemoveDatabaseAccess(ctx context.Context, db Database) error {
 	if err != nil {
 		return WithStack(err)
 	}
-	escapedDbName := pathEscape(dbName)
+	escapedDbName := pathEscape(dbName, u.conn)
 	req, err := u.conn.NewRequest("DELETE", path.Join(u.relPath(), "database", escapedDbName))
 	if err != nil {
 		return WithStack(err)
@@ -285,8 +283,8 @@ func (u *user) SetCollectionAccess(ctx context.Context, col AccessTarget, access
 	if err != nil {
 		return WithStack(err)
 	}
-	escapedDbName := pathEscape(dbName)
-	escapedColName := pathEscape(colName)
+	escapedDbName := pathEscape(dbName, u.conn)
+	escapedColName := pathEscape(colName, u.conn)
 	req, err := u.conn.NewRequest("PUT", path.Join(u.relPath(), "database", escapedDbName, escapedColName))
 	if err != nil {
 		return WithStack(err)
@@ -318,8 +316,8 @@ func (u *user) GetCollectionAccess(ctx context.Context, col AccessTarget) (Grant
 	if err != nil {
 		return GrantNone, WithStack(err)
 	}
-	escapedDbName := pathEscape(dbName)
-	escapedColName := pathEscape(colName)
+	escapedDbName := pathEscape(dbName, u.conn)
+	escapedColName := pathEscape(colName, u.conn)
 	req, err := u.conn.NewRequest("GET", path.Join(u.relPath(), "database", escapedDbName, escapedColName))
 	if err != nil {
 		return GrantNone, WithStack(err)
@@ -350,8 +348,8 @@ func (u *user) RemoveCollectionAccess(ctx context.Context, col AccessTarget) err
 	if err != nil {
 		return WithStack(err)
 	}
-	escapedDbName := pathEscape(dbName)
-	escapedColName := pathEscape(colName)
+	escapedDbName := pathEscape(dbName, u.conn)
+	escapedColName := pathEscape(colName, u.conn)
 	req, err := u.conn.NewRequest("DELETE", path.Join(u.relPath(), "database", escapedDbName, escapedColName))
 	if err != nil {
 		return WithStack(err)

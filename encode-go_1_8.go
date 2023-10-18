@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,19 +17,21 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 //go:build go1.8
-// +build go1.8
 
 package driver
 
 import "net/url"
 
 // pathEscape the given value for use in a URL path.
-func pathEscape(s string) string {
-	return url.PathEscape(s)
+func pathEscape(s string, c Connection) string {
+	if c.Protocols().Contains(ProtocolHTTP) {
+		return url.PathEscape(s)
+	}
+
+	// For VST we do not escape the URL params
+	return s
 }
 
 // pathUnescape unescapes the given value for use in a URL path.

@@ -51,7 +51,7 @@ func (c *vertexCollection) readDocument(ctx context.Context, key string, result 
 	if err := validateKey(key); err != nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
-	escapedKey := pathEscape(key)
+	escapedKey := pathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("GET", path.Join(c.relPath(), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
@@ -242,7 +242,7 @@ func (c *vertexCollection) updateDocument(ctx context.Context, key string, updat
 	if update == nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "update nil"})
 	}
-	escapedKey := pathEscape(key)
+	escapedKey := pathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("PATCH", path.Join(c.relPath(), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
@@ -361,7 +361,7 @@ func (c *vertexCollection) replaceDocument(ctx context.Context, key string, docu
 	if document == nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(InvalidArgumentError{Message: "document nil"})
 	}
-	escapedKey := pathEscape(key)
+	escapedKey := pathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("PUT", path.Join(c.relPath(), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
@@ -476,7 +476,7 @@ func (c *vertexCollection) removeDocument(ctx context.Context, key string) (Docu
 	if err := validateKey(key); err != nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(err)
 	}
-	escapedKey := pathEscape(key)
+	escapedKey := pathEscape(key, c.conn)
 	req, err := c.conn.NewRequest("DELETE", path.Join(c.relPath(), escapedKey))
 	if err != nil {
 		return DocumentMeta{}, contextSettings{}, WithStack(err)

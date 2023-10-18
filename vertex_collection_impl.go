@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-// Author Tomasz Mielech
 //
 
 package driver
@@ -51,7 +48,7 @@ type vertexCollection struct {
 
 // relPath creates the relative path to this edge collection (`_db/<db-name>/_api/gharial/<graph-name>/vertex/<collection-name>`)
 func (c *vertexCollection) relPath() string {
-	escapedName := pathEscape(c.name)
+	escapedName := pathEscape(c.name, c.conn)
 	return path.Join(c.g.relPath(), "vertex", escapedName)
 }
 

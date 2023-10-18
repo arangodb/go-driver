@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package driver
@@ -57,7 +55,7 @@ type view struct {
 
 // relPath creates the relative path to this view (`_db/<db-name>/_api/view/<view-name>`)
 func (v *view) relPath() string {
-	escapedName := pathEscape(v.name)
+	escapedName := pathEscape(v.name, v.conn)
 	return path.Join(v.db.relPath(), "_api", "view", escapedName)
 }
 

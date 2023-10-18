@@ -132,7 +132,7 @@ func (c *client) clusterEndpoints(ctx context.Context, dbname string) (clusterEn
 	if dbname == "" {
 		url = "_api/cluster/endpoints"
 	} else {
-		url = path.Join("_db", pathEscape(dbname), "_api/cluster/endpoints")
+		url = path.Join("_db", pathEscape(dbname, c.conn), "_api/cluster/endpoints")
 	}
 	req, err := c.conn.NewRequest("GET", url)
 	if err != nil {

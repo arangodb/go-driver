@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
-// Author Tomasz Mielech
 //
 
 package driver
@@ -50,7 +47,7 @@ var ErrBatchClosed = errors.New("Batch already closed")
 
 // CreateBatch creates a "batch" to prevent WAL file removal and to take a snapshot
 func (c *client) CreateBatch(ctx context.Context, db Database, serverID int64, ttl time.Duration) (Batch, error) {
-	req, err := c.conn.NewRequest("POST", path.Join("_db", pathEscape(db.Name()), "_api/replication/batch"))
+	req, err := c.conn.NewRequest("POST", path.Join("_db", pathEscape(db.Name(), c.conn), "_api/replication/batch"))
 	if err != nil {
 		return nil, WithStack(err)
 	}
@@ -81,7 +78,7 @@ func (c *client) CreateBatch(ctx context.Context, db Database, serverID int64, t
 
 // DatabaseInventory Get the inventory of a server containing all collections (with entire details) of a database.
 func (c *client) DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error) {
-	req, err := c.conn.NewRequest("GET", path.Join("_db", pathEscape(db.Name()), "_api/replication/inventory"))
+	req, err := c.conn.NewRequest("GET", path.Join("_db", pathEscape(db.Name(), c.conn), "_api/replication/inventory"))
 	if err != nil {
 		return DatabaseInventory{}, WithStack(err)
 	}

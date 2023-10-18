@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package driver
 
@@ -30,7 +28,7 @@ import (
 // User opens a connection to an existing user.
 // If no user with given name exists, an NotFoundError is returned.
 func (c *client) User(ctx context.Context, name string) (User, error) {
-	escapedName := pathEscape(name)
+	escapedName := pathEscape(name, c.conn)
 	req, err := c.conn.NewRequest("GET", path.Join("_api/user", escapedName))
 	if err != nil {
 		return nil, WithStack(err)
@@ -55,7 +53,7 @@ func (c *client) User(ctx context.Context, name string) (User, error) {
 
 // UserExists returns true if a database with given name exists.
 func (c *client) UserExists(ctx context.Context, name string) (bool, error) {
-	escapedName := pathEscape(name)
+	escapedName := pathEscape(name, c.conn)
 	req, err := c.conn.NewRequest("GET", path.Join("_api", "user", escapedName))
 	if err != nil {
 		return false, WithStack(err)

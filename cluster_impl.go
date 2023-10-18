@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package driver
@@ -66,7 +64,7 @@ func (c *cluster) Health(ctx context.Context) (ClusterHealth, error) {
 
 // DatabaseInventory Get the inventory of the cluster containing all collections (with entire details) of a database.
 func (c *cluster) DatabaseInventory(ctx context.Context, db Database) (DatabaseInventory, error) {
-	req, err := c.conn.NewRequest("GET", path.Join("_db", pathEscape(db.Name()), "_api/replication/clusterInventory"))
+	req, err := c.conn.NewRequest("GET", path.Join("_db", pathEscape(db.Name(), c.conn), "_api/replication/clusterInventory"))
 	if err != nil {
 		return DatabaseInventory{}, WithStack(err)
 	}

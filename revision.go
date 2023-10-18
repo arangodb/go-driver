@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package driver
@@ -167,7 +165,7 @@ func (n *RevisionUInt64) MarshalVPack() (velocypack.Slice, error) {
 // GetRevisionTree retrieves the Revision tree (Merkel tree) associated with the collection.
 func (c *client) GetRevisionTree(ctx context.Context, db Database, batchId, collection string) (RevisionTree, error) {
 
-	req, err := c.conn.NewRequest("GET", path.Join("_db", pathEscape(db.Name()), "_api/replication/revisions/tree"))
+	req, err := c.conn.NewRequest("GET", path.Join("_db", pathEscape(db.Name(), c.conn), "_api/replication/revisions/tree"))
 	if err != nil {
 		return RevisionTree{}, WithStack(err)
 	}
@@ -196,7 +194,7 @@ func (c *client) GetRevisionTree(ctx context.Context, db Database, batchId, coll
 func (c *client) GetRevisionsByRanges(ctx context.Context, db Database, batchId, collection string,
 	minMaxRevision []RevisionMinMax, resume RevisionUInt64) (RevisionRanges, error) {
 
-	req, err := c.conn.NewRequest("PUT", path.Join("_db", pathEscape(db.Name()), "_api/replication/revisions/ranges"))
+	req, err := c.conn.NewRequest("PUT", path.Join("_db", pathEscape(db.Name(), c.conn), "_api/replication/revisions/ranges"))
 	if err != nil {
 		return RevisionRanges{}, WithStack(err)
 	}
@@ -233,7 +231,7 @@ func (c *client) GetRevisionsByRanges(ctx context.Context, db Database, batchId,
 func (c *client) GetRevisionDocuments(ctx context.Context, db Database, batchId, collection string,
 	revisions Revisions) ([]map[string]interface{}, error) {
 
-	req, err := c.conn.NewRequest("PUT", path.Join("_db", pathEscape(db.Name()), "_api/replication/revisions/documents"))
+	req, err := c.conn.NewRequest("PUT", path.Join("_db", pathEscape(db.Name(), c.conn), "_api/replication/revisions/documents"))
 	if err != nil {
 		return nil, WithStack(err)
 	}
