@@ -18,8 +18,6 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 
-//go:build go1.8
-
 package driver
 
 import "net/url"
