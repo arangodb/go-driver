@@ -26,8 +26,10 @@ import "net/url"
 
 // pathEscape the given value for use in a URL path.
 func pathEscape(s string, c Connection) string {
-	if c.Protocols().Contains(ProtocolHTTP) {
-		return url.PathEscape(s)
+	if c != nil {
+		if c.Protocols().Contains(ProtocolHTTP) {
+			return url.PathEscape(s)
+		}
 	}
 
 	// For VST we do not escape the URL params

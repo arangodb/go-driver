@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,22 +17,61 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package driver
 
-import "testing"
+import (
+	"crypto/tls"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/http"
+	"github.com/arangodb/go-driver/vst"
+	"github.com/arangodb/go-driver/vst/protocol"
+)
 
 func TestPathEscape(t *testing.T) {
-	tests := map[string]string{ // Input : Expected-Output
-		"abc":        "abc",
-		"The Donald": "The%20Donald",
-	}
-	for input, expected := range tests {
-		result := pathEscape(input)
-		if result != expected {
-			t.Errorf("pathEscapse failed for '%s': Expected '%s', got '%s'", input, expected, result)
+	t.Run("pathUnescape - HTTP", func(t *testing.T) {
+		tests := map[string]string{
+			"abc":        "abc",
+			"The Donald": "The%20Donald",
 		}
+		for input, expected := range tests {
+			result := pathEscape(input, prepareHTTPConnection())
+			require.Equal(t, expected, result)
+		}
+	})
+	t.Run("pathUnescape - VST", func(t *testing.T) {
+		tests := map[string]string{
+			"abc":        "abc",
+			"The Donald": "The Donald",
+		}
+		for input, expected := range tests {
+			result := pathEscape(input, prepareVSTConnection())
+			require.Equal(t, expected, result)
+		}
+	})
+}
+
+func prepareVSTConnection() Connection {
+	config := vst.ConnectionConfig{
+		Endpoints: []string{"http://localhost:8529"},
+		TLSConfig: &tls.Config{InsecureSkipVerify: true},
+		Transport: protocol.TransportConfig{
+			Version: protocol.Version1_0,
+		},
 	}
+	conn, _ := vst.NewConnection(config)
+	return conn
+}
+
+func prepareHTTPConnection() Connection {
+	config := http.ConnectionConfig{
+		Endpoints:   []string{"http://localhost:8529"},
+		TLSConfig:   &tls.Config{InsecureSkipVerify: true},
+		ContentType: ContentTypeJSON,
+	}
+	conn, _ := http.NewConnection(config)
+	return conn
 }
