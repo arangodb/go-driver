@@ -145,16 +145,16 @@ workflows:
             - download-demo-data
           test-to-run: run-v2-tests-resilientsingle
 
-  # Monthly vulnerability check
-  monthly_vulncheck:
+  # Weekly vulnerability check
+  weekly_vulncheck:
     jobs:
       - vulncheck:
           context:
             - slack
     triggers:
       - schedule:
-          # 8:00 at 1st day of month
-          cron: 0 8 1 * *
+          # 6:00 on every Monday
+          cron: 0 6 * * 1
           filters:
             branches:
               only: master
