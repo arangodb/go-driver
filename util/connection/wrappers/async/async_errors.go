@@ -21,15 +21,17 @@
 package async
 
 import (
+	"errors"
 	"fmt"
 )
+
+var v ErrorAsyncJobInProgress
 
 func IsAsyncJobInProgress(err error) (string, bool) {
 	if err == nil {
 		return "", false
 	}
-
-	if v, ok := err.(ErrorAsyncJobInProgress); ok {
+	if errors.As(err, &v) {
 		return v.jobID, true
 	}
 	return "", false
