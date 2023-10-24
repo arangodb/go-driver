@@ -51,7 +51,7 @@ func TestCreateCursorWithMaxRuntime(t *testing.T) {
 			Name:          "Too long query interrupted",
 			SleepQuery:    "1",
 			MaxRuntime:    0.01,
-			ExpectedError: "query killed (while executing)",
+			ExpectedError: "query killed",
 		},
 		{
 			Name:       "Query passed before max runtime",

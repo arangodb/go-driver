@@ -21,6 +21,7 @@
 package async
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -29,7 +30,8 @@ func IsAsyncJobInProgress(err error) (string, bool) {
 		return "", false
 	}
 
-	if v, ok := err.(ErrorAsyncJobInProgress); ok {
+	var v ErrorAsyncJobInProgress
+	if errors.As(err, &v) {
 		return v.jobID, true
 	}
 	return "", false
