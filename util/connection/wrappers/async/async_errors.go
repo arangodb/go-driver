@@ -41,6 +41,12 @@ type ErrorAsyncJobInProgress struct {
 	jobID string
 }
 
+func NewErrorAsyncJobInProgress(jobID string) ErrorAsyncJobInProgress {
+	return ErrorAsyncJobInProgress{
+		jobID: jobID,
+	}
+}
+
 func (a ErrorAsyncJobInProgress) Error() string {
 	return fmt.Sprintf("Job with ID %s in progress", a.jobID)
 }
