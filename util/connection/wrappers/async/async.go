@@ -65,7 +65,7 @@ func (a asyncConnectionWrapper) Do(ctx context.Context, req driver.Request) (dri
 			}
 
 			// Job is in progress
-			return nil, ErrorAsyncJobInProgress{id}
+			return nil, NewErrorAsyncJobInProgress(id)
 		default:
 			return resp, nil
 		}
@@ -83,7 +83,7 @@ func (a asyncConnectionWrapper) Do(ctx context.Context, req driver.Request) (dri
 			if asyncID := resp.Header(ArangoHeaderAsyncIDKey); len(asyncID) == 0 {
 				return nil, errors.New("missing async key response")
 			} else {
-				return nil, ErrorAsyncJobInProgress{asyncID}
+				return nil, NewErrorAsyncJobInProgress(asyncID)
 			}
 		default:
 			// we expect a 202 status code only
