@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e
 	github.com/coreos/go-iptables v0.6.0
+	github.com/coreos/go-semver v0.3.1
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.1.1

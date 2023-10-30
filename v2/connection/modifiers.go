@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/arangodb/go-driver/v2/version"
 )
 
 func WithTransactionID(transactionID string) RequestModifier {
@@ -53,7 +55,7 @@ func applyGlobalSettings(ctx context.Context) RequestModifier {
 	return func(r Request) error {
 
 		// Set version header
-		val := fmt.Sprintf("go-driver-v2/%s", DriverVersion)
+		val := fmt.Sprintf("go-driver-v2/%s", version.DriverVersion())
 		if ctx != nil {
 			if v := ctx.Value(keyDriverFlags); v != nil {
 				if flags, ok := v.([]string); ok {

@@ -359,7 +359,7 @@ func setDirtyReadFlagIfRequired(ctx context.Context, wasDirty bool) {
 
 // ApplyVersionHeader adds the driver version to the request.
 func ApplyVersionHeader(ctx context.Context, req Request) {
-	val := fmt.Sprintf("go-driver-v1/%s", DriverVersion)
+	val := fmt.Sprintf("go-driver-v1/%s", DriverVersion())
 	if ctx != nil {
 		if v := ctx.Value(keyDriverFlags); v != nil {
 			if flags, ok := v.([]string); ok {

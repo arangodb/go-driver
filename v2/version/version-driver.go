@@ -1,4 +1,4 @@
-package driver
+package version
 
 import _ "embed"
 
