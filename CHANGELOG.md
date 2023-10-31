@@ -1,33 +1,21 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [1.6.1](https://github.com/arangodb/go-driver/tree/v1.6.1) (2023-10-31)
 - Add support for getting license
 - Add support for Raw Authentication in VST (support external jwt token as raw element)
 - Fix race when using WithRawResponse/WithResponse context with agencyConnection 
-- [V1] Async Client
-- [V2] Add optional status code checks. Consistent return of response
-- [V2] JavaScript Transactions API
-- [V2] Async Client
-- [V2] Fix connection.NewRequestWithEndpoint()
-- [V2] Add support for MaglevHashEndpoints
-- [V2] Add basic support for Views and Analyzers
-- [V2] Add ServerMode/SetServerMode/ServerID
-- [V2] Add collection Truncate, Count, Properties, SetProperties
-- [V2] Add and re-organize missing collection properties fields
-- [V1] Expose getters for Context values
-- [V2] Rename CreateCollectionOptions to CreateCollectionProperties
-- [V2] Add support for missing query options (create documents, remove collection, remove view)
-- [V2] Adjust CursorStats and JournalSize types
-- [V1] Deprecate `AllowInconsistent` in HotBackup
-- [V1] Revert ReturnOld for edge/vertex operations
-- [V2] Improve returning old doc handling in CollectionDocumentDelete
-- [V1] Agency: Deprecate TTL and observe features
-- [V2] Agency: Supply ClientID with agency transactions
+- Async Client
+- Expose getters for Context values
+- Deprecate `AllowInconsistent` in HotBackup
+- Revert ReturnOld for edge/vertex operations
+- Agency: Deprecate TTL and observe features
 - Bugfix: Force analyzer removal
 - Move examples to separate package
 - Deprecate ClientConfig.SynchronizeEndpointsInterval due to bug in implementation
-- [V1] Add Rename function for collections (single server only).
-- [V1] Fix using VST for database with non-ANSI characters
+- Add Rename function for collections (single server only).
+- Fix using VST for database with non-ANSI characters
 - Automate release process
 
 ## [1.6.0](https://github.com/arangodb/go-driver/tree/v1.6.0) (2023-05-30)
