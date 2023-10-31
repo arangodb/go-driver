@@ -574,15 +574,6 @@ release-minor:
 release-major:
 	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE)
 
-prerelease-patch:
-	go run $(RELEASE) -type=patch -prerelease=true -github-release=$(GH_RELEASE)
-
-prerelease-minor:
-	go run $(RELEASE) -type=minor -prerelease -github-release=$(GH_RELEASE)
-
-prerelease-major:
-	go run $(RELEASE) -type=major -prerelease -github-release=$(GH_RELEASE)
-
 release-v2-patch:
 	go run $(RELEASE) -type=patch -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
 
@@ -591,13 +582,3 @@ release-v2-minor:
 
 release-v2-major:
 	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
-
-prerelease-v2-patch:
-	go run $(RELEASE) -type=patch -prerelease=true -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
-
-prerelease-v2-minor:
-	go run $(RELEASE) -type=minor -prerelease -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
-
-prerelease-v2-major:
-	go run $(RELEASE) -type=major -prerelease -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
-
