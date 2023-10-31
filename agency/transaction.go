@@ -43,7 +43,7 @@ type Transaction struct {
 // The argument 'clientID' should be used to mark that transaction sender uniquely.
 func NewTransaction(clientID string, options TransactionOptions) Transaction {
 	if clientID == "" {
-		clientID = fmt.Sprintf("go-driver/%s", driver.DriverVersion)
+		clientID = fmt.Sprintf("go-driver/%s", driver.DriverVersion())
 	}
 
 	return Transaction{
