@@ -57,7 +57,7 @@ func ExampleNewClient() {
 }
 
 // ExampleNewConnection shows how to create the client with custom connection configuration
-// If there is more than one endpoint, the client will use pick the first one that works and use it till it fails.
+// If there is more than one endpoint, the client will pick the first one that works and use it till it fails.
 // Then it will try the next one
 func ExampleNewConnection() {
 	// Create an HTTP connection to the database
