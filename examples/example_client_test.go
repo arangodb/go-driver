@@ -56,11 +56,13 @@ func ExampleNewClient() {
 	fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 }
 
-// ExampleNewClientWithAuthentication shows how to create the client with custom connection configuration
+// ExampleNewConnection shows how to create the client with custom connection configuration
+// If there is more than one endpoint, the client will use pick the first one that works and use it till it fails.
+// Then it will try the next one
 func ExampleNewConnection() {
 	// Create an HTTP connection to the database
 	conn, err := drviverHttp.NewConnection(drviverHttp.ConnectionConfig{
-		Endpoints: []string{"http://localhost:8529"},
+		Endpoints: []string{"http://localhost:8529", "http://localhost:8539"},
 		Transport: NewConnectionTransport(),
 	})
 	if err != nil {
