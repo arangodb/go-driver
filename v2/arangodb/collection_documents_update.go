@@ -30,27 +30,30 @@ import (
 // CollectionDocumentUpdate Partially updates document(s) with given key in the collection.
 // https://www.arangodb.com/docs/devel/http/document.html#update-a-document
 type CollectionDocumentUpdate interface {
-
-	// UpdateDocument updates a single document with given key in the collection.
+	// UpdateDocument updates a single document with a given key in the collection.
 	// The document metadata is returned.
-	// If no document exists with given key, a NotFoundError is returned.
+	// If no document exists with a given key, a NotFoundError is returned.
+	// If `_id` field is present in the document body, it is always ignored.
 	UpdateDocument(ctx context.Context, key string, document interface{}) (CollectionDocumentUpdateResponse, error)
 
-	// UpdateDocumentWithOptions updates a single document with given key in the collection.
+	// UpdateDocumentWithOptions updates a single document with a given key in the collection.
 	// The document metadata is returned.
-	// If no document exists with given key, a NotFoundError is returned.
+	// If no document exists with a given key, a NotFoundError is returned.
+	// If `_id` field is present in the document body, it is always ignored.
 	UpdateDocumentWithOptions(ctx context.Context, key string, document interface{}, options *CollectionDocumentUpdateOptions) (CollectionDocumentUpdateResponse, error)
 
 	// UpdateDocuments updates multiple documents
 	// The updates are loaded from the given updates slice, the documents metadata are returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
-	// Each element in the updates slice must contain a `_key` field.
+	// Each element in the update slice must contain a `_key` field.
+	// If `_id` field is present in the document body, it is always ignored.
 	UpdateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentUpdateResponseReader, error)
 
 	// UpdateDocumentsWithOptions updates multiple documents
 	// The updates are loaded from the given updates slice, the documents metadata are returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
-	// Each element in the updates slice must contain a `_key` field.
+	// Each element in the update slice must contain a `_key` field.
+	// If `_id` field is present in the document body, it is always ignored.
 	UpdateDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentUpdateOptions) (CollectionDocumentUpdateResponseReader, error)
 }
 
