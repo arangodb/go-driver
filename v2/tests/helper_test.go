@@ -34,9 +34,9 @@ import (
 )
 
 func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDatabaseOptions, f func(db arangodb.Database)) {
-	name := fmt.Sprintf("test-DB-%s", uuid.New().String())
+	name := fmt.Sprintf("test-DB-%s-%d", uuid.New().String(), time.Now().Nanosecond())
 
-	info(t)("Creating DB %s", name)
+	t.Logf("Creating DB %s", name)
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		db, err := client.CreateDatabase(ctx, name, opts)
@@ -44,7 +44,8 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-				info(t)("Removing DB %s", db.Name())
+				t.Logf("Removing DB %s", db.Name())
+				require.NoError(t, db.Remove(ctx))
 			})
 		}()
 
@@ -53,9 +54,9 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 }
 
 func WithCollection(t testing.TB, db arangodb.Database, props *arangodb.CreateCollectionProperties, f func(col arangodb.Collection)) {
-	name := fmt.Sprintf("test-COL-%s", uuid.New().String())
+	name := fmt.Sprintf("test-COL-%s-%d", uuid.New().String(), time.Now().Nanosecond())
 
-	info(t)("Creating COL %s", name)
+	t.Logf("Creating COL %s", name)
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		col, err := db.CreateCollection(ctx, name, props)
