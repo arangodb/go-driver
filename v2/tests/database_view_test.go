@@ -277,7 +277,7 @@ func Test_AddCollectionMultipleViews(t *testing.T) {
 	})
 }
 
-// Test_AddCollectionMultipleViews creates a collection and two view. adds the collection to both views
+// Test_AddCollectionMultipleViews creates a collection and two views. It adds the collection to both views
 // and checks if the links exist. The links are set when creating the view.
 func Test_AddCollectionMultipleViewsViaCreate(t *testing.T) {
 	ctx := context.Background()
