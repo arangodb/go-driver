@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	"github.com/dchest/uniuri"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/unicode/norm"
 
@@ -168,7 +167,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 	c := createClient(t, nil)
 	databaseExtendedNamesRequired(t, c)
 
-	dbName := "\u006E\u0303\u00f1" + uuid.New().String()
+	dbName := "\u006E\u0303\u00f1" + GenerateUUID("test-db-unicode")
 	normalized := norm.NFC.String(dbName)
 	ctx := context.Background()
 	_, err := c.CreateDatabase(ctx, dbName, nil)

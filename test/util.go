@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-// Author Tomasz Mielech
-//
 
 package test
 
@@ -32,6 +29,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -271,4 +269,22 @@ func waitForHealthyCluster(t *testing.T, client driver.Client, timeout time.Dura
 
 		return nil
 	}
+}
+
+var (
+	generateLock sync.Mutex
+	generateID   uint64
+)
+
+func GenerateUUID(prefix string) string {
+	generateLock.Lock()
+	defer generateLock.Unlock()
+
+	generateID++
+
+	if prefix == "" {
+		prefix = "test"
+	}
+
+	return fmt.Sprintf("%s-%s-%04d", prefix, uuid.New().String(), generateID)
 }

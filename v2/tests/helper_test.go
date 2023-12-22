@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,8 +34,26 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
+var (
+	generateLock sync.Mutex
+	generateID   uint64
+)
+
+func GenerateUUID(prefix string) string {
+	generateLock.Lock()
+	defer generateLock.Unlock()
+
+	generateID++
+
+	if prefix == "" {
+		prefix = "test"
+	}
+
+	return fmt.Sprintf("%s-%s-%04d", prefix, uuid.New().String(), generateID)
+}
+
 func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDatabaseOptions, f func(db arangodb.Database)) {
-	name := fmt.Sprintf("test-DB-%s-%d", uuid.New().String(), time.Now().Nanosecond())
+	name := GenerateUUID("test-DB")
 
 	t.Logf("Creating DB %s", name)
 
@@ -54,7 +73,7 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 }
 
 func WithCollection(t testing.TB, db arangodb.Database, props *arangodb.CreateCollectionProperties, f func(col arangodb.Collection)) {
-	name := fmt.Sprintf("test-COL-%s-%d", uuid.New().String(), time.Now().Nanosecond())
+	name := GenerateUUID("test-COL")
 
 	t.Logf("Creating COL %s", name)
 
