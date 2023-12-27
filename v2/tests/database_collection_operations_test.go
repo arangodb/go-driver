@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/unicode/norm"
@@ -246,7 +245,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 					docs := newDocs(size)
 
 					for i := 0; i < size; i++ {
-						docs[i].Fields = uuid.New().String()
+						docs[i].Fields = GenerateUUID("test-doc-col")
 					}
 
 					docsIds := docs.asBasic().getKeys()
@@ -418,7 +417,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 
 						for i := 0; i < size; i++ {
 							newDocs[i] = docs[i]
-							newDocs[i].Fields = uuid.New().String()
+							newDocs[i].Fields = GenerateUUID("test-new-doc")
 						}
 
 						ng := newDocs
@@ -471,7 +470,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 			skipBelowVersion(c, ctx, "3.9.0", t)
 			databaseExtendedNamesRequired(t, c, ctx)
 
-			random := uuid.New().String()
+			random := GenerateUUID("test-db-unicode")
 			dbName := "\u006E\u0303\u00f1" + random
 			_, err := c.CreateDatabase(ctx, dbName, nil)
 			require.EqualError(t, err, "database name is not properly UTF-8 NFC-normalized")
@@ -512,7 +511,7 @@ func TestDatabaseNameUnicode(t *testing.T) {
 // with the option --database.extended-names-databases=true.
 func databaseExtendedNamesRequired(t *testing.T, c arangodb.Client, ctx context.Context) {
 	// If the database can be created with the below name then it means that it excepts unicode names.
-	dbName := "\u006E\u0303\u00f1" + uuid.New().String()
+	dbName := "\u006E\u0303\u00f1" + GenerateUUID("test-db")
 	normalized := norm.NFC.String(dbName)
 	db, err := c.CreateDatabase(ctx, normalized, nil)
 	if err == nil {
@@ -535,7 +534,7 @@ func Test_DatabaseCollectionTruncate(t *testing.T) {
 					size := 10
 					docs := newDocs(size)
 					for i := 0; i < size; i++ {
-						docs[i].Fields = uuid.New().String()
+						docs[i].Fields = GenerateUUID("test-doc-truncate")
 					}
 
 					_, err := col.CreateDocuments(ctx, docs)

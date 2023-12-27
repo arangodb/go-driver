@@ -20,8 +20,6 @@
 
 package tests
 
-import "github.com/google/uuid"
-
 type DocWithRev struct {
 	Rev       string         `json:"_rev,omitempty"`
 	Key       string         `json:"_key,omitempty"`
@@ -52,7 +50,7 @@ type basicDocument struct {
 
 func newBasicDocument() basicDocument {
 	return basicDocument{
-		Key: uuid.New().String(),
+		Key: GenerateUUID("test-doc-basic"),
 	}
 }
 

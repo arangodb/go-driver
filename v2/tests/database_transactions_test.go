@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -203,7 +202,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 				WithCollection(t, db, nil, func(col arangodb.Collection) {
 					d := document{
-						basicDocument: basicDocument{Key: uuid.New().String()},
+						basicDocument: basicDocument{Key: GenerateUUID("test-doc-basic")},
 						Fields:        "no1",
 					}
 

@@ -24,7 +24,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -40,7 +39,7 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 					size := 10
 					docs := newDocs(size)
 					for i := 0; i < size; i++ {
-						docs[i].Fields = uuid.New().String()
+						docs[i].Fields = GenerateUUID("test-doc")
 					}
 
 					docsIds := docs.asBasic().getKeys()
