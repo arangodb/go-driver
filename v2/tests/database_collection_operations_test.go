@@ -97,10 +97,9 @@ func Test_CollectionSetProperties(t *testing.T) {
 	createOpts := arangodb.CreateCollectionProperties{
 		WaitForSync:       false,
 		ReplicationFactor: 2,
-		// TODO REMOVE ME - Found unexpected attribute 'journalSize'
-		JournalSize:    1048576 * 2,
-		NumberOfShards: 2,
-		CacheEnabled:   newBool(false),
+		JournalSize:       1048576 * 2,
+		NumberOfShards:    2,
+		CacheEnabled:      newBool(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
