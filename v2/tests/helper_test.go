@@ -59,7 +59,7 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		db, err := client.CreateDatabase(ctx, name, opts)
-		require.NoError(t, err)
+		require.NoError(t, err, fmt.Sprintf("Failed to create DB %s", name))
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
@@ -79,7 +79,7 @@ func WithCollection(t testing.TB, db arangodb.Database, props *arangodb.CreateCo
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		col, err := db.CreateCollection(ctx, name, props)
-		require.NoError(t, err)
+		require.NoError(t, err, fmt.Sprintf("Failed to create COL %s", name))
 
 		NewTimeout(func() error {
 			_, err := db.Collection(ctx, name)
