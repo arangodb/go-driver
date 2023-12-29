@@ -59,6 +59,22 @@ func assertCollection(ctx context.Context, db driver.Database, name string, t *t
 	return c
 }
 
+func TestGetCollection(t *testing.T) {
+	c := createClient(t, nil)
+	db := ensureDatabase(nil, c, "collection_get_test", nil, t)
+
+	name := "test_wrong_collection"
+
+	_, err := db.Collection(nil, name)
+	require.Error(t, err)
+
+	_, err = db.Collection(driver.WithSkipExistCheck(nil, false), name)
+	require.Error(t, err)
+
+	_, err = db.Collection(driver.WithSkipExistCheck(nil, true), name)
+	require.NoError(t, err)
+}
+
 // TestCreateCollection creates a collection and then checks that it exists.
 func TestCreateCollection(t *testing.T) {
 	c := createClient(t, nil)

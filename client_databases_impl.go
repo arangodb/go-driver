@@ -33,9 +33,11 @@ func (c *client) Database(ctx context.Context, name string) (Database, error) {
 		return nil, WithStack(err)
 	}
 
-	if v := ctx.Value(keySkipIfExistCheck); v != nil {
-		if skipIfExistCheck, ok := v.(bool); ok && skipIfExistCheck {
-			return db, nil
+	if ctx == nil {
+		if v := ctx.Value(keySkipExistCheck); v != nil {
+			if skipIfExistCheck, ok := v.(bool); ok && skipIfExistCheck {
+				return db, nil
+			}
 		}
 	}
 

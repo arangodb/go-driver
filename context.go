@@ -69,7 +69,7 @@ const (
 	keyRefillIndexCaches        ContextKey = "arangodb-driver-refill-index-caches"
 	keyAsyncRequest             ContextKey = "arangodb-async-request"
 	keyAsyncID                  ContextKey = "arangodb-async-id"
-	keySkipIfExistCheck         ContextKey = "arangodb-skip-if-exist-check"
+	keySkipExistCheck           ContextKey = "arangodb-skip-exist-check"
 )
 
 type OverwriteMode string
@@ -308,10 +308,10 @@ func WithAsyncID(parent context.Context, asyncID string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyAsyncID, asyncID)
 }
 
-// WithSkipIfExistCheck is used to disable validation for resource existence
+// WithSkipExistCheck is used to disable validation for resource existence
 // e.g.: ClientDatabases.Database will do not call the additional check to ArangoDB for ensuring that DB exist
-func WithSkipIfExistCheck(parent context.Context, value bool) context.Context {
-	return context.WithValue(contextOrBackground(parent), keySkipIfExistCheck, value)
+func WithSkipExistCheck(parent context.Context, value bool) context.Context {
+	return context.WithValue(contextOrBackground(parent), keySkipExistCheck, value)
 }
 
 type contextSettings struct {

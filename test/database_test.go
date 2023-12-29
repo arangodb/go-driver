@@ -74,6 +74,21 @@ func skipIfEngineType(t *testing.T, db driver.Database, engineType driver.Engine
 	}
 }
 
+func TestGetDatabase(t *testing.T) {
+	c := createClient(t, nil)
+
+	name := "test_wrong_database"
+
+	_, err := c.Database(nil, name)
+	require.Error(t, err)
+
+	_, err = c.Database(driver.WithSkipExistCheck(nil, false), name)
+	require.Error(t, err)
+
+	_, err = c.Database(driver.WithSkipExistCheck(nil, true), name)
+	require.NoError(t, err)
+}
+
 // TestCreateDatabase creates a database and then checks that it exists.
 func TestCreateDatabase(t *testing.T) {
 	c := createClient(t, nil)
