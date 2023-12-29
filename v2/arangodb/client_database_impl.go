@@ -101,7 +101,7 @@ func (c clientDatabase) Database(ctx context.Context, name string) (Database, er
 func (c clientDatabase) GetDatabase(ctx context.Context, name string, options *GetDatabaseOptions) (Database, error) {
 	db := newDatabase(c.client, name)
 
-	if options == nil && options.SkipExistCheck {
+	if options != nil && options.SkipExistCheck {
 		return db, nil
 	}
 

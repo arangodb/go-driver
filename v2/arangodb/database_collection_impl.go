@@ -50,7 +50,7 @@ func (d databaseCollection) Collection(ctx context.Context, name string) (Collec
 func (d databaseCollection) GetCollection(ctx context.Context, name string, options *GetCollectionOptions) (Collection, error) {
 	col := newCollection(d.db, name)
 
-	if options == nil && options.SkipExistCheck {
+	if options != nil && options.SkipExistCheck {
 		return col, nil
 	}
 
