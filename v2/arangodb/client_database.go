@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -29,7 +27,12 @@ import (
 type ClientDatabase interface {
 	// Database opens a connection to an existing database.
 	// If no database with given name exists, an NotFoundError is returned.
+	// deprecated: use GetDatabase instead
 	Database(ctx context.Context, name string) (Database, error)
+
+	// GetDatabase opens a connection to an existing database.
+	// If no database with given name exists, an NotFoundError is returned.
+	GetDatabase(ctx context.Context, name string, options *GetDatabaseOptions) (Database, error)
 
 	// DatabaseExists returns true if a database with given name exists.
 	DatabaseExists(ctx context.Context, name string) (bool, error)
@@ -61,6 +64,12 @@ type CreateDatabaseOptions struct {
 
 	// Options database defaults
 	Options CreateDatabaseDefaultOptions `json:"options,omitempty"`
+}
+
+// GetDatabaseOptions contains options that customize the getting of a database.
+type GetDatabaseOptions struct {
+	// SkipExistCheck skips checking if database exists
+	SkipExistCheck bool `json:"skipExistCheck,omitempty"`
 }
 
 // DatabaseReplicationVersion defines replication protocol version to use for this database

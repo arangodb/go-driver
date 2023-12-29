@@ -82,7 +82,7 @@ func WithCollection(t testing.TB, db arangodb.Database, props *arangodb.CreateCo
 		require.NoError(t, err, fmt.Sprintf("Failed to create COL %s", name))
 
 		NewTimeout(func() error {
-			_, err := db.Collection(ctx, name)
+			_, err := db.GetCollection(ctx, name, nil)
 			if err == nil {
 				return Interrupt{}
 			}

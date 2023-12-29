@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package arangodb
@@ -79,7 +77,7 @@ func (c clientDatabase) AccessibleDatabases(ctx context.Context) ([]Database, er
 }
 
 func (c clientDatabase) DatabaseExists(ctx context.Context, name string) (bool, error) {
-	_, err := c.Database(ctx, name)
+	_, err := c.GetDatabase(ctx, name, nil)
 	if err == nil {
 		return true, nil
 	}
@@ -97,6 +95,16 @@ func (c clientDatabase) Databases(ctx context.Context) ([]Database, error) {
 }
 
 func (c clientDatabase) Database(ctx context.Context, name string) (Database, error) {
+	return c.GetDatabase(ctx, name, nil)
+}
+
+func (c clientDatabase) GetDatabase(ctx context.Context, name string, options *GetDatabaseOptions) (Database, error) {
+	db := newDatabase(c.client, name)
+
+	if options == nil && options.SkipExistCheck {
+		return db, nil
+	}
+
 	url := connection.NewUrl("_db", name, "_api", "database", "current")
 
 	var response struct {
@@ -111,7 +119,7 @@ func (c clientDatabase) Database(ctx context.Context, name string) (Database, er
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return newDatabase(c.client, name), nil
+		return db, nil
 	default:
 		return nil, response.AsArangoErrorWithCode(code)
 	}

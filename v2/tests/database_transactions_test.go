@@ -80,7 +80,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 							tid = transaction.ID()
 
 							// Get collection in transaction
-							tCol, err := transaction.Collection(ctx, col.Name())
+							tCol, err := transaction.GetCollection(ctx, col.Name(), nil)
 							require.NoError(t, err)
 
 							_, err = tCol.CreateDocument(ctx, d)
@@ -123,7 +123,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 							tid = transaction.ID()
 
 							// Get collection in transaction
-							tCol, err := transaction.Collection(ctx, col.Name())
+							tCol, err := transaction.GetCollection(ctx, col.Name(), nil)
 							require.NoError(t, err)
 
 							_, err = tCol.CreateDocument(ctx, d)
@@ -169,7 +169,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 								tid = transaction.ID()
 
 								// Get collection in transaction
-								tCol, err := transaction.Collection(ctx, col.Name())
+								tCol, err := transaction.GetCollection(ctx, col.Name(), nil)
 								require.NoError(t, err)
 
 								_, err = tCol.CreateDocument(ctx, d)
@@ -219,7 +219,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 					require.NoError(t, err)
 					defer abortTransaction(t, t1)
 
-					col1, err := t1.Collection(ctx, col.Name())
+					col1, err := t1.GetCollection(ctx, col.Name(), nil)
 					require.NoError(t, err)
 
 					t2, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{Write: []string{col.Name()}}, &arangodb.BeginTransactionOptions{
@@ -228,7 +228,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 					require.NoError(t, err)
 					defer abortTransaction(t, t1)
 
-					col2, err := t2.Collection(ctx, col.Name())
+					col2, err := t2.GetCollection(ctx, col.Name(), nil)
 					require.NoError(t, err)
 
 					_, err = col1.UpdateDocument(ctx, d.Key, ud)
