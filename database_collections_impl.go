@@ -33,7 +33,7 @@ func (d *database) Collection(ctx context.Context, name string) (Collection, err
 		return nil, WithStack(err)
 	}
 
-	if ctx == nil {
+	if ctx != nil {
 		if v := ctx.Value(keySkipExistCheck); v != nil {
 			if skipIfExistCheck, ok := v.(bool); ok && skipIfExistCheck {
 				return coll, nil
