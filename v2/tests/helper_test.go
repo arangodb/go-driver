@@ -35,9 +35,20 @@ import (
 )
 
 var (
+	globalLock   sync.Mutex
 	generateLock sync.Mutex
 	generateID   uint64
 )
+
+// withGlobalThrottle ensures that f is not executed too often
+func withGlobalThrottle(f func()) {
+	globalLock.Lock()
+	defer globalLock.Unlock()
+
+	f()
+	// unlock after some time to ensure f() is not called too fast
+	time.Sleep(time.Millisecond * 500)
+}
 
 func GenerateUUID(prefix string) string {
 	generateLock.Lock()
@@ -55,11 +66,14 @@ func GenerateUUID(prefix string) string {
 func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDatabaseOptions, f func(db arangodb.Database)) {
 	name := GenerateUUID("test-DB")
 
-	t.Logf("Creating DB %s", name)
-
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-		db, err := client.CreateDatabase(ctx, name, opts)
-		require.NoError(t, err, fmt.Sprintf("Failed to create DB %s", name))
+		var db arangodb.Database
+		var err error
+		withGlobalThrottle(func() {
+			t.Logf("Creating DB %s", name)
+			db, err = client.CreateDatabase(ctx, name, opts)
+			require.NoError(t, err, fmt.Sprintf("Failed to create DB %s", name))
+		})
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
@@ -75,11 +89,14 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 func WithCollection(t testing.TB, db arangodb.Database, props *arangodb.CreateCollectionProperties, f func(col arangodb.Collection)) {
 	name := GenerateUUID("test-COL")
 
-	t.Logf("Creating COL %s", name)
-
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-		col, err := db.CreateCollection(ctx, name, props)
-		require.NoError(t, err, fmt.Sprintf("Failed to create COL %s", name))
+		var col arangodb.Collection
+		var err error
+		withGlobalThrottle(func() {
+			t.Logf("Creating COL %s", name)
+			col, err = db.CreateCollection(ctx, name, props)
+			require.NoError(t, err, fmt.Sprintf("Failed to create COL %s", name))
+		})
 
 		NewTimeout(func() error {
 			_, err := db.Collection(ctx, name)
