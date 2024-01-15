@@ -1,7 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- Switch Go 1.20.11
+- Switch to Go 1.20.11
+- Switch to Go 1.21.5
 
 ## [1.6.1](https://github.com/arangodb/go-driver/tree/v1.6.1) (2023-10-31)
 - Add support for getting license

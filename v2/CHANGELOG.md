@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Switch to Go 1.21.5
 
 ## [2.0.3](https://github.com/arangodb/go-driver/tree/v2.0.3) (2023-10-31)
 - Add optional status code checks. Consistent return of response
