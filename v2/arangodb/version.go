@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Ewout Prangsma
 //
 
 package arangodb
@@ -69,7 +67,7 @@ func (v Version) SubInt() (int, bool) {
 	return result, err == nil
 }
 
-// CompareTo returns an integer comparing two version.
+// CompareTo returns an integer comparing two versions.
 // The result will be 0 if v==other, -1 if v < other, and +1 if v > other.
 // If major & minor parts are equal and sub part is not a number,
 // the sub part will be compared using lexicographical string comparison.

@@ -136,6 +136,18 @@ func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) dri
 	return x
 }
 
+// skipFromVersion skips test if DB version is equal or above given version
+func skipFromVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
+	}
+	if x.Version.CompareTo(version) > 0 || x.Version.CompareTo(version) == 0 {
+		t.Skipf("Skipping above version '%s', got version '%s'", version, x.Version)
+	}
+	return x
+}
+
 // getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS
 // environment variable.
 func getEndpointsFromEnv(t testEnv) []string {
@@ -274,7 +286,7 @@ type testsClientConfig struct {
 }
 
 // createClient initializes a Client from information specified in environment variables.
-func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
+func createClient(t *testing.T, cfg *testsClientConfig) driver.Client {
 	waitUntilReady := true
 	disallowUnknownFields := false
 	if os.Getenv("TEST_DISALLOW_UNKNOWN_FIELDS") == "true" {
@@ -320,6 +332,11 @@ func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
 	})
 	if err != nil {
 		t.Fatalf("Failed to create new client: %s", describe(err))
+	}
+
+	if getTestMode() == testModeResilientSingle {
+		// AF mode is not anymore supported
+		skipFromVersion(c, "3.12", t)
 	}
 
 	if os.Getenv("TEST_NOT_WAIT_UNTIL_READY") != "" {
