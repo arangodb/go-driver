@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ func skipBetweenVersions(c driver.Client, minVersion, maxVersion driver.Version,
 
 // skipBelowVersion skips the test if the current server version is less than
 // the given version.
-func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {
+func skipBelowVersion(c driver.Client, version driver.Version, t testEnv) driver.VersionInfo {
 	x, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Failed to get version info: %s", describe(err))
@@ -137,7 +137,7 @@ func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) dri
 }
 
 // skipFromVersion skips test if DB version is equal or above given version
-func skipFromVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {
+func skipFromVersion(c driver.Client, version driver.Version, t testEnv) driver.VersionInfo {
 	x, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Failed to get version info: %s", describe(err))
@@ -286,7 +286,7 @@ type testsClientConfig struct {
 }
 
 // createClient initializes a Client from information specified in environment variables.
-func createClient(t *testing.T, cfg *testsClientConfig) driver.Client {
+func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
 	waitUntilReady := true
 	disallowUnknownFields := false
 	if os.Getenv("TEST_DISALLOW_UNKNOWN_FIELDS") == "true" {
