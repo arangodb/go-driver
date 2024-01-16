@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +60,11 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 
 	version, err := c.Version(context.Background())
 	require.NoError(t, err)
+
+	if getTestMode() == string(testModeResilientSingle) {
+		// AF mode is not anymore supported
+		skipFromVersion(c, context.Background(), "3.12", t)
+	}
 
 	parallel := true
 	async := false
@@ -254,7 +259,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 
 			return Interrupt{}
 		})
-	}).TimeoutT(t, time.Minute, 100*time.Millisecond)
+	}).TimeoutT(t, 1*time.Minute, 1*time.Second)
 
 	return client
 }

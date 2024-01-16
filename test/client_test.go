@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -125,13 +125,25 @@ func skipBetweenVersions(c driver.Client, minVersion, maxVersion driver.Version,
 
 // skipBelowVersion skips the test if the current server version is less than
 // the given version.
-func skipBelowVersion(c driver.Client, version driver.Version, t *testing.T) driver.VersionInfo {
+func skipBelowVersion(c driver.Client, version driver.Version, t testEnv) driver.VersionInfo {
 	x, err := c.Version(nil)
 	if err != nil {
 		t.Fatalf("Failed to get version info: %s", describe(err))
 	}
 	if x.Version.CompareTo(version) < 0 {
 		t.Skipf("Skipping below version '%s', got version '%s'", version, x.Version)
+	}
+	return x
+}
+
+// skipFromVersion skips test if DB version is equal or above given version
+func skipFromVersion(c driver.Client, version driver.Version, t testEnv) driver.VersionInfo {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
+	}
+	if x.Version.CompareTo(version) > 0 || x.Version.CompareTo(version) == 0 {
+		t.Skipf("Skipping above version '%s', got version '%s'", version, x.Version)
 	}
 	return x
 }
@@ -320,6 +332,11 @@ func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
 	})
 	if err != nil {
 		t.Fatalf("Failed to create new client: %s", describe(err))
+	}
+
+	if getTestMode() == testModeResilientSingle {
+		// AF mode is not anymore supported
+		skipFromVersion(c, "3.12", t)
 	}
 
 	if os.Getenv("TEST_NOT_WAIT_UNTIL_READY") != "" {

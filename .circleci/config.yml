@@ -4,7 +4,7 @@ orbs:
 executors:
   golang-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.20.11
+      - image: gcr.io/gcr-for-testing/golang:1.21.5
   machine-executor:
     machine:
       image: ubuntu-2204:current
@@ -19,7 +19,7 @@ aliases:
 parameters:
   goImage:
     type: string
-    default: "gcr.io/gcr-for-testing/golang:1.20.11"
+    default: "gcr.io/gcr-for-testing/golang:1.21.5"
   arangodbImage:
     type: string
     default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly"
@@ -123,11 +123,6 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-tests-cluster
-      - run-integration-tests:
-          name: Test V1 resilientsingle
-          requires:
-            - download-demo-data
-          test-to-run: run-tests-resilientsingle
 
       - run-integration-tests:
           name: Test V2 single
@@ -139,11 +134,6 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
-      - run-integration-tests:
-          name: Test V2 resilientsingle
-          requires:
-            - download-demo-data
-          test-to-run: run-v2-tests-resilientsingle
 
   # Weekly vulnerability check
   weekly_vulncheck:
