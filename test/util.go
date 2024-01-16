@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ type testEnv interface {
 	Logf(format string, args ...interface{})
 	Name() string
 	FailNow()
+	Skip(args ...any)
+	Skipf(format string, args ...any)
 }
 
 func NewUUID() string {

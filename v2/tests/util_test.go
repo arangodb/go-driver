@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -78,6 +78,18 @@ func skipNoEnterprise(c arangodb.Client, ctx context.Context, t testing.TB) {
 	if !version.IsEnterprise() {
 		t.Skip("Skipping test, no enterprise version")
 	}
+}
+
+// skipFromVersion skips test if DB version is equal or above given version
+func skipFromVersion(c arangodb.Client, ctx context.Context, version arangodb.Version, t testing.TB) arangodb.VersionInfo {
+	x, err := c.Version(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", err)
+	}
+	if x.Version.CompareTo(version) > 0 || x.Version.CompareTo(version) == 0 {
+		t.Skipf("Skipping above version '%s', got version '%s'", version, x.Version)
+	}
+	return x
 }
 
 func skipBelowVersion(c arangodb.Client, ctx context.Context, version arangodb.Version, t testing.TB) arangodb.VersionInfo {
