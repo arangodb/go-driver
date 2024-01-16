@@ -31,6 +31,10 @@ ifdef RACE
 	CGO_ENABLED=1
 endif
 
+ifndef AF_ENABLED
+	AF_ENABLED := "false"
+endif
+
 TESTV2PARALLEL ?= 8
 
 ORGPATH := github.com/arangodb
@@ -162,7 +166,10 @@ changelog:
 		--no-author \
 		--unreleased-label "Master"
 
-run-tests: run-unit-tests run-tests-single run-tests-resilientsingle run-tests-cluster
+run-tests: run-unit-tests run-tests-single run-tests-cluster
+ifeq ("$(AF_ENABLED)", "true")
+	run-tests-resilientsingle
+endif
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
@@ -526,7 +533,10 @@ vulncheck:
 v2-%:
 	@(cd "$(ROOTDIR)/v2"; make)
 
-run-v2-tests: run-v2-tests-single run-v2-tests-cluster run-v2-tests-resilientsingle
+run-v2-tests: run-v2-tests-single run-v2-tests-cluster
+ifeq ("$(AF_ENABLED)", "true")
+	run-v2-tests-resilientsingle
+endif
 
 run-v2-tests-cluster: run-v2-tests-cluster-with-basic-auth run-v2-tests-cluster-without-ssl run-v2-tests-cluster-without-auth run-v2-tests-cluster-with-jwt-auth
 
