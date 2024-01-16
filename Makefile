@@ -142,7 +142,7 @@ ifeq ("$(DEBUG)", "true")
 	DOCKER_V2_RUN_CMD := $(DOCKER_RUN_CMD)
 else
     DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
-    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -test.parallel $(TESTV2PARALLEL) ./tests
+    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -parallel $(TESTV2PARALLEL) ./tests
 endif
 
 .PHONY: all build clean linter run-tests vulncheck
