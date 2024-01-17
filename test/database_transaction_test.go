@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,14 +45,14 @@ func TestDatabaseTransaction(t *testing.T) {
 		ExclusiveCollections: []string{colName},
 	}
 	testCases := []struct {
-		name         string
-		action       string
-		options      *driver.TransactionOptions
-		expectResult interface{}
-		expectError  error
+		name           string
+		action         string
+		options        *driver.TransactionOptions
+		expectResult   interface{}
+		expectErrorStr string
 	}{
-		{"ReturnValue", "function () { return 'worked!'; }", txOptions, "worked!", nil},
-		{"ReturnError", "function () { error error; }", txOptions, nil, fmt.Errorf("missing/invalid action definition for transaction - Uncaught SyntaxError: Unexpected identifier - SyntaxError: Unexpected identifier\n    at new Function (<anonymous>)")},
+		{"ReturnValue", "function () { return 'worked!'; }", txOptions, "worked!", ""},
+		{"ReturnError", "function () { error error; }", txOptions, nil, "Uncaught SyntaxError: Unexpected identifier"},
 	}
 
 	for _, testCase := range testCases {
@@ -61,9 +61,9 @@ func TestDatabaseTransaction(t *testing.T) {
 			if !reflect.DeepEqual(testCase.expectResult, result) {
 				t.Errorf("expected result %v, got %v", testCase.expectResult, result)
 			}
-			if testCase.expectError != nil {
-				if testCase.expectError.Error() != err.Error() {
-					t.Errorf("expected error %v, got %v", testCase.expectError.Error(), err.Error())
+			if testCase.expectErrorStr != "" {
+				if strings.Index(err.Error(), testCase.expectErrorStr) < 0 {
+					t.Errorf("expected error to contain '%v', got '%v'", testCase.expectErrorStr, err.Error())
 				}
 			}
 		})

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package tests
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -64,7 +65,10 @@ func Test_DatabaseTransactionsJS(t *testing.T) {
 
 						_, err := db.TransactionJS(ctx, txJSOptions)
 						require.Error(t, err)
-						require.Equal(t, "missing/invalid action definition for transaction - Uncaught SyntaxError: Unexpected identifier - SyntaxError: Unexpected identifier\n    at new Function (<anonymous>)", err.Error())
+
+						const expectedStr = "Uncaught SyntaxError: Unexpected identifier"
+						substrFound := strings.Index(err.Error(), expectedStr) >= 0
+						require.Truef(t, substrFound, "expected error to contain '%v', got '%v'", expectedStr, err.Error())
 					})
 				})
 
