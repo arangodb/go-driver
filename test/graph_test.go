@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package test
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	driver "github.com/arangodb/go-driver"
@@ -188,4 +189,38 @@ func TestRemoveGraph(t *testing.T) {
 	} else if found {
 		t.Errorf("GraphExists('%s') return true, expected false", name)
 	}
+}
+
+// TestRemoveGraphWithOpts creates a graph with collection and then removes it.
+func TestRemoveGraphWithOpts(t *testing.T) {
+	ctx := context.Background()
+	c := createClient(t, nil)
+	db := ensureDatabase(ctx, c, "graph_test_remove", nil, t)
+	name := "test_remove_graph_opts"
+	colName := "remove_graph_col"
+
+	g, err := db.CreateGraphV2(ctx, name, nil)
+	require.NoError(t, err)
+
+	found, err := db.GraphExists(ctx, name)
+	require.NoError(t, err)
+	require.True(t, found)
+
+	// Now create a vertex collection
+	vc, err := g.CreateVertexCollection(nil, colName)
+	require.NoError(t, err)
+	require.Equal(t, colName, vc.Name())
+
+	// Now remove the graph with collections
+	err = g.RemoveWithOpts(ctx, &driver.RemoveGraphOptions{DropCollections: true})
+	require.NoError(t, err)
+
+	// Collection must not exist in a database
+	colExist, err := db.CollectionExists(ctx, name)
+	require.NoError(t, err)
+	require.False(t, colExist)
+
+	found, err = db.GraphExists(ctx, name)
+	require.NoError(t, err)
+	require.False(t, found)
 }

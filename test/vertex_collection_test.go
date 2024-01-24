@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ package test
 import (
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
 )
@@ -144,7 +146,8 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 	}
 
 	// revert
-	g.Remove(ctx)
+	err = g.Remove(ctx)
+	require.NoError(t, err)
 }
 
 // TestRemoveVertexCollection creates a graph and then adds an vertex collection in it and then removes the vertex collection.
