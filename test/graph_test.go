@@ -22,8 +22,9 @@ package test
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
 )
