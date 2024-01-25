@@ -570,7 +570,7 @@ run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
 
 run-v2-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v2"
-	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" __run_v2_tests
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v2_tests
 
 GH_RELEASE := $(TMPDIR)/bin/github-release
 RELEASE := $(SCRIPTDIR)/tools/release
