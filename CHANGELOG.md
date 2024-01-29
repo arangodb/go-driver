@@ -5,6 +5,7 @@
 - Switch to Go 1.21.5
 - Disable AF mode in tests (not supported since 3.12)
 - Remove graph with all collections
+- Allow skipping validation for Database and Collection existence
 
 ## [1.6.1](https://github.com/arangodb/go-driver/tree/v1.6.1) (2023-10-31)
 - Add support for getting license

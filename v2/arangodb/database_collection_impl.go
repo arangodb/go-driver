@@ -44,6 +44,16 @@ type databaseCollection struct {
 }
 
 func (d databaseCollection) Collection(ctx context.Context, name string) (Collection, error) {
+	return d.GetCollection(ctx, name, nil)
+}
+
+func (d databaseCollection) GetCollection(ctx context.Context, name string, options *GetCollectionOptions) (Collection, error) {
+	col := newCollection(d.db, name)
+
+	if options != nil && options.SkipExistCheck {
+		return col, nil
+	}
+
 	url := d.db.url("_api", "collection", name)
 
 	var response struct {
@@ -57,14 +67,14 @@ func (d databaseCollection) Collection(ctx context.Context, name string) (Collec
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return newCollection(d.db, name), nil
+		return col, nil
 	default:
 		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 
 func (d databaseCollection) CollectionExists(ctx context.Context, name string) (bool, error) {
-	_, err := d.Collection(ctx, name)
+	_, err := d.GetCollection(ctx, name, nil)
 	if err == nil {
 		return true, nil
 	}

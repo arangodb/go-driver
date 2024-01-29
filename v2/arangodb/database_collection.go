@@ -27,7 +27,12 @@ import (
 type DatabaseCollection interface {
 	// Collection opens a connection to an existing collection within the database.
 	// If no collection with given name exists, an NotFoundError is returned.
+	// deprecated: use GetCollection instead
 	Collection(ctx context.Context, name string) (Collection, error)
+
+	// GetCollection opens a connection to an existing collection within the database.
+	// If no collection with given name exists, an NotFoundError is returned.
+	GetCollection(ctx context.Context, name string, options *GetCollectionOptions) (Collection, error)
 
 	// CollectionExists returns true if a collection with given name exists within the database.
 	CollectionExists(ctx context.Context, name string) (bool, error)
@@ -42,4 +47,9 @@ type DatabaseCollection interface {
 	// CreateCollectionWithOptions creates a new collection with given name and options, and opens a connection to it.
 	// If a collection with given name already exists within the database, a DuplicateError is returned.
 	CreateCollectionWithOptions(ctx context.Context, name string, props *CreateCollectionProperties, options *CreateCollectionOptions) (Collection, error)
+}
+
+type GetCollectionOptions struct {
+	// SkipExistCheck skips checking if collection exists
+	SkipExistCheck bool `json:"skipExistCheck,omitempty"`
 }
