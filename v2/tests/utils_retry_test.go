@@ -21,10 +21,11 @@
 package tests
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,7 +52,8 @@ func (t Timeout) Timeout(timeout, interval time.Duration) error {
 	for {
 		err := t()
 		if err != nil {
-			if _, ok := err.(Interrupt); ok {
+			var interrupt Interrupt
+			if errors.As(err, &interrupt) {
 				return nil
 			}
 
@@ -60,7 +62,7 @@ func (t Timeout) Timeout(timeout, interval time.Duration) error {
 
 		select {
 		case <-timeoutT.C:
-			return errors.Errorf("Timeouted")
+			return fmt.Errorf("Timeouted")
 		case <-intervalT.C:
 			continue
 		}
