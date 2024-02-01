@@ -35,7 +35,7 @@ ifndef AF_ENABLED
 	AF_ENABLED := "false"
 endif
 
-TESTV2PARALLEL ?= 4
+TESTV2PARALLEL ?= 2
 
 ORGPATH := github.com/arangodb
 REPONAME := $(PROJECT)
