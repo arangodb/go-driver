@@ -334,11 +334,6 @@ func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
 		t.Fatalf("Failed to create new client: %s", describe(err))
 	}
 
-	if getTestMode() == testModeResilientSingle {
-		// AF mode is not anymore supported
-		skipFromVersion(c, "3.12", t)
-	}
-
 	if os.Getenv("TEST_NOT_WAIT_UNTIL_READY") != "" {
 		waitUntilReady = false
 	}
@@ -351,6 +346,12 @@ func createClient(t testEnv, cfg *testsClientConfig) driver.Client {
 			t.Fatalf("Connection is not available in %s: %s", timeout, describe(up))
 		}
 	}
+
+	if getTestMode() == testModeResilientSingle {
+		// AF mode is not anymore supported
+		skipFromVersion(c, "3.12", t)
+	}
+
 	return c
 }
 
