@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,14 +25,14 @@ import (
 )
 
 type DatabaseAnalyzer interface {
-	// EnsureAnalyzer ensures that the given analyzer exists. If it does not exist it is created.
+	// EnsureAnalyzer ensures that the given analyzer exists. If it does not exist, it is created.
 	// The function returns whether the analyzer already existed or not.
 	EnsureAnalyzer(ctx context.Context, analyzer *AnalyzerDefinition) (bool, Analyzer, error)
 
 	// Analyzer returns the analyzer definition for the given analyzer
 	Analyzer(ctx context.Context, name string) (Analyzer, error)
 
-	// Analyzers returns an iterator to read all analyzers
+	// Analyzers return an iterator to read all analyzers
 	Analyzers(ctx context.Context) (AnalyzersResponseReader, error)
 }
 

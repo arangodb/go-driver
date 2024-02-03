@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ func newDatabase(c *client, name string, modifiers ...connection.RequestModifier
 	d.databaseQuery = newDatabaseQuery(d)
 	d.databaseView = newDatabaseView(d)
 	d.databaseAnalyzer = newDatabaseAnalyzer(d)
+	d.databaseGraph = newDatabaseGraph(d)
 
 	return d
 }
@@ -54,6 +55,7 @@ type database struct {
 	*databaseQuery
 	*databaseView
 	*databaseAnalyzer
+	*databaseGraph
 }
 
 func (d database) Remove(ctx context.Context) error {

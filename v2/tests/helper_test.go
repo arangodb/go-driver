@@ -115,6 +115,18 @@ func WithUserDocs(t *testing.T, col arangodb.Collection, f func(users []UserDoc)
 	})
 }
 
+func WithGraph(t *testing.T, db arangodb.Database, graphDef *arangodb.GraphDefinition, opts *arangodb.CreateGraphOptions, f func(g arangodb.Graph)) {
+	name := db.Name() + "_graph"
+	t.Logf("Creating Graph %s", name)
+
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+		g, err := db.CreateGraph(ctx, name, graphDef, opts)
+		require.NoError(t, err, fmt.Sprintf("Failed to create Graph %s", name))
+
+		f(g)
+	})
+}
+
 func getBool(b *bool, d bool) bool {
 	if b == nil {
 		return d
