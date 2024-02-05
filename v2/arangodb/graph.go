@@ -63,9 +63,8 @@ type Graph interface {
 	// Remove the entire graph with options.
 	Remove(ctx context.Context, opts *RemoveGraphOptions) error
 
-	// TODO
 	// GraphVertexCollections - Vertex collection functions
-	//GraphVertexCollections
+	GraphVertexCollections
 
 	// TODO
 	// GraphEdgeCollections - Edge collection functions
