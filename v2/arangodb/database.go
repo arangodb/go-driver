@@ -43,4 +43,5 @@ type Database interface {
 	DatabaseQuery
 	DatabaseView
 	DatabaseAnalyzer
+	DatabaseGraph
 }
