@@ -96,7 +96,7 @@ func (g *graphVertexCollections) VertexCollections(ctx context.Context) ([]Verte
 }
 
 func (g *graphVertexCollections) getCollections(ctx context.Context) ([]string, error) {
-	url := g.graph.url("vertex")
+	url := g.url()
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
@@ -116,7 +116,7 @@ func (g *graphVertexCollections) getCollections(ctx context.Context) ([]string, 
 }
 
 func (g *graphVertexCollections) CreateVertexCollection(ctx context.Context, name string, opts *CreateVertexCollectionOptions) (CreateVertexCollectionResponse, error) {
-	url := g.url("vertex")
+	url := g.url()
 
 	var response CreateVertexCollectionResponse
 
@@ -147,12 +147,12 @@ func (g *graphVertexCollections) CreateVertexCollection(ctx context.Context, nam
 	}
 }
 
-func (g *graphVertexCollections) Delete(ctx context.Context, name string, opts *DeleteVertexCollectionOptions) (DeleteVertexCollectionResponse, error) {
-	url := g.url("vertex", name)
+func (g *graphVertexCollections) DeleteVertexCollection(ctx context.Context, name string, opts *DeleteVertexCollectionOptions) (DeleteVertexCollectionResponse, error) {
+	url := g.url(name)
 
 	var response DeleteVertexCollectionResponse
 
-	resp, err := connection.CallPost(ctx, g.graph.db.connection(), url, &response, nil, append(g.graph.db.modifiers, opts.modifyRequest)...)
+	resp, err := connection.CallDelete(ctx, g.graph.db.connection(), url, &response, append(g.graph.db.modifiers, opts.modifyRequest)...)
 	if err != nil {
 		return DeleteVertexCollectionResponse{}, err
 	}

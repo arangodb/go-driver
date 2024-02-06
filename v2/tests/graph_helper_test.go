@@ -24,23 +24,28 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
-func sampleGraph(db arangodb.Database) (*arangodb.GraphDefinition, []string) {
-	edge := db.Name() + "_edge"
-	to := db.Name() + "_to-coll"
-	from := db.Name() + "_from-coll"
-
-	graphDef := &arangodb.GraphDefinition{
-		OrphanCollections: []string{"orphan1", "orphan2"},
-		EdgeDefinitions: []arangodb.EdgeDefinition{
-			{
-				Collection: edge,
-				To:         []string{to},
-				From:       []string{from},
-			},
-		},
+func sampleGraph(db arangodb.Database) *arangodb.GraphDefinition {
+	return &arangodb.GraphDefinition{
+		OrphanCollections:   []string{"orphan1", "orphan2"},
 		NumberOfShards:      newInt(3),
 		SmartGraphAttribute: "key",
 		IsSmart:             true,
 	}
-	return graphDef, []string{to, from}
+}
+
+func sampleGraphWithEdges(db arangodb.Database) (*arangodb.GraphDefinition, []string) {
+	edge := db.Name() + "_edge"
+	to := db.Name() + "_to-coll"
+	from := db.Name() + "_from-coll"
+
+	g := sampleGraph(db)
+	g.EdgeDefinitions = []arangodb.EdgeDefinition{
+		{
+			Collection: edge,
+			To:         []string{to},
+			From:       []string{from},
+		},
+	}
+
+	return g, []string{to, from}
 }

@@ -22,6 +22,7 @@ package arangodb
 
 import (
 	"context"
+
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
@@ -41,11 +42,11 @@ type GraphVertexCollections interface {
 	// CreateVertexCollection creates a vertex collection in the graph
 	CreateVertexCollection(ctx context.Context, name string, opts *CreateVertexCollectionOptions) (CreateVertexCollectionResponse, error)
 
-	// Delete Removes a vertex collection from the list of the graph’s orphan collections.
+	// DeleteVertexCollection Removes a vertex collection from the list of the graph’s orphan collections.
 	// It can optionally delete the collection if it is not used in any other graph.
 	// You cannot remove vertex collections that are used in one of the edge definitions of the graph.
 	// You need to modify or remove the edge definition first to fully remove a vertex collection from the graph.
-	Delete(ctx context.Context, name string, opts *DeleteVertexCollectionOptions) (DeleteVertexCollectionResponse, error)
+	DeleteVertexCollection(ctx context.Context, name string, opts *DeleteVertexCollectionOptions) (DeleteVertexCollectionResponse, error)
 }
 
 type CreateVertexCollectionOptions struct {

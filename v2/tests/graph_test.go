@@ -34,7 +34,7 @@ func Test_GraphSimple(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			gDef, collections := sampleGraph(db)
+			gDef, collections := sampleGraphWithEdges(db)
 			gDef.ReplicationFactor = 2
 			gDef.WriteConcern = newInt(2)
 			WithGraph(t, db, gDef, nil, func(graph arangodb.Graph) {
@@ -96,7 +96,7 @@ func Test_GraphCreation(t *testing.T) {
 
 			t.Run("Satellite", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					gDef, _ := sampleGraph(db)
+					gDef := sampleGraph(db)
 					gDef.ReplicationFactor = arangodb.SatelliteGraph
 					gDef.IsSmart = false
 					gDef.SmartGraphAttribute = ""
@@ -115,7 +115,7 @@ func Test_GraphCreation(t *testing.T) {
 
 			t.Run("Disjoint", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					gDef, _ := sampleGraph(db)
+					gDef := sampleGraph(db)
 					gDef.IsDisjoint = true
 
 					g, err := db.CreateGraph(ctx, db.Name()+"_disjoint", gDef, nil)
