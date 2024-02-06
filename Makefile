@@ -35,6 +35,10 @@ ifndef AF_ENABLED
 	AF_ENABLED := "false"
 endif
 
+ifndef VST_ENABLED
+	VST_ENABLED := "false"
+endif
+
 TESTV2PARALLEL ?= 2
 
 ORGPATH := github.com/arangodb
@@ -168,7 +172,7 @@ changelog:
 
 run-tests: run-unit-tests run-tests-single run-tests-cluster
 ifeq ("$(AF_ENABLED)", "true")
-	run-tests-resilientsingle
+	make run-tests-resilientsingle
 endif
 
 # The below rule exists only for backward compatibility.
@@ -193,7 +197,10 @@ run-v2-unit-tests:
 		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection $(REPOPATH)/v2/arangodb/...
 
 # Single server tests 
-run-tests-single: run-tests-single-json run-tests-single-vpack run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
+run-tests-single: run-tests-single-json run-tests-single-vpack
+ifeq ("$(VST_ENABLED)", "true")
+	make run-tests-single-vst-1.0 $(VST11_SINGLE_TESTS)
+endif
 
 run-tests-single-json: run-tests-single-json-with-auth run-tests-single-json-no-auth run-tests-single-json-jwt-super run-tests-single-json-ssl
 
@@ -268,7 +275,10 @@ run-tests-single-vst-1.1-jwt-ssl:
 	@${MAKE} TEST_MODE="single" TEST_AUTH="jwt" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # ResilientSingle server tests 
-run-tests-resilientsingle: run-tests-resilientsingle-json run-tests-resilientsingle-vpack run-tests-resilientsingle-vst-1.0 $(VST11_RESILIENTSINGLE_TESTS)
+run-tests-resilientsingle: run-tests-resilientsingle-json run-tests-resilientsingle-vpack
+ifeq ("$(VST_ENABLED)", "true")
+	make run-tests-resilientsingle-vst-1.0 $(VST11_RESILIENTSINGLE_TESTS)
+endif
 
 run-tests-resilientsingle-json: run-tests-resilientsingle-json-with-auth run-tests-resilientsingle-json-no-auth
 
@@ -315,7 +325,11 @@ run-tests-resilientsingle-vst-1.1-jwt-auth:
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="jwt" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
 # Cluster mode tests
-run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack run-tests-cluster-vst-1.0 $(VST11_CLUSTER_TESTS)
+run-tests-cluster: run-tests-cluster-json run-tests-cluster-vpack
+ifeq ("$(VST_ENABLED)", "true")
+	make run-tests-cluster-vst-1.0 $(VST11_CLUSTER_TESTS)
+endif
+
 
 run-tests-cluster-json: run-tests-cluster-json-no-auth run-tests-cluster-json-with-auth run-tests-cluster-json-ssl
 
@@ -535,7 +549,7 @@ v2-%:
 
 run-v2-tests: run-v2-tests-single run-v2-tests-cluster
 ifeq ("$(AF_ENABLED)", "true")
-	run-v2-tests-resilientsingle
+	make run-v2-tests-resilientsingle
 endif
 
 run-v2-tests-cluster: run-v2-tests-cluster-with-basic-auth run-v2-tests-cluster-without-ssl run-v2-tests-cluster-without-auth run-v2-tests-cluster-with-jwt-auth
