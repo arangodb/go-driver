@@ -33,6 +33,7 @@ func TestCreatePregelJob(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
+	skipFromVersion(c, "3.12", t)
 	skipNoCluster(c, t)
 
 	db := ensureDatabase(ctx, c, "pregel_job_test", nil, t)
