@@ -73,6 +73,7 @@ type Graph interface {
 }
 
 type RemoveGraphOptions struct {
+	// Drop the collections of this graph as well. Collections are only dropped if they are not used in other graphs.
 	DropCollections bool
 }
 

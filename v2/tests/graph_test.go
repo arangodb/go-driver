@@ -96,7 +96,7 @@ func Test_GraphCreation(t *testing.T) {
 
 			t.Run("Satellite", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					gDef := sampleGraph(db)
+					gDef := sampleGraph()
 					gDef.ReplicationFactor = arangodb.SatelliteGraph
 					gDef.IsSmart = false
 					gDef.SmartGraphAttribute = ""
@@ -115,7 +115,7 @@ func Test_GraphCreation(t *testing.T) {
 
 			t.Run("Disjoint", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					gDef := sampleGraph(db)
+					gDef := sampleGraph()
 					gDef.IsDisjoint = true
 
 					g, err := db.CreateGraph(ctx, db.Name()+"_disjoint", gDef, nil)
@@ -225,6 +225,56 @@ func Test_GraphHybridSmartGraphCreationConditions(t *testing.T) {
 					require.Equal(t, tc.SmartGraphAttribute, g.SmartGraphAttribute())
 				})
 			}
+		})
+	})
+}
+
+func Test_GraphRemoval(t *testing.T) {
+	requireClusterMode(t)
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+
+			t.Run("Deleting graph should not remove the collection", func(t *testing.T) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					orphanColName := "col-not-remove"
+
+					gDef := sampleGraph()
+					gDef.OrphanCollections = []string{orphanColName}
+
+					g, err := db.CreateGraph(ctx, db.Name()+"_del", gDef, nil)
+					require.NoError(t, err)
+
+					err = g.Remove(ctx, nil)
+					require.NoError(t, err)
+
+					exist, err := db.CollectionExists(ctx, orphanColName)
+					require.NoError(t, err)
+					require.True(t, exist, "orphan collection should exist")
+				})
+			})
+
+			t.Run("Deleting graph should remove the collection", func(t *testing.T) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					orphanColName := "col-remove"
+
+					gDef := sampleGraph()
+					gDef.OrphanCollections = []string{orphanColName}
+
+					g, err := db.CreateGraph(ctx, db.Name()+"_del", gDef, nil)
+					require.NoError(t, err)
+
+					opts := arangodb.RemoveGraphOptions{
+						DropCollections: true,
+					}
+					err = g.Remove(ctx, &opts)
+					require.NoError(t, err)
+
+					exist, err := db.CollectionExists(ctx, orphanColName)
+					require.NoError(t, err)
+					require.False(t, exist, "orphan collection should not exist")
+				})
+			})
 		})
 	})
 }
