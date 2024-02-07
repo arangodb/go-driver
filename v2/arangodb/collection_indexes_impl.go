@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Jakub Wierzbowski
 //
 
 package arangodb
@@ -72,7 +70,7 @@ func (c *collectionIndexes) IndexExists(ctx context.Context, name string) (bool,
 
 	resp, err := connection.CallGet(ctx, c.collection.connection(), url, nil, c.collection.withModifiers()...)
 	if err != nil {
-		if connection.IsNotFoundError(err) {
+		if shared.IsNotFound(err) {
 			return false, nil
 		}
 		return false, err

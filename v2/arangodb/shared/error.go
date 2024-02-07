@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package shared
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -117,7 +116,8 @@ func IsArangoError(err error) bool {
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
 func IsArangoErrorWithCode(err error, code int) bool {
 	return checkCause(err, func(err error) bool {
-		if a, ok := err.(ArangoError); ok {
+		var a ArangoError
+		if errors.As(err, &a) {
 			return a.HasError && a.Code == code
 		}
 
@@ -128,7 +128,8 @@ func IsArangoErrorWithCode(err error, code int) bool {
 // IsArangoErrorWithErrorNum returns true when the given error is an ArangoError and its ErrorNum field is equal to one of the given numbers.
 func IsArangoErrorWithErrorNum(err error, errorNum ...int) bool {
 	return checkCause(err, func(err error) bool {
-		if a, ok := err.(ArangoError); ok {
+		var a ArangoError
+		if errors.As(err, &a) {
 			if !a.HasError {
 				return false
 			}
@@ -219,7 +220,8 @@ func (e InvalidArgumentError) Error() string {
 // IsInvalidArgument returns true if the given error is an InvalidArgumentError.
 func IsInvalidArgument(err error) bool {
 	return checkCause(err, func(err error) bool {
-		if _, ok := err.(InvalidArgumentError); ok {
+		var invalidArgumentError InvalidArgumentError
+		if errors.As(err, &invalidArgumentError) {
 			return true
 		}
 
@@ -244,7 +246,8 @@ func IsEOF(err error) bool {
 // IsNoMoreDocuments returns true if the given error is an NoMoreDocumentsError.
 func IsNoMoreDocuments(err error) bool {
 	return checkCause(err, func(err error) bool {
-		if _, ok := err.(NoMoreDocumentsError); ok {
+		var noMoreDocumentsError NoMoreDocumentsError
+		if errors.As(err, &noMoreDocumentsError) {
 			return true
 		}
 

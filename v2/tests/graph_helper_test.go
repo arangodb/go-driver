@@ -26,7 +26,6 @@ import (
 
 func sampleGraph(db arangodb.Database) *arangodb.GraphDefinition {
 	return &arangodb.GraphDefinition{
-		OrphanCollections:   []string{"orphan1", "orphan2"},
 		NumberOfShards:      newInt(3),
 		SmartGraphAttribute: "key",
 		IsSmart:             true,
@@ -46,6 +45,7 @@ func sampleGraphWithEdges(db arangodb.Database) (*arangodb.GraphDefinition, []st
 			From:       []string{from},
 		},
 	}
+	g.OrphanCollections = []string{"orphan1", "orphan2"}
 
 	return g, []string{to, from}
 }
