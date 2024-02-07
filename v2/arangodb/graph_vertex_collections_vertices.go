@@ -52,6 +52,18 @@ type GetVertexOptions struct {
 	// Must contain a revision. If this is set, a document is only returned if it has exactly this revision.
 	// Also see if-match header as an alternative to this.
 	Rev string `json:"rev,omitempty"`
+
+	// If the “If-Match” header is given, then it must contain exactly one ETag (_rev).
+	// The document is returned, if it has the same revision as the given ETag
+	IfMatch string
+
+	// If the “If-None-Match” header is given, then it must contain exactly one ETag (_rev).
+	// The document is returned, if it has a different revision than the given ETag
+	IfNoneMatch string
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 type CreateVertexOptions struct {
@@ -60,6 +72,10 @@ type CreateVertexOptions struct {
 
 	// Define if the response should contain the complete new version of the document.
 	NewObject interface{}
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 type VertexCreateResponse struct {
@@ -82,6 +98,14 @@ type VertexUpdateOptions struct {
 	// are set to null. If this parameter is set to false, top-level attribute and sub-attributes with a null value
 	// in the request are removed from the document (but not attributes of objects that are nested inside of arrays).
 	KeepNull *bool
+
+	// Conditionally update a vertex based on a target revision id
+	// If the “If-Match” header is given, then it must contain exactly one ETag (_rev).
+	IfMatch string
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 type VertexUpdateResponse struct {
@@ -104,6 +128,14 @@ type VertexReplaceOptions struct {
 	// are set to null. If this parameter is set to false, top-level attribute and sub-attributes with a null value
 	// in the request are removed from the document (but not attributes of objects that are nested inside of arrays).
 	KeepNull *bool
+
+	// Conditionally replace a vertex based on a target revision id
+	// If the “If-Match” header is given, then it must contain exactly one ETag (_rev).
+	IfMatch string
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 type VertexReplaceResponse struct {
@@ -118,6 +150,14 @@ type DeleteVertexOptions struct {
 
 	// Define if a presentation of the deleted document should be returned within the response object.
 	OldObject interface{}
+
+	// Conditionally delete a vertex based on a target revision id
+	// If the “If-Match” header is given, then it must contain exactly one ETag (_rev).
+	IfMatch string
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 type VertexDeleteResponse struct {

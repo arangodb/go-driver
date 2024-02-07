@@ -87,6 +87,18 @@ func (g *GetVertexOptions) modifyRequest(r connection.Request) error {
 		r.AddQuery("rev", g.Rev)
 	}
 
+	if g.IfMatch != "" {
+		r.AddHeader("If-Match", g.IfMatch)
+	}
+
+	if g.IfNoneMatch != "" {
+		r.AddHeader("If-None-Match", g.IfNoneMatch)
+	}
+
+	if g.TransactionID != "" {
+		r.AddHeader("x-arango-trx-id", g.TransactionID)
+	}
+
 	return nil
 }
 
@@ -135,6 +147,10 @@ func (c *CreateVertexOptions) modifyRequest(r connection.Request) error {
 
 	if c.NewObject != nil {
 		r.AddQuery("returnNew", "true")
+	}
+
+	if c.TransactionID != "" {
+		r.AddHeader("x-arango-trx-id", c.TransactionID)
 	}
 
 	return nil
@@ -196,6 +212,14 @@ func (v *VertexUpdateOptions) modifyRequest(r connection.Request) error {
 
 	if v.KeepNull != nil {
 		r.AddQuery("keepNull", boolToString(*v.KeepNull))
+	}
+
+	if v.IfMatch != "" {
+		r.AddHeader("If-Match", v.IfMatch)
+	}
+
+	if v.TransactionID != "" {
+		r.AddHeader("x-arango-trx-id", v.TransactionID)
 	}
 
 	return nil
@@ -260,6 +284,14 @@ func (v *VertexReplaceOptions) modifyRequest(r connection.Request) error {
 		r.AddQuery("keepNull", boolToString(*v.KeepNull))
 	}
 
+	if v.IfMatch != "" {
+		r.AddHeader("If-Match", v.IfMatch)
+	}
+
+	if v.TransactionID != "" {
+		r.AddHeader("x-arango-trx-id", v.TransactionID)
+	}
+
 	return nil
 }
 
@@ -295,6 +327,14 @@ func (c *DeleteVertexOptions) modifyRequest(r connection.Request) error {
 
 	if c.OldObject != nil {
 		r.AddQuery("returnOld", "true")
+	}
+
+	if c.IfMatch != "" {
+		r.AddHeader("If-Match", c.IfMatch)
+	}
+
+	if c.TransactionID != "" {
+		r.AddHeader("x-arango-trx-id", c.TransactionID)
 	}
 
 	return nil
