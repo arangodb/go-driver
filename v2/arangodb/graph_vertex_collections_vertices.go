@@ -31,9 +31,11 @@ type VertexCollection interface {
 	Name() string
 
 	// GetVertex Gets a vertex from the given collection.
-	GetVertex(ctx context.Context, key string, result interface{}, opts *GetVertexOptions) (DocumentMeta, error)
+	// To get _key and _rev values, embed the DocumentMeta struct in your result struct.
+	GetVertex(ctx context.Context, key string, result interface{}, opts *GetVertexOptions) error
 
 	// CreateVertex Adds a vertex to the given collection.
+	// To get _key and _rev values, embed the DocumentMeta struct in your result struct and pass to VertexCreateResponse.New.
 	CreateVertex(ctx context.Context, vertex interface{}, opts *CreateVertexOptions) (VertexCreateResponse, error)
 
 	// UpdateVertex Updates the data of the specific vertex in the collection.
@@ -119,7 +121,6 @@ type DeleteVertexOptions struct {
 }
 
 type VertexDeleteResponse struct {
-	DocumentMeta
 	shared.ResponseStruct `json:",inline"`
 	Old                   interface{}
 }

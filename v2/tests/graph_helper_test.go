@@ -24,7 +24,7 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
-func sampleGraph() *arangodb.GraphDefinition {
+func sampleSmartGraph() *arangodb.GraphDefinition {
 	return &arangodb.GraphDefinition{
 		NumberOfShards:      newInt(3),
 		SmartGraphAttribute: "key",
@@ -37,7 +37,7 @@ func sampleGraphWithEdges(db arangodb.Database) (*arangodb.GraphDefinition, []st
 	to := db.Name() + "_to-coll"
 	from := db.Name() + "_from-coll"
 
-	g := sampleGraph()
+	g := sampleSmartGraph()
 	g.EdgeDefinitions = []arangodb.EdgeDefinition{
 		{
 			Collection: edge,

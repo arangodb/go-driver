@@ -96,7 +96,7 @@ func Test_GraphCreation(t *testing.T) {
 
 			t.Run("Satellite", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					gDef := sampleGraph()
+					gDef := sampleSmartGraph()
 					gDef.ReplicationFactor = arangodb.SatelliteGraph
 					gDef.IsSmart = false
 					gDef.SmartGraphAttribute = ""
@@ -115,7 +115,7 @@ func Test_GraphCreation(t *testing.T) {
 
 			t.Run("Disjoint", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					gDef := sampleGraph()
+					gDef := sampleSmartGraph()
 					gDef.IsDisjoint = true
 
 					g, err := db.CreateGraph(ctx, db.Name()+"_disjoint", gDef, nil)
@@ -239,7 +239,7 @@ func Test_GraphRemoval(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					orphanColName := "col-not-remove"
 
-					gDef := sampleGraph()
+					gDef := sampleSmartGraph()
 					gDef.OrphanCollections = []string{orphanColName}
 
 					g, err := db.CreateGraph(ctx, db.Name()+"_del", gDef, nil)
@@ -258,7 +258,7 @@ func Test_GraphRemoval(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					orphanColName := "col-remove"
 
-					gDef := sampleGraph()
+					gDef := sampleSmartGraph()
 					gDef.OrphanCollections = []string{orphanColName}
 
 					g, err := db.CreateGraph(ctx, db.Name()+"_del", gDef, nil)

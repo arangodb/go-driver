@@ -47,7 +47,7 @@ type vertexCollection struct {
 
 // creates the relative path to this vertex (`_db/<db-name>/_api/gharial/<graph-name>/vertex/<collection-name>`)
 func (v *vertexCollection) url(parts ...string) string {
-	p := append([]string{v.vertexColName, "vertex"}, parts...)
+	p := append([]string{"vertex", v.vertexColName}, parts...)
 	return v.graph.url(p...)
 }
 
@@ -55,27 +55,26 @@ func (v *vertexCollection) Name() string {
 	return v.vertexColName
 }
 
-func (v *vertexCollection) GetVertex(ctx context.Context, key string, result interface{}, opts *GetVertexOptions) (DocumentMeta, error) {
+func (v *vertexCollection) GetVertex(ctx context.Context, key string, result interface{}, opts *GetVertexOptions) error {
 	url := v.url(key)
 
-	var response struct {
-		shared.ResponseStruct `json:",inline"`
-		DocumentMeta          `json:",inline"`
+	response := struct {
+		*shared.ResponseStruct `json:",inline"`
+		Vertex                 *UnmarshalInto `json:"vertex,omitempty"`
+	}{
+		Vertex: newUnmarshalInto(result),
 	}
 
-	data := newUnmarshalInto(result)
-
-	resp, err := connection.CallGet(ctx, v.graph.db.connection(), url,
-		newMultiUnmarshaller(&response, data), append(v.graph.db.modifiers, opts.modifyRequest)...)
+	resp, err := connection.CallGet(ctx, v.graph.db.connection(), url, &response, append(v.graph.db.modifiers, opts.modifyRequest)...)
 	if err != nil {
-		return DocumentMeta{}, err
+		return err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return response.DocumentMeta, nil
+		return nil
 	default:
-		return DocumentMeta{}, response.AsArangoErrorWithCode(code)
+		return response.AsArangoErrorWithCode(code)
 	}
 }
 
@@ -101,14 +100,13 @@ func (v *vertexCollection) CreateVertex(ctx context.Context, vertex interface{},
 	}
 
 	response := struct {
-		*DocumentMeta          `json:",inline"`
+		*DocumentMeta          `json:"vertex,omitempty"`
 		*shared.ResponseStruct `json:",inline"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}{
 		DocumentMeta:   &meta.DocumentMeta,
 		ResponseStruct: &meta.ResponseStruct,
-
-		New: newUnmarshalInto(meta.New),
+		New:            newUnmarshalInto(meta.New),
 	}
 
 	resp, err := connection.CallPost(ctx, v.graph.db.connection(), url, &response, vertex, append(v.graph.db.modifiers, opts.modifyRequest)...)
@@ -153,16 +151,15 @@ func (v *vertexCollection) UpdateVertex(ctx context.Context, key string, newValu
 	}
 
 	response := struct {
-		*DocumentMeta          `json:",inline"`
+		*DocumentMeta          `json:"vertex,inline"`
 		*shared.ResponseStruct `json:",inline"`
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}{
 		DocumentMeta:   &meta.DocumentMeta,
 		ResponseStruct: &meta.ResponseStruct,
-
-		Old: newUnmarshalInto(meta.Old),
-		New: newUnmarshalInto(meta.New),
+		Old:            newUnmarshalInto(meta.Old),
+		New:            newUnmarshalInto(meta.New),
 	}
 
 	resp, err := connection.CallPatch(ctx, v.graph.db.connection(), url, &response, newValue, append(v.graph.db.modifiers, opts.modifyRequest)...)
@@ -215,7 +212,7 @@ func (v *vertexCollection) ReplaceVertex(ctx context.Context, key string, newVal
 	}
 
 	response := struct {
-		*DocumentMeta          `json:",inline"`
+		*DocumentMeta          `json:"vertex,omitempty"`
 		*shared.ResponseStruct `json:",inline"`
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
@@ -227,7 +224,7 @@ func (v *vertexCollection) ReplaceVertex(ctx context.Context, key string, newVal
 		New: newUnmarshalInto(meta.New),
 	}
 
-	resp, err := connection.CallPatch(ctx, v.graph.db.connection(), url, &response, newValue, append(v.graph.db.modifiers, opts.modifyRequest)...)
+	resp, err := connection.CallPut(ctx, v.graph.db.connection(), url, &response, newValue, append(v.graph.db.modifiers, opts.modifyRequest)...)
 	if err != nil {
 		return VertexReplaceResponse{}, err
 	}

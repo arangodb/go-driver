@@ -34,7 +34,7 @@ func Test_GraphVertexCollections(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithGraph(t, db, sampleGraph(), nil, func(graph arangodb.Graph) {
+			WithGraph(t, db, sampleSmartGraph(), nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					cols, err := graph.VertexCollections(ctx)
 					require.NoError(t, err)
@@ -77,14 +77,13 @@ func Test_GraphVertexCollections(t *testing.T) {
 	})
 }
 
-// TestCreateSatelliteVertexCollection creates a graph and then adds a Satellite vertex collection in it
 func TestCreateSatelliteVertexCollection(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		requireClusterMode(t)
 		skipNoEnterprise(client, context.Background(), t)
 
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithGraph(t, db, sampleGraph(), nil, func(graph arangodb.Graph) {
+			WithGraph(t, db, sampleSmartGraph(), nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipNoEnterprise(client, ctx, t)
 					cols, err := graph.VertexCollections(ctx)
