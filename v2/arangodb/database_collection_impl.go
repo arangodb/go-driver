@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
-
 	"github.com/pkg/errors"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
@@ -79,7 +78,7 @@ func (d databaseCollection) CollectionExists(ctx context.Context, name string) (
 		return true, nil
 	}
 
-	if connection.IsNotFoundError(err) {
+	if shared.IsNotFound(err) {
 		return false, nil
 	}
 

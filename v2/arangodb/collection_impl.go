@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -188,12 +188,12 @@ func (c collection) connection() connection.Connection {
 	return c.db.connection()
 }
 
+// creates the relative path to this collection (`_db/<db-name>/_api/<document|collection|index>/<collection-name>`)
 func (c collection) url(api string, parts ...string) string {
 	return c.db.url(append([]string{"_api", api, c.name}, parts...)...)
 }
 
-// Shards fetches shards information of the collection.
-func (c *collection) Shards(ctx context.Context, details bool) (CollectionShards, error) {
+func (c collection) Shards(ctx context.Context, details bool) (CollectionShards, error) {
 	var body struct {
 		shared.ResponseStruct `json:",inline"`
 		CollectionShards      `json:",inline"`

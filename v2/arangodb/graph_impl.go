@@ -34,8 +34,7 @@ import (
 func newGraph(db *database, def GraphDefinition, modifiers ...connection.RequestModifier) *graph {
 	g := &graph{db: db, input: def, modifiers: append(db.modifiers, modifiers...)}
 
-	// TODO
-	//g.graphVertexCollections = newGraphVertexCollections(g)
+	g.graphVertexCollections = newGraphVertexCollections(g)
 
 	return g
 }
@@ -48,10 +47,10 @@ type graph struct {
 	input     GraphDefinition
 	modifiers []connection.RequestModifier
 
-	// TODO
-	//*graphVertexCollections
+	*graphVertexCollections
 }
 
+// creates the relative path to this graph (`_db/<db-name>/_api/gharial/<graph-name>`)
 func (g *graph) url(parts ...string) string {
 	p := append([]string{"_api", "gharial", g.Name()}, parts...)
 	return g.db.url(p...)

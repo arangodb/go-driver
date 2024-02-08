@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package tests
@@ -38,16 +36,9 @@ type UserDoc struct {
 	Age  int    `json:"age"`
 }
 
-type UserDocWithKey struct {
-	Key  string `json:"_key"`
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-
-type UserDocWithKeyWithOmit struct {
-	Key  string `json:"_key,omitempty"`
-	Name string `json:"name,omitempty"`
-	Age  int    `json:"age,omitempty"`
+type UserDocWithMeta struct {
+	arangodb.DocumentMeta `json:",inline"`
+	UserDoc               `json:",inline"`
 }
 
 type Account struct {

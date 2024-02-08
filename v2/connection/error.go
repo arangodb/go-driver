@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package connection
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
@@ -52,7 +51,8 @@ type cause interface {
 }
 
 func IsCodeError(err error, code int) bool {
-	if codeErr, ok := err.(Error); ok {
+	var codeErr Error
+	if errors.As(err, &codeErr) {
 		return codeErr.Code == code
 	}
 
