@@ -114,7 +114,6 @@ func Test_GraphEdgeDefinitions(t *testing.T) {
 	})
 }
 
-/*
 func TestGraphEdgeDefinitionsRemovalCollections(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		requireClusterMode(t)
@@ -141,12 +140,13 @@ func TestGraphEdgeDefinitionsRemovalCollections(t *testing.T) {
 
 						// TODO: BTS https://arangodb.atlassian.net/browse/BTS-1768
 						//require.False(t, exist, "collection should not exist")
+						t.Logf("%v", exist)
 					})
 				})
 			})
 		})
 	})
-}*/
+}
 
 func TestGraphEdgeDefinitionsWithSatellites(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
