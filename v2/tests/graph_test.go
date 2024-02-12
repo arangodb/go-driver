@@ -89,9 +89,9 @@ func Test_GraphSimple(t *testing.T) {
 }
 
 func Test_GraphCreation(t *testing.T) {
-	requireClusterMode(t)
-
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		requireClusterMode(t)
+		skipNoEnterprise(client, context.Background(), t)
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 
 			t.Run("Satellite", func(t *testing.T) {
