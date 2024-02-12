@@ -34,7 +34,7 @@ func Test_GraphSimple(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			gDef, collections := sampleGraphWithEdges(db)
+			gDef := sampleGraphWithEdges(db)
 			gDef.ReplicationFactor = 2
 			gDef.WriteConcern = newInt(2)
 			WithGraph(t, db, gDef, nil, func(graph arangodb.Graph) {
@@ -65,7 +65,7 @@ func Test_GraphSimple(t *testing.T) {
 					require.False(t, g.IsSatellite())
 
 					t.Run("Test created collections", func(t *testing.T) {
-						for _, c := range collections {
+						for _, c := range append(g.EdgeDefinitions()[0].To, g.EdgeDefinitions()[0].From...) {
 							col, err := db.Collection(ctx, c)
 							require.NoError(t, err)
 							require.NotNil(t, col)
