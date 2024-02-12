@@ -74,7 +74,7 @@ func Test_EdgeSimple(t *testing.T) {
 						opts := arangodb.EdgeUpdateOptions{
 							WaitForSync: newBool(true),
 						}
-						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"Distance": 10}, &opts)
+						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"distance": 10}, &opts)
 						require.NoError(t, err)
 						require.NotEmpty(t, updateEdgeResp.Key)
 
@@ -174,7 +174,7 @@ func Test_EdgeExtended(t *testing.T) {
 							WaitForSync: newBool(true),
 							OldObject:   &oldObject,
 						}
-						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"Distance": 10}, &opts)
+						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"distance": 10}, &opts)
 						require.NoError(t, err)
 						require.NotEmpty(t, updateEdgeResp.Key)
 						require.NotEmpty(t, oldObject)
