@@ -79,7 +79,10 @@ func Test_EdgeSimple(t *testing.T) {
 						require.NotEmpty(t, updateEdgeResp.Key)
 
 						docRead := RouteEdge{}
-						err = edgeDefResp.Edge.GetEdge(ctx, updateEdgeResp.Key, &docRead, nil)
+						optsRead := arangodb.GetEdgeOptions{
+							Rev: updateEdgeResp.Rev,
+						}
+						err = edgeDefResp.Edge.GetEdge(ctx, docKey, &docRead, &optsRead)
 						require.NoError(t, err)
 						require.Equal(t, doc.From, docRead.From)
 						require.Equal(t, doc.To, docRead.To)
@@ -103,7 +106,10 @@ func Test_EdgeSimple(t *testing.T) {
 						require.NotEmpty(t, replaceEdgeResp.Key)
 
 						docRead := RouteEdge{}
-						err = edgeDefResp.Edge.GetEdge(ctx, replaceEdgeResp.Key, &docRead, nil)
+						optsRead := arangodb.GetEdgeOptions{
+							Rev: replaceEdgeResp.Rev,
+						}
+						err = edgeDefResp.Edge.GetEdge(ctx, docKey, &docRead, &optsRead)
 						require.NoError(t, err)
 						require.Equal(t, doc.From, docRead.From)
 						require.Equal(t, doc.To, docRead.To)
@@ -175,7 +181,10 @@ func Test_EdgeExtended(t *testing.T) {
 						require.Equal(t, doc, oldObject)
 
 						docRead := RouteEdge{}
-						err = edgeDefResp.Edge.GetEdge(ctx, updateEdgeResp.Key, &docRead, nil)
+						optsRead := arangodb.GetEdgeOptions{
+							Rev: updateEdgeResp.Rev,
+						}
+						err = edgeDefResp.Edge.GetEdge(ctx, docKey, &docRead, &optsRead)
 						require.NoError(t, err)
 						require.Equal(t, doc.From, docRead.From)
 						require.Equal(t, doc.To, docRead.To)

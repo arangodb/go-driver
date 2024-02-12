@@ -139,7 +139,7 @@ func TestGraphEdgeDefinitionsRemovalCollections(t *testing.T) {
 						exist, err := db.CollectionExists(ctx, edgeDef.Collection)
 						require.NoError(t, err)
 
-						// TODO: BTS it is a bug!
+						// TODO: BTS https://arangodb.atlassian.net/browse/BTS-1768
 						//require.False(t, exist, "collection should not exist")
 					})
 				})
