@@ -41,18 +41,8 @@ type UserDocWithMeta struct {
 	UserDoc               `json:",inline"`
 }
 
-type Account struct {
-	ID   string   `json:"id"`
-	User *UserDoc `json:"user"`
-}
-
-type Book struct {
-	Title string
-}
-
-type BookWithAuthor struct {
-	Title  string
-	Author string
+type Place struct {
+	Name string `json:"name"`
 }
 
 type RouteEdge struct {

@@ -35,6 +35,7 @@ func newGraph(db *database, def GraphDefinition, modifiers ...connection.Request
 	g := &graph{db: db, input: def, modifiers: append(db.modifiers, modifiers...)}
 
 	g.graphVertexCollections = newGraphVertexCollections(g)
+	g.graphEdgeDefinitions = newGraphEdgeDefinitions(g)
 
 	return g
 }
@@ -48,6 +49,7 @@ type graph struct {
 	modifiers []connection.RequestModifier
 
 	*graphVertexCollections
+	*graphEdgeDefinitions
 }
 
 // creates the relative path to this graph (`_db/<db-name>/_api/gharial/<graph-name>`)

@@ -66,10 +66,8 @@ type Graph interface {
 	// GraphVertexCollections - Vertex collection functions
 	GraphVertexCollections
 
-	// TODO
-	// GraphEdgeCollections - Edge collection functions
-	// GraphEdgeCollections
-
+	// GraphEdgesDefinition - Edge collection functions
+	GraphEdgesDefinition
 }
 
 type RemoveGraphOptions struct {
