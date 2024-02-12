@@ -55,7 +55,10 @@ func Test_EdgeSimple(t *testing.T) {
 					var docKey string
 
 					t.Run("Create Edge", func(t *testing.T) {
-						createEdgeResp, err := edgeDefResp.Edge.CreateEdge(ctx, doc, nil)
+						opts := arangodb.CreateEdgeOptions{
+							WaitForSync: newBool(true),
+						}
+						createEdgeResp, err := edgeDefResp.Edge.CreateEdge(ctx, doc, &opts)
 						require.NoError(t, err)
 						require.NotEmpty(t, createEdgeResp.Key)
 
@@ -68,7 +71,10 @@ func Test_EdgeSimple(t *testing.T) {
 					})
 
 					t.Run("Update Edge", func(t *testing.T) {
-						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"Distance": 10}, nil)
+						opts := arangodb.EdgeUpdateOptions{
+							WaitForSync: newBool(true),
+						}
+						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"Distance": 10}, &opts)
 						require.NoError(t, err)
 						require.NotEmpty(t, updateEdgeResp.Key)
 
@@ -82,13 +88,17 @@ func Test_EdgeSimple(t *testing.T) {
 					})
 
 					t.Run("Replace Edge", func(t *testing.T) {
+						opts := arangodb.EdgeReplaceOptions{
+							WaitForSync: newBool(true),
+						}
+
 						docReplace := RouteEdge{
 							From:     string(fromVertex.ID),
 							To:       string(toVertex.ID),
 							Distance: 12,
 						}
 
-						replaceEdgeResp, err := edgeDefResp.Edge.ReplaceEdge(ctx, docKey, docReplace, nil)
+						replaceEdgeResp, err := edgeDefResp.Edge.ReplaceEdge(ctx, docKey, docReplace, &opts)
 						require.NoError(t, err)
 						require.NotEmpty(t, replaceEdgeResp.Key)
 
@@ -140,7 +150,8 @@ func Test_EdgeExtended(t *testing.T) {
 					t.Run("Create Edge", func(t *testing.T) {
 						var newObject RouteEdge
 						opts := arangodb.CreateEdgeOptions{
-							NewObject: &newObject,
+							WaitForSync: newBool(true),
+							NewObject:   &newObject,
 						}
 
 						createEdgeResp, err := edgeDefResp.Edge.CreateEdge(ctx, doc, &opts)
@@ -154,7 +165,8 @@ func Test_EdgeExtended(t *testing.T) {
 					t.Run("Update Edge", func(t *testing.T) {
 						var oldObject RouteEdge
 						opts := arangodb.EdgeUpdateOptions{
-							OldObject: &oldObject,
+							WaitForSync: newBool(true),
+							OldObject:   &oldObject,
 						}
 						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"Distance": 10}, &opts)
 						require.NoError(t, err)
@@ -175,8 +187,9 @@ func Test_EdgeExtended(t *testing.T) {
 						var oldObject RouteEdge
 						var newObject RouteEdge
 						opts := arangodb.EdgeReplaceOptions{
-							OldObject: &oldObject,
-							NewObject: &newObject,
+							OldObject:   &oldObject,
+							NewObject:   &newObject,
+							WaitForSync: newBool(true),
 						}
 
 						docReplace := RouteEdge{
