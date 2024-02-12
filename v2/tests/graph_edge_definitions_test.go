@@ -45,7 +45,7 @@ func Test_GraphEdgeDefinitions(t *testing.T) {
 					colFrom := "test_vertex_collection_from"
 					colToNew := "test_vertex_collection_to_new"
 
-					createResp, err := graph.CreateEdgeDefinition(ctx, colName, []string{colTo}, []string{colFrom}, nil)
+					createResp, err := graph.CreateEdgeDefinition(ctx, colName, []string{colFrom}, []string{colTo}, nil)
 					require.NoError(t, err)
 					require.Empty(t, createResp.GraphDefinition.OrphanCollections)
 					require.Len(t, createResp.GraphDefinition.EdgeDefinitions, 1)
@@ -75,7 +75,7 @@ func Test_GraphEdgeDefinitions(t *testing.T) {
 					require.Equal(t, colFrom, colFromRead.Name())
 
 					t.Run("Replacing Edge should not remove the collection", func(t *testing.T) {
-						replaceResp, err := graph.ReplaceEdgeDefinition(ctx, colName, []string{colToNew}, []string{colFrom}, nil)
+						replaceResp, err := graph.ReplaceEdgeDefinition(ctx, colName, []string{colFrom}, []string{colToNew}, nil)
 						require.NoError(t, err)
 						require.Len(t, replaceResp.GraphDefinition.OrphanCollections, 1)
 						require.Contains(t, replaceResp.GraphDefinition.OrphanCollections, colTo)
@@ -164,7 +164,7 @@ func TestGraphEdgeDefinitionsWithSatellites(t *testing.T) {
 					opts := arangodb.CreateEdgeDefinitionOptions{
 						Satellites: []string{colFromName},
 					}
-					createResp, err := graph.CreateEdgeDefinition(ctx, colName, []string{colToName}, []string{colFromName}, &opts)
+					createResp, err := graph.CreateEdgeDefinition(ctx, colName, []string{colFromName}, []string{colToName}, &opts)
 					require.NoError(t, err)
 					require.Len(t, createResp.GraphDefinition.EdgeDefinitions, 1)
 
@@ -187,7 +187,7 @@ func TestGraphEdgeDefinitionsWithSatellites(t *testing.T) {
 						opts := arangodb.ReplaceEdgeOptions{
 							Satellites: []string{newColName},
 						}
-						delResp, err := graph.ReplaceEdgeDefinition(ctx, colName, []string{colToName}, []string{newColName}, &opts)
+						delResp, err := graph.ReplaceEdgeDefinition(ctx, colName, []string{newColName}, []string{colToName}, &opts)
 						require.NoError(t, err)
 						require.Contains(t, delResp.GraphDefinition.EdgeDefinitions[0].From, newColName)
 						require.Contains(t, delResp.GraphDefinition.OrphanCollections, colFromName)

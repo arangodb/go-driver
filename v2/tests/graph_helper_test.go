@@ -21,7 +21,13 @@
 package tests
 
 import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 func sampleSmartGraph() *arangodb.GraphDefinition {
@@ -48,4 +54,20 @@ func sampleGraphWithEdges(db arangodb.Database) *arangodb.GraphDefinition {
 	g.OrphanCollections = []string{"orphan1", "orphan2"}
 
 	return g
+}
+
+func ensureVertex(t *testing.T, ctx context.Context, graph arangodb.Graph, collection string, doc interface{}) arangodb.DocumentMeta {
+	col, err := graph.VertexCollection(ctx, collection)
+	if err != nil {
+		if shared.IsNotFound(err) {
+			col, err = graph.CreateVertexCollection(ctx, collection, nil)
+			require.NoError(t, err)
+		}
+		require.NoError(t, err)
+	}
+
+	meta, err := col.CreateVertex(ctx, doc, nil)
+	require.NoError(t, err)
+
+	return meta.DocumentMeta
 }

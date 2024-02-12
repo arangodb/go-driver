@@ -115,7 +115,7 @@ func (g *graphEdgeDefinitions) getEdgeDefinitions(ctx context.Context) ([]string
 	}
 }
 
-func (g *graphEdgeDefinitions) CreateEdgeDefinition(ctx context.Context, collection string, to, from []string, opts *CreateEdgeDefinitionOptions) (CreateEdgeDefinitionResponse, error) {
+func (g *graphEdgeDefinitions) CreateEdgeDefinition(ctx context.Context, collection string, from, to []string, opts *CreateEdgeDefinitionOptions) (CreateEdgeDefinitionResponse, error) {
 	url := g.url()
 
 	var response CreateEdgeDefinitionResponse
@@ -151,7 +151,7 @@ func (g *graphEdgeDefinitions) CreateEdgeDefinition(ctx context.Context, collect
 	}
 }
 
-func (g *graphEdgeDefinitions) ReplaceEdgeDefinition(ctx context.Context, collection string, to, from []string, opts *ReplaceEdgeOptions) (ReplaceEdgeDefinitionResponse, error) {
+func (g *graphEdgeDefinitions) ReplaceEdgeDefinition(ctx context.Context, collection string, from, to []string, opts *ReplaceEdgeOptions) (ReplaceEdgeDefinitionResponse, error) {
 	url := g.url(collection)
 
 	var response ReplaceEdgeDefinitionResponse

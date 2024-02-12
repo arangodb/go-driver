@@ -45,11 +45,11 @@ type GraphEdgesDefinition interface {
 	// with exactly the same definition.
 	// For example, it is not possible to store a definition “e” from “v1” to “v2” in one graph,
 	// and “e” from “v2” to “v1” in another graph, but both can have “e” from “v1” to “v2”.
-	CreateEdgeDefinition(ctx context.Context, collection string, to, from []string, opts *CreateEdgeDefinitionOptions) (CreateEdgeDefinitionResponse, error)
+	CreateEdgeDefinition(ctx context.Context, collection string, from, to []string, opts *CreateEdgeDefinitionOptions) (CreateEdgeDefinitionResponse, error)
 
 	// ReplaceEdgeDefinition Change one specific edge definition.
 	// This modifies all occurrences of this definition in all graphs known to your database.
-	ReplaceEdgeDefinition(ctx context.Context, collection string, to, from []string, opts *ReplaceEdgeOptions) (ReplaceEdgeDefinitionResponse, error)
+	ReplaceEdgeDefinition(ctx context.Context, collection string, from, to []string, opts *ReplaceEdgeOptions) (ReplaceEdgeDefinitionResponse, error)
 
 	// DeleteEdgeDefinition Remove one edge definition from the graph.
 	// This only removes the edge collection from the graph definition.
