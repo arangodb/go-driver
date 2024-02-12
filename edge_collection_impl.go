@@ -28,7 +28,7 @@ import (
 	"path"
 )
 
-// newEdgeCollection creates a new Edge implementation.
+// newEdgeCollection creates a new EdgeCollection implementation.
 func newEdgeCollection(name string, g *graph) (Collection, error) {
 	if name == "" {
 		return nil, WithStack(InvalidArgumentError{Message: "name is empty"})
