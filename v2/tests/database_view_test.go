@@ -788,7 +788,7 @@ func Test_ArangoSearchPrimarySort(t *testing.T) {
 								require.Nil(t, testCase.ExpectedAscending)
 							} else {
 								require.NotNil(t, testCase.ExpectedAscending)
-								require.Equal(t, *testCase.ExpectedAscending, ps.Ascending)
+								require.Equal(t, ps.GetAscending(), *testCase.ExpectedAscending)
 							}
 						})
 					}
