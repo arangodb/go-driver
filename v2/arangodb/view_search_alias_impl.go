@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,12 +29,10 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
-// viewArangoSearchAlias implements ArangoSearchView
 type viewArangoSearchAlias struct {
 	*view
 }
 
-// Properties fetches extended information about the view.
 func (v *viewArangoSearchAlias) Properties(ctx context.Context) (ArangoSearchAliasViewProperties, error) {
 	url := v.db.url("_api", "view", v.name, "properties")
 
@@ -56,7 +54,6 @@ func (v *viewArangoSearchAlias) Properties(ctx context.Context) (ArangoSearchAli
 	}
 }
 
-// SetProperties changes properties of the view.
 func (v *viewArangoSearchAlias) SetProperties(ctx context.Context, options ArangoSearchAliasViewProperties) error {
 	url := v.db.url("_api", "view", v.name, "properties")
 	var response struct {
@@ -64,6 +61,25 @@ func (v *viewArangoSearchAlias) SetProperties(ctx context.Context, options Arang
 	}
 
 	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, options)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (v *viewArangoSearchAlias) UpdateProperties(ctx context.Context, options ArangoSearchAliasUpdateOpts) error {
+	url := v.db.url("_api", "view", v.name, "properties")
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallPatch(ctx, v.db.connection(), url, &response, options)
 	if err != nil {
 		return errors.WithStack(err)
 	}

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,8 +30,11 @@ type DatabaseView interface {
 	// ViewExists returns true if a view with given name exists within the database.
 	ViewExists(ctx context.Context, name string) (bool, error)
 
-	// Views returns a list of all views in the database.
+	// Views returns a reader to iterate over all views in the database
 	Views(ctx context.Context) (ViewsResponseReader, error)
+
+	// ViewsAll returns all views in the database
+	ViewsAll(ctx context.Context) ([]View, error)
 
 	// CreateArangoSearchView creates a new view of type ArangoSearch,
 	// with given name and options, and opens a connection to it.

@@ -109,6 +109,31 @@ func (d databaseView) Views(ctx context.Context) (ViewsResponseReader, error) {
 	}
 }
 
+func (d databaseView) ViewsAll(ctx context.Context) ([]View, error) {
+	url := d.db.url("_api", "view")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Views                 []ViewBase `json:"result,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		result := make([]View, len(response.Views))
+		for id, view := range response.Views {
+			result[id] = newView(d.db, view.Name, view.Type)
+		}
+		return result, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
 func (d databaseView) CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (ArangoSearchView, error) {
 	url := d.db.url("_api", "view")
 	input := struct {
