@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ type ViewType string
 const (
 	// ViewTypeArangoSearch specifies an ArangoSearch view type.
 	ViewTypeArangoSearch = ViewType("arangosearch")
+
 	// ViewTypeSearchAlias specifies an ArangoSearch view type alias.
 	ViewTypeSearchAlias = ViewType("search-alias")
 )

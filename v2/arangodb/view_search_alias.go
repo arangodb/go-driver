@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,11 +32,15 @@ type ArangoSearchViewAlias interface {
 	// Properties fetches extended information about the view.
 	Properties(ctx context.Context) (ArangoSearchAliasViewProperties, error)
 
-	// SetProperties changes properties of the view.
+	// SetProperties Replaces the list of indexes of a search-alias View.
 	SetProperties(ctx context.Context, options ArangoSearchAliasViewProperties) error
+
+	// UpdateProperties Updates the list of indexes of a search-alias View.
+	UpdateProperties(ctx context.Context, options ArangoSearchAliasUpdateOpts) error
 }
 
 type ArangoSearchAliasViewProperties struct {
+	// ViewBase field is available only in read operations
 	ViewBase
 
 	// Indexes A list of inverted indexes to add to the View.
@@ -46,6 +50,27 @@ type ArangoSearchAliasViewProperties struct {
 type ArangoSearchAliasIndex struct {
 	// Collection The name of a collection.
 	Collection string `json:"collection"`
-	// Index The name of an inverted index of the collection.
+
+	// Index The name of an inverted index of the collection, or the index ID without the <collection>/ prefix.
 	Index string `json:"index"`
+}
+
+type ArangoSearchAliasOperation string
+
+const (
+	// ArangoSearchAliasOperationAdd adds the index to the stored indexes property of the View.
+	ArangoSearchAliasOperationAdd ArangoSearchAliasOperation = "add"
+
+	// ArangoSearchAliasOperationDel removes the index from the stored indexes property of the View.
+	ArangoSearchAliasOperationDel ArangoSearchAliasOperation = "del"
+)
+
+type ArangoSearchAliasUpdateOpts struct {
+	// Indexes A list of inverted indexes to add to the View.
+	Indexes []ArangoSearchAliasIndex `json:"indexes,omitempty"`
+
+	// Operation Whether to add or remove the index to the stored indexes property of the View.
+	// Possible values: "add", "del".
+	// The default is "add".
+	Operation ArangoSearchAliasOperation `json:"operation,omitempty"`
 }

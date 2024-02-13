@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import (
 
 // defaultTestTimeout is the default timeout for context use in tests
 // less than 2 minutes is causing problems on CI
-const defaultTestTimeout = 3 * time.Minute
+const defaultTestTimeout = 5 * time.Minute
 
 type Timeout func() error
 

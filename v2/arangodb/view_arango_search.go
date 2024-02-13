@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,25 +32,28 @@ type ArangoSearchView interface {
 	// Properties fetches extended information about the view.
 	Properties(ctx context.Context) (ArangoSearchViewProperties, error)
 
-	// SetProperties changes properties of the view.
+	// SetProperties Changes all properties of a View by replacing them.
 	SetProperties(ctx context.Context, options ArangoSearchViewProperties) error
+
+	// UpdateProperties Partially changes the properties of a View by updating the specified attributes.
+	UpdateProperties(ctx context.Context, options ArangoSearchViewProperties) error
 }
 
 // ArangoSearchViewProperties contains properties of view with type 'arangosearch'
 type ArangoSearchViewProperties struct {
 	ViewBase
 
-	// CleanupIntervalStep specifies the minimum number of commits to wait between
-	// removing unused files in the data directory.
-	// Defaults to 10.
-	// Use 0 to disable waiting.
-	// For the case where the consolidation policies merge segments often
-	// (i.e. a lot of commit+consolidate), a lower value will cause a lot of
-	// disk space to be wasted.
-	// For the case where the consolidation policies rarely merge segments
-	// (i.e. few inserts/deletes), a higher value will impact performance
-	// without any added benefits.
+	// CleanupIntervalStep Wait at least this many commits between removing unused files in the ArangoSearch data
+	// directory (default: 2, to disable use: 0). For the case where the consolidation policies merge segments
+	// often (i.e. a lot of commit+consolidate), a lower value causes a lot of disk space to be wasted.
+	// For the case where the consolidation policies rarely merge segments (i.e. few inserts/deletes),
+	// a higher value impacts performance without any added benefits.
+	//
+	// Background: With every “commit” or “consolidate” operation, a new state of the View’s internal data structures
+	// is created on disk. Old states/snapshots are released once there are no longer any users remaining.
+	// However, the files for the released states/snapshots are left on disk, and only removed by “cleanup” operation.
 	CleanupIntervalStep *int64 `json:"cleanupIntervalStep,omitempty"`
+
 	// ConsolidationInterval specifies the minimum number of milliseconds that must be waited
 	// between committing index data changes and making them visible to queries.
 	// Defaults to 60000.
@@ -62,6 +65,7 @@ type ArangoSearchViewProperties struct {
 	// impact performance and waste disk space for each commit call without
 	// any added benefits.
 	ConsolidationInterval *int64 `json:"consolidationIntervalMsec,omitempty"`
+
 	// ConsolidationPolicy specifies thresholds for consolidation.
 	ConsolidationPolicy *ArangoSearchConsolidationPolicy `json:"consolidationPolicy,omitempty"`
 
@@ -70,7 +74,7 @@ type ArangoSearchViewProperties struct {
 
 	// WriteBufferIdle specifies the maximum number of writers (segments) cached in the pool.
 	// 0 value turns off caching, default value is 64.
-	WriteBufferIdel *int64 `json:"writebufferIdle,omitempty"`
+	WriteBufferIdle *int64 `json:"writebufferIdle,omitempty"`
 
 	// WriteBufferActive specifies the maximum number of concurrent active writers (segments) performs (a transaction).
 	// Other writers (segments) are wait till current active writers (segments) finish.
@@ -120,14 +124,14 @@ type ArangoSearchConsolidationPolicyType string
 const (
 	// ArangoSearchConsolidationPolicyTypeTier consolidate based on segment byte size and live document count as dictated by the customization attributes.
 	ArangoSearchConsolidationPolicyTypeTier ArangoSearchConsolidationPolicyType = "tier"
+
 	// ArangoSearchConsolidationPolicyTypeBytesAccum consolidate if and only if ({threshold} range [0.0, 1.0])
 	// {threshold} > (segment_bytes + sum_of_merge_candidate_segment_bytes) / all_segment_bytes,
 	// i.e. the sum of all candidate segment's byte size is less than the total segment byte size multiplied by the {threshold}.
 	ArangoSearchConsolidationPolicyTypeBytesAccum ArangoSearchConsolidationPolicyType = "bytes_accum"
 )
 
-// ArangoSearchConsolidationPolicy holds threshold values specifying when to
-// consolidate view data.
+// ArangoSearchConsolidationPolicy holds threshold values specifying when to consolidate view data.
 // Semantics of the values depend on where they are used.
 type ArangoSearchConsolidationPolicy struct {
 	// Type returns the type of the ConsolidationPolicy. This interface can then be casted to the corresponding ArangoSearchConsolidationPolicy* struct.
@@ -146,18 +150,18 @@ type ArangoSearchConsolidationPolicyBytesAccum struct {
 // ArangoSearchConsolidationPolicyTier contains fields used for ArangoSearchConsolidationPolicyTypeTier
 type ArangoSearchConsolidationPolicyTier struct {
 	MinScore *int64 `json:"minScore,omitempty"`
+
 	// MinSegments specifies the minimum number of segments that will be evaluated as candidates for consolidation.
 	MinSegments *int64 `json:"segmentsMin,omitempty"`
+
 	// MaxSegments specifies the maximum number of segments that will be evaluated as candidates for consolidation.
 	MaxSegments *int64 `json:"segmentsMax,omitempty"`
+
 	// SegmentsBytesMax specifies the maxinum allowed size of all consolidated segments in bytes.
 	SegmentsBytesMax *int64 `json:"segmentsBytesMax,omitempty"`
+
 	// SegmentsBytesFloor defines the value (in bytes) to treat all smaller segments as equal for consolidation selection.
 	SegmentsBytesFloor *int64 `json:"segmentsBytesFloor,omitempty"`
-	// Lookahead specifies the number of additionally searched tiers except initially chosen candidated based on min_segments,
-	// max_segments, segments_bytes_max, segments_bytes_floor with respect to defined values.
-	// Default value falls to integer_traits<size_t>::const_max (in C++ source code).
-	Lookahead *int64 `json:"lookahead,omitempty"`
 }
 
 // ArangoSearchPrimarySortEntry describes an entry for the primarySort list
@@ -190,24 +194,32 @@ type ArangoSearchFields map[string]ArangoSearchElementProperties
 // at a given level will inherit their setting from a lower level.
 type ArangoSearchElementProperties struct {
 	AnalyzerDefinitions []AnalyzerDefinition `json:"analyzerDefinitions,omitempty"`
+
 	// The list of analyzers to be used for indexing of string values. Defaults to ["identify"].
 	Analyzers []string `json:"analyzers,omitempty"`
+
 	// If set to true, all fields of this element will be indexed. Defaults to false.
 	IncludeAllFields *bool `json:"includeAllFields,omitempty"`
+
 	// If set to true, values in a listed are treated as separate values. Defaults to false.
 	TrackListPositions *bool `json:"trackListPositions,omitempty"`
+
 	// This values specifies how the view should track values.
 	StoreValues ArangoSearchStoreValues `json:"storeValues,omitempty"`
+
 	// Fields contains the properties for individual fields of the element.
 	// The key of the map are field names.
 	Fields ArangoSearchFields `json:"fields,omitempty"`
+
 	// If set to true, then no exclusive lock is used on the source collection during View index creation,
 	// so that it remains basically available. inBackground is an option that can be set when adding links.
 	// It does not get persisted as it is not a View property, but only a one-off option
 	InBackground *bool `json:"inBackground,omitempty"`
+
 	// Nested contains the properties for nested fields (sub-objects) of the element
 	// Enterprise Edition only
 	Nested ArangoSearchFields `json:"nested,omitempty"`
+
 	// Cache If you enable this option, then field normalization values are always cached in memory.
 	// Introduced in v3.9.5, Enterprise Edition only
 	Cache *bool `json:"cache,omitempty"`
@@ -219,6 +231,7 @@ type ArangoSearchStoreValues string
 const (
 	// ArangoSearchStoreValuesNone specifies that a view should not store values.
 	ArangoSearchStoreValuesNone ArangoSearchStoreValues = "none"
+
 	// ArangoSearchStoreValuesID specifies that a view should only store
 	// information about value presence, to allow use of the EXISTS() function.
 	ArangoSearchStoreValuesID ArangoSearchStoreValues = "id"

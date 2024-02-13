@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -148,5 +148,9 @@ func newVersion(val string) *arangodb.Version {
 }
 
 func newInt(i int) *int {
+	return &i
+}
+
+func newInt64(i int64) *int64 {
 	return &i
 }

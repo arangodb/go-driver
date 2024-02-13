@@ -229,7 +229,7 @@ func (d *DeleteEdgeDefinitionOptions) modifyRequest(r connection.Request) error 
 	}
 
 	if d.DropCollection != nil {
-		r.AddQuery("dropCollection", boolToString(*d.DropCollection))
+		r.AddQuery("dropCollections", boolToString(*d.DropCollection))
 	}
 
 	if d.WaitForSync != nil {
