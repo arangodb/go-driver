@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Jakub Wierzbowski
 //
 
 package arangodb
@@ -105,6 +103,11 @@ type InvertedIndexOptions struct {
 	// OptimizeTopK is an array of strings defining optimized sort expressions.
 	// Introduced in v3.11.0, Enterprise Edition only.
 	OptimizeTopK []string `json:"optimizeTopK,omitempty"`
+
+	// InBackground You can set this option to true to create the index in the background,
+	// which will not write-lock the underlying collection for as long as if the index is built in the foreground.
+	// The default value is false.
+	InBackground *bool `json:"inBackground,omitempty"`
 }
 
 // InvertedIndexField contains configuration for indexing of the field

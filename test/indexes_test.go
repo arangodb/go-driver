@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -404,6 +404,29 @@ var namedIndexTestCases = []struct {
 		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
 			idx, _, err := col.EnsureZKDIndex(nil, []string{"zkd"}, &driver.EnsureZKDIndexOptions{
 				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name:       "MDI",
+		MinVersion: newVersion("3.12"),
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureMDIIndex(nil, []string{"mdi"}, &driver.EnsureMDIIndexOptions{
+				Name: name,
+			})
+			return idx, err
+		},
+	},
+	{
+		Name:       "MDI-Prefixed",
+		MinVersion: newVersion("3.12"),
+		CreateCallback: func(col driver.Collection, name string) (driver.Index, error) {
+			idx, _, err := col.EnsureMDIPrefixedIndex(nil, []string{"mdi"}, &driver.EnsureMDIPrefixedIndexOptions{
+				EnsureMDIIndexOptions: driver.EnsureMDIIndexOptions{
+					Name: name,
+				},
+				PrefixFields: []string{"prefix"},
 			})
 			return idx, err
 		},

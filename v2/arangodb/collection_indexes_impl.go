@@ -174,6 +174,38 @@ func (c *collectionIndexes) EnsureZKDIndex(ctx context.Context, fields []string,
 	return newIndexResponse(&result), exist, err
 }
 
+func (c *collectionIndexes) EnsureMDIIndex(ctx context.Context, fields []string, options *CreateMDIIndexOptions) (IndexResponse, bool, error) {
+	reqData := struct {
+		Type   IndexType `json:"type"`
+		Fields []string  `json:"fields"`
+		*CreateMDIIndexOptions
+	}{
+		Type:                  MDIIndexType,
+		Fields:                fields,
+		CreateMDIIndexOptions: options,
+	}
+
+	result := responseIndex{}
+	exist, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), exist, err
+}
+
+func (c *collectionIndexes) EnsureMDIPrefixedIndex(ctx context.Context, fields []string, options *CreateMDIPrefixedIndexOptions) (IndexResponse, bool, error) {
+	reqData := struct {
+		Type   IndexType `json:"type"`
+		Fields []string  `json:"fields"`
+		*CreateMDIPrefixedIndexOptions
+	}{
+		Type:                          MDIPrefixedIndexType,
+		Fields:                        fields,
+		CreateMDIPrefixedIndexOptions: options,
+	}
+
+	result := responseIndex{}
+	exist, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), exist, err
+}
+
 func (c *collectionIndexes) EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (IndexResponse, bool, error) {
 	if options == nil || options.Fields == nil || len(options.Fields) == 0 {
 		return IndexResponse{}, false, errors.New("InvertedIndexOptions with non-empty Fields are required")

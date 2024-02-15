@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Jakub Wierzbowski
 //
 
 package arangodb
@@ -61,9 +59,22 @@ type CollectionIndexes interface {
 	// fields The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	EnsureTTLIndex(ctx context.Context, fields []string, expireAfter int, options *CreateTTLIndexOptions) (IndexResponse, bool, error)
 
-	// EnsureZKDIndex creates a ZKD multi-dimensional index for the collection, if it does not already exist.
-	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	// EnsureZKDIndex @Deprecated since 3.12 version, use EnsureMKDIndex instead.
+	// The previously experimental `zkd` index is now stable and has been renamed to `mdi`.
+	// Existing indexes keep the `zkd` type. The HTTP API still allows the old name to create new indexes that behave
+	// exactly like `mdi` indexes but this is discouraged. The `zkd` alias may get removed in a future version.
+	// Deprecated: since 3.12 version use EnsureMKDIndex instead.
 	EnsureZKDIndex(ctx context.Context, fields []string, options *CreateZKDIndexOptions) (IndexResponse, bool, error)
+
+	// EnsureMDIIndex creates a multidimensional index for the collection, if it does not already exist.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	// Available in ArangoDB 3.12 and later.
+	EnsureMDIIndex(ctx context.Context, fields []string, options *CreateMDIIndexOptions) (IndexResponse, bool, error)
+
+	// EnsureMDIPrefixedIndex creates is an additional index variant of mdi index that lets you specify additional
+	// attributes for the index to narrow down the search space using equality checks.
+	// Available in ArangoDB 3.12 and later.
+	EnsureMDIPrefixedIndex(ctx context.Context, fields []string, options *CreateMDIPrefixedIndexOptions) (IndexResponse, bool, error)
 
 	// EnsureInvertedIndex creates an inverted index in the collection, if it does not already exist.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
@@ -82,8 +93,8 @@ type CollectionIndexes interface {
 type IndexType string
 
 const (
-	// PrimaryIndexType  is automatically created for each collections. It indexes the documents’ primary keys,
-	//  which are stored in the _key system attribute. The primary index is unique and can be used for queries on both the _key and _id attributes.
+	// PrimaryIndexType is automatically created for each collection. It indexes the documents’ primary keys,
+	// which are stored in the _key system attribute. The primary index is unique and can be used for queries on both the _key and _id attributes.
 	// There is no way to explicitly create or delete primary indexes.
 	PrimaryIndexType = IndexType("primary")
 
@@ -104,25 +115,38 @@ const (
 
 	// ZKDIndexType == multi-dimensional index. The zkd index type is an experimental index for indexing two- or higher dimensional data such as time ranges,
 	// for efficient intersection of multiple range queries.
+	// Deprecated: since 3.12 version use MDIIndexType instead.
 	ZKDIndexType = IndexType("zkd")
+
+	// MDIIndexType is multidimensional index for indexing two- or higher dimensional data such as time ranges,
+	// for efficient intersection of multiple range queries.
+	// Available in ArangoDB 3.12 and later.
+	MDIIndexType = IndexType("mdi")
+
+	// MDIPrefixedIndexType is an additional `mdi` index variant that lets you specify additional attributes
+	// for the index to narrow down the search space using equality checks.
+	// Available in ArangoDB 3.12 and later.
+	MDIPrefixedIndexType = IndexType("mdi-prefixed")
 
 	// InvertedIndexType can be used to speed up a broad range of AQL queries, from simple to complex, including full-text search
 	InvertedIndexType = IndexType("inverted")
 
-	/*** DEPRECATED INDEXES ***/
-
-	// FullTextIndex - Deprecated: since 3.10 version. Use ArangoSearch view instead.
+	// FullTextIndex
+	// @Deprecated: since 3.10 version. Use ArangoSearch view instead.
+	// It is ued just for the read compatibility with older versions.
 	FullTextIndex = IndexType("fulltext")
 
 	// HashIndex are an aliases for the persistent index type and should no longer be used to create new indexes.
 	// The aliases will be removed in a future version.
+	// It is ued just for the read compatibility with older versions.
+	// @Deprecated use PersistentIndexType instead
 	HashIndex = IndexType("hash")
 
 	// SkipListIndex are an aliases for the persistent index type and should no longer be used to create new indexes.
 	// The aliases will be removed in a future version.
+	// It is ued just for the read compatibility with older versions.
+	// @Deprecated use PersistentIndexType instead
 	SkipListIndex = IndexType("skiplist")
-
-	/*** DEPRECATED INDEXES ***/
 )
 
 // IndexResponse is the response from the Index list method
@@ -160,7 +184,7 @@ type IndexSharedOptions struct {
 	IsNewlyCreated *bool `json:"isNewlyCreated,omitempty"`
 }
 
-// IndexOptions contains the information about an regular index type
+// IndexOptions contains the information about a regular index type
 type IndexOptions struct {
 	// Fields returns a list of attributes of this index.
 	Fields []string `json:"fields,omitempty"`
@@ -233,6 +257,11 @@ type CreatePersistentIndexOptions struct {
 	// indexes to choose from. The estimates attribute is optional and defaults to true if not set.
 	// It will have no effect on indexes other than persistent (with hash and skiplist being mere aliases for the persistent index type nowadays).
 	Estimates *bool `json:"estimates,omitempty"`
+
+	// InBackground You can set this option to true to create the index in the background,
+	// which will not write-lock the underlying collection for as long as if the index is built in the foreground.
+	// The default value is false.
+	InBackground *bool `json:"inBackground,omitempty"`
 }
 
 // CreateGeoIndexOptions contains specific options for creating a geo index.
@@ -250,17 +279,33 @@ type CreateGeoIndexOptions struct {
 	// Newly generated geo indexes from 3.10 on will have the legacyPolygons option by default set to false,
 	// however, it can still be explicitly overwritten with true to create a legacy index but is not recommended.
 	LegacyPolygons *bool `json:"legacyPolygons,omitempty"`
+
+	// InBackground You can set this option to true to create the index in the background,
+	// which will not write-lock the underlying collection for as long as if the index is built in the foreground.
+	// The default value is false.
+	InBackground *bool `json:"inBackground,omitempty"`
 }
 
 // CreateTTLIndexOptions provides specific options for creating a TTL index
 type CreateTTLIndexOptions struct {
 	// Name optional user defined name used for hints in AQL queries
 	Name string `json:"name,omitempty"`
+
+	// InBackground You can set this option to true to create the index in the background,
+	// which will not write-lock the underlying collection for as long as if the index is built in the foreground.
+	// The default value is false.
+	InBackground *bool `json:"inBackground,omitempty"`
 }
 
+// ZKDFieldType @Deprecated use MDIFieldType instead
 type ZKDFieldType string
 
+// ZKDDoubleFieldType @Deprecated use MDIDoubleFieldType instead
 const ZKDDoubleFieldType ZKDFieldType = "double"
+
+type MDIFieldType string
+
+const MDIDoubleFieldType MDIFieldType = "double"
 
 // CreateZKDIndexOptions provides specific options for creating a ZKD index
 type CreateZKDIndexOptions struct {
@@ -269,4 +314,43 @@ type CreateZKDIndexOptions struct {
 
 	// FieldValueTypes is required and the only allowed value is "double". Future extensions of the index will allow other types.
 	FieldValueTypes ZKDFieldType `json:"fieldValueTypes,required"`
+}
+
+// CreateMDIIndexOptions provides specific options for creating a MKD index
+type CreateMDIIndexOptions struct {
+	// Name optional user defined name used for hints in AQL queries
+	Name string `json:"name,omitempty"`
+
+	// FieldValueTypes is required and the only allowed value is "double".
+	//Future extensions of the index will allow other types.
+	FieldValueTypes MDIFieldType `json:"fieldValueTypes,required"`
+
+	// Unique if true, then create a unique index.
+	Unique *bool `json:"unique,omitempty"`
+
+	// Sparse If `true`, then create a sparse index to exclude documents from the index that do not have the defined
+	// attributes or are explicitly set to `null` values. If a non-value is set, it still needs to be numeric.
+	Sparse *bool `json:"sparse,omitempty"`
+
+	// InBackground You can set this option to true to create the index in the background,
+	// which will not write-lock the underlying collection for as long as if the index is built in the foreground.
+	// The default value is false.
+	InBackground *bool `json:"inBackground,omitempty"`
+
+	// StoredValues The optional `storedValues` attribute can contain an array of paths to additional attributes to
+	// store in the index. These additional attributes cannot be used for index lookups or for sorting, but they can
+	// be used for projections. This allows an index to fully cover more queries and avoid extra document lookups.
+	// The maximum number of attributes in `storedValues` is 32.
+	//
+	// Attributes in `storedValues` cannot overlap with attributes specified in `prefixFields` but you can have
+	// the attributes in both `storedValues` and `fields`.
+	StoredValues []string `json:"storedValues,omitempty"`
+}
+
+type CreateMDIPrefixedIndexOptions struct {
+	CreateMDIIndexOptions `json:",inline"`
+
+	// PrefixFields is required and contains nn array of attribute names used as search prefix.
+	// Array expansions are not allowed.
+	PrefixFields []string `json:"prefixFields,required"`
 }
