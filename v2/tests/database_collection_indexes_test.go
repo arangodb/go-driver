@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -408,6 +408,31 @@ func Test_NamedIndexes(t *testing.T) {
 								})
 								return idx, err
 							},
+						},
+						{
+							Name: "MKD",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								idx, _, err := col.EnsureMDIIndex(ctx, []string{"mkd"}, &arangodb.CreateMDIIndexOptions{
+									Name:            name,
+									FieldValueTypes: arangodb.MDIDoubleFieldType,
+								})
+								return idx, err
+							},
+							MinVersion: "3.12",
+						},
+						{
+							Name: "MKD-Prefixed",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								idx, _, err := col.EnsureMDIPrefixedIndex(ctx, []string{"mkd-prefixed"}, &arangodb.CreateMDIPrefixedIndexOptions{
+									CreateMDIIndexOptions: arangodb.CreateMDIIndexOptions{
+										Name:            name,
+										FieldValueTypes: arangodb.MDIDoubleFieldType,
+									},
+									PrefixFields: []string{"prefix"},
+								})
+								return idx, err
+							},
+							MinVersion: "3.12",
 						},
 						{
 							Name:       "Inverted",

@@ -8,6 +8,8 @@
 - Add support for Graph API - Vertex
 - Add support for Graph API - Edge
 - Align ArangoSearchView and ArangoSearchAliasView with API
+- `MDI` and `MDI-Prefixed` indexes. Deprecate `ZKD` index
+
 
 ## [2.0.3](https://github.com/arangodb/go-driver/tree/v2.0.3) (2023-10-31)
 - Add optional status code checks. Consistent return of response

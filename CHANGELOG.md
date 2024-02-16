@@ -7,6 +7,7 @@
 - Remove graph with all collections
 - Allow skipping validation for Database and Collection existence
 - Deprecate Pregel Job API
+- `MDI` and `MDI-Prefixed` indexes. Deprecate `ZKD` index
 
 ## [1.6.1](https://github.com/arangodb/go-driver/tree/v1.6.1) (2023-10-31)
 - Add support for getting license
