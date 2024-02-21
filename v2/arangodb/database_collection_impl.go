@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -53,13 +54,13 @@ func (d databaseCollection) GetCollection(ctx context.Context, name string, opti
 		return col, nil
 	}
 
-	url := d.db.url("_api", "collection", name)
+	urlEndpoint := d.db.url("_api", "collection", url.PathEscape(name))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -86,27 +87,27 @@ func (d databaseCollection) CollectionExists(ctx context.Context, name string) (
 }
 
 func (d databaseCollection) Collections(ctx context.Context) ([]Collection, error) {
-	url := d.db.url("_api", "collection")
+	urlEndpoint := d.db.url("_api", "collection")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Result                []CollectionInfo `json:"result,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		colls := make([]Collection, len(response.Result))
+		result := make([]Collection, len(response.Result))
 
 		for id, info := range response.Result {
-			colls[id] = newCollection(d.db, info.Name)
+			result[id] = newCollection(d.db, info.Name)
 		}
 
-		return colls, nil
+		return result, nil
 	default:
 		return nil, response.AsArangoErrorWithCode(code)
 	}
@@ -119,7 +120,7 @@ func (d databaseCollection) CreateCollection(ctx context.Context, name string, p
 func (d databaseCollection) CreateCollectionWithOptions(ctx context.Context, name string, props *CreateCollectionProperties, options *CreateCollectionOptions) (Collection, error) {
 	props.Init()
 
-	url := d.db.url("_api", "collection")
+	urlEndpoint := d.db.url("_api", "collection")
 	reqData := struct {
 		shared.ResponseStruct `json:",inline"`
 		Name                  string `json:"name"`
@@ -129,7 +130,7 @@ func (d databaseCollection) CreateCollectionWithOptions(ctx context.Context, nam
 		CreateCollectionProperties: props,
 	}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, nil, &reqData, append(d.db.modifiers, options.modifyRequest)...)
+	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, nil, &reqData, append(d.db.modifiers, options.modifyRequest)...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

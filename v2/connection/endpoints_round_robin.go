@@ -52,14 +52,12 @@ func (e *roundRobinEndpoints) Get(providedEp, _, _ string) (string, error) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	if len(e.endpoints) == 0 {
-		return "", errors.New("no endpoints known")
+	if providedEp != "" {
+		return providedEp, nil
 	}
 
-	for _, known := range e.endpoints {
-		if known == providedEp {
-			return known, nil
-		}
+	if len(e.endpoints) == 0 {
+		return "", errors.New("no endpoints known")
 	}
 
 	if e.index >= len(e.endpoints) {

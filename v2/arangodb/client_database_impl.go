@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -104,14 +105,14 @@ func (c clientDatabase) GetDatabase(ctx context.Context, name string, options *G
 		return db, nil
 	}
 
-	url := connection.NewUrl("_db", name, "_api", "database", "current")
+	urlEndpoint := connection.NewUrl("_db", url.PathEscape(name), "_api", "database", "current")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		VersionInfo           `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

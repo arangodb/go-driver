@@ -22,6 +22,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -55,12 +56,12 @@ func (v *viewArangoSearchAlias) Properties(ctx context.Context) (ArangoSearchAli
 }
 
 func (v *viewArangoSearchAlias) SetProperties(ctx context.Context, options ArangoSearchAliasViewProperties) error {
-	url := v.db.url("_api", "view", v.name, "properties")
+	urlEndpoint := v.db.url("_api", "view", url.PathEscape(v.name), "properties")
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, options)
+	resp, err := connection.CallPut(ctx, v.db.connection(), urlEndpoint, &response, options)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -74,12 +75,12 @@ func (v *viewArangoSearchAlias) SetProperties(ctx context.Context, options Arang
 }
 
 func (v *viewArangoSearchAlias) UpdateProperties(ctx context.Context, options ArangoSearchAliasUpdateOpts) error {
-	url := v.db.url("_api", "view", v.name, "properties")
+	urlEndpoint := v.db.url("_api", "view", url.PathEscape(v.name), "properties")
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPatch(ctx, v.db.connection(), url, &response, options)
+	resp, err := connection.CallPatch(ctx, v.db.connection(), urlEndpoint, &response, options)
 	if err != nil {
 		return errors.WithStack(err)
 	}

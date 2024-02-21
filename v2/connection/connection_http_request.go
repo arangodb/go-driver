@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package connection
@@ -87,12 +85,14 @@ func (j *httpRequest) SetBody(i interface{}) error {
 	return nil
 }
 
-func (j httpRequest) Method() string {
+func (j *httpRequest) Method() string {
 	return j.method
 }
 
 func (j *httpRequest) URL() string {
-	return j.url.String()
+	// return unescaped string since it is escaped again in Connection.Do()
+	u, _ := url.QueryUnescape(j.url.String())
+	return u
 }
 
 func (j *httpRequest) asRequest(ctx context.Context, bodyReader bodyReadFactory) (*http.Request, error) {

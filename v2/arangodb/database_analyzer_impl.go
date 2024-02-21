@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -44,13 +45,13 @@ type databaseAnalyzer struct {
 }
 
 func (d databaseAnalyzer) EnsureAnalyzer(ctx context.Context, analyzer *AnalyzerDefinition) (bool, Analyzer, error) {
-	url := d.db.url("_api", "analyzer")
+	urlEndpoint := d.db.url("_api", "analyzer")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		AnalyzerDefinition
 	}
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, analyzer)
+	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, &response, analyzer)
 	if err != nil {
 		return false, nil, errors.WithStack(err)
 	}
@@ -64,13 +65,13 @@ func (d databaseAnalyzer) EnsureAnalyzer(ctx context.Context, analyzer *Analyzer
 }
 
 func (d databaseAnalyzer) Analyzer(ctx context.Context, name string) (Analyzer, error) {
-	url := d.db.url("_api", "analyzer", name)
+	urlEndpoint := d.db.url("_api", "analyzer", url.PathEscape(name))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		AnalyzerDefinition
 	}
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -85,14 +86,14 @@ func (d databaseAnalyzer) Analyzer(ctx context.Context, name string) (Analyzer, 
 
 // Analyzers lists returns a list of all analyzers
 func (d databaseAnalyzer) Analyzers(ctx context.Context) (AnalyzersResponseReader, error) {
-	url := d.db.url("_api", "analyzer")
+	urlEndpoint := d.db.url("_api", "analyzer")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Analyzers             connection.Array `json:"result,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

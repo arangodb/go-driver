@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -59,9 +60,9 @@ type database struct {
 }
 
 func (d database) Remove(ctx context.Context) error {
-	url := connection.NewUrl("_api", "database", d.name)
+	urlEndpoint := connection.NewUrl("_api", "database", url.PathEscape(d.name))
 
-	resp, err := connection.CallDelete(ctx, d.client.connection, url, nil)
+	resp, err := connection.CallDelete(ctx, d.client.connection, urlEndpoint, nil)
 	if err != nil {
 		return err
 	}
@@ -87,14 +88,14 @@ func (d database) Name() string {
 }
 
 func (d database) Info(ctx context.Context) (DatabaseInfo, error) {
-	url := d.url("_api", "database", "current")
+	urlEndpoint := d.url("_api", "database", "current")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Database              DatabaseInfo `json:"result"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.client.connection, url, &response)
+	resp, err := connection.CallGet(ctx, d.client.connection, urlEndpoint, &response)
 	if err != nil {
 		return DatabaseInfo{}, err
 	}
@@ -108,14 +109,14 @@ func (d database) Info(ctx context.Context) (DatabaseInfo, error) {
 }
 
 func (d database) TransactionJS(ctx context.Context, options TransactionJSOptions) (interface{}, error) {
-	url := d.url("_api", "transaction")
+	urlEndpoint := d.url("_api", "transaction")
 
 	var transactionResponse struct {
 		shared.ResponseStruct `json:",inline"`
 		Result                interface{} `json:"result"`
 	}
 
-	resp, err := connection.CallPost(ctx, d.client.connection, url, &transactionResponse, &options)
+	resp, err := connection.CallPost(ctx, d.client.connection, urlEndpoint, &transactionResponse, &options)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
