@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -77,13 +78,13 @@ func (c collection) RemoveWithOptions(ctx context.Context, opts *RemoveCollectio
 }
 
 func (c collection) Truncate(ctx context.Context) error {
-	url := c.url("collection", "truncate")
+	urlEndpoint := c.url("collection", "truncate")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, struct{}{}, c.withModifiers()...)
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, struct{}{}, c.withModifiers()...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -97,14 +98,14 @@ func (c collection) Truncate(ctx context.Context) error {
 }
 
 func (c collection) Count(ctx context.Context) (int64, error) {
-	url := c.url("collection", "count")
+	urlEndpoint := c.url("collection", "count")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Count                 int64 `json:"count,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers()...)
+	resp, err := connection.CallGet(ctx, c.connection(), urlEndpoint, &response, c.withModifiers()...)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
@@ -118,14 +119,14 @@ func (c collection) Count(ctx context.Context) (int64, error) {
 }
 
 func (c collection) Properties(ctx context.Context) (CollectionProperties, error) {
-	url := c.url("collection", "properties")
+	urlEndpoint := c.url("collection", "properties")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		CollectionProperties  `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.connection(), url, &response, c.withModifiers()...)
+	resp, err := connection.CallGet(ctx, c.connection(), urlEndpoint, &response, c.withModifiers()...)
 	if err != nil {
 		return CollectionProperties{}, errors.WithStack(err)
 	}
@@ -139,13 +140,13 @@ func (c collection) Properties(ctx context.Context) (CollectionProperties, error
 }
 
 func (c collection) SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error {
-	url := c.url("collection", "properties")
+	urlEndpoint := c.url("collection", "properties")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, c.connection(), url, &response, options, c.withModifiers()...)
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, options, c.withModifiers()...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -190,7 +191,7 @@ func (c collection) connection() connection.Connection {
 
 // creates the relative path to this collection (`_db/<db-name>/_api/<document|collection|index>/<collection-name>`)
 func (c collection) url(api string, parts ...string) string {
-	return c.db.url(append([]string{"_api", api, c.name}, parts...)...)
+	return c.db.url(append([]string{"_api", api, url.PathEscape(c.name)}, parts...)...)
 }
 
 func (c collection) Shards(ctx context.Context, details bool) (CollectionShards, error) {

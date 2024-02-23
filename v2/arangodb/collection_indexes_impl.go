@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -45,14 +46,14 @@ type collectionIndexes struct {
 }
 
 func (c *collectionIndexes) Index(ctx context.Context, name string) (IndexResponse, error) {
-	url := c.collection.url("index", name)
+	urlEndpoint := c.collection.url("index", url.PathEscape(name))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		IndexResponse         `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.collection.connection(), url, &response, c.collection.withModifiers()...)
+	resp, err := connection.CallGet(ctx, c.collection.connection(), urlEndpoint, &response, c.collection.withModifiers()...)
 	if err != nil {
 		return IndexResponse{}, errors.WithStack(err)
 	}
@@ -66,9 +67,9 @@ func (c *collectionIndexes) Index(ctx context.Context, name string) (IndexRespon
 }
 
 func (c *collectionIndexes) IndexExists(ctx context.Context, name string) (bool, error) {
-	url := c.collection.url("index", name)
+	urlEndpoint := c.collection.url("index", url.PathEscape(name))
 
-	resp, err := connection.CallGet(ctx, c.collection.connection(), url, nil, c.collection.withModifiers()...)
+	resp, err := connection.CallGet(ctx, c.collection.connection(), urlEndpoint, nil, c.collection.withModifiers()...)
 	if err != nil {
 		if shared.IsNotFound(err) {
 			return false, nil
@@ -87,14 +88,14 @@ func (c *collectionIndexes) IndexExists(ctx context.Context, name string) (bool,
 }
 
 func (c *collectionIndexes) Indexes(ctx context.Context) ([]IndexResponse, error) {
-	url := c.collection.db.url("_api", "index")
+	urlEndpoint := c.collection.db.url("_api", "index")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Indexes               []IndexResponse `json:"indexes,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.collection.connection(), url, &response,
+	resp, err := connection.CallGet(ctx, c.collection.connection(), urlEndpoint, &response,
 		c.collection.withModifiers(connection.WithQuery("collection", c.collection.name))...)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -225,14 +226,14 @@ func (c *collectionIndexes) EnsureInvertedIndex(ctx context.Context, options *In
 }
 
 func (c *collectionIndexes) ensureIndex(ctx context.Context, reqData interface{}, result interface{}) (bool, error) {
-	url := c.collection.db.url("_api", "index")
+	urlEndpoint := c.collection.db.url("_api", "index")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 	data := newUnmarshalInto(&result)
 
-	resp, err := connection.CallPost(ctx, c.collection.connection(), url, newMultiUnmarshaller(&response, data), &reqData,
+	resp, err := connection.CallPost(ctx, c.collection.connection(), urlEndpoint, newMultiUnmarshaller(&response, data), &reqData,
 		c.collection.withModifiers(connection.WithQuery("collection", c.collection.name))...)
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -258,10 +259,10 @@ func (c *collectionIndexes) DeleteIndex(ctx context.Context, name string) error 
 }
 
 func (c *collectionIndexes) DeleteIndexByID(ctx context.Context, id string) error {
-	url := c.collection.db.url("_api", "index", id)
+	urlEndpoint := c.collection.db.url("_api", "index", id)
 
 	response := shared.ResponseStruct{}
-	resp, err := connection.CallDelete(ctx, c.collection.connection(), url, &response, c.collection.withModifiers()...)
+	resp, err := connection.CallDelete(ctx, c.collection.connection(), urlEndpoint, &response, c.collection.withModifiers()...)
 	if err != nil {
 		return errors.WithStack(err)
 	}

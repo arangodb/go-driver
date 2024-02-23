@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -54,7 +55,7 @@ type graph struct {
 
 // creates the relative path to this graph (`_db/<db-name>/_api/gharial/<graph-name>`)
 func (g *graph) url(parts ...string) string {
-	p := append([]string{"_api", "gharial", g.Name()}, parts...)
+	p := append([]string{"_api", "gharial", url.PathEscape(g.Name())}, parts...)
 	return g.db.url(p...)
 }
 

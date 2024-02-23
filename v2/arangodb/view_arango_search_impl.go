@@ -22,6 +22,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -34,14 +35,14 @@ type viewArangoSearch struct {
 }
 
 func (v *viewArangoSearch) Properties(ctx context.Context) (ArangoSearchViewProperties, error) {
-	url := v.db.url("_api", "view", v.name, "properties")
+	urlEndpoint := v.db.url("_api", "view", url.PathEscape(v.name), "properties")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		ArangoSearchViewProperties
 	}
 
-	resp, err := connection.CallGet(ctx, v.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, v.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return ArangoSearchViewProperties{}, errors.WithStack(err)
 	}
@@ -55,12 +56,12 @@ func (v *viewArangoSearch) Properties(ctx context.Context) (ArangoSearchViewProp
 }
 
 func (v *viewArangoSearch) SetProperties(ctx context.Context, options ArangoSearchViewProperties) error {
-	url := v.db.url("_api", "view", v.name, "properties")
+	urlEndpoint := v.db.url("_api", "view", url.PathEscape(v.name), "properties")
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, options)
+	resp, err := connection.CallPut(ctx, v.db.connection(), urlEndpoint, &response, options)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -74,12 +75,12 @@ func (v *viewArangoSearch) SetProperties(ctx context.Context, options ArangoSear
 }
 
 func (v *viewArangoSearch) UpdateProperties(ctx context.Context, options ArangoSearchViewProperties) error {
-	url := v.db.url("_api", "view", v.name, "properties")
+	urlEndpoint := v.db.url("_api", "view", url.PathEscape(v.name), "properties")
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPatch(ctx, v.db.connection(), url, &response, options)
+	resp, err := connection.CallPatch(ctx, v.db.connection(), urlEndpoint, &response, options)
 	if err != nil {
 		return errors.WithStack(err)
 	}

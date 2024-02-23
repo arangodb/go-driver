@@ -24,6 +24,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -44,7 +45,7 @@ type databaseGraph struct {
 }
 
 func (d *databaseGraph) Graph(ctx context.Context, name string, options *GetGraphOptions) (Graph, error) {
-	url := d.db.url("_api", "gharial", name)
+	urlEndpoint := d.db.url("_api", "gharial", url.PathEscape(name))
 
 	if options != nil && options.SkipExistCheck {
 		return nil, nil
@@ -54,7 +55,7 @@ func (d *databaseGraph) Graph(ctx context.Context, name string, options *GetGrap
 		shared.ResponseStruct `json:",inline"`
 		GraphDefinition       `json:"graph,omitempty"`
 	}
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -68,13 +69,13 @@ func (d *databaseGraph) Graph(ctx context.Context, name string, options *GetGrap
 }
 
 func (d *databaseGraph) GraphExists(ctx context.Context, name string) (bool, error) {
-	url := d.db.url("_api", "gharial", name)
+	urlEndpoint := d.db.url("_api", "gharial", url.PathEscape(name))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
@@ -92,14 +93,14 @@ func (d *databaseGraph) GraphExists(ctx context.Context, name string) (bool, err
 }
 
 func (d *databaseGraph) Graphs(ctx context.Context) (GraphsResponseReader, error) {
-	url := d.db.url("_api", "gharial")
+	urlEndpoint := d.db.url("_api", "gharial")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Graphs                connection.Array `json:"graphs,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -129,7 +130,7 @@ type createGraphAdditionalOptions struct {
 }
 
 func (d *databaseGraph) CreateGraph(ctx context.Context, name string, graph *GraphDefinition, options *CreateGraphOptions) (Graph, error) {
-	url := d.db.url("_api", "gharial")
+	urlEndpoint := d.db.url("_api", "gharial")
 
 	input := createGraphOptions{
 		Name: name,
@@ -157,7 +158,7 @@ func (d *databaseGraph) CreateGraph(ctx context.Context, name string, graph *Gra
 		GraphDefinition       `json:"graph,omitempty"`
 	}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, input)
+	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, &response, input)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

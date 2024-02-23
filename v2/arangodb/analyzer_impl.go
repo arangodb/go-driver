@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -68,7 +69,7 @@ func (a analyzer) Database() Database {
 }
 
 func (a analyzer) Remove(ctx context.Context, force bool) error {
-	url := a.db.url("_api", "analyzer", a.Name())
+	urlEndpoint := a.db.url("_api", "analyzer", url.PathEscape(a.Name()))
 	var mods []connection.RequestModifier
 	if force {
 		mods = append(mods, connection.WithQuery("force", "true"))
@@ -78,7 +79,7 @@ func (a analyzer) Remove(ctx context.Context, force bool) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallDelete(ctx, a.db.connection(), url, &response, append(a.db.modifiers, mods...)...)
+	resp, err := connection.CallDelete(ctx, a.db.connection(), urlEndpoint, &response, append(a.db.modifiers, mods...)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}

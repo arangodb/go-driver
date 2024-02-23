@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -62,7 +63,7 @@ func (v *view) Rename(ctx context.Context, newName string) error {
 		return errors.WithStack(shared.InvalidArgumentError{Message: "newName is empty"})
 	}
 
-	url := v.db.url("_api", "view", v.name, "rename")
+	urlEndpoint := v.db.url("_api", "view", url.PathEscape(v.name), "rename")
 	input := struct {
 		Name string `json:"name"`
 	}{
@@ -73,7 +74,7 @@ func (v *view) Rename(ctx context.Context, newName string) error {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallPut(ctx, v.db.connection(), url, &response, input, v.db.modifiers...)
+	resp, err := connection.CallPut(ctx, v.db.connection(), urlEndpoint, &response, input, v.db.modifiers...)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -92,13 +93,13 @@ func (v *view) Remove(ctx context.Context) error {
 }
 
 func (v *view) RemoveWithOptions(ctx context.Context, opts *RemoveViewOptions) error {
-	url := v.db.url("_api", "view", v.name)
+	urlEndpoint := v.db.url("_api", "view", url.PathEscape(v.name))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallDelete(ctx, v.db.connection(), url, &response, append(v.db.modifiers, opts.modifyRequest)...)
+	resp, err := connection.CallDelete(ctx, v.db.connection(), urlEndpoint, &response, append(v.db.modifiers, opts.modifyRequest)...)
 	if err != nil {
 		return errors.WithStack(err)
 	}

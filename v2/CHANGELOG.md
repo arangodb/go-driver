@@ -9,6 +9,7 @@
 - Add support for Graph API - Edge
 - Align ArangoSearchView and ArangoSearchAliasView with API
 - `MDI` and `MDI-Prefixed` indexes. Deprecate `ZKD` index
+- Fix url encoding for names with slashes
 
 
 ## [2.0.3](https://github.com/arangodb/go-driver/tree/v2.0.3) (2023-10-31)

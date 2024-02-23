@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -44,7 +45,7 @@ type databaseView struct {
 }
 
 func (d databaseView) View(ctx context.Context, name string) (View, error) {
-	url := d.db.url("_api", "view", name)
+	urlEndpoint := d.db.url("_api", "view", url.PathEscape(name))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
@@ -53,7 +54,7 @@ func (d databaseView) View(ctx context.Context, name string) (View, error) {
 		Type ViewType `json:"type,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -67,13 +68,13 @@ func (d databaseView) View(ctx context.Context, name string) (View, error) {
 }
 
 func (d databaseView) ViewExists(ctx context.Context, name string) (bool, error) {
-	url := d.db.url("_api", "view", name)
+	urlEndpoint := d.db.url("_api", "view", url.PathEscape(name))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return false, errors.WithStack(err)
 	}
@@ -90,14 +91,14 @@ func (d databaseView) ViewExists(ctx context.Context, name string) (bool, error)
 }
 
 func (d databaseView) Views(ctx context.Context) (ViewsResponseReader, error) {
-	url := d.db.url("_api", "view")
+	urlEndpoint := d.db.url("_api", "view")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Views                 connection.Array `json:"result,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -110,14 +111,14 @@ func (d databaseView) Views(ctx context.Context) (ViewsResponseReader, error) {
 }
 
 func (d databaseView) ViewsAll(ctx context.Context) ([]View, error) {
-	url := d.db.url("_api", "view")
+	urlEndpoint := d.db.url("_api", "view")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		Views                 []ViewBase `json:"result,omitempty"`
 	}
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response)
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -135,7 +136,7 @@ func (d databaseView) ViewsAll(ctx context.Context) ([]View, error) {
 }
 
 func (d databaseView) CreateArangoSearchView(ctx context.Context, name string, options *ArangoSearchViewProperties) (ArangoSearchView, error) {
-	url := d.db.url("_api", "view")
+	urlEndpoint := d.db.url("_api", "view")
 	input := struct {
 		Name string   `json:"name"`
 		Type ViewType `json:"type"`
@@ -151,7 +152,7 @@ func (d databaseView) CreateArangoSearchView(ctx context.Context, name string, o
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, input)
+	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, &response, input)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -169,7 +170,7 @@ func (d databaseView) CreateArangoSearchView(ctx context.Context, name string, o
 }
 
 func (d databaseView) CreateArangoSearchAliasView(ctx context.Context, name string, options *ArangoSearchAliasViewProperties) (ArangoSearchViewAlias, error) {
-	url := d.db.url("_api", "view")
+	urlEndpoint := d.db.url("_api", "view")
 	input := struct {
 		Name string   `json:"name"`
 		Type ViewType `json:"type"`
@@ -185,7 +186,7 @@ func (d databaseView) CreateArangoSearchAliasView(ctx context.Context, name stri
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, input)
+	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, &response, input)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
