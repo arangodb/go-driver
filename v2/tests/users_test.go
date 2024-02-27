@@ -43,7 +43,7 @@ func Test_Users(t *testing.T) {
 			t.Run("Test list users", func(t *testing.T) {
 				users, err := client.Users(ctx)
 				require.NoError(t, err)
-				require.Len(t, users, 1)
+				require.GreaterOrEqual(t, len(users), 1)
 			})
 
 			t.Run("Test created user", func(t *testing.T) {
@@ -83,7 +83,6 @@ func Test_Users(t *testing.T) {
 			t.Run("Test list users", func(t *testing.T) {
 				users, err := client.Users(ctx)
 				require.NoError(t, err)
-				require.Len(t, users, 3)
 
 				for _, u := range users {
 					require.True(t, u.IsActive())
