@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ package tests
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,10 +34,8 @@ import (
 )
 
 func Test_DatabaseCreateReplicationV2(t *testing.T) {
-	requireClusterMode(t)
-
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		skipBelowVersion(client, context.Background(), "3.12.0", t)
+		databaseReplication2Required(t, client, context.Background())
 
 		opts := arangodb.CreateDatabaseOptions{
 			Users: nil,
@@ -295,4 +294,27 @@ func abortTransaction(t testing.TB, transaction arangodb.Transaction) {
 	withContextT(t, 10*time.Second, func(ctx context.Context, t testing.TB) {
 		require.NoError(t, transaction.Abort(ctx, nil))
 	})
+}
+
+func databaseReplication2Required(t *testing.T, c arangodb.Client, ctx context.Context) {
+	skipBelowVersion(c, context.Background(), "3.12.0", t)
+	requireClusterMode(t)
+
+	dbName := "replication2" + GenerateUUID("test-db")
+	opts := arangodb.CreateDatabaseOptions{Options: arangodb.CreateDatabaseDefaultOptions{
+		ReplicationVersion: arangodb.DatabaseReplicationVersionTwo,
+	}}
+
+	db, err := c.CreateDatabase(ctx, dbName, &opts)
+	if err == nil {
+		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
+		return
+	}
+
+	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
+		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
+	}
+
+	// Some other error that has not been expected.
+	require.NoError(t, err)
 }

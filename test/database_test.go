@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import (
 	"github.com/arangodb/go-driver"
 )
 
-// databaseName is helper to create database name in non-colliding way
+// databaseName is a helper to create database name in non-colliding way
 func databaseName(parts ...string) string {
 	return fmt.Sprintf("%s_%s", strings.Join(parts, "_"), uniuri.NewLen(8))
 }
@@ -219,9 +219,8 @@ func TestDatabaseNameUnicode(t *testing.T) {
 
 // TestCreateDatabaseReplication2 creates a database with replication version two.
 func TestCreateDatabaseReplication2(t *testing.T) {
-	ctx := context.Background()
 	c := createClient(t, nil)
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
+	databaseReplication2Required(t, c)
 
 	name := "create_test_replication2"
 	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
@@ -256,19 +255,14 @@ func TestCreateDatabaseReplication2(t *testing.T) {
 // with the option --database.extended-names-databases=true.
 func databaseExtendedNamesRequired(t *testing.T, c driver.Client) {
 	ctx := context.Background()
-	version, err := c.Version(ctx)
-	require.NoError(t, err)
-
-	if version.Version.CompareTo("3.9.0") < 0 {
-		t.Skipf("Version of the ArangoDB should be at least 3.9.0")
-	}
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0"))
 
 	// If the database can be created with the below name then it means that it excepts unicode names.
 	dbName := "\u006E\u0303\u00f1"
 	normalized := norm.NFC.String(dbName)
 	db, err := c.CreateDatabase(ctx, normalized, nil)
 	if err == nil {
-		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
+		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing unicode database")
 		return
 	}
 
@@ -276,6 +270,31 @@ func databaseExtendedNamesRequired(t *testing.T, c driver.Client) {
 		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
 	}
 
-	// Some other error which has not been expected.
+	// Some other error that has not been expected.
+	require.NoError(t, err)
+}
+
+// databaseReplication2Required skips test if the version is < 3.12.0.
+// It also skips the test if the ArangoDB has not been launched with the option--database.default-replication-version=2.
+func databaseReplication2Required(t *testing.T, c driver.Client) {
+	ctx := context.Background()
+	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
+
+	dbName := "create_test_replication2"
+	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
+		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
+	}}
+
+	db, err := c.CreateDatabase(ctx, dbName, &opts)
+	if err == nil {
+		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
+		return
+	}
+
+	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
+		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
+	}
+
+	// Some other error that has not been expected.
 	require.NoError(t, err)
 }

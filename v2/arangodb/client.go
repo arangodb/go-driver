@@ -29,6 +29,7 @@ type Client interface {
 	Requests
 
 	ClientDatabase
+	ClientUsers
 	ClientServerInfo
 	ClientAdmin
 	ClientAsyncJob
