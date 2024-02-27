@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,15 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package connection
 
 const (
+	PlainText              = "text/plain"
+	ApplicationOctetStream = "application/octet-stream"
+	ApplicationZip         = "application/zip"
+
 	ApplicationJSON = "application/json"
+
+	ApplicationVPack = "application/x-velocypack"
 )

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package connection
 
@@ -31,6 +29,8 @@ type Http2Configuration struct {
 	Endpoint       Endpoint
 
 	ContentType string
+
+	ArangoDBConfig ArangoDBConfiguration
 
 	Transport *http2.Transport
 }
@@ -52,7 +52,7 @@ func (h Http2Configuration) GetContentType() string {
 }
 
 func NewHttp2Connection(config Http2Configuration) Connection {
-	c := newHttpConnection(config.getTransport(), config.ContentType, config.Endpoint)
+	c := newHttpConnection(config.getTransport(), config.ContentType, config.Endpoint, config.ArangoDBConfig)
 
 	if a := config.Authentication; a != nil {
 		c.authentication = a

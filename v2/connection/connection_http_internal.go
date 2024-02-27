@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ const (
 	ContentType = "content-type"
 )
 
-func NewHTTP2DialForEndpoint(e Endpoint) func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+func NewHTTP2DialForEndpoint(e Endpoint) func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
 	if len(e.List()) == 0 {
 		return nil
 	}
@@ -57,7 +57,7 @@ func NewHTTP2DialForEndpoint(e Endpoint) func(network, addr string, cfg *tls.Con
 	}
 
 	if strings.ToLower(u.Scheme) == "http" || strings.ToLower(u.Scheme) == "tcp" {
-		return func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+		return func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
 			return net.Dial(network, addr)
 		}
 	}
@@ -65,7 +65,7 @@ func NewHTTP2DialForEndpoint(e Endpoint) func(network, addr string, cfg *tls.Con
 	return nil
 }
 
-func newHttpConnection(t http.RoundTripper, contentType string, endpoint Endpoint) *httpConnection {
+func newHttpConnection(t http.RoundTripper, contentType string, endpoint Endpoint, config ArangoDBConfiguration) *httpConnection {
 	c := &http.Client{}
 	c.Transport = t
 
@@ -78,6 +78,7 @@ func newHttpConnection(t http.RoundTripper, contentType string, endpoint Endpoin
 		client:      c,
 		endpoint:    endpoint,
 		contentType: contentType,
+		config:      config,
 	}
 }
 
@@ -91,6 +92,8 @@ type httpConnection struct {
 	contentType    string
 
 	streamSender bool
+
+	config ArangoDBConfiguration
 }
 
 func (j *httpConnection) GetAuthentication() Authentication {
@@ -103,14 +106,14 @@ func (j *httpConnection) SetAuthentication(a Authentication) error {
 }
 
 // Decoder returns the decoder according to the response content type or HTTP connection request content type.
-// If the content type is unknown then it returns default JSON decoder.
+// If the content type is unknown, then it returns default JSON decoder.
 func (j *httpConnection) Decoder(contentType string) Decoder {
-	// First try to get decoder by the content type of the response.
+	// First, try to get decoder by the content type of the response.
 	if decoder := getDecoderByContentType(contentType); decoder != nil {
 		return decoder
 	}
 
-	// Next try to get decoder by the content type of the HTTP connection.
+	// Next, try to get decoder by the content type of the HTTP connection.
 	if decoder := getDecoderByContentType(j.contentType); decoder != nil {
 		return decoder
 	}
@@ -126,6 +129,14 @@ func (j *httpConnection) GetEndpoint() Endpoint {
 func (j *httpConnection) SetEndpoint(e Endpoint) error {
 	j.endpoint = e
 	return nil
+}
+
+func (j *httpConnection) GetConfiguration() ArangoDBConfiguration {
+	return j.config
+}
+
+func (j *httpConnection) SetConfiguration(config ArangoDBConfiguration) {
+	j.config = config
 }
 
 func (j *httpConnection) NewRequestWithEndpoint(endpoint string, method string, urlParts ...string) (Request, error) {
@@ -158,8 +169,8 @@ func (j *httpConnection) newRequestWithEndpoint(endpoint string, method string, 
 	return r, nil
 }
 
-// Do performs HTTP request and returns the response.
-// If `output` is provided then it is populated from response body and the response is automatically freed.
+// Do perform HTTP request and returns the response.
+// If `output` is provided, then it is populated from response body and the response is automatically freed.
 func (j *httpConnection) Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error) {
 	resp, body, err := j.Stream(ctx, request)
 	if err != nil {
@@ -167,7 +178,12 @@ func (j *httpConnection) Do(ctx context.Context, request Request, output interfa
 	}
 
 	// The body should be closed at the end of the function.
-	defer dropBodyData(body)
+	defer func(closer io.ReadCloser) {
+		err := dropBodyData(closer)
+		if err != nil {
+			log.Errorf(err, "error closing body")
+		}
+	}(body)
 
 	if len(allowedStatusCodes) > 0 {
 		found := false
@@ -199,7 +215,7 @@ func (j *httpConnection) Do(ctx context.Context, request Request, output interfa
 
 // Stream performs HTTP request.
 // It returns the response and body reader to read the data from there.
-// The caller is responsible to free the response body.
+// The caller is responsible for free the response body.
 func (j *httpConnection) Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error) {
 	req, ok := request.(*httpRequest)
 	if !ok {
@@ -209,8 +225,7 @@ func (j *httpConnection) Stream(ctx context.Context, request Request) (Response,
 	return j.stream(ctx, req)
 }
 
-// stream performs the HTTP request.
-// It returns HTTP response and body reader to read the data from there.
+// stream performs the HTTP request. It returns HTTP response and body reader to read the data from there.
 func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpResponse, io.ReadCloser, error) {
 	id := uuid.New().String()
 	log.Debugf("(%s) Sending request to %s/%s", id, req.Method(), req.URL())
@@ -258,7 +273,7 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 }
 
 // getDecoderByContentType returns the decoder according to the content type.
-// If content type is unknown then nil is returned.
+// If contentType is unknown, then nil is returned.
 func getDecoderByContentType(contentType string) Decoder {
 	switch contentType {
 	case ApplicationVPack:
@@ -296,6 +311,7 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream b
 			reader, writer := io.Pipe()
 			go func() {
 				defer writer.Close()
+
 				if err := decoder.Encode(writer, obj); err != nil {
 					log.Errorf(err, "error encoding body (stream) - OBJ: %v", obj)
 					writer.CloseWithError(err)

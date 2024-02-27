@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,12 +96,14 @@ func IsAsyncJobInProgress(err error) (string, bool) {
 	}
 
 	// Unwrap error WithStack case
-	if v, ok := errors.Unwrap(err).(ErrorAsyncJobInProgress); ok {
+	var v ErrorAsyncJobInProgress
+	if errors.As(errors.Unwrap(err), &v) {
 		return v.jobID, true
 	}
 
-	if v, ok := err.(ErrorAsyncJobInProgress); ok {
-		return v.jobID, true
+	var v2 ErrorAsyncJobInProgress
+	if errors.As(err, &v2) {
+		return v2.jobID, true
 	}
 
 	return "", false

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ func WithQuery(s, value string) RequestModifier {
 }
 
 // applyGlobalSettings applies the settings configured in the context to the given request.
+// Deprecated: use applyArangoDBConfiguration instead
 func applyGlobalSettings(ctx context.Context) RequestModifier {
 	return func(r Request) error {
 
@@ -76,6 +77,28 @@ func applyGlobalSettings(ctx context.Context) RequestModifier {
 					timeout := deadline.Sub(time.Now())
 					r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 				}
+			}
+		}
+
+		return nil
+	}
+}
+
+func applyArangoDBConfiguration(config ArangoDBConfiguration, ctx context.Context) RequestModifier {
+	return func(r Request) error {
+		// Set version header
+		val := fmt.Sprintf("go-driver-v2/%s", version.DriverVersion())
+		if len(config.DriverFlags) > 0 {
+			val = fmt.Sprintf("%s (%s)", val, strings.Join(config.DriverFlags, ","))
+		}
+		r.AddHeader("x-arango-driver", val)
+
+		if config.ArangoQueueTimeoutEnabled {
+			if config.ArangoQueueTimeoutSec > 0 {
+				r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(config.ArangoQueueTimeoutSec))
+			} else if deadline, ok := ctx.Deadline(); ok {
+				timeout := deadline.Sub(time.Now())
+				r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 			}
 		}
 
