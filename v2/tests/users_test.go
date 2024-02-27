@@ -32,9 +32,9 @@ import (
 func Test_Users(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-			user1Name := "kuba@example"
+			user1Name := "kuba@example" + GenerateUUID("user-db")
 
-			user2Name := "testOpts"
+			user2Name := "testOpts" + GenerateUUID("user-db")
 			doc := UserDoc{
 				Name: "Jakub",
 				Age:  30,
@@ -177,5 +177,7 @@ func Test_UserCreation(t *testing.T) {
 				require.NoError(t, client.RemoveUser(ctx, name))
 			})
 		}
+	}, WrapOptions{
+		Parallel: newBool(false),
 	})
 }

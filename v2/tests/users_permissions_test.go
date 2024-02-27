@@ -62,7 +62,7 @@ func Test_UserPermission(t *testing.T) {
 
 				t.Run("Test custom user", func(t *testing.T) {
 					WithCollection(t, db, nil, func(col arangodb.Collection) {
-						userCustom, err := client.CreateUser(ctx, "custom", nil)
+						userCustom, err := client.CreateUser(ctx, "custom"+GenerateUUID("user-db"), nil)
 						require.NoError(t, err)
 						require.NotNil(t, userCustom)
 
