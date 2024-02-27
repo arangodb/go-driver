@@ -131,6 +131,8 @@ func Test_Users(t *testing.T) {
 				require.NoError(t, client.RemoveUser(ctx, user2Name))
 			})
 		})
+	}, WrapOptions{
+		Parallel: newBool(false),
 	})
 }
 

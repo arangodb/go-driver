@@ -115,5 +115,7 @@ func Test_UserPermission(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: newBool(false),
 	})
 }
