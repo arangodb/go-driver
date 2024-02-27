@@ -39,7 +39,7 @@ ifndef VST_ENABLED
 	VST_ENABLED := "false"
 endif
 
-TESTV2PARALLEL ?= 2
+TESTV2PARALLEL ?= 1
 
 ORGPATH := github.com/arangodb
 REPONAME := $(PROJECT)
