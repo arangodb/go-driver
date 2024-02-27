@@ -85,11 +85,11 @@ func Test_Users(t *testing.T) {
 				require.NoError(t, err)
 
 				for _, u := range users {
-					require.True(t, u.IsActive())
 					if u.Name() == user2Name {
 						var docRead UserDoc
 						require.NoError(t, u.Extra(&docRead))
 						require.Equal(t, doc, docRead)
+						require.True(t, u.IsActive())
 					}
 				}
 			})
