@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,17 +46,20 @@ func contextOrBackground(ctx context.Context) context.Context {
 }
 
 // WithArangoQueueTimeout is used to enable Queue timeout on the server side.
-// If WithArangoQueueTime is used then its value takes precedence in other case value of ctx.Deadline will be taken
+// If WithArangoQueueTime is used, then its value takes precedence in other case value of ctx.Deadline will be taken
+// Deprecated: use ArangoDBConfiguration.ArangoQueueTimeoutEnabled
 func WithArangoQueueTimeout(parent context.Context, useQueueTimeout bool) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyUseQueueTimeout, useQueueTimeout)
 }
 
 // WithArangoQueueTime defines max queue timeout on the server side.
+// Deprecated: use ArangoDBConfiguration.ArangoQueueTimeoutSec
 func WithArangoQueueTime(parent context.Context, duration time.Duration) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyMaxQueueTime, duration)
 }
 
 // WithDriverFlags is used to configure additional flags for the `x-arango-driver` header.
+// Deprecated: use ArangoDBConfiguration.DriverFlags
 func WithDriverFlags(parent context.Context, value []string) context.Context {
 	return context.WithValue(contextOrBackground(parent), keyDriverFlags, value)
 }

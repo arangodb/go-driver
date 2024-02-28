@@ -210,7 +210,7 @@ type clusterEndpoint struct {
 
 func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 	// For Active Failover, we need to track the leader endpoint
-	var nextEndpoint int = -1
+	var nextEndpoint = -1
 
 	NewTimeout(func() error {
 		return withContext(time.Second, func(ctx context.Context) error {
@@ -267,7 +267,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 // getRandomEndpointsManager returns random endpoints manager
 func getRandomEndpointsManager(t testing.TB) connection.Endpoint {
 	eps := getEndpointsFromEnv(t)
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 	if rand.Intn(2) == 1 {
 		t.Log("Using MaglevHashEndpoints")
 		ep, err := connection.NewMaglevHashEndpoints(eps, connection.RequestDBNameValueExtractor)
@@ -337,7 +337,7 @@ func connectionJsonHttp2(t testing.TB) connection.Connection {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			AllowHTTP:       true,
 
-			DialTLS: connection.NewHTTP2DialForEndpoint(endpoints),
+			DialTLSContext: connection.NewHTTP2DialForEndpoint(endpoints),
 		},
 	}
 
@@ -358,7 +358,7 @@ func connectionVPACKHttp2(t testing.TB) connection.Connection {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			AllowHTTP:       true,
 
-			DialTLS: connection.NewHTTP2DialForEndpoint(endpoints),
+			DialTLSContext: connection.NewHTTP2DialForEndpoint(endpoints),
 		},
 	}
 
@@ -387,11 +387,11 @@ func withContextT(t testing.TB, timeout time.Duration, f func(ctx context.Contex
 type healthFunc func(*testing.T, context.Context, arangodb.ClusterHealth)
 
 // withHealth waits for health, and launches a given function when it is healthy.
-// When system is available then sometimes it needs more time to fetch healthiness.
+// When systems are available, then sometimes it needs more time to fetch healthiness.
 func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, f healthFunc) {
 	ctxInner := ctx
 	if _, ok := ctx.Deadline(); !ok {
-		// When caller does not provide timeout, wait for healthiness for 30 seconds.
+		// When a caller does not provide timeout, wait for healthiness for 30 seconds.
 		var cancel context.CancelFunc
 
 		ctxInner, cancel = context.WithTimeout(ctx, time.Second*30)

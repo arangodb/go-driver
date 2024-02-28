@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
-//
-// Author Adam Janikowski
 //
 
 package connection
@@ -86,6 +84,19 @@ func (c *connectionPool) SetEndpoint(e Endpoint) error {
 	}
 
 	return nil
+}
+
+func (c *connectionPool) GetConfiguration() ArangoDBConfiguration {
+	return c.connections[0].GetConfiguration()
+}
+
+func (c *connectionPool) SetConfiguration(config ArangoDBConfiguration) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	for _, c := range c.connections {
+		c.SetConfiguration(config)
+	}
 }
 
 func (c *connectionPool) GetAuthentication() Authentication {

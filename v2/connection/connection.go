@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,27 +29,54 @@ type Wrapper func(c Connection) Connection
 
 type Factory func() (Connection, error)
 
+type ArangoDBConfiguration struct {
+	// ArangoQueueTimeoutEnabled is used to enable Queue timeout on the server side.
+	// If ArangoQueueTimeoutEnabled is used, then its value takes precedence.
+	// In another case value of context.Deadline will be taken
+	ArangoQueueTimeoutEnabled bool
+
+	// ArangoQueueTimeout defines max queue timeout on the server side
+	ArangoQueueTimeoutSec uint
+
+	// DriverFlags configure additional flags for the `x-arango-driver` header
+	DriverFlags []string
+}
+
 type Connection interface {
 	// NewRequest initializes Request object
 	NewRequest(method string, urls ...string) (Request, error)
-	// NewRequestWithEndpoint initializes Request object with specific endpoint
+
+	// NewRequestWithEndpoint initializes a Request object with a specific endpoint
 	NewRequestWithEndpoint(endpoint string, method string, urls ...string) (Request, error)
-	// Do executes the given Request and parses the response into output
+
+	// Do execute the given Request and parses the response into output
 	// If allowed status codes are provided, they will be checked before decoding the response body.
 	// In case of mismatch shared.ArangoError will be returned
 	Do(ctx context.Context, request Request, output interface{}, allowedStatusCodes ...int) (Response, error)
+
 	// Stream executes the given Request and returns a reader for Response body
 	Stream(ctx context.Context, request Request) (Response, io.ReadCloser, error)
+
 	// GetEndpoint returns Endpoint which is currently used to execute requests
 	GetEndpoint() Endpoint
+
 	// SetEndpoint changes Endpoint which is used to execute requests
 	SetEndpoint(e Endpoint) error
+
 	// GetAuthentication returns Authentication
 	GetAuthentication() Authentication
+
 	// SetAuthentication returns Authentication parameters used to execute requests
 	SetAuthentication(a Authentication) error
+
 	// Decoder returns Decoder to use for Response body decoding
 	Decoder(contentType string) Decoder
+
+	// GetConfiguration returns the configuration for the connection to database
+	GetConfiguration() ArangoDBConfiguration
+
+	// SetConfiguration sets the configuration for the connection to database
+	SetConfiguration(config ArangoDBConfiguration)
 }
 
 type Request interface {
@@ -71,12 +98,16 @@ type Request interface {
 type Response interface {
 	// Code returns an HTTP compatible status code of the response.
 	Code() int
+
 	// Response returns underlying response object
 	Response() interface{}
+
 	// Endpoint returns the endpoint that handled the request.
 	Endpoint() string
+
 	// Content returns Content-Type
 	Content() string
+
 	// Header gets the first value associated with the given key.
 	// If there are no values associated with the key, Get returns "".
 	Header(name string) string

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/arangodb/go-driver/v2/connection"
 )
 
 func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
@@ -40,7 +39,9 @@ func TestContextWithArangoQueueTimeoutParams(t *testing.T) {
 			})
 
 			t.Run("without timeout - if no queue timeout and no context deadline set", func(t *testing.T) {
-				ctx := connection.WithArangoQueueTimeout(context.Background(), true)
+				cfg := client.Connection().GetConfiguration()
+				cfg.ArangoQueueTimeoutEnabled = true
+				client.Connection().SetConfiguration(cfg)
 
 				_, err := client.Version(ctx)
 				require.NoError(t, err)
