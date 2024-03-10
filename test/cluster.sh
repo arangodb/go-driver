@@ -49,7 +49,7 @@ if [ "$CMD" == "start" ]; then
         STARTERARGS="$STARTERARGS --all.backup.api-enabled=true"
     fi
     if [ -n "$ENABLE_DATABASE_EXTENDED_NAMES" ]; then
-        STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true"
+        STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true --args.all.http.compress-response-threshold=1"
     fi
     if [[ "$OSTYPE" == "darwin"* ]]; then
         DOCKERPLATFORMARG="--platform linux/x86_64"

@@ -94,6 +94,14 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
+			cmp := conn.GetConfiguration()
+			cmp.Compression = &connection.Compression{
+				CompressionType:            connection.RequestCompressionTypeGzip,
+				RequestCompressionLevel:    9,
+				ResponseCompressionEnabled: true,
+				RequestCompressionEnabled:  true,
+			}
+			conn.SetConfiguration(cmp)
 			return conn
 		})
 	})
@@ -129,6 +137,14 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
+			cmp := conn.GetConfiguration()
+			cmp.Compression = &connection.Compression{
+				CompressionType:            connection.RequestCompressionTypeDeflate,
+				RequestCompressionLevel:    9,
+				ResponseCompressionEnabled: true,
+				RequestCompressionEnabled:  true,
+			}
+			conn.SetConfiguration(cmp)
 			return conn
 		})
 	})
