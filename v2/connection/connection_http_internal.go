@@ -22,8 +22,11 @@ package connection
 
 import (
 	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -248,7 +251,7 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 		ctx = context.Background()
 	}
 
-	reader := j.bodyReadFunc(j.Decoder(j.contentType), req.body, j.streamSender)
+	reader := j.bodyReadFunc(j.Decoder(j.contentType), req, j.streamSender)
 	r, err := req.asRequest(ctx, reader)
 	if err != nil {
 		return nil, nil, errors.WithStack(err)
@@ -263,9 +266,21 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 	log.Debugf("(%s) Response received: %d", id, resp.StatusCode)
 
 	if b := resp.Body; b != nil {
-		var body = resp.Body
+		var resultBody io.ReadCloser
 
-		return &httpResponse{response: resp, request: req}, body, nil
+		respEncoding := resp.Header.Get("Content-Encoding")
+		switch respEncoding {
+		case "gzip":
+			fmt.Println("gzip decoding")
+			resultBody, err = gzip.NewReader(resp.Body)
+		case "deflate":
+			fmt.Println("deflate zlib decoding")
+			resultBody, err = zlib.NewReader(resp.Body)
+		default:
+			resultBody = resp.Body
+		}
+
+		return &httpResponse{response: resp, request: req}, resultBody, nil
 
 	}
 
@@ -289,8 +304,8 @@ func getDecoderByContentType(contentType string) Decoder {
 
 type bodyReadFactory func() (io.Reader, error)
 
-func (j *httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream bool) bodyReadFactory {
-	if obj == nil {
+func (j *httpConnection) bodyReadFunc(decoder Decoder, req *httpRequest, stream bool) bodyReadFactory {
+	if req.body == nil {
 		return func() (io.Reader, error) {
 			return nil, nil
 		}
@@ -299,25 +314,84 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, obj interface{}, stream b
 	if !stream {
 		return func() (io.Reader, error) {
 			b := bytes.NewBuffer([]byte{})
-			if err := decoder.Encode(b, obj); err != nil {
-				log.Errorf(err, "error encoding body - OBJ: %v", obj)
+			compressedWriter, err := j.applyCompression(req, b)
+			if err != nil {
+				log.Errorf(err, "error applying compression")
 				return nil, err
 			}
 
-			return b, nil
+			var encErr error
+			if compressedWriter != nil {
+				defer compressedWriter.Close()
+				encErr = decoder.Encode(compressedWriter, req.body)
+			} else {
+				encErr = decoder.Encode(b, req.body)
+			}
+
+			if encErr != nil {
+				log.Errorf(err, "error encoding body - OBJ: %v", req.body)
+				return nil, err
+			}
+			return b, err
 		}
 	} else {
 		return func() (io.Reader, error) {
 			reader, writer := io.Pipe()
+
+			compressedWriter, err := j.applyCompression(req, writer)
+			if err != nil {
+				log.Errorf(err, "error applying compression")
+				return nil, err
+			}
+
 			go func() {
 				defer writer.Close()
 
-				if err := decoder.Encode(writer, obj); err != nil {
-					log.Errorf(err, "error encoding body (stream) - OBJ: %v", obj)
+				var encErr error
+				if compressedWriter != nil {
+					defer compressedWriter.Close()
+					encErr = decoder.Encode(compressedWriter, req.body)
+				} else {
+					encErr = decoder.Encode(writer, req.body)
+				}
+
+				if encErr != nil {
+					log.Errorf(err, "error encoding body stream - OBJ: %v", req.body)
 					writer.CloseWithError(err)
 				}
 			}()
 			return reader, nil
 		}
 	}
+}
+
+func (j *httpConnection) applyCompression(req *httpRequest, rootWriter io.Writer) (io.WriteCloser, error) {
+	compression := j.config.Compression
+
+	if compression != nil && compression.RequestCompressionEnabled {
+		if compression.CompressionType == "gzip" {
+			req.headers["Content-Encoding"] = "gzip"
+
+			gzipWriter, err := gzip.NewWriterLevel(rootWriter, compression.RequestCompressionLevel)
+			if err != nil {
+				log.Errorf(err, "error creating gzip writer")
+				return nil, err
+			}
+			return gzipWriter, nil
+		} else if compression.CompressionType == "deflate" {
+			req.headers["Content-Encoding"] = "deflate"
+
+			zlibWriter, err := zlib.NewWriterLevel(rootWriter, compression.RequestCompressionLevel)
+			if err != nil {
+				log.Errorf(err, "error creating zlib writer")
+				return nil, err
+			}
+
+			return zlibWriter, nil
+		} else {
+			return nil, errors.Errorf("unsupported compression type: %s", compression.CompressionType)
+		}
+	}
+
+	return nil, nil
 }
