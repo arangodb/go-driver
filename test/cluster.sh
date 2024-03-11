@@ -49,7 +49,7 @@ if [ "$CMD" == "start" ]; then
         STARTERARGS="$STARTERARGS --all.backup.api-enabled=true"
     fi
     if [ -n "$ENABLE_DATABASE_EXTRA_FEATURES" ]; then
-        STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true --args.all.http.compress-response-threshold=1"
+        STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true --args.all.http.compress-response-threshold=1 --args.all.http.http.handle-content-encoding-for-unauthenticated-requests=true"
     fi
     if [[ "$OSTYPE" == "darwin"* ]]; then
         DOCKERPLATFORMARG="--platform linux/x86_64"

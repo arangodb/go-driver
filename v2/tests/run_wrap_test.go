@@ -95,7 +95,7 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
-			applyCompression(t, conn)
+			applyCompression(conn)
 			return conn
 		})
 	})
@@ -112,7 +112,7 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
-			applyCompression(t, conn)
+			applyCompression(conn)
 			return conn
 		})
 	})
@@ -132,7 +132,7 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
-			applyCompression(t, conn)
+			applyCompression(conn)
 			return conn
 		})
 	})
@@ -152,13 +152,13 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
-			applyCompression(t, conn)
+			applyCompression(conn)
 			return conn
 		})
 	})
 }
 
-func applyCompression(t *testing.T, conn connection.Connection) {
+func applyCompression(conn connection.Connection) {
 	if os.Getenv("ENABLE_DATABASE_EXTRA_FEATURES") == "true" {
 		cmp := conn.GetConfiguration()
 		cmp.Compression = &connection.Compression{
