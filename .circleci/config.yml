@@ -55,6 +55,9 @@ jobs:
       test-to-run:
         type: string
         default: "run-tests-single"
+      enable-extra-db-features:
+        type: boolean
+        default: false
     steps:
       - checkout
       - run:
@@ -71,6 +74,7 @@ jobs:
       GOIMAGE: << pipeline.parameters.goImage >>
       ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
       STARTER: << pipeline.parameters.starterImage >>
+      ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
       TEST_DISALLOW_UNKNOWN_FIELDS: false
       VERBOSE: 1
 
@@ -123,6 +127,12 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
+      - run-integration-tests:
+          name: Test V2 cluster - DB extra features (compression)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster
+          enable-extra-db-features: true
 
       - run-integration-tests:
           name: Test V1 single

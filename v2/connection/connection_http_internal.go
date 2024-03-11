@@ -26,7 +26,6 @@ import (
 	"compress/zlib"
 	"context"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -271,10 +270,8 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 		respEncoding := resp.Header.Get("Content-Encoding")
 		switch respEncoding {
 		case "gzip":
-			fmt.Println("gzip decoding")
 			resultBody, err = gzip.NewReader(resp.Body)
 		case "deflate":
-			fmt.Println("deflate zlib decoding")
 			resultBody, err = zlib.NewReader(resp.Body)
 		default:
 			resultBody = resp.Body
