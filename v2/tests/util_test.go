@@ -71,6 +71,12 @@ func skipResilientSingleMode(t testing.TB) {
 	requireMode(t, testModeCluster, testModeSingle)
 }
 
+func requireExtraDBFeatures(t testing.TB) {
+	if os.Getenv("ENABLE_DATABASE_EXTRA_FEATURES") != "true" {
+		t.Skip("Skipping test, extra database features are not enabled")
+	}
+}
+
 func skipNoEnterprise(c arangodb.Client, ctx context.Context, t testing.TB) {
 	version, err := c.Version(ctx)
 	require.NoError(t, err)
