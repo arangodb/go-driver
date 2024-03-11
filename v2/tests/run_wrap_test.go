@@ -26,6 +26,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -94,14 +95,7 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
-			cmp := conn.GetConfiguration()
-			cmp.Compression = &connection.Compression{
-				CompressionType:            connection.RequestCompressionTypeGzip,
-				RequestCompressionLevel:    9,
-				ResponseCompressionEnabled: true,
-				RequestCompressionEnabled:  true,
-			}
-			conn.SetConfiguration(cmp)
+			applyCompression(t, conn)
 			return conn
 		})
 	})
@@ -118,6 +112,7 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
+			applyCompression(t, conn)
 			return conn
 		})
 	})
@@ -137,14 +132,7 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
-			cmp := conn.GetConfiguration()
-			cmp.Compression = &connection.Compression{
-				CompressionType:            connection.RequestCompressionTypeDeflate,
-				RequestCompressionLevel:    9,
-				ResponseCompressionEnabled: true,
-				RequestCompressionEnabled:  true,
-			}
-			conn.SetConfiguration(cmp)
+			applyCompression(t, conn)
 			return conn
 		})
 	})
@@ -164,9 +152,23 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 			}
 
 			waitForConnection(t, arangodb.NewClient(conn))
+			applyCompression(t, conn)
 			return conn
 		})
 	})
+}
+
+func applyCompression(t *testing.T, conn connection.Connection) {
+	if os.Getenv("ENABLE_DATABASE_EXTRA_FEATURES") == "true" {
+		cmp := conn.GetConfiguration()
+		cmp.Compression = &connection.Compression{
+			CompressionType:            connection.RequestCompressionTypeDeflate,
+			RequestCompressionLevel:    9,
+			ResponseCompressionEnabled: true,
+			RequestCompressionEnabled:  true,
+		}
+		conn.SetConfiguration(cmp)
+	}
 }
 
 func WrapConnection(t *testing.T, w WrapperConnection, wo ...WrapOptions) {
