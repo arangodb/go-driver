@@ -60,10 +60,6 @@ type Compression struct {
 	// RequestCompressionEnabled is used to enable compression for the requests
 	RequestCompressionEnabled bool
 
-	// RequestCompressionThreshold - Sets the minimum HTTP request body size (in bytes) to trigger compression.
-	// Default: 0 (AlwaysCompress)
-	RequestCompressionThreshold int
-
 	// RequestCompressionLevel - Sets the compression level between -1 and 9
 	// Default: 0 (NoCompression). For Reference see: https://pkg.go.dev/compress/flate#pkg-constants
 	RequestCompressionLevel int
