@@ -328,6 +328,17 @@ func Test_Analyzers(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "create-my-wildcard",
+			Definition: arangodb.AnalyzerDefinition{
+				Name: "my-wildcard",
+				Type: arangodb.ArangoSearchAnalyzerTypeWildcard,
+				Properties: arangodb.ArangoSearchAnalyzerProperties{
+					NGramSize: 4,
+				},
+			},
+			HasError: false,
+		},
 	}
 
 	ctx := context.Background()
