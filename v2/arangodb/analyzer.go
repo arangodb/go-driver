@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,8 +40,16 @@ type Analyzer interface {
 }
 
 type AnalyzerDefinition struct {
-	Name       string                         `json:"name,omitempty"`
-	Type       ArangoSearchAnalyzerType       `json:"type,omitempty"`
+	// The Analyzer name.
+	Name string `json:"name,omitempty"`
+
+	// The Analyzer type.
+	Type ArangoSearchAnalyzerType `json:"type,omitempty"`
+
+	// The properties used to configure the specified Analyzer type.
 	Properties ArangoSearchAnalyzerProperties `json:"properties,omitempty"`
-	Features   []ArangoSearchFeature          `json:"features,omitempty"`
+
+	// The set of features to set on the Analyzer generated fields.
+	// The default value is an empty array.
+	Features []ArangoSearchFeature `json:"features,omitempty"`
 }
