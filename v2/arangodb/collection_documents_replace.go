@@ -99,6 +99,10 @@ type CollectionDocumentReplaceOptions struct {
 	// Note: This option is intended for internal (replication) use.
 	// It is NOT intended to be used by normal client. Use on your own risk!
 	IsRestore *bool
+
+	// Specify any top-level attribute to compare whether the version number is higher
+	// than the currently stored one when updating or replacing documents.
+	VersionAttribute string
 }
 
 func (c *CollectionDocumentReplaceOptions) modifyRequest(r connection.Request) error {
@@ -136,6 +140,10 @@ func (c *CollectionDocumentReplaceOptions) modifyRequest(r connection.Request) e
 
 	if c.IsRestore != nil {
 		r.AddQuery("isRestore", boolToString(*c.IsRestore))
+	}
+
+	if c.VersionAttribute != "" {
+		r.AddQuery("versionAttribute", c.VersionAttribute)
 	}
 
 	return nil
