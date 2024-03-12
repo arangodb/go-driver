@@ -13,6 +13,7 @@
 - Users API support
 - Add ArangoDBConfiguration to Client config. Deprecate Context config options
 - GT-593 External versioning
+- Switch to Go 1.21.8
 
 
 ## [2.0.3](https://github.com/arangodb/go-driver/tree/v2.0.3) (2023-10-31)
