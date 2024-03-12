@@ -67,15 +67,17 @@ func applyGlobalSettings(ctx context.Context) RequestModifier {
 		r.AddHeader("x-arango-driver", val)
 
 		// Enable Queue timeout
-		if v := ctx.Value(keyUseQueueTimeout); v != nil {
-			if useQueueTimeout, ok := v.(bool); ok && useQueueTimeout {
-				if v := ctx.Value(keyMaxQueueTime); v != nil {
-					if timeout, ok := v.(time.Duration); ok {
+		if ctx != nil {
+			if v := ctx.Value(keyUseQueueTimeout); v != nil {
+				if useQueueTimeout, ok := v.(bool); ok && useQueueTimeout {
+					if v := ctx.Value(keyMaxQueueTime); v != nil {
+						if timeout, ok := v.(time.Duration); ok {
+							r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
+						}
+					} else if deadline, ok := ctx.Deadline(); ok {
+						timeout := deadline.Sub(time.Now())
 						r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 					}
-				} else if deadline, ok := ctx.Deadline(); ok {
-					timeout := deadline.Sub(time.Now())
-					r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
 				}
 			}
 		}

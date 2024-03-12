@@ -329,3 +329,71 @@ func Test_DatabaseCollectionDocCreateWaitForSync(t *testing.T) {
 		})
 	})
 }
+
+func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		skipBelowVersion(client, nil, "3.12", t)
+
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					doc := DocWithRev{
+						Name: "test-version-attribute",
+						Age:  newInt(23),
+					}
+
+					meta, err := col.CreateDocument(ctx, doc)
+					require.NoError(t, err)
+
+					t.Run("do not replace if age is lower", func(t *testing.T) {
+						var newDoc DocWithRev
+						var oldDoc DocWithRev
+
+						docReplaced := DocWithRev{
+							Name: "test-check-Replaced",
+							Age:  newInt(19),
+							Key:  meta.Key,
+						}
+
+						metaDoc, err := col.CreateDocumentWithOptions(ctx, docReplaced, &arangodb.CollectionDocumentCreateOptions{
+							NewObject:        &newDoc,
+							OldObject:        &oldDoc,
+							Overwrite:        newBool(true),
+							VersionAttribute: "age",
+						})
+						require.NoError(t, err)
+						require.NotEmpty(t, metaDoc.Key)
+						require.NotEmpty(t, newDoc)
+						require.NotEmpty(t, oldDoc)
+						require.Equal(t, newDoc.Rev, oldDoc.Rev)
+						require.Equal(t, newDoc.Age, doc.Age)
+					})
+
+					t.Run("Replace if age is higher", func(t *testing.T) {
+						var newDoc DocWithRev
+						var oldDoc DocWithRev
+
+						docReplaced := DocWithRev{
+							Name: "test-check-Replaced",
+							Age:  newInt(99),
+							Key:  meta.Key,
+						}
+
+						metaDoc, err := col.CreateDocumentWithOptions(ctx, docReplaced, &arangodb.CollectionDocumentCreateOptions{
+							NewObject:        &newDoc,
+							OldObject:        &oldDoc,
+							Overwrite:        newBool(true),
+							VersionAttribute: "age",
+						})
+						require.NoError(t, err)
+						require.NotEmpty(t, metaDoc.Key)
+						require.NotEmpty(t, newDoc)
+						require.NotEmpty(t, oldDoc)
+						require.NotEqual(t, newDoc.Rev, oldDoc.Rev)
+						require.NotEqual(t, newDoc.Age, doc.Age)
+					})
+				})
+			})
+		})
+	})
+}

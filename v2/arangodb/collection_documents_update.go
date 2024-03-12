@@ -107,6 +107,10 @@ type CollectionDocumentUpdateOptions struct {
 	// If set to false, the value in the patch document overwrites the existing document’s value.
 	// If set to true, objects are merged. The default is true. This option controls the update-insert behavior only.
 	MergeObjects *bool
+
+	// Specify any top-level attribute to compare whether the version number is higher
+	// than the currently stored one when updating or replacing documents.
+	VersionAttribute string
 }
 
 func (c *CollectionDocumentUpdateOptions) modifyRequest(r connection.Request) error {
@@ -148,6 +152,10 @@ func (c *CollectionDocumentUpdateOptions) modifyRequest(r connection.Request) er
 
 	if c.IgnoreRevs != nil {
 		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
+	}
+
+	if c.VersionAttribute != "" {
+		r.AddQuery("versionAttribute", c.VersionAttribute)
 	}
 
 	return nil

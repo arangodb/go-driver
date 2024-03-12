@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -324,6 +324,70 @@ func Test_DatabaseCollectionDocUpdateWaitForSync(t *testing.T) {
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, meta.Key)
+					})
+				})
+			})
+		})
+	})
+}
+
+func Test_DatabaseCollectionDocUpdateVersionAttribute(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		skipBelowVersion(client, nil, "3.12", t)
+
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					doc := DocWithRev{
+						Name: "test-version-attribute",
+						Age:  newInt(23),
+					}
+
+					meta, err := col.CreateDocument(ctx, doc)
+					require.NoError(t, err)
+
+					t.Run("do not update if age is lower", func(t *testing.T) {
+						var newDoc DocWithRev
+						var oldDoc DocWithRev
+
+						docUpdate := DocWithRev{
+							Name: "test-check-UPDATED",
+							Age:  newInt(19),
+						}
+
+						metaDoc, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{
+							NewObject:        &newDoc,
+							OldObject:        &oldDoc,
+							VersionAttribute: "age",
+						})
+						require.NoError(t, err)
+						require.NotEmpty(t, metaDoc.Key)
+						require.NotEmpty(t, newDoc)
+						require.NotEmpty(t, oldDoc)
+						require.Equal(t, newDoc.Rev, oldDoc.Rev)
+						require.Equal(t, newDoc.Age, doc.Age)
+					})
+
+					t.Run("update if age is higher", func(t *testing.T) {
+						var newDoc DocWithRev
+						var oldDoc DocWithRev
+
+						docUpdate := DocWithRev{
+							Name: "test-check-UPDATED",
+							Age:  newInt(99),
+						}
+
+						metaDoc, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{
+							NewObject:        &newDoc,
+							OldObject:        &oldDoc,
+							VersionAttribute: "age",
+						})
+						require.NoError(t, err)
+						require.NotEmpty(t, metaDoc.Key)
+						require.NotEmpty(t, newDoc)
+						require.NotEmpty(t, oldDoc)
+						require.NotEqual(t, newDoc.Rev, oldDoc.Rev)
+						require.NotEqual(t, newDoc.Age, doc.Age)
 					})
 				})
 			})
