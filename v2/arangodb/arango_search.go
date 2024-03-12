@@ -47,6 +47,8 @@ const (
 	ArangoSearchAnalyzerTypeDelimiter ArangoSearchAnalyzerType = "delimiter"
 
 	// ArangoSearchAnalyzerTypeMultiDelimiter split into tokens at user-defined character
+	//
+	// Available in ArangoDB 3.12 and later.
 	ArangoSearchAnalyzerTypeMultiDelimiter ArangoSearchAnalyzerType = "multi_delimiter"
 
 	// ArangoSearchAnalyzerTypeStem apply stemming to the value as a whole
@@ -95,6 +97,13 @@ const (
 
 	// ArangoSearchAnalyzerTypeMinhash an analyzer which is capable of evaluating so called MinHash signatures as a stream of tokens. (EE only)
 	ArangoSearchAnalyzerTypeMinhash ArangoSearchAnalyzerType = "minhash"
+
+	// ArangoSearchAnalyzerTypeWildcard An Analyzer that creates n-grams to enable fast partial matching for wildcard
+	// queries if you have large string values, especially if you want to search for suffixes or substrings in the
+	// middle of strings (infixes) as opposed to prefixes.
+	//
+	// Available in ArangoDB 3.12 and later.
+	ArangoSearchAnalyzerTypeWildcard ArangoSearchAnalyzerType = "wildcard"
 )
 
 // ArangoSearchAnalyzerProperties specifies options for the analyzer.
@@ -214,6 +223,14 @@ type ArangoSearchAnalyzerProperties struct {
 
 	// Format is the internal binary representation to use for storing the geo-spatial data in an index.
 	Format *ArangoSearchFormat `json:"format,omitempty"`
+
+	// NGramSize used by ArangoSearchAnalyzerTypeWildcard
+	// It is an unsigned integer for the n-gram length, needs to be at least 2.
+	// It can be greater than the substrings between wildcards that you want to search for, e.g. 4 with an expected
+	// search pattern of %up%if%ref% (substrings of length 2 and 3 between %), but this leads to a slower search
+	// (for ref% with post-validation using the ICU regular expression engine).
+	// A value of 3 is a good default, 2 is better for short strings
+	NGramSize uint `json:"ngramSize"`
 }
 
 type ArangoSearchCaseType string

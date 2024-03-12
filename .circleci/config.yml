@@ -114,26 +114,26 @@ workflows:
             - run-unit-tests
 
       - run-integration-tests:
-          name: Test V1 single
-          requires:
-            - download-demo-data
-          test-to-run: run-tests-single
-      - run-integration-tests:
           name: Test V1 cluster
           requires:
             - download-demo-data
           test-to-run: run-tests-cluster
-
-      - run-integration-tests:
-          name: Test V2 single
-          requires:
-            - download-demo-data
-          test-to-run: run-v2-tests-single
       - run-integration-tests:
           name: Test V2 cluster
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
+
+      - run-integration-tests:
+          name: Test V1 single
+          requires:
+            - download-demo-data
+          test-to-run: run-tests-single
+      - run-integration-tests:
+          name: Test V2 single
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-single
 
   # Weekly vulnerability check
   weekly_vulncheck:
