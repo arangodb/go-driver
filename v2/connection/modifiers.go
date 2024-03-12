@@ -104,13 +104,7 @@ func applyArangoDBConfiguration(config ArangoDBConfiguration, ctx context.Contex
 			}
 		}
 
-		if config.Compression != nil && config.Compression.ResponseCompressionEnabled {
-			if config.Compression.CompressionType == "gzip" {
-				r.AddHeader("Accept-Encoding", "gzip")
-			} else if config.Compression.CompressionType == "deflate" {
-				r.AddHeader("Accept-Encoding", "deflate")
-			}
-		}
+		newCompression(config.Compression).ApplyRequestHeaders(r)
 
 		return nil
 	}

@@ -161,7 +161,7 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 func applyCompression(conn connection.Connection) {
 	if os.Getenv("ENABLE_DATABASE_EXTRA_FEATURES") == "true" {
 		cmp := conn.GetConfiguration()
-		cmp.Compression = &connection.Compression{
+		cmp.Compression = &connection.CompressionConfig{
 			CompressionType:            connection.RequestCompressionTypeDeflate,
 			RequestCompressionLevel:    9,
 			ResponseCompressionEnabled: true,
