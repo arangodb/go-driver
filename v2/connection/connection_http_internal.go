@@ -311,7 +311,7 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, req *httpRequest, stream 
 	if !stream {
 		return func() (io.Reader, error) {
 			b := bytes.NewBuffer([]byte{})
-			compressedWriter, err := j.applyCompression(req, b)
+			compressedWriter, err := newCompression(j.config.Compression).ApplyRequestCompression(req, b)
 			if err != nil {
 				log.Errorf(err, "error applying compression")
 				return nil, err
@@ -335,7 +335,7 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, req *httpRequest, stream 
 		return func() (io.Reader, error) {
 			reader, writer := io.Pipe()
 
-			compressedWriter, err := j.applyCompression(req, writer)
+			compressedWriter, err := newCompression(j.config.Compression).ApplyRequestCompression(req, writer)
 			if err != nil {
 				log.Errorf(err, "error applying compression")
 				return nil, err
@@ -360,35 +360,4 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, req *httpRequest, stream 
 			return reader, nil
 		}
 	}
-}
-
-func (j *httpConnection) applyCompression(req *httpRequest, rootWriter io.Writer) (io.WriteCloser, error) {
-	compression := j.config.Compression
-
-	if compression != nil && compression.RequestCompressionEnabled {
-		if compression.CompressionType == "gzip" {
-			req.headers["Content-Encoding"] = "gzip"
-
-			gzipWriter, err := gzip.NewWriterLevel(rootWriter, compression.RequestCompressionLevel)
-			if err != nil {
-				log.Errorf(err, "error creating gzip writer")
-				return nil, err
-			}
-			return gzipWriter, nil
-		} else if compression.CompressionType == "deflate" {
-			req.headers["Content-Encoding"] = "deflate"
-
-			zlibWriter, err := zlib.NewWriterLevel(rootWriter, compression.RequestCompressionLevel)
-			if err != nil {
-				log.Errorf(err, "error creating zlib writer")
-				return nil, err
-			}
-
-			return zlibWriter, nil
-		} else {
-			return nil, errors.Errorf("unsupported compression type: %s", compression.CompressionType)
-		}
-	}
-
-	return nil, nil
 }

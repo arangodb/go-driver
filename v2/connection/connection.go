@@ -46,12 +46,12 @@ type ArangoDBConfiguration struct {
 	DriverFlags []string
 
 	// Compression is used to enable compression between client and server
-	Compression *Compression
+	Compression *CompressionConfig
 }
 
-// Compression is used to enable compression for the connection
-type Compression struct {
-	// Compression is used to enable compression for the requests
+// CompressionConfig is used to enable compression for the connection
+type CompressionConfig struct {
+	// CompressionConfig is used to enable compression for the requests
 	CompressionType CompressionType
 
 	// ResponseCompressionEnabled is used to enable compression for the responses (requires server side adjustments)

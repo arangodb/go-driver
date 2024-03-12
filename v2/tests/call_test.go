@@ -116,7 +116,7 @@ func Test_Compression_Builtin(t *testing.T) {
 
 				for _, tc := range testCases {
 					config := client.Connection().GetConfiguration()
-					config.Compression = &connection.Compression{
+					config.Compression = &connection.CompressionConfig{
 						CompressionType:            tc.compression,
 						RequestCompressionEnabled:  tc.request,
 						RequestCompressionLevel:    tc.level,
@@ -158,7 +158,7 @@ func Test_Compression_Raw(t *testing.T) {
 
 				for _, tc := range testCases {
 					config := client.Connection().GetConfiguration()
-					config.Compression = &connection.Compression{
+					config.Compression = &connection.CompressionConfig{
 						CompressionType:            tc.compression,
 						RequestCompressionEnabled:  tc.request,
 						RequestCompressionLevel:    tc.level,
