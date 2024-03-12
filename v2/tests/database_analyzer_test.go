@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,6 +65,17 @@ func Test_Analyzers(t *testing.T) {
 				},
 			},
 			HasError: true,
+		},
+		{
+			Name: "create-my-multi-delimiters",
+			Definition: arangodb.AnalyzerDefinition{
+				Name: "my-multidelimiters",
+				Type: arangodb.ArangoSearchAnalyzerTypeMultiDelimiter,
+				Properties: arangodb.ArangoSearchAnalyzerProperties{
+					Delimiters: []string{"ö", "ü"},
+				},
+			},
+			HasError: false,
 		},
 		{
 			Name: "create-my-delimiter",
@@ -355,7 +366,7 @@ func Test_Analyzers(t *testing.T) {
 
 						checkAnalyzer(t, db, def, ensuredA)
 
-						// try to find same analyzer via reading all analyzers
+						// try to find the same analyzer via reading all analyzers
 						list := readAllAnalyzersT(ctx, t, db)
 						found := false
 						for _, listedA := range list {
@@ -366,7 +377,7 @@ func Test_Analyzers(t *testing.T) {
 						}
 						require.True(t, found)
 
-						// try to find same analyzer by normal GET
+						// try to find the same analyzer by normal GET
 						gotA, err := db.Analyzer(ctx, ensuredA.Name())
 						require.NoError(t, err)
 						require.NotNil(t, gotA)

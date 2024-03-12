@@ -71,6 +71,9 @@ if [ "$CMD" == "start" ]; then
     # Start network namespace
     docker run -d --name=${NAMESPACE} $DOCKERPLATFORMARG $DOCKER_DEBUG_PORT $DOCKER_FWD_PORTS "${ALPINE_IMAGE}" sleep 365d
 
+    # pull latest version of ArangoDB image
+    docker pull ${ARANGODB}
+
     # Start starters 
     # arangodb/arangodb-starter 0.7.0 or higher is needed.
     docker run -d --name=${STARTERCONTAINER} --net=container:${NAMESPACE} \
