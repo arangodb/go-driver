@@ -319,7 +319,12 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, req *httpRequest, stream 
 
 			var encErr error
 			if compressedWriter != nil {
-				defer compressedWriter.Close()
+				defer func(compressedWriter io.WriteCloser) {
+					errCompression := compressedWriter.Close()
+					if errCompression != nil {
+						log.Errorf(errCompression, "error closing compressed writer")
+					}
+				}(compressedWriter)
 				encErr = decoder.Encode(compressedWriter, req.body)
 			} else {
 				encErr = decoder.Encode(b, req.body)
@@ -346,7 +351,12 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, req *httpRequest, stream 
 
 				var encErr error
 				if compressedWriter != nil {
-					defer compressedWriter.Close()
+					defer func(compressedWriter io.WriteCloser) {
+						errCompression := compressedWriter.Close()
+						if errCompression != nil {
+							log.Errorf(errCompression, "error closing compressed writer - stream")
+						}
+					}(compressedWriter)
 					encErr = decoder.Encode(compressedWriter, req.body)
 				} else {
 					encErr = decoder.Encode(writer, req.body)
