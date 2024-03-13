@@ -21,11 +21,9 @@
 package connection
 
 import (
-	"compress/gzip"
 	"compress/zlib"
+	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 
 	"github.com/arangodb/go-driver/v2/log"
 )
@@ -40,35 +38,35 @@ type compression struct {
 }
 
 func newCompression(config *CompressionConfig) Compression {
-	return &compression{
-		config: config,
+	if config == nil {
+		return noCompression{}
+	} else if config.CompressionType == "gzip" {
+		return gzipCompression{config: config}
+	} else if config.CompressionType == "deflate" {
+		return deflateCompression{config: config}
+	} else {
+		log.Error(fmt.Errorf("unknown compression type: %s", config.CompressionType), "")
+		return noCompression{config: config}
 	}
 }
 
-func (g compression) ApplyRequestHeaders(r Request) {
+type gzipCompression struct {
+	config *CompressionConfig
+}
+
+func (g gzipCompression) ApplyRequestHeaders(r Request) {
 	if g.config != nil && g.config.ResponseCompressionEnabled {
 		if g.config.CompressionType == "gzip" {
 			r.AddHeader("Accept-Encoding", "gzip")
-		} else if g.config.CompressionType == "deflate" {
-			r.AddHeader("Accept-Encoding", "deflate")
 		}
 	}
 }
 
-func (g compression) ApplyRequestCompression(r *httpRequest, rootWriter io.Writer) (io.WriteCloser, error) {
+func (g gzipCompression) ApplyRequestCompression(r *httpRequest, rootWriter io.Writer) (io.WriteCloser, error) {
 	config := g.config
 
 	if config != nil && config.RequestCompressionEnabled {
-		if config.CompressionType == "gzip" {
-			r.headers["Content-Encoding"] = "gzip"
-
-			gzipWriter, err := gzip.NewWriterLevel(rootWriter, config.RequestCompressionLevel)
-			if err != nil {
-				log.Errorf(err, "error creating gzip writer")
-				return nil, err
-			}
-			return gzipWriter, nil
-		} else if config.CompressionType == "deflate" {
+		if config.CompressionType == "deflate" {
 			r.headers["Content-Encoding"] = "deflate"
 
 			zlibWriter, err := zlib.NewWriterLevel(rootWriter, config.RequestCompressionLevel)
@@ -78,10 +76,51 @@ func (g compression) ApplyRequestCompression(r *httpRequest, rootWriter io.Write
 			}
 
 			return zlibWriter, nil
-		} else {
-			return nil, errors.Errorf("unsupported compression type: %s", config.CompressionType)
 		}
 	}
 
+	return nil, nil
+}
+
+type deflateCompression struct {
+	config *CompressionConfig
+}
+
+func (g deflateCompression) ApplyRequestHeaders(r Request) {
+	if g.config != nil && g.config.ResponseCompressionEnabled {
+		if g.config.CompressionType == "deflate" {
+			r.AddHeader("Accept-Encoding", "deflate")
+		}
+	}
+}
+
+func (g deflateCompression) ApplyRequestCompression(r *httpRequest, rootWriter io.Writer) (io.WriteCloser, error) {
+	config := g.config
+
+	if config != nil && config.RequestCompressionEnabled {
+		if config.CompressionType == "deflate" {
+			r.headers["Content-Encoding"] = "deflate"
+
+			zlibWriter, err := zlib.NewWriterLevel(rootWriter, config.RequestCompressionLevel)
+			if err != nil {
+				log.Errorf(err, "error creating zlib writer")
+				return nil, err
+			}
+
+			return zlibWriter, nil
+		}
+	}
+
+	return nil, nil
+}
+
+type noCompression struct {
+	config *CompressionConfig
+}
+
+func (g noCompression) ApplyRequestHeaders(r Request) {
+}
+
+func (g noCompression) ApplyRequestCompression(r *httpRequest, rootWriter io.Writer) (io.WriteCloser, error) {
 	return nil, nil
 }
