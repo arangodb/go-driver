@@ -58,3 +58,7 @@ func (j *httpResponse) Header(name string) string {
 	}
 	return j.response.Header.Get(name)
 }
+
+func (j *httpResponse) RawResponse() *http.Response {
+	return j.response
+}

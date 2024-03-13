@@ -23,7 +23,11 @@ package connection
 import (
 	"context"
 	"io"
+	"net/http"
 )
+
+type EncodingCodec interface {
+}
 
 type Wrapper func(c Connection) Connection
 
@@ -40,7 +44,37 @@ type ArangoDBConfiguration struct {
 
 	// DriverFlags configure additional flags for the `x-arango-driver` header
 	DriverFlags []string
+
+	// Compression is used to enable compression between client and server
+	Compression *CompressionConfig
 }
+
+// CompressionConfig is used to enable compression for the connection
+type CompressionConfig struct {
+	// CompressionConfig is used to enable compression for the requests
+	CompressionType CompressionType
+
+	// ResponseCompressionEnabled is used to enable compression for the responses (requires server side adjustments)
+	ResponseCompressionEnabled bool
+
+	// RequestCompressionEnabled is used to enable compression for the requests
+	RequestCompressionEnabled bool
+
+	// RequestCompressionLevel - Sets the compression level between -1 and 9
+	// Default: 0 (NoCompression). For Reference see: https://pkg.go.dev/compress/flate#pkg-constants
+	RequestCompressionLevel int
+}
+
+type CompressionType string
+
+const (
+
+	// RequestCompressionTypeGzip is used to enable gzip compression
+	RequestCompressionTypeGzip CompressionType = "gzip"
+
+	// RequestCompressionTypeDeflate is used to enable deflate compression
+	RequestCompressionTypeDeflate CompressionType = "deflate"
+)
 
 type Connection interface {
 	// NewRequest initializes Request object
@@ -111,4 +145,6 @@ type Response interface {
 	// Header gets the first value associated with the given key.
 	// If there are no values associated with the key, Get returns "".
 	Header(name string) string
+
+	RawResponse() *http.Response
 }
