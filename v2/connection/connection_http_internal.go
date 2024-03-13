@@ -361,6 +361,7 @@ func (j *httpConnection) bodyReadFunc(decoder Decoder, req *httpRequest, stream 
 							writer.CloseWithError(err)
 						}
 					}(compressedWriter)
+
 					encErr = decoder.Encode(compressedWriter, req.body)
 				} else {
 					encErr = decoder.Encode(writer, req.body)

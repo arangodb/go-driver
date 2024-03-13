@@ -33,10 +33,6 @@ type Compression interface {
 	ApplyRequestCompression(r *httpRequest, rootWriter io.Writer) (io.WriteCloser, error)
 }
 
-type compression struct {
-	config *CompressionConfig
-}
-
 func newCompression(config *CompressionConfig) Compression {
 	if config == nil {
 		return noCompression{}
