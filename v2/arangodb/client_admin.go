@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,12 +43,10 @@ type ClientAdmin interface {
 	SetServerMode(ctx context.Context, mode ServerMode) error
 }
 
-type ClientAdminBackup interface {
-}
-
 type ClientAdminLog interface {
 	// GetLogLevels returns log levels for topics.
 	GetLogLevels(ctx context.Context, opts *LogLevelsGetOptions) (LogLevels, error)
+
 	// SetLogLevels sets log levels for a given topics.
 	SetLogLevels(ctx context.Context, logLevels LogLevels, opts *LogLevelsSetOptions) error
 }

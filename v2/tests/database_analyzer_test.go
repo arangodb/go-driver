@@ -67,7 +67,8 @@ func Test_Analyzers(t *testing.T) {
 			HasError: true,
 		},
 		{
-			Name: "create-my-multi-delimiters",
+			Name:       "create-my-multi-delimiters",
+			MinVersion: newVersion("3.12"),
 			Definition: arangodb.AnalyzerDefinition{
 				Name: "my-multidelimiters",
 				Type: arangodb.ArangoSearchAnalyzerTypeMultiDelimiter,
@@ -329,7 +330,8 @@ func Test_Analyzers(t *testing.T) {
 			},
 		},
 		{
-			Name: "create-my-wildcard",
+			Name:       "create-my-wildcard",
+			MinVersion: newVersion("3.12"),
 			Definition: arangodb.AnalyzerDefinition{
 				Name: "my-wildcard",
 				Type: arangodb.ArangoSearchAnalyzerTypeWildcard,
