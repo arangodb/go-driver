@@ -23,12 +23,14 @@ package tests
 import (
 	"context"
 	"encoding/json"
-	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
 func Test_CreateBackupSimple(t *testing.T) {
