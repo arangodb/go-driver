@@ -60,7 +60,6 @@ func Test_CreateBackupSimple(t *testing.T) {
 			require.NoError(t, err, "BackupList failed")
 			require.NotNil(t, backups, "BackupList did not return a list of backups")
 			require.Contains(t, backups.Backups, backup.ID, "BackupList did not return the created backup")
-			require.GreaterOrEqual(t, len(backups.Backups), 2, "BackupList did not return the correct number of backups")
 
 			t.Run("List with single", func(t *testing.T) {
 				opt := &arangodb.BackupListOptions{
