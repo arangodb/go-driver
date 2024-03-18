@@ -388,13 +388,13 @@ type healthFunc func(*testing.T, context.Context, arangodb.ClusterHealth)
 
 // withHealth waits for health, and launches a given function when it is healthy.
 // When systems are available, then sometimes it needs more time to fetch healthiness.
-func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, f healthFunc) {
+func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, timeout time.Duration, f healthFunc) {
 	ctxInner := ctx
 	if _, ok := ctx.Deadline(); !ok {
 		// When a caller does not provide timeout, wait for healthiness for 30 seconds.
 		var cancel context.CancelFunc
 
-		ctxInner, cancel = context.WithTimeout(ctx, time.Second*30)
+		ctxInner, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 

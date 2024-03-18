@@ -16,6 +16,7 @@
 - Switch to Go 1.21.8
 - multi_delimiter analyzer support
 - Wildcard analyzer support
+- Backup API support
 
 
 ## [2.0.3](https://github.com/arangodb/go-driver/tree/v2.0.3) (2023-10-31)

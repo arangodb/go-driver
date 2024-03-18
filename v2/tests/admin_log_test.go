@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -67,7 +68,7 @@ func Test_LogLevels(t *testing.T) {
 func Test_LogLevelsForServers(t *testing.T) {
 	requireMode(t, testModeCluster, testModeResilientSingle)
 
-	// This test can not run subtests parallelly, because it changes admin settings.
+	// This test can not run subtests parallel, because it changes admin settings.
 	wrapOpts := WrapOptions{
 		Parallel: newBool(false),
 	}
@@ -75,7 +76,7 @@ func Test_LogLevelsForServers(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			skipBelowVersion(client, ctx, "3.10.2", t)
-			withHealthT(t, ctx, client, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
+			withHealthT(t, ctx, client, time.Second*30, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
 				var changed int
 				servers := make(map[arangodb.ServerID]arangodb.LogLevels)
 				for serverID, health := range health.Health {
