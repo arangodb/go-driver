@@ -30,7 +30,7 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
-func (c clientAdmin) BackupCreate(ctx context.Context, opt *BackupCreateOptions) (BackupResponse, error) {
+func (c *clientAdmin) BackupCreate(ctx context.Context, opt *BackupCreateOptions) (BackupResponse, error) {
 	url := connection.NewUrl("_admin", "backup", "create")
 
 	var response struct {
@@ -56,7 +56,7 @@ func (c clientAdmin) BackupCreate(ctx context.Context, opt *BackupCreateOptions)
 	}
 }
 
-func (c clientAdmin) BackupRestore(ctx context.Context, id string) (BackupRestoreResponse, error) {
+func (c *clientAdmin) BackupRestore(ctx context.Context, id string) (BackupRestoreResponse, error) {
 	url := connection.NewUrl("_admin", "backup", "restore")
 
 	var response struct {
@@ -83,7 +83,7 @@ func (c clientAdmin) BackupRestore(ctx context.Context, id string) (BackupRestor
 	}
 }
 
-func (c clientAdmin) BackupDelete(ctx context.Context, id string) error {
+func (c *clientAdmin) BackupDelete(ctx context.Context, id string) error {
 	url := connection.NewUrl("_admin", "backup", "delete")
 
 	var response struct {
@@ -109,7 +109,7 @@ func (c clientAdmin) BackupDelete(ctx context.Context, id string) error {
 	}
 }
 
-func (c clientAdmin) BackupList(ctx context.Context, opt *BackupListOptions) (ListBackupsResponse, error) {
+func (c *clientAdmin) BackupList(ctx context.Context, opt *BackupListOptions) (ListBackupsResponse, error) {
 	url := connection.NewUrl("_admin", "backup", "list")
 
 	var response struct {
@@ -135,7 +135,7 @@ func (c clientAdmin) BackupList(ctx context.Context, opt *BackupListOptions) (Li
 	}
 }
 
-func (c clientAdmin) BackupUpload(ctx context.Context, backupId string, remoteRepository string, config interface{}) (TransferMonitor, error) {
+func (c *clientAdmin) BackupUpload(ctx context.Context, backupId string, remoteRepository string, config interface{}) (TransferMonitor, error) {
 	url := connection.NewUrl("_admin", "backup", "upload")
 
 	var response struct {
@@ -168,7 +168,7 @@ func (c clientAdmin) BackupUpload(ctx context.Context, backupId string, remoteRe
 	}
 }
 
-func (c clientAdmin) BackupDownload(ctx context.Context, backupId string, remoteRepository string, config interface{}) (TransferMonitor, error) {
+func (c *clientAdmin) BackupDownload(ctx context.Context, backupId string, remoteRepository string, config interface{}) (TransferMonitor, error) {
 	url := connection.NewUrl("_admin", "backup", "download")
 
 	var response struct {
@@ -198,6 +198,17 @@ func (c clientAdmin) BackupDownload(ctx context.Context, backupId string, remote
 		return newDownloadMonitor(c.client, response.Result.DownloadID)
 	default:
 		return nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientAdmin) TransferMonitor(jobId string, transferType TransferType) (TransferMonitor, error) {
+	switch transferType {
+	case TransferTypeUpload:
+		return newUploadMonitor(c.client, jobId)
+	case TransferTypeDownload:
+		return newDownloadMonitor(c.client, jobId)
+	default:
+		return nil, errors.Errorf("unsupported transfer type '%s'", transferType)
 	}
 }
 

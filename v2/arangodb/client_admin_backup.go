@@ -43,6 +43,8 @@ type ClientAdminBackup interface {
 
 	// BackupDownload triggers a download of backup into the remote repository using the given config
 	BackupDownload(ctx context.Context, backupId string, remoteRepository string, config interface{}) (TransferMonitor, error)
+
+	TransferMonitor(jobId string, transferType TransferType) (TransferMonitor, error)
 }
 
 type TransferMonitor interface {
@@ -52,6 +54,13 @@ type TransferMonitor interface {
 	// Abort the transfer (upload/download)
 	Abort(ctx context.Context) error
 }
+
+type TransferType string
+
+const (
+	TransferTypeUpload   TransferType = "upload"
+	TransferTypeDownload TransferType = "download"
+)
 
 type BackupCreateOptions struct {
 	// The label for this backup.
