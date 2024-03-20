@@ -48,19 +48,19 @@ type ClientAdminCluster interface {
 	DatabaseInventory(ctx context.Context, dbName string) (DatabaseInventory, error)
 
 	// MoveShard moves a single shard of the given collection between `fromServer` and `toServer`.
-	MoveShard(ctx context.Context, col Collection, shard ShardID, fromServer, toServer ServerID) error
+	MoveShard(ctx context.Context, col Collection, shard ShardID, fromServer, toServer ServerID) (string, error)
 
 	// CleanOutServer triggers activities to clean out a DBServer.
-	CleanOutServer(ctx context.Context, serverID string) error
+	CleanOutServer(ctx context.Context, serverID ServerID) (string, error)
 
 	// ResignServer triggers activities to let a DBServer resign for all shards.
-	ResignServer(ctx context.Context, serverID string) error
+	ResignServer(ctx context.Context, serverID ServerID) (string, error)
 
 	// NumberOfServers returns the number of coordinators & dbServers in a clusters and the ID's of cleanedOut servers.
 	NumberOfServers(ctx context.Context) (NumberOfServersResponse, error)
 
 	// IsCleanedOut checks if the dbServer with given ID has been cleaned out.
-	IsCleanedOut(ctx context.Context, serverID string) (bool, error)
+	IsCleanedOut(ctx context.Context, serverID ServerID) (bool, error)
 
 	// RemoveServer is a low-level option to remove a server from a cluster.
 	// This function is suitable for servers of type coordinator or dbServer.
@@ -69,9 +69,9 @@ type ClientAdminCluster interface {
 }
 
 type NumberOfServersResponse struct {
-	NoCoordinators   int      `json:"numberOfCoordinators,omitempty"`
-	NoDBServers      int      `json:"numberOfDBServers,omitempty"`
-	CleanedServerIDs []string `json:"cleanedServers,omitempty"`
+	NoCoordinators   int        `json:"numberOfCoordinators,omitempty"`
+	NoDBServers      int        `json:"numberOfDBServers,omitempty"`
+	CleanedServerIDs []ServerID `json:"cleanedServers,omitempty"`
 }
 
 type ClientAdminLog interface {

@@ -73,11 +73,12 @@ func (c *clientAdmin) DatabaseInventory(ctx context.Context, dbName string) (Dat
 	}
 }
 
-func (c *clientAdmin) MoveShard(ctx context.Context, col Collection, shard ShardID, fromServer, toServer ServerID) error {
+func (c *clientAdmin) MoveShard(ctx context.Context, col Collection, shard ShardID, fromServer, toServer ServerID) (string, error) {
 	urlEndpoint := connection.NewUrl("_admin", "cluster", "moveShard")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
+		JobID                 string `json:"id"`
 	}
 
 	body := struct {
@@ -96,19 +97,19 @@ func (c *clientAdmin) MoveShard(ctx context.Context, col Collection, shard Shard
 
 	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &response, body)
 	if err != nil {
-		return errors.WithStack(err)
+		return "", errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusAccepted:
-		return nil
+		return response.JobID, nil
 	default:
-		return response.AsArangoErrorWithCode(code)
+		return "", response.AsArangoErrorWithCode(code)
 	}
 }
 
-func (c *clientAdmin) CleanOutServer(ctx context.Context, serverID string) error {
-	url := connection.NewUrl("_admin", "cluster", "cleanOutServer")
+func (c *clientAdmin) CleanOutServer(ctx context.Context, serverID ServerID) (string, error) {
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "cleanOutServer")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
@@ -116,25 +117,25 @@ func (c *clientAdmin) CleanOutServer(ctx context.Context, serverID string) error
 	}
 
 	body := struct {
-		Server string `json:"server"`
+		Server ServerID `json:"server"`
 	}{
 		Server: serverID,
 	}
 
-	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, body)
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &response, body)
 	if err != nil {
-		return errors.WithStack(err)
+		return "", errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK, http.StatusAccepted:
-		return nil
+		return response.JobID, nil
 	default:
-		return response.AsArangoErrorWithCode(code)
+		return "", response.AsArangoErrorWithCode(code)
 	}
 }
 
-func (c *clientAdmin) ResignServer(ctx context.Context, serverID string) error {
+func (c *clientAdmin) ResignServer(ctx context.Context, serverID ServerID) (string, error) {
 	urlEndpoint := connection.NewUrl("_admin", "cluster", "resignLeadership")
 
 	var response struct {
@@ -143,21 +144,21 @@ func (c *clientAdmin) ResignServer(ctx context.Context, serverID string) error {
 	}
 
 	body := struct {
-		Server string `json:"server"`
+		Server ServerID `json:"server"`
 	}{
 		Server: serverID,
 	}
 
 	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &response, body)
 	if err != nil {
-		return errors.WithStack(err)
+		return "", errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK, http.StatusAccepted:
-		return nil
+		return response.JobID, nil
 	default:
-		return response.AsArangoErrorWithCode(code)
+		return "", response.AsArangoErrorWithCode(code)
 	}
 }
 
@@ -182,7 +183,7 @@ func (c *clientAdmin) NumberOfServers(ctx context.Context) (NumberOfServersRespo
 	}
 }
 
-func (c *clientAdmin) IsCleanedOut(ctx context.Context, serverID string) (bool, error) {
+func (c *clientAdmin) IsCleanedOut(ctx context.Context, serverID ServerID) (bool, error) {
 	r, err := c.NumberOfServers(ctx)
 	if err != nil {
 		return false, errors.WithStack(err)
