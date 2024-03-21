@@ -63,7 +63,7 @@ type License struct {
 }
 
 // GetLicense returns license of an ArangoDB deployment.
-func (c clientAdmin) GetLicense(ctx context.Context) (License, error) {
+func (c *clientAdmin) GetLicense(ctx context.Context) (License, error) {
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		License

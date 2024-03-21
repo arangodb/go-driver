@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Adam Janikowski
-//
 
 package arangodb
 
@@ -26,18 +24,25 @@ package arangodb
 type DatabaseInfo struct {
 	// The identifier of the database.
 	ID string `json:"id,omitempty"`
+
 	// The name of the database.
 	Name string `json:"name,omitempty"`
+
 	// The filesystem path of the database.
 	Path string `json:"path,omitempty"`
+
 	// If true then the database is the _system database.
 	IsSystem bool `json:"isSystem,omitempty"`
+
 	// Default replication factor for collections in database
 	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
+
 	// Default write concern for collections in database
 	WriteConcern int `json:"writeConcern,omitempty"`
+
 	// Default sharding for collections in database
 	Sharding DatabaseSharding `json:"sharding,omitempty"`
+
 	// Replication version used for this database
 	ReplicationVersion DatabaseReplicationVersion `json:"replicationVersion,omitempty"`
 }

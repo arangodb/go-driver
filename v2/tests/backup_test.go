@@ -36,6 +36,8 @@ import (
 func Test_CreateBackupSimple(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			skipNoEnterprise(client, ctx, t)
+
 			backup, err := client.BackupCreate(ctx, nil)
 			require.NoError(t, err, "CreateBackup failed")
 			require.NotNil(t, backup, "CreateBackup did not return a backup")
@@ -93,6 +95,8 @@ func Test_RestoreBackupSimple(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollection(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					skipNoEnterprise(client, ctx, t)
+
 					book1 := DocWithRev{
 						Name: "Hello World",
 					}

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,8 +37,10 @@ type ServerStatus string
 const (
 	// ServerStatusGood indicates server is in good state
 	ServerStatusGood ServerStatus = "GOOD"
+
 	// ServerStatusBad indicates server has missed 1 heartbeat
 	ServerStatusBad ServerStatus = "BAD"
+
 	// ServerStatusFailed indicates server has been declared failed by the supervision, this happens after about 15s being bad.
 	ServerStatusFailed ServerStatus = "FAILED"
 )
@@ -61,6 +63,7 @@ type ClusterHealth struct {
 	// Unique identifier of the entire cluster.
 	// This ID is created when the cluster was first created.
 	ID string `json:"ClusterId"`
+
 	// Health per server
 	Health map[ServerID]ServerHealth `json:"Health"`
 }
@@ -111,30 +114,7 @@ func newClientAdmin(client *client) *clientAdmin {
 
 var _ ClientAdmin = &clientAdmin{}
 
-// Health returns the cluster configuration & health.
-// It works in cluster or active fail-over mode.
-func (c clientAdmin) Health(ctx context.Context) (ClusterHealth, error) {
-	url := connection.NewUrl("_admin", "cluster", "health")
-
-	var response struct {
-		shared.ResponseStruct `json:",inline"`
-		ClusterHealth         `json:",inline"` // TODo inline ?
-	}
-
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
-	if err != nil {
-		return ClusterHealth{}, errors.WithStack(err)
-	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		return response.ClusterHealth, nil
-	default:
-		return ClusterHealth{}, response.AsArangoErrorWithCode(code)
-	}
-}
-
-func (c clientAdmin) ServerMode(ctx context.Context) (ServerMode, error) {
+func (c *clientAdmin) ServerMode(ctx context.Context) (ServerMode, error) {
 	url := connection.NewUrl("_admin", "server", "mode")
 
 	var response struct {
@@ -155,7 +135,7 @@ func (c clientAdmin) ServerMode(ctx context.Context) (ServerMode, error) {
 	}
 }
 
-func (c clientAdmin) SetServerMode(ctx context.Context, mode ServerMode) error {
+func (c *clientAdmin) SetServerMode(ctx context.Context, mode ServerMode) error {
 	url := connection.NewUrl("_admin", "server", "mode")
 
 	reqBody := struct {

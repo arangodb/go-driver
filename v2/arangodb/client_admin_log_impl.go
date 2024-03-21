@@ -46,7 +46,7 @@ type LogLevelsSetOptions struct {
 }
 
 // GetLogLevels returns log levels for topics.
-func (c clientAdmin) GetLogLevels(ctx context.Context, opts *LogLevelsGetOptions) (LogLevels, error) {
+func (c *clientAdmin) GetLogLevels(ctx context.Context, opts *LogLevelsGetOptions) (LogLevels, error) {
 	url := connection.NewUrl("_admin", "log", "level")
 
 	var response LogLevels
@@ -72,7 +72,7 @@ func (c clientAdmin) GetLogLevels(ctx context.Context, opts *LogLevelsGetOptions
 }
 
 // SetLogLevels sets log levels for a given topics.
-func (c clientAdmin) SetLogLevels(ctx context.Context, logLevels LogLevels, opts *LogLevelsSetOptions) error {
+func (c *clientAdmin) SetLogLevels(ctx context.Context, logLevels LogLevels, opts *LogLevelsSetOptions) error {
 	url := connection.NewUrl("_admin", "log", "level")
 
 	var response struct {

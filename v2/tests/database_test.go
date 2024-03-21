@@ -28,7 +28,6 @@ import (
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 func TestGetDatabase(t *testing.T) {
@@ -45,11 +44,11 @@ func TestGetDatabase(t *testing.T) {
 	})
 }
 
+// --database.extended-names-databases=true are enabled by default in 3.12
 func TestDatabaseNameUnicode(t *testing.T) {
 	Wrap(t, func(t *testing.T, c arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-			skipBelowVersion(c, ctx, "3.9.0", t)
-			databaseExtendedNamesRequired(t, c, ctx)
+			skipBelowVersion(c, ctx, "3.12", t)
 
 			random := GenerateUUID("test-db-unicode")
 			dbName := "\u006E\u0303\u00f1" + random
@@ -86,23 +85,4 @@ func TestDatabaseNameUnicode(t *testing.T) {
 			require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
 		})
 	})
-}
-
-// databaseExtendedNamesRequired skips test if the version is < 3.9.0 or the ArangoDB has not been launched
-// with the option --database.extended-names-databases=true.
-func databaseExtendedNamesRequired(t *testing.T, c arangodb.Client, ctx context.Context) {
-	// If the database can be created with the below name, then it means that it excepts unicode names.
-	dbName := "\u006E\u0303\u00f1" + GenerateUUID("test-db")
-	normalized := norm.NFC.String(dbName)
-	db, err := c.CreateDatabase(ctx, normalized, nil)
-	if err == nil {
-		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
-	}
-
-	if shared.IsArangoErrorWithErrorNum(err, shared.ErrArangoDatabaseNameInvalid, shared.ErrArangoIllegalName) {
-		t.Skipf("ArangoDB is not launched with the option --database.extended-names-databases=true")
-	}
-
-	// Some other error that has not been expected.
-	require.NoError(t, err)
 }
