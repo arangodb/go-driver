@@ -137,3 +137,23 @@ type InventoryView struct {
 
 	ArangoSearchViewProperties
 }
+
+// CollectionByName returns the InventoryCollection with given name. Return false if not found.
+func (i DatabaseInventory) CollectionByName(name string) (InventoryCollection, bool) {
+	for _, c := range i.Collections {
+		if c.Parameters.Name == name {
+			return c, true
+		}
+	}
+	return InventoryCollection{}, false
+}
+
+// ViewByName returns the InventoryView with given name. Return false if not found.
+func (i DatabaseInventory) ViewByName(name string) (InventoryView, bool) {
+	for _, v := range i.Views {
+		if v.Name == name {
+			return v, true
+		}
+	}
+	return InventoryView{}, false
+}
