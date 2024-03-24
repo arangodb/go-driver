@@ -18,6 +18,7 @@
 - Wildcard analyzer support
 - Backup API support
 - Admin Cluster API support
+- Set Licence API support
 
 
 ## [2.0.3](https://github.com/arangodb/go-driver/tree/v2.0.3) (2023-10-31)

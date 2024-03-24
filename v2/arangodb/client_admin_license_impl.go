@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,27 +42,35 @@ type LicenseStatus string
 const (
 	// LicenseStatusGood - The license is valid for more than 2 weeks.
 	LicenseStatusGood LicenseStatus = "good"
+
 	// LicenseStatusExpired - The license has expired. In this situation, no new Enterprise Edition features can be utilized.
 	LicenseStatusExpired LicenseStatus = "expired"
+
 	// LicenseStatusExpiring - The license is valid for less than 2 weeks.
 	LicenseStatusExpiring LicenseStatus = "expiring"
+
 	// LicenseStatusReadOnly - The license is expired over 2 weeks. The instance is now restricted to read-only mode.
 	LicenseStatusReadOnly LicenseStatus = "read-only"
 )
 
 // License describes license information.
 type License struct {
-	// Features describes properties of the license.
+	// Features describe properties of the license.
 	Features LicenseFeatures `json:"features"`
+
 	// License is an encrypted license key in Base64 encoding.
-	License string `json:"license"`
+	License string `json:"license,omitempty"`
+
 	// Status is a status of a license.
-	Status LicenseStatus `json:"status"`
+	Status LicenseStatus `json:"status,omitempty"`
+
 	// Version is a version of a license.
 	Version int `json:"version"`
+
+	// Hash The hash value of the license.
+	Hash string `json:"hash,omitempty"`
 }
 
-// GetLicense returns license of an ArangoDB deployment.
 func (c *clientAdmin) GetLicense(ctx context.Context) (License, error) {
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
@@ -78,5 +86,28 @@ func (c *clientAdmin) GetLicense(ctx context.Context) (License, error) {
 		return response.License, nil
 	default:
 		return License{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientAdmin) SetLicense(ctx context.Context, license string, force bool) error {
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	var modifiers []connection.RequestModifier
+	if force {
+		modifiers = append(modifiers, connection.WithQuery("force", "true"))
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, "_admin/license", &response, license, modifiers...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusCreated:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
 	}
 }
