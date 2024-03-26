@@ -65,10 +65,12 @@ type retryData struct {
 	currentBatchID string
 }
 
+// TODO we should not check error or skip if 404
 func (c *cursor) Close() error {
 	return c.CloseWithContext(context.Background())
 }
 
+// TODO we should not check error or skip if 404
 func (c *cursor) CloseWithContext(ctx context.Context) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -89,10 +91,10 @@ func (c *cursor) CloseWithContext(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	c.closed = true
 
 	switch code := resp.Code(); code {
 	case http.StatusAccepted:
-		c.closed = true
 		c.data = cursorData{}
 		return nil
 	default:
