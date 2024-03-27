@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"sync"
@@ -800,7 +801,10 @@ func TestBackupRestoreWithViews(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create query: %s", describe(err))
 			}
-			defer cursor.Close()
+			defer func(cursor driver.Cursor) {
+				err := cursor.Close()
+				require.NoError(t, err)
+			}(cursor)
 
 			var numDocumentsInView int
 			_, err = cursor.ReadDocument(ctx, &numDocumentsInView)

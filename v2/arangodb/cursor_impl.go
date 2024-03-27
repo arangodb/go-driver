@@ -65,12 +65,10 @@ type retryData struct {
 	currentBatchID string
 }
 
-// TODO we should not check error or skip if 404
 func (c *cursor) Close() error {
 	return c.CloseWithContext(context.Background())
 }
 
-// TODO we should not check error or skip if 404
 func (c *cursor) CloseWithContext(ctx context.Context) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -184,13 +182,16 @@ func (c *cursor) getNextBatch(ctx context.Context, retryBatchID string) error {
 		c.retryData.currentBatchID = c.data.NextBatchID
 	}
 
-	resp, err := connection.CallPost(ctx, c.db.connection(), url, &c.data, nil, c.db.modifiers...)
+	var data cursorData
+
+	resp, err := connection.CallPost(ctx, c.db.connection(), url, &data, nil, c.db.modifiers...)
 	if err != nil {
 		return err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
+		c.data = data
 		return nil
 	default:
 		return shared.NewResponseStruct().AsArangoErrorWithCode(code)

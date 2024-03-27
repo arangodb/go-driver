@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ type Cursor interface {
 	io.Closer
 
 	// CloseWithContext run Close with specified Context
+	// 404 is returned if the server is not aware of the cursor.
+	// 404 is also returned if a cursor is used after it has been destroyed.
 	CloseWithContext(ctx context.Context) error
 
 	// HasMore returns true if the next call to ReadDocument does not return a NoMoreDocuments error.
@@ -62,6 +64,8 @@ type CursorBatch interface {
 	io.Closer
 
 	// CloseWithContext run Close with specified Context
+	// 404 is returned if the server is not aware of the cursor.
+	// 404 is also returned if a cursor is used after it has been destroyed.
 	CloseWithContext(ctx context.Context) error
 
 	// HasMoreBatches returns true if the next call to ReadNextBatch does not return a NoMoreDocuments error.
