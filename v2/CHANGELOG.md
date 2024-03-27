@@ -20,6 +20,7 @@
 - Admin Cluster API support
 - Set Licence API support
 - Transparent compression of requests and responses (ArangoDBConfiguration.Compression)
+- Fix Cursor batch
 
 
 ## [2.0.3](https://github.com/arangodb/go-driver/tree/v2.0.3) (2023-10-31)

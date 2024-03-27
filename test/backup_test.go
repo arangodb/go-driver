@@ -30,6 +30,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	driver "github.com/arangodb/go-driver"
 )
 
@@ -800,7 +802,10 @@ func TestBackupRestoreWithViews(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create query: %s", describe(err))
 			}
-			defer cursor.Close()
+			defer func(cursor driver.Cursor) {
+				err := cursor.Close()
+				require.NoError(t, err)
+			}(cursor)
 
 			var numDocumentsInView int
 			_, err = cursor.ReadDocument(ctx, &numDocumentsInView)
