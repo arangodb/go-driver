@@ -89,10 +89,10 @@ func (c *cursor) CloseWithContext(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	c.closed = true
 
 	switch code := resp.Code(); code {
 	case http.StatusAccepted:
-		c.closed = true
 		c.data = cursorData{}
 		return nil
 	default:
@@ -182,13 +182,16 @@ func (c *cursor) getNextBatch(ctx context.Context, retryBatchID string) error {
 		c.retryData.currentBatchID = c.data.NextBatchID
 	}
 
-	resp, err := connection.CallPost(ctx, c.db.connection(), url, &c.data, nil, c.db.modifiers...)
+	var data cursorData
+
+	resp, err := connection.CallPost(ctx, c.db.connection(), url, &data, nil, c.db.modifiers...)
 	if err != nil {
 		return err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
+		c.data = data
 		return nil
 	default:
 		return shared.NewResponseStruct().AsArangoErrorWithCode(code)
