@@ -104,6 +104,8 @@ func applyArangoDBConfiguration(config ArangoDBConfiguration, ctx context.Contex
 			}
 		}
 
+		newCompression(config.Compression).ApplyRequestHeaders(r)
+
 		return nil
 	}
 }
