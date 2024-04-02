@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [2.1.0](https://github.com/arangodb/go-driver/tree/v2.1.0) (2024-04-02)
 - Switch to Go 1.21.5
 - Disable AF mode in tests (not supported since 3.12)
 - Allow skipping validation for Database and Collection existence
