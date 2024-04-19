@@ -11,8 +11,8 @@ require (
 	github.com/rs/zerolog v1.19.0
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/exp v0.0.0-20230125214544-b3c2aaf6208d
-	golang.org/x/net v0.17.0
-	golang.org/x/text v0.13.0
+	golang.org/x/net v0.23.0
+	golang.org/x/text v0.14.0
 )
 
 require (
