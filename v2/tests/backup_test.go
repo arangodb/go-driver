@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -227,9 +228,12 @@ func Test_UploadBackupFailAndAbort(t *testing.T) {
 }
 
 func waitForHealthyClusterAfterBackup(t *testing.T, ctx context.Context, client arangodb.Client) {
-	time.Sleep(5 * time.Second)
-	withHealthT(t, ctx, client, time.Second*30, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
-
+	// give the cluster some time to start up
+	time.Sleep(15 * time.Second)
+	withHealthT(t, ctx, client, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
+		resp, err := client.Get(ctx, nil, "_admin", "server", "availability")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.Code())
 	})
 }
 
