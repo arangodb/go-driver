@@ -30,7 +30,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/http2"
@@ -406,18 +405,9 @@ type healthFunc func(*testing.T, context.Context, arangodb.ClusterHealth)
 
 // withHealth waits for health, and launches a given function when it is healthy.
 // When systems are available, then sometimes it needs more time to fetch healthiness.
-func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, timeout time.Duration, f healthFunc) {
-	ctxInner := ctx
-	if _, ok := ctx.Deadline(); !ok {
-		// When a caller does not provide timeout, wait for healthiness for 30 seconds.
-		var cancel context.CancelFunc
-
-		ctxInner, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
-	}
-
+func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, f healthFunc) {
 	for {
-		health, err := client.Health(ctxInner)
+		health, err := client.Health(ctx)
 		if err == nil && len(health.Health) > 0 {
 			notGood := 0
 			for _, h := range health.Health {
@@ -427,7 +417,8 @@ func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, time
 			}
 
 			if notGood == 0 {
-				f(t, ctxInner, health)
+				t.Logf("Cluster is healthy, running the test")
+				f(t, ctx, health)
 				return
 			}
 		}
@@ -435,14 +426,12 @@ func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, time
 		select {
 		case <-time.After(time.Second):
 			break
-		case <-ctxInner.Done():
+		case <-ctx.Done():
 			if err == nil {
 				// It is not health error, but context error.
-				err = ctxInner.Err()
+				err = ctx.Err()
 			}
-
-			err = errors.WithMessagef(err, "health %#v", health)
-			require.NoError(t, err)
+			t.Fatalf("Health check tiemouted: %s", err)
 		}
 	}
 }

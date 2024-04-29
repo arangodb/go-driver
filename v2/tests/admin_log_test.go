@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -32,7 +31,7 @@ import (
 
 // Test_LogLevels tests log levels.
 func Test_LogLevels(t *testing.T) {
-	// This test can not run sub-tests parallelly, because it changes admin settings.
+	// This test cannot run subtests parallel, because it changes admin settings.
 	wrapOpts := WrapOptions{
 		Parallel: newBool(false),
 	}
@@ -48,7 +47,7 @@ func Test_LogLevels(t *testing.T) {
 
 			var topic, level string
 			for topic, level = range logLevels {
-				// Get first topic from map of topics.
+				// Get a first topic from the map of topics.
 				break
 			}
 
@@ -68,7 +67,7 @@ func Test_LogLevels(t *testing.T) {
 func Test_LogLevelsForServers(t *testing.T) {
 	requireMode(t, testModeCluster, testModeResilientSingle)
 
-	// This test can not run subtests parallel, because it changes admin settings.
+	// This test cannot run subtests parallel, because it changes admin settings.
 	wrapOpts := WrapOptions{
 		Parallel: newBool(false),
 	}
@@ -76,7 +75,7 @@ func Test_LogLevelsForServers(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			skipBelowVersion(client, ctx, "3.10.2", t)
-			withHealthT(t, ctx, client, time.Second*30, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
+			withHealthT(t, ctx, client, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
 				var changed int
 				servers := make(map[arangodb.ServerID]arangodb.LogLevels)
 				for serverID, health := range health.Health {
@@ -92,7 +91,7 @@ func Test_LogLevelsForServers(t *testing.T) {
 					require.NoError(t, err)
 
 					if changed == 0 {
-						// Change log level for random topic, but only for one server.
+						// Change log level for a random topic, but only for one server.
 						changed++
 						for randomTopic, level := range logLevels {
 							logLevels[randomTopic] = changeLogLevel(level)
