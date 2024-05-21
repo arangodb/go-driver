@@ -29,6 +29,7 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 // ServerStatus describes the health status of a server
@@ -158,4 +159,16 @@ func (c *clientAdmin) SetServerMode(ctx context.Context, mode ServerMode) error 
 	default:
 		return response.AsArangoErrorWithCode(code)
 	}
+}
+
+func (c *clientAdmin) CheckAvailability(ctx context.Context, serverEndpoint string) error {
+	url := connection.NewUrl("_admin", "server", "availability")
+
+	req, err := c.client.Connection().NewRequestWithEndpoint(utils.FixupEndpointURLScheme(serverEndpoint), http.MethodGet, url)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = c.client.Connection().Do(ctx, req, nil, http.StatusOK)
+	return errors.WithStack(err)
 }

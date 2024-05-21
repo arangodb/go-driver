@@ -400,38 +400,3 @@ func withContextT(t testing.TB, timeout time.Duration, f func(ctx context.Contex
 		return nil
 	}))
 }
-
-type healthFunc func(*testing.T, context.Context, arangodb.ClusterHealth)
-
-// withHealth waits for health, and launches a given function when it is healthy.
-// When systems are available, then sometimes it needs more time to fetch healthiness.
-func withHealthT(t *testing.T, ctx context.Context, client arangodb.Client, f healthFunc) {
-	for {
-		health, err := client.Health(ctx)
-		if err == nil && len(health.Health) > 0 {
-			notGood := 0
-			for _, h := range health.Health {
-				if h.Status != arangodb.ServerStatusGood {
-					notGood++
-				}
-			}
-
-			if notGood == 0 {
-				t.Logf("Cluster is healthy, running the test")
-				f(t, ctx, health)
-				return
-			}
-		}
-
-		select {
-		case <-time.After(time.Second):
-			break
-		case <-ctx.Done():
-			if err == nil {
-				// It is not health error, but context error.
-				err = ctx.Err()
-			}
-			t.Fatalf("Health check tiemouted: %s", err)
-		}
-	}
-}

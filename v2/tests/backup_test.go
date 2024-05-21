@@ -120,7 +120,7 @@ func Test_RestoreBackupSimple(t *testing.T) {
 					require.NotEmpty(t, resp.Previous)
 
 					time.Sleep(15 * time.Second)
-					WaitForHealthyCluster(t, client, time.Minute)
+					WaitForHealthyCluster(t, client, time.Minute, true)
 
 					exist, err := col.DocumentExists(ctx, meta1.Key)
 					require.NoError(t, err)
@@ -181,7 +181,7 @@ func Test_BackupFullFlow(t *testing.T) {
 				require.NotEmpty(t, resp.Previous)
 
 				time.Sleep(15 * time.Second)
-				WaitForHealthyCluster(t, client, time.Minute)
+				WaitForHealthyCluster(t, client, time.Minute, true)
 			})
 
 		})
