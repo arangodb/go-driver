@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -115,14 +114,13 @@ func Test_RestoreBackupSimple(t *testing.T) {
 					meta2, err := col.CreateDocument(ctx, book2)
 					require.NoError(t, err)
 
-					t.Run("Restore Backup", func(t *testing.T) {
-						resp, err := client.BackupRestore(ctx, backup.ID)
-						require.NoError(t, err, "RestoreBackup failed")
-						require.NotNil(t, resp, "RestoreBackup did not return a task")
-						require.NotEmpty(t, resp.Previous)
+					resp, err := client.BackupRestore(ctx, backup.ID)
+					require.NoError(t, err, "RestoreBackup failed")
+					require.NotNil(t, resp, "RestoreBackup did not return a task")
+					require.NotEmpty(t, resp.Previous)
 
-						waitForHealthyClusterAfterBackup(t, ctx, client)
-					})
+					time.Sleep(15 * time.Second)
+					WaitForHealthyCluster(t, client, time.Minute)
 
 					exist, err := col.DocumentExists(ctx, meta1.Key)
 					require.NoError(t, err)
@@ -182,7 +180,8 @@ func Test_BackupFullFlow(t *testing.T) {
 				require.NotNil(t, resp, "RestoreBackup did not return a task")
 				require.NotEmpty(t, resp.Previous)
 
-				waitForHealthyClusterAfterBackup(t, ctx, client)
+				time.Sleep(15 * time.Second)
+				WaitForHealthyCluster(t, client, time.Minute)
 			})
 
 		})
@@ -224,16 +223,6 @@ func Test_UploadBackupFailAndAbort(t *testing.T) {
 		})
 	}, WrapOptions{
 		Parallel: newBool(false),
-	})
-}
-
-func waitForHealthyClusterAfterBackup(t *testing.T, ctx context.Context, client arangodb.Client) {
-	// give the cluster some time to start up
-	time.Sleep(15 * time.Second)
-	withHealthT(t, ctx, client, func(t *testing.T, ctx context.Context, health arangodb.ClusterHealth) {
-		resp, err := client.Get(ctx, nil, "_admin", "server", "availability")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.Code())
 	})
 }
 
