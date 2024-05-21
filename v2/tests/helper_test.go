@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -32,6 +33,8 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 var (
@@ -125,6 +128,40 @@ func WithGraph(t *testing.T, db arangodb.Database, graphDef *arangodb.GraphDefin
 
 		f(g)
 	})
+}
+
+func WaitForHealthyCluster(t *testing.T, client arangodb.Client, timeout time.Duration) {
+	NewTimeout(func() error {
+		return withContext(time.Second*3, func(ctx context.Context) error {
+			health, err := client.Health(ctx)
+			if err != nil {
+				return nil
+			}
+
+			for id, server := range health.Health {
+				if server.Status != arangodb.ServerStatusGood {
+					t.Logf("Server %s is not healthy", server.ShortName)
+					return nil
+				}
+
+				// check server availability
+				t.Logf("Checking server availability %s", id)
+
+				urlEndpoint := connection.NewUrl("_admin", "server", "availability")
+				req, err := client.Connection().NewRequestWithEndpoint(utils.FixupEndpointURLScheme(server.Endpoint), http.MethodGet, urlEndpoint)
+				require.NoError(t, err)
+
+				_, err = client.Connection().Do(ctx, req, nil, http.StatusOK)
+				if err != nil {
+					t.Logf("Server %s is not available", id)
+					return nil
+				}
+			}
+
+			return Interrupt{}
+		})
+	}).TimeoutT(t, timeout, 500*time.Millisecond)
+
 }
 
 func getBool(b *bool, d bool) bool {
