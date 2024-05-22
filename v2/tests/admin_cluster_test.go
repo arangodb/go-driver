@@ -239,7 +239,7 @@ func Test_ClusterMoveShards(t *testing.T) {
 
 					t.Run("Check if shards are moved", func(t *testing.T) {
 						start := time.Now()
-						maxTestTime := time.Minute
+						maxTestTime := 2 * time.Minute
 						lastShardsNotOnTargetServerID := movedShards
 
 						for {

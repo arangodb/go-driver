@@ -38,6 +38,11 @@ type ClientAdmin interface {
 	// This call needs a client that uses JWT authentication.
 	// This call needs ArangoDB 3.3 and up.
 	SetServerMode(ctx context.Context, mode ServerMode) error
+
+	// CheckAvailability checks if the particular server is available.
+	// Use ClientAdminCluster.Health() to fetch the Endpoint list.
+	// For ActiveFailover, it will return an error (503 code) if the server is not the leader.
+	CheckAvailability(ctx context.Context, serverEndpoint string) error
 }
 
 type ClientAdminLog interface {

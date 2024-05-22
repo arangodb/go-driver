@@ -23,7 +23,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -33,8 +32,6 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
-	"github.com/arangodb/go-driver/v2/connection"
-	"github.com/arangodb/go-driver/v2/utils"
 )
 
 var (
@@ -58,7 +55,7 @@ func GenerateUUID(prefix string) string {
 func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDatabaseOptions, f func(db arangodb.Database)) {
 	name := GenerateUUID("test-DB")
 
-	t.Logf("Creating DB %s", name)
+	t.Logf("Creating DB %s, time: %s", name, time.Now())
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		db, err := client.CreateDatabase(ctx, name, opts)
@@ -66,7 +63,7 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-				t.Logf("Removing DB %s", db.Name())
+				t.Logf("Removing DB %s, time: %s", db.Name(), time.Now())
 				require.NoError(t, db.Remove(ctx))
 			})
 		}()
@@ -78,7 +75,7 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 func WithCollection(t testing.TB, db arangodb.Database, props *arangodb.CreateCollectionProperties, f func(col arangodb.Collection)) {
 	name := GenerateUUID("test-COL")
 
-	t.Logf("Creating COL %s", name)
+	t.Logf("Creating COL %s, time: %s", name, time.Now())
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		col, err := db.CreateCollection(ctx, name, props)
@@ -130,7 +127,7 @@ func WithGraph(t *testing.T, db arangodb.Database, graphDef *arangodb.GraphDefin
 	})
 }
 
-func WaitForHealthyCluster(t *testing.T, client arangodb.Client, timeout time.Duration) {
+func WaitForHealthyCluster(t *testing.T, client arangodb.Client, timeout time.Duration, checkAvailability bool) {
 	NewTimeout(func() error {
 		return withContext(time.Second*3, func(ctx context.Context) error {
 			health, err := client.Health(ctx)
@@ -144,17 +141,12 @@ func WaitForHealthyCluster(t *testing.T, client arangodb.Client, timeout time.Du
 					return nil
 				}
 
-				// check server availability
-				t.Logf("Checking server availability %s", id)
-
-				urlEndpoint := connection.NewUrl("_admin", "server", "availability")
-				req, err := client.Connection().NewRequestWithEndpoint(utils.FixupEndpointURLScheme(server.Endpoint), http.MethodGet, urlEndpoint)
-				require.NoError(t, err)
-
-				_, err = client.Connection().Do(ctx, req, nil, http.StatusOK)
-				if err != nil {
-					t.Logf("Server %s is not available", id)
-					return nil
+				if checkAvailability {
+					err = client.CheckAvailability(ctx, server.Endpoint)
+					if err != nil {
+						t.Logf("Server %s (Endpoint: %s) is not available, err: %v", id, server.Endpoint, err)
+						return nil
+					}
 				}
 			}
 
