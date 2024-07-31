@@ -8,10 +8,11 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/arangodb/go-driver/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/arangodb/go-driver/tree/master)
 [![GoDoc](https://godoc.org/github.com/arangodb/go-driver?status.svg)](http://godoc.org/github.com/arangodb/go-driver)
 
+> **Warning**
+> V1 is deprecated and will not receive any new features. Please use [V2](v2) instead.
 
-- [Getting Started](https://docs.arangodb.com/3.12/develop/drivers/go/)
-- [Example Requests](https://www.arangodb.com/docs/stable/drivers/go-example-requests.html)
-- [Connection Management](https://www.arangodb.com/docs/stable/drivers/go-connection-management.html)
+- [Getting Started](https://docs.arangodb.com/stable/develop/drivers/go/)
+- [Example Requests](v2/examples)
 - [Reference](https://godoc.org/github.com/arangodb/go-driver)
 
 # Supported Go Versions
