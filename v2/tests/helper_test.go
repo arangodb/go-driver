@@ -59,6 +59,13 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		db, err := client.CreateDatabase(ctx, name, opts)
+
+		if err != nil {
+			if ok, arangoErr := shared.IsArangoError(err); ok {
+				t.Logf("errorNum: %d, errCode: %d, msg: %s, err: %v", arangoErr.Code, arangoErr.Code, arangoErr.ErrorMessage, arangoErr)
+				t.Fatalf("We neeed to retry here")
+			}
+		}
 		require.NoError(t, err, fmt.Sprintf("Failed to create DB %s", name))
 
 		defer func() {
