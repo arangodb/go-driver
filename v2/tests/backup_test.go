@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -31,6 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 func Test_CreateBackupSimple(t *testing.T) {
@@ -132,12 +134,33 @@ func Test_RestoreBackupSimple(t *testing.T) {
 
 					err = client.BackupDelete(ctx, backup.ID)
 					require.NoError(t, err, "DeleteBackup failed")
+
+					waitForSync(t, ctx, client)
 				})
 			})
 		})
 	}, WrapOptions{
 		Parallel: newBool(false),
 	})
+}
+
+func waitForSync(t *testing.T, ctx context.Context, client arangodb.Client) {
+	NewTimeout(func() error {
+		name := GenerateUUID("test-backup-DB")
+
+		db, err := client.CreateDatabase(ctx, name, nil)
+		if err != nil {
+			if ok, arangoErr := shared.IsArangoError(err); ok {
+				t.Logf("waitForSync ERROR: errorNum: %d, errCode: %d, msg: %s", arangoErr.ErrorNum, arangoErr.Code, arangoErr.ErrorMessage)
+				if strings.Contains(arangoErr.ErrorMessage, "executing createSystemCollectionsAndIndices (creates all system collections including their indices) failed") {
+					return err
+				}
+			}
+		}
+		require.NoError(t, err, fmt.Sprintf("waitForSyncL Failed to create DB %s", name))
+		require.NoError(t, db.Remove(ctx))
+		return Interrupt{}
+	}).TimeoutT(t, 2*time.Minute, 125*time.Millisecond)
 }
 
 func Test_BackupFullFlow(t *testing.T) {
@@ -184,6 +207,7 @@ func Test_BackupFullFlow(t *testing.T) {
 				WaitForHealthyCluster(t, client, time.Minute, true)
 			})
 
+			waitForSync(t, ctx, client)
 		})
 	}, WrapOptions{
 		Parallel: newBool(false),

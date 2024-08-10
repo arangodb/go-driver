@@ -84,10 +84,9 @@ func Test_CallWithChecks(t *testing.T) {
 					[]int{http.StatusOK, http.StatusNoContent})
 				require.Error(t, err)
 
-				arangoErr, ok := err.(shared.ArangoError)
+				ok, arangoErr := shared.IsArangoError(err)
 				require.True(t, ok)
 				require.True(t, arangoErr.HasError)
-				require.True(t, shared.IsArangoError(arangoErr))
 				require.Equal(t, http.StatusNotFound, resp.Code())
 			})
 		})
