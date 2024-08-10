@@ -144,6 +144,21 @@ func Test_RestoreBackupSimple(t *testing.T) {
 	})
 }
 
+/*
+Sometimes after restore, we observe the following error during db creation:
+
+```
+Could not create database: executing createSystemCollectionsAndIndices
+(creates all system collections including their indices) failed.
+```
+
+Looks like not all DB servers have reported ready in Current/DBServers in the agency when the database creation attempt runs.
+This could be the case if DB servers are all restarted (as after a hotbackup) and start reacting to liveliness probes each,
+but the coordinator has not yet fetched the latest agency state.
+There may be a small window of time in which a DB server already responds to `/_admin/server/availablity`,
+but has not reported ready to the agency, or the coordinator has not yet fetched the latest state from the agency and
+does not yet see the server available in Current/DBServers.
+*/
 func waitForSync(t *testing.T, ctx context.Context, client arangodb.Client) {
 	NewTimeout(func() error {
 		name := GenerateUUID("test-backup-DB")
