@@ -172,7 +172,7 @@ func waitForSync(t *testing.T, ctx context.Context, client arangodb.Client) {
 				}
 			}
 		}
-		require.NoError(t, err, fmt.Sprintf("waitForSyncL Failed to create DB %s", name))
+		require.NoError(t, err, fmt.Sprintf("waitForSync Failed to create DB %s", name))
 		require.NoError(t, db.Remove(ctx))
 		return Interrupt{}
 	}).TimeoutT(t, 2*time.Minute, 125*time.Millisecond)
