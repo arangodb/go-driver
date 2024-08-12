@@ -333,6 +333,11 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) dr
 }
 
 func TestBackupRestore(t *testing.T) {
+	if os.Getenv("TEST_CONNECTION") == "vst" {
+		t.Skip("VST is dropped since 3.12")
+		return
+	}
+
 	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()
@@ -721,6 +726,11 @@ func TestBackupCreateManyBackupsFast(t *testing.T) {
 }
 
 func TestBackupRestoreWithViews(t *testing.T) {
+	if os.Getenv("TEST_CONNECTION") == "vst" {
+		t.Skip("VST is dropped since 3.12")
+		return
+	}
+
 	c := createClient(t, nil)
 	skipIfNoBackup(c, t)
 	ctx := context.Background()

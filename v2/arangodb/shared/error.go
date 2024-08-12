@@ -102,15 +102,12 @@ func newArangoError(code, errorNum int, errorMessage string) error {
 	}
 }
 
-// IsArangoError returns true when the given error is an ArangoError.
-func IsArangoError(err error) bool {
-	return checkCause(err, func(err error) bool {
-		if a, ok := err.(ArangoError); ok {
-			return a.HasError
-		}
+// IsArangoError returns true when the given error is an ArangoError
+func IsArangoError(err error) (bool, ArangoError) {
+	var arangoErr ArangoError
+	ok := errors.As(err, &arangoErr)
 
-		return false
-	})
+	return ok, arangoErr
 }
 
 // IsArangoErrorWithCode returns true when the given error is an ArangoError and its Code field is equal to the given code.
