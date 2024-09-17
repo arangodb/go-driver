@@ -21,8 +21,9 @@
 package arangodb
 
 import (
-	"github.com/arangodb/go-driver/v2/connection"
 	"time"
+
+	"github.com/arangodb/go-driver/v2/connection"
 )
 
 // BeginTransactionOptions provides options for BeginTransaction call
