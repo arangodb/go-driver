@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ type PrimarySort struct {
 	Cache *bool `json:"cache,omitempty"`
 }
 
-// PrimarySortEntry  field to sort the index by and the direction
+// PrimarySortEntry field to sort the index by and the direction
 type PrimarySortEntry struct {
 	// Field An attribute path. The . character denotes sub-attributes.
 	Field string `json:"field,required"`

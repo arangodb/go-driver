@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
-
 	"github.com/pkg/errors"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
@@ -138,7 +137,7 @@ func (d databaseTransaction) BeginTransaction(ctx context.Context, cols Transact
 		} `json:"result"`
 	}{}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), url, &output, &input, d.db.modifiers...)
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, &output, &input, append(d.db.modifiers, opts.modifyRequest)...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
