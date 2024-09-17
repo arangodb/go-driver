@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,23 +99,23 @@ func (c *CollectionDocumentReadOptions) modifyRequest(r connection.Request) erro
 	}
 
 	if c.IfMatch != "" {
-		r.AddHeader("If-Match", c.IfMatch)
+		r.AddHeader(HeaderIfMatch, c.IfMatch)
 	}
 
 	if c.IfNoneMatch != "" {
-		r.AddHeader("If-None-Match", c.IfNoneMatch)
+		r.AddHeader(HeaderIfNoneMatch, c.IfNoneMatch)
 	}
 
 	if c.IgnoreRevs != nil {
-		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
+		r.AddQuery(QueryIgnoreRevs, boolToString(*c.IgnoreRevs))
 	}
 
 	if c.AllowDirtyReads != nil {
-		r.AddHeader("x-arango-allow-dirty-read", boolToString(*c.AllowDirtyReads))
+		r.AddHeader(HeaderDirtyReads, boolToString(*c.AllowDirtyReads))
 	}
 
 	if c.TransactionID != "" {
-		r.AddHeader("x-arango-trx-id", c.TransactionID)
+		r.AddHeader(HeaderTransaction, c.TransactionID)
 	}
 
 	return nil

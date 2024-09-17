@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -95,27 +95,27 @@ func (c *CollectionDocumentDeleteOptions) modifyRequest(r connection.Request) er
 	}
 
 	if c.IfMatch != "" {
-		r.AddHeader("If-Match", c.IfMatch)
+		r.AddHeader(HeaderIfMatch, c.IfMatch)
 	}
 
 	if c.IgnoreRevs != nil {
-		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
+		r.AddQuery(QueryIgnoreRevs, boolToString(*c.IgnoreRevs))
 	}
 
 	if c.WithWaitForSync != nil {
-		r.AddQuery("waitForSync", boolToString(*c.WithWaitForSync))
+		r.AddQuery(QueryWaitForSync, boolToString(*c.WithWaitForSync))
 	}
 
 	if c.OldObject != nil {
-		r.AddQuery("returnOld", "true")
+		r.AddQuery(QueryReturnOld, "true")
 	}
 
 	if c.Silent != nil {
-		r.AddQuery("silent", boolToString(*c.Silent))
+		r.AddQuery(QuerySilent, boolToString(*c.Silent))
 	}
 
 	if c.RefillIndexCaches != nil {
-		r.AddQuery("refillIndexCaches", boolToString(*c.RefillIndexCaches))
+		r.AddQuery(QueryRefillIndexCaches, boolToString(*c.RefillIndexCaches))
 	}
 
 	return nil

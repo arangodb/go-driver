@@ -59,13 +59,13 @@ type BeginTransactionOptions struct {
 	LockTimeoutDuration time.Duration `json:"-"`
 }
 
-func (q *BeginTransactionOptions) modifyRequest(r connection.Request) error {
-	if q == nil {
+func (b *BeginTransactionOptions) modifyRequest(r connection.Request) error {
+	if b == nil {
 		return nil
 	}
 
-	if q.AllowDirtyReads != nil {
-		r.AddHeader("x-arango-allow-dirty-read", boolToString(*q.AllowDirtyReads))
+	if b.AllowDirtyReads != nil {
+		r.AddHeader(HeaderDirtyReads, boolToString(*b.AllowDirtyReads))
 	}
 
 	return nil

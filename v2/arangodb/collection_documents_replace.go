@@ -111,39 +111,39 @@ func (c *CollectionDocumentReplaceOptions) modifyRequest(r connection.Request) e
 	}
 
 	if c.IfMatch != "" {
-		r.AddHeader("If-Match", c.IfMatch)
+		r.AddHeader(HeaderIfMatch, c.IfMatch)
 	}
 
 	if c.WithWaitForSync != nil {
-		r.AddQuery("waitForSync", boolToString(*c.WithWaitForSync))
+		r.AddQuery(QueryWaitForSync, boolToString(*c.WithWaitForSync))
 	}
 
 	if c.Silent != nil {
-		r.AddQuery("silent", boolToString(*c.Silent))
+		r.AddQuery(QuerySilent, boolToString(*c.Silent))
 	}
 
 	if c.NewObject != nil {
-		r.AddQuery("returnNew", "true")
+		r.AddQuery(QueryReturnNew, "true")
 	}
 
 	if c.OldObject != nil {
-		r.AddQuery("returnOld", "true")
+		r.AddQuery(QueryReturnOld, "true")
 	}
 
 	if c.RefillIndexCaches != nil {
-		r.AddQuery("refillIndexCaches", boolToString(*c.RefillIndexCaches))
+		r.AddQuery(QueryRefillIndexCaches, boolToString(*c.RefillIndexCaches))
 	}
 
 	if c.IgnoreRevs != nil {
-		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
+		r.AddQuery(QueryIgnoreRevs, boolToString(*c.IgnoreRevs))
 	}
 
 	if c.IsRestore != nil {
-		r.AddQuery("isRestore", boolToString(*c.IsRestore))
+		r.AddQuery(QueryIsRestore, boolToString(*c.IsRestore))
 	}
 
 	if c.VersionAttribute != "" {
-		r.AddQuery("versionAttribute", c.VersionAttribute)
+		r.AddQuery(QueryVersionAttribute, c.VersionAttribute)
 	}
 
 	return nil

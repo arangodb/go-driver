@@ -142,11 +142,11 @@ func (q *QueryOptions) modifyRequest(r connection.Request) error {
 	}
 
 	if q.AllowDirtyReads != nil {
-		r.AddHeader("x-arango-allow-dirty-read", boolToString(*q.AllowDirtyReads))
+		r.AddHeader(HeaderDirtyReads, boolToString(*q.AllowDirtyReads))
 	}
 
 	if q.TransactionID != "" {
-		r.AddHeader("x-arango-trx-id", q.TransactionID)
+		r.AddHeader(HeaderTransaction, q.TransactionID)
 	}
 
 	return nil

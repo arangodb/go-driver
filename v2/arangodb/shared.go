@@ -17,10 +17,30 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Jakub Wierzbowski
-//
 
 package arangodb
+
+const (
+	HeaderDirtyReads  = "x-arango-allow-dirty-read"
+	HeaderTransaction = "x-arango-trx-id"
+	HeaderIfMatch     = "If-Match"
+	HeaderIfNoneMatch = "If-None-Match"
+
+	QueryRev               = "rev"
+	QueryIgnoreRevs        = "ignoreRevs"
+	QueryWaitForSync       = "waitForSync"
+	QueryReturnNew         = "returnNew"
+	QueryReturnOld         = "returnOld"
+	QueryKeepNull          = "keepNull"
+	QueryDirection         = "direction"
+	QuerySilent            = "silent"
+	QueryRefillIndexCaches = "refillIndexCaches"
+	QueryMergeObjects      = "mergeObjects"
+	QueryOverwrite         = "overwrite"
+	QueryOverwriteMode     = "overwriteMode"
+	QueryVersionAttribute  = "versionAttribute"
+	QueryIsRestore         = "isRestore"
+)
 
 // PrimarySortCompression Defines how to compress the primary sort data (introduced in v3.7.1)
 type PrimarySortCompression string

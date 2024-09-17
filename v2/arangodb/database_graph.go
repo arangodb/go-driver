@@ -100,11 +100,11 @@ func (q *GetEdgesOptions) modifyRequest(r connection.Request) error {
 	}
 
 	if q.AllowDirtyReads != nil {
-		r.AddHeader("x-arango-allow-dirty-read", boolToString(*q.AllowDirtyReads))
+		r.AddHeader(HeaderDirtyReads, boolToString(*q.AllowDirtyReads))
 	}
 
 	if q.Direction != "" {
-		r.AddQuery("direction", string(q.Direction))
+		r.AddQuery(QueryDirection, string(q.Direction))
 	}
 
 	return nil

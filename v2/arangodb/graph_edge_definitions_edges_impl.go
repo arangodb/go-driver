@@ -84,19 +84,19 @@ func (g *GetEdgeOptions) modifyRequest(r connection.Request) error {
 	}
 
 	if g.Rev != "" {
-		r.AddQuery("rev", g.Rev)
+		r.AddQuery(QueryRev, g.Rev)
 	}
 
 	if g.IfMatch != "" {
-		r.AddHeader("If-Match", g.IfMatch)
+		r.AddHeader(HeaderIfMatch, g.IfMatch)
 	}
 
 	if g.IfNoneMatch != "" {
-		r.AddHeader("If-None-Match", g.IfNoneMatch)
+		r.AddHeader(HeaderIfNoneMatch, g.IfNoneMatch)
 	}
 
 	if g.TransactionID != "" {
-		r.AddHeader("x-arango-trx-id", g.TransactionID)
+		r.AddHeader(HeaderTransaction, g.TransactionID)
 	}
 
 	return nil
@@ -142,15 +142,15 @@ func (c *CreateEdgeOptions) modifyRequest(r connection.Request) error {
 	}
 
 	if c.WaitForSync != nil {
-		r.AddQuery("waitForSync", boolToString(*c.WaitForSync))
+		r.AddQuery(QueryWaitForSync, boolToString(*c.WaitForSync))
 	}
 
 	if c.NewObject != nil {
-		r.AddQuery("returnNew", "true")
+		r.AddQuery(QueryReturnNew, "true")
 	}
 
 	if c.TransactionID != "" {
-		r.AddHeader("x-arango-trx-id", c.TransactionID)
+		r.AddHeader(HeaderTransaction, c.TransactionID)
 	}
 
 	return nil
@@ -199,27 +199,27 @@ func (v *EdgeUpdateOptions) modifyRequest(r connection.Request) error {
 	}
 
 	if v.WaitForSync != nil {
-		r.AddQuery("waitForSync", boolToString(*v.WaitForSync))
+		r.AddQuery(QueryWaitForSync, boolToString(*v.WaitForSync))
 	}
 
 	if v.NewObject != nil {
-		r.AddQuery("returnNew", "true")
+		r.AddQuery(QueryReturnNew, "true")
 	}
 
 	if v.OldObject != nil {
-		r.AddQuery("returnOld", "true")
+		r.AddQuery(QueryReturnOld, "true")
 	}
 
 	if v.KeepNull != nil {
-		r.AddQuery("keepNull", boolToString(*v.KeepNull))
+		r.AddQuery(QueryKeepNull, boolToString(*v.KeepNull))
 	}
 
 	if v.IfMatch != "" {
-		r.AddHeader("If-Match", v.IfMatch)
+		r.AddHeader(HeaderIfMatch, v.IfMatch)
 	}
 
 	if v.TransactionID != "" {
-		r.AddHeader("x-arango-trx-id", v.TransactionID)
+		r.AddHeader(HeaderTransaction, v.TransactionID)
 	}
 
 	return nil
@@ -269,27 +269,27 @@ func (v *EdgeReplaceOptions) modifyRequest(r connection.Request) error {
 	}
 
 	if v.WaitForSync != nil {
-		r.AddQuery("waitForSync", boolToString(*v.WaitForSync))
+		r.AddQuery(QueryWaitForSync, boolToString(*v.WaitForSync))
 	}
 
 	if v.NewObject != nil {
-		r.AddQuery("returnNew", "true")
+		r.AddQuery(QueryReturnNew, "true")
 	}
 
 	if v.OldObject != nil {
-		r.AddQuery("returnOld", "true")
+		r.AddQuery(QueryReturnOld, "true")
 	}
 
 	if v.KeepNull != nil {
-		r.AddQuery("keepNull", boolToString(*v.KeepNull))
+		r.AddQuery(QueryKeepNull, boolToString(*v.KeepNull))
 	}
 
 	if v.IfMatch != "" {
-		r.AddHeader("If-Match", v.IfMatch)
+		r.AddHeader(HeaderIfMatch, v.IfMatch)
 	}
 
 	if v.TransactionID != "" {
-		r.AddHeader("x-arango-trx-id", v.TransactionID)
+		r.AddHeader(HeaderTransaction, v.TransactionID)
 	}
 
 	return nil
@@ -322,19 +322,19 @@ func (c *DeleteEdgeOptions) modifyRequest(r connection.Request) error {
 	}
 
 	if c.WaitForSync != nil {
-		r.AddQuery("waitForSync", boolToString(*c.WaitForSync))
+		r.AddQuery(QueryWaitForSync, boolToString(*c.WaitForSync))
 	}
 
 	if c.OldObject != nil {
-		r.AddQuery("returnOld", "true")
+		r.AddQuery(QueryReturnOld, "true")
 	}
 
 	if c.IfMatch != "" {
-		r.AddHeader("If-Match", c.IfMatch)
+		r.AddHeader(HeaderIfMatch, c.IfMatch)
 	}
 
 	if c.TransactionID != "" {
-		r.AddHeader("x-arango-trx-id", c.TransactionID)
+		r.AddHeader(HeaderTransaction, c.TransactionID)
 	}
 
 	return nil
