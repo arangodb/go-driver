@@ -3,6 +3,9 @@
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Improve backup tests stability
 - CheckAvailability function for the specific member
+- Switch to Go 1.22.6
+- Support for missing dirty read options (query, transaction apis)
+- Get inbound and outbound edges
 
 ## [2.1.0](https://github.com/arangodb/go-driver/tree/v2.1.0) (2024-04-02)
 - Switch to Go 1.21.5
