@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,11 @@
 
 package arangodb
 
-import "context"
+import (
+	"context"
+
+	"github.com/arangodb/go-driver/v2/connection"
+)
 
 type DatabaseQuery interface {
 	// Query performs an AQL query, returning a cursor used to iterate over the returned documents.
@@ -44,17 +48,21 @@ type DatabaseQuery interface {
 type QuerySubOptions struct {
 	// ShardId query option
 	ShardIds []string `json:"shardIds,omitempty"`
+
 	// Profile If set to 1, then the additional query profiling information is returned in the profile sub-attribute
 	// of the extra return attribute, unless the query result is served from the query cache.
 	// If set to 2, the query includes execution stats per query plan node in stats.nodes
 	// sub-attribute of the extra return attribute.
 	// Additionally, the query plan is returned in the extra.plan sub-attribute.
 	Profile uint `json:"profile,omitempty"`
+
 	// Optimizer contains options related to the query optimizer.
 	Optimizer QuerySubOptionsOptimizer `json:"optimizer,omitempty"`
+
 	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
 	// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
 	SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
+
 	// if set to true and the query contains a LIMIT clause, then the result will have an extra attribute with the sub-attributes
 	// stats and fullCount, { ... , "extra": { "stats": { "fullCount": 123 } } }. The fullCount attribute will contain the number
 	// of documents in the result before the last LIMIT in the query was applied. It can be used to count the number of documents
@@ -63,48 +71,85 @@ type QuerySubOptions struct {
 	// thus make queries run longer. Note that the fullCount attribute will only be present in the result if the query has a LIMIT clause
 	// and the LIMIT clause is actually used in the query.
 	FullCount bool `json:"fullCount,omitempty"`
+
 	// Limits the maximum number of plans that are created by the AQL query optimizer.
 	MaxPlans int `json:"maxPlans,omitempty"`
+
 	// Specify true and the query will be executed in a streaming fashion. The query result is not stored on
 	// the server, but calculated on the fly. Beware: long-running queries will need to hold the collection
 	// locks for as long as the query cursor exists. When set to false a query will be executed right away in
 	// its entirety.
 	Stream bool `json:"stream,omitempty"`
+
 	// MaxRuntime specify the timeout which can be used to kill a query on the server after the specified
 	// amount in time. The timeout value is specified in seconds. A value of 0 means no timeout will be enforced.
 	MaxRuntime float64 `json:"maxRuntime,omitempty"`
+
 	// FillBlockCache if is set to true or not specified, this will make the query store the data it reads via the RocksDB storage engine in the RocksDB block cache.
 	// This is usually the desired behavior. The option can be set to false for queries that are known to either read a lot of data which would thrash the block cache,
 	// or for queries that read data which are known to be outside of the hot set. By setting the option to false, data read by the query will not make it into
 	// the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
 	FillBlockCache bool `json:"fillBlockCache,omitempty"`
+
 	// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
 	// that batch reads can be retried in the case of a communication error.
 	AllowRetry bool `json:"allowRetry,omitempty"`
 }
 
 type QueryOptions struct {
-	// indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
+	// Set this to true to allow the Coordinator to ask any shard replica for the data, not only the shard leader.
+	// This may result in “dirty reads”.
+	// This option is ignored if this operation is part of a DatabaseTransaction (TransactionID option).
+	// The header set when creating the transaction decides about dirty reads for the entire transaction,
+	// not the individual read operations.
+	AllowDirtyReads *bool `json:"-"`
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string `json:"-"`
+
+	// Indicates whether the number of documents in the result set should be returned in the "count" attribute of the result.
 	// Calculating the "count" attribute might have a performance impact for some queries in the future so this option is
 	// turned off by default, and "count" is only returned when requested.
 	Count bool `json:"count,omitempty"`
+
 	// maximum number of result documents to be transferred from the server to the client in one roundtrip.
 	// If this attribute is not set, a server-controlled default value will be used. A batchSize value of 0 is disallowed.
 	BatchSize int `json:"batchSize,omitempty"`
+
 	// flag to determine whether the AQL query cache shall be used. If set to false, then any query cache lookup
 	// will be skipped for the query. If set to true, it will lead to the query cache being checked for the query
 	// if the query cache mode is either on or demand.
 	Cache bool `json:"cache,omitempty"`
+
 	// the maximum number of memory (measured in bytes) that the query is allowed to use. If set, then the query will fail
 	// with error "resource limit exceeded" in case it allocates too much memory. A value of 0 indicates that there is no memory limit.
 	MemoryLimit int64 `json:"memoryLimit,omitempty"`
+
 	// The time-to-live for the cursor (in seconds). The cursor will be removed on the server automatically after the specified
 	// amount of time. This is useful to ensure garbage collection of cursors that are not fully fetched by clients.
 	// If not set, a server-defined value will be used.
 	TTL float64 `json:"ttl,omitempty"`
+
 	// key/value pairs representing the bind parameters.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
 	Options  QuerySubOptions        `json:"options,omitempty"`
+}
+
+func (q *QueryOptions) modifyRequest(r connection.Request) error {
+	if q == nil {
+		return nil
+	}
+
+	if q.AllowDirtyReads != nil {
+		r.AddHeader(HeaderDirtyReads, boolToString(*q.AllowDirtyReads))
+	}
+
+	if q.TransactionID != "" {
+		r.AddHeader(HeaderTransaction, q.TransactionID)
+	}
+
+	return nil
 }
 
 // QuerySubOptionsOptimizer describes optimization's settings for AQL queries.
@@ -158,14 +203,19 @@ type ExplainQueryResultExecutionVariable struct {
 type ExplainQueryResultPlan struct {
 	// Execution nodes of the plan.
 	NodesRaw []ExplainQueryResultExecutionNodeRaw `json:"nodes,omitempty"`
+
 	// List of rules the optimizer applied
 	Rules []string `json:"rules,omitempty"`
+
 	// List of collections used in the query
 	Collections []ExplainQueryResultExecutionCollection `json:"collections,omitempty"`
+
 	// List of variables used in the query (note: this may contain internal variables created by the optimizer)
 	Variables []ExplainQueryResultExecutionVariable `json:"variables,omitempty"`
+
 	// The total estimated cost for the plan. If there are multiple plans, the optimizer will choose the plan with the lowest total cost
 	EstimatedCost float64 `json:"estimatedCost,omitempty"`
+
 	// The estimated number of results.
 	EstimatedNrItems int `json:"estimatedNrItems,omitempty"`
 }
@@ -181,10 +231,13 @@ type ExplainQueryResultExecutionStats struct {
 type ExplainQueryResult struct {
 	Plan  ExplainQueryResultPlan   `json:"plan,omitempty"`
 	Plans []ExplainQueryResultPlan `json:"plans,omitempty"`
+
 	// List of warnings that occurred during optimization or execution plan creation
 	Warnings []string `json:"warnings,omitempty"`
+
 	// Info about optimizer statistics
 	Stats ExplainQueryResultExecutionStats `json:"stats,omitempty"`
+
 	// Cacheable states whether the query results can be cached on the server if the query result cache were used.
 	// This attribute is not present when allPlans is set to true.
 	Cacheable *bool `json:"cacheable,omitempty"`

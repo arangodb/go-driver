@@ -70,6 +70,17 @@ func Test_EdgeSimple(t *testing.T) {
 
 					})
 
+					t.Run("Get Edge documents", func(t *testing.T) {
+						edges, err := db.GetEdges(ctx, edgeColName, string(fromVertex.ID), nil)
+						require.NoError(t, err)
+						require.Len(t, edges, 1)
+
+						docRead := edges[0]
+						require.Equal(t, docKey, docRead.Key)
+						require.Equal(t, doc.From, docRead.From)
+						require.Equal(t, doc.To, docRead.To)
+					})
+
 					t.Run("Update Edge", func(t *testing.T) {
 						opts := arangodb.EdgeUpdateOptions{
 							WaitForSync: newBool(true),
@@ -166,6 +177,25 @@ func Test_EdgeExtended(t *testing.T) {
 						require.NotEmpty(t, newObject)
 						require.Equal(t, doc, newObject)
 						docKey = createEdgeResp.Key
+					})
+
+					t.Run("Get Edge documents", func(t *testing.T) {
+						opts := arangodb.GetEdgesOptions{
+							Direction: arangodb.EdgeDirectionOut,
+						}
+						edges, err := db.GetEdges(ctx, edgeColName, string(fromVertex.ID), &opts)
+						require.NoError(t, err)
+						require.Len(t, edges, 1)
+
+						docRead := edges[0]
+						require.Equal(t, docKey, docRead.Key)
+						require.Equal(t, doc.From, docRead.From)
+						require.Equal(t, doc.To, docRead.To)
+
+						opts.Direction = arangodb.EdgeDirectionIn
+						edges, err = db.GetEdges(ctx, edgeColName, string(fromVertex.ID), &opts)
+						require.NoError(t, err)
+						require.Len(t, edges, 0)
 					})
 
 					t.Run("Update Edge", func(t *testing.T) {

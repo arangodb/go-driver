@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -171,51 +171,51 @@ func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) er
 	}
 
 	if c.WithWaitForSync != nil {
-		r.AddQuery("waitForSync", boolToString(*c.WithWaitForSync))
+		r.AddQuery(QueryWaitForSync, boolToString(*c.WithWaitForSync))
 	}
 
 	if c.Overwrite != nil {
-		r.AddQuery("overwrite", boolToString(*c.Overwrite))
+		r.AddQuery(QueryOverwrite, boolToString(*c.Overwrite))
 	}
 
 	if c.OverwriteMode != nil {
-		r.AddQuery("overwriteMode", c.OverwriteMode.String())
+		r.AddQuery(QueryOverwriteMode, c.OverwriteMode.String())
 	}
 
 	if c.Silent != nil {
-		r.AddQuery("silent", boolToString(*c.Silent))
+		r.AddQuery(QuerySilent, boolToString(*c.Silent))
 	}
 
 	if c.NewObject != nil {
-		r.AddQuery("returnNew", "true")
+		r.AddQuery(QueryReturnNew, "true")
 	}
 
 	if c.OldObject != nil {
-		r.AddQuery("returnOld", "true")
+		r.AddQuery(QueryReturnOld, "true")
 	}
 
 	if c.RefillIndexCaches != nil {
-		r.AddQuery("refillIndexCaches", boolToString(*c.RefillIndexCaches))
+		r.AddQuery(QueryRefillIndexCaches, boolToString(*c.RefillIndexCaches))
 	}
 
 	if c.KeepNull != nil {
-		r.AddQuery("keepNull", boolToString(*c.KeepNull))
+		r.AddQuery(QueryKeepNull, boolToString(*c.KeepNull))
 	}
 
 	if c.MergeObjects != nil {
-		r.AddQuery("mergeObjects", boolToString(*c.MergeObjects))
+		r.AddQuery(QueryMergeObjects, boolToString(*c.MergeObjects))
 	}
 
 	if c.IgnoreRevs != nil {
-		r.AddQuery("ignoreRevs", boolToString(*c.IgnoreRevs))
+		r.AddQuery(QueryIgnoreRevs, boolToString(*c.IgnoreRevs))
 	}
 
 	if c.IsRestore != nil {
-		r.AddQuery("isRestore", boolToString(*c.IsRestore))
+		r.AddQuery(QueryIsRestore, boolToString(*c.IsRestore))
 	}
 
 	if c.VersionAttribute != "" {
-		r.AddQuery("versionAttribute", c.VersionAttribute)
+		r.AddQuery(QueryVersionAttribute, c.VersionAttribute)
 	}
 
 	return nil

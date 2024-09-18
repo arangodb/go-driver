@@ -44,6 +44,31 @@ type databaseGraph struct {
 	db *database
 }
 
+func (d *databaseGraph) GetEdges(ctx context.Context, name, vertex string, options *GetEdgesOptions) ([]EdgeDetails, error) {
+	if name == "" || vertex == "" {
+		return nil, errors.WithStack(errors.New("edge collection name and vertex must be set"))
+	}
+
+	urlEndpoint := d.db.url("_api", "edges", url.PathEscape(name))
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Edges                 []EdgeDetails `json:"edges,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), urlEndpoint, &response, append(d.db.modifiers, options.modifyRequest, connection.WithQuery("vertex", vertex))...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Edges, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
 func (d *databaseGraph) Graph(ctx context.Context, name string, options *GetGraphOptions) (Graph, error) {
 	urlEndpoint := d.db.url("_api", "gharial", url.PathEscape(name))
 

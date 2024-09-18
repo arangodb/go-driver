@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,30 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Jakub Wierzbowski
-//
 
 package arangodb
+
+const (
+	HeaderDirtyReads  = "x-arango-allow-dirty-read"
+	HeaderTransaction = "x-arango-trx-id"
+	HeaderIfMatch     = "If-Match"
+	HeaderIfNoneMatch = "If-None-Match"
+
+	QueryRev               = "rev"
+	QueryIgnoreRevs        = "ignoreRevs"
+	QueryWaitForSync       = "waitForSync"
+	QueryReturnNew         = "returnNew"
+	QueryReturnOld         = "returnOld"
+	QueryKeepNull          = "keepNull"
+	QueryDirection         = "direction"
+	QuerySilent            = "silent"
+	QueryRefillIndexCaches = "refillIndexCaches"
+	QueryMergeObjects      = "mergeObjects"
+	QueryOverwrite         = "overwrite"
+	QueryOverwriteMode     = "overwriteMode"
+	QueryVersionAttribute  = "versionAttribute"
+	QueryIsRestore         = "isRestore"
+)
 
 // PrimarySortCompression Defines how to compress the primary sort data (introduced in v3.7.1)
 type PrimarySortCompression string
@@ -57,7 +77,7 @@ type PrimarySort struct {
 	Cache *bool `json:"cache,omitempty"`
 }
 
-// PrimarySortEntry  field to sort the index by and the direction
+// PrimarySortEntry field to sort the index by and the direction
 type PrimarySortEntry struct {
 	// Field An attribute path. The . character denotes sub-attributes.
 	Field string `json:"field,required"`

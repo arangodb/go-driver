@@ -20,7 +20,11 @@
 
 package arangodb
 
-import "context"
+import (
+	"context"
+
+	"github.com/arangodb/go-driver/v2/connection"
+)
 
 const (
 	// SatelliteGraph is a special replication factor for satellite graphs.
@@ -28,7 +32,20 @@ const (
 	SatelliteGraph = -100
 )
 
+type EdgeDirection string
+
+const (
+	// EdgeDirectionIn selects inbound edges
+	EdgeDirectionIn EdgeDirection = "in"
+	// EdgeDirectionOut selects outbound edges
+	EdgeDirectionOut EdgeDirection = "out"
+)
+
 type DatabaseGraph interface {
+	// GetEdges returns inbound and outbound edge documents of a given vertex.
+	// Requires Edge collection name and vertex ID
+	GetEdges(ctx context.Context, name, vertex string, options *GetEdgesOptions) ([]EdgeDetails, error)
+
 	// Graph opens a connection to an existing graph within the database.
 	// If no graph with given name exists, an NotFoundError is returned.
 	Graph(ctx context.Context, name string, options *GetGraphOptions) (Graph, error)
@@ -42,6 +59,22 @@ type DatabaseGraph interface {
 	// CreateGraph creates a new graph with given name and options, and opens a connection to it.
 	// If a graph with given name already exists within the database, a DuplicateError is returned.
 	CreateGraph(ctx context.Context, name string, graph *GraphDefinition, options *CreateGraphOptions) (Graph, error)
+}
+
+type GetEdgesOptions struct {
+	// The direction of the edges. Allowed values are "in" and "out". If not set, edges in both directions are returned.
+	Direction EdgeDirection `json:"direction,omitempty"`
+
+	// Set this to true to allow the Coordinator to ask any shard replica for the data, not only the shard leader.
+	// This may result in “dirty reads”.
+	AllowDirtyReads *bool `json:"-"`
+}
+
+type EdgeDetails struct {
+	DocumentMeta
+	From  string `json:"_from"`
+	To    string `json:"_to"`
+	Label string `json:"$label"`
 }
 
 type GetGraphOptions struct {
@@ -59,4 +92,20 @@ type CreateGraphOptions struct {
 type GraphsResponseReader interface {
 	// Read returns next Graph. If no Graph left, shared.NoMoreDocumentsError returned
 	Read() (Graph, error)
+}
+
+func (q *GetEdgesOptions) modifyRequest(r connection.Request) error {
+	if q == nil {
+		return nil
+	}
+
+	if q.AllowDirtyReads != nil {
+		r.AddHeader(HeaderDirtyReads, boolToString(*q.AllowDirtyReads))
+	}
+
+	if q.Direction != "" {
+		r.AddQuery(QueryDirection, string(q.Direction))
+	}
+
+	return nil
 }
