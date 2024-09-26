@@ -11,9 +11,9 @@ This project contains the official Go driver for the [ArangoDB database](https:/
 > **Warning**
 > V1 is deprecated and will not receive any new features. Please use [V2](v2) instead.
 
-- [Getting Started](https://docs.arangodb.com/stable/develop/drivers/go/)
-- [Example Requests](v2/examples)
-- [Reference](https://godoc.org/github.com/arangodb/go-driver)
+- [Example Requests - V2](v2/examples)
+- [Reference - V2](https://godoc.org/github.com/arangodb/go-driver)
+- [Getting Started Tutorial - V1 only (V2 is coming soon!)](https://docs.arangodb.com/stable/develop/drivers/go/)
 
 # Supported Go Versions
 
