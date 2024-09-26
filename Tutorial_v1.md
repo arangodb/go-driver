@@ -1,4 +1,4 @@
-# Tutorial for the Go driver version (v1)
+# Tutorial for the Go driver version 1
 
 ## Install the driver
 
