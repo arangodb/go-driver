@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [2.1.1](https://github.com/arangodb/go-driver/tree/v2.1.1) (2024-09-27)
 - Improve backup tests stability
 - CheckAvailability function for the specific member
 - Switch to Go 1.22.6
