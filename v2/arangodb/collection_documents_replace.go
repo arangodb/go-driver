@@ -28,7 +28,7 @@ import (
 )
 
 // CollectionDocumentReplace replaces document(s) with given key(s) in the collection
-// https://www.arangodb.com/docs/devel/http/document.html#replace-a-document
+// https://docs.arangodb.com/stable/develop/http-api/documents/#replace-a-document
 type CollectionDocumentReplace interface {
 
 	// ReplaceDocument replaces a single document with given key in the collection.

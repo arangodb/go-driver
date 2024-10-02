@@ -108,7 +108,7 @@ const (
 
 // ArangoSearchAnalyzerProperties specifies options for the analyzer.
 // Required and respected depend on the analyzer type.
-// See docs: https://www.arangodb.com/docs/stable/arangosearch-analyzers.html#analyzer-properties
+// See docs: https://docs.arangodb.com/stable/index-and-search/analyzers/#analyzer-properties
 type ArangoSearchAnalyzerProperties struct {
 	IsSystem bool `json:"isSystem,omitempty"`
 
@@ -247,7 +247,7 @@ const (
 )
 
 // ArangoSearchEdgeNGram specifies options for the edgeNGram text analyzer.
-// More information can be found here: https://www.arangodb.com/docs/stable/arangosearch-analyzers.html#text
+// More information can be found here: https://docs.arangodb.com/stable/index-and-search/analyzers/#text
 type ArangoSearchEdgeNGram struct {
 	// Min used by Text
 	Min *int64 `json:"min,omitempty"`

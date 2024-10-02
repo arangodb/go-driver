@@ -28,7 +28,7 @@ import (
 )
 
 // CollectionDocumentDelete removes document(s) with given key(s) from the collection
-// https://www.arangodb.com/docs/devel/http/document.html#remove-a-document
+// https://docs.arangodb.com/stable/develop/http-api/documents/#remove-a-document
 type CollectionDocumentDelete interface {
 	// DeleteDocument removes a single document with given key from the collection.
 	// The document metadata is returned.

@@ -28,7 +28,7 @@ import (
 )
 
 // CollectionDocumentRead contains methods for reading documents from a collection.
-// https://www.arangodb.com/docs/devel/http/document.html#get-a-document
+// https://docs.arangodb.com/stable/develop/http-api/documents/#get-a-document
 type CollectionDocumentRead interface {
 	// ReadDocument reads a single document with given key from the collection.
 	// The document data is stored into result, the document metadata is returned.
