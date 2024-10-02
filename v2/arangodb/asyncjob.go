@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-// ClientAsyncJob https://www.arangodb.com/docs/devel/http/jobs.html
+// ClientAsyncJob https://docs.arangodb.com/stable/develop/http-api/jobs/
 type ClientAsyncJob interface {
 	// AsyncJobList Returns the ids of job results with a specific status
 	AsyncJobList(ctx context.Context, jobType AsyncJobStatusType, opts *AsyncJobListOptions) ([]string, error)

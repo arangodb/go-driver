@@ -25,7 +25,7 @@ import (
 )
 
 // DatabaseTransaction contains Streaming Transactions functions
-// https://www.arangodb.com/docs/stable/http/transaction-stream-transaction.html
+// https://docs.arangodb.com/stable/develop/http-api/transactions/stream-transactions/
 type DatabaseTransaction interface {
 	ListTransactions(ctx context.Context) ([]Transaction, error)
 	ListTransactionsWithStatuses(ctx context.Context, statuses ...TransactionStatus) ([]Transaction, error)

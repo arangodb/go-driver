@@ -28,7 +28,7 @@ import (
 )
 
 // CollectionDocumentCreate interface for creating documents in a collection.
-// https://www.arangodb.com/docs/devel/http/document.html#create-a-document
+// https://docs.arangodb.com/stable/develop/http-api/documents/#create-a-document
 type CollectionDocumentCreate interface {
 
 	// CreateDocument creates a single document in the collection.

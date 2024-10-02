@@ -28,7 +28,7 @@ import (
 )
 
 // CollectionDocumentUpdate Partially updates document(s) with given key in the collection.
-// https://www.arangodb.com/docs/devel/http/document.html#update-a-document
+// https://docs.arangodb.com/stable/develop/http-api/documents/#update-a-document
 type CollectionDocumentUpdate interface {
 	// UpdateDocument updates a single document with a given key in the collection.
 	// The document metadata is returned.
