@@ -23,6 +23,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -36,8 +38,8 @@ func Test_ArangoSearchSimple(t *testing.T) {
 					viewName := GenerateUUID("test-view")
 
 					opts := &arangodb.ArangoSearchViewProperties{
-						CleanupIntervalStep: newInt64(1),
-						CommitInterval:      newInt64(500),
+						CleanupIntervalStep: utils.NewInt64(1),
+						CommitInterval:      utils.NewInt64(500),
 					}
 
 					view, err := db.CreateArangoSearchView(ctx, viewName, opts)
@@ -52,7 +54,7 @@ func Test_ArangoSearchSimple(t *testing.T) {
 
 					t.Run("Update properties of the view", func(t *testing.T) {
 						opt := arangodb.ArangoSearchViewProperties{
-							CommitInterval: newInt64(200),
+							CommitInterval: utils.NewInt64(200),
 						}
 						err = view.UpdateProperties(ctx, opt)
 						require.NoError(t, err)
@@ -67,7 +69,7 @@ func Test_ArangoSearchSimple(t *testing.T) {
 
 					t.Run("Replace properties of the view", func(t *testing.T) {
 						opt := arangodb.ArangoSearchViewProperties{
-							CommitInterval: newInt64(300),
+							CommitInterval: utils.NewInt64(300),
 						}
 						err = view.SetProperties(ctx, opt)
 						require.NoError(t, err)

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -42,7 +44,7 @@ func insertDocuments(t testing.TB, col arangodb.Collection, documents, batch int
 
 		if len(b) == batch {
 			insertBatch(t, context.Background(), col, &arangodb.CollectionDocumentCreateOptions{
-				WithWaitForSync: newBool(true),
+				WithWaitForSync: utils.NewT(true),
 			}, b)
 			b = b[:0]
 		}

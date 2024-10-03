@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
+
+	"github.com/arangodb/go-driver/util"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -537,8 +539,8 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				Name: "inverted-opt",
 				PrimarySort: driver.InvertedIndexPrimarySort{
 					Fields: []driver.ArangoSearchPrimarySortEntry{
-						{Field: "test1", Ascending: newBool(true)},
-						{Field: "test2", Ascending: newBool(false)},
+						{Field: "test1", Ascending: util.NewT(true)},
+						{Field: "test2", Ascending: util.NewT(false)},
 					},
 					Compression: driver.PrimarySortCompressionLz4,
 				},
@@ -554,8 +556,8 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				Name: "inverted-opt-nested",
 				PrimarySort: driver.InvertedIndexPrimarySort{
 					Fields: []driver.ArangoSearchPrimarySortEntry{
-						{Field: "test1", Ascending: newBool(true)},
-						{Field: "test2", Ascending: newBool(false)},
+						{Field: "test1", Ascending: util.NewT(true)},
+						{Field: "test2", Ascending: util.NewT(false)},
 					},
 					Compression: driver.PrimarySortCompressionLz4,
 				},
@@ -588,7 +590,7 @@ func TestEnsureInvertedIndex(t *testing.T) {
 				Name: "inverted-opt-optimize-top-k",
 				PrimarySort: driver.InvertedIndexPrimarySort{
 					Fields: []driver.ArangoSearchPrimarySortEntry{
-						{Field: "field1", Ascending: newBool(true)},
+						{Field: "field1", Ascending: util.NewT(true)},
 					},
 					Compression: driver.PrimarySortCompressionLz4,
 				},

@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -236,7 +238,7 @@ func Test_VerticesUpdate(t *testing.T) {
 
 					john := Developer{
 						Name:    "John",
-						IsAdmin: newBool(true),
+						IsAdmin: utils.NewT(true),
 					}
 
 					johnResp, err := colVertex.CreateVertex(ctx, john, nil)
@@ -249,7 +251,7 @@ func Test_VerticesUpdate(t *testing.T) {
 
 						opts := arangodb.VertexUpdateOptions{
 							NewObject: &johnUpdated,
-							KeepNull:  newBool(true),
+							KeepNull:  utils.NewT(true),
 						}
 
 						response, err := colVertex.UpdateVertex(ctx, johnResp.Key, johnUpdated, &opts)
@@ -272,7 +274,7 @@ func Test_VerticesUpdate(t *testing.T) {
 
 						opts := arangodb.VertexUpdateOptions{
 							NewObject: &johnUpdated,
-							KeepNull:  newBool(false),
+							KeepNull:  utils.NewT(false),
 						}
 
 						response, err := colVertex.UpdateVertex(ctx, johnResp.Key, johnUpdated, &opts)

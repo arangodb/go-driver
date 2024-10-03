@@ -24,6 +24,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -95,23 +97,23 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-ngram",
 				Type: arangodb.ArangoSearchAnalyzerTypeNGram,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
-					Min:              newT[int64](1),
-					Max:              newT[int64](14),
-					PreserveOriginal: newBool(false),
+					Min:              utils.NewT[int64](1),
+					Max:              utils.NewT[int64](14),
+					PreserveOriginal: utils.NewT(false),
 				},
 			},
 			ExpectedDefinition: &arangodb.AnalyzerDefinition{
 				Name: "my-ngram",
 				Type: arangodb.ArangoSearchAnalyzerTypeNGram,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
-					Min:              newT[int64](1),
-					Max:              newT[int64](14),
-					PreserveOriginal: newBool(false),
+					Min:              utils.NewT[int64](1),
+					Max:              utils.NewT[int64](14),
+					PreserveOriginal: utils.NewT(false),
 
 					// Check defaults for 3.6
-					StartMarker: newT(""),
-					EndMarker:   newT(""),
-					StreamType:  newT(arangodb.ArangoSearchNGramStreamBinary),
+					StartMarker: utils.NewT(""),
+					EndMarker:   utils.NewT(""),
+					StreamType:  utils.NewT(arangodb.ArangoSearchNGramStreamBinary),
 				},
 			},
 		},
@@ -122,12 +124,12 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-ngram-custom",
 				Type: arangodb.ArangoSearchAnalyzerTypeNGram,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
-					Min:              newT[int64](1),
-					Max:              newT[int64](14),
-					PreserveOriginal: newBool(false),
-					StartMarker:      newT("^"),
-					EndMarker:        newT("^"),
-					StreamType:       newT(arangodb.ArangoSearchNGramStreamUTF8),
+					Min:              utils.NewT[int64](1),
+					Max:              utils.NewT[int64](14),
+					PreserveOriginal: utils.NewT(false),
+					StartMarker:      utils.NewT("^"),
+					EndMarker:        utils.NewT("^"),
+					StreamType:       utils.NewT(arangodb.ArangoSearchNGramStreamUTF8),
 				},
 			},
 		},
@@ -142,12 +144,12 @@ func Test_Analyzers(t *testing.T) {
 						{
 							Type: arangodb.ArangoSearchAnalyzerTypeNGram,
 							Properties: arangodb.ArangoSearchAnalyzerProperties{
-								Min:              newT[int64](1),
-								Max:              newT[int64](14),
-								PreserveOriginal: newBool(false),
-								StartMarker:      newT("^"),
-								EndMarker:        newT("^"),
-								StreamType:       newT(arangodb.ArangoSearchNGramStreamUTF8),
+								Min:              utils.NewT[int64](1),
+								Max:              utils.NewT[int64](14),
+								PreserveOriginal: utils.NewT(false),
+								StartMarker:      utils.NewT("^"),
+								EndMarker:        utils.NewT("^"),
+								StreamType:       utils.NewT(arangodb.ArangoSearchNGramStreamUTF8),
 							},
 						},
 					},
@@ -162,11 +164,11 @@ func Test_Analyzers(t *testing.T) {
 				Type: arangodb.ArangoSearchAnalyzerTypeAQL,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
 					QueryString:       `FOR year IN [ 2011, 2012, 2013 ] FOR quarter IN [ 1, 2, 3, 4 ] RETURN { year, quarter, formatted: CONCAT(quarter, " / ", year)}`,
-					CollapsePositions: newBool(true),
-					KeepNull:          newBool(false),
-					BatchSize:         newT(10),
+					CollapsePositions: utils.NewT(true),
+					KeepNull:          utils.NewT(false),
+					BatchSize:         utils.NewT(10),
 					ReturnType:        arangodb.ArangoSearchAnalyzerAQLReturnTypeString.New(),
-					MemoryLimit:       newT(1024 * 1024),
+					MemoryLimit:       utils.NewT(1024 * 1024),
 				},
 			},
 		},
@@ -178,9 +180,9 @@ func Test_Analyzers(t *testing.T) {
 				Type: arangodb.ArangoSearchAnalyzerTypeGeoPoint,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
 					Options: &arangodb.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newT(20),
-						MinLevel: newT(4),
-						MaxLevel: newT(23),
+						MaxCells: utils.NewT(20),
+						MinLevel: utils.NewT(4),
+						MaxLevel: utils.NewT(23),
 					},
 					Latitude:  []string{},
 					Longitude: []string{},
@@ -195,9 +197,9 @@ func Test_Analyzers(t *testing.T) {
 				Type: arangodb.ArangoSearchAnalyzerTypeGeoJSON,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
 					Options: &arangodb.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newT(20),
-						MinLevel: newT(4),
-						MaxLevel: newT(23),
+						MaxCells: utils.NewT(20),
+						MinLevel: utils.NewT(4),
+						MaxLevel: utils.NewT(23),
 					},
 					Type: arangodb.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
@@ -210,11 +212,11 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-geo_s2",
 				Type: arangodb.ArangoSearchAnalyzerTypeGeoS2,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
-					Format: newT(arangodb.ArangoSearchFormatLatLngInt),
+					Format: utils.NewT(arangodb.ArangoSearchFormatLatLngInt),
 					Options: &arangodb.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newT(20),
-						MinLevel: newT(4),
-						MaxLevel: newT(23),
+						MaxCells: utils.NewT(20),
+						MinLevel: utils.NewT(4),
+						MaxLevel: utils.NewT(23),
 					},
 					Type: arangodb.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
@@ -223,11 +225,11 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-geo_s2",
 				Type: arangodb.ArangoSearchAnalyzerTypeGeoS2,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
-					Format: newT(arangodb.ArangoSearchFormatLatLngInt),
+					Format: utils.NewT(arangodb.ArangoSearchFormatLatLngInt),
 					Options: &arangodb.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newT(20),
-						MinLevel: newT(4),
-						MaxLevel: newT(23),
+						MaxCells: utils.NewT(20),
+						MinLevel: utils.NewT(4),
+						MaxLevel: utils.NewT(23),
 					},
 					Type: arangodb.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
@@ -271,7 +273,7 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-stopWords",
 				Type: arangodb.ArangoSearchAnalyzerTypeStopwords,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
-					Hex: newBool(true),
+					Hex: utils.NewT(true),
 					Stopwords: []string{
 						"616e64",
 						"746865",
@@ -282,7 +284,7 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-stopWords",
 				Type: arangodb.ArangoSearchAnalyzerTypeStopwords,
 				Properties: arangodb.ArangoSearchAnalyzerProperties{
-					Hex: newBool(true),
+					Hex: utils.NewT(true),
 					Stopwords: []string{
 						"616e64",
 						"746865",
@@ -301,14 +303,14 @@ func Test_Analyzers(t *testing.T) {
 					Analyzer: &arangodb.AnalyzerDefinition{
 						Type: arangodb.ArangoSearchAnalyzerTypeStopwords,
 						Properties: arangodb.ArangoSearchAnalyzerProperties{
-							Hex: newBool(true),
+							Hex: utils.NewT(true),
 							Stopwords: []string{
 								"616e64",
 								"746865",
 							},
 						},
 					},
-					NumHashes: newT[uint64](2),
+					NumHashes: utils.NewT[uint64](2),
 				},
 			},
 			ExpectedDefinition: &arangodb.AnalyzerDefinition{
@@ -318,14 +320,14 @@ func Test_Analyzers(t *testing.T) {
 					Analyzer: &arangodb.AnalyzerDefinition{
 						Type: arangodb.ArangoSearchAnalyzerTypeStopwords,
 						Properties: arangodb.ArangoSearchAnalyzerProperties{
-							Hex: newBool(true),
+							Hex: utils.NewT(true),
 							Stopwords: []string{
 								"616e64",
 								"746865",
 							},
 						},
 					},
-					NumHashes: newT[uint64](2),
+					NumHashes: utils.NewT[uint64](2),
 				},
 			},
 		},

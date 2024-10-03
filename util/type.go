@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,35 +18,8 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 
-package utils
-
-import "reflect"
-
-func IsListPtr(i interface{}) bool {
-	t := reflect.ValueOf(i)
-	switch t.Kind() {
-	case reflect.Ptr:
-		return IsList(t.Elem().Interface())
-	default:
-		return false
-	}
-}
-
-func IsList(i interface{}) bool {
-	switch reflect.ValueOf(i).Kind() {
-	case reflect.Slice:
-		fallthrough
-	case reflect.Array:
-		return true
-	default:
-		return false
-	}
-}
+package util
 
 func NewT[T any](val T) *T {
 	return &val
-}
-
-func NewInt64(i int64) *int64 {
-	return &i
 }

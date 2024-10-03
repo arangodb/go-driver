@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/arangodb/go-driver/util"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -114,7 +116,7 @@ func TestCollection_CacheEnabled(t *testing.T) {
 	t.Run("False", func(t *testing.T) {
 		name := "test_create_collection_cache_false"
 		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
-			CacheEnabled: newBool(false),
+			CacheEnabled: util.NewT(false),
 		})
 		require.NoError(t, err)
 
@@ -131,7 +133,7 @@ func TestCollection_CacheEnabled(t *testing.T) {
 	t.Run("True", func(t *testing.T) {
 		name := "test_create_collection_cache_true"
 		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
-			CacheEnabled: newBool(true),
+			CacheEnabled: util.NewT(true),
 		})
 		require.NoError(t, err)
 
@@ -148,7 +150,7 @@ func TestCollection_CacheEnabled(t *testing.T) {
 	t.Run("With update", func(t *testing.T) {
 		name := "test_create_collection_cache_update"
 		_, err := db.CreateCollection(nil, name, &driver.CreateCollectionOptions{
-			CacheEnabled: newBool(false),
+			CacheEnabled: util.NewT(false),
 		})
 		require.NoError(t, err)
 
@@ -162,7 +164,7 @@ func TestCollection_CacheEnabled(t *testing.T) {
 		require.False(t, prop.CacheEnabled)
 
 		err = col.SetProperties(nil, driver.SetCollectionPropertiesOptions{
-			CacheEnabled: newBool(true),
+			CacheEnabled: util.NewT(true),
 		})
 		require.NoError(t, err)
 

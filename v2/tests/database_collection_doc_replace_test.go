@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ package tests
 import (
 	"context"
 	"testing"
+
+	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/stretchr/testify/require"
 
@@ -93,7 +95,7 @@ func Test_DatabaseCollectionDocReplaceIgnoreRevs(t *testing.T) {
 					t.Run("do not replace if rev doesn't match", func(t *testing.T) {
 						docReplace.Rev = "wrong-rev"
 						metaError, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, docReplace, &arangodb.CollectionDocumentReplaceOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewT(false),
 						})
 						require.Error(t, err)
 						require.Empty(t, metaError.Rev)
@@ -102,7 +104,7 @@ func Test_DatabaseCollectionDocReplaceIgnoreRevs(t *testing.T) {
 					t.Run("do an update if rev match", func(t *testing.T) {
 						docReplace.Rev = meta.Rev
 						metaReplaced, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, docReplace, &arangodb.CollectionDocumentReplaceOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewT(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, metaReplaced.Rev)
@@ -112,7 +114,7 @@ func Test_DatabaseCollectionDocReplaceIgnoreRevs(t *testing.T) {
 					t.Run("do an update if rev is missing", func(t *testing.T) {
 						docReplace.Rev = ""
 						metaReplaced, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, docReplace, &arangodb.CollectionDocumentReplaceOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewT(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, metaReplaced.Rev)
@@ -133,7 +135,7 @@ func Test_DatabaseCollectionDocReplaceSilent(t *testing.T) {
 
 					doc := DocWithRev{
 						Name: "test-silent",
-						Age:  newInt(42),
+						Age:  utils.NewT(42),
 					}
 					meta, err := col.CreateDocument(ctx, doc)
 					require.NoError(t, err)
@@ -142,7 +144,7 @@ func Test_DatabaseCollectionDocReplaceSilent(t *testing.T) {
 						Name: "test-silent-updated",
 					}
 					metaUpdated, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, docReplace, &arangodb.CollectionDocumentReplaceOptions{
-						Silent: newBool(true),
+						Silent: utils.NewT(true),
 					})
 					require.NoError(t, err)
 					require.Empty(t, metaUpdated.Key, "response should be empty (silent)!")
@@ -159,24 +161,24 @@ func Test_DatabaseCollectionDocReplaceWaitForSync(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-wait-for-sync",
-						Age:  newInt(23),
+						Age:  utils.NewT(23),
 					}
 					meta, err := col.CreateDocument(ctx, doc)
 					require.NoError(t, err)
 
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
-						doc.Age = newInt(42)
+						doc.Age = utils.NewT(42)
 						meta, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, doc, &arangodb.CollectionDocumentReplaceOptions{
-							WithWaitForSync: newBool(false),
+							WithWaitForSync: utils.NewT(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, meta.Key)
 					})
 
 					t.Run("WithWaitForSync==true should not return an error", func(t *testing.T) {
-						doc.Age = newInt(32)
+						doc.Age = utils.NewT(32)
 						meta, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, doc, &arangodb.CollectionDocumentReplaceOptions{
-							WithWaitForSync: newBool(true),
+							WithWaitForSync: utils.NewT(true),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, meta.Key)
@@ -196,7 +198,7 @@ func Test_DatabaseCollectionDocReplaceVersionAttribute(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-version-attribute",
-						Age:  newInt(23),
+						Age:  utils.NewT(23),
 					}
 
 					meta, err := col.CreateDocument(ctx, doc)
@@ -208,7 +210,7 @@ func Test_DatabaseCollectionDocReplaceVersionAttribute(t *testing.T) {
 
 						docReplaced := DocWithRev{
 							Name: "test-check-Replaced",
-							Age:  newInt(19),
+							Age:  utils.NewT(19),
 						}
 
 						metaDoc, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, docReplaced, &arangodb.CollectionDocumentReplaceOptions{
@@ -230,7 +232,7 @@ func Test_DatabaseCollectionDocReplaceVersionAttribute(t *testing.T) {
 
 						docReplaced := DocWithRev{
 							Name: "test-check-Replaced",
-							Age:  newInt(99),
+							Age:  utils.NewT(99),
 						}
 
 						metaDoc, err := col.ReplaceDocumentWithOptions(ctx, meta.Key, docReplaced, &arangodb.CollectionDocumentReplaceOptions{

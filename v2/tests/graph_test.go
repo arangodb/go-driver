@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -36,7 +38,7 @@ func Test_GraphSimple(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			gDef := sampleGraphWithEdges(db)
 			gDef.ReplicationFactor = 2
-			gDef.WriteConcern = newInt(2)
+			gDef.WriteConcern = utils.NewT(2)
 			WithGraph(t, db, gDef, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					exist, err := db.GraphExists(ctx, graph.Name())
@@ -100,7 +102,7 @@ func Test_GraphCreation(t *testing.T) {
 					gDef.ReplicationFactor = arangodb.SatelliteGraph
 					gDef.IsSmart = false
 					gDef.SmartGraphAttribute = ""
-					gDef.NumberOfShards = newInt(1)
+					gDef.NumberOfShards = utils.NewT(1)
 
 					g, err := db.CreateGraph(ctx, db.Name()+"_sat", gDef, nil)
 					require.NoError(t, err)
@@ -145,7 +147,7 @@ func Test_GraphCreation(t *testing.T) {
 								From:       []string{colNonSat},
 							},
 						},
-						NumberOfShards:      newInt(2),
+						NumberOfShards:      utils.NewT(2),
 						SmartGraphAttribute: "test",
 						IsSmart:             true,
 						ReplicationFactor:   2,

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ package test
 import (
 	"context"
 	"testing"
+
+	"github.com/arangodb/go-driver/util"
 
 	"github.com/stretchr/testify/require"
 
@@ -76,8 +78,8 @@ func TestSearchViewsAlias(t *testing.T) {
 		Name: nameInvInd,
 		PrimarySort: driver.InvertedIndexPrimarySort{
 			Fields: []driver.ArangoSearchPrimarySortEntry{
-				{Field: "test1", Ascending: newBool(true)},
-				{Field: "test2", Ascending: newBool(false)},
+				{Field: "test1", Ascending: util.NewT(true)},
+				{Field: "test2", Ascending: util.NewT(false)},
 			},
 			Compression: driver.PrimarySortCompressionLz4,
 		},

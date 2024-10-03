@@ -29,6 +29,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -86,7 +88,7 @@ func Test_CreateBackupSimple(t *testing.T) {
 			require.NoError(t, err, "DeleteBackup failed")
 		})
 	}, WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewT(false),
 	})
 }
 
@@ -140,7 +142,7 @@ func Test_RestoreBackupSimple(t *testing.T) {
 			})
 		})
 	}, WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewT(false),
 	})
 }
 
@@ -225,7 +227,7 @@ func Test_BackupFullFlow(t *testing.T) {
 			waitForSync(t, ctx, client)
 		})
 	}, WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewT(false),
 	})
 }
 
@@ -261,7 +263,7 @@ func Test_UploadBackupFailAndAbort(t *testing.T) {
 			})
 		})
 	}, WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewT(false),
 	})
 }
 

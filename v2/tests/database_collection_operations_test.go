@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
@@ -113,7 +115,7 @@ func Test_CollectionSetProperties(t *testing.T) {
 		ReplicationFactor: 2,
 		JournalSize:       1048576 * 2,
 		NumberOfShards:    2,
-		CacheEnabled:      newBool(false),
+		CacheEnabled:      utils.NewT(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -133,10 +135,10 @@ func Test_CollectionSetProperties(t *testing.T) {
 				})
 
 				newProps := arangodb.SetCollectionPropertiesOptions{
-					WaitForSync:       newBool(true),
+					WaitForSync:       utils.NewT(true),
 					ReplicationFactor: 3,
 					WriteConcern:      2,
-					CacheEnabled:      newBool(true),
+					CacheEnabled:      utils.NewT(true),
 					Schema:            nil,
 				}
 				err = col.SetProperties(ctx, newProps)
@@ -200,7 +202,7 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 					defer c()
 
 					col, err := db.CreateCollectionWithOptions(ctx, "test", nil, &arangodb.CreateCollectionOptions{
-						EnforceReplicationFactor: newBool(false),
+						EnforceReplicationFactor: utils.NewT(false),
 					})
 					require.NoError(t, err)
 

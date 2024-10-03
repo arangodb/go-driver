@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
@@ -164,22 +166,6 @@ func getBool(b *bool, d bool) bool {
 	return *b
 }
 
-func newBool(b bool) *bool {
-	return newT(b)
-}
-
-func newT[T any](val T) *T {
-	return &val
-}
-
 func newVersion(val string) *arangodb.Version {
-	return newT(arangodb.Version(val))
-}
-
-func newInt(i int) *int {
-	return &i
-}
-
-func newInt64(i int64) *int64 {
-	return &i
+	return utils.NewT(arangodb.Version(val))
 }

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ package tests
 import (
 	"context"
 	"testing"
+
+	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/stretchr/testify/require"
 
@@ -107,7 +109,7 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 						}
 
 						r, err := col.ReadDocumentsWithOptions(ctx, &docToRead, &arangodb.CollectionDocumentReadOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewT(false),
 						})
 						require.NoError(t, err)
 
@@ -127,7 +129,7 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 						}
 
 						r, err := col.ReadDocumentsWithOptions(ctx, &docToRead, &arangodb.CollectionDocumentReadOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewT(false),
 						})
 						require.NoError(t, err)
 
@@ -144,7 +146,7 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 						}
 
 						r, err := col.ReadDocumentsWithOptions(ctx, &docToRead, &arangodb.CollectionDocumentReadOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewT(false),
 						})
 						require.NoError(t, err)
 
@@ -166,7 +168,7 @@ func Test_DatabaseCollectionDocReadAllowDirtyReads(t *testing.T) {
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
 						doc := DocWithRev{
 							Name: "test-wait-for-sync-false",
-							Age:  newInt(23),
+							Age:  utils.NewT(23),
 						}
 						meta, err := col.CreateDocument(ctx, doc)
 						require.NoError(t, err)
