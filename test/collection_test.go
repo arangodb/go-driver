@@ -27,12 +27,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/util"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/util"
 )
 
 // ensureCollection is a helper to check if a collection exists and create if if needed.

@@ -25,11 +25,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/arangodb/go-driver/util"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/util"
 )
 
 func newInt(v int) *int {

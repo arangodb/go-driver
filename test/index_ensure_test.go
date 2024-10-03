@@ -25,12 +25,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/arangodb/go-driver/util"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	driver "github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/util"
 )
 
 // TestEnsureFullTextIndex creates a collection with a full text index.

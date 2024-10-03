@@ -26,12 +26,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/arangodb/go-driver/util"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/util"
 )
 
 // ensureArangoSearchView is a helper to check if an arangosearch view exists and create it if needed.
