@@ -36,7 +36,7 @@ import (
 func Test_LogLevels(t *testing.T) {
 	// This test cannot run subtests parallel, because it changes admin settings.
 	wrapOpts := WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -72,7 +72,7 @@ func Test_LogLevelsForServers(t *testing.T) {
 
 	// This test cannot run subtests parallel, because it changes admin settings.
 	wrapOpts := WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {

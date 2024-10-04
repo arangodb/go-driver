@@ -44,7 +44,7 @@ func insertDocuments(t testing.TB, col arangodb.Collection, documents, batch int
 
 		if len(b) == batch {
 			insertBatch(t, context.Background(), col, &arangodb.CollectionDocumentCreateOptions{
-				WithWaitForSync: utils.NewT(true),
+				WithWaitForSync: utils.NewType(true),
 			}, b)
 			b = b[:0]
 		}

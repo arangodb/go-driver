@@ -34,7 +34,7 @@ import (
 
 func sampleSmartGraph() *arangodb.GraphDefinition {
 	return &arangodb.GraphDefinition{
-		NumberOfShards:      utils.NewT(3),
+		NumberOfShards:      utils.NewType(3),
 		SmartGraphAttribute: "key",
 		IsSmart:             true,
 	}

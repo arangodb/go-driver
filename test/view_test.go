@@ -634,7 +634,7 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 					Properties: driver.ArangoSearchAnalyzerProperties{
 						Min:              newInt64(2),
 						Max:              newInt64(2),
-						PreserveOriginal: util.NewT(false),
+						PreserveOriginal: util.NewType(false),
 						StreamType:       newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamUTF8),
 					},
 				},
@@ -952,8 +952,8 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 						},
 					},
 				},
-				IncludeAllFields: util.NewT(true),
-				InBackground:     util.NewT(false),
+				IncludeAllFields: util.NewType(true),
+				InBackground:     util.NewType(false),
 			},
 		},
 	}
@@ -988,7 +988,7 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.Contains(t, analyzer.Features, driver.ArangoSearchAnalyzerFeaturePosition)
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
-	require.Equal(t, util.NewT(true), link.IncludeAllFields)
+	require.Equal(t, util.NewType(true), link.IncludeAllFields)
 }
 
 func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
@@ -1006,12 +1006,12 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 		StoredValues: []driver.StoredValue{
 			{
 				Fields: []string{"f1", "f2"},
-				Cache:  util.NewT(true),
+				Cache:  util.NewType(true),
 			},
 		},
 		Links: driver.ArangoSearchLinks{
 			linkedColName: driver.ArangoSearchElementProperties{
-				Cache: util.NewT(false),
+				Cache: util.NewType(false),
 			},
 		},
 	}
@@ -1022,12 +1022,12 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	p, err := v.Properties(ctx)
 	require.NoError(t, err)
 	require.Len(t, p.StoredValues, 1)
-	require.Equal(t, util.NewT(true), p.StoredValues[0].Cache)
+	require.Equal(t, util.NewType(true), p.StoredValues[0].Cache)
 	linkedColumnProps := p.Links[linkedColName]
 	require.NotNil(t, linkedColumnProps)
 	require.Nil(t, linkedColumnProps.Cache)
 	// update props: set to cached
-	p.Links[linkedColName] = driver.ArangoSearchElementProperties{Cache: util.NewT(true)}
+	p.Links[linkedColName] = driver.ArangoSearchElementProperties{Cache: util.NewType(true)}
 	err = v.SetProperties(ctx, p)
 	require.NoError(t, err)
 
@@ -1036,7 +1036,7 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	require.NoError(t, err)
 	linkedColumnProps = p.Links[linkedColName]
 	require.NotNil(t, linkedColumnProps)
-	require.Equal(t, util.NewT(true), linkedColumnProps.Cache)
+	require.Equal(t, util.NewType(true), linkedColumnProps.Cache)
 }
 
 func TestArangoSearchViewInMemoryCache(t *testing.T) {
@@ -1053,7 +1053,7 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 
 		name := "test_create_asview"
 		opts := &driver.ArangoSearchViewProperties{
-			PrimarySortCache: util.NewT(true),
+			PrimarySortCache: util.NewType(true),
 		}
 		v, err := db.CreateArangoSearchView(ctx, name, opts)
 		require.NoError(t, err)
@@ -1063,7 +1063,7 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 		// bug in arangod: the primarySortCache field is not returned in response. Fixed only in 3.9.6+:
 		t.Run("must-be-returned-in-response", func(t *testing.T) {
 			skipBelowVersion(c, "3.9.6", t)
-			require.Equal(t, util.NewT(true), p.PrimarySortCache)
+			require.Equal(t, util.NewType(true), p.PrimarySortCache)
 		})
 	})
 
@@ -1074,13 +1074,13 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 
 		name := "test_view_"
 		opts := &driver.ArangoSearchViewProperties{
-			PrimaryKeyCache: util.NewT(true),
+			PrimaryKeyCache: util.NewType(true),
 		}
 		v, err := db.CreateArangoSearchView(ctx, name, opts)
 		require.NoError(t, err)
 
 		p, err := v.Properties(ctx)
 		require.NoError(t, err)
-		require.Equal(t, util.NewT(true), p.PrimaryKeyCache)
+		require.Equal(t, util.NewType(true), p.PrimaryKeyCache)
 	})
 }

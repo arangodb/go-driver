@@ -113,7 +113,7 @@ func Test_DatabaseCollectionDocCreateOverwrite(t *testing.T) {
 							metaReplacedSimple, err := col.CreateDocumentWithOptions(ctx, docOverwrite, &arangodb.CollectionDocumentCreateOptions{
 								OldObject: &oldDoc,
 								NewObject: &newDoc,
-								Overwrite: utils.NewT(true),
+								Overwrite: utils.NewType(true),
 							})
 							require.NoError(t, err)
 							require.NotEqual(t, metaReplacedSimple.Rev, metaReplaced.Rev)
@@ -134,7 +134,7 @@ func Test_DatabaseCollectionDocCreateKeepNull(t *testing.T) {
 
 					doc := DocWithRev{
 						Name: "test-keep-null",
-						Age:  utils.NewT(10),
+						Age:  utils.NewType(10),
 					}
 
 					meta, err := col.CreateDocument(ctx, doc)
@@ -150,7 +150,7 @@ func Test_DatabaseCollectionDocCreateKeepNull(t *testing.T) {
 
 						overwriteMode := arangodb.CollectionDocumentCreateOverwriteModeUpdate
 						metaUpdated, err := col.CreateDocumentWithOptions(ctx, docOverwrite, &arangodb.CollectionDocumentCreateOptions{
-							KeepNull:      utils.NewT(true),
+							KeepNull:      utils.NewType(true),
 							OverwriteMode: overwriteMode.New(),
 						})
 						require.NoError(t, err)
@@ -176,7 +176,7 @@ func Test_DatabaseCollectionDocCreateKeepNull(t *testing.T) {
 
 						overwriteMode := arangodb.CollectionDocumentCreateOverwriteModeUpdate
 						metaUpdated, err := col.CreateDocumentWithOptions(ctx, docOverwrite, &arangodb.CollectionDocumentCreateOptions{
-							KeepNull:      utils.NewT(false),
+							KeepNull:      utils.NewType(false),
 							OverwriteMode: overwriteMode.New(),
 						})
 						require.NoError(t, err)
@@ -225,7 +225,7 @@ func Test_DatabaseCollectionDocCreateMergeObjects(t *testing.T) {
 
 						overwriteMode := arangodb.CollectionDocumentCreateOverwriteModeUpdate
 						metaUpdated, err := col.CreateDocumentWithOptions(ctx, docOverwrite, &arangodb.CollectionDocumentCreateOptions{
-							MergeObjects:  utils.NewT(true),
+							MergeObjects:  utils.NewType(true),
 							OverwriteMode: overwriteMode.New(),
 						})
 						require.NoError(t, err)
@@ -255,7 +255,7 @@ func Test_DatabaseCollectionDocCreateMergeObjects(t *testing.T) {
 
 						overwriteMode := arangodb.CollectionDocumentCreateOverwriteModeUpdate
 						metaUpdated, err := col.CreateDocumentWithOptions(ctx, docOverwrite, &arangodb.CollectionDocumentCreateOptions{
-							MergeObjects:  utils.NewT(false),
+							MergeObjects:  utils.NewType(false),
 							OverwriteMode: overwriteMode.New(),
 						})
 						require.NoError(t, err)
@@ -287,11 +287,11 @@ func Test_DatabaseCollectionDocCreateSilent(t *testing.T) {
 
 					doc := DocWithRev{
 						Name: "test-silent",
-						Age:  utils.NewT(42),
+						Age:  utils.NewType(42),
 					}
 
 					meta, err := col.CreateDocumentWithOptions(ctx, doc, &arangodb.CollectionDocumentCreateOptions{
-						Silent: utils.NewT(true),
+						Silent: utils.NewType(true),
 					})
 					require.NoError(t, err)
 					require.Empty(t, meta.Key, "response should be empty (silent)!")
@@ -308,12 +308,12 @@ func Test_DatabaseCollectionDocCreateWaitForSync(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-wait-for-sync",
-						Age:  utils.NewT(23),
+						Age:  utils.NewType(23),
 					}
 
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
 						meta, err := col.CreateDocumentWithOptions(ctx, doc, &arangodb.CollectionDocumentCreateOptions{
-							WithWaitForSync: utils.NewT(false),
+							WithWaitForSync: utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, meta.Key)
@@ -321,7 +321,7 @@ func Test_DatabaseCollectionDocCreateWaitForSync(t *testing.T) {
 
 					t.Run("WithWaitForSync==true should not return an error", func(t *testing.T) {
 						meta, err := col.CreateDocumentWithOptions(ctx, doc, &arangodb.CollectionDocumentCreateOptions{
-							WithWaitForSync: utils.NewT(true),
+							WithWaitForSync: utils.NewType(true),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, meta.Key)
@@ -341,7 +341,7 @@ func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-version-attribute",
-						Age:  utils.NewT(23),
+						Age:  utils.NewType(23),
 					}
 
 					meta, err := col.CreateDocument(ctx, doc)
@@ -353,14 +353,14 @@ func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
 
 						docReplaced := DocWithRev{
 							Name: "test-check-Replaced",
-							Age:  utils.NewT(19),
+							Age:  utils.NewType(19),
 							Key:  meta.Key,
 						}
 
 						metaDoc, err := col.CreateDocumentWithOptions(ctx, docReplaced, &arangodb.CollectionDocumentCreateOptions{
 							NewObject:        &newDoc,
 							OldObject:        &oldDoc,
-							Overwrite:        utils.NewT(true),
+							Overwrite:        utils.NewType(true),
 							VersionAttribute: "age",
 						})
 						require.NoError(t, err)
@@ -377,14 +377,14 @@ func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
 
 						docReplaced := DocWithRev{
 							Name: "test-check-Replaced",
-							Age:  utils.NewT(99),
+							Age:  utils.NewType(99),
 							Key:  meta.Key,
 						}
 
 						metaDoc, err := col.CreateDocumentWithOptions(ctx, docReplaced, &arangodb.CollectionDocumentCreateOptions{
 							NewObject:        &newDoc,
 							OldObject:        &oldDoc,
-							Overwrite:        utils.NewT(true),
+							Overwrite:        utils.NewType(true),
 							VersionAttribute: "age",
 						})
 						require.NoError(t, err)

@@ -167,5 +167,5 @@ func getBool(b *bool, d bool) bool {
 }
 
 func newVersion(val string) *arangodb.Version {
-	return utils.NewT(arangodb.Version(val))
+	return utils.NewType(arangodb.Version(val))
 }

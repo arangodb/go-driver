@@ -43,6 +43,6 @@ func IsList(i interface{}) bool {
 	}
 }
 
-func NewT[T any](val T) *T {
+func NewType[T any](val T) *T {
 	return &val
 }

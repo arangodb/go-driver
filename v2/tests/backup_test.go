@@ -88,7 +88,7 @@ func Test_CreateBackupSimple(t *testing.T) {
 			require.NoError(t, err, "DeleteBackup failed")
 		})
 	}, WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -142,7 +142,7 @@ func Test_RestoreBackupSimple(t *testing.T) {
 			})
 		})
 	}, WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -227,7 +227,7 @@ func Test_BackupFullFlow(t *testing.T) {
 			waitForSync(t, ctx, client)
 		})
 	}, WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -263,7 +263,7 @@ func Test_UploadBackupFailAndAbort(t *testing.T) {
 			})
 		})
 	}, WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	})
 }
 

@@ -77,8 +77,8 @@ func TestSearchViewsAlias(t *testing.T) {
 		Name: nameInvInd,
 		PrimarySort: driver.InvertedIndexPrimarySort{
 			Fields: []driver.ArangoSearchPrimarySortEntry{
-				{Field: "test1", Ascending: util.NewT(true)},
-				{Field: "test2", Ascending: util.NewT(false)},
+				{Field: "test1", Ascending: util.NewType(true)},
+				{Field: "test2", Ascending: util.NewType(false)},
 			},
 			Compression: driver.PrimarySortCompressionLz4,
 		},

@@ -238,7 +238,7 @@ func Test_VerticesUpdate(t *testing.T) {
 
 					john := Developer{
 						Name:    "John",
-						IsAdmin: utils.NewT(true),
+						IsAdmin: utils.NewType(true),
 					}
 
 					johnResp, err := colVertex.CreateVertex(ctx, john, nil)
@@ -251,7 +251,7 @@ func Test_VerticesUpdate(t *testing.T) {
 
 						opts := arangodb.VertexUpdateOptions{
 							NewObject: &johnUpdated,
-							KeepNull:  utils.NewT(true),
+							KeepNull:  utils.NewType(true),
 						}
 
 						response, err := colVertex.UpdateVertex(ctx, johnResp.Key, johnUpdated, &opts)
@@ -274,7 +274,7 @@ func Test_VerticesUpdate(t *testing.T) {
 
 						opts := arangodb.VertexUpdateOptions{
 							NewObject: &johnUpdated,
-							KeepNull:  utils.NewT(false),
+							KeepNull:  utils.NewType(false),
 						}
 
 						response, err := colVertex.UpdateVertex(ctx, johnResp.Key, johnUpdated, &opts)

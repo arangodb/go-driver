@@ -109,7 +109,7 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 						}
 
 						r, err := col.ReadDocumentsWithOptions(ctx, &docToRead, &arangodb.CollectionDocumentReadOptions{
-							IgnoreRevs: utils.NewT(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.NoError(t, err)
 
@@ -129,7 +129,7 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 						}
 
 						r, err := col.ReadDocumentsWithOptions(ctx, &docToRead, &arangodb.CollectionDocumentReadOptions{
-							IgnoreRevs: utils.NewT(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.NoError(t, err)
 
@@ -146,7 +146,7 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 						}
 
 						r, err := col.ReadDocumentsWithOptions(ctx, &docToRead, &arangodb.CollectionDocumentReadOptions{
-							IgnoreRevs: utils.NewT(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.NoError(t, err)
 
@@ -168,7 +168,7 @@ func Test_DatabaseCollectionDocReadAllowDirtyReads(t *testing.T) {
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
 						doc := DocWithRev{
 							Name: "test-wait-for-sync-false",
-							Age:  utils.NewT(23),
+							Age:  utils.NewType(23),
 						}
 						meta, err := col.CreateDocument(ctx, doc)
 						require.NoError(t, err)

@@ -58,7 +58,7 @@ func Test_EdgeSimple(t *testing.T) {
 
 					t.Run("Create Edge", func(t *testing.T) {
 						opts := arangodb.CreateEdgeOptions{
-							WaitForSync: utils.NewT(true),
+							WaitForSync: utils.NewType(true),
 						}
 						createEdgeResp, err := edgeDefResp.Edge.CreateEdge(ctx, doc, &opts)
 						require.NoError(t, err)
@@ -85,7 +85,7 @@ func Test_EdgeSimple(t *testing.T) {
 
 					t.Run("Update Edge", func(t *testing.T) {
 						opts := arangodb.EdgeUpdateOptions{
-							WaitForSync: utils.NewT(true),
+							WaitForSync: utils.NewType(true),
 						}
 						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"distance": 10}, &opts)
 						require.NoError(t, err)
@@ -105,7 +105,7 @@ func Test_EdgeSimple(t *testing.T) {
 
 					t.Run("Replace Edge", func(t *testing.T) {
 						opts := arangodb.EdgeReplaceOptions{
-							WaitForSync: utils.NewT(true),
+							WaitForSync: utils.NewType(true),
 						}
 
 						docReplace := RouteEdge{
@@ -169,7 +169,7 @@ func Test_EdgeExtended(t *testing.T) {
 					t.Run("Create Edge", func(t *testing.T) {
 						var newObject RouteEdge
 						opts := arangodb.CreateEdgeOptions{
-							WaitForSync: utils.NewT(true),
+							WaitForSync: utils.NewType(true),
 							NewObject:   &newObject,
 						}
 
@@ -203,7 +203,7 @@ func Test_EdgeExtended(t *testing.T) {
 					t.Run("Update Edge", func(t *testing.T) {
 						var oldObject RouteEdge
 						opts := arangodb.EdgeUpdateOptions{
-							WaitForSync: utils.NewT(true),
+							WaitForSync: utils.NewType(true),
 							OldObject:   &oldObject,
 						}
 						updateEdgeResp, err := edgeDefResp.Edge.UpdateEdge(ctx, docKey, map[string]int{"distance": 10}, &opts)
@@ -230,7 +230,7 @@ func Test_EdgeExtended(t *testing.T) {
 						opts := arangodb.EdgeReplaceOptions{
 							OldObject:   &oldObject,
 							NewObject:   &newObject,
-							WaitForSync: utils.NewT(true),
+							WaitForSync: utils.NewType(true),
 						}
 
 						docReplace := RouteEdge{

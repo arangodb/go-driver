@@ -115,7 +115,7 @@ func Test_CollectionSetProperties(t *testing.T) {
 		ReplicationFactor: 2,
 		JournalSize:       1048576 * 2,
 		NumberOfShards:    2,
-		CacheEnabled:      utils.NewT(false),
+		CacheEnabled:      utils.NewType(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -135,10 +135,10 @@ func Test_CollectionSetProperties(t *testing.T) {
 				})
 
 				newProps := arangodb.SetCollectionPropertiesOptions{
-					WaitForSync:       utils.NewT(true),
+					WaitForSync:       utils.NewType(true),
 					ReplicationFactor: 3,
 					WriteConcern:      2,
-					CacheEnabled:      utils.NewT(true),
+					CacheEnabled:      utils.NewType(true),
 					Schema:            nil,
 				}
 				err = col.SetProperties(ctx, newProps)
@@ -202,7 +202,7 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 					defer c()
 
 					col, err := db.CreateCollectionWithOptions(ctx, "test", nil, &arangodb.CreateCollectionOptions{
-						EnforceReplicationFactor: utils.NewT(false),
+						EnforceReplicationFactor: utils.NewType(false),
 					})
 					require.NoError(t, err)
 

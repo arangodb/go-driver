@@ -35,8 +35,8 @@ import (
 )
 
 var asyncTestOpt = WrapOptions{
-	Async:    utils.NewT(true),
-	Parallel: utils.NewT(false),
+	Async:    utils.NewType(true),
+	Parallel: utils.NewType(false),
 }
 
 func TestAsyncJobListDone(t *testing.T) {

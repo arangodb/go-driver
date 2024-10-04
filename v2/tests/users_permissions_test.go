@@ -118,6 +118,6 @@ func Test_UserPermission(t *testing.T) {
 			})
 		})
 	}, WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	})
 }

@@ -129,7 +129,7 @@ func TestGraphEdgeDefinitionsRemovalCollections(t *testing.T) {
 						edgeDef := gDef.EdgeDefinitions[0]
 
 						opts := arangodb.DeleteEdgeDefinitionOptions{
-							DropCollection: utils.NewT(true),
+							DropCollection: utils.NewType(true),
 						}
 						delResp, err := graph.DeleteEdgeDefinition(ctx, edgeDef.Collection, &opts)
 						require.NoError(t, err)

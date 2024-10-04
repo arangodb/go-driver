@@ -114,7 +114,7 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 
 					t.Run("Deleting Vertex should remove the collection when requested", func(t *testing.T) {
 						opts := arangodb.DeleteVertexCollectionOptions{
-							DropCollection: utils.NewT(true),
+							DropCollection: utils.NewType(true),
 						}
 						delResp, err := graph.DeleteVertexCollection(ctx, colName, &opts)
 						require.NoError(t, err)

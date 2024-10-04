@@ -591,10 +591,10 @@ func Test_UseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 								{
 									Type: arangodb.ArangoSearchAnalyzerTypeNGram,
 									Properties: arangodb.ArangoSearchAnalyzerProperties{
-										Min:              utils.NewT[int64](2),
-										Max:              utils.NewT[int64](2),
-										PreserveOriginal: utils.NewT(false),
-										StreamType:       utils.NewT(arangodb.ArangoSearchNGramStreamUTF8),
+										Min:              utils.NewType[int64](2),
+										Max:              utils.NewType[int64](2),
+										PreserveOriginal: utils.NewType(false),
+										StreamType:       utils.NewType(arangodb.ArangoSearchNGramStreamUTF8),
 									},
 								},
 								{
@@ -685,7 +685,7 @@ func Test_ArangoSearchViewProperties35(t *testing.T) {
 						CommitInterval: &commitInterval,
 						PrimarySort: []arangodb.ArangoSearchPrimarySortEntry{{
 							Field:     sortField,
-							Ascending: utils.NewT(false),
+							Ascending: utils.NewType(false),
 						}},
 						StoredValues: []arangodb.StoredValue{{
 							Fields:      storedValuesFields,
@@ -828,8 +828,8 @@ func Test_ArangoSearchViewProperties353(t *testing.T) {
 										},
 									},
 								},
-								IncludeAllFields: utils.NewT(true),
-								InBackground:     utils.NewT(false),
+								IncludeAllFields: utils.NewType(true),
+								InBackground:     utils.NewType(false),
 							},
 						},
 					}
@@ -868,12 +868,12 @@ func Test_ArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 						StoredValues: []arangodb.StoredValue{
 							{
 								Fields: []string{"f1", "f2"},
-								Cache:  utils.NewT(true),
+								Cache:  utils.NewType(true),
 							},
 						},
 						Links: arangodb.ArangoSearchLinks{
 							linkedColName: arangodb.ArangoSearchElementProperties{
-								Cache: utils.NewT(false),
+								Cache: utils.NewType(false),
 							},
 						},
 					}
@@ -883,13 +883,13 @@ func Test_ArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 					p, err := v.Properties(ctx)
 					require.NoError(t, err)
 					require.Len(t, p.StoredValues, 1)
-					require.Equal(t, utils.NewT(true), p.StoredValues[0].Cache)
+					require.Equal(t, utils.NewType(true), p.StoredValues[0].Cache)
 					linkedColumnProps := p.Links[linkedColName]
 					require.NotNil(t, linkedColumnProps)
 					require.Nil(t, linkedColumnProps.Cache)
 
 					// update props: set to cached
-					p.Links[linkedColName] = arangodb.ArangoSearchElementProperties{Cache: utils.NewT(true)}
+					p.Links[linkedColName] = arangodb.ArangoSearchElementProperties{Cache: utils.NewType(true)}
 					err = v.SetProperties(ctx, p)
 					require.NoError(t, err)
 
@@ -898,7 +898,7 @@ func Test_ArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 					require.NoError(t, err)
 					linkedColumnProps = p.Links[linkedColName]
 					require.NotNil(t, linkedColumnProps)
-					require.Equal(t, utils.NewT(true), linkedColumnProps.Cache)
+					require.Equal(t, utils.NewType(true), linkedColumnProps.Cache)
 				})
 			})
 		})
@@ -919,7 +919,7 @@ func Test_ArangoSearchViewInMemoryCache(t *testing.T) {
 
 						name := "test_create_asview"
 						opts := &arangodb.ArangoSearchViewProperties{
-							PrimarySortCache: utils.NewT(true),
+							PrimarySortCache: utils.NewType(true),
 						}
 						v, err := db.CreateArangoSearchView(ctx, name, opts)
 						require.NoError(t, err)
@@ -929,7 +929,7 @@ func Test_ArangoSearchViewInMemoryCache(t *testing.T) {
 						// bug in arangod: the primarySortCache field is not returned in response. Fixed only in 3.9.6+:
 						t.Run("must-be-returned-in-response", func(t *testing.T) {
 							skipBelowVersion(client, ctx, "3.9.6", t)
-							require.Equal(t, utils.NewT(true), p.PrimarySortCache)
+							require.Equal(t, utils.NewType(true), p.PrimarySortCache)
 						})
 					})
 
@@ -940,14 +940,14 @@ func Test_ArangoSearchViewInMemoryCache(t *testing.T) {
 
 						name := "test_view_"
 						opts := &arangodb.ArangoSearchViewProperties{
-							PrimaryKeyCache: utils.NewT(true),
+							PrimaryKeyCache: utils.NewType(true),
 						}
 						v, err := db.CreateArangoSearchView(ctx, name, opts)
 						require.NoError(t, err)
 
 						p, err := v.Properties(ctx)
 						require.NoError(t, err)
-						require.Equal(t, utils.NewT(true), p.PrimaryKeyCache)
+						require.Equal(t, utils.NewType(true), p.PrimaryKeyCache)
 					})
 				})
 			})

@@ -34,7 +34,7 @@ import (
 func Test_ServerMode(t *testing.T) {
 	// This test can not run sub-tests parallelly, because it changes admin settings.
 	wrapOpts := WrapOptions{
-		Parallel: utils.NewT(false),
+		Parallel: utils.NewType(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -79,7 +79,7 @@ func Test_Version(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			v, err := client.VersionWithOptions(context.Background(), &arangodb.GetVersionOptions{
-				Details: utils.NewT(true),
+				Details: utils.NewType(true),
 			})
 			require.NoError(t, err)
 			require.NotEmpty(t, v.Version)
