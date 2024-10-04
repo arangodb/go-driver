@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -112,7 +114,7 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 
 					t.Run("Deleting Vertex should remove the collection when requested", func(t *testing.T) {
 						opts := arangodb.DeleteVertexCollectionOptions{
-							DropCollection: newBool(true),
+							DropCollection: utils.NewType(true),
 						}
 						delResp, err := graph.DeleteVertexCollection(ctx, colName, &opts)
 						require.NoError(t, err)

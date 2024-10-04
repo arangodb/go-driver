@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -93,7 +95,7 @@ func Test_DatabaseCollectionDocUpdateIgnoreRevs(t *testing.T) {
 					t.Run("do not update if rev doesn't match", func(t *testing.T) {
 						docUpdate.Rev = "wrong-rev"
 						metaError, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.Error(t, err)
 						require.Empty(t, metaError.Rev)
@@ -102,7 +104,7 @@ func Test_DatabaseCollectionDocUpdateIgnoreRevs(t *testing.T) {
 					t.Run("do an update if rev match", func(t *testing.T) {
 						docUpdate.Rev = meta.Rev
 						metaUpdated, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, metaUpdated.Rev)
@@ -112,7 +114,7 @@ func Test_DatabaseCollectionDocUpdateIgnoreRevs(t *testing.T) {
 					t.Run("do an update if rev is missing", func(t *testing.T) {
 						docUpdate.Rev = ""
 						metaUpdated, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, metaUpdated.Rev)
@@ -132,7 +134,7 @@ func Test_DatabaseCollectionDocUpdateKeepNull(t *testing.T) {
 
 					doc := DocWithRev{
 						Name: "test-keep-null",
-						Age:  newInt(10),
+						Age:  utils.NewType(10),
 					}
 
 					meta, err := col.CreateDocument(ctx, doc)
@@ -147,7 +149,7 @@ func Test_DatabaseCollectionDocUpdateKeepNull(t *testing.T) {
 						}
 
 						metaUpdated, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docOverwrite, &arangodb.CollectionDocumentUpdateOptions{
-							KeepNull: newBool(true),
+							KeepNull: utils.NewType(true),
 						})
 						require.NoError(t, err)
 						require.Equal(t, metaUpdated.Key, meta.Key)
@@ -171,7 +173,7 @@ func Test_DatabaseCollectionDocUpdateKeepNull(t *testing.T) {
 						}
 
 						metaUpdated, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docOverwrite, &arangodb.CollectionDocumentUpdateOptions{
-							KeepNull: newBool(false),
+							KeepNull: utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.Equal(t, metaUpdated.Key, meta.Key)
@@ -218,7 +220,7 @@ func Test_DatabaseCollectionDocUpdateMergeObjects(t *testing.T) {
 						}
 
 						metaUpdated, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docOverwrite, &arangodb.CollectionDocumentUpdateOptions{
-							MergeObjects: newBool(true),
+							MergeObjects: utils.NewType(true),
 						})
 						require.NoError(t, err)
 						require.Equal(t, metaUpdated.Key, meta.Key)
@@ -246,7 +248,7 @@ func Test_DatabaseCollectionDocUpdateMergeObjects(t *testing.T) {
 						}
 
 						metaUpdated, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docOverwrite, &arangodb.CollectionDocumentUpdateOptions{
-							MergeObjects: newBool(false),
+							MergeObjects: utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.Equal(t, metaUpdated.Key, meta.Key)
@@ -277,7 +279,7 @@ func Test_DatabaseCollectionDocUpdateSilent(t *testing.T) {
 
 					doc := DocWithRev{
 						Name: "test-silent",
-						Age:  newInt(42),
+						Age:  utils.NewType(42),
 					}
 					meta, err := col.CreateDocument(ctx, doc)
 					require.NoError(t, err)
@@ -286,7 +288,7 @@ func Test_DatabaseCollectionDocUpdateSilent(t *testing.T) {
 						Name: "test-silent-updated",
 					}
 					metaUpdated, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{
-						Silent: newBool(true),
+						Silent: utils.NewType(true),
 					})
 					require.NoError(t, err)
 					require.Empty(t, metaUpdated.Key, "response should be empty (silent)!")
@@ -303,24 +305,24 @@ func Test_DatabaseCollectionDocUpdateWaitForSync(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-wait-for-sync",
-						Age:  newInt(23),
+						Age:  utils.NewType(23),
 					}
 					meta, err := col.CreateDocument(ctx, doc)
 					require.NoError(t, err)
 
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
-						doc.Age = newInt(42)
+						doc.Age = utils.NewType(42)
 						meta, err := col.UpdateDocumentWithOptions(ctx, meta.Key, doc, &arangodb.CollectionDocumentUpdateOptions{
-							WithWaitForSync: newBool(false),
+							WithWaitForSync: utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, meta.Key)
 					})
 
 					t.Run("WithWaitForSync==true should not return an error", func(t *testing.T) {
-						doc.Age = newInt(32)
+						doc.Age = utils.NewType(32)
 						meta, err := col.UpdateDocumentWithOptions(ctx, meta.Key, doc, &arangodb.CollectionDocumentUpdateOptions{
-							WithWaitForSync: newBool(true),
+							WithWaitForSync: utils.NewType(true),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, meta.Key)
@@ -340,7 +342,7 @@ func Test_DatabaseCollectionDocUpdateVersionAttribute(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-version-attribute",
-						Age:  newInt(23),
+						Age:  utils.NewType(23),
 					}
 
 					meta, err := col.CreateDocument(ctx, doc)
@@ -352,7 +354,7 @@ func Test_DatabaseCollectionDocUpdateVersionAttribute(t *testing.T) {
 
 						docUpdate := DocWithRev{
 							Name: "test-check-UPDATED",
-							Age:  newInt(19),
+							Age:  utils.NewType(19),
 						}
 
 						metaDoc, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{
@@ -374,7 +376,7 @@ func Test_DatabaseCollectionDocUpdateVersionAttribute(t *testing.T) {
 
 						docUpdate := DocWithRev{
 							Name: "test-check-UPDATED",
-							Age:  newInt(99),
+							Age:  utils.NewType(99),
 						}
 
 						metaDoc, err := col.UpdateDocumentWithOptions(ctx, meta.Key, docUpdate, &arangodb.CollectionDocumentUpdateOptions{

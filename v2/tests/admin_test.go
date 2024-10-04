@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -32,7 +34,7 @@ import (
 func Test_ServerMode(t *testing.T) {
 	// This test can not run sub-tests parallelly, because it changes admin settings.
 	wrapOpts := WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewType(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -77,7 +79,7 @@ func Test_Version(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			v, err := client.VersionWithOptions(context.Background(), &arangodb.GetVersionOptions{
-				Details: newBool(true),
+				Details: utils.NewType(true),
 			})
 			require.NoError(t, err)
 			require.NotEmpty(t, v.Version)

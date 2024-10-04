@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/util"
 )
 
 // ensureArangoSearchView is a helper to check if an arangosearch view exists and create it if needed.
@@ -76,8 +77,8 @@ func TestSearchViewsAlias(t *testing.T) {
 		Name: nameInvInd,
 		PrimarySort: driver.InvertedIndexPrimarySort{
 			Fields: []driver.ArangoSearchPrimarySortEntry{
-				{Field: "test1", Ascending: newBool(true)},
-				{Field: "test2", Ascending: newBool(false)},
+				{Field: "test1", Ascending: util.NewType(true)},
+				{Field: "test2", Ascending: util.NewType(false)},
 			},
 			Compression: driver.PrimarySortCompressionLz4,
 		},

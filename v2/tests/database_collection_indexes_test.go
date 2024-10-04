@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
@@ -88,23 +90,23 @@ func Test_EnsurePersistentIndex(t *testing.T) {
 						{true, 2, []string{"age", "name"}, nil},
 						// same as default
 						{false, 2, []string{"age", "name"},
-							&arangodb.CreatePersistentIndexOptions{Unique: newBool(false), Sparse: newBool(false)}},
+							&arangodb.CreatePersistentIndexOptions{Unique: utils.NewType(false), Sparse: utils.NewType(false)}},
 
 						// unique
 						{true, 3, []string{"age", "name"},
-							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(false)}},
+							&arangodb.CreatePersistentIndexOptions{Unique: utils.NewType(true), Sparse: utils.NewType(false)}},
 						{false, 3, []string{"age", "name"},
-							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(false)}},
+							&arangodb.CreatePersistentIndexOptions{Unique: utils.NewType(true), Sparse: utils.NewType(false)}},
 
 						{true, 4, []string{"age", "name"},
-							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(true)}},
+							&arangodb.CreatePersistentIndexOptions{Unique: utils.NewType(true), Sparse: utils.NewType(true)}},
 						{false, 4, []string{"age", "name"},
-							&arangodb.CreatePersistentIndexOptions{Unique: newBool(true), Sparse: newBool(true)}},
+							&arangodb.CreatePersistentIndexOptions{Unique: utils.NewType(true), Sparse: utils.NewType(true)}},
 
 						{true, 5, []string{"age", "name"},
-							&arangodb.CreatePersistentIndexOptions{Unique: newBool(false), Sparse: newBool(true)}},
+							&arangodb.CreatePersistentIndexOptions{Unique: utils.NewType(false), Sparse: utils.NewType(true)}},
 						{false, 5, []string{"age", "name"},
-							&arangodb.CreatePersistentIndexOptions{Unique: newBool(false), Sparse: newBool(true)}},
+							&arangodb.CreatePersistentIndexOptions{Unique: utils.NewType(false), Sparse: utils.NewType(true)}},
 					}
 
 					for _, testOpt := range testOptions {
@@ -138,7 +140,7 @@ func Test_EnsurePersistentIndex(t *testing.T) {
 
 						options := &arangodb.CreatePersistentIndexOptions{
 							StoredValues: storedValues,
-							CacheEnabled: newBool(true),
+							CacheEnabled: utils.NewType(true),
 						}
 
 						idx, created, err := col.EnsurePersistentIndex(ctx, fields, options)
@@ -169,9 +171,9 @@ func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
 
 					t.Run("Create index with Deduplicate OFF", func(t *testing.T) {
 						idx, created, err := col.EnsurePersistentIndex(ctx, []string{"tags[*]"}, &arangodb.CreatePersistentIndexOptions{
-							Deduplicate: newBool(false),
-							Unique:      newBool(true),
-							Sparse:      newBool(false),
+							Deduplicate: utils.NewType(false),
+							Unique:      utils.NewType(true),
+							Sparse:      utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.True(t, created)
@@ -188,9 +190,9 @@ func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
 
 					t.Run("Create index with Deduplicate ON", func(t *testing.T) {
 						idx, created, err := col.EnsurePersistentIndex(ctx, []string{"tags[*]"}, &arangodb.CreatePersistentIndexOptions{
-							Deduplicate: newBool(true),
-							Unique:      newBool(true),
-							Sparse:      newBool(false),
+							Deduplicate: utils.NewType(true),
+							Unique:      utils.NewType(true),
+							Sparse:      utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.True(t, created)
@@ -299,8 +301,8 @@ func Test_EnsureGeoIndexIndex(t *testing.T) {
 
 					t.Run("Test GeoJSON opts", func(t *testing.T) {
 						var testOptions = []arangodb.CreateGeoIndexOptions{
-							{GeoJSON: newBool(true)},
-							{GeoJSON: newBool(false)},
+							{GeoJSON: utils.NewType(true)},
+							{GeoJSON: utils.NewType(false)},
 						}
 						for _, testOpt := range testOptions {
 							idx, created, err := col.EnsureGeoIndex(ctx, []string{"geo"}, &testOpt)
@@ -323,25 +325,25 @@ func Test_EnsureGeoIndexIndex(t *testing.T) {
 								true,
 								false,
 								[]string{"geoOld1"},
-								&arangodb.CreateGeoIndexOptions{LegacyPolygons: newBool(true)},
+								&arangodb.CreateGeoIndexOptions{LegacyPolygons: utils.NewType(true)},
 							},
 							{
 								false,
 								false,
 								[]string{"geoOld2"},
-								&arangodb.CreateGeoIndexOptions{LegacyPolygons: newBool(false)},
+								&arangodb.CreateGeoIndexOptions{LegacyPolygons: utils.NewType(false)},
 							},
 							{
 								false,
 								true,
 								[]string{"geoOld3"},
-								&arangodb.CreateGeoIndexOptions{GeoJSON: newBool(true), LegacyPolygons: newBool(false)},
+								&arangodb.CreateGeoIndexOptions{GeoJSON: utils.NewType(true), LegacyPolygons: utils.NewType(false)},
 							},
 							{
 								false,
 								false,
 								[]string{"geoOld4"},
-								&arangodb.CreateGeoIndexOptions{GeoJSON: newBool(false), LegacyPolygons: newBool(false)},
+								&arangodb.CreateGeoIndexOptions{GeoJSON: utils.NewType(false), LegacyPolygons: utils.NewType(false)},
 							},
 						}
 

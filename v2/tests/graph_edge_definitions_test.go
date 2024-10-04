@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -127,7 +129,7 @@ func TestGraphEdgeDefinitionsRemovalCollections(t *testing.T) {
 						edgeDef := gDef.EdgeDefinitions[0]
 
 						opts := arangodb.DeleteEdgeDefinitionOptions{
-							DropCollection: newBool(true),
+							DropCollection: utils.NewType(true),
 						}
 						delResp, err := graph.DeleteEdgeDefinition(ctx, edgeDef.Collection, &opts)
 						require.NoError(t, err)

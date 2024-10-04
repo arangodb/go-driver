@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ package tests
 import (
 	"context"
 	"testing"
+
+	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/stretchr/testify/require"
 
@@ -221,7 +223,7 @@ func Test_DatabaseCollectionDocDeleteIgnoreRevs(t *testing.T) {
 						}
 
 						delReader, err := col.DeleteDocumentsWithOptions(ctx, docToRemove, &arangodb.CollectionDocumentDeleteOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.NoError(t, err)
 
@@ -243,7 +245,7 @@ func Test_DatabaseCollectionDocDeleteIgnoreRevs(t *testing.T) {
 						}
 
 						delReader, err := col.DeleteDocumentsWithOptions(ctx, docToRemove, &arangodb.CollectionDocumentDeleteOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 						require.NoError(t, err)
 
@@ -266,7 +268,7 @@ func Test_DatabaseCollectionDocDeleteIgnoreRevs(t *testing.T) {
 						}
 
 						delReader, err := col.DeleteDocumentsWithOptions(ctx, docToRemove, &arangodb.CollectionDocumentDeleteOptions{
-							IgnoreRevs: newBool(false),
+							IgnoreRevs: utils.NewType(false),
 						})
 
 						require.NoError(t, err)
@@ -296,13 +298,13 @@ func Test_DatabaseCollectionDocDeleteSilent(t *testing.T) {
 
 					doc := DocWithRev{
 						Name: "test-silent",
-						Age:  newInt(42),
+						Age:  utils.NewType(42),
 					}
 					meta, err := col.CreateDocument(ctx, doc)
 					require.NoError(t, err)
 
 					metaDeleted, err := col.DeleteDocumentWithOptions(ctx, meta.Key, &arangodb.CollectionDocumentDeleteOptions{
-						Silent: newBool(true),
+						Silent: utils.NewType(true),
 					})
 					require.NoError(t, err)
 					require.Empty(t, metaDeleted.Key, "response should be empty (silent)!")
@@ -320,13 +322,13 @@ func Test_DatabaseCollectionDocDeleteWaitForSync(t *testing.T) {
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
 						doc := DocWithRev{
 							Name: "test-wait-for-sync-false",
-							Age:  newInt(23),
+							Age:  utils.NewType(23),
 						}
 						meta, err := col.CreateDocument(ctx, doc)
 						require.NoError(t, err)
 
 						metaDel, err := col.DeleteDocumentWithOptions(ctx, meta.Key, &arangodb.CollectionDocumentDeleteOptions{
-							WithWaitForSync: newBool(false),
+							WithWaitForSync: utils.NewType(false),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, metaDel.Key)
@@ -335,13 +337,13 @@ func Test_DatabaseCollectionDocDeleteWaitForSync(t *testing.T) {
 					t.Run("WithWaitForSync==true should not return an error", func(t *testing.T) {
 						doc := DocWithRev{
 							Name: "test-wait-for-sync-true",
-							Age:  newInt(23),
+							Age:  utils.NewType(23),
 						}
 						meta, err := col.CreateDocument(ctx, doc)
 						require.NoError(t, err)
 
 						metaDel, err := col.DeleteDocumentWithOptions(ctx, meta.Key, &arangodb.CollectionDocumentDeleteOptions{
-							WithWaitForSync: newBool(true),
+							WithWaitForSync: utils.NewType(true),
 						})
 						require.NoError(t, err)
 						require.NotEmpty(t, metaDel.Key)

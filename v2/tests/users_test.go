@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -96,7 +98,7 @@ func Test_Users(t *testing.T) {
 
 			t.Run("Test update user", func(t *testing.T) {
 				opts := &arangodb.UserOptions{
-					Active: newBool(false),
+					Active: utils.NewType(false),
 				}
 
 				u, err := client.UpdateUser(ctx, user1Name, opts)
@@ -132,7 +134,7 @@ func Test_Users(t *testing.T) {
 			})
 		})
 	}, WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -141,8 +143,8 @@ func Test_UserCreation(t *testing.T) {
 
 		testCases := map[string]*arangodb.UserOptions{
 			"jan1":      nil,
-			"george":    {Password: "foo", Active: newBool(false)},
-			"candy":     {Password: "ARANGODB_DEFAULT_ROOT_PASSWORD", Active: newBool(true)},
+			"george":    {Password: "foo", Active: utils.NewType(false)},
+			"candy":     {Password: "ARANGODB_DEFAULT_ROOT_PASSWORD", Active: utils.NewType(true)},
 			"joe":       {Extra: map[string]interface{}{"key": "value", "x": 5}},
 			"admin@api": nil,
 			"測試用例":      nil,
@@ -179,6 +181,6 @@ func Test_UserCreation(t *testing.T) {
 			})
 		}
 	}, WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewType(false),
 	})
 }

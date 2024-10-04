@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -116,6 +118,6 @@ func Test_UserPermission(t *testing.T) {
 			})
 		})
 	}, WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewType(false),
 	})
 }

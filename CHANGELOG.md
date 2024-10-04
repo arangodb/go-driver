@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Expose `NewType` method
 
 ## [1.6.4(https://github.com/arangodb/go-driver/tree/v1.6.4) (2024-09-27)
 - Switch to Go 1.22.5

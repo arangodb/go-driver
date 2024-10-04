@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/util"
 )
 
 // ensureArangoSearchView is a helper to check if an arangosearch view exists and create it if needed.
@@ -633,7 +634,7 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 					Properties: driver.ArangoSearchAnalyzerProperties{
 						Min:              newInt64(2),
 						Max:              newInt64(2),
-						PreserveOriginal: newBool(false),
+						PreserveOriginal: util.NewType(false),
 						StreamType:       newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamUTF8),
 					},
 				},
@@ -923,10 +924,6 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 	}
 }
 
-func newBool(v bool) *bool {
-	return &v
-}
-
 // TestArangoSearchViewProperties353 tests for custom analyzers.
 func TestArangoSearchViewProperties353(t *testing.T) {
 	ctx := context.Background()
@@ -955,8 +952,8 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 						},
 					},
 				},
-				IncludeAllFields: newBool(true),
-				InBackground:     newBool(false),
+				IncludeAllFields: util.NewType(true),
+				InBackground:     util.NewType(false),
 			},
 		},
 	}
@@ -991,7 +988,7 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.Contains(t, analyzer.Features, driver.ArangoSearchAnalyzerFeaturePosition)
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
-	require.Equal(t, newBool(true), link.IncludeAllFields)
+	require.Equal(t, util.NewType(true), link.IncludeAllFields)
 }
 
 func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
@@ -1009,12 +1006,12 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 		StoredValues: []driver.StoredValue{
 			{
 				Fields: []string{"f1", "f2"},
-				Cache:  newBool(true),
+				Cache:  util.NewType(true),
 			},
 		},
 		Links: driver.ArangoSearchLinks{
 			linkedColName: driver.ArangoSearchElementProperties{
-				Cache: newBool(false),
+				Cache: util.NewType(false),
 			},
 		},
 	}
@@ -1025,12 +1022,12 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	p, err := v.Properties(ctx)
 	require.NoError(t, err)
 	require.Len(t, p.StoredValues, 1)
-	require.Equal(t, newBool(true), p.StoredValues[0].Cache)
+	require.Equal(t, util.NewType(true), p.StoredValues[0].Cache)
 	linkedColumnProps := p.Links[linkedColName]
 	require.NotNil(t, linkedColumnProps)
 	require.Nil(t, linkedColumnProps.Cache)
 	// update props: set to cached
-	p.Links[linkedColName] = driver.ArangoSearchElementProperties{Cache: newBool(true)}
+	p.Links[linkedColName] = driver.ArangoSearchElementProperties{Cache: util.NewType(true)}
 	err = v.SetProperties(ctx, p)
 	require.NoError(t, err)
 
@@ -1039,7 +1036,7 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	require.NoError(t, err)
 	linkedColumnProps = p.Links[linkedColName]
 	require.NotNil(t, linkedColumnProps)
-	require.Equal(t, newBool(true), linkedColumnProps.Cache)
+	require.Equal(t, util.NewType(true), linkedColumnProps.Cache)
 }
 
 func TestArangoSearchViewInMemoryCache(t *testing.T) {
@@ -1056,7 +1053,7 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 
 		name := "test_create_asview"
 		opts := &driver.ArangoSearchViewProperties{
-			PrimarySortCache: newBool(true),
+			PrimarySortCache: util.NewType(true),
 		}
 		v, err := db.CreateArangoSearchView(ctx, name, opts)
 		require.NoError(t, err)
@@ -1066,7 +1063,7 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 		// bug in arangod: the primarySortCache field is not returned in response. Fixed only in 3.9.6+:
 		t.Run("must-be-returned-in-response", func(t *testing.T) {
 			skipBelowVersion(c, "3.9.6", t)
-			require.Equal(t, newBool(true), p.PrimarySortCache)
+			require.Equal(t, util.NewType(true), p.PrimarySortCache)
 		})
 	})
 
@@ -1077,13 +1074,13 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 
 		name := "test_view_"
 		opts := &driver.ArangoSearchViewProperties{
-			PrimaryKeyCache: newBool(true),
+			PrimaryKeyCache: util.NewType(true),
 		}
 		v, err := db.CreateArangoSearchView(ctx, name, opts)
 		require.NoError(t, err)
 
 		p, err := v.Properties(ctx)
 		require.NoError(t, err)
-		require.Equal(t, newBool(true), p.PrimaryKeyCache)
+		require.Equal(t, util.NewType(true), p.PrimaryKeyCache)
 	})
 }

@@ -24,6 +24,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -32,7 +34,7 @@ import (
 
 func sampleSmartGraph() *arangodb.GraphDefinition {
 	return &arangodb.GraphDefinition{
-		NumberOfShards:      newInt(3),
+		NumberOfShards:      utils.NewType(3),
 		SmartGraphAttribute: "key",
 		IsSmart:             true,
 	}

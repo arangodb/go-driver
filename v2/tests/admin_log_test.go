@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arangodb/go-driver/v2/utils"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -34,7 +36,7 @@ import (
 func Test_LogLevels(t *testing.T) {
 	// This test cannot run subtests parallel, because it changes admin settings.
 	wrapOpts := WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewType(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -70,7 +72,7 @@ func Test_LogLevelsForServers(t *testing.T) {
 
 	// This test cannot run subtests parallel, because it changes admin settings.
 	wrapOpts := WrapOptions{
-		Parallel: newBool(false),
+		Parallel: utils.NewType(false),
 	}
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {

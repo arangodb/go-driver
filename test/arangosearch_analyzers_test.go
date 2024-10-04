@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver"
+	"github.com/arangodb/go-driver/util"
 )
 
 func newInt(v int) *int {
@@ -139,7 +140,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Min:              newInt64(1),
 					Max:              newInt64(14),
-					PreserveOriginal: newBool(false),
+					PreserveOriginal: util.NewType(false),
 				},
 			},
 		},
@@ -152,7 +153,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Min:              newInt64(1),
 					Max:              newInt64(14),
-					PreserveOriginal: newBool(false),
+					PreserveOriginal: util.NewType(false),
 				},
 			},
 			ExpectedDefinition: &driver.ArangoSearchAnalyzerDefinition{
@@ -161,7 +162,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Min:              newInt64(1),
 					Max:              newInt64(14),
-					PreserveOriginal: newBool(false),
+					PreserveOriginal: util.NewType(false),
 
 					// Check defaults for 3.6
 					StartMarker: newString(""),
@@ -179,7 +180,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Min:              newInt64(1),
 					Max:              newInt64(14),
-					PreserveOriginal: newBool(false),
+					PreserveOriginal: util.NewType(false),
 					StartMarker:      newString("^"),
 					EndMarker:        newString("^"),
 					StreamType:       newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamUTF8),
@@ -199,7 +200,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 							Properties: driver.ArangoSearchAnalyzerProperties{
 								Min:              newInt64(1),
 								Max:              newInt64(14),
-								PreserveOriginal: newBool(false),
+								PreserveOriginal: util.NewType(false),
 								StartMarker:      newString("^"),
 								EndMarker:        newString("^"),
 								StreamType:       newArangoSearchNGramStreamType(driver.ArangoSearchNGramStreamUTF8),
@@ -217,11 +218,11 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Type: driver.ArangoSearchAnalyzerTypeAQL,
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					QueryString:       `FOR year IN [ 2011, 2012, 2013 ] FOR quarter IN [ 1, 2, 3, 4 ] RETURN { year, quarter, formatted: CONCAT(quarter, " / ", year)}`,
-					CollapsePositions: newBool(true),
-					KeepNull:          newBool(false),
-					BatchSize:         newInt(10),
+					CollapsePositions: util.NewType(true),
+					KeepNull:          util.NewType(false),
+					BatchSize:         util.NewType(10),
 					ReturnType:        driver.ArangoSearchAnalyzerAQLReturnTypeString.New(),
-					MemoryLimit:       newInt(1024 * 1024),
+					MemoryLimit:       util.NewType(1024 * 1024),
 				},
 			},
 		},
@@ -233,9 +234,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Type: driver.ArangoSearchAnalyzerTypeGeoPoint,
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Options: &driver.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newInt(20),
-						MinLevel: newInt(4),
-						MaxLevel: newInt(23),
+						MaxCells: util.NewType(20),
+						MinLevel: util.NewType(4),
+						MaxLevel: util.NewType(23),
 					},
 					Latitude:  []string{},
 					Longitude: []string{},
@@ -250,9 +251,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Type: driver.ArangoSearchAnalyzerTypeGeoJSON,
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Options: &driver.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newInt(20),
-						MinLevel: newInt(4),
-						MaxLevel: newInt(23),
+						MaxCells: util.NewType(20),
+						MinLevel: util.NewType(4),
+						MaxLevel: util.NewType(23),
 					},
 					Type: driver.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
@@ -267,9 +268,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Format: driver.FormatLatLngInt.New(),
 					Options: &driver.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newInt(20),
-						MinLevel: newInt(4),
-						MaxLevel: newInt(23),
+						MaxCells: util.NewType(20),
+						MinLevel: util.NewType(4),
+						MaxLevel: util.NewType(23),
 					},
 					Type: driver.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
@@ -280,9 +281,9 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Properties: driver.ArangoSearchAnalyzerProperties{
 					Format: driver.FormatLatLngInt.New(),
 					Options: &driver.ArangoSearchAnalyzerGeoOptions{
-						MaxCells: newInt(20),
-						MinLevel: newInt(4),
-						MaxLevel: newInt(23),
+						MaxCells: util.NewType(20),
+						MinLevel: util.NewType(4),
+						MaxLevel: util.NewType(23),
 					},
 					Type: driver.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
@@ -326,7 +327,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Name: "my-stopWords",
 				Type: driver.ArangoSearchAnalyzerTypeStopwords,
 				Properties: driver.ArangoSearchAnalyzerProperties{
-					Hex: newBool(true),
+					Hex: util.NewType(true),
 					Stopwords: []string{
 						"616e64",
 						"746865",
@@ -337,7 +338,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 				Name: "my-stopWords",
 				Type: driver.ArangoSearchAnalyzerTypeStopwords,
 				Properties: driver.ArangoSearchAnalyzerProperties{
-					Hex: newBool(true),
+					Hex: util.NewType(true),
 					Stopwords: []string{
 						"616e64",
 						"746865",
@@ -356,7 +357,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 					Analyzer: &driver.ArangoSearchAnalyzerDefinition{
 						Type: driver.ArangoSearchAnalyzerTypeStopwords,
 						Properties: driver.ArangoSearchAnalyzerProperties{
-							Hex: newBool(true),
+							Hex: util.NewType(true),
 							Stopwords: []string{
 								"616e64",
 								"746865",
@@ -373,7 +374,7 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 					Analyzer: &driver.ArangoSearchAnalyzerDefinition{
 						Type: driver.ArangoSearchAnalyzerTypeStopwords,
 						Properties: driver.ArangoSearchAnalyzerProperties{
-							Hex: newBool(true),
+							Hex: util.NewType(true),
 							Stopwords: []string{
 								"616e64",
 								"746865",
@@ -450,7 +451,7 @@ func TestArangoSearchAnalyzerGet(t *testing.T) {
 		Properties: driver.ArangoSearchAnalyzerProperties{
 			Min:              newInt64(1),
 			Max:              newInt64(14),
-			PreserveOriginal: newBool(false),
+			PreserveOriginal: util.NewType(false),
 		},
 	}
 	ensureAnalyzer(ctx, db, def, t)
@@ -484,7 +485,7 @@ func TestArangoSearchAnalyzerGetAll(t *testing.T) {
 		Properties: driver.ArangoSearchAnalyzerProperties{
 			Min:              newInt64(1),
 			Max:              newInt64(14),
-			PreserveOriginal: newBool(false),
+			PreserveOriginal: util.NewType(false),
 		},
 	}
 	ensureAnalyzer(ctx, db, def, t)
@@ -524,7 +525,7 @@ func TestArangoSearchAnalyzerRemove(t *testing.T) {
 		Properties: driver.ArangoSearchAnalyzerProperties{
 			Min:              newInt64(1),
 			Max:              newInt64(14),
-			PreserveOriginal: newBool(false),
+			PreserveOriginal: util.NewType(false),
 		},
 	}
 	a := ensureAnalyzer(ctx, db, def, t)
