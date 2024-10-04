@@ -1,7 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- Expose `NewT` method
+- Expose `NewType` method
 
 ## [2.1.1](https://github.com/arangodb/go-driver/tree/v2.1.1) (2024-09-27)
 - Improve backup tests stability
