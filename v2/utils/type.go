@@ -46,7 +46,3 @@ func IsList(i interface{}) bool {
 func NewT[T any](val T) *T {
 	return &val
 }
-
-func NewInt64(i int64) *int64 {
-	return &i
-}

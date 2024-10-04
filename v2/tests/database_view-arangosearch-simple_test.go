@@ -38,8 +38,8 @@ func Test_ArangoSearchSimple(t *testing.T) {
 					viewName := GenerateUUID("test-view")
 
 					opts := &arangodb.ArangoSearchViewProperties{
-						CleanupIntervalStep: utils.NewInt64(1),
-						CommitInterval:      utils.NewInt64(500),
+						CleanupIntervalStep: utils.NewT[int64](1),
+						CommitInterval:      utils.NewT[int64](500),
 					}
 
 					view, err := db.CreateArangoSearchView(ctx, viewName, opts)
@@ -54,7 +54,7 @@ func Test_ArangoSearchSimple(t *testing.T) {
 
 					t.Run("Update properties of the view", func(t *testing.T) {
 						opt := arangodb.ArangoSearchViewProperties{
-							CommitInterval: utils.NewInt64(200),
+							CommitInterval: utils.NewT[int64](200),
 						}
 						err = view.UpdateProperties(ctx, opt)
 						require.NoError(t, err)
@@ -69,7 +69,7 @@ func Test_ArangoSearchSimple(t *testing.T) {
 
 					t.Run("Replace properties of the view", func(t *testing.T) {
 						opt := arangodb.ArangoSearchViewProperties{
-							CommitInterval: utils.NewInt64(300),
+							CommitInterval: utils.NewT[int64](300),
 						}
 						err = view.SetProperties(ctx, opt)
 						require.NoError(t, err)
