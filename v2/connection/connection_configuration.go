@@ -72,7 +72,6 @@ func WithHTTPEndpoint(endpoint Endpoint) Mod[HttpConfiguration] {
 func WithHTT2PEndpoint(endpoint Endpoint) Mod[Http2Configuration] {
 	return func(in *Http2Configuration) {
 		in.Endpoint = endpoint
-		in.Transport.DialTLSContext = NewHTTP2DialForEndpoint(endpoint)
 	}
 }
 
