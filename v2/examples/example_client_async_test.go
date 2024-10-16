@@ -22,7 +22,6 @@ package examples
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -32,10 +31,16 @@ import (
 
 // ExampleNewConnectionAsyncWrapper shows how to create a connection wrapper for async requests
 // It lets use async requests on demand
-func ExampleNewConnectionAsyncWrapper() {
+func Main() {
 	// Create an HTTP connection to the database
 	endpoint := connection.NewRoundRobinEndpoints([]string{"http://localhost:8529"})
 	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
+
+	auth := connection.NewBasicAuth("root", "")
+	err := conn.SetAuthentication(auth)
+	if err != nil {
+		log.Fatalf("Failed to set authentication: %v", err)
+	}
 
 	// Create ASYNC wrapper for the connection
 	conn = connection.NewConnectionAsyncWrapper(conn)
@@ -46,24 +51,25 @@ func ExampleNewConnectionAsyncWrapper() {
 	// Ask the version of the server
 	versionInfo, err := client.Version(context.Background())
 	if err != nil {
-		fmt.Printf("Failed to get version info: %v", err)
+		log.Fatalf("Failed to get version info: %v", err)
 	} else {
-		fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
+		log.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 	}
 
 	// Trigger async request
 	info, err := client.Version(connection.WithAsync(context.Background()))
 	if err != nil {
-		fmt.Printf("this is expected error since we are using async mode and response is not ready yet: %v", err)
+		log.Fatalf("this is expected error since we are using async mode and response is not ready yet: %v", err)
+		return
 	}
 	if info.Version != "" {
-		fmt.Printf("Expected empty version if async request is in progress, got %s", info.Version)
+		log.Printf("Expected empty version if async request is in progress, got %s", info.Version)
 	}
 
 	// Fetch an async job id from the error
 	id, isAsyncId := connection.IsAsyncJobInProgress(err)
 	if !isAsyncId {
-		fmt.Printf("Expected async job id, got %v", id)
+		log.Fatalf("Expected async job id, got %v", id)
 	}
 
 	// Wait for an async result
