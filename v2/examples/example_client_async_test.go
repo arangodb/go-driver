@@ -52,15 +52,13 @@ func Main() {
 	versionInfo, err := client.Version(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to get version info: %v", err)
-	} else {
-		log.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 	}
+	log.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 
 	// Trigger async request
 	info, err := client.Version(connection.WithAsync(context.Background()))
 	if err != nil {
-		log.Fatalf("this is expected error since we are using async mode and response is not ready yet: %v", err)
-		return
+		log.Printf("this is expected error since we are using async mode and response is not ready yet: %v", err)
 	}
 	if info.Version != "" {
 		log.Printf("Expected empty version if async request is in progress, got %s", info.Version)
@@ -89,4 +87,5 @@ func Main() {
 	if err != nil {
 		log.Fatalf("Failed to fetch async job result: %v", err)
 	}
+	log.Printf("Async job result: %s", info.Version)
 }

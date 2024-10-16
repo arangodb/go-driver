@@ -47,7 +47,6 @@ func ExampleNewClient() {
 	versionInfo, err := client.Version(context.Background())
 	if err != nil {
 		log.Printf("Failed to get version info: %v", err)
-	} else {
-		log.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 	}
+	log.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 }
