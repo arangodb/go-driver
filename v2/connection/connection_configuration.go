@@ -21,6 +21,7 @@
 package connection
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 	"net/http"
@@ -102,6 +103,11 @@ func WithHTTP2InsecureSkipVerify(in *http2.Transport) {
 	}
 	in.TLSClientConfig.InsecureSkipVerify = true
 	in.AllowHTTP = true
+
+	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+		// Use net.Dial for plain TCP connection (h2c)
+		return net.DialTimeout(network, addr, 30*time.Second)
+	}
 }
 
 func DefaultHTTPTransportSettings(in *http.Transport) {
