@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,12 +35,12 @@ import (
 // - all requests to _db/<db-name-2> will use endpoint 2
 func ExampleNewMaglevHashEndpoints() {
 	// Create an HTTP connection to the database
-	endpoints, err := connection.NewMaglevHashEndpoints(
+	endpoint, err := connection.NewMaglevHashEndpoints(
 		[]string{"https://a:8529", "https://a:8539", "https://b:8529"},
 		connection.RequestDBNameValueExtractor,
 	)
 
-	conn := connection.NewHttpConnection(exampleJSONHTTPConnectionConfig(endpoints))
+	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
 
 	// Create a client
 	client := arangodb.NewClient(conn)

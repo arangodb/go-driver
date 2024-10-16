@@ -35,7 +35,7 @@ import (
 func ExampleNewConnectionAsyncWrapper() {
 	// Create an HTTP connection to the database
 	endpoint := connection.NewRoundRobinEndpoints([]string{"http://localhost:8529"})
-	conn := connection.NewHttpConnection(exampleJSONHTTPConnectionConfig(endpoint))
+	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
 
 	// Create ASYNC wrapper for the connection
 	conn = connection.NewConnectionAsyncWrapper(conn)
