@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package examples
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/connection"
@@ -35,12 +35,19 @@ import (
 // - all requests to _db/<db-name-2> will use endpoint 2
 func ExampleNewMaglevHashEndpoints() {
 	// Create an HTTP connection to the database
-	endpoints, err := connection.NewMaglevHashEndpoints(
+	endpoint, err := connection.NewMaglevHashEndpoints(
 		[]string{"https://a:8529", "https://a:8539", "https://b:8529"},
 		connection.RequestDBNameValueExtractor,
 	)
 
-	conn := connection.NewHttpConnection(exampleJSONHTTPConnectionConfig(endpoints))
+	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
+
+	// Add authentication
+	auth := connection.NewBasicAuth("root", "")
+	err = conn.SetAuthentication(auth)
+	if err != nil {
+		log.Fatalf("Failed to set authentication: %v", err)
+	}
 
 	// Create a client
 	client := arangodb.NewClient(conn)
@@ -48,8 +55,7 @@ func ExampleNewMaglevHashEndpoints() {
 	// Ask the version of the server
 	versionInfo, err := client.Version(context.Background())
 	if err != nil {
-		fmt.Printf("Failed to get version info: %v", err)
-	} else {
-		fmt.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
+		log.Printf("Failed to get version info: %v", err)
 	}
+	log.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 }
