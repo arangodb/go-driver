@@ -3,6 +3,7 @@
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Expose `NewType` method
 - Connection configuration helper
+- Tutorial for v2
 
 ## [2.1.1](https://github.com/arangodb/go-driver/tree/v2.1.1) (2024-09-27)
 - Improve backup tests stability
