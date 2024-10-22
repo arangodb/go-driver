@@ -639,15 +639,13 @@ You can specify a TLS configuration when creating a connection configuration.
 ```go
 import (
     /*...*/
-    "crypto/tls"
+  "github.com/arangodb/go-driver/v2/connection"
 )
 
 /*...*/
 
-conn, err := http.NewConnection(http.ConnectionConfig{
-    Endpoints: []string{"https://localhost:8529"},
-    TLSConfig: &tls.Config{ /*...*/ },
-})
+endpoint := connection.NewRoundRobinEndpoints([]string{"https://localhost:8529"})
+conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, false))
 ```
 
 If you want to connect to a server that has a secure endpoint using a
