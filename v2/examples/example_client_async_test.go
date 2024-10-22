@@ -56,16 +56,16 @@ func Main() {
 	log.Printf("Database has version '%s' and license '%s'\n", versionInfo.Version, versionInfo.License)
 
 	// Trigger async request
-	info, err := client.Version(connection.WithAsync(context.Background()))
-	if err != nil {
-		log.Printf("this is expected error since we are using async mode and response is not ready yet: %v", err)
+	info, errWithJobID := client.Version(connection.WithAsync(context.Background()))
+	if errWithJobID == nil {
+		log.Fatalf("err should not be nil. It should be an async job id")
 	}
 	if info.Version != "" {
 		log.Printf("Expected empty version if async request is in progress, got %s", info.Version)
 	}
 
 	// Fetch an async job id from the error
-	id, isAsyncId := connection.IsAsyncJobInProgress(err)
+	id, isAsyncId := connection.IsAsyncJobInProgress(errWithJobID)
 	if !isAsyncId {
 		log.Fatalf("Expected async job id, got %v", id)
 	}
