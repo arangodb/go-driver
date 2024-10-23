@@ -1,4 +1,4 @@
-# Tutorial for the Go driver version 1
+# Tutorial for the Go driver version 2
 
 ## Install the driver
 
@@ -39,7 +39,7 @@ import (
 /*...*/
 
 endpoint := connection.NewRoundRobinEndpoints([]string{"http://localhost:8529"})
-conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
+conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, /*InsecureSkipVerify*/ false))
 
 // Add authentication
 auth := connection.NewBasicAuth("root", "")
@@ -59,8 +59,8 @@ and write data.
 
 ### Asynchronous client
 
-The driver supports an asynchronous client that can be used to run multiple operations concurrently.
-
+The driver supports an asynchronous client that can be used to run multiple
+operations concurrently.
 
 ```go
 import (
@@ -75,9 +75,9 @@ import (
 
 // Create an HTTP connection to the database
 endpoint := connection.NewRoundRobinEndpoints([]string{"http://localhost:8529"})
-conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
+conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, false))
 
-auth := connection.NewBasicAuth("root", "")
+auth := connection.NewBasicAuth("root", "password")
 err := conn.SetAuthentication(auth)
 if err != nil {
     log.Fatalf("Failed to set authentication: %v", err)
@@ -92,7 +92,7 @@ client := arangodb.NewClient(conn)
 // Trigger async request
 info, errWithJobID := client.Version(connection.WithAsync(context.Background()))
 if errWithJobID == nil {
-    log.Fatalf("err should not be nil. It should be an async job id")
+    log.Fatalf("Error object should not be nil but be an async job id")
 }
 if info.Version != "" {
     log.Printf("Expected empty version if async request is in progress, got %s", info.Version)
@@ -136,7 +136,7 @@ Key types you need to know about to work with ArangoDB using the Go driver:
 These are declared as in the following examples:
 
 ```go
-var err error
+var err    error
 var client arangodb.Client
 var conn   connection.Connection
 var db     arangodb.Database
@@ -148,11 +148,11 @@ database and create a new document in that collection.
 
 ```go
 // Setup a client connection
-endpoint := connection.NewRoundRobinEndpoints([]string{"https://5a812333269f.arangodb.cloud:8529/"})
+endpoint := connection.NewRoundRobinEndpoints([]string{"https://abcdef123456.arangodb.cloud:8529/"})
 conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, false))
 
 // Add authentication
-auth := connection.NewBasicAuth("root", "wnbGnPpCXHwbP")
+auth := connection.NewBasicAuth("root", "password")
 err := conn.SetAuthentication(auth)
 if err != nil {
     log.Fatalf("Failed to set authentication: %v", err)
@@ -161,19 +161,25 @@ if err != nil {
 // Create a client
 client := arangodb.NewClient(conn)
 
-// Open "examples_books" database
-db, err := client.Database(nil, "examples_books")
+// Open the "mydb" database
+db, err := client.Database(nil, "mydb")
 if err != nil {
     // Handle error
 }
 
-// Open "books" collection
-col, err := db.Collection(nil, "books")
+// Open the "coll" collection
+col, err := db.Collection(nil, "coll")
 if err != nil {
     // Handle error
 }
 
-// Create document
+// Define a structure for (de)serializing documents
+type Book struct {
+  Title   string `json:"title"`
+  NoPages int    `json:"number_pages,omitempty"`
+}
+
+// Create a document
 book := Book{
     Title:   "ArangoDB Cookbook",
     NoPages: 257,
@@ -206,19 +212,19 @@ type IntKeyValue struct {
 
 // A typical vertex type must have field matching _key
 type MyVertexNode struct {
-    Key     string    `json:"_key"` // mandatory field (handle) - short name
+    Key     string   `json:"_key"` // mandatory field (handle) - short name
     // other fields … e.g.
-    Data    string `json: "data"`   // Longer description or bulk string data
-    Weight float64 `json:"weight"`  // importance rank
+    Data    string   `json: "data"`   // Longer description or bulk string data
+    Weight  float64  `json:"weight"`  // importance rank
 }
 
 // A typical edge type must have fields matching _from and _to
 type MyEdgeLink struct {
-    Key       string `json:"_key"`  // mandatory field (handle)
-    From      string `json:"_from"` // mandatory field
-    To        string `json:"_to"`   // mandatory field
+    Key     string   `json:"_key"`  // mandatory field (handle)
+    From    string   `json:"_from"` // mandatory field
+    To      string   `json:"_to"`   // mandatory field
     // other fields … e.g.
-    Weight  float64 `json:"weight"`
+    Weight  float64  `json:"weight"`
 }
 ```
 
@@ -634,57 +640,28 @@ timeouts/deadlines, and pass additional options.
 ### Secure connections (TLS)
 
 The driver supports endpoints that use TLS using the `https` URL scheme.
-You can specify a TLS configuration when creating a connection configuration.
-
-```go
-import (
-    /*...*/
-  "github.com/arangodb/go-driver/v2/connection"
-)
-
-/*...*/
-
-endpoint := connection.NewRoundRobinEndpoints([]string{"https://localhost:8529"})
-conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, false))
-```
+Supplying endpoints that start with `https://` instead of `http://` is all you
+need to do to use an encrypted connection.
 
 If you want to connect to a server that has a secure endpoint using a
-self-signed certificate, use `TLSConfig: &tls.Config{InsecureSkipVerify: true},`.
-
-### Connection Pooling
-
-The driver has a built-in connection pooling, and the connection limit
-(`connLimit`) defaults to `32`.
+**self-signed certificate**, you need to skip the certificate verification.
 
 ```go
-conn, err := http.NewConnection(http.ConnectionConfig{
-    Endpoints: []string{"https://localhost:8529"},
-    connLimit: 32,
-})
+endpoint := connection.NewRoundRobinEndpoints([]string{"https://localhost:8529"})
+conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, /*InsecureSkipVerify*/ true))
 ```
-
-Opening and closing connections very frequently can exhaust the number of
-connections allowed by the operating system. TCP connections enter a special
-state `WAIT_TIME` after close and typically remain in this state for two minutes
-(maximum segment life \* 2). These connections count towards the global limit,
-which depends on the operating system but is usually around 28,000. Connections
-should thus be reused as much as possible.
-
-You may run into this problem if you bypass the driver's safeguards by setting a
-very high connection limit or by using multiple connection objects and thus pools.
 
 ### Endpoints management
 
 The driver supports multiple endpoints to connect to.
-Currently Maglev and RoundRobin approaches are supported.
+Currently, Maglev and RoundRobin approaches are supported.
 
-The following example shows how to connect to a cluster of three servers using RoundRobin:
+The following example shows how to connect to a cluster of three servers
+using RoundRobin:
 
 ```go
 endpoint := connection.NewRoundRobinEndpoints([]string{"http://server1:8529", "http://server2:8529", "http://server3:8529"})
-conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
-client := arangodb.NewClient(conn)
-
+conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, false))
 ```
 
 Note that a valid endpoint is a URL to either a standalone server or a URL to a
