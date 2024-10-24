@@ -4,6 +4,9 @@ The implementation of the v2 driver makes use of runtime JSON serialization,
 reducing memory and CPU usage. The combination of JSON serialization and HTTP/2
 support makes the driver more efficient and faster.
 
+To get started, see the
+[Tutorial](https://docs.arangodb.com/stable/develop/drivers/go/).
+
 ## Deprecation Notice
 
 From ArangoDB v3.12 onward, the VelocyStream (VST) protocol is not supported
