@@ -46,22 +46,32 @@ type DatabaseQuery interface {
 }
 
 type QuerySubOptions struct {
-	// ShardId query option
-	ShardIds []string `json:"shardIds,omitempty"`
+	// If you set this option to true and execute the query against a cluster deployment, then the Coordinator is
+	// allowed to read from any shard replica and not only from the leader.
+	// You may observe data inconsistencies (dirty reads) when reading from followers, namely obsolete revisions of
+	// documents because changes have not yet been replicated to the follower, as well as changes to documents before
+	// they are officially committed on the leader.
+	//
+	//This feature is only available in the Enterprise Edition.
+	AllowDirtyReads bool `json:"allowDirtyReads,omitempty"`
 
-	// Profile If set to 1, then the additional query profiling information is returned in the profile sub-attribute
-	// of the extra return attribute, unless the query result is served from the query cache.
-	// If set to 2, the query includes execution stats per query plan node in stats.nodes
-	// sub-attribute of the extra return attribute.
-	// Additionally, the query plan is returned in the extra.plan sub-attribute.
-	Profile uint `json:"profile,omitempty"`
+	// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
+	// that batch reads can be retried in the case of a communication error.
+	AllowRetry bool `json:"allowRetry,omitempty"`
 
-	// Optimizer contains options related to the query optimizer.
-	Optimizer QuerySubOptionsOptimizer `json:"optimizer,omitempty"`
+	// When set to true, the query will throw an exception and abort instead of producing a warning.
+	// This option should be used during development to catch potential issues early.
+	// When the attribute is set to false, warnings will not be propagated to exceptions and will be returned
+	// with the query result. There is also a server configuration option --query.fail-on-warning for setting
+	// the default value for failOnWarning so it does not need to be set on a per-query level.
+	FailOnWarning *bool `json:"failOnWarning,omitempty"`
 
-	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
-	// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
-	SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
+	// If set to true or not specified, this will make the query store the data it reads via the RocksDB storage engine
+	// in the RocksDB block cache. This is usually the desired behavior. The option can be set to false for queries that
+	// are known to either read a lot of data which would thrash the block cache, or for queries that read data which
+	// are known to be outside of the hot set. By setting the option to false, data read by the query will not make it
+	// into the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
+	FillBlockCache bool `json:"fillBlockCache,omitempty"`
 
 	// if set to true and the query contains a LIMIT clause, then the result will have an extra attribute with the sub-attributes
 	// stats and fullCount, { ... , "extra": { "stats": { "fullCount": 123 } } }. The fullCount attribute will contain the number
@@ -72,8 +82,88 @@ type QuerySubOptions struct {
 	// and the LIMIT clause is actually used in the query.
 	FullCount bool `json:"fullCount,omitempty"`
 
+	// The maximum number of operations after which an intermediate commit is performed automatically.
+	IntermediateCommitCount *int `json:"intermediateCommitCount,omitempty"`
+
+	// The maximum total size of operations after which an intermediate commit is performed automatically.
+	IntermediateCommitSize *int `json:"intermediateCommitSize,omitempty"`
+
+	// A threshold for the maximum number of OR sub-nodes in the internal representation of an AQL FILTER condition.
+	// Yon can use this option to limit the computation time and memory usage when converting complex AQL FILTER
+	// conditions into the internal DNF (disjunctive normal form) format. FILTER conditions with a lot of logical
+	// branches (AND, OR, NOT) can take a large amount of processing time and memory. This query option limits
+	// the computation time and memory usage for such conditions.
+	//
+	// Once the threshold value is reached during the DNF conversion of a FILTER condition, the conversion is aborted,
+	// and the query continues with a simplified internal representation of the condition,
+	// which cannot be used for index lookups.
+	//
+	// You can set the threshold globally instead of per query with the --query.max-dnf-condition-members startup option.
+	MaxDNFConditionMembers *int `json:"maxDNFConditionMembers,omitempty"`
+
+	// The number of execution nodes in the query plan after that stack splitting is performed to avoid a potential
+	// stack overflow. Defaults to the configured value of the startup option `--query.max-nodes-per-callstack`.
+	// This option is only useful for testing and debugging and normally does not need any adjustment.
+	MaxNodesPerCallstack *int `json:"maxNodesPerCallstack,omitempty"`
+
 	// Limits the maximum number of plans that are created by the AQL query optimizer.
-	MaxPlans int `json:"maxPlans,omitempty"`
+	MaxNumberOfPlans *int `json:"maxNumberOfPlans,omitempty"`
+
+	// MaxRuntime specify the timeout which can be used to kill a query on the server after the specified
+	// amount in time. The timeout value is specified in seconds. A value of 0 means no timeout will be enforced.
+	MaxRuntime float64 `json:"maxRuntime,omitempty"`
+
+	// The transaction size limit in bytes.
+	MaxTransactionSize *int `json:"maxTransactionSize,omitempty"`
+
+	// Limits the maximum number of warnings a query will return. The number of warnings a query will return is limited
+	// to 10 by default, but that number can be increased or decreased by setting this attribute.
+	MaxWarningCount *int `json:"maxWarningCount,omitempty"`
+
+	// Optimizer contains options related to the query optimizer.
+	Optimizer QuerySubOptionsOptimizer `json:"optimizer,omitempty"`
+
+	// Profile If set to 1, then the additional query profiling information is returned in the profile sub-attribute
+	// of the extra return attribute, unless the query result is served from the query cache.
+	// If set to 2, the query includes execution stats per query plan node in stats.nodes
+	// sub-attribute of the extra return attribute.
+	// Additionally, the query plan is returned in the extra.plan sub-attribute.
+	Profile uint `json:"profile,omitempty"`
+
+	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
+	// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
+	SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
+
+	// Let AQL queries (especially graph traversals) treat collection to which a user has no access rights for as if
+	// these collections are empty. Instead of returning a forbidden access error, your queries execute normally.
+	// This is intended to help with certain use-cases: A graph contains several collections and different users
+	// execute AQL queries on that graph. You can naturally limit the accessible results by changing the access rights
+	// of users on collections.
+	//
+	// This feature is only available in the Enterprise Edition.
+	SkipInaccessibleCollections *bool `json:"skipInaccessibleCollections,omitempty"`
+
+	// This option allows queries to store intermediate and final results temporarily on disk if the amount of memory
+	// used (in bytes) exceeds the specified value. This is used for decreasing the memory usage during the query execution.
+	//
+	// This option only has an effect on queries that use the SORT operation but without a LIMIT, and if you enable
+	//the spillover feature by setting a path for the directory to store the temporary data in with
+	// the --temp.intermediate-results-path startup option.
+	//
+	// Default value: 128MB.
+	SpillOverThresholdMemoryUsage *int `json:"spillOverThresholdMemoryUsage,omitempty"`
+
+	// This option allows queries to store intermediate and final results temporarily on disk if the number of rows
+	// produced by the query exceeds the specified value. This is used for decreasing the memory usage during the query
+	// execution. In a query that iterates over a collection that contains documents, each row is a document, and in
+	// a query that iterates over temporary values (i.e. FOR i IN 1..100), each row is one of such temporary values.
+	//
+	// This option only has an effect on queries that use the SORT operation but without a LIMIT, and if you enable
+	// the spillover feature by setting a path for the directory to store the temporary data in with
+	// the --temp.intermediate-results-path startup option.
+	//
+	// Default value: 5000000 rows.
+	SpillOverThresholdNumRows *int `json:"spillOverThresholdNumRows,omitempty"`
 
 	// Specify true and the query will be executed in a streaming fashion. The query result is not stored on
 	// the server, but calculated on the fly. Beware: long-running queries will need to hold the collection
@@ -81,19 +171,17 @@ type QuerySubOptions struct {
 	// its entirety.
 	Stream bool `json:"stream,omitempty"`
 
-	// MaxRuntime specify the timeout which can be used to kill a query on the server after the specified
-	// amount in time. The timeout value is specified in seconds. A value of 0 means no timeout will be enforced.
-	MaxRuntime float64 `json:"maxRuntime,omitempty"`
+	/* Not officially documented options, please use them with care. */
 
-	// FillBlockCache if is set to true or not specified, this will make the query store the data it reads via the RocksDB storage engine in the RocksDB block cache.
-	// This is usually the desired behavior. The option can be set to false for queries that are known to either read a lot of data which would thrash the block cache,
-	// or for queries that read data which are known to be outside of the hot set. By setting the option to false, data read by the query will not make it into
-	// the RocksDB block cache if not already in there, thus leaving more room for the actual hot set.
-	FillBlockCache bool `json:"fillBlockCache,omitempty"`
+	// [unofficial] Limits the maximum number of plans that are created by the AQL query optimizer.
+	MaxPlans int `json:"maxPlans,omitempty"`
 
-	// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
-	// that batch reads can be retried in the case of a communication error.
-	AllowRetry bool `json:"allowRetry,omitempty"`
+	// [unofficial] ShardId query option
+	ShardIds []string `json:"shardIds,omitempty"`
+
+	// [unofficial] This query option can be used in complex queries in case the query optimizer cannot
+	// automatically detect that the query can be limited to only a single server (e.g. in a disjoint smart graph case).
+	ForceOneShardAttributeValue *string `json:"forceOneShardAttributeValue,omitempty"`
 }
 
 type QueryOptions struct {

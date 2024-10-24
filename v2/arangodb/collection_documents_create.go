@@ -163,6 +163,10 @@ type CollectionDocumentCreateOptions struct {
 	//
 	// Only applicable if `Overwrite` is set to `true` or `OverwriteMode` is set to `update` or `replace`.
 	VersionAttribute string
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) error {
@@ -216,6 +220,10 @@ func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) er
 
 	if c.VersionAttribute != "" {
 		r.AddQuery(QueryVersionAttribute, c.VersionAttribute)
+	}
+
+	if c.TransactionID != "" {
+		r.AddHeader(HeaderTransaction, c.TransactionID)
 	}
 
 	return nil
