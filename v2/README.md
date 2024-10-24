@@ -5,7 +5,7 @@ reducing memory and CPU usage. The combination of JSON serialization and HTTP/2
 support makes the driver more efficient and faster.
 
 To get started, see the
-[Tutorial](https://docs.arangodb.com/stable/develop/drivers/go/#tutorial).
+[Tutorial](https://docs.arangodb.com/stable/develop/drivers/go/).
 
 ## Deprecation Notice
 
