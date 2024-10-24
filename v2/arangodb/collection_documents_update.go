@@ -111,6 +111,10 @@ type CollectionDocumentUpdateOptions struct {
 	// Specify any top-level attribute to compare whether the version number is higher
 	// than the currently stored one when updating or replacing documents.
 	VersionAttribute string
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 func (c *CollectionDocumentUpdateOptions) modifyRequest(r connection.Request) error {
@@ -156,6 +160,9 @@ func (c *CollectionDocumentUpdateOptions) modifyRequest(r connection.Request) er
 
 	if c.VersionAttribute != "" {
 		r.AddQuery(QueryVersionAttribute, c.VersionAttribute)
+	}
+	if c.TransactionID != "" {
+		r.AddHeader(HeaderTransaction, c.TransactionID)
 	}
 
 	return nil
