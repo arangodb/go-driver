@@ -87,6 +87,10 @@ type CollectionDocumentDeleteOptions struct {
 
 	// RefillIndexCaches if set to true then refills the in-memory index caches.
 	RefillIndexCaches *bool
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
 }
 
 func (c *CollectionDocumentDeleteOptions) modifyRequest(r connection.Request) error {
@@ -118,5 +122,8 @@ func (c *CollectionDocumentDeleteOptions) modifyRequest(r connection.Request) er
 		r.AddQuery(QueryRefillIndexCaches, boolToString(*c.RefillIndexCaches))
 	}
 
+	if c.TransactionID != "" {
+		r.AddHeader(HeaderTransaction, c.TransactionID)
+	}
 	return nil
 }
