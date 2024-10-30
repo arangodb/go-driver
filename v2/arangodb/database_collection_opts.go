@@ -149,6 +149,7 @@ type CollectionKeyOptions struct {
 	// If set to true, then it is allowed to supply own key values in the _key attribute of a document.
 	// If set to false, then the key generator will solely be responsible for generating keys and supplying own
 	// key values in the _key attribute of documents is considered an error.
+	//
 	// Deprecated: Use AllowUserKeysPtr instead
 	AllowUserKeys bool `json:"-"`
 	// If set to true, then it is allowed to supply own key values in the _key attribute of a document.

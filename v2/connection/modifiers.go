@@ -51,6 +51,7 @@ func WithQuery(s, value string) RequestModifier {
 }
 
 // applyGlobalSettings applies the settings configured in the context to the given request.
+//
 // Deprecated: use applyArangoDBConfiguration instead
 func applyGlobalSettings(ctx context.Context) RequestModifier {
 	return func(r Request) error {

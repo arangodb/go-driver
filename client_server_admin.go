@@ -56,6 +56,7 @@ type ClientServerAdmin interface {
 	MetricsForSingleServer(ctx context.Context, serverID string) ([]byte, error)
 
 	// Deprecated: Use Metrics instead.
+	//
 	// Statistics queries statistics from a specific server
 	Statistics(ctx context.Context) (ServerStatistics, error)
 

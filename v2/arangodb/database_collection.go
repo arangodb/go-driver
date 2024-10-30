@@ -27,7 +27,8 @@ import (
 type DatabaseCollection interface {
 	// Collection opens a connection to an existing collection within the database.
 	// If no collection with given name exists, an NotFoundError is returned.
-	// deprecated: use GetCollection instead
+	//
+	// Deprecated: use GetCollection instead
 	Collection(ctx context.Context, name string) (Collection, error)
 
 	// GetCollection opens a connection to an existing collection within the database.

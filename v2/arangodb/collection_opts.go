@@ -131,10 +131,12 @@ type CollectionProperties struct {
 	// For example, 64 might be a sensible value for a collection with 100 000 000 documents.
 	// Currently, only the edge index respects this value, but other index types might follow in future ArangoDB versions.
 	// Changes are applied when the collection is loaded the next time.
+	//
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IndexBuckets int `json:"indexBuckets,omitempty"`
 
 	// DoCompact specifies whether or not the collection will be compacted.
+	//
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	DoCompact bool `json:"doCompact,omitempty"`
 
@@ -147,6 +149,7 @@ type CollectionProperties struct {
 	// than regular collections because ArangoDB does not enforce any synchronization to disk and does not calculate any
 	// CRC checksums for datafiles (as there are no datafiles). This option should therefore be used for cache-type collections only,
 	// and not for data that cannot be re-created otherwise. (The default is false)
+	//
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IsVolatile bool `json:"isVolatile,omitempty"`
 

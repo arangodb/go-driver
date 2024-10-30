@@ -26,6 +26,7 @@ import (
 )
 
 // Deprecated: use NewRoundRobinEndpoints
+//
 // NewEndpoints returns Endpoint manager which runs round-robin
 func NewEndpoints(e ...string) Endpoint {
 	return NewRoundRobinEndpoints(e)

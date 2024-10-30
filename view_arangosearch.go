@@ -423,7 +423,7 @@ type ArangoSearchPrimarySortEntry struct {
 	Field     string `json:"field,omitempty"`
 	Ascending *bool  `json:"asc,omitempty"`
 
-	// deprecated, please use Ascending instead
+	// Deprecated: please use Ascending instead
 	Direction *ArangoSearchSortDirection `json:"direction,omitempty"`
 }
 

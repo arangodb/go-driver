@@ -29,8 +29,8 @@ type IndexType string
 const (
 	PrimaryIndex     = IndexType("primary")
 	FullTextIndex    = IndexType("fulltext") // Deprecated: since 3.10 version. Use ArangoSearch view instead.
-	HashIndex        = IndexType("hash")     // Deprecated use PersistentIndexType instead
-	SkipListIndex    = IndexType("skiplist") // Deprecated use PersistentIndexType instead
+	HashIndex        = IndexType("hash")     // Deprecated: use PersistentIndexType instead
+	SkipListIndex    = IndexType("skiplist") // Deprecated: use PersistentIndexType instead
 	PersistentIndex  = IndexType("persistent")
 	GeoIndex         = IndexType("geo")
 	EdgeIndex        = IndexType("edge")
