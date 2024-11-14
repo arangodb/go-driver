@@ -50,42 +50,6 @@ func WithQuery(s, value string) RequestModifier {
 	}
 }
 
-// applyGlobalSettings applies the settings configured in the context to the given request.
-// Deprecated: use applyArangoDBConfiguration instead
-func applyGlobalSettings(ctx context.Context) RequestModifier {
-	return func(r Request) error {
-
-		// Set version header
-		val := fmt.Sprintf("go-driver-v2/%s", version.DriverVersion())
-		if ctx != nil {
-			if v := ctx.Value(keyDriverFlags); v != nil {
-				if flags, ok := v.([]string); ok {
-					val = fmt.Sprintf("%s (%s)", val, strings.Join(flags, ","))
-				}
-			}
-		}
-		r.AddHeader("x-arango-driver", val)
-
-		// Enable Queue timeout
-		if ctx != nil {
-			if v := ctx.Value(keyUseQueueTimeout); v != nil {
-				if useQueueTimeout, ok := v.(bool); ok && useQueueTimeout {
-					if v := ctx.Value(keyMaxQueueTime); v != nil {
-						if timeout, ok := v.(time.Duration); ok {
-							r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
-						}
-					} else if deadline, ok := ctx.Deadline(); ok {
-						timeout := deadline.Sub(time.Now())
-						r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
-					}
-				}
-			}
-		}
-
-		return nil
-	}
-}
-
 func applyArangoDBConfiguration(config ArangoDBConfiguration, ctx context.Context) RequestModifier {
 	return func(r Request) error {
 		// Set version header
