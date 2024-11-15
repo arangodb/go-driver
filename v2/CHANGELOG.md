@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [2.1.2](https://github.com/arangodb/go-driver/tree/v2.1.2) (2024-11-15)
 - Expose `NewType` method
 - Connection configuration helper
 - Adjust Cursor options
