@@ -122,15 +122,16 @@ func (d databaseCollection) CreateCollectionWithOptions(ctx context.Context, nam
 
 	urlEndpoint := d.db.url("_api", "collection")
 	reqData := struct {
-		shared.ResponseStruct `json:",inline"`
-		Name                  string `json:"name"`
+		Name string `json:"name"`
 		*CreateCollectionProperties
 	}{
 		Name:                       name,
 		CreateCollectionProperties: props,
 	}
 
-	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, nil, &reqData, append(d.db.modifiers, options.modifyRequest)...)
+	var respData shared.ResponseStruct
+
+	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, &respData, &reqData, append(d.db.modifiers, options.modifyRequest)...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -139,6 +140,6 @@ func (d databaseCollection) CreateCollectionWithOptions(ctx context.Context, nam
 	case http.StatusOK:
 		return newCollection(d.db, name), nil
 	default:
-		return nil, reqData.AsArangoErrorWithCode(code)
+		return nil, respData.AsArangoErrorWithCode(code)
 	}
 }
