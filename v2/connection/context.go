@@ -22,16 +22,11 @@ package connection
 
 import (
 	"context"
-	"time"
 )
 
 type ContextKey string
 
 const (
-	keyUseQueueTimeout ContextKey = "arangodb-use-queue-timeout"
-	keyMaxQueueTime    ContextKey = "arangodb-max-queue-time-seconds"
-	keyDriverFlags     ContextKey = "arangodb-driver-flags"
-
 	keyAsyncRequest ContextKey = "arangodb-async-request"
 	keyAsyncID      ContextKey = "arangodb-async-id"
 )
@@ -43,28 +38,6 @@ func contextOrBackground(ctx context.Context) context.Context {
 		return ctx
 	}
 	return context.Background()
-}
-
-// WithArangoQueueTimeout is used to enable Queue timeout on the server side.
-// If WithArangoQueueTime is used, then its value takes precedence in other case value of ctx.Deadline will be taken
-//
-// Deprecated: use ArangoDBConfiguration.ArangoQueueTimeoutEnabled
-func WithArangoQueueTimeout(parent context.Context, useQueueTimeout bool) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyUseQueueTimeout, useQueueTimeout)
-}
-
-// WithArangoQueueTime defines max queue timeout on the server side.
-//
-// Deprecated: use ArangoDBConfiguration.ArangoQueueTimeoutSec
-func WithArangoQueueTime(parent context.Context, duration time.Duration) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyMaxQueueTime, duration)
-}
-
-// WithDriverFlags is used to configure additional flags for the `x-arango-driver` header.
-//
-// Deprecated: use ArangoDBConfiguration.DriverFlags
-func WithDriverFlags(parent context.Context, value []string) context.Context {
-	return context.WithValue(contextOrBackground(parent), keyDriverFlags, value)
 }
 
 // WithAsync is used to configure a context to make an async operation - requires Connection with Async wrapper!

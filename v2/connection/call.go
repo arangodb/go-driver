@@ -39,7 +39,6 @@ func CallWithChecks(ctx context.Context, c Connection, method, url string, outpu
 		return nil, err
 	}
 
-	modifiers = append(modifiers, applyGlobalSettings(ctx))
 	modifiers = append(modifiers, applyArangoDBConfiguration(c.GetConfiguration(), ctx))
 
 	for _, modifier := range modifiers {
@@ -60,7 +59,6 @@ func CallStream(ctx context.Context, c Connection, method, url string, modifiers
 		return nil, nil, err
 	}
 
-	modifiers = append(modifiers, applyGlobalSettings(ctx))
 	modifiers = append(modifiers, applyArangoDBConfiguration(c.GetConfiguration(), ctx))
 
 	for _, modifier := range modifiers {

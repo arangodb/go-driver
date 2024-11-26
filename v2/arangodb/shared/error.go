@@ -82,6 +82,11 @@ func (ae ArangoError) Error() string {
 	return fmt.Sprintf("ArangoError: Code %d, ErrorNum %d", ae.Code, ae.ErrorNum)
 }
 
+// FullError returns the full error message of an ArangoError.
+func (ae ArangoError) FullError() string {
+	return fmt.Sprintf("ArangoError: Code %d, ErrorNum %d: %s", ae.Code, ae.ErrorNum, ae.ErrorMessage)
+}
+
 // Timeout returns true when the given error is a timeout error.
 func (ae ArangoError) Timeout() bool {
 	return ae.HasError && (ae.Code == http.StatusRequestTimeout || ae.Code == http.StatusGatewayTimeout)
