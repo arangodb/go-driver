@@ -59,10 +59,12 @@ type CollectionIndexes interface {
 	// fields The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	EnsureTTLIndex(ctx context.Context, fields []string, expireAfter int, options *CreateTTLIndexOptions) (IndexResponse, bool, error)
 
-	// EnsureZKDIndex @Deprecated since 3.12 version, use EnsureMKDIndex instead.
+	// Deprecated: since 3.12 version, use EnsureMKDIndex instead.
+	//
 	// The previously experimental `zkd` index is now stable and has been renamed to `mdi`.
 	// Existing indexes keep the `zkd` type. The HTTP API still allows the old name to create new indexes that behave
 	// exactly like `mdi` indexes but this is discouraged. The `zkd` alias may get removed in a future version.
+	//
 	// Deprecated: since 3.12 version use EnsureMKDIndex instead.
 	EnsureZKDIndex(ctx context.Context, fields []string, options *CreateZKDIndexOptions) (IndexResponse, bool, error)
 
@@ -115,6 +117,7 @@ const (
 
 	// ZKDIndexType == multi-dimensional index. The zkd index type is an experimental index for indexing two- or higher dimensional data such as time ranges,
 	// for efficient intersection of multiple range queries.
+	//
 	// Deprecated: since 3.12 version use MDIIndexType instead.
 	ZKDIndexType = IndexType("zkd")
 
@@ -132,20 +135,23 @@ const (
 	InvertedIndexType = IndexType("inverted")
 
 	// FullTextIndex
-	// @Deprecated: since 3.10 version. Use ArangoSearch view instead.
 	// It is ued just for the read compatibility with older versions.
+	//
+	// Deprecated: since 3.10 version. Use ArangoSearch view instead.
 	FullTextIndex = IndexType("fulltext")
 
 	// HashIndex are an aliases for the persistent index type and should no longer be used to create new indexes.
 	// The aliases will be removed in a future version.
 	// It is ued just for the read compatibility with older versions.
-	// @Deprecated use PersistentIndexType instead
+	//
+	// Deprecated: use PersistentIndexType instead
 	HashIndex = IndexType("hash")
 
 	// SkipListIndex are an aliases for the persistent index type and should no longer be used to create new indexes.
 	// The aliases will be removed in a future version.
 	// It is ued just for the read compatibility with older versions.
-	// @Deprecated use PersistentIndexType instead
+	//
+	// Deprecated: use PersistentIndexType instead
 	SkipListIndex = IndexType("skiplist")
 )
 
@@ -297,10 +303,10 @@ type CreateTTLIndexOptions struct {
 	InBackground *bool `json:"inBackground,omitempty"`
 }
 
-// ZKDFieldType @Deprecated use MDIFieldType instead
+// Deprecated: use MDIFieldType instead
 type ZKDFieldType string
 
-// ZKDDoubleFieldType @Deprecated use MDIDoubleFieldType instead
+// Deprecated: use MDIDoubleFieldType instead
 const ZKDDoubleFieldType ZKDFieldType = "double"
 
 type MDIFieldType string
