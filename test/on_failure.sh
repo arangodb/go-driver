@@ -7,16 +7,37 @@ docker logs ${TESTCONTAINER}-s
 echo -n "\nARANGODB-S-* logs:"
 docker ps -f name=${TESTCONTAINER}-s- --format "{{.ID}} {{.Names}}" | xargs -L1 bash -c 'echo -e "\n\tLogs from $1:"; docker logs $0'
 
-if [ $DUMP_ON_FAILURE -eq 1 ] && [ "${TEST_MODE}" != "single" ]; then
+if [ -n "${DUMP_AGENCY_ON_FAILURE}" ] && [ "${TEST_MODE}" = "cluster" ]; then
     echo "\nAgency dump..."
-    AGENCY_CONTATIONER_NAME='agent'
-    ANY_CONNECTION_HTTPS=$(docker ps -f name=${TESTCONTAINER}-s-${AGENCY_CONTATIONER_NAME}  --format '{{.Names}}'  | head -n 1 | sed -E 's/.*-([a-zA-Z0-9.-]+)-([0-9]+)$/https:\/\/\1:\2/')
-    LEADER_CONNECTION_SSL=$(curl -Lk --no-progress-meter $ANY_CONNECTION_HTTPS/_api/agency/config | jq -r '.configuration.pool[.leaderId]')
-    LEADER_CONNECTION_HTTPS=$(echo $LEADER_CONNECTION_SSL | sed 's/^ssl:\/\//https:\/\//')
-    DUMP_FOLDER_PATH=./arango_data_v$(cat ./v2/version/VERSION)
-    mkdir -p $DUMP_FOLDER_PATH
-    DUMP_FILE_PATH=$DUMP_FOLDER_PATH/FAIL_agency_dump-HTTP_VPACK.json
-    echo $(curl -Lk --no-progress-meter $LEADER_CONNECTION_HTTPS/_api/agency/state) > $DUMP_FILE_PATH
+    
+    if [ "${TEST_SSL}" = "auto" ]; then
+        PROTOCOL='https'
+    else
+        PROTOCOL='http'
+    fi
+
+    if [ "${TEST_AUTH}" = "jwt" ] || [ "${TEST_AUTH}" = "rootpw" ] || [ "${TEST_AUTH}" = "jwtsuper" ]; then
+        JWT_TOKEN=$(bash -c "JWTSECRET=$TEST_JWTSECRET; source ./test/jwt.sh")
+        AUTH="-H 'authorization: bearer $JWT_TOKEN'"
+    else
+        AUTH=""
+    fi
+
+    SED_DOCKER_NAME_TO_ENDPOINT="s/.*-([a-zA-Z0-9.-]+)-([0-9]+)$/${PROTOCOL}:\/\/\1:\2/"
+    ANY_ENDPOINT=$(docker ps -f name=${TESTCONTAINER}-s-agent --format '{{.Names}}'  | head -n 1 | sed -E $SED_DOCKER_NAME_TO_ENDPOINT)
+    echo "Any agent endpoint: $ANY_ENDPOINT"
+
+    # _api/agency/config returns leader endpoint with protocol that is usually not supported by curl 
+    AGENCY_CONFIG=$(bash -c "curl -k --no-progress-meter ${AUTH} ${ANY_ENDPOINT}/_api/agency/config")
+    
+    LEADER_ENDPOINT_WITH_UNSUPPORTED_PROTOCOL=$(echo $AGENCY_CONFIG | jq -r '.configuration.pool[.leaderId]' | cat)
+    SED_UNSUPPORTED_PROTOCOL_ENDPOINT_TO_ENDPOINT="s/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//${PROTOCOL}:\/\//"
+    LEADER_ENDPOINT=$(echo $LEADER_ENDPOINT_WITH_UNSUPPORTED_PROTOCOL | sed $SED_UNSUPPORTED_PROTOCOL_ENDPOINT_TO_ENDPOINT)
+    echo "Leader agent endpoint: $LEADER_ENDPOINT"
+    
+    DUMP_FILE_PATH=$DUMP_AGENCY_ON_FAILURE
+    AGENCY_DUMP=$(bash -c "curl -Lk --no-progress-meter ${AUTH} ${LEADER_ENDPOINT}/_api/agency/state")
+    echo $AGENCY_DUMP > $DUMP_FILE_PATH
     echo "Agency dump created at $(realpath $DUMP_FILE_PATH)"
 fi
 

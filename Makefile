@@ -80,9 +80,26 @@ endif
 
 TEST_NET := --net=host
 
-ifndef DUMP_ON_FAILURE
-	DUMP_ON_FAILURE := 0
+SPACE :=    
+TABV4 := $(SPACE) $(SPACE) $(SPACE) $(SPACE)
+ifdef DUMP_AGENCY_ON_FAILURE
+  	$(info Checking for jq...)
+	CHECK_JQ_INSTALLTION := $(shell jq --version 2>&1 >/dev/null | cat)
+	ifneq ($(CHECK_JQ_INSTALLTION),)
+  		$(info )
+  		$(info Error: 'jq' is not installed. This check happens because DUMP_AGENCY_ON_FAILURE is set, and 'jq' is used during the creation of the agency dump. Verified for version jq==1.6. )
+  		$(info Try installing it with:)
+  		$(info $(TABV4) sudo apt install jq)
+  		$(info )
+  		$(error $(CHECK_JQ_INSTALLTION))
+	endif
 endif
+# Installation of jq is required for processing AGENCY_DUMP
+# ifdef DUMP_AGENCY_ON_FAILURE
+# 	CHECK_JQ_INSTALLTION := $(shell command -v jq >/dev/null 2>&1 || (
+# 		
+# endif
+
 
 # By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
 # e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
@@ -416,7 +433,7 @@ COMMON_DOCKER_CMD_PARAMS = \
 __run_tests: __test_debug__ __test_prepare __test_go_test __test_cleanup
 
 
-ALL_DOCKER_CMD_PARAMS=\
+DOCKER_V1_CMD_PARAMS=\
 	$(COMMON_DOCKER_CMD_PARAMS) \
 	-e TEST_CONNECTION=$(TEST_CONNECTION) \
 	-e TEST_CVERSION=$(TEST_CVERSION) \
@@ -428,29 +445,23 @@ ALL_DOCKER_CMD_PARAMS=\
 	-w /usr/code/
 
 __test_go_test:
-	$(DOCKER_CMD) $(ALL_DOCKER_CMD_PARAMS) $(DOCKER_RUN_CMD) \
+	$(DOCKER_CMD) $(DOCKER_V1_CMD_PARAMS) $(DOCKER_RUN_CMD) \
 	&& echo "success!" \
-	|| ( \
-		$(foreach var,$(sort $(.VARIABLES)),$(eval export $(var)=$($(var)))) \
-		MAJOR_VERSION=1 . ./test/on_failure.sh \
-	)
+	|| ( $(foreach var,$(sort $(.VARIABLES)),$(eval export $(var)=$($(var)))) MAJOR_VERSION=1 . ./test/on_failure.sh)
 
 			
 # Internal test tasks
 __run_v2_tests: __test_v2_debug__ __test_prepare __test_v2_go_test __test_cleanup
 
-ALL_DOCKER_CMD_V2_PARAMS=\
+DOCKER_CMD_V2_PARAMS=\
 	$(COMMON_DOCKER_CMD_PARAMS) \
 	-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
 	-w /usr/code/v2/
 
 __test_v2_go_test:
-	$(DOCKER_CMD) $(ALL_DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) \
+	$(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) \
 	&& echo "success!" \
-	|| ( \
-		$(foreach var,$(sort $(.VARIABLES)),$(eval export $(var)=$($(var)))) \
-		MAJOR_VERSION=2 . ./test/on_failure.sh \
-	)
+	|| ( $(foreach var,$(sort $(.VARIABLES)),$(eval export $(var)=$($(var)))) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
