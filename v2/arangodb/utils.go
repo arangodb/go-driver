@@ -24,11 +24,84 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 )
+
+// AlternativeError informs that at least one of the errors must be resolved before continueing.
+func newAlternativeError(errs ...*error) error {
+	return &AlternativeError{
+		errs: errs,
+	}
+}
+
+type AlternativeError struct {
+	errs []*error
+}
+
+// Error message for AlternativeError
+func (e AlternativeError) Error() string {
+	var errorMessages []string
+	for _, err := range e.errs {
+		errorMessages = append(errorMessages, (*err).Error())
+	}
+	return fmt.Sprintf("One of the following must be correct:\n- %s", strings.Join(errorMessages, "\n- "))
+}
+
+// OrderedMultiUnmarshaller runs all unmarshalers given as the input skipping the UnmarshallerTypeErrors (See GetError)
+func newOrderedMultiUnmarshaller(obj ...json.Unmarshaler) *orderedMultiUnmarshaller {
+	return &orderedMultiUnmarshaller{
+		obj: obj,
+	}
+}
+
+type orderedMultiUnmarshaller struct {
+	obj  []json.Unmarshaler
+	errs []*json.UnmarshalTypeError
+}
+
+var _ json.Unmarshaler = &orderedMultiUnmarshaller{}
+
+func (m *orderedMultiUnmarshaller) UnmarshalJSON(d []byte) error {
+	m.errs = []*json.UnmarshalTypeError{}
+	noneSuccessful := true
+
+	for _, o := range m.obj {
+		switch err := o.UnmarshalJSON(d); err.(type) {
+		case nil:
+			m.errs = append(m.errs, nil)
+			noneSuccessful = false
+		case *json.UnmarshalTypeError:
+			m.errs = append(m.errs, err.(*json.UnmarshalTypeError))
+		default:
+			m.errs = nil
+			return err
+		}
+	}
+	if noneSuccessful {
+		errs := []*error{}
+		for _, e := range m.errs {
+			if e != nil {
+				eAsError := error(e)
+				errs = append(errs, &eAsError)
+			}
+		}
+		return newAlternativeError(errs...)
+	}
+	return nil
+}
+
+// GetError recovers error triggered by the index-th unmarshaller
+func (m *orderedMultiUnmarshaller) GetError(index int) *json.UnmarshalTypeError {
+	if m.errs == nil {
+		return nil
+	}
+	return m.errs[index]
+}
 
 var _ json.Unmarshaler = &multiUnmarshaller{}
 var _ json.Marshaler = &multiUnmarshaller{}

@@ -79,9 +79,8 @@ func (c collectionDocumentRead) ReadDocumentWithOptions(ctx context.Context, key
 		DocumentMeta          `json:",inline"`
 	}
 
-	data := newUnmarshalInto(result)
-
-	resp, err := connection.CallGet(ctx, c.collection.connection(), url, newMultiUnmarshaller(&response, data), c.collection.withModifiers(opts.modifyRequest)...)
+	orderedMultiUnmarshaller := newOrderedMultiUnmarshaller(newUnmarshalInto(&response), newUnmarshalInto(result))
+	resp, err := connection.CallGet(ctx, c.collection.connection(), url, orderedMultiUnmarshaller, c.collection.withModifiers(opts.modifyRequest)...)
 	if err != nil {
 		return DocumentMeta{}, err
 	}
