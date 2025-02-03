@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -63,13 +64,48 @@ func (m multiUnmarshaller) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r)
 }
 
+func isInTags(f string, o interface{}) bool {
+	r := reflect.TypeOf(o)
+	for i := 0; i < r.NumField(); i++ {
+		field := r.Field(i)
+		tag := field.Tag.Get("json")
+
+		if tag == "" {
+			continue
+		}
+		firstTag := strings.Split(tag, ",")[0]
+
+		if firstTag == f {
+			return true
+		}
+	}
+	return false
+}
+
+// func (m multiUnmarshaller) UnmarshalJSON(d []byte) error {
+// 	var mainErr error
+// 	mainInterface := m.obj[0]
+
+// 	for _, o := range m.obj {
+// 		err := json.Unmarshal(d, o)
+// 		if unmarshalErr, ok := err.(*json.UnmarshalTypeError); ok {
+// 			if mainErr == nil
+// 		}
+// 	}
+// 	if mainErr != nil {
+// 		return mainErr
+// 	}
+
+// 	return nil
+// }
+
 func (m multiUnmarshaller) UnmarshalJSON(d []byte) error {
 	for _, o := range m.obj {
-		if err := json.Unmarshal(d, o); err != nil {
+		err := json.Unmarshal(d, o)
+		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
