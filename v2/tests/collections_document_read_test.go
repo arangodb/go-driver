@@ -47,8 +47,8 @@ func Test_CollectionDocumentsReadWithStringErrorCode(t *testing.T) {
 
 					type DocWithCode struct {
 						Name  string `json:"name"`
-						Error string `json:"errore"`
-						Code  string `json:"codee"`
+						Error string `json:"error"`
+						Code  string `json:"code"`
 					}
 					doc_with_code := DocWithCode{
 						Name: "DocWithCode",
@@ -83,105 +83,93 @@ func Test_CollectionDocumentsReadWithStringErrorCode(t *testing.T) {
 
 					_, _, _, _ = meta_with_no_code, meta_with_code, meta_with_code_2, meta_with_responselike
 
-					// t.Run("sanity check, proper doc should have no error", func(t *testing.T) {
-					// 	var docRead DocWithNoCode
-					// 	meta, err := col.ReadDocumentWithOptions(ctx, meta_with_no_code.Key, &docRead, nil)
-					// 	require.NoError(t, err)
-					// 	require.Equal(t, meta.Key, meta_with_no_code.Key)
-					// })
-					// t.Run("sanity check, proper doc that doesn't exist should have error", func(t *testing.T) {
-					// 	var docRead DocWithNoCode
-					// 	_, err := col.ReadDocumentWithOptions(ctx, "404", &docRead, nil)
-					// 	require.Error(t, err)
-					// 	require.Equal(t, err.(shared.ArangoError).Code, 404)
-					// })
-					// t.Run("doc with code should have no error", func(t *testing.T) {
-					// 	var docRead DocWithCode
-					// 	meta, err := col.ReadDocumentWithOptions(ctx, meta_with_code.Key, &docRead, nil)
-					// 	require.NoError(t, err)
-					// 	require.Equal(t, docRead.Code, "777")
-					// 	require.Equal(t, meta.Key, meta_with_code.Key)
-					// })
-					// t.Run("doc with code that doesn't exist should have error", func(t *testing.T) {
-					// 	var docRead DocWithCode
-					// 	_, err := col.ReadDocumentWithOptions(ctx, "404", &docRead, nil)
-					// 	require.Error(t, err)
-					// 	require.Equal(t, err.(shared.ArangoError).Code, 404)
-					// })
-					// t.Run("doc with responselike format shouldn't have error", func(t *testing.T) {
-					// 	var docRead DocWithResponselike
-					// 	meta, err := col.ReadDocumentWithOptions(ctx, meta_with_responselike.Key, &docRead, nil)
-					// 	require.NoError(t, err)
-					// 	require.Equal(t, docRead.Key, "key")
-					// 	require.Equal(t, meta.Key, meta_with_responselike.Key)
-					// })
-					// t.Run("doc with responselike format that doesn't exist should have error", func(t *testing.T) {
-					// 	var docRead DocWithResponselike
-					// 	_, err := col.ReadDocumentWithOptions(ctx, "404", &docRead, nil)
-					// 	require.Error(t, err)
-					// 	require.Equal(t, err.(shared.ArangoError).Code, 404)
-					// })
-					// t.Run("docs with code should exist", func(t *testing.T) {
-					// 	docsKeys := []DocWithRev{
-					// 		{
-					// 			Key: meta_with_code.Key,
-					// 		},
-					// 		{
-					// 			Key: meta_with_code_2.Key,
-					// 		},
-					// 	}
+					t.Run("sanity check, proper doc should have no error", func(t *testing.T) {
+						var docRead DocWithNoCode
+						meta, err := col.ReadDocumentWithOptions(ctx, meta_with_no_code.Key, &docRead, nil)
+						require.NoError(t, err)
+						require.Equal(t, meta_with_no_code.Key, meta.Key)
+					})
+					t.Run("sanity check, proper doc that doesn't exist should have error", func(t *testing.T) {
+						var docRead DocWithNoCode
+						_, err := col.ReadDocumentWithOptions(ctx, "404", &docRead, nil)
+						require.Error(t, err)
+						require.Equal(t, 404, err.(shared.ArangoError).Code)
+					})
+					t.Run("doc with code should have no error", func(t *testing.T) {
+						var docRead DocWithCode
+						meta, err := col.ReadDocumentWithOptions(ctx, meta_with_code.Key, &docRead, nil)
+						require.NoError(t, err)
+						require.Equal(t, "777", docRead.Code)
+						require.Equal(t, meta_with_code.Key, meta.Key)
+					})
+					t.Run("doc with code that doesn't exist should have error", func(t *testing.T) {
+						var docRead DocWithCode
+						_, err := col.ReadDocumentWithOptions(ctx, "404", &docRead, nil)
+						require.Error(t, err)
+						require.Equal(t, 404, err.(shared.ArangoError).Code)
+					})
+					t.Run("doc with responselike format shouldn't have error", func(t *testing.T) {
+						var docRead DocWithResponselike
+						meta, err := col.ReadDocumentWithOptions(ctx, meta_with_responselike.Key, &docRead, nil)
+						require.NoError(t, err)
+						require.Equal(t, "key", docRead.Key)
+						require.Equal(t, meta_with_responselike.Key, meta.Key)
+					})
+					t.Run("doc with responselike format that doesn't exist should have error", func(t *testing.T) {
+						var docRead DocWithResponselike
+						_, err := col.ReadDocumentWithOptions(ctx, "404", &docRead, nil)
+						require.Error(t, err)
+						require.Equal(t, 404, err.(shared.ArangoError).Code)
+					})
+					t.Run("docs with code should exist", func(t *testing.T) {
+						docsKeys := []DocWithRev{
+							{
+								Key: meta_with_code.Key,
+							},
+							{
+								Key: meta_with_code_2.Key,
+							},
+						}
 
-					// 	resp, err := col.ReadDocumentsWithOptions(ctx, &docsKeys, nil)
-					// 	require.NoError(t, err)
+						resp, err := col.ReadDocumentsWithOptions(ctx, &docsKeys, nil)
+						require.NoError(t, err)
 
-					// 	var docsRead []DocWithCode
-					// 	for {
-					// 		var docRead DocWithCode
-					// 		_, err := resp.Read(&docRead)
-					// 		if err != nil {
-					// 			if _, ok := err.(shared.NoMoreDocumentsError); ok {
-					// 				err = nil
-					// 			}
-					// 			break
-					// 		}
-					// 		docsRead = append(docsRead, docRead)
-					// 	}
-					// 	require.NoError(t, err)
-					// 	require.Equal(t, docsRead[0].Code, "777")
-					// 	require.Equal(t, docsRead[1].Code, "222")
+						var docRead DocWithCode
 
-					// })
+						_, err = resp.Read(&docRead)
+						require.NoError(t, err)
+						require.Equal(t, "777", docRead.Code)
 
-					// t.Run("docs with code that doesn't exist should return empty", func(t *testing.T) {
-					// 	docsKeys := []DocWithRev{
-					// 		{
-					// 			Key: "404",
-					// 		},
-					// 		{
-					// 			Key: "404_2",
-					// 		},
-					// 	}
+						_, err = resp.Read(&docRead)
+						require.NoError(t, err)
+						require.Equal(t, "222", docRead.Code)
 
-					// 	resp, err := col.ReadDocumentsWithOptions(ctx, &docsKeys, nil)
-					// 	require.NoError(t, err)
+					})
 
-					// 	var docsRead []DocWithCode
-					// 	for {
-					// 		var docRead DocWithCode
-					// 		_, err := resp.Read(&docRead)
-					// 		if err != nil {
-					// 			if _, ok := err.(shared.NoMoreDocumentsError); ok {
-					// 				err = nil
-					// 			}
-					// 			break
-					// 		}
-					// 		docsRead = append(docsRead, docRead)
-					// 	}
-					// 	require.NoError(t, err)
-					// 	require.Equal(t, docsRead[0].Code, "777")
-					// 	require.Equal(t, docsRead[1].Code, "222")
+					t.Run("docs with code that doesn't exist should return empty", func(t *testing.T) {
+						docsKeys := []DocWithRev{
+							{
+								Key: "404",
+							},
+							{
+								Key: "404_2",
+							},
+						}
 
-					// })
+						resp, err := col.ReadDocumentsWithOptions(ctx, &docsKeys, nil)
+						require.NoError(t, err)
+
+						var docRead DocWithCode
+
+						_, err = resp.Read(&docRead)
+						require.Error(t, err)
+						require.Equal(t, 1202, err.(shared.ArangoError).ErrorNum)
+
+						_, err = resp.Read(&docRead)
+						require.Error(t, err)
+						require.Equal(t, 1202, err.(shared.ArangoError).ErrorNum)
+
+					})
 
 					t.Run("docs with code mixed existence", func(t *testing.T) {
 						docsKeys := []DocWithRev{
@@ -196,21 +184,15 @@ func Test_CollectionDocumentsReadWithStringErrorCode(t *testing.T) {
 						resp, err := col.ReadDocumentsWithOptions(ctx, &docsKeys, nil)
 						require.NoError(t, err)
 
-						var docsRead []DocWithCode
-						for {
-							var docRead DocWithCode
-							_, err := resp.Read(&docRead)
-							if err != nil {
-								if _, ok := err.(shared.NoMoreDocumentsError); ok {
-									err = nil
-								}
-								break
-							}
-							docsRead = append(docsRead, docRead)
-						}
+						var docRead DocWithCode
+						_, err = resp.Read(&docRead)
+
+						require.Error(t, err)
+						require.Equal(t, 1202, err.(shared.ArangoError).ErrorNum)
+
+						_, err = resp.Read(&docRead)
 						require.NoError(t, err)
-						require.Equal(t, docsRead[0].Code, "777")
-						require.Equal(t, docsRead[1].Code, "222")
+						require.Equal(t, "222", docRead.Code)
 
 					})
 				})
