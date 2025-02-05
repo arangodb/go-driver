@@ -411,6 +411,17 @@ run-tests-cluster-vst-1.1-ssl:
 	@echo "Cluster server, Velocystream 1.1, SSL, with authentication"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_SSL="auto" TEST_CONNECTION="vst" TEST_CVERSION="1.1" __run_tests
 
+ON_FAILURE_PARAMS = \
+	TESTCONTAINER=$(TESTCONTAINER) \
+	TEST_MODE=$(TEST_MODE) \
+	TEST_SSL=$(TEST_SSL) \
+	TEST_AUTH=$(TEST_AUTH) \
+	TEST_CONNECTION=$(TEST_CONNECTION) \
+	TEST_CONTENT_TYPE=$(TEST_CONTENT_TYPE) \
+	TEST_CVERSION=$(TEST_CVERSION) \
+	TEST_JWTSECRET=$(TEST_JWTSECRET) \
+	DUMP_AGENCY_ON_FAILURE=$(DUMP_AGENCY_ON_FAILURE)
+
 
 COMMON_DOCKER_CMD_PARAMS = \
 	--name=$(TESTCONTAINER) \
@@ -447,7 +458,7 @@ DOCKER_V1_CMD_PARAMS=\
 __test_go_test:
 	$(DOCKER_CMD) $(DOCKER_V1_CMD_PARAMS) $(DOCKER_RUN_CMD) \
 	&& echo "success!" \
-	|| ( $(foreach var,$(sort $(.VARIABLES)),$(eval export $(var)=$($(var)))) MAJOR_VERSION=1 . ./test/on_failure.sh)
+	|| ( $(ON_FAILURE_PARAMS) MAJOR_VERSION=1 . ./test/on_failure.sh)
 
 			
 # Internal test tasks
@@ -461,7 +472,7 @@ DOCKER_CMD_V2_PARAMS=\
 __test_v2_go_test:
 	$(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) \
 	&& echo "success!" \
-	|| ( $(foreach var,$(sort $(.VARIABLES)),$(eval export $(var)=$($(var)))) MAJOR_VERSION=2 . ./test/on_failure.sh)
+	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")

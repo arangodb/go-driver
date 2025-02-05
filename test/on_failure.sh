@@ -36,6 +36,7 @@ if [ -n "${DUMP_AGENCY_ON_FAILURE}" ] && [ "${TEST_MODE}" = "cluster" ]; then
     echo "Leader agent endpoint: $LEADER_ENDPOINT"
     
     DUMP_FILE_PATH=$DUMP_AGENCY_ON_FAILURE
+    mkdir -p $(dirname ${DUMP_FILE_PATH})
     AGENCY_DUMP=$(bash -c "curl -Lk --no-progress-meter ${AUTH} ${LEADER_ENDPOINT}/_api/agency/state")
     echo $AGENCY_DUMP > $DUMP_FILE_PATH
     echo "Agency dump created at $(realpath $DUMP_FILE_PATH)"
