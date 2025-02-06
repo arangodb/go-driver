@@ -124,15 +124,29 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 		meta.Old = c.options.OldObject
 	}
 
-	if err := c.array.Unmarshal(newMultiUnmarshaller(&meta, newUnmarshalInto(i))); err != nil {
+	var response Unmarshal[shared.ResponseStruct, Unmarshal[DocumentMeta, UnmarshalData]]
+
+	if err := c.array.Unmarshal(&response); err != nil {
 		if err == io.EOF {
 			return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
 		}
 		return CollectionDocumentDeleteResponse{}, err
 	}
 
+	if q := response.Current; q != nil {
+		meta.ResponseStruct = *q
+	}
+
+	if q := response.Object.Current; q != nil {
+		meta.DocumentMeta = *q
+	}
+
 	if meta.Error != nil && *meta.Error {
 		return meta, meta.AsArangoError()
+	}
+
+	if err := response.Object.Object.Inject(i); err != nil {
+		return CollectionDocumentDeleteResponse{}, err
 	}
 
 	return meta, nil
