@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,23 +74,24 @@ func (c collectionDocumentRead) ReadDocument(ctx context.Context, key string, re
 func (c collectionDocumentRead) ReadDocumentWithOptions(ctx context.Context, key string, result interface{}, opts *CollectionDocumentReadOptions) (DocumentMeta, error) {
 	url := c.collection.url("document", key)
 
-	var response struct {
-		shared.ResponseStruct `json:",inline"`
-		DocumentMeta          `json:",inline"`
-	}
+	var response Unmarshal[shared.ResponseStruct, Unmarshal[DocumentMeta, UnmarshalData]]
 
-	data := newUnmarshalInto(result)
-
-	resp, err := connection.CallGet(ctx, c.collection.connection(), url, newMultiUnmarshaller(&response, data), c.collection.withModifiers(opts.modifyRequest)...)
+	resp, err := connection.CallGet(ctx, c.collection.connection(), url, &response, c.collection.withModifiers(opts.modifyRequest)...)
 	if err != nil {
 		return DocumentMeta{}, err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return response.DocumentMeta, nil
+		if err := response.Object.Object.Inject(result); err != nil {
+			return DocumentMeta{}, err
+		}
+		if z := response.Object.Current; z != nil {
+			return *z, nil
+		}
+		return DocumentMeta{}, nil
 	default:
-		return DocumentMeta{}, response.AsArangoErrorWithCode(code)
+		return DocumentMeta{}, response.Current.AsArangoErrorWithCode(code)
 	}
 }
 
@@ -112,17 +113,31 @@ func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDo
 		return CollectionDocumentReadResponse{}, shared.NoMoreDocumentsError{}
 	}
 
-	var meta CollectionDocumentReadResponse
+	var response Unmarshal[shared.ResponseStruct, Unmarshal[DocumentMeta, UnmarshalData]]
 
-	if err := c.array.Unmarshal(newMultiUnmarshaller(&meta, newUnmarshalInto(i))); err != nil {
+	if err := c.array.Unmarshal(&response); err != nil {
 		if err == io.EOF {
 			return CollectionDocumentReadResponse{}, shared.NoMoreDocumentsError{}
 		}
 		return CollectionDocumentReadResponse{}, err
 	}
 
+	var meta CollectionDocumentReadResponse
+
+	if q := response.Current; q != nil {
+		meta.ResponseStruct = *q
+	}
+
+	if q := response.Object.Current; q != nil {
+		meta.DocumentMeta = *q
+	}
+
 	if meta.Error != nil && *meta.Error {
 		return meta, meta.AsArangoError()
+	}
+
+	if err := response.Object.Object.Inject(i); err != nil {
+		return CollectionDocumentReadResponse{}, err
 	}
 
 	return meta, nil
