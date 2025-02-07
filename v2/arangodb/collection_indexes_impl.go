@@ -228,12 +228,9 @@ func (c *collectionIndexes) EnsureInvertedIndex(ctx context.Context, options *In
 func (c *collectionIndexes) ensureIndex(ctx context.Context, reqData interface{}, result interface{}) (bool, error) {
 	urlEndpoint := c.collection.db.url("_api", "index")
 
-	var response struct {
-		shared.ResponseStruct `json:",inline"`
-	}
-	data := newUnmarshalInto(&result)
+	var response Unmarshal[shared.ResponseStruct, UnmarshalData]
 
-	resp, err := connection.CallPost(ctx, c.collection.connection(), urlEndpoint, newMultiUnmarshaller(&response, data), &reqData,
+	resp, err := connection.CallPost(ctx, c.collection.connection(), urlEndpoint, &response, &reqData,
 		c.collection.withModifiers(connection.WithQuery("collection", c.collection.name))...)
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -241,11 +238,17 @@ func (c *collectionIndexes) ensureIndex(ctx context.Context, reqData interface{}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
+		if err := response.Object.Inject(result); err != nil {
+			return false, err
+		}
 		return false, nil
 	case http.StatusCreated:
+		if err := response.Object.Inject(result); err != nil {
+			return false, err
+		}
 		return true, nil
 	default:
-		return false, response.AsArangoErrorWithCode(code)
+		return false, response.Current.AsArangoErrorWithCode(code)
 	}
 }
 
