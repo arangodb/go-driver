@@ -238,8 +238,14 @@ func (c *collectionIndexes) ensureIndex(ctx context.Context, reqData interface{}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
+		if err := response.Object.Inject(result); err != nil {
+			return false, err
+		}
 		return false, nil
 	case http.StatusCreated:
+		if err := response.Object.Inject(result); err != nil {
+			return false, err
+		}
 		return true, nil
 	default:
 		return false, response.Current.AsArangoErrorWithCode(code)

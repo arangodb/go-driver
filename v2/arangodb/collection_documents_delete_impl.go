@@ -120,10 +120,6 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 
 	var meta CollectionDocumentDeleteResponse
 
-	if c.options != nil {
-		meta.Old = c.options.OldObject
-	}
-
 	var response Unmarshal[shared.ResponseStruct, Unmarshal[DocumentMeta, UnmarshalData]]
 
 	if err := c.array.Unmarshal(&response); err != nil {
@@ -147,6 +143,13 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 
 	if err := response.Object.Object.Inject(i); err != nil {
 		return CollectionDocumentDeleteResponse{}, err
+	}
+
+	if c.options != nil && c.options.OldObject != nil {
+		meta.Old = c.options.OldObject
+		if err := response.Object.Object.Extract("old").Inject(meta.Old); err != nil {
+			return CollectionDocumentDeleteResponse{}, err
+		}
 	}
 
 	return meta, nil

@@ -45,7 +45,7 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						Key: "test",
 					}
 
-					meta, err := col.CreateDocument(ctx, doc)
+					meta, err := col.CreateDocumentWithOptions(ctx, doc, &arangodb.CollectionDocumentCreateOptions{})
 					require.NoError(t, err)
 					require.NotEmpty(t, meta.Rev)
 					require.Empty(t, meta.Old)

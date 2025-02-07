@@ -67,7 +67,7 @@ func (d databaseTransaction) listTransactionsWithStatuses(ctx context.Context, s
 		return nil, errors.WithStack(err)
 	}
 
-	if err := response.Object.Inject(result); err != nil {
+	if err := response.Object.Inject(&result); err != nil {
 		return nil, err
 	}
 

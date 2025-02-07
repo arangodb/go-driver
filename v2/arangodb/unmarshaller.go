@@ -20,9 +20,18 @@
 
 package arangodb
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-var _ json.Unmarshaler = &Unmarshal[string, int]{}
+	"github.com/pkg/errors"
+)
+
+type Unmarshaler interface {
+	json.Unmarshaler
+
+	Inject(object any) error
+	Extract(key string) Unmarshaler
+}
 
 type Unmarshal[C, T any] struct {
 	Current *C
@@ -44,15 +53,57 @@ func (u *Unmarshal[C, T]) UnmarshalJSON(bytes []byte) error {
 
 type UnmarshalData []byte
 
-func (u UnmarshalData) Inject(object any) error {
-	return json.Unmarshal(u, object)
+func (u *UnmarshalData) Inject(object any) error {
+	if u == nil {
+		return errors.Errorf("Data provided is nil")
+	}
+
+	return json.Unmarshal(*u, object)
+}
+
+func (u *UnmarshalData) Extract(key string) Unmarshaler {
+	if u == nil {
+		return errorUnmarshalData{err: errors.Errorf("Data provided is nil")}
+	}
+
+	var z map[string]UnmarshalData
+
+	if err := json.Unmarshal(*u, &z); err != nil {
+		return errorUnmarshalData{err: err}
+	}
+
+	if v, ok := z[key]; ok {
+		return &v
+	}
+
+	return errorUnmarshalData{err: errors.Errorf("Key %s not found", key)}
 }
 
 func (u *UnmarshalData) UnmarshalJSON(bytes []byte) error {
+	if u == nil {
+		return errors.Errorf("Data provided is nil")
+	}
+
 	z := make([]byte, len(bytes))
 
 	copy(z, bytes)
 
 	*u = z
 	return nil
+}
+
+type errorUnmarshalData struct {
+	err error
+}
+
+func (e errorUnmarshalData) UnmarshalJSON(bytes []byte) error {
+	return e.err
+}
+
+func (e errorUnmarshalData) Inject(object any) error {
+	return e.err
+}
+
+func (e errorUnmarshalData) Extract(key string) Unmarshaler {
+	return e
 }
