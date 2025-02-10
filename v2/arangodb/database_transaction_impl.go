@@ -60,11 +60,15 @@ func (d databaseTransaction) listTransactionsWithStatuses(ctx context.Context, s
 		} `json:"transactions,omitempty"`
 	}
 
-	var response shared.ResponseStruct
+	var response Unmarshal[shared.ResponseStruct, UnmarshalData]
 
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, newMultiUnmarshaller(&result, &response), d.db.modifiers...)
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
 	if err != nil {
 		return nil, errors.WithStack(err)
+	}
+
+	if err := response.Object.Inject(&result); err != nil {
+		return nil, err
 	}
 
 	switch code := resp.Code(); code {
@@ -80,7 +84,7 @@ func (d databaseTransaction) listTransactionsWithStatuses(ctx context.Context, s
 
 		return t, nil
 	default:
-		return nil, response.AsArangoErrorWithCode(code)
+		return nil, response.Current.AsArangoErrorWithCode(code)
 	}
 }
 

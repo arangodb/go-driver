@@ -59,7 +59,12 @@ func createAuthenticationFromEnv(t testing.TB, conn connection.Connection) conne
 
 // getEndpointsFromEnv returns the endpoints specified in the TEST_ENDPOINTS environment variable.
 func getEndpointsFromEnv(t testing.TB) []string {
-	eps := strings.Split(os.Getenv("TEST_ENDPOINTS"), ",")
+	v, ok := os.LookupEnv("TEST_ENDPOINTS")
+	if !ok {
+		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
+	}
+
+	eps := strings.Split(v, ",")
 	if len(eps) == 0 {
 		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
 	}
