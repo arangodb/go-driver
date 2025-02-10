@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -144,22 +144,21 @@ func (c *cursor) readDocument(ctx context.Context, result interface{}) (Document
 		}
 	}
 
-	var data byteDecoder
-	if err := c.data.Result.Read(&data); err != nil {
+	var res Unmarshal[DocumentMeta, UnmarshalData]
+
+	if err := c.data.Result.Read(&res); err != nil {
 		return DocumentMeta{}, err
 	}
 
-	var meta DocumentMeta
-
-	if err := data.Unmarshal(&meta); err != nil {
-		// Ignore error
-	}
-
-	if err := data.Unmarshal(result); err != nil {
+	if err := res.Object.Inject(result); err != nil {
 		return DocumentMeta{}, err
 	}
 
-	return meta, nil
+	if m := res.Current; m != nil {
+		return *m, nil
+	}
+
+	return DocumentMeta{}, nil
 }
 
 func (c *cursor) getNextBatch(ctx context.Context, retryBatchID string) error {
