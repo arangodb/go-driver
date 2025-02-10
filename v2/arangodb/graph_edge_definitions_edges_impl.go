@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2024-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -134,6 +134,17 @@ func (v *edgeCollection) CreateEdge(ctx context.Context, edge interface{}, opts 
 	default:
 		return EdgeCreateResponse{}, response.AsArangoErrorWithCode(code)
 	}
+}
+
+func (v *edgeCollection) AsCollection() *collection {
+	c := &collection{
+		name:      v.edgeColName,
+		db:        v.graph.db,
+		modifiers: append(v.graph.db.modifiers, v.modifiers...),
+	}
+	c.collectionDocuments = newCollectionDocuments(c)
+	c.collectionIndexes = newCollectionIndexes(c)
+	return c
 }
 
 func (c *CreateEdgeOptions) modifyRequest(r connection.Request) error {

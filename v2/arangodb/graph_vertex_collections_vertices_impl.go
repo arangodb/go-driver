@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2024-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -134,6 +134,18 @@ func (v *vertexCollection) CreateVertex(ctx context.Context, vertex interface{},
 	default:
 		return VertexCreateResponse{}, response.AsArangoErrorWithCode(code)
 	}
+}
+
+func (v *vertexCollection) AsCollection() *collection {
+	c := &collection{
+		name:      v.vertexColName,
+		db:        v.graph.db,
+		modifiers: append(v.graph.db.modifiers, v.modifiers...),
+	}
+	c.collectionDocuments = newCollectionDocuments(c)
+	c.collectionIndexes = newCollectionIndexes(c)
+
+	return c
 }
 
 func (c *CreateVertexOptions) modifyRequest(r connection.Request) error {
