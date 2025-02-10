@@ -27,7 +27,7 @@ import (
 )
 
 type VertexCollection interface {
-	Collection
+	GraphCollection
 
 	// Name returns the name of the vertex collection
 	Name() string

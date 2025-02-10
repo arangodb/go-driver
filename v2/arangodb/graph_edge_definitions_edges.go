@@ -27,7 +27,7 @@ import (
 )
 
 type Edge interface {
-	Collection
+	GraphCollection
 
 	// Name returns the name of the Edge collection
 	Name() string
