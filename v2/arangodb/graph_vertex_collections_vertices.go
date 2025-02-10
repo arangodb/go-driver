@@ -27,6 +27,8 @@ import (
 )
 
 type VertexCollection interface {
+	Collection
+
 	// Name returns the name of the vertex collection
 	Name() string
 
@@ -46,9 +48,6 @@ type VertexCollection interface {
 
 	// DeleteVertex Removes a vertex from the collection.
 	DeleteVertex(ctx context.Context, key string, opts *DeleteVertexOptions) (VertexDeleteResponse, error)
-
-	// TODO
-	AsCollection() *collection
 }
 
 type GetVertexOptions struct {

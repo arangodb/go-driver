@@ -27,6 +27,8 @@ import (
 )
 
 type Edge interface {
+	Collection
+
 	// Name returns the name of the Edge collection
 	Name() string
 
@@ -48,9 +50,6 @@ type Edge interface {
 
 	// DeleteEdge Removes an Edge from the collection.
 	DeleteEdge(ctx context.Context, key string, opts *DeleteEdgeOptions) (EdgeDeleteResponse, error)
-
-	// TODO
-	AsCollection() *collection
 }
 
 type GetEdgeOptions struct {

@@ -32,12 +32,15 @@ func newEdgeCollection(edge *graph, edgeColName string) *edgeCollection {
 	return &edgeCollection{
 		graph:       edge,
 		edgeColName: edgeColName,
+		collection:  *newCollection(edge.db, edgeColName, edge.modifiers...),
 	}
 }
 
 var _ Edge = &edgeCollection{}
 
 type edgeCollection struct {
+	collection
+
 	edgeColName string
 
 	modifiers []connection.RequestModifier
@@ -134,17 +137,6 @@ func (v *edgeCollection) CreateEdge(ctx context.Context, edge interface{}, opts 
 	default:
 		return EdgeCreateResponse{}, response.AsArangoErrorWithCode(code)
 	}
-}
-
-func (v *edgeCollection) AsCollection() *collection {
-	c := &collection{
-		name:      v.edgeColName,
-		db:        v.graph.db,
-		modifiers: append(v.graph.db.modifiers, v.modifiers...),
-	}
-	c.collectionDocuments = newCollectionDocuments(c)
-	c.collectionIndexes = newCollectionIndexes(c)
-	return c
 }
 
 func (c *CreateEdgeOptions) modifyRequest(r connection.Request) error {

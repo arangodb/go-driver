@@ -32,12 +32,15 @@ func newVertexCollection(vertex *graph, vertexColName string) *vertexCollection 
 	return &vertexCollection{
 		graph:         vertex,
 		vertexColName: vertexColName,
+		collection:    *newCollection(vertex.db, vertexColName, vertex.modifiers...),
 	}
 }
 
 var _ VertexCollection = &vertexCollection{}
 
 type vertexCollection struct {
+	collection
+
 	vertexColName string
 
 	modifiers []connection.RequestModifier
@@ -134,18 +137,6 @@ func (v *vertexCollection) CreateVertex(ctx context.Context, vertex interface{},
 	default:
 		return VertexCreateResponse{}, response.AsArangoErrorWithCode(code)
 	}
-}
-
-func (v *vertexCollection) AsCollection() *collection {
-	c := &collection{
-		name:      v.vertexColName,
-		db:        v.graph.db,
-		modifiers: append(v.graph.db.modifiers, v.modifiers...),
-	}
-	c.collectionDocuments = newCollectionDocuments(c)
-	c.collectionIndexes = newCollectionIndexes(c)
-
-	return c
 }
 
 func (c *CreateVertexOptions) modifyRequest(r connection.Request) error {

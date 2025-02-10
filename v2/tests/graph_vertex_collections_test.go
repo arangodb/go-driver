@@ -123,8 +123,8 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 
 					idxOpts := arangodb.CreateGeoIndexOptions{GeoJSON: utils.NewType(false)}
 					col := createResp.VertexCollection
-					col.AsCollection().EnsureGeoIndex(ctx, []string{"latitude", "longitude"}, &idxOpts)
-					_, err = col.AsCollection().CreateDocuments(ctx, docs)
+					col.EnsureGeoIndex(ctx, []string{"latitude", "longitude"}, &idxOpts)
+					_, err = col.CreateDocuments(ctx, docs)
 					require.NoError(t, err)
 
 					QUERY := fmt.Sprintf("FOR x IN %v FILTER DISTANCE(0, 0, x.latitude, x.longitude) <= 1120000 RETURN x", colName)
@@ -179,7 +179,7 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 					createVertResp, err := graph.CreateVertexCollection(ctx, vColName, nil)
 					require.NoError(t, err)
 					vCol := createVertResp.VertexCollection
-					_, err = vCol.AsCollection().CreateDocuments(ctx, docs)
+					_, err = vCol.CreateDocuments(ctx, docs)
 					require.NoError(t, err)
 					require.Contains(t, createVertResp.GraphDefinition.OrphanCollections, vColName)
 
@@ -225,7 +225,7 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 					require.NoError(t, err)
 					require.NotContains(t, createEdgeResp.GraphDefinition.OrphanCollections, vColName)
 					eCol := createEdgeResp.Edge
-					_, err = eCol.AsCollection().CreateDocuments(ctx, edges)
+					_, err = eCol.CreateDocuments(ctx, edges)
 					require.NoError(t, err)
 
 					var meta arangodb.DocumentMeta
