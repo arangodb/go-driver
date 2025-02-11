@@ -37,9 +37,8 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		requireClusterMode(t)
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithGraph(t, db, sampleSmartGraph(), nil, func(graph arangodb.Graph) {
+			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-
 					type DocVertex struct {
 						Key   string  `json:"_key,omitempty"`
 						Value string  `json:"value"`
@@ -100,9 +99,8 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 		})
 
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithGraph(t, db, sampleSmartGraph(), nil, func(graph arangodb.Graph) {
+			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-
 					type DocVertex struct {
 						Key   string `json:"_key,omitempty"`
 						Value string `json:"value"`
@@ -219,9 +217,8 @@ func Test_GraphCollectionsAsCollection(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		requireClusterMode(t)
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithGraph(t, db, sampleSmartGraph(), nil, func(graph arangodb.Graph) {
+			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-
 					type DocVertex struct {
 						Key   string  `json:"_key,omitempty"`
 						Value string  `json:"value"`
