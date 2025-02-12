@@ -36,6 +36,7 @@ type CollectionDocumentCreate interface {
 	// If the document data already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
 	// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	CreateDocument(ctx context.Context, document interface{}) (CollectionDocumentCreateResponse, error)
 
 	// CreateDocumentWithOptions creates a single document in the collection.
@@ -43,6 +44,7 @@ type CollectionDocumentCreate interface {
 	// If the document data already contains a `_key` field, this will be used as key of the new document,
 	// otherwise a unique key is created.
 	// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	CreateDocumentWithOptions(ctx context.Context, document interface{}, options *CollectionDocumentCreateOptions) (CollectionDocumentCreateResponse, error)
 
 	// CreateDocuments creates multiple documents in the collection.
