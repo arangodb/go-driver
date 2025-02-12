@@ -55,6 +55,7 @@ type CollectionDocumentCreate interface {
 	// a slice with the same number of entries as the `documents` slice.
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If the create request itself fails or one of the arguments is invalid, an error is returned.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	CreateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentCreateResponseReader, error)
 
 	// CreateDocumentsWithOptions creates multiple documents in the collection.
@@ -67,6 +68,7 @@ type CollectionDocumentCreate interface {
 	// a slice with the same number of entries as the `documents` slice.
 	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If the create request itself fails or one of the arguments is invalid, an error is returned.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	CreateDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentCreateOptions) (CollectionDocumentCreateResponseReader, error)
 }
 
