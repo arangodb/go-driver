@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,11 +34,13 @@ type CollectionDocumentReplace interface {
 	// ReplaceDocument replaces a single document with given key in the collection.
 	// If no document exists with given key, a NotFoundError is returned.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	ReplaceDocument(ctx context.Context, key string, document interface{}) (CollectionDocumentReplaceResponse, error)
 
 	// ReplaceDocumentWithOptions replaces a single document with given key in the collection.
 	// If no document exists with given key, a NotFoundError is returned.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	ReplaceDocumentWithOptions(ctx context.Context, key string, document interface{}, options *CollectionDocumentReplaceOptions) (CollectionDocumentReplaceResponse, error)
 
 	// ReplaceDocuments replaces multiple document with given keys in the collection.
@@ -46,6 +48,7 @@ type CollectionDocumentReplace interface {
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	// Each element in the replaces slice must contain a `_key` field.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	ReplaceDocuments(ctx context.Context, documents interface{}) (CollectionDocumentReplaceResponseReader, error)
 
 	// ReplaceDocumentsWithOptions replaces multiple document with given keys in the collection.
@@ -53,6 +56,7 @@ type CollectionDocumentReplace interface {
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	// Each element in the replaces slice must contain a `_key` field.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	ReplaceDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentReplaceOptions) (CollectionDocumentReplaceResponseReader, error)
 }
 
@@ -61,7 +65,7 @@ type CollectionDocumentReplaceResponseReader interface {
 }
 
 type CollectionDocumentReplaceResponse struct {
-	DocumentMeta
+	DocumentMetaWithOldRev
 	shared.ResponseStruct `json:",inline"`
 	Old, New              interface{}
 }

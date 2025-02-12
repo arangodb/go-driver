@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2021 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,11 @@ type DocumentMeta struct {
 	Key string     `json:"_key,omitempty"`
 	ID  DocumentID `json:"_id,omitempty"`
 	Rev string     `json:"_rev,omitempty"`
+}
+
+type DocumentMetaWithOldRev struct {
+	DocumentMeta
+	OldRev string `json:"_oldRev,omitempty"`
 }
 
 // validateKey returns an error if the given key is empty otherwise invalid.

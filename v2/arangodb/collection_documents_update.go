@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ type CollectionDocumentUpdateResponseReader interface {
 }
 
 type CollectionDocumentUpdateResponse struct {
-	DocumentMeta
+	DocumentMetaWithOldRev
 	shared.ResponseStruct `json:",inline"`
 	Old, New              interface{}
 }
