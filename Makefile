@@ -80,20 +80,6 @@ endif
 
 TEST_NET := --net=host
 
-SPACE :=    
-TABV4 := $(SPACE) $(SPACE) $(SPACE) $(SPACE)
-ifdef DUMP_AGENCY_ON_FAILURE
-  	$(info Checking for jq...)
-	CHECK_JQ_INSTALLTION := $(shell jq --version 2>&1 >/dev/null | cat)
-	ifneq ($(CHECK_JQ_INSTALLTION),)
-  		$(info )
-  		$(info Error: 'jq' is not installed. This check happens because DUMP_AGENCY_ON_FAILURE is set, and 'jq' is used during the creation of the agency dump. Verified for version jq==1.6. )
-  		$(info Try installing it with:)
-  		$(info $(TABV4) sudo apt install jq)
-  		$(info )
-  		$(error $(CHECK_JQ_INSTALLTION))
-	endif
-endif
 # Installation of jq is required for processing AGENCY_DUMP
 # ifdef DUMP_AGENCY_ON_FAILURE
 # 	CHECK_JQ_INSTALLTION := $(shell command -v jq >/dev/null 2>&1 || (
