@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,12 +34,14 @@ type CollectionDocumentUpdate interface {
 	// The document metadata is returned.
 	// If no document exists with a given key, a NotFoundError is returned.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	UpdateDocument(ctx context.Context, key string, document interface{}) (CollectionDocumentUpdateResponse, error)
 
 	// UpdateDocumentWithOptions updates a single document with a given key in the collection.
 	// The document metadata is returned.
 	// If no document exists with a given key, a NotFoundError is returned.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	UpdateDocumentWithOptions(ctx context.Context, key string, document interface{}, options *CollectionDocumentUpdateOptions) (CollectionDocumentUpdateResponse, error)
 
 	// UpdateDocuments updates multiple documents
@@ -47,6 +49,7 @@ type CollectionDocumentUpdate interface {
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	// Each element in the update slice must contain a `_key` field.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	UpdateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentUpdateResponseReader, error)
 
 	// UpdateDocumentsWithOptions updates multiple documents
@@ -54,6 +57,7 @@ type CollectionDocumentUpdate interface {
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	// Each element in the update slice must contain a `_key` field.
 	// If `_id` field is present in the document body, it is always ignored.
+	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
 	UpdateDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentUpdateOptions) (CollectionDocumentUpdateResponseReader, error)
 }
 
