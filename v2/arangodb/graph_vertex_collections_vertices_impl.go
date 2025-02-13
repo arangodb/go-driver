@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2024-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,12 +32,15 @@ func newVertexCollection(vertex *graph, vertexColName string) *vertexCollection 
 	return &vertexCollection{
 		graph:         vertex,
 		vertexColName: vertexColName,
+		collection:    *newCollection(vertex.db, vertexColName, vertex.modifiers...),
 	}
 }
 
 var _ VertexCollection = &vertexCollection{}
 
 type vertexCollection struct {
+	collection
+
 	vertexColName string
 
 	modifiers []connection.RequestModifier
