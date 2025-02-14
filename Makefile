@@ -4,7 +4,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.22.8
+GOVERSION ?= 1.22.11
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.17
@@ -79,13 +79,6 @@ else ifeq ("$(TEST_AUTH)", "jwt")
 endif
 
 TEST_NET := --net=host
-
-# Installation of jq is required for processing AGENCY_DUMP
-# ifdef DUMP_AGENCY_ON_FAILURE
-# 	CHECK_JQ_INSTALLTION := $(shell command -v jq >/dev/null 2>&1 || (
-# 		
-# endif
-
 
 # By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
 # e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
