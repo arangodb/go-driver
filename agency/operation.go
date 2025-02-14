@@ -38,6 +38,7 @@ type KeyChanger interface {
 	GetVal() interface{}
 
 	// Deprecated: removed since 3.12
+	//
 	// GetTTL returns how long (in seconds) a key will live in the agency
 	GetTTL() time.Duration
 }
@@ -113,6 +114,7 @@ func NewKeySetV2(key []string, value interface{}) KeyChanger {
 }
 
 // NewKeySet returns a new key operation which must be set in the agency
+//
 // Deprecated: TTL param is removed since 3.12, use NewKeySetV2 instead
 func NewKeySet(key []string, value interface{}, TTL time.Duration) KeyChanger {
 	return &keySet{
@@ -127,6 +129,7 @@ func NewKeySet(key []string, value interface{}, TTL time.Duration) KeyChanger {
 // NewKeyObserve returns a new key callback operation which must be written in the agency.
 // URL parameter describes where callback must be sent in case of changes on a key.
 // When 'observe' is false then we want to stop observing a key.
+//
 // Deprecated: observe param is removed since 3.12
 func NewKeyObserve(key []string, URL string, observe bool) KeyChanger {
 	return &keyObserve{

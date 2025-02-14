@@ -28,6 +28,7 @@ const (
 	ApplicationJSON = "application/json"
 
 	// ApplicationVPack is the content type for VelocyPack
+	//
 	// Deprecated: Use JSON instead
 	ApplicationVPack = "application/x-velocypack"
 )

@@ -34,7 +34,8 @@ type TransactionOptions struct {
 	// all data to disk before returning.
 	WaitForSync bool
 
-	// @deprecated
+	// Deprecated: Avoid use
+	//
 	// Maximum number of operations after which an intermediate commit is performed
 	// automatically. Honored by the RocksDB storage engine only.
 	IntermediateCommitCount *int
@@ -42,7 +43,8 @@ type TransactionOptions struct {
 	// Optional arguments passed to action.
 	Params []interface{}
 
-	// @deprecated
+	// Deprecated: Avoid use
+	//
 	// Maximum total size of operations after which an intermediate commit is
 	// performed automatically. Honored by the RocksDB storage engine only.
 	IntermediateCommitSize *int
