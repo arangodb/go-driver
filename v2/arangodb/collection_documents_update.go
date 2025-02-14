@@ -66,7 +66,7 @@ type CollectionDocumentUpdateResponseReader interface {
 }
 
 type CollectionDocumentUpdateResponse struct {
-	DocumentMeta
+	DocumentMetaWithOldRev
 	shared.ResponseStruct `json:",inline"`
 	Old, New              interface{}
 }

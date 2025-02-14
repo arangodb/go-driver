@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,13 +59,13 @@ func (c collectionDocumentUpdate) UpdateDocumentWithOptions(ctx context.Context,
 	}
 
 	response := struct {
-		*DocumentMeta          `json:",inline"`
-		*shared.ResponseStruct `json:",inline"`
-		Old                    *UnmarshalInto `json:"old,omitempty"`
-		New                    *UnmarshalInto `json:"new,omitempty"`
+		*DocumentMetaWithOldRev `json:",inline"`
+		*shared.ResponseStruct  `json:",inline"`
+		Old                     *UnmarshalInto `json:"old,omitempty"`
+		New                     *UnmarshalInto `json:"new,omitempty"`
 	}{
-		DocumentMeta:   &meta.DocumentMeta,
-		ResponseStruct: &meta.ResponseStruct,
+		DocumentMetaWithOldRev: &meta.DocumentMetaWithOldRev,
+		ResponseStruct:         &meta.ResponseStruct,
 
 		Old: newUnmarshalInto(meta.Old),
 		New: newUnmarshalInto(meta.New),
@@ -142,7 +142,7 @@ type collectionDocumentUpdateResponseReader struct {
 	array    *connection.Array
 	options  *CollectionDocumentUpdateOptions
 	response struct {
-		*DocumentMeta
+		*DocumentMetaWithOldRev
 		*shared.ResponseStruct `json:",inline"`
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
@@ -161,7 +161,7 @@ func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdat
 		meta.New = c.options.NewObject
 	}
 
-	c.response.DocumentMeta = &meta.DocumentMeta
+	c.response.DocumentMetaWithOldRev = &meta.DocumentMetaWithOldRev
 	c.response.ResponseStruct = &meta.ResponseStruct
 
 	if err := c.array.Unmarshal(&c.response); err != nil {
