@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -119,6 +119,33 @@ func Test_DatabaseCollectionDocUpdateIgnoreRevs(t *testing.T) {
 						require.NoError(t, err)
 						require.NotEmpty(t, metaUpdated.Rev)
 						require.NotEqual(t, metaUpdated.Rev, meta.Rev)
+					})
+				})
+			})
+		})
+	})
+}
+
+func Test_DatabaseCollectionDocUpdateReturnOldRev(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollection(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					doc := DocWithRev{
+						Name: "test-ORG",
+					}
+
+					metaOrg, err := col.CreateDocument(ctx, doc)
+					require.NoError(t, err)
+
+					docUpdate := DocWithRev{
+						Name: "test-UPDATED",
+					}
+
+					t.Run("OldRev should match", func(t *testing.T) {
+						metaRep, err := col.UpdateDocumentWithOptions(ctx, metaOrg.Key, docUpdate, nil)
+						require.NoError(t, err)
+						require.Equal(t, metaOrg.Rev, metaRep.OldRev)
 					})
 				})
 			})
