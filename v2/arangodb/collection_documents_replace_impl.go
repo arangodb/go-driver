@@ -97,7 +97,7 @@ func (c collectionDocumentReplace) ReplaceDocumentsWithOptions(ctx context.Conte
 
 	url := c.collection.url("document")
 
-	req, err := c.collection.connection().NewRequest(http.MethodPatch, url)
+	req, err := c.collection.connection().NewRequest(http.MethodPut, url)
 	if err != nil {
 		return nil, err
 	}
