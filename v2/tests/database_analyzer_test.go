@@ -38,7 +38,7 @@ func Test_Analyzers(t *testing.T) {
 		MinVersion         *arangodb.Version
 		Definition         arangodb.AnalyzerDefinition
 		ExpectedDefinition *arangodb.AnalyzerDefinition
-		Found              bool
+		Created            bool
 		HasError           bool
 		EnterpriseOnly     bool
 	}{
@@ -48,6 +48,7 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-identitfy",
 				Type: arangodb.ArangoSearchAnalyzerTypeIdentity,
 			},
+			Created: true,
 		},
 		{
 			Name: "create-again-my-identity",
@@ -55,7 +56,7 @@ func Test_Analyzers(t *testing.T) {
 				Name: "my-identitfy",
 				Type: arangodb.ArangoSearchAnalyzerTypeIdentity,
 			},
-			Found: true,
+			Created: false,
 		},
 		{
 			Name: "create-again-my-identity-diff-type",
@@ -66,6 +67,7 @@ func Test_Analyzers(t *testing.T) {
 					Delimiter: "äöü",
 				},
 			},
+			Created:  false,
 			HasError: true,
 		},
 		{
@@ -78,6 +80,7 @@ func Test_Analyzers(t *testing.T) {
 					Delimiters: []string{"ö", "ü"},
 				},
 			},
+			Created:  true,
 			HasError: false,
 		},
 		{
@@ -89,6 +92,7 @@ func Test_Analyzers(t *testing.T) {
 					Delimiter: "äöü",
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-my-ngram-3.6",
@@ -116,6 +120,7 @@ func Test_Analyzers(t *testing.T) {
 					StreamType:  utils.NewType(arangodb.ArangoSearchNGramStreamBinary),
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-my-ngram-3.6-custom",
@@ -132,6 +137,7 @@ func Test_Analyzers(t *testing.T) {
 					StreamType:       utils.NewType(arangodb.ArangoSearchNGramStreamUTF8),
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-pipeline-analyzer",
@@ -155,6 +161,7 @@ func Test_Analyzers(t *testing.T) {
 					},
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-aql-analyzer",
@@ -171,6 +178,7 @@ func Test_Analyzers(t *testing.T) {
 					MemoryLimit:       utils.NewType(1024 * 1024),
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-geopoint",
@@ -188,6 +196,7 @@ func Test_Analyzers(t *testing.T) {
 					Longitude: []string{},
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-geojson",
@@ -204,6 +213,7 @@ func Test_Analyzers(t *testing.T) {
 					Type: arangodb.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-geo_s2",
@@ -234,6 +244,7 @@ func Test_Analyzers(t *testing.T) {
 					Type: arangodb.ArangoSearchAnalyzerGeoJSONTypeShape.New(),
 				},
 			},
+			Created:        true,
 			EnterpriseOnly: true,
 		},
 		{
@@ -247,6 +258,7 @@ func Test_Analyzers(t *testing.T) {
 					Case:  arangodb.ArangoSearchCaseUpper,
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-collation",
@@ -265,6 +277,7 @@ func Test_Analyzers(t *testing.T) {
 					Locale: "en_US",
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-stopWords",
@@ -291,6 +304,7 @@ func Test_Analyzers(t *testing.T) {
 					},
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:           "my-minhash",
@@ -330,6 +344,7 @@ func Test_Analyzers(t *testing.T) {
 					NumHashes: utils.NewType[uint64](2),
 				},
 			},
+			Created: true,
 		},
 		{
 			Name:       "create-my-wildcard",
@@ -342,6 +357,7 @@ func Test_Analyzers(t *testing.T) {
 				},
 			},
 			HasError: false,
+			Created:  true,
 		},
 	}
 
@@ -362,7 +378,7 @@ func Test_Analyzers(t *testing.T) {
 						skipNoEnterprise(client, ctx, t)
 					}
 
-					existed, ensuredA, err := db.EnsureAnalyzer(ctx, &testCase.Definition)
+					ensuredA, created, err := db.EnsureCreatedAnalyzer(ctx, &testCase.Definition)
 
 					if testCase.HasError {
 						require.Error(t, err)
@@ -370,7 +386,7 @@ func Test_Analyzers(t *testing.T) {
 						require.NoError(t, err)
 					}
 
-					require.Equal(t, testCase.Found, existed)
+					require.Equal(t, testCase.Created, created)
 					if ensuredA != nil {
 						var def arangodb.AnalyzerDefinition
 						if testCase.ExpectedDefinition != nil {
@@ -417,7 +433,7 @@ func Test_AnalyzerRemove(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			ctx := context.Background()
 
-			_, a, err := db.EnsureAnalyzer(ctx, &def)
+			a, _, err := db.EnsureCreatedAnalyzer(ctx, &def)
 			require.NoError(t, err)
 
 			// delete and check it was deleted (use force to delete it even if it is in use)
