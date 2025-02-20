@@ -362,7 +362,7 @@ func Test_Analyzers(t *testing.T) {
 						skipNoEnterprise(client, ctx, t)
 					}
 
-					existed, ensuredA, err := db.EnsureAnalyzer(ctx, &testCase.Definition)
+					ensuredA, created, err := db.EnsureCreatedAnalyzer(ctx, &testCase.Definition)
 
 					if testCase.HasError {
 						require.Error(t, err)
@@ -370,7 +370,7 @@ func Test_Analyzers(t *testing.T) {
 						require.NoError(t, err)
 					}
 
-					require.Equal(t, testCase.Found, existed)
+					require.NotEqual(t, testCase.Found, created)
 					if ensuredA != nil {
 						var def arangodb.AnalyzerDefinition
 						if testCase.ExpectedDefinition != nil {
@@ -417,7 +417,7 @@ func Test_AnalyzerRemove(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			ctx := context.Background()
 
-			_, a, err := db.EnsureAnalyzer(ctx, &def)
+			a, _, err := db.EnsureCreatedAnalyzer(ctx, &def)
 			require.NoError(t, err)
 
 			// delete and check it was deleted (use force to delete it even if it is in use)

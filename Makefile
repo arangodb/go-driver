@@ -80,13 +80,6 @@ endif
 
 TEST_NET := --net=host
 
-# Installation of jq is required for processing AGENCY_DUMP
-# ifdef DUMP_AGENCY_ON_FAILURE
-# 	CHECK_JQ_INSTALLTION := $(shell command -v jq >/dev/null 2>&1 || (
-# 		
-# endif
-
-
 # By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
 # e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
 TEST_ENDPOINTS := http://localhost:7001

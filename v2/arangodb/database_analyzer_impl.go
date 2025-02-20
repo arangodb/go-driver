@@ -44,6 +44,7 @@ type databaseAnalyzer struct {
 	db *database
 }
 
+// Deprecated: Use EnsureCreatedAnalyzer instead
 func (d databaseAnalyzer) EnsureAnalyzer(ctx context.Context, analyzer *AnalyzerDefinition) (bool, Analyzer, error) {
 	urlEndpoint := d.db.url("_api", "analyzer")
 
@@ -61,6 +62,28 @@ func (d databaseAnalyzer) EnsureAnalyzer(ctx context.Context, analyzer *Analyzer
 		return code == http.StatusOK, newAnalyzer(d.db, response.AnalyzerDefinition), nil
 	default:
 		return false, nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// EnsureCreatedAnalyzer creates an Analyzer for the database, if it does not already exist.
+// It returns the Analyser object together with a boolean indicating if the Analyzer was newly created (true) or pre-existing (false).
+func (d databaseAnalyzer) EnsureCreatedAnalyzer(ctx context.Context, analyzer *AnalyzerDefinition) (Analyzer, bool, error) {
+	urlEndpoint := d.db.url("_api", "analyzer")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		AnalyzerDefinition
+	}
+	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, &response, analyzer)
+	if err != nil {
+		return nil, false, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusCreated, http.StatusOK:
+		return newAnalyzer(d.db, response.AnalyzerDefinition), code == http.StatusCreated, nil
+	default:
+		return nil, false, response.AsArangoErrorWithCode(code)
 	}
 }
 
