@@ -25,9 +25,14 @@ import (
 )
 
 type DatabaseAnalyzer interface {
+	// Deprecated: Use EnsureCreatedAnalyzer instead
 	// EnsureAnalyzer ensures that the given analyzer exists. If it does not exist, it is created.
 	// The function returns whether the analyzer already existed or not.
 	EnsureAnalyzer(ctx context.Context, analyzer *AnalyzerDefinition) (bool, Analyzer, error)
+
+	// EnsureCreatedAnalyzer creates an Analyzer for the database, if it does not already exist.
+	// It returns the Analyser object together with a boolean indicating if the Analyzer was newly created (true) or pre-existing (false).
+	EnsureCreatedAnalyzer(ctx context.Context, analyzer *AnalyzerDefinition) (Analyzer, bool, error)
 
 	// Analyzer returns the analyzer definition for the given analyzer
 	Analyzer(ctx context.Context, name string) (Analyzer, error)

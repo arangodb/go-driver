@@ -612,9 +612,9 @@ func Test_UseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 							arangodb.ArangoSearchFeatureNorm,
 						},
 					}
-					existed, _, err := db.EnsureAnalyzer(ctx, &analyzer)
+					_, created, err := db.EnsureCreatedAnalyzer(ctx, &analyzer)
 					require.NoError(t, err)
-					require.False(t, existed)
+					require.True(t, created)
 
 					ensureArangoSearchView(ctx, db, "some_view_with_analyzer", &arangodb.ArangoSearchViewProperties{
 						Links: arangodb.ArangoSearchLinks{

@@ -121,8 +121,8 @@ func (c *collectionIndexes) EnsurePersistentIndex(ctx context.Context, fields []
 	}
 
 	result := responseIndex{}
-	exist, err := c.ensureIndex(ctx, &reqData, &result)
-	return newIndexResponse(&result), exist, err
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
 }
 
 func (c *collectionIndexes) EnsureGeoIndex(ctx context.Context, fields []string, options *CreateGeoIndexOptions) (IndexResponse, bool, error) {
@@ -137,8 +137,8 @@ func (c *collectionIndexes) EnsureGeoIndex(ctx context.Context, fields []string,
 	}
 
 	result := responseIndex{}
-	exist, err := c.ensureIndex(ctx, &reqData, &result)
-	return newIndexResponse(&result), exist, err
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
 }
 
 func (c *collectionIndexes) EnsureTTLIndex(ctx context.Context, fields []string, expireAfter int, options *CreateTTLIndexOptions) (IndexResponse, bool, error) {
@@ -155,8 +155,8 @@ func (c *collectionIndexes) EnsureTTLIndex(ctx context.Context, fields []string,
 	}
 
 	result := responseIndex{}
-	exist, err := c.ensureIndex(ctx, &reqData, &result)
-	return newIndexResponse(&result), exist, err
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
 }
 
 func (c *collectionIndexes) EnsureZKDIndex(ctx context.Context, fields []string, options *CreateZKDIndexOptions) (IndexResponse, bool, error) {
@@ -171,8 +171,8 @@ func (c *collectionIndexes) EnsureZKDIndex(ctx context.Context, fields []string,
 	}
 
 	result := responseIndex{}
-	exist, err := c.ensureIndex(ctx, &reqData, &result)
-	return newIndexResponse(&result), exist, err
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
 }
 
 func (c *collectionIndexes) EnsureMDIIndex(ctx context.Context, fields []string, options *CreateMDIIndexOptions) (IndexResponse, bool, error) {
@@ -187,8 +187,8 @@ func (c *collectionIndexes) EnsureMDIIndex(ctx context.Context, fields []string,
 	}
 
 	result := responseIndex{}
-	exist, err := c.ensureIndex(ctx, &reqData, &result)
-	return newIndexResponse(&result), exist, err
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
 }
 
 func (c *collectionIndexes) EnsureMDIPrefixedIndex(ctx context.Context, fields []string, options *CreateMDIPrefixedIndexOptions) (IndexResponse, bool, error) {
@@ -203,8 +203,8 @@ func (c *collectionIndexes) EnsureMDIPrefixedIndex(ctx context.Context, fields [
 	}
 
 	result := responseIndex{}
-	exist, err := c.ensureIndex(ctx, &reqData, &result)
-	return newIndexResponse(&result), exist, err
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
 }
 
 func (c *collectionIndexes) EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (IndexResponse, bool, error) {
@@ -221,8 +221,8 @@ func (c *collectionIndexes) EnsureInvertedIndex(ctx context.Context, options *In
 	}
 
 	result := responseInvertedIndex{}
-	exist, err := c.ensureIndex(ctx, &reqData, &result)
-	return newInvertedIndexResponse(&result), exist, err
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newInvertedIndexResponse(&result), created, err
 }
 
 func (c *collectionIndexes) ensureIndex(ctx context.Context, reqData interface{}, result interface{}) (bool, error) {
