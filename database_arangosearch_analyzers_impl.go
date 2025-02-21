@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -92,6 +92,7 @@ func (a *analyzer) Database() Database {
 }
 
 // Deprecated: Use EnsureCreatedAnalyzer instead
+//
 // Ensure ensures that the given analyzer exists. If it does not exist it is created.
 // The function returns whether the analyzer already existed or an error.
 func (d *database) EnsureAnalyzer(ctx context.Context, definition ArangoSearchAnalyzerDefinition) (bool, ArangoSearchAnalyzer, error) {
