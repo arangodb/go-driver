@@ -80,13 +80,6 @@ endif
 
 TEST_NET := --net=host
 
-# Installation of jq is required for processing AGENCY_DUMP
-# ifdef DUMP_AGENCY_ON_FAILURE
-# 	CHECK_JQ_INSTALLTION := $(shell command -v jq >/dev/null 2>&1 || (
-# 		
-# endif
-
-
 # By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
 # e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
 TEST_ENDPOINTS := http://localhost:7001
@@ -153,6 +146,10 @@ ifeq ("$(DEBUG)", "true")
 else
     DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
     DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -parallel $(TESTV2PARALLEL) ./tests
+endif
+
+ifeq ("$(ADD_TIMESTAMP)", "true")
+	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
 .PHONY: all build clean linter run-tests vulncheck
@@ -442,8 +439,7 @@ DOCKER_V1_CMD_PARAMS=\
 	-w /usr/code/
 
 __test_go_test:
-	$(DOCKER_CMD) $(DOCKER_V1_CMD_PARAMS) $(DOCKER_RUN_CMD) \
-	&& echo "success!" \
+	($(DOCKER_CMD) $(DOCKER_V1_CMD_PARAMS) $(DOCKER_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
 	|| ( $(ON_FAILURE_PARAMS) MAJOR_VERSION=1 . ./test/on_failure.sh)
 
 			
@@ -456,8 +452,7 @@ DOCKER_CMD_V2_PARAMS=\
 	-w /usr/code/v2/
 
 __test_v2_go_test:
-	$(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) \
-	&& echo "success!" \
+	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __test_debug__:
