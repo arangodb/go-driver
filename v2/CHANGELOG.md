@@ -2,7 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 
-## [2.1.2](https://github.com/arangodb/go-driver/tree/v2.1.2) (2025-02-21)
+## [2.1.3](https://github.com/arangodb/go-driver/tree/v2.1.3) (2025-02-21)
 - Switch to Go 1.22.11
 - Switch to jwt-go v5
 - Fix incorrect Http method for ReplaceDocuments
