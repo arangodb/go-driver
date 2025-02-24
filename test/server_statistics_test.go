@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2019-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2019-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -327,7 +327,8 @@ func TestServerStatisticsForwarding(t *testing.T) {
 		t.Fatalf("Error in statistics call: %s", describe(err))
 	}
 
-	// @deprecated Second coordinator should not count as user traffic (besides maybe the statistics calls)
+	// Deprecated: Second coordinator should not count as user traffic (besides maybe the statistics calls)
+	//
 	// UPDATE: since 3.10 there a lot more traffic between the servers (metrics scrape) than just the statistics calls - we don't want to check for that here.
 	/*
 		t.Logf("Checking user traffic on coordinator2...")

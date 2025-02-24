@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -149,6 +149,7 @@ type CollectionKeyOptions struct {
 	// If set to true, then it is allowed to supply own key values in the _key attribute of a document.
 	// If set to false, then the key generator will solely be responsible for generating keys and supplying own
 	// key values in the _key attribute of documents is considered an error.
+	//
 	// Deprecated: Use AllowUserKeysPtr instead
 	AllowUserKeys bool `json:"-"`
 	// If set to true, then it is allowed to supply own key values in the _key attribute of a document.
