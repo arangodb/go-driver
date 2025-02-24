@@ -30,7 +30,7 @@ DEBUG=true TESTOPTIONS="-test.run TestResponseHeader -test.v" make run-tests-sin
 
 1. Update CHANGELOG.md
 2. Make sure that GitHub access token exist in `~/.arangodb/github-token` and has read/write access for this repo.
-3. Make sure you have the `~/go-driver/.tmp/bin/github-release` folder. If not run `make tools`.
+3. Make sure you have the `~/go-driver/.tmp/bin/github-release` file. If not run `make tools`.
 4. Make sure you have admin access to `go-driver` repository.
 5. Run `make release-patch|minor|major` to create a release.
    - To release v2 version, use `make release-v2-patch|minor|major`.
