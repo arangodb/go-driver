@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@ import (
 )
 
 type ClientDatabase interface {
+	// Deprecated:  use GetDatabase instead
+	//
 	// Database opens a connection to an existing database.
 	// If no database with given name exists, an NotFoundError is returned.
-	// deprecated: use GetDatabase instead
 	Database(ctx context.Context, name string) (Database, error)
 
 	// GetDatabase opens a connection to an existing database.

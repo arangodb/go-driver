@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2021-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ const (
 	ApplicationJSON = "application/json"
 
 	// ApplicationVPack is the content type for VelocyPack
+	//
 	// Deprecated: Use JSON instead
 	ApplicationVPack = "application/x-velocypack"
 )

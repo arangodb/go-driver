@@ -2,6 +2,15 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 
+## [2.1.3](https://github.com/arangodb/go-driver/tree/v2.1.3) (2025-02-21)
+- Switch to Go 1.22.11
+- Switch to jwt-go v5
+- Fix incorrect Http method for ReplaceDocuments
+- Fix unmarshalling error due to field name collision in Documents.
+- Add bulk operations on Collections to VertexCollection and Edges (General and Satellite Graphs only)
+- Add OldRev to CollectionDocumentUpdateResponse and CollectionDocumentReplaceResponse
+
+
 ## [2.1.2](https://github.com/arangodb/go-driver/tree/v2.1.2) (2024-11-15)
 - Expose `NewType` method
 - Connection configuration helper
