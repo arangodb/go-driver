@@ -29,7 +29,7 @@ import (
 type ReplicationFactor int
 
 const (
-	// ReplicationFactorSatellite represents a satellite collection's replication factor
+	// ReplicationFactorSatellite represents a SatelliteCollection's replication factor
 	ReplicationFactorSatellite       ReplicationFactor = -1
 	replicationFactorSatelliteString string            = "satellite"
 )
@@ -100,7 +100,7 @@ type CollectionExtendedInfo struct {
 
 	// WriteConcern contains how many copies must be available before a collection can be written.
 	// It is required that 1 <= WriteConcern <= ReplicationFactor.
-	// Default is 1. Not available for satellite collections.
+	// Default is 1. Not available for SatelliteCollections.
 	// Available from 3.6 arangod version.
 	WriteConcern int `json:"writeConcern,omitempty"`
 
@@ -151,11 +151,11 @@ type CollectionProperties struct {
 	IsVolatile bool `json:"isVolatile,omitempty"`
 
 	// SmartJoinAttribute
-	// See documentation for smart joins.
+	// See documentation for SmartJoins.
 	// This requires ArangoDB Enterprise Edition.
 	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
 
-	// This field must be set to the attribute that will be used for sharding or smart graphs.
+	// This field must be set to the attribute that will be used for sharding or SmartGraphs.
 	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
 	// This requires ArangoDB Enterprise Edition.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
@@ -176,7 +176,7 @@ type CollectionProperties struct {
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
-// IsSatellite returns true if the collection is a satellite collection
+// IsSatellite returns true if the collection is a SatelliteCollection
 func (p *CollectionProperties) IsSatellite() bool {
 	return p.ReplicationFactor == ReplicationFactorSatellite
 }
