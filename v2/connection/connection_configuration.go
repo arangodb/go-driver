@@ -140,4 +140,8 @@ func DefaultHTTP2TransportSettings(in *http2.Transport) {
 		MinVersion:         tls.VersionTLS12,
 		InsecureSkipVerify: false,
 	}
+
+	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+		return net.DialTimeout(network, addr, 30*time.Second)
+	}
 }
