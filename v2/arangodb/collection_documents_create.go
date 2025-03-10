@@ -53,9 +53,6 @@ type CollectionDocumentCreate interface {
 	// otherwise a unique key is created.
 	// If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
 	// a ConflictError is returned in its indeed in the errors slice.
-	// To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
-	// a slice with the same number of entries as the `documents` slice.
-	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If the create request itself fails or one of the arguments is invalid, an error is returned.
 	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	CreateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentCreateResponseReader, error)
@@ -66,9 +63,6 @@ type CollectionDocumentCreate interface {
 	// otherwise a unique key is created.
 	// If a documents element contains a `_key` field with a duplicate key, other any other field violates an index constraint,
 	// a ConflictError is returned in its indeed in the errors slice.
-	// To return the NEW documents, prepare a context with `WithReturnNew`. The data argument passed to `WithReturnNew` must be
-	// a slice with the same number of entries as the `documents` slice.
-	// To wait until document has been synced to disk, prepare a context with `WithWaitForSync`.
 	// If the create request itself fails or one of the arguments is invalid, an error is returned.
 	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	CreateDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentCreateOptions) (CollectionDocumentCreateResponseReader, error)
