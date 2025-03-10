@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@ import (
 )
 
 type DatabaseCollection interface {
+	// Deprecated: use GetCollection instead
+	//
 	// Collection opens a connection to an existing collection within the database.
 	// If no collection with given name exists, an NotFoundError is returned.
-	// deprecated: use GetCollection instead
 	Collection(ctx context.Context, name string) (Collection, error)
 
 	// GetCollection opens a connection to an existing collection within the database.

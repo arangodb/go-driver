@@ -4,7 +4,7 @@ orbs:
 executors:
   golang-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.22.8
+      - image: gcr.io/gcr-for-testing/golang:1.22.12
   machine-executor:
     machine:
       image: ubuntu-2204:current
