@@ -100,7 +100,7 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 			})
 		})
 
-		t.Run("tests the DatabaseInventory with satellite collections", func(t *testing.T) {
+		t.Run("tests the DatabaseInventory with SatelliteCollections", func(t *testing.T) {
 			skipNoEnterprise(client, context.Background(), t)
 
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
@@ -131,13 +131,13 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 								}
 							}
 						}
-						require.True(t, foundSatellite, "DatabaseInventory did not return any satellite collections")
+						require.True(t, foundSatellite, "DatabaseInventory did not return any SatelliteCollections")
 					})
 				})
 			})
 		})
 
-		t.Run("tests the DatabaseInventory with with smart joins", func(t *testing.T) {
+		t.Run("tests the DatabaseInventory with with SmartJoins", func(t *testing.T) {
 			skipNoEnterprise(client, context.Background(), t)
 
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
@@ -164,7 +164,7 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 									foundSmartJoin = true
 								}
 							}
-							require.True(t, foundSmartJoin, "DatabaseInventory did not return any smart join collections")
+							require.True(t, foundSmartJoin, "DatabaseInventory did not return any SmartJoin collections")
 						})
 					})
 				})

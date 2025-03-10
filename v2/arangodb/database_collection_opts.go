@@ -83,14 +83,14 @@ type CreateCollectionProperties struct {
 	// Note: Values of shard key attributes cannot be changed once set. This option is meaningless in a single server setup.
 	// The default is []string{"_key"}.
 	ShardKeys []string `json:"shardKeys,omitempty"`
-	// This field must be set to the attribute that will be used for sharding or smart graphs.
+	// This field must be set to the attribute that will be used for sharding or SmartGraphs.
 	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
 	// This requires ArangoDB Enterprise Edition.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
 	// SmartJoinAttribute
 	// In the specific case that the two collections have the same number of shards, the data of the two collections can
 	// be co-located on the same server for the same shard key values. In this case the extra hop via the coordinator will not be necessary.
-	// See documentation for smart joins.
+	// See documentation for SmartJoins.
 	// This requires ArangoDB Enterprise Edition.
 	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
 	// Available from 3.7 ArangoDB version
@@ -101,7 +101,7 @@ type CreateCollectionProperties struct {
 	WaitForSync bool `json:"waitForSync,omitempty"`
 	// WriteConcern contains how many copies must be available before a collection can be written.
 	// It is required that 1 <= WriteConcern <= ReplicationFactor.
-	// Default is 1. Not available for satellite collections.
+	// Default is 1. Not available for SatelliteCollections.
 	// Available from 3.6 ArangoDB version.
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression

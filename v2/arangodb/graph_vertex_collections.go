@@ -51,7 +51,7 @@ type GraphVertexCollections interface {
 
 type CreateVertexCollectionOptions struct {
 	// Satellites contain an array of collection names that will be used to create SatelliteCollections for
-	// a Hybrid (Disjoint) SmartGraph (Enterprise Edition only)
+	// a (Disjoint) SmartGraph using SatelliteCollections (Enterprise Edition only)
 	Satellites []string `json:"satellites,omitempty"`
 }
 
