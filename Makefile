@@ -18,6 +18,9 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 ARANGODB ?= arangodb/arangodb:latest
 STARTER ?= arangodb/arangodb-starter:latest
 
+BASH_NOP = /bin/true
+BUILD_GO_BINARY_DEPENDENCIES := $(BASH_NOP)
+
 ifndef TESTOPTIONS
 	TESTOPTIONS := 
 endif
@@ -149,12 +152,32 @@ else
 endif
 
 ifeq ("$(ADD_TIMESTAMP)", "true")
-	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
+    ADD_TIMESTAMP_CMD :=| bash ./test/timestamp_output/timestamp_output_binary
+	BUILD_GO_BINARY_DEPENDENCIES := $(BUILD_GO_BINARY_DEPENDENCIES) && go build -o ./test/timestamp_output/timestamp_output_binary  ./test/timestamp_output/timestamp_output.go
+endif
+
+ifdef $(DUMP_AGENCY_ON_FAILURE)
+    BUILD_GO_BINARY_DEPENDENCIES := $(BUILD_GO_BINARY_DEPENDENCIES) && go build -o ./test/json_agency_config_parse_leader_id/json_agency_config_parse_leader_id_binary ./test/json_agency_config_parse_leader_id/json_agency_config_parse_leader_id.go
 endif
 
 .PHONY: all build clean linter run-tests vulncheck
 
 all: build
+
+build_go_binary_dependencies:
+	if [ "$(BUILD_GO_BINARY_DEPENDENCIES)" != "$(BASH_NOP)" ]; then\
+       echo "Building Go Dependencies Binaries";\
+	   echo "$(BUILD_GO_BINARY_DEPENDENCIES)";\
+	   echo "$(ADD_TIMESTAMP_CMD)";\
+	   $(DOCKER_CMD) --rm \
+		-v "${ROOTDIR}":/usr/code \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
+		-w /usr/code/ \
+		$(GOIMAGE) \
+		$(BUILD_GO_BINARY_DEPENDENCIES) && ls -al ./test/timestamp_output; \
+	fi \
+	
+	
 
 build: __dir_setup $(SOURCES)
 	go build -v $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/vst $(REPOPATH)/agency $(REPOPATH)/jwt
@@ -438,8 +461,8 @@ DOCKER_V1_CMD_PARAMS=\
 	-v "${ROOTDIR}":/usr/code ${TEST_RESOURCES_VOLUME} \
 	-w /usr/code/
 
-__test_go_test:
-	($(DOCKER_CMD) $(DOCKER_V1_CMD_PARAMS) $(DOCKER_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
+__test_go_test: build_go_binary_dependencies
+	($(DOCKER_CMD) $(DOCKER_V1_CMD_PARAMS) $(DOCKER_RUN_CMD) $(ADD_TIMESTAMP_CMD)) && echo "success!" \
 	|| ( $(ON_FAILURE_PARAMS) MAJOR_VERSION=1 . ./test/on_failure.sh)
 
 			
@@ -451,8 +474,8 @@ DOCKER_CMD_V2_PARAMS=\
 	-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
 	-w /usr/code/v2/
 
-__test_v2_go_test:
-	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
+__test_v2_go_test: build_go_binary_dependencies
+	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP_CMD)) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __test_debug__:
