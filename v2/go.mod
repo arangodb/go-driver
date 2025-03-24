@@ -6,7 +6,7 @@ toolchain go1.22.11
 
 require (
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/kkdai/maglev v0.2.0
 	github.com/pkg/errors v0.9.1
