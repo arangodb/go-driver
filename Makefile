@@ -5,7 +5,7 @@ CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
 GOVERSION ?= 1.22.12
-GOTOOLCHAIN ?= 1.24.1
+GOTOOLCHAIN ?= go1.24.1
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.17
