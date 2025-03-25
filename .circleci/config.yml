@@ -20,6 +20,9 @@ parameters:
   goImage:
     type: string
     default: "gcr.io/gcr-for-testing/golang:1.22.12"
+  goToolchain:
+    type: string
+    default: go1.24.1+auto
   arangodbImage:
     type: string
     default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly"
