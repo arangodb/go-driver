@@ -51,6 +51,8 @@ func (h Http2Configuration) GetContentType() string {
 	return h.ContentType
 }
 
+// NewHttp2Connection
+// Warning: Ensure that VST is not enabled to avoid performance issues
 func NewHttp2Connection(config Http2Configuration) Connection {
 	c := newHttpConnection(config.getTransport(), config.ContentType, config.Endpoint, config.ArangoDBConfig)
 
