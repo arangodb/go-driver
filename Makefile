@@ -5,6 +5,7 @@ CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
 GOVERSION ?= 1.22.12
+GOTOOLCHAIN ?= go1.23.0
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.17
@@ -186,6 +187,7 @@ run-unit-tests: run-v2-unit-tests
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
+		-e GOTOOLCHAIN=$(GOTOOLCHAIN) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/agency $(REPOPATH)/vst/protocol
@@ -195,6 +197,7 @@ run-v2-unit-tests:
 		--rm \
 		-v "${ROOTDIR}"/v2:/usr/code \
 		-e CGO_ENABLED=$(CGO_ENABLED) \
+		-e GOTOOLCHAIN=$(GOTOOLCHAIN) \
 		-w /usr/code/ \
 		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection $(REPOPATH)/v2/arangodb/...
@@ -420,7 +423,8 @@ COMMON_DOCKER_CMD_PARAMS = \
 	-e TEST_ENABLE_SHUTDOWN=$(TEST_ENABLE_SHUTDOWN) \
 	-e ENABLE_DATABASE_EXTRA_FEATURES=$(ENABLE_DATABASE_EXTRA_FEATURES) \
 	-e GODEBUG=tls13=1 \
-	-e CGO_ENABLED=$(CGO_ENABLED)
+	-e CGO_ENABLED=$(CGO_ENABLED) \
+	-e GOTOOLCHAIN=$(GOTOOLCHAIN)
 
 
 # Internal test tasks

@@ -33,26 +33,26 @@ type CollectionDocumentDelete interface {
 	// DeleteDocument removes a single document with given key from the collection.
 	// The document metadata is returned.
 	// If no document exists with given key, a NotFoundError is returned.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	DeleteDocument(ctx context.Context, key string) (CollectionDocumentDeleteResponse, error)
 
 	// DeleteDocumentWithOptions removes a single document with given key from the collection.
 	// The document metadata is returned.
 	// If no document exists with given key, a NotFoundError is returned.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	DeleteDocumentWithOptions(ctx context.Context, key string, opts *CollectionDocumentDeleteOptions) (CollectionDocumentDeleteResponse, error)
 
 	// DeleteDocuments removes multiple documents with given keys from the collection.
 	// The document metadata are returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	DeleteDocuments(ctx context.Context, keys []string) (CollectionDocumentDeleteResponseReader, error)
 
 	// DeleteDocumentsWithOptions removes multiple documents with given keys from the collection.
 	// The document metadata are returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	// 'documents' must be a slice of structs with a `_key` field or a slice of keys.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	DeleteDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentDeleteOptions) (CollectionDocumentDeleteResponseReader, error)
 }
 

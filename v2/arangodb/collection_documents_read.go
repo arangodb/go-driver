@@ -33,27 +33,27 @@ type CollectionDocumentRead interface {
 	// ReadDocument reads a single document with given key from the collection.
 	// The document data is stored into result, the document metadata is returned.
 	// If no document exists with given key, a NotFoundError is returned.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	ReadDocument(ctx context.Context, key string, result interface{}) (DocumentMeta, error)
 
 	// ReadDocumentWithOptions reads a single document with given key from the collection.
 	// The document data is stored into result, the document metadata is returned.
 	// If no document exists with given key, a NotFoundError is returned.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	ReadDocumentWithOptions(ctx context.Context, key string, result interface{}, opts *CollectionDocumentReadOptions) (DocumentMeta, error)
 
 	// ReadDocuments reads multiple documents with given keys from the collection.
 	// The documents data is stored into elements of the given results slice,
 	// the documents metadata is returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	ReadDocuments(ctx context.Context, keys []string) (CollectionDocumentReadResponseReader, error)
 
 	// ReadDocumentsWithOptions reads multiple documents with given keys from the collection.
 	// The documents data is stored into elements of the given results slice and the documents metadata is returned.
 	// If no document exists with a given key, a NotFoundError is returned at its errors index.
 	// 'documents' must be a slice of structs with a `_key` field or a slice of keys.
-	// SmartGraphs and Enterprise Graphs cannot use existing collections and cannot use the document interface
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
 	ReadDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentReadOptions) (CollectionDocumentReadResponseReader, error)
 }
 
