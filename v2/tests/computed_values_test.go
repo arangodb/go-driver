@@ -202,7 +202,7 @@ func Test_CollectionComputedValues(t *testing.T) {
 				require.NoError(t, err)
 
 				// Collection must exist now
-				col, err := db.Collection(nil, name)
+				col, err := db.GetCollection(nil, name, nil)
 				require.NoError(t, err)
 
 				prop, err := col.Properties(nil)
