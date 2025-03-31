@@ -4,11 +4,11 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.22.12
+GOVERSION ?= 1.23
 GOTOOLCHAIN ?= auto
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
-ALPINE_IMAGE ?= alpine:3.17
+ALPINE_IMAGE ?= alpine:3.21
 TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run
@@ -142,7 +142,7 @@ ifeq ("$(DEBUG)", "true")
 	DOCKER_DEBUG_ARGS := --security-opt=seccomp:unconfined
 	DEBUG_PORT := 2345
 
-	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 exec /test_debug.test -- $(TESTOPTIONS)
+	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 --accept-multiclient exec /test_debug.test -- $(TESTOPTIONS)
 	DOCKER_V2_RUN_CMD := $(DOCKER_RUN_CMD)
 else
     DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)

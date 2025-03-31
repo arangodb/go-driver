@@ -118,7 +118,7 @@ type CollectionExtendedInfo struct {
 	IsSmart bool `json:"isSmart,omitempty"`
 
 	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
-	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
+	ComputedValues []ComputedValue `json:"computedValues"`
 }
 
 // CollectionProperties contains extended information about a collection.
@@ -210,7 +210,7 @@ type SetCollectionPropertiesOptions struct {
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 
 	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
-	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
+	ComputedValues []ComputedValue `json:"computedValues"`
 }
 
 type ComputedValue struct {
