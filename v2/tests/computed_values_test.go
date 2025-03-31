@@ -214,6 +214,9 @@ func Test_CollectionComputedValues(t *testing.T) {
 					ComputedValues: []arangodb.ComputedValue{},
 				})
 				require.NoError(t, err)
+
+				prop, err = col.Properties(nil)
+				require.NoError(t, err)
 				require.Len(t, prop.ComputedValues, 0)
 
 			})
@@ -246,6 +249,9 @@ func Test_CollectionComputedValues(t *testing.T) {
 				err = col.SetProperties(nil, arangodb.SetCollectionPropertiesOptions{
 					MinReplicationFactor: 2,
 				})
+				require.NoError(t, err)
+
+				prop, err = col.Properties(nil)
 				require.NoError(t, err)
 				require.Len(t, prop.ComputedValues, 1)
 

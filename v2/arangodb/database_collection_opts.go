@@ -105,7 +105,7 @@ type CreateCollectionProperties struct {
 	// Available from 3.6 ArangoDB version.
 	WriteConcern int `json:"writeConcern,omitempty"`
 	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
-	ComputedValues []ComputedValue `json:"computedValues"`
+	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
 }
 
 // Init translate deprecated fields into current one for backward compatibility
