@@ -159,6 +159,26 @@ func (c collection) SetProperties(ctx context.Context, options SetCollectionProp
 	}
 }
 
+func (c collection) SetPropertiesV2(ctx context.Context, options SetCollectionPropertiesOptionsV2) error {
+	urlEndpoint := c.url("collection", "properties")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, options, c.withModifiers()...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
+
 func (c collection) Name() string {
 	return c.name
 }

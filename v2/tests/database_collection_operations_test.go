@@ -134,14 +134,14 @@ func Test_CollectionSetProperties(t *testing.T) {
 					require.Equal(t, createOpts.NumberOfShards, props.NumberOfShards)
 				})
 
-				newProps := arangodb.SetCollectionPropertiesOptions{
+				newProps := arangodb.SetCollectionPropertiesOptionsV2{
 					WaitForSync:       utils.NewType(true),
-					ReplicationFactor: 3,
-					WriteConcern:      2,
+					ReplicationFactor: arangodb.ReplicationFactor(3),
+					WriteConcern:      utils.NewType(2),
 					CacheEnabled:      utils.NewType(true),
 					Schema:            nil,
 				}
-				err = col.SetProperties(ctx, newProps)
+				err = col.SetPropertiesV2(ctx, newProps)
 				require.NoError(t, err)
 
 				props, err = col.Properties(ctx)

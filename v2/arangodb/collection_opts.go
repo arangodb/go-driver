@@ -184,6 +184,8 @@ func (p *CollectionProperties) IsSatellite() bool {
 	return p.ReplicationFactor == ReplicationFactorSatellite
 }
 
+// Deprecated: use 'SetCollectionPropertiesOptionsV2' instead
+//
 // SetCollectionPropertiesOptions contains data for Collection.SetProperties.
 type SetCollectionPropertiesOptions struct {
 	// If true then creating or changing a document will wait until the data has been synchronized to disk.
@@ -210,7 +212,35 @@ type SetCollectionPropertiesOptions struct {
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 
 	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
-	ComputedValues []ComputedValue `json:"computedValues"`
+	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
+}
+
+type SetCollectionPropertiesOptionsV2 struct {
+	// If true then creating or changing a document will wait until the data has been synchronized to disk.
+	WaitForSync *bool `json:"waitForSync,omitempty"`
+
+	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MB). Note that when changing the journalSize value, it will only have an effect for additional journals or datafiles that are created. Already existing journals or datafiles will not be affected.
+	JournalSize *int64 `json:"journalSize,omitempty"`
+
+	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
+	// Only available in cluster setup.
+	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
+
+	// Deprecated: use 'WriteConcern' instead
+	MinReplicationFactor *int `json:"minReplicationFactor,omitempty"`
+
+	// WriteConcern contains how many copies must be available before a collection can be written.
+	// Available from 3.6 arangod version.
+	WriteConcern *int `json:"writeConcern,omitempty"`
+
+	// CacheEnabled set cacheEnabled option in collection properties
+	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
+
+	// Schema for collection validation
+	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+
+	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
+	ComputedValues *[]ComputedValue `json:"computedValues,omitempty"`
 }
 
 type ComputedValue struct {
