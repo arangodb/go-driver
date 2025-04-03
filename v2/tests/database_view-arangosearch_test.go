@@ -77,7 +77,7 @@ func tryAddArangoSearchLink(ctx context.Context, view arangodb.ArangoSearchView,
 func Test_CreateArangoSearchView(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					name := "test_create_asview"
 					opts := &arangodb.ArangoSearchViewProperties{
@@ -106,7 +106,7 @@ func Test_CreateArangoSearchView(t *testing.T) {
 func Test_CreateArangoSearchViewInvalidLinks(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					name := "test_create_inv_view"
 					opts := &arangodb.ArangoSearchViewProperties{
@@ -136,7 +136,7 @@ func Test_CreateArangoSearchViewInvalidLinks(t *testing.T) {
 func Test_CreateEmptyArangoSearchView(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					name := "test_create_empty_asview"
 					v, err := db.CreateArangoSearchView(ctx, name, nil)
@@ -159,7 +159,7 @@ func Test_CreateEmptyArangoSearchView(t *testing.T) {
 func Test_CreateDuplicateArangoSearchView(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					name := "test_create_dup_asview"
 
@@ -184,7 +184,7 @@ func Test_CreateDuplicateArangoSearchView(t *testing.T) {
 func Test_CreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					name := "test_create_view_then_rem_col"
 					opts := &arangodb.ArangoSearchViewProperties{
@@ -221,7 +221,7 @@ func Test_CreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 func Test_AddCollectionMultipleViews(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					v1 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view1", nil, t)
 					require.True(t, tryAddArangoSearchLink(ctx, v1, col.Name(), t), "Link does not exists")
@@ -239,7 +239,7 @@ func Test_AddCollectionMultipleViews(t *testing.T) {
 func Test_AddCollectionMultipleViewsViaCreate(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					opts := &arangodb.ArangoSearchViewProperties{
 						Links: arangodb.ArangoSearchLinks{
@@ -261,7 +261,7 @@ func Test_AddCollectionMultipleViewsViaCreate(t *testing.T) {
 func Test_GetArangoSearchOptimizeTopK(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.12.0", t)
 					skipNoEnterprise(client, ctx, t)
@@ -294,7 +294,7 @@ func Test_GetArangoSearchOptimizeTopK(t *testing.T) {
 func Test_GetArangoSearchView(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					name := "test_get_asview"
 					opts := &arangodb.ArangoSearchViewProperties{
@@ -346,7 +346,7 @@ func readAllViewsT(ctx context.Context, t *testing.T, db arangodb.Database) []ar
 func Test_GetArangoSearchViews(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.4", t)
 					// Get views before adding some
@@ -383,7 +383,7 @@ func Test_GetArangoSearchViews(t *testing.T) {
 func Test_RenameAndRemoveArangoSearchView(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					name := "test_rename_view"
 					renamedView := "test_rename_view_new"
@@ -435,7 +435,7 @@ func Test_RenameAndRemoveArangoSearchView(t *testing.T) {
 func Test_UseArangoSearchView(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					ensureArangoSearchView(ctx, db, "some_view", &arangodb.ArangoSearchViewProperties{
 						Links: arangodb.ArangoSearchLinks{
@@ -505,7 +505,7 @@ func Test_UseArangoSearchView(t *testing.T) {
 func Test_UseArangoSearchViewWithNested(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.10", t)
 					skipNoEnterprise(client, ctx, t)
@@ -581,7 +581,7 @@ func Test_UseArangoSearchViewWithNested(t *testing.T) {
 func Test_UseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					analyzer := arangodb.AnalyzerDefinition{
 						Name: "custom_analyzer",
@@ -670,7 +670,7 @@ func Test_UseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 func Test_ArangoSearchViewProperties35(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.7.1", t)
 					commitInterval := int64(100)
@@ -720,7 +720,7 @@ func Test_ArangoSearchViewProperties35(t *testing.T) {
 func Test_ArangoSearchPrimarySort(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.5", t)
 
@@ -804,7 +804,7 @@ func Test_ArangoSearchPrimarySort(t *testing.T) {
 func Test_ArangoSearchViewProperties353(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.5.3", t)
 					requireClusterMode(t)
@@ -854,7 +854,7 @@ func Test_ArangoSearchViewProperties353(t *testing.T) {
 func Test_ArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					// feature was introduced in 3.9.5 and in 3.10.2:
 					skipBelowVersion(client, ctx, "3.9.5", t)
@@ -908,7 +908,7 @@ func Test_ArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 func Test_ArangoSearchViewInMemoryCache(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipNoEnterprise(client, ctx, t)
 

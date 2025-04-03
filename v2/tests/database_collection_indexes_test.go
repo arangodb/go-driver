@@ -39,7 +39,7 @@ import (
 func Test_DefaultIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					indexes, err := col.Indexes(ctx)
 					require.NoError(t, err)
@@ -55,7 +55,7 @@ func Test_DefaultIndexes(t *testing.T) {
 func Test_DefaultEdgeIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, &arangodb.CreateCollectionProperties{Type: arangodb.CollectionTypeEdge}, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, &arangodb.CreateCollectionPropertiesV2{Type: utils.NewType(arangodb.CollectionTypeEdge)}, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					indexes, err := col.Indexes(ctx)
 					require.NoError(t, err)
@@ -78,7 +78,7 @@ func Test_DefaultEdgeIndexes(t *testing.T) {
 func Test_EnsurePersistentIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					var testOptions = []struct {
 						ShouldBeCreated bool
@@ -161,7 +161,7 @@ func Test_EnsurePersistentIndex(t *testing.T) {
 func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					doc := struct {
 						Tags []string `json:"tags"`
@@ -214,7 +214,7 @@ func Test_EnsurePersistentIndexDeduplicate(t *testing.T) {
 func Test_TTLIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, 4*time.Minute, func(ctx context.Context, _ testing.TB) {
 					t.Run("Removing documents at a fixed period after creation", func(t *testing.T) {
 						idx, created, err := col.EnsureTTLIndex(ctx, []string{"createdAt"}, 5, nil)
@@ -296,7 +296,7 @@ func Test_TTLIndex(t *testing.T) {
 func Test_EnsureGeoIndexIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 
 					t.Run("Test GeoJSON opts", func(t *testing.T) {
@@ -366,7 +366,7 @@ func Test_EnsureGeoIndexIndex(t *testing.T) {
 func Test_NamedIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 
 					var namedIndexTestCases = []struct {

@@ -35,7 +35,7 @@ import (
 func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 
 					size := 10
@@ -163,7 +163,7 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 func Test_DatabaseCollectionDocDeleteIfMatch(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-if-match",
@@ -197,7 +197,7 @@ func Test_DatabaseCollectionDocDeleteIfMatch(t *testing.T) {
 func Test_DatabaseCollectionDocDeleteIgnoreRevs(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := []DocWithRev{
 						{
@@ -292,7 +292,7 @@ func Test_DatabaseCollectionDocDeleteIgnoreRevs(t *testing.T) {
 func Test_DatabaseCollectionDocDeleteSilent(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.12", t)
 
@@ -317,7 +317,7 @@ func Test_DatabaseCollectionDocDeleteSilent(t *testing.T) {
 func Test_DatabaseCollectionDocDeleteWaitForSync(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
 						doc := DocWithRev{

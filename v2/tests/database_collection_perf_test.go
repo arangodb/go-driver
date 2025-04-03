@@ -72,7 +72,7 @@ func insertBatch(t testing.TB, ctx context.Context, col arangodb.Collection, opt
 func Test_BatchInsert(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				insertDocuments(t, col, 2048, 128, func(i int) interface{} {
 					return i
 				})
@@ -82,7 +82,7 @@ func Test_BatchInsert(t *testing.T) {
 }
 
 func bInsert(b *testing.B, db arangodb.Database, threads int) {
-	WithCollection(b, db, nil, func(col arangodb.Collection) {
+	WithCollectionV2(b, db, nil, func(col arangodb.Collection) {
 		withContextT(b, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
 				b.SetParallelism(threads)
@@ -106,7 +106,7 @@ func bInsert(b *testing.B, db arangodb.Database, threads int) {
 }
 
 func bBatchInsert(b *testing.B, db arangodb.Database, threads int) {
-	WithCollection(b, db, nil, func(col arangodb.Collection) {
+	WithCollectionV2(b, db, nil, func(col arangodb.Collection) {
 		withContextT(b, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 			b.Run(fmt.Sprintf("With %d", threads), func(b *testing.B) {
 				b.SetParallelism(threads)

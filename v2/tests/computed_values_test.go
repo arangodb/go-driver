@@ -63,8 +63,8 @@ func Test_CollectionComputedValues(t *testing.T) {
 					ComputeOn:  []arangodb.ComputeOn{arangodb.ComputeOnInsert},
 				}
 
-				_, err := db.CreateCollection(nil, name, &arangodb.CreateCollectionProperties{
-					ComputedValues: []arangodb.ComputedValue{computedValue},
+				_, err := db.CreateCollectionV2(nil, name, &arangodb.CreateCollectionPropertiesV2{
+					ComputedValues: &[]arangodb.ComputedValue{computedValue},
 				})
 				require.NoError(t, err)
 
@@ -121,7 +121,7 @@ func Test_CollectionComputedValues(t *testing.T) {
 					ComputeOn:  []arangodb.ComputeOn{arangodb.ComputeOnInsert},
 				}
 
-				_, err := db.CreateCollection(nil, name, nil)
+				_, err := db.CreateCollectionV2(nil, name, nil)
 				require.NoError(t, err)
 
 				// Collection must exist now
@@ -158,7 +158,7 @@ func Test_CollectionComputedValues(t *testing.T) {
 					Overwrite:  true,
 				}
 
-				_, err := db.CreateCollection(nil, name, nil)
+				_, err := db.CreateCollectionV2(nil, name, nil)
 				require.NoError(t, err)
 
 				// Collection must exist now
@@ -198,8 +198,8 @@ func Test_CollectionComputedValues(t *testing.T) {
 					ComputeOn:  []arangodb.ComputeOn{arangodb.ComputeOnInsert},
 				}
 
-				_, err := db.CreateCollection(nil, name, &arangodb.CreateCollectionProperties{
-					ComputedValues: []arangodb.ComputedValue{computedValue},
+				_, err := db.CreateCollectionV2(nil, name, &arangodb.CreateCollectionPropertiesV2{
+					ComputedValues: &[]arangodb.ComputedValue{computedValue},
 				})
 				require.NoError(t, err)
 
@@ -236,8 +236,8 @@ func Test_CollectionComputedValues(t *testing.T) {
 					ComputeOn:  []arangodb.ComputeOn{arangodb.ComputeOnInsert},
 				}
 
-				_, err := db.CreateCollection(nil, name, &arangodb.CreateCollectionProperties{
-					ComputedValues: []arangodb.ComputedValue{computedValue},
+				_, err := db.CreateCollectionV2(nil, name, &arangodb.CreateCollectionPropertiesV2{
+					ComputedValues: &[]arangodb.ComputedValue{computedValue},
 				})
 				require.NoError(t, err)
 

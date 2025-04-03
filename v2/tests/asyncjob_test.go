@@ -106,7 +106,7 @@ func TestAsyncJobListDone(t *testing.T) {
 func TestAsyncJobListPending(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
@@ -153,7 +153,7 @@ func TestAsyncJobListPending(t *testing.T) {
 func TestAsyncJobCancel(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
@@ -203,7 +203,7 @@ func TestAsyncJobCancel(t *testing.T) {
 func TestAsyncJobDelete(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
