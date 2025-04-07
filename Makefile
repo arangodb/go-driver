@@ -139,7 +139,7 @@ endif
 
 ifeq ("$(DEBUG)", "true")
 	GOIMAGE := go-driver-tests:debug
-	DOCKER_DEBUG_ARGS := --security-opt=seccomp:unconfined
+	DOCKER_DEBUG_ARGS := --security-opt=seccomp:unconfined -e GOTOOLCHAIN=$(GOTOOLCHAIN)
 	DEBUG_PORT := 2345
 
 	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 --accept-multiclient exec /test_debug.test -- $(TESTOPTIONS)
@@ -461,12 +461,12 @@ __test_v2_go_test:
 
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
-	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
+	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
 endif
 
 __test_v2_debug__:
 ifeq ("$(DEBUG)", "true")
-	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
+	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
 endif
 
 __dir_setup:

@@ -224,7 +224,7 @@ type SetCollectionPropertiesOptionsV2 struct {
 
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
-	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
+	ReplicationFactor *ReplicationFactor `json:"replicationFactor,omitempty"`
 
 	// Deprecated: use 'WriteConcern' instead
 	MinReplicationFactor *int `json:"minReplicationFactor,omitempty"`
