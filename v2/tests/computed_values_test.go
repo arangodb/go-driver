@@ -110,7 +110,7 @@ func Test_CollectionComputedValues(t *testing.T) {
 				require.True(t, tm.After(time.Now().Add(-time.Second)))
 			})
 
-			t.Run("Update to ComputedValues", func(t *testing.T) {
+			t.Run("Update ComputedValues", func(t *testing.T) {
 				name := "test_update_computed_values"
 
 				// Add an attribute with the creation timestamp to new documents
@@ -252,7 +252,7 @@ func Test_CollectionComputedValues(t *testing.T) {
 
 				err = col.SetPropertiesV2(nil,
 					arangodb.SetCollectionPropertiesOptionsV2{
-						MinReplicationFactor: utils.NewType(3),
+						JournalSize: utils.NewType(int64(512)),
 					},
 				)
 				require.NoError(t, err)
