@@ -22,7 +22,7 @@ parameters:
     default: "gcr.io/gcr-for-testing/golang:1.22.12"
   arangodbImage:
     type: string
-    default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:devel-nightly"
+    default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest"
   alpineImage:
     type: string
     default: "gcr.io/gcr-for-testing/alpine:3.21"
