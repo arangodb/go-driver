@@ -28,19 +28,20 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 // Test_ExplainQuery tries to explain several AQL queries.
 func Test_ExplainQuery(t *testing.T) {
 	rf := arangodb.ReplicationFactor(2)
-	options := arangodb.CreateCollectionProperties{
-		ReplicationFactor: rf,
-		NumberOfShards:    2,
+	options := arangodb.CreateCollectionPropertiesV2{
+		ReplicationFactor: &rf,
+		NumberOfShards:    utils.NewType(2),
 	}
 	ctx := context.Background()
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, &options, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, &options, func(col arangodb.Collection) {
 				// Setup tests
 				tests := []struct {
 					Query         string
@@ -101,7 +102,7 @@ func Test_ExplainQuery(t *testing.T) {
 func Test_QueryBatchWithRetries(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				WithUserDocs(t, col, func(docs []UserDoc) {
 					withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 						skipBelowVersion(client, ctx, "3.11", t)
