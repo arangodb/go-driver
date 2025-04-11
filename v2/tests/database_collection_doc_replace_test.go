@@ -34,7 +34,7 @@ import (
 func Test_DatabaseCollectionDocReplaceIfMatch(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-if-match",
@@ -79,7 +79,7 @@ func Test_DatabaseCollectionDocReplaceIfMatch(t *testing.T) {
 func Test_DatabaseCollectionDocReplaceIgnoreRevs(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-IgnoreRevs",
@@ -129,7 +129,7 @@ func Test_DatabaseCollectionDocReplaceIgnoreRevs(t *testing.T) {
 func Test_DatabaseCollectionDocReplaceReturnOldRev(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-ORG",
@@ -156,7 +156,7 @@ func Test_DatabaseCollectionDocReplaceReturnOldRev(t *testing.T) {
 func Test_DatabaseCollectionDocReplaceSilent(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.12", t)
 
@@ -184,7 +184,7 @@ func Test_DatabaseCollectionDocReplaceSilent(t *testing.T) {
 func Test_DatabaseCollectionDocReplaceWaitForSync(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-wait-for-sync",
@@ -221,7 +221,7 @@ func Test_DatabaseCollectionDocReplaceVersionAttribute(t *testing.T) {
 		skipBelowVersion(client, nil, "3.12", t)
 
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-version-attribute",

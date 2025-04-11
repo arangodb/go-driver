@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import (
 type ReplicationFactor int
 
 const (
-	// ReplicationFactorSatellite represents a satellite collection's replication factor
+	// ReplicationFactorSatellite represents a SatelliteCollection's replication factor
 	ReplicationFactorSatellite       ReplicationFactor = -1
 	replicationFactorSatelliteString string            = "satellite"
 )
@@ -100,7 +100,7 @@ type CollectionExtendedInfo struct {
 
 	// WriteConcern contains how many copies must be available before a collection can be written.
 	// It is required that 1 <= WriteConcern <= ReplicationFactor.
-	// Default is 1. Not available for satellite collections.
+	// Default is 1. Not available for SatelliteCollections.
 	// Available from 3.6 arangod version.
 	WriteConcern int `json:"writeConcern,omitempty"`
 
@@ -131,10 +131,12 @@ type CollectionProperties struct {
 	// For example, 64 might be a sensible value for a collection with 100 000 000 documents.
 	// Currently, only the edge index respects this value, but other index types might follow in future ArangoDB versions.
 	// Changes are applied when the collection is loaded the next time.
+	//
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IndexBuckets int `json:"indexBuckets,omitempty"`
 
 	// DoCompact specifies whether or not the collection will be compacted.
+	//
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	DoCompact bool `json:"doCompact,omitempty"`
 
@@ -147,15 +149,16 @@ type CollectionProperties struct {
 	// than regular collections because ArangoDB does not enforce any synchronization to disk and does not calculate any
 	// CRC checksums for datafiles (as there are no datafiles). This option should therefore be used for cache-type collections only,
 	// and not for data that cannot be re-created otherwise. (The default is false)
+	//
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IsVolatile bool `json:"isVolatile,omitempty"`
 
 	// SmartJoinAttribute
-	// See documentation for smart joins.
+	// See documentation for SmartJoins.
 	// This requires ArangoDB Enterprise Edition.
 	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
 
-	// This field must be set to the attribute that will be used for sharding or smart graphs.
+	// This field must be set to the attribute that will be used for sharding or SmartGraphs.
 	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
 	// This requires ArangoDB Enterprise Edition.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
@@ -176,11 +179,13 @@ type CollectionProperties struct {
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
 }
 
-// IsSatellite returns true if the collection is a satellite collection
+// IsSatellite returns true if the collection is a SatelliteCollection
 func (p *CollectionProperties) IsSatellite() bool {
 	return p.ReplicationFactor == ReplicationFactorSatellite
 }
 
+// Deprecated: use 'SetCollectionPropertiesOptionsV2' instead
+//
 // SetCollectionPropertiesOptions contains data for Collection.SetProperties.
 type SetCollectionPropertiesOptions struct {
 	// If true then creating or changing a document will wait until the data has been synchronized to disk.
@@ -208,6 +213,34 @@ type SetCollectionPropertiesOptions struct {
 
 	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
 	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
+}
+
+type SetCollectionPropertiesOptionsV2 struct {
+	// If true then creating or changing a document will wait until the data has been synchronized to disk.
+	WaitForSync *bool `json:"waitForSync,omitempty"`
+
+	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MB). Note that when changing the journalSize value, it will only have an effect for additional journals or datafiles that are created. Already existing journals or datafiles will not be affected.
+	JournalSize *int64 `json:"journalSize,omitempty"`
+
+	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
+	// Only available in cluster setup.
+	ReplicationFactor *ReplicationFactor `json:"replicationFactor,omitempty"`
+
+	// Deprecated: use 'WriteConcern' instead
+	MinReplicationFactor *int `json:"minReplicationFactor,omitempty"`
+
+	// WriteConcern contains how many copies must be available before a collection can be written.
+	// Available from 3.6 arangod version.
+	WriteConcern *int `json:"writeConcern,omitempty"`
+
+	// CacheEnabled set cacheEnabled option in collection properties
+	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
+
+	// Schema for collection validation
+	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+
+	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
+	ComputedValues *[]ComputedValue `json:"computedValues,omitempty"`
 }
 
 type ComputedValue struct {

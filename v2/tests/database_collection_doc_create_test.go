@@ -34,7 +34,7 @@ import (
 func Test_DatabaseCollectionDocCreateOverwrite(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-overwrite",
@@ -129,7 +129,7 @@ func Test_DatabaseCollectionDocCreateOverwrite(t *testing.T) {
 func Test_DatabaseCollectionDocCreateKeepNull(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 
 					doc := DocWithRev{
@@ -200,7 +200,7 @@ func Test_DatabaseCollectionDocCreateKeepNull(t *testing.T) {
 func Test_DatabaseCollectionDocCreateMergeObjects(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-merge",
@@ -281,7 +281,7 @@ func Test_DatabaseCollectionDocCreateMergeObjects(t *testing.T) {
 func Test_DatabaseCollectionDocCreateSilent(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipBelowVersion(client, ctx, "3.12", t)
 
@@ -304,7 +304,7 @@ func Test_DatabaseCollectionDocCreateSilent(t *testing.T) {
 func Test_DatabaseCollectionDocCreateWaitForSync(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-wait-for-sync",
@@ -337,7 +337,7 @@ func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
 		skipBelowVersion(client, nil, "3.12", t)
 
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-version-attribute",

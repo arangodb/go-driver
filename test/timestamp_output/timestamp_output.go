@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2021-2025 ArangoDB GmbH, Cologne, Germany
+// Copyright 2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,17 +18,26 @@
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
 
-package connection
+package main
 
-const (
-	PlainText              = "text/plain"
-	ApplicationOctetStream = "application/octet-stream"
-	ApplicationZip         = "application/zip"
-
-	ApplicationJSON = "application/json"
-
-	// ApplicationVPack is the content type for VelocyPack
-	//
-	// Deprecated: Use JSON instead
-	ApplicationVPack = "application/x-velocypack"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"time"
 )
+
+func main() {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		now := time.Now()
+		nsec := now.Nanosecond()
+
+		// Format only once at compile-time and reuse
+		fmt.Printf("%d-%02d-%02d %02d:%02d:%02d.%09d|   %s\n",
+			now.Year(), now.Month(), now.Day(),
+			now.Hour(), now.Minute(), now.Second(),
+			nsec, scanner.Text(),
+		)
+	}
+}

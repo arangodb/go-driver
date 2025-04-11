@@ -59,7 +59,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			t.Run("Transaction", func(t *testing.T) {
-				WithCollection(t, db, nil, func(col arangodb.Collection) {
+				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						d := document{
 							basicDocument: basicDocument{Key: "uniq_key"},
@@ -102,7 +102,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 			})
 
 			t.Run("Transaction - With Error", func(t *testing.T) {
-				WithCollection(t, db, nil, func(col arangodb.Collection) {
+				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						d := document{
 							basicDocument: basicDocument{Key: "uniq_key"},
@@ -147,7 +147,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 
 			t.Run("Transaction - With Panic", func(t *testing.T) {
 				t.Skipf("")
-				WithCollection(t, db, nil, func(col arangodb.Collection) {
+				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						d := document{
 							basicDocument: basicDocument{Key: "uniq_key"},
@@ -199,7 +199,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-				WithCollection(t, db, nil, func(col arangodb.Collection) {
+				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 					d := document{
 						basicDocument: basicDocument{Key: GenerateUUID("test-doc-basic")},
 						Fields:        "no1",

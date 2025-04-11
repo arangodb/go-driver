@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error
 	cep, err := c.clusterEndpoints(ctx, dbname)
 	if err != nil {
 		// ignore Forbidden: automatic failover is not enabled errors
-		if !IsArangoErrorWithErrorNum(err, ErrHttpForbidden, ErrHttpInternal, 0, ErrNotImplemented, ErrForbidden) {
+		if !IsArangoErrorWithErrorNum(err, ErrHttpForbidden, ErrHttpNotImplemented, 0, ErrNotImplemented, ErrForbidden) {
 			// 3.2 returns no error code, thus check for 0
 			// 501 with ErrorNum 9 is in there since 3.7, earlier versions returned 403 and ErrorNum 11.
 			return WithStack(err)
@@ -107,6 +107,7 @@ func (c *client) SynchronizeEndpoints2(ctx context.Context, dbname string) error
 }
 
 // Deprecated: should not be called in new code.
+//
 // autoSynchronizeEndpoints performs automatic endpoint synchronization.
 func (c *client) autoSynchronizeEndpoints(interval time.Duration) {
 	for {

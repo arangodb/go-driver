@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 )
 
 // Deprecated: use NewRoundRobinEndpoints
+//
 // NewEndpoints returns Endpoint manager which runs round-robin
 func NewEndpoints(e ...string) Endpoint {
 	return NewRoundRobinEndpoints(e)

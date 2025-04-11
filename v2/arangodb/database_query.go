@@ -130,7 +130,7 @@ type QuerySubOptions struct {
 	// Additionally, the query plan is returned in the extra.plan sub-attribute.
 	Profile uint `json:"profile,omitempty"`
 
-	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the satellite collections
+	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the SatelliteCollections
 	// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
 	SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
 
@@ -180,7 +180,7 @@ type QuerySubOptions struct {
 	ShardIds []string `json:"shardIds,omitempty"`
 
 	// [unofficial] This query option can be used in complex queries in case the query optimizer cannot
-	// automatically detect that the query can be limited to only a single server (e.g. in a disjoint smart graph case).
+	// automatically detect that the query can be limited to only a single server (e.g. in a Disjoint SmartGraph case).
 	ForceOneShardAttributeValue *string `json:"forceOneShardAttributeValue,omitempty"`
 }
 

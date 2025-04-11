@@ -34,7 +34,7 @@ import (
 func Test_DatabaseCollectionDocReadIfMatch(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-if-match",
@@ -91,7 +91,7 @@ func Test_DatabaseCollectionDocReadIfMatch(t *testing.T) {
 func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					doc := DocWithRev{
 						Name: "test-IgnoreRevs",
@@ -163,7 +163,7 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 func Test_DatabaseCollectionDocReadAllowDirtyReads(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollection(t, db, nil, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					t.Run("WithWaitForSync==false should not return an error", func(t *testing.T) {
 						doc := DocWithRev{

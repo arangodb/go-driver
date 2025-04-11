@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func Test_ClusterHealth(t *testing.T) {
@@ -100,14 +101,14 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 			})
 		})
 
-		t.Run("tests the DatabaseInventory with satellite collections", func(t *testing.T) {
+		t.Run("tests the DatabaseInventory with SatelliteCollections", func(t *testing.T) {
 			skipNoEnterprise(client, context.Background(), t)
 
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
-				optionsSatellite := arangodb.CreateCollectionProperties{
-					ReplicationFactor: arangodb.ReplicationFactorSatellite,
+				optionsSatellite := arangodb.CreateCollectionPropertiesV2{
+					ReplicationFactor: utils.NewType(arangodb.ReplicationFactorSatellite),
 				}
-				WithCollection(t, db, &optionsSatellite, func(col arangodb.Collection) {
+				WithCollectionV2(t, db, &optionsSatellite, func(col arangodb.Collection) {
 					withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 						health, err := client.Health(ctx)
 						require.NoError(t, err, "Health failed")
@@ -131,28 +132,28 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 								}
 							}
 						}
-						require.True(t, foundSatellite, "DatabaseInventory did not return any satellite collections")
+						require.True(t, foundSatellite, "DatabaseInventory did not return any SatelliteCollections")
 					})
 				})
 			})
 		})
 
-		t.Run("tests the DatabaseInventory with with smart joins", func(t *testing.T) {
+		t.Run("tests the DatabaseInventory with with SmartJoins", func(t *testing.T) {
 			skipNoEnterprise(client, context.Background(), t)
 
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
-				optionsSatellite := arangodb.CreateCollectionProperties{
-					ShardKeys:      []string{"_key"},
-					NumberOfShards: 2,
+				optionsSatellite := arangodb.CreateCollectionPropertiesV2{
+					ShardKeys:      &[]string{"_key"},
+					NumberOfShards: utils.NewType(2),
 				}
-				WithCollection(t, db, &optionsSatellite, func(colParent arangodb.Collection) {
-					optionsSmartJoins := arangodb.CreateCollectionProperties{
-						DistributeShardsLike: colParent.Name(),
-						ShardKeys:            []string{"_key:"},
-						SmartJoinAttribute:   "smart",
-						NumberOfShards:       2,
+				WithCollectionV2(t, db, &optionsSatellite, func(colParent arangodb.Collection) {
+					optionsSmartJoins := arangodb.CreateCollectionPropertiesV2{
+						DistributeShardsLike: utils.NewType(colParent.Name()),
+						ShardKeys:            &[]string{"_key:"},
+						SmartJoinAttribute:   utils.NewType("smart"),
+						NumberOfShards:       utils.NewType(2),
 					}
-					WithCollection(t, db, &optionsSmartJoins, func(col arangodb.Collection) {
+					WithCollectionV2(t, db, &optionsSmartJoins, func(col arangodb.Collection) {
 						withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 							inv, err := client.DatabaseInventory(ctx, db.Name())
 							require.NoError(t, err, "DatabaseInventory failed")
@@ -164,7 +165,7 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 									foundSmartJoin = true
 								}
 							}
-							require.True(t, foundSmartJoin, "DatabaseInventory did not return any smart join collections")
+							require.True(t, foundSmartJoin, "DatabaseInventory did not return any SmartJoin collections")
 						})
 					})
 				})
@@ -175,10 +176,10 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 			skipNoEnterprise(client, context.Background(), t)
 
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
-				optionsSatellite := arangodb.CreateCollectionProperties{
-					ShardingStrategy: arangodb.ShardingStrategyCommunityCompat,
+				optionsSatellite := arangodb.CreateCollectionPropertiesV2{
+					ShardingStrategy: utils.NewType(arangodb.ShardingStrategyCommunityCompat),
 				}
-				WithCollection(t, db, &optionsSatellite, func(col arangodb.Collection) {
+				WithCollectionV2(t, db, &optionsSatellite, func(col arangodb.Collection) {
 					withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 						inv, err := client.DatabaseInventory(ctx, db.Name())
 						require.NoError(t, err, "DatabaseInventory failed")
@@ -201,10 +202,10 @@ func Test_ClusterMoveShards(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			optionsShards := arangodb.CreateCollectionProperties{
-				NumberOfShards: 12,
+			optionsShards := arangodb.CreateCollectionPropertiesV2{
+				NumberOfShards: utils.NewType(12),
 			}
-			WithCollection(t, db, &optionsShards, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, &optionsShards, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					health, err := client.Health(ctx)
 					require.NoError(t, err, "Health failed")
@@ -290,11 +291,11 @@ func Test_ClusterResignLeadership(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			optionsShards := arangodb.CreateCollectionProperties{
-				NumberOfShards:    12,
-				ReplicationFactor: 2,
+			optionsShards := arangodb.CreateCollectionPropertiesV2{
+				NumberOfShards:    utils.NewType(12),
+				ReplicationFactor: utils.NewType(arangodb.ReplicationFactor(2)),
 			}
-			WithCollection(t, db, &optionsShards, func(col arangodb.Collection) {
+			WithCollectionV2(t, db, &optionsShards, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					inv, err := client.DatabaseInventory(ctx, db.Name())
 					require.NoError(t, err, "DatabaseInventory failed")
