@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/stretchr/testify/require"
 
@@ -62,15 +63,39 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+
+					type DocWithCode struct {
+						Key  string `json:"_key,omitempty"`
+						Code string `json:"code2"`
+					}
+
 					doc := DocWithCode{
-						Key: "test",
+						Key:  "test",
+						Code: "ww",
 					}
 					doc2 := DocWithCode{
-						Key: "test2",
+						Key:  "test2",
+						Code: "ww2",
 					}
 
 					_, err := col.CreateDocuments(ctx, []any{
 						doc, doc2,
+					})
+
+					doc3 := DocWithCode{
+						Key:  "test",
+						Code: "ww3",
+					}
+					doc4 := DocWithCode{
+						Key:  "test2",
+						Code: "ww4",
+					}
+
+					require.NoError(t, err)
+					_, err = col.CreateDocumentsWithOptions(ctx, []any{
+						doc3, doc4,
+					}, &arangodb.CollectionDocumentCreateOptions{
+						OverwriteMode: utils.NewType(arangodb.CollectionDocumentCreateOverwriteModeConflict),
 					})
 					require.NoError(t, err)
 
