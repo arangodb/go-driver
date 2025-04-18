@@ -421,15 +421,6 @@ func (ae ArangoError) Temporary() bool {
 	return ae.HasError && ae.Code == http.StatusServiceUnavailable
 }
 
-// GetConflictFieldname if error was caused by Conflict it returns the fieldname that caused it or "" otherwise
-func (ae ArangoError) GetConflictFieldname() string {
-	if IsConflict(error(ae)) {
-		return ae.ErrorMessage
-	} else {
-		return ""
-	}
-}
-
 // newArangoError creates a new ArangoError with given values.
 func newArangoError(code, errorNum int, errorMessage string) error {
 	return ArangoError{

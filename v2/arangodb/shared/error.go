@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 )
 
 const (
@@ -421,6 +422,23 @@ func (ae ArangoError) Timeout() bool {
 // Temporary returns true when the given error is a temporary error.
 func (ae ArangoError) Temporary() bool {
 	return ae.HasError && ae.Code == http.StatusServiceUnavailable
+}
+
+// GetConflictKey if error was caused by Conflict it returns the key that caused it or "" otherwise
+func (ae ArangoError) GetConflictKey() string {
+	if IsConflict(error(ae)) {
+		// Whitespace symbols are not allowed as part of a key so trimming them will result in a mistake.
+		re := regexp.MustCompile(`conflicting key:\s*(.+)$`)
+		match := re.FindStringSubmatch(ae.ErrorMessage)
+		if len(match) == 1 {
+			return match[1]
+		} else {
+			return ""
+		}
+
+	} else {
+		return ""
+	}
 }
 
 // newArangoError creates a new ArangoError with given values.
