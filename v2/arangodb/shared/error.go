@@ -427,7 +427,7 @@ func (ae ArangoError) Temporary() bool {
 // GetConflictKey if error was caused by Conflict it returns the key that caused it or "" otherwise
 func (ae ArangoError) GetConflictKey() string {
 	if IsConflict(error(ae)) {
-		// Whitespace symbols are not allowed as part of a key so trimming them will result in a mistake.
+		// Whitespace symbols are not allowed as part of a key so trimming them will not result in a mistake.
 		re := regexp.MustCompile(`conflicting key:\s*(.+)$`)
 		match := re.FindStringSubmatch(ae.ErrorMessage)
 		if len(match) == 1 {
