@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/stretchr/testify/require"
@@ -77,6 +78,8 @@ func Test_DatabaseCollectionDocCreateOverwrite(t *testing.T) {
 							OverwriteMode: overwriteMode.New(),
 						})
 						require.Error(t, err)
+
+						require.Equal(t, meta.Key, err.(shared.ArangoError).GetConflictKey())
 						require.Empty(t, metaConflict.Rev)
 						require.Empty(t, metaConflict.Old)
 						require.Empty(t, metaConflict.New)
