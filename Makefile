@@ -515,7 +515,7 @@ tools: __dir_setup
 	@echo ">> Fetching golangci-lint linter"
 	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 	@echo ">> Fetching goimports"
-	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.1.12
+	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.32.0
 	@echo ">> Fetching license check"
 	@GOBIN=$(TMPDIR)/bin go install github.com/google/addlicense@v1.0.0
 	@echo ">> Fetching govulncheck"
