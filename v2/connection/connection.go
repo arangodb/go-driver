@@ -148,3 +148,7 @@ type Response interface {
 
 	RawResponse() *http.Response
 }
+
+// RawObject is a raw encoded object.
+// Connection implementations must be able to unmarshal *RawObject into Go objects.
+type RawObject []byte
