@@ -100,6 +100,10 @@ func (r ResponseStruct) AsArangoError() ArangoError {
 		a.ErrorMessage = *r.ErrorMessage
 	}
 
+	if r.ErrorMessage != nil {
+		a.ErrorMessage = *r.ErrorMessage
+	}
+
 	return a
 }
 

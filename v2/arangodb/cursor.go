@@ -23,6 +23,8 @@ package arangodb
 import (
 	"context"
 	"io"
+
+	"github.com/arangodb/go-driver/v2/connection"
 )
 
 // Cursor is returned from a query, used to iterate over a list of documents.
@@ -76,6 +78,14 @@ type CursorBatch interface {
 	// The result must be a pointer to a slice of documents.
 	// E.g. `var result []MyStruct{}`.
 	RetryReadBatch(ctx context.Context, result interface{}) error
+
+	// ReadNextRawBatch reads the next batch of documents from the cursor.
+	// The result must be a pointer to a byte array *[]bytes.
+	ReadNextRawBatch(ctx context.Context, result *connection.RawObject) error
+
+	// RetryReadRawBatch retries the last batch read made by ReadNextRawBatch.
+	// The result must be a pointer to a byte array *[]bytes.
+	RetryReadRawBatch(ctx context.Context, result *connection.RawObject) error
 
 	// Count returns the total number of result documents available.
 	// A valid return value is only available when the cursor has been created with `Count` and not with `Stream`.
