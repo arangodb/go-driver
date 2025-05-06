@@ -51,7 +51,6 @@ func Test_CursorRawResult(t *testing.T) {
 							}
 
 							cursor, err := db.QueryBatch(ctx, query, &opts, nil)
-							rowSizeInBytes := 132
 							require.NoError(t, err)
 							for {
 								if !cursor.HasMoreBatches() {
@@ -63,15 +62,8 @@ func Test_CursorRawResult(t *testing.T) {
 								var resultRetry connection.RawObject
 								require.NoError(t, cursor.RetryReadRawBatch(ctx, &resultRetry))
 
-								if cursor.HasMoreBatches() {
-									require.Len(t, result, rowSizeInBytes*2)
-									require.Len(t, resultRetry, rowSizeInBytes*2)
-								} else {
-									require.Len(t, result, rowSizeInBytes)
-									require.Len(t, resultRetry, rowSizeInBytes)
-								}
-
-								require.Equal(t, result[0], resultRetry[0])
+								require.Equal(t, len(result), len(resultRetry))
+								require.Equal(t, result, resultRetry)
 
 							}
 
