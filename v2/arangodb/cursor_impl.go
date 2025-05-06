@@ -115,22 +115,37 @@ func (c *cursor) ReadDocument(ctx context.Context, result interface{}) (Document
 	return c.readDocument(ctx, result)
 }
 
-func (c *cursor) ReadNextBatch(ctx context.Context, result interface{}) error {
-	err := c.getNextBatch(ctx, "")
+func (c *cursor) readBatch(ctx context.Context, result interface{}, retryBatchID string) error {
+	err := c.getNextBatch(ctx, retryBatchID)
 	if err != nil {
 		return err
 	}
-
 	return json.Unmarshal(c.data.Result.in, result)
 }
 
-func (c *cursor) RetryReadBatch(ctx context.Context, result interface{}) error {
-	err := c.getNextBatch(ctx, c.retryData.currentBatchID)
+func (c *cursor) readRawBatch(ctx context.Context, result *connection.RawObject, retryBatchID string) error {
+	err := c.getNextBatch(ctx, retryBatchID)
 	if err != nil {
 		return err
 	}
+	*result = append([]byte(nil), c.data.Result.in...)
+	return nil
+}
 
-	return json.Unmarshal(c.data.Result.in, result)
+func (c *cursor) ReadNextBatch(ctx context.Context, result interface{}) error {
+	return c.readBatch(ctx, result, "")
+}
+
+func (c *cursor) RetryReadBatch(ctx context.Context, result interface{}) error {
+	return c.readBatch(ctx, result, c.retryData.currentBatchID)
+}
+
+func (c *cursor) ReadNextRawBatch(ctx context.Context, result *connection.RawObject) error {
+	return c.readRawBatch(ctx, result, "")
+}
+
+func (c *cursor) RetryReadRawBatch(ctx context.Context, result *connection.RawObject) error {
+	return c.readRawBatch(ctx, result, c.retryData.currentBatchID)
 }
 
 func (c *cursor) readDocument(ctx context.Context, result interface{}) (DocumentMeta, error) {
