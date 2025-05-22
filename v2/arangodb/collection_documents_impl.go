@@ -37,6 +37,7 @@ func newCollectionDocuments(collection *collection) *collectionDocuments {
 	d.collectionDocumentCreate = newCollectionDocumentCreate(d.collection)
 	d.collectionDocumentDelete = newCollectionDocumentDelete(d.collection)
 
+	d.collectionDocumentImport = newCollectionDocumentImport(d.collection)
 	return d
 }
 
@@ -52,6 +53,8 @@ type collectionDocuments struct {
 	*collectionDocumentRead
 	*collectionDocumentCreate
 	*collectionDocumentDelete
+
+	*collectionDocumentImport
 }
 
 func (c collectionDocuments) DocumentExists(ctx context.Context, key string) (bool, error) {

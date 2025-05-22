@@ -250,7 +250,7 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 		ctx = context.Background()
 	}
 
-	reader := j.bodyReadFunc(j.Decoder(j.contentType), req, j.streamSender)
+	reader := j.bodyReadFunc(j.Decoder(req.headers["content-type"]), req, j.streamSender)
 	r, err := req.asRequest(ctx, reader)
 	if err != nil {
 		return nil, nil, errors.WithStack(err)
