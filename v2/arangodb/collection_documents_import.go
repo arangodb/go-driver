@@ -37,7 +37,7 @@ const (
 // https://docs.arangodb.com/stable/develop/http-api/documents/#remove-a-document
 type CollectionDocumentImport interface {
 
-	// ImportDocuments imports one or more documents into the collection. // TODO FIX
+	// ImportDocuments imports one or more documents into the collection.
 	// The document data is loaded from the given documents argument, statistics are returned.
 	// The documents argument can be one of the following:
 	// - An array of structs: All structs will be imported as individual documents.
