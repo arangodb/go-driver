@@ -33,4 +33,6 @@ type CollectionDocuments interface {
 	CollectionDocumentUpdate
 	CollectionDocumentReplace
 	CollectionDocumentDelete
+
+	CollectionDocumentImport
 }

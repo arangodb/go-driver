@@ -40,6 +40,8 @@ const (
 	QueryOverwriteMode     = "overwriteMode"
 	QueryVersionAttribute  = "versionAttribute"
 	QueryIsRestore         = "isRestore"
+	QueryCollection        = "collection"
+	QueryType              = "type"
 )
 
 // PrimarySortCompression Defines how to compress the primary sort data (introduced in v3.7.1)
