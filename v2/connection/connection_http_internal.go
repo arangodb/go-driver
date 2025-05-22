@@ -250,7 +250,12 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 		ctx = context.Background()
 	}
 
-	reader := j.bodyReadFunc(j.Decoder(req.headers["content-type"]), req, j.streamSender)
+	contentType, ok := req.GetHeader(ContentType)
+	if !ok {
+		return nil, nil, errors.WithStack(NewError(1, "ContentType is not set."))
+	}
+
+	reader := j.bodyReadFunc(j.Decoder(contentType), req, j.streamSender)
 	r, err := req.asRequest(ctx, reader)
 	if err != nil {
 		return nil, nil, errors.WithStack(err)
