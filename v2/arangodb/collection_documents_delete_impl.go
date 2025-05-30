@@ -42,6 +42,7 @@ var _ CollectionDocumentDelete = &collectionDocumentDelete{}
 
 type collectionDocumentDelete struct {
 	collection *collection
+	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
 }
 
 func (c collectionDocumentDelete) DeleteDocument(ctx context.Context, key string) (CollectionDocumentDeleteResponse, error) {
@@ -103,6 +104,7 @@ func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context
 func newCollectionDocumentDeleteResponseReader(array *connection.Array, options *CollectionDocumentDeleteOptions) *collectionDocumentDeleteResponseReader {
 	c := &collectionDocumentDeleteResponseReader{array: array, options: options}
 
+	c.ReadAllIntoReader = shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]{Reader: c}
 	return c
 }
 
@@ -111,6 +113,7 @@ var _ CollectionDocumentDeleteResponseReader = &collectionDocumentDeleteResponse
 type collectionDocumentDeleteResponseReader struct {
 	array   *connection.Array
 	options *CollectionDocumentDeleteOptions
+	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
 }
 
 func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (CollectionDocumentDeleteResponse, error) {

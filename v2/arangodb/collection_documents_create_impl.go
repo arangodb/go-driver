@@ -133,6 +133,7 @@ func newCollectionDocumentCreateResponseReader(array *connection.Array, options 
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
 
+	c.ReadAllReader = shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]{Reader: c}
 	return c
 }
 
@@ -147,6 +148,7 @@ type collectionDocumentCreateResponseReader struct {
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}
+	shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]
 }
 
 func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreateResponse, error) {
