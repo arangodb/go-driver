@@ -97,7 +97,7 @@ func (c collectionDocumentRead) ReadDocumentWithOptions(ctx context.Context, key
 
 func newCollectionDocumentReadResponseReader(array *connection.Array, options *CollectionDocumentReadOptions) *collectionDocumentReadResponseReader {
 	c := &collectionDocumentReadResponseReader{array: array, options: options}
-
+	c.ReadAllIntoReader = shared.ReadAllIntoReader[CollectionDocumentReadResponse, *collectionDocumentReadResponseReader]{Reader: c}
 	return c
 }
 
@@ -106,6 +106,7 @@ var _ CollectionDocumentReadResponseReader = &collectionDocumentReadResponseRead
 type collectionDocumentReadResponseReader struct {
 	array   *connection.Array
 	options *CollectionDocumentReadOptions
+	shared.ReadAllIntoReader[CollectionDocumentReadResponse, *collectionDocumentReadResponseReader]
 }
 
 func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDocumentReadResponse, error) {
