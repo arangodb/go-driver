@@ -76,6 +76,10 @@ func TestUpdateVertices(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, readDoc)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVerticesReturnOld creates documents, updates them checks the ReturnOld values.
@@ -120,6 +124,10 @@ func TestUpdateVerticesReturnOld(t *testing.T) {
 		if !reflect.DeepEqual(doc, oldDocs[i]) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, oldDocs[i])
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -167,6 +175,10 @@ func TestUpdateVerticesReturnNew(t *testing.T) {
 		if !reflect.DeepEqual(expected, newDocs[i]) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, expected, newDocs[i])
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -246,6 +258,10 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVerticesKeepNullFalse creates documents, updates them with KeepNull(false) and then checks the updates have succeeded.
@@ -303,6 +319,10 @@ func TestUpdateVerticesKeepNullFalse(t *testing.T) {
 			t.Errorf("Expected user to be untouched, got %v", readDoc.User)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVerticesSilent creates documents, updates them with Silent() and then checks the metas are indeed empty.
@@ -341,6 +361,10 @@ func TestUpdateVerticesSilent(t *testing.T) {
 		t.Fatalf("Expected no errors, got first: %s", describe(err))
 	} else if strings.Join(metas.Keys(), "") != "" {
 		t.Errorf("Expected empty meta, got %v", metas)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -408,6 +432,10 @@ func TestUpdateVerticesRevision(t *testing.T) {
 	if _, _, err := ec.UpdateDocuments(updatedRevCtx, metas.Keys(), updates); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVerticesKeyEmpty updates documents with an empty key.
@@ -427,6 +455,10 @@ func TestUpdateVerticesKeyEmpty(t *testing.T) {
 	if _, _, err := ec.UpdateDocuments(nil, []string{""}, updates); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVerticesUpdateNil updates documents it with a nil update.
@@ -439,6 +471,10 @@ func TestUpdateVerticesUpdateNil(t *testing.T) {
 
 	if _, _, err := ec.UpdateDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -460,5 +496,9 @@ func TestUpdateVerticesUpdateLenDiff(t *testing.T) {
 	}
 	if _, _, err := ec.UpdateDocuments(nil, []string{"only1"}, updates); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

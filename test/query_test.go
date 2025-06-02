@@ -133,6 +133,10 @@ func TestValidateQuery(t *testing.T) {
 			}
 		})
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestExplainQuery tries to explain several AQL queries.
@@ -196,6 +200,10 @@ func TestExplainQuery(t *testing.T) {
 			}
 		})
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestValidateQuery validates several AQL queries.
@@ -227,6 +235,10 @@ func TestValidateQueryOptionShardIds(t *testing.T) {
 			_, err = db.Query(ctx, "FOR doc in c RETURN doc", map[string]interface{}{})
 			require.NotNil(t, err)
 		})
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 
 	return
@@ -325,6 +337,10 @@ func TestProfileQuery(t *testing.T) {
 			})
 		}
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestForceOneShardAttributeValue test ForceOneShardAttributeValue query attribute.
@@ -363,6 +379,10 @@ func TestForceOneShardAttributeValue(t *testing.T) {
 			})
 		}
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestFillBlockCache test FillBlockCache query attribute
@@ -411,6 +431,10 @@ func TestFillBlockCache(t *testing.T) {
 			})
 		}
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestOptimizerRulesForQueries optimizer rules for AQL queries endpoint
@@ -436,6 +460,10 @@ func TestOptimizerRulesForQueries(t *testing.T) {
 		require.NotNil(t, ruleToFind)
 		require.True(t, ruleToFind.Flags.CanBeDisabled)
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRetryReadDocument test retry read document query attribute
@@ -556,4 +584,8 @@ func TestRetryReadDocument(t *testing.T) {
 			})
 		}
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

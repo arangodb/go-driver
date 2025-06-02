@@ -79,6 +79,10 @@ func TestUpdateDocuments1(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, readDoc)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateDocumentsReturnOld creates documents, updates them checks the ReturnOld values.
@@ -140,6 +144,10 @@ func TestUpdateDocumentsReturnOld(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, oldDocs[i])
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateDocumentsReturnNew creates documents, updates them checks the ReturnNew values.
@@ -192,6 +200,10 @@ func TestUpdateDocumentsReturnNew(t *testing.T) {
 		if !reflect.DeepEqual(expected, newDocs[i]) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, expected, newDocs[i])
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -260,6 +272,10 @@ func TestUpdateDocumentsKeepNullTrue(t *testing.T) {
 			t.Errorf("Expected user to be found and nil, got %s", string(*raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateDocumentsKeepNullFalse creates documents, updates them with KeepNull(false) and then checks the updates have succeeded.
@@ -315,6 +331,10 @@ func TestUpdateDocumentsKeepNullFalse(t *testing.T) {
 			t.Errorf("Expected user to be untouched, got %v", readDoc.User)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateDocumentsSilent creates documents, updates them with Silent() and then checks the metas are indeed empty.
@@ -353,6 +373,10 @@ func TestUpdateDocumentsSilent(t *testing.T) {
 		t.Fatalf("Expected no errors, got first: %s", describe(err))
 	} else if strings.Join(metas.Keys(), "") != "" {
 		t.Errorf("Expected empty meta, got %v", metas)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -420,6 +444,10 @@ func TestUpdateDocumentsRevision(t *testing.T) {
 	if _, _, err := col.UpdateDocuments(updatedRevCtx, metas.Keys(), updates); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateDocumentsKeyEmpty updates documents with an empty key.
@@ -436,6 +464,10 @@ func TestUpdateDocumentsKeyEmpty(t *testing.T) {
 	if _, _, err := col.UpdateDocuments(nil, []string{""}, updates); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateDocumentsUpdateNil updates documents it with a nil update.
@@ -445,6 +477,10 @@ func TestUpdateDocumentsUpdateNil(t *testing.T) {
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	if _, _, err := col.UpdateDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -463,6 +499,10 @@ func TestUpdateDocumentsUpdateLenDiff(t *testing.T) {
 	}
 	if _, _, err := col.UpdateDocuments(nil, []string{"only1"}, updates); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -515,5 +555,9 @@ func TestUpdateDocumentsInWaitForSyncCollection(t *testing.T) {
 		if !reflect.DeepEqual(doc, readDoc) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, readDoc)
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

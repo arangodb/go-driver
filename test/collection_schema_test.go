@@ -191,4 +191,8 @@ func TestCollectionSchema(t *testing.T) {
 			require.Equal(t, http.StatusBadRequest, arangoErr.Code)
 		})
 	})
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

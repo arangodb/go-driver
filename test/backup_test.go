@@ -314,7 +314,7 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) dr
 		}
 
 		return nil
-	}).RetryT(t, 100*time.Millisecond, 15*time.Second)
+	}).RetryT(t, 100*time.Millisecond, 30*time.Second)
 
 	// Wait for secret to start
 	newRetryFunc(func() error {
@@ -327,7 +327,7 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) dr
 		}
 
 		return nil
-	}).RetryT(t, 100*time.Millisecond, 15*time.Second)
+	}).RetryT(t, 100*time.Millisecond, 30*time.Second)
 
 	return c
 }
@@ -403,6 +403,10 @@ func TestBackupRestore(t *testing.T) {
 		t.Errorf("Failed to lookup document: %s", describe(err))
 	} else if ok {
 		t.Errorf("Document should not be there: %s", meta2.Key)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -656,6 +660,10 @@ func TestBackupCompleteCycle(t *testing.T) {
 	} else if ok {
 		t.Errorf("Document should not be there: %s", meta2.Key)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 type backupResult struct {
@@ -795,7 +803,7 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	defer waitForHealthyClusterAfterBackup(t, c)
 
 	if isSingle {
-		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		waitctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		defer cancel()
 		c = waitForServerRestart(waitctx, c, t)
 	}
@@ -855,4 +863,8 @@ func TestBackupRestoreWithViews(t *testing.T) {
 			return interrupt{}
 		}).RetryT(t, 125*time.Millisecond, time.Minute)
 	})
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

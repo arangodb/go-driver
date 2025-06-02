@@ -429,6 +429,10 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 			}
 		})
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func ensureAnalyzer(ctx context.Context, db driver.Database, definition driver.ArangoSearchAnalyzerDefinition, t *testing.T) driver.ArangoSearchAnalyzer {
@@ -469,6 +473,10 @@ func TestArangoSearchAnalyzerGet(t *testing.T) {
 
 	_, err = db.Analyzer(ctx, "does-not-exist")
 	require.Error(t, err)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestArangoSearchAnalyzerGetAll(t *testing.T) {
@@ -509,6 +517,10 @@ func TestArangoSearchAnalyzerGetAll(t *testing.T) {
 	}
 
 	require.True(t, found)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestArangoSearchAnalyzerRemove(t *testing.T) {
@@ -546,4 +558,8 @@ func TestArangoSearchAnalyzerRemove(t *testing.T) {
 	}
 
 	require.False(t, found)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

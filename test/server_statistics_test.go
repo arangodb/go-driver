@@ -210,6 +210,11 @@ func TestServerStatisticsTraffic(t *testing.T) {
 	} else {
 		t.Log("Skipping ClientUser tests for statistics, since API is not present.")
 	}
+	db := ensureDatabase(ctx, c, "statistics_test", nil, t)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // myQueryRequest is used below for a special query test for forwarding.
@@ -354,5 +359,10 @@ func TestServerStatisticsForwarding(t *testing.T) {
 		checkTrafficAtMost(t, &statsBefore1, &statsAfter1, user,
 			&limits{Recv: 0.1, Sent: 0.1,
 				RecvCount: 0, SentCount: 0}, "Mango")
+	}
+	db := ensureDatabase(ctx, c, "statistics_test", nil, t)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

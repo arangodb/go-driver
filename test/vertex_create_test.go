@@ -57,6 +57,10 @@ func TestCreateVertex(t *testing.T) {
 			t.Errorf("Got invalid document. Expected '%+v', got '%+v'", book, readDoc)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateVertexReturnNew creates a document and checks the document returned in in ReturnNew.
@@ -89,6 +93,10 @@ func TestCreateVertexReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateVertexSilent creates a document with WithSilent.
@@ -108,6 +116,10 @@ func TestCreateVertexSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateVertexNil creates a document with a nil document.
@@ -120,5 +132,9 @@ func TestCreateVertexNil(t *testing.T) {
 
 	if _, err := vc.CreateDocument(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Fatalf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

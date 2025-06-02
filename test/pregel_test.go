@@ -91,4 +91,8 @@ func TestCreatePregelJob(t *testing.T) {
 	require.Greater(t, docResult.ResultField, 0.0)
 
 	t.Logf("resultField value: %f", docResult.ResultField)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

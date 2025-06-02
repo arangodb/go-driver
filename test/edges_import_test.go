@@ -78,6 +78,10 @@ func TestImportEdgesWithKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportEdgesWithoutKeys imports documents and then checks that it exists.
@@ -129,6 +133,10 @@ func TestImportEdgesWithoutKeys(t *testing.T) {
 		if stats.Empty != 0 {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -185,6 +193,10 @@ func TestImportEdgesEmptyEntries(t *testing.T) {
 		if stats.Empty != 1 {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -244,6 +256,10 @@ func TestImportEdgesInvalidEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportEdgesDuplicateEntries imports documents and then checks that it exists.
@@ -296,6 +312,10 @@ func TestImportEdgesDuplicateEntries(t *testing.T) {
 			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportEdgesDuplicateEntriesComplete imports documents and then checks that it exists.
@@ -336,6 +356,10 @@ func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 		Complete: true,
 	}); !driver.IsConflict(err) {
 		t.Errorf("Expected ConflictError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -402,6 +426,10 @@ func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportEdgesDuplicateEntriesReplace imports documents and then checks that it exists.
@@ -466,6 +494,10 @@ func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 				t.Errorf("Expected Distance to be 0, got %d", edge.Distance)
 			}
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -532,6 +564,10 @@ func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportEdgesDetails imports documents and then checks that it exists.
@@ -591,6 +627,10 @@ func TestImportEdgesDetails(t *testing.T) {
 			t.Errorf("Expected details[0] to be '%s', got '%s'", detailsExpected, details[0])
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportEdgesOverwriteYes imports documents and then checks that it exists.
@@ -640,6 +680,10 @@ func TestImportEdgesOverwriteYes(t *testing.T) {
 		} else if count != countExpected {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -691,6 +735,10 @@ func TestImportEdgesOverwriteNo(t *testing.T) {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportEdgesPrefix imports documents and then checks that it exists.
@@ -739,5 +787,9 @@ func TestImportEdgesPrefix(t *testing.T) {
 		t.Errorf("Failed to count documents: %s", describe(err))
 	} else if count != countExpected {
 		t.Errorf("Expected count to be %d, got %d", countExpected, count)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

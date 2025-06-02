@@ -114,6 +114,10 @@ func TestCreateArangoSearchView(t *testing.T) {
 	if len(p.Links) != 1 {
 		t.Errorf("Expected 1 link, got %d", len(p.Links))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateArangoSearchViewInvalidLinks attempts to create an arangosearch view with invalid links and then checks that it does not exists.
@@ -142,6 +146,10 @@ func TestCreateArangoSearchViewInvalidLinks(t *testing.T) {
 	if v, err := db.View(ctx, name); !driver.IsNotFound(err) {
 		t.Errorf("Expected NotFound error from View('%s'), got %s instead (%#v)", name, describe(err), v)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateEmptyArangoSearchView creates an arangosearch view without any links.
@@ -169,6 +177,14 @@ func TestCreateEmptyArangoSearchView(t *testing.T) {
 	if len(p.Links) != 0 {
 		t.Errorf("Expected 0 links, got %d", len(p.Links))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateDuplicateArangoSearchView creates an arangosearch view twice and then checks that it exists.
@@ -190,6 +206,10 @@ func TestCreateDuplicateArangoSearchView(t *testing.T) {
 	// Try to create again. Must fail
 	if _, err := db.CreateArangoSearchView(ctx, name, nil); !driver.IsConflict(err) {
 		t.Fatalf("Expect a Conflict error from CreateArangoSearchView, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -244,6 +264,10 @@ func TestCreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 		// TODO is the really the correct expected behavior.
 		t.Errorf("Expected 0 links, got %d", len(p.Links))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestAddCollectionMultipleViews creates a collection and two view. adds the collection to both views
@@ -261,6 +285,10 @@ func TestAddCollectionMultipleViews(t *testing.T) {
 	v2 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view2", nil, t)
 	if !tryAddArangoSearchLink(ctx, db, v2, "col_in_multi_view", t) {
 		t.Error("Link does not exists")
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -284,6 +312,10 @@ func TestAddCollectionMultipleViewsViaCreate(t *testing.T) {
 	v2 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view2", opts, t)
 	if !checkLinkExists(ctx, v2, "col_in_multi_view_create", t) {
 		t.Error("Link does not exists")
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -321,6 +353,10 @@ func TestGetArangoSearchOptimizeTopK(t *testing.T) {
 		t.Fatalf("Properties failed: %s", describe(err))
 	}
 	assert.Equal(t, optimizeTopK, p.OptimizeTopK)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestGetArangoSearchView creates an ArangoSearch view and then gets it again.
@@ -369,6 +405,10 @@ func TestGetArangoSearchView(t *testing.T) {
 		// 1 is always added by the system
 		t.Errorf("Expected 1 index, got %d", len(indexes))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestGetArangoSearchViews creates several arangosearch views and then gets all of them.
@@ -411,6 +451,10 @@ func TestGetArangoSearchViews(t *testing.T) {
 		if !found {
 			t.Errorf("Expected view '%s' is not found", n)
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -462,6 +506,10 @@ func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 		require.False(t, found)
 	})
 
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUseArangoSearchView tries to create a view and actually use it in
@@ -545,6 +593,10 @@ func TestUseArangoSearchView(t *testing.T) {
 			t.Fatalf("Expected result `John`, found `%s`", doc.Name)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUseArangoSearchViewWithNested tries to create a view with nested fields and actually use it in an AQL query.
@@ -612,6 +664,10 @@ func TestUseArangoSearchViewWithNested(t *testing.T) {
 		} else if cur.Count() != 2 || !cur.HasMore() {
 			t.Fatalf("Wrong number of return values: expected 1, found %d", cur.Count())
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -711,6 +767,10 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 			t.Fatalf("Expected result `John`, found `%s`", doc.Name)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestGetArangoSearchView creates an arangosearch view and then gets it again.
@@ -778,6 +838,10 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 		} else if sv.Compression != storedValuesCompression {
 			t.Errorf("StoredValues Compression is wrong: %s, expected %s", sv.Compression, storedValuesCompression)
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -922,6 +986,10 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 			}
 		})
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestArangoSearchViewProperties353 tests for custom analyzers.
@@ -989,6 +1057,10 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	require.EqualValues(t, analyzer.Properties.Locale, "en_US")
 	require.EqualValues(t, analyzer.Properties.Case, driver.ArangoSearchCaseLower)
 	require.Equal(t, util.NewType(true), link.IncludeAllFields)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
@@ -1037,6 +1109,10 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	linkedColumnProps = p.Links[linkedColName]
 	require.NotNil(t, linkedColumnProps)
 	require.Equal(t, util.NewType(true), linkedColumnProps.Cache)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestArangoSearchViewInMemoryCache(t *testing.T) {
@@ -1083,4 +1159,8 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, util.NewType(true), p.PrimaryKeyCache)
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

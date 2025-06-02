@@ -105,6 +105,10 @@ func TestCreateEdgeCollection(t *testing.T) {
 	} else if ec.Name() != colName {
 		t.Errorf("EdgeCollection return invalid collection, expected '%s', got '%s'", colName, ec.Name())
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateSatelliteEdgeCollection creates a graph and then adds an Satellite edge collection in it
@@ -179,6 +183,10 @@ func TestCreateSatelliteEdgeCollection(t *testing.T) {
 
 	// revert
 	g.Remove(ctx)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveEdgeCollection creates a graph and then adds an edge collection in it and then removes the edge collection.
@@ -221,6 +229,10 @@ func TestRemoveEdgeCollection(t *testing.T) {
 
 	// Collection must still exist in database
 	assertCollection(nil, db, colName, t)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestSetVertexConstraints creates a graph and then adds an edge collection in it and then removes the edge collection.
@@ -277,6 +289,10 @@ func TestSetVertexConstraints(t *testing.T) {
 			t.Errorf("Invalid to constraints. Expected ['colD'], got %q", constraints.To)
 		}
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRenameEdgeCollection creates a graph and then adds an edge collection in it and then renames the edge collection.
@@ -324,4 +340,8 @@ func TestRenameEdgeCollection(t *testing.T) {
 
 	// Collection must still exist in database
 	assertCollection(nil, db, newColName, t)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

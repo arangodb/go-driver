@@ -59,6 +59,10 @@ func TestRemoveEdge(t *testing.T) {
 	if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveEdgeReturnOld creates a document, removes it with ReturnOld, which is an invalid argument.
@@ -91,6 +95,10 @@ func TestRemoveEdgeReturnOld(t *testing.T) {
 
 	// Check an old document
 	require.Equal(t, doc, old)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveEdgeSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.
@@ -125,6 +133,10 @@ func TestRemoveEdgeSilent(t *testing.T) {
 	var readDoc RouteEdge
 	if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -186,6 +198,10 @@ func TestRemoveEdgeRevision(t *testing.T) {
 	} else if found {
 		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveEdgeKeyEmpty removes a document it with an empty key.
@@ -199,5 +215,9 @@ func TestRemoveEdgeKeyEmpty(t *testing.T) {
 
 	if _, err := ec.RemoveDocument(nil, ""); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

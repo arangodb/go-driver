@@ -76,6 +76,10 @@ func TestReplaceDocuments(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, replacements[i], readDoc)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestReplaceDocumentsReturnOld creates documents, replaces them checks the ReturnOld values.
@@ -119,6 +123,10 @@ func TestReplaceDocumentsReturnOld(t *testing.T) {
 		if !reflect.DeepEqual(doc, oldDocs[i]) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, oldDocs[i])
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -164,6 +172,10 @@ func TestReplaceDocumentsReturnNew(t *testing.T) {
 		if !reflect.DeepEqual(expected, newDocs[i]) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, expected, newDocs[i])
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -215,6 +227,10 @@ func TestReplaceDocumentsSilent(t *testing.T) {
 		if len(metas) > 0 {
 			t.Errorf("Expected 0 metas, got %d", len(metas))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -285,6 +301,10 @@ func TestReplaceDocumentsRevision(t *testing.T) {
 	} else if err := errs.FirstNonNil(); err != nil {
 		t.Fatalf("Expected no errors, got first: %s", describe(err))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestReplaceDocumentsKeyEmpty replaces a document it with an empty key.
@@ -299,6 +319,10 @@ func TestReplaceDocumentsKeyEmpty(t *testing.T) {
 	if _, _, err := col.ReplaceDocuments(nil, []string{""}, replacement); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestReplaceDocumentsUpdateNil replaces a document it with a nil update.
@@ -308,6 +332,10 @@ func TestReplaceDocumentsUpdateNil(t *testing.T) {
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	if _, _, err := col.ReplaceDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -326,6 +354,10 @@ func TestReplaceDocumentsUpdateLenDiff(t *testing.T) {
 	}
 	if _, _, err := col.ReplaceDocuments(nil, []string{"only1"}, replacements); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -378,5 +410,9 @@ func TestReplaceDocumentsInWaitForSyncCollection(t *testing.T) {
 		if !reflect.DeepEqual(replacements[i], readDoc) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, replacements[i], readDoc)
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

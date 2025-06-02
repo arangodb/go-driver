@@ -88,6 +88,10 @@ func TestEnsureFullTextIndex(t *testing.T) {
 			t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureGeoIndex creates a collection with a geo index.
@@ -146,6 +150,10 @@ func TestEnsureGeoIndex(t *testing.T) {
 			t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureGeoIndexLegacyPolygons creates a collection with a Geo index and additional LegacyPolygons options.
@@ -175,6 +183,10 @@ func TestEnsureGeoIndexLegacyPolygons(t *testing.T) {
 	require.True(t, created)
 	require.Equal(t, driver.GeoIndex, idx.Type())
 	require.False(t, idxDefault.LegacyPolygons())
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureHashIndex creates a collection with a hash index.
@@ -237,6 +249,10 @@ func TestEnsureHashIndex(t *testing.T) {
 		} else if found {
 			t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 		}
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -301,6 +317,10 @@ func TestEnsurePersistentIndex(t *testing.T) {
 			t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsurePersistentIndexOptions creates a collection with a persistent index and additional options.
@@ -330,6 +350,10 @@ func TestEnsurePersistentIndexOptions(t *testing.T) {
 	require.Equal(t, "extra2", idx.StoredValues()[1])
 
 	require.True(t, idx.CacheEnabled())
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureSkipListIndex creates a collection with a skiplist index.
@@ -396,6 +420,10 @@ func TestEnsureSkipListIndex(t *testing.T) {
 			t.Errorf("Index '%s' does exist, expected it not to exist", idx.Name())
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureTTLIndex creates a collection with a ttl index.
@@ -461,6 +489,10 @@ func TestEnsureTTLIndex(t *testing.T) {
 	if idx.ExpireAfter() != 0 {
 		t.Errorf("Expected ExpireAfter to be 0, found `%d`", idx.ExpireAfter())
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureZKDIndex creates a collection with a ZKD index.
@@ -485,6 +517,10 @@ func TestEnsureZKDIndex(t *testing.T) {
 
 	err = idx.Remove(nil)
 	require.NoError(t, err)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureZKDIndexWithOptions creates a collection with a ZKD index and additional options
@@ -514,6 +550,10 @@ func TestEnsureZKDIndexWithOptions(t *testing.T) {
 
 	err = idx.Remove(nil)
 	require.NoError(t, err)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestEnsureInvertedIndex creates a collection with an inverted index
@@ -641,5 +681,9 @@ func TestEnsureInvertedIndex(t *testing.T) {
 			err = idx.Remove(ctx)
 			require.NoError(t, err)
 		})
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

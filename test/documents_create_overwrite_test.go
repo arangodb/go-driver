@@ -89,6 +89,10 @@ func TestCreateOverwriteDocument(t *testing.T) {
 		}
 	})
 
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateOverwriteModeDocument creates a document and then checks that it exists. Check with overwriteMode flag.
@@ -476,4 +480,8 @@ func TestCreateOverwriteModeDocument(t *testing.T) {
 		require.EqualError(t, errSlice[0], "unique constraint violated - in index primary of type primary over '_key'; conflicting key: "+id[0])
 		require.EqualError(t, errSlice[1], "unique constraint violated - in index primary of type primary over '_key'; conflicting key: "+id[1])
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

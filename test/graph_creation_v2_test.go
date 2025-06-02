@@ -71,6 +71,10 @@ func Test_Graph_AdvancedCreateV2(t *testing.T) {
 			}
 		}
 	})
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // Test_Graph_AdvancedCreateV2_Defaults will check if graph created have properly set replication factor and write concern by default
@@ -111,6 +115,10 @@ func Test_Graph_AdvancedCreateV2_Defaults(t *testing.T) {
 			}
 		}
 	})
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestGraphCreationV2(t *testing.T) {
@@ -250,6 +258,11 @@ func TestGraphCreationV2(t *testing.T) {
 		require.Equal(t, g.Name(), graphs[0].Name())
 		require.True(t, graphs[0].IsDisjoint())
 	})
+	db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestHybridSmartGraphCreationV2(t *testing.T) {
@@ -302,6 +315,10 @@ func TestHybridSmartGraphCreationV2(t *testing.T) {
 		} else {
 			require.True(t, prop.IsSatellite())
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -359,4 +376,8 @@ func TestHybridSmartGraphCreationConditions(t *testing.T) {
 		require.Empty(t, g.SmartGraphAttribute())
 		require.True(t, g.IsSmart())
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

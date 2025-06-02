@@ -90,6 +90,10 @@ func TestCreateVertexCollection(t *testing.T) {
 	} else if vc.Name() != "person" {
 		t.Errorf("VertexCollection return invalid collection, expected 'person', got '%s'", vc.Name())
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateSatelliteVertexCollection creates a graph and then adds a Satellite vertex collection in it
@@ -148,6 +152,10 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 	// revert
 	err = g.Remove(ctx)
 	require.NoError(t, err)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveVertexCollection creates a graph and then adds an vertex collection in it and then removes the vertex collection.
@@ -189,7 +197,10 @@ func TestRemoveVertexCollection(t *testing.T) {
 
 	// Collection must still exist in database
 	assertCollection(nil, db, "friends", t)
-
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRenameVertexCollection creates a graph and then adds an vertex collection in it and then renames the vertex collection.
@@ -237,5 +248,8 @@ func TestRenameVertexCollection(t *testing.T) {
 
 	// Collection must still exist in database
 	assertCollection(nil, db, newName, t)
-
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

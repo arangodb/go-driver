@@ -120,6 +120,10 @@ func TestConcurrentCreateSmallDocuments(t *testing.T) {
 		wgCreators.Wait()
 		close(docChan)
 		wgReaders.Wait()
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 }
 
@@ -213,5 +217,9 @@ func TestConcurrentCreateBigDocuments(t *testing.T) {
 		wgCreators.Wait()
 		close(docChan)
 		wgReaders.Wait()
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 }

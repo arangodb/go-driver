@@ -84,6 +84,10 @@ func TestReplaceEdges(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, replacements[i], readDoc)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestReplaceEdgesReturnOld creates documents, replaces them checks the ReturnOld values.
@@ -139,6 +143,10 @@ func TestReplaceEdgesReturnOld(t *testing.T) {
 		if !reflect.DeepEqual(doc, oldDocs[i]) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, oldDocs[i])
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -197,6 +205,10 @@ func TestReplaceEdgesReturnNew(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, expected, newDocs[i])
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestReplaceEdgesSilent creates documents, replaces them with Silent() and then checks the meta is indeed empty.
@@ -251,6 +263,10 @@ func TestReplaceEdgesSilent(t *testing.T) {
 		if len(metas) > 0 {
 			t.Errorf("Expected 0 metas, got %d", len(metas))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -334,6 +350,10 @@ func TestReplaceEdgesRevision(t *testing.T) {
 	} else if err := errs.FirstNonNil(); err != nil {
 		t.Fatalf("Expected no errors, got first: %s", describe(err))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestReplaceEdgesKeyEmpty replaces a document it with an empty key.
@@ -351,6 +371,10 @@ func TestReplaceEdgesKeyEmpty(t *testing.T) {
 	if _, _, err := ec.ReplaceDocuments(nil, []string{""}, replacement); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestReplaceEdgesUpdateNil replaces a document it with a nil update.
@@ -364,6 +388,10 @@ func TestReplaceEdgesUpdateNil(t *testing.T) {
 
 	if _, _, err := ec.ReplaceDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -386,5 +414,9 @@ func TestReplaceEdgesUpdateLenDiff(t *testing.T) {
 	}
 	if _, _, err := ec.ReplaceDocuments(nil, []string{"only1"}, replacements); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

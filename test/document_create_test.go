@@ -67,6 +67,10 @@ func TestCreateDocument(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateDocumentWithKey creates a document with given key and then checks that it exists.
@@ -100,6 +104,10 @@ func TestCreateDocumentWithKey(t *testing.T) {
 	// Retry creating the document with same key. This must fail.
 	if _, err := col.CreateDocument(nil, doc); !driver.IsConflict(err) {
 		t.Fatalf("Expected ConflictError, got %s", describe(err))
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -142,6 +150,10 @@ func TestCreateDocumentReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateDocumentSilent creates a document with WithSilent.
@@ -159,6 +171,10 @@ func TestCreateDocumentSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateDocumentNil creates a document with a nil document.
@@ -168,6 +184,10 @@ func TestCreateDocumentNil(t *testing.T) {
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	if _, err := col.CreateDocument(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Fatalf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -201,5 +221,9 @@ func TestCreateDocumentInWaitForSyncCollection(t *testing.T) {
 	}
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

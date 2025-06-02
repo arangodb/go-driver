@@ -64,6 +64,10 @@ func TestRemoveVertices(t *testing.T) {
 			t.Fatalf("Expected NotFoundError at %d, got  %s", i, describe(err))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveVerticesReturnOld creates documents, removes them checks the ReturnOld value.
@@ -99,6 +103,10 @@ func TestRemoveVerticesReturnOld(t *testing.T) {
 	// Check old documents
 	for i, doc := range docs {
 		require.Equal(t, doc, oldDocs[i])
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -141,6 +149,10 @@ func TestRemoveVerticesSilent(t *testing.T) {
 		if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 			t.Errorf("Expected NotFoundError at %d, got  %s", i, describe(err))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -210,6 +222,10 @@ func TestRemoveVerticesRevision(t *testing.T) {
 			t.Errorf("Expected NotFoundError at %d, got  %s", i, describe(err))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveVerticesKeyEmpty removes a document it with an empty key.
@@ -222,5 +238,9 @@ func TestRemoveVerticesKeyEmpty(t *testing.T) {
 
 	if _, _, err := vc.RemoveDocuments(nil, []string{""}); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

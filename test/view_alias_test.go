@@ -132,4 +132,8 @@ func TestSearchViewsAlias(t *testing.T) {
 	views, err = db.Views(ctx)
 	require.NoError(t, err)
 	require.Len(t, views, 0)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

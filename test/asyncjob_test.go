@@ -135,6 +135,10 @@ func TestAsyncJobListPending(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestAsyncJobCancel(t *testing.T) {

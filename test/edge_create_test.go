@@ -63,6 +63,10 @@ func TestCreateEdge(t *testing.T) {
 			t.Errorf("Got invalid _to. Expected '%s', got '%s'", to.ID, readDoc.To)
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateCustomEdge creates an edge with a custom type and then checks that it exists.
@@ -93,6 +97,10 @@ func TestCreateCustomEdge(t *testing.T) {
 		t.Fatalf("Failed to read edge '%s': %s", meta.Key, describe(err))
 	} else if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got invalid return document. Expected '%+v', got '%+v'", doc, readDoc)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -132,6 +140,10 @@ func TestCreateEdgeReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateEdgeSilent creates a document with WithSilent.
@@ -157,6 +169,10 @@ func TestCreateEdgeSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateEdgeNil creates a document with a nil document.
@@ -170,5 +186,9 @@ func TestCreateEdgeNil(t *testing.T) {
 
 	if _, err := ec.CreateDocument(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Fatalf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

@@ -142,4 +142,8 @@ func TestRevisionTree(t *testing.T) {
 		json.Unmarshal(bytes, &user)
 		require.Equalf(t, user, expectedDocuments[i], "Documents should be the same")
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

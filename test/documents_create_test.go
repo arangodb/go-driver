@@ -84,6 +84,10 @@ func TestCreateDocuments(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateDocumentsReturnNew creates a document and checks the document returned in in ReturnNew.
@@ -128,6 +132,10 @@ func TestCreateDocumentsReturnNew(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateDocumentsSilent creates a document with WithSilent.
@@ -156,6 +164,10 @@ func TestCreateDocumentsSilent(t *testing.T) {
 			t.Errorf("Expected 0 errors, got %d", len(errs))
 		}
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateDocumentsNil creates multiple documents with a nil documents input.
@@ -165,6 +177,10 @@ func TestCreateDocumentsNil(t *testing.T) {
 	col := ensureCollection(nil, db, "documents_test", nil, t)
 	if _, _, err := col.CreateDocuments(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -180,6 +196,10 @@ func TestCreateDocumentsNonSlice(t *testing.T) {
 	var m map[string]interface{}
 	if _, _, err := col.CreateDocuments(nil, &m); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -225,5 +245,9 @@ func TestCreateDocumentsInWaitForSyncCollection(t *testing.T) {
 				t.Errorf("Got wrong document. Expected %+v, got %+v", docs[i], readDoc)
 			}
 		}
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

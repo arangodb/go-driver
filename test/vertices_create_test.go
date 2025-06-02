@@ -83,6 +83,10 @@ func TestCreateVertices(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateVerticesReturnNew creates documents and checks the document returned in in ReturnNew.
@@ -130,6 +134,10 @@ func TestCreateVerticesReturnNew(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateVerticesSilent creates documents with WithSilent.
@@ -160,6 +168,10 @@ func TestCreateVerticesSilent(t *testing.T) {
 			t.Errorf("Expected 0 errors, got %d", len(errs))
 		}
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateVerticesNil creates multiple documents with a nil documents input.
@@ -171,6 +183,10 @@ func TestCreateVerticesNil(t *testing.T) {
 	vc := ensureVertexCollection(ctx, g, "rivers", t)
 	if _, _, err := vc.CreateDocuments(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -189,5 +205,9 @@ func TestCreateVerticesNonSlice(t *testing.T) {
 	var m map[string]interface{}
 	if _, _, err := vc.CreateDocuments(nil, &m); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

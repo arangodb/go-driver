@@ -60,6 +60,10 @@ func TestRemoveVertex(t *testing.T) {
 	} else if found {
 		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveVertexReturnOld creates a document, removes it checks the ReturnOld value.
@@ -84,6 +88,10 @@ func TestRemoveVertexReturnOld(t *testing.T) {
 
 	// Check an old document
 	require.Equal(t, doc, old)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveVertexSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.
@@ -111,6 +119,10 @@ func TestRemoveVertexSilent(t *testing.T) {
 	var readDoc Book
 	if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -157,6 +169,10 @@ func TestRemoveVertexRevision(t *testing.T) {
 	if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestRemoveVertexKeyEmpty removes a document it with an empty key.
@@ -169,5 +185,9 @@ func TestRemoveVertexKeyEmpty(t *testing.T) {
 
 	if _, err := vc.RemoveDocument(nil, ""); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

@@ -38,6 +38,10 @@ func BenchmarkCreateDocument(b *testing.B) {
 			b.Fatalf("Failed to create new document: %s", describe(err))
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // BenchmarkCreateDocumentParallel measures parallel CreateDocument operations for a simple document.
@@ -58,6 +62,10 @@ func BenchmarkCreateDocumentParallel(b *testing.B) {
 			}
 		}
 	})
+	err := db.Remove(nil)
+	if err != nil {
+		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // BenchmarkReadDocument measures the ReadDocument operation for a simple document.
@@ -80,6 +88,10 @@ func BenchmarkReadDocument(b *testing.B) {
 		if _, err := col.ReadDocument(nil, meta.Key, &result); err != nil {
 			b.Errorf("Failed to read document: %s", describe(err))
 		}
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -106,6 +118,10 @@ func BenchmarkReadDocumentParallel(b *testing.B) {
 			}
 		}
 	})
+	err = db.Remove(nil)
+	if err != nil {
+		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // BenchmarkRemoveDocument measures the RemoveDocument operation for a simple document.
@@ -132,5 +148,9 @@ func BenchmarkRemoveDocument(b *testing.B) {
 		if _, err := col.RemoveDocument(nil, meta.Key); err != nil {
 			b.Errorf("Failed to remove document: %s", describe(err))
 		}
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

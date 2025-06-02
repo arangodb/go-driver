@@ -207,6 +207,10 @@ func TestGrantUserDatabase(t *testing.T) {
 	} else {
 		t.Logf("SetDatabaseAccess(ReadOnly) is not supported on versions below 3.2 (got version %s)", version.Version)
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestGrantUserDefaultDatabase creates a user & database and granting the user access to the "default" database.
@@ -333,6 +337,10 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 			}
 			break
 		}
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -526,6 +534,10 @@ func TestGrantUserCollection(t *testing.T) {
 	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUserAccessibleDatabases creates a user & databases and checks the list of accessible databases.
@@ -635,6 +647,19 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	} else {
 		t.Logf("Last part of test fails on version < 3.2 (got version %s)", version.Version)
 	}
+	err = u.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+	}
+	err = db1.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db1.Name(), err)
+	}
+	err = db2.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db2.Name(), err)
+	}
+	
 }
 
 func waitForDatabaseAccess(authClient driver.Client, dbname string, t *testing.T) driver.Database {

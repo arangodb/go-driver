@@ -521,6 +521,10 @@ func TestResponseHeader(t *testing.T) {
 		if x := resp.Header("ETAG"); x != expectedETag {
 			t.Errorf("Unexpected result from Header('ETAG'), got '%s', expected '%s'", x, expectedETag)
 		}
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 }
 
@@ -623,6 +627,17 @@ func TestClientConnectionReuse(t *testing.T) {
 		}
 	}
 	wg.Wait()
+	for dbName, user := range dbUsers {
+		t.Logf("Dropping DB %s ...", dbName)
+		db, err := c.Database(ctx, dbName)
+		if err == nil {
+			err = db.Remove(ctx)
+		}
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", dbName, err)
+		}
+	}
+	
 }
 
 func checkDBAccess(ctx context.Context, conn driver.Connection, dbName, username, password string) error {

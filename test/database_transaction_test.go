@@ -68,6 +68,10 @@ func TestDatabaseTransaction(t *testing.T) {
 			}
 		})
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func insertDocument(ctx context.Context, col driver.Collection, t *testing.T) driver.DocumentMeta {
@@ -127,6 +131,10 @@ func TestTransactionCommit(t *testing.T) {
 
 	// document should exist
 	documentExists(ctx, col, meta1.Key, true, t)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestTransactionAbort(t *testing.T) {
@@ -158,4 +166,8 @@ func TestTransactionAbort(t *testing.T) {
 
 	// document should exist
 	documentExists(ctx, col, meta1.Key, false, t)
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

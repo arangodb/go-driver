@@ -60,6 +60,10 @@ func TestUpdateVertex(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVertexReturnOld creates a document, updates it checks the ReturnOld value.
@@ -90,6 +94,10 @@ func TestUpdateVertexReturnOld(t *testing.T) {
 	// Check old document
 	if !reflect.DeepEqual(doc, old) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, old)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -124,6 +132,10 @@ func TestUpdateVertexReturnNew(t *testing.T) {
 	expected.Age = 45
 	if !reflect.DeepEqual(expected, newDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", expected, newDoc)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -182,6 +194,10 @@ func TestUpdateVertexKeepNullTrue(t *testing.T) {
 			t.Errorf("Expected user to be found and nil, got %s", string(*raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVertexKeepNullFalse creates a document, updates it with KeepNull(false) and then checks the update has succeeded.
@@ -219,6 +235,10 @@ func TestUpdateVertexKeepNullFalse(t *testing.T) {
 	if readDoc.User == nil {
 		t.Errorf("Expected user to be untouched, got %v", readDoc.User)
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVertexSilent creates a document, updates it with Silent() and then checks the meta is indeed empty.
@@ -245,6 +265,10 @@ func TestUpdateVertexSilent(t *testing.T) {
 		t.Fatalf("Failed to update document '%s': %s", meta.Key, describe(err))
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -291,6 +315,10 @@ func TestUpdateVertexRevision(t *testing.T) {
 	if _, err := vc.UpdateDocument(updatedRevCtx, meta.Key, update); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVertexKeyEmpty updates a document it with an empty key.
@@ -308,6 +336,10 @@ func TestUpdateVertexKeyEmpty(t *testing.T) {
 	if _, err := vc.UpdateDocument(nil, "", update); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestUpdateVertexUpdateNil updates a document it with a nil update.
@@ -320,5 +352,9 @@ func TestUpdateVertexUpdateNil(t *testing.T) {
 
 	if _, err := vc.UpdateDocument(nil, "validKey", nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
+	}
+	err := db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

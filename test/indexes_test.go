@@ -46,6 +46,10 @@ func TestDefaultIndexes(t *testing.T) {
 			t.Errorf("Expected 1 index, got %d", len(idxs))
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestDefaultEdgeIndexes creates a edge collection without any custom index.
@@ -75,6 +79,10 @@ func TestDefaultEdgeIndexes(t *testing.T) {
 		if !existed {
 			t.Errorf("Expected `%s` index presents, got no", driver.EdgeIndex)
 		}
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -127,6 +135,10 @@ func TestIndexes(t *testing.T) {
 		// 3 because 1 system index + 2 created above
 		t.Errorf("Expected 3 indexes, got %d", stats.Figures.Indexes.Count)
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestMultipleIndexes creates a collection with a full text index.
@@ -168,6 +180,10 @@ func TestMultipleIndexes(t *testing.T) {
 	} else if stats.Figures.Indexes.Count != 3 {
 		// 3 because 1 system index + 2 created above
 		t.Errorf("Expected 3 indexes, got %d", stats.Figures.Indexes.Count)
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -224,6 +240,10 @@ func TestIndexesDeduplicateHash(t *testing.T) {
 			if _, err := col.CreateDocument(nil, doc); err != nil {
 				t.Errorf("Expected success, got %s", describe(err))
 			}
+		}
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}
 }
@@ -282,6 +302,10 @@ func TestIndexesDeduplicateSkipList(t *testing.T) {
 				t.Errorf("Expected success, got %s", describe(err))
 			}
 		}
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 }
 
@@ -336,6 +360,10 @@ func TestIndexesTTL(t *testing.T) {
 
 	if !wasThere {
 		t.Fatalf("Document never existed")
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -488,6 +516,10 @@ func TestNamedIndexes(t *testing.T) {
 			}
 		})
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestNamedIndexesClusterInventory(t *testing.T) {
@@ -539,6 +571,10 @@ func TestNamedIndexesClusterInventory(t *testing.T) {
 				t.Errorf("Index with id %s not found", idx.ID())
 			}
 		})
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -600,7 +636,10 @@ func TestTTLIndexesClusterInventory(t *testing.T) {
 			t.Fatalf("Index not created: %s", describe(ctx.Err()))
 		}
 	}
-
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestPersistentIndexCreation(t *testing.T) {
@@ -630,5 +669,9 @@ func TestPersistentIndexCreation(t *testing.T) {
 		)
 		require.NoError(t, err)
 		require.NotNil(t, index)
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

@@ -102,6 +102,12 @@ func TestCreateDatabase(t *testing.T) {
 	} else if !found {
 		t.Errorf("DatabaseExists('%s') return false, expected true", name)
 	}
+	db, err := c.Database(driver.WithSkipExistCheck(nil, true), name)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
+
 }
 
 // TestRemoveDatabase creates a database and then removes it.

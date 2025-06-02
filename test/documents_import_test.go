@@ -65,6 +65,10 @@ func TestImportDocumentsWithKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportDocumentsWithoutKeys imports documents and then checks that it exists.
@@ -102,6 +106,10 @@ func TestImportDocumentsWithoutKeys(t *testing.T) {
 		if stats.Empty != 0 {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -148,6 +156,10 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 		if stats.Empty != 1 {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -196,6 +208,10 @@ func TestImportDocumentsInvalidEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportDocumentsDuplicateEntries imports documents and then checks that it exists.
@@ -238,6 +254,10 @@ func TestImportDocumentsDuplicateEntries(t *testing.T) {
 			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportDocumentsDuplicateEntriesComplete imports documents and then checks that it exists.
@@ -264,6 +284,10 @@ func TestImportDocumentsDuplicateEntriesComplete(t *testing.T) {
 		Complete: true,
 	}); !driver.IsConflict(err) {
 		t.Errorf("Expected ConflictError, got %s", describe(err))
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -321,6 +345,10 @@ func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportDocumentsDuplicateEntriesReplace imports documents and then checks that it exists.
@@ -376,6 +404,10 @@ func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
 				t.Errorf("Expected Age to be 0, got %d", user.Age)
 			}
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -433,6 +465,10 @@ func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
 			}
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportDocumentsDetails imports documents and then checks that it exists.
@@ -483,6 +519,10 @@ func TestImportDocumentsDetails(t *testing.T) {
 			t.Errorf("Expected details[0] to be '%s', got '%s'", detailsExpected, details[0])
 		}
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportDocumentsOverwriteYes imports documents and then checks that it exists.
@@ -523,6 +563,10 @@ func TestImportDocumentsOverwriteYes(t *testing.T) {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestImportDocumentsOverwriteNo imports documents and then checks that it exists.
@@ -562,6 +606,10 @@ func TestImportDocumentsOverwriteNo(t *testing.T) {
 		} else if count != countExpected {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -606,5 +654,9 @@ func TestImportDocumentsWithKeysInWaitForSyncCollection(t *testing.T) {
 		if stats.Empty != 0 {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
+	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

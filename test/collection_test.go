@@ -74,6 +74,10 @@ func TestGetCollection(t *testing.T) {
 
 	_, err = db.Collection(driver.WithSkipExistCheck(nil, true), name)
 	require.NoError(t, err)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateCollection creates a collection and then checks that it exists.
@@ -89,6 +93,10 @@ func TestCreateCollection(t *testing.T) {
 		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
 	} else if !found {
 		t.Errorf("CollectionExists('%s') return false, expected true", name)
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -172,6 +180,10 @@ func TestCollection_CacheEnabled(t *testing.T) {
 
 		require.True(t, prop.CacheEnabled)
 	})
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollection_ComputedValues
@@ -314,6 +326,10 @@ func TestCollection_ComputedValues(t *testing.T) {
 		// we should get the default value for ComputeOn - ["insert", "update", "replace"]
 		require.Len(t, prop.ComputedValues[0].ComputeOn, 3)
 	})
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateSatelliteCollection create a satellite collection
@@ -346,6 +362,10 @@ func TestCreateSatelliteCollection(t *testing.T) {
 				t.Errorf("Collection %s is not satellite", name)
 			}
 		}
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -388,6 +408,10 @@ func TestCreateSmartJoinCollection(t *testing.T) {
 	prop, err := colRead.Properties(nil)
 	require.NoError(t, err)
 	require.Equal(t, "smart", prop.SmartJoinAttribute)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCreateCollectionWithShardingStrategy create a collection with non default sharding strategy
@@ -421,6 +445,10 @@ func TestCreateCollectionWithShardingStrategy(t *testing.T) {
 				t.Errorf("Collection does not have the correct sharding strategy value, expected `%s`, found `%s`", driver.ShardingStrategyCommunityCompat, prop.ShardingStrategy)
 			}
 		}
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -465,6 +493,10 @@ func TestRemoveCollection(t *testing.T) {
 		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
 	} else if found {
 		t.Errorf("CollectionExists('%s') return true, expected false", name)
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -529,6 +561,10 @@ func TestLoadUnloadCollection(t *testing.T) {
 			break
 		}
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionName creates a collection and checks its name
@@ -542,6 +578,10 @@ func TestCollectionName(t *testing.T) {
 	}
 	if col.Name() != name {
 		t.Errorf("Collection.Name() is wrong, got '%s', expected '%s'", col.Name(), name)
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -582,6 +622,10 @@ func TestCollectionTruncate(t *testing.T) {
 	} else if c != 0 {
 		t.Errorf("Expected 0 documents, got %d", c)
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionProperties creates a collection and checks its properties
@@ -615,6 +659,10 @@ func TestCollectionProperties(t *testing.T) {
 		if p.Type != driver.CollectionTypeDocument {
 			t.Errorf("Expected type %d, got %d", driver.CollectionTypeDocument, p.Type)
 		}
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -723,6 +771,10 @@ func TestCollectionSetProperties(t *testing.T) {
 	} else {
 		t.Errorf("Cluster failed: %s", describe(err))
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 func TestCollectionSetPropertiesSatellite(t *testing.T) {
@@ -751,6 +803,10 @@ func TestCollectionSetPropertiesSatellite(t *testing.T) {
 			if p.ReplicationFactor != replFact {
 				t.Errorf("Expected ReplicationFactor %d, got %d", replFact, p.ReplicationFactor)
 			}
+		}
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	} else if driver.IsPreconditionFailed(err) {
 		t.Logf("ReplicationFactor tests skipped because we're not running in a cluster")
@@ -787,6 +843,10 @@ func TestCollectionRevision(t *testing.T) {
 			t.Errorf("Expected revision before, after to be different. Got '%s', '%s'", before, after)
 		}
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionChecksum creates a collection, checks checksum after adding documents.
@@ -821,6 +881,10 @@ func TestCollectionChecksum(t *testing.T) {
 		require.NotEqual(t, after.Checksum, afterWithData.Checksum)
 		require.NotEqual(t, afterWithRevision.Checksum, afterWithData.Checksum)
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionStatistics creates a collection, checks statistics after adding documents.
@@ -853,6 +917,10 @@ func TestCollectionStatistics(t *testing.T) {
 		if before.Figures.DataFiles.FileSize > after.Figures.DataFiles.FileSize {
 			t.Errorf("Expected DataFiles.FileSize before <= after. Got %d, %d", before.Figures.DataFiles.FileSize, after.Figures.DataFiles.FileSize)
 		}
+	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -897,6 +965,10 @@ func TestCollectionMinReplFactDeprecatedCreate(t *testing.T) {
 			}
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionMinReplFactDeprecatedInvalid creates a collection with minReplicationFactor > replicationFactor
@@ -919,6 +991,10 @@ func TestCollectionMinReplFactDeprecatedInvalid(t *testing.T) {
 		t.Errorf("CollectionExists('%s') failed: %s", name, describe(err))
 	} else if found {
 		t.Errorf("Collection %s should not exist", name)
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -960,6 +1036,10 @@ func TestCollectionMinReplFactDeprecatedClusterInv(t *testing.T) {
 				minRepl, col.Parameters.WriteConcern)
 		}
 	}
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionMinReplFactDeprecatedSetProp updates the minimal replication factor using SetProperties
@@ -995,6 +1075,10 @@ func TestCollectionMinReplFactDeprecatedSetProp(t *testing.T) {
 			}
 		}
 	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionMinReplFactDeprecatedSetPropInvalid updates the minimal replication factor
@@ -1029,6 +1113,10 @@ func TestCollectionMinReplFactDeprecatedSetPropInvalid(t *testing.T) {
 				t.Fatalf("WriteConcern not updated, expected %d, found %d", minRepl, prop.WriteConcern)
 			}
 		}
+	}
+	err := db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -1067,6 +1155,10 @@ func TestCollectionWriteConcernCreate(t *testing.T) {
 	assert.Equalf(t, minRepl, prop.MinReplicationFactor,
 		"Collection does not have the correct MinReplicationFactor value, expected `%d`, found `%d`", minRepl,
 		prop.MinReplicationFactor)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionWriteConcernInvalid creates a collection with WriteConcern > replicationFactor
@@ -1090,6 +1182,10 @@ func TestCollectionWriteConcernInvalid(t *testing.T) {
 	found, err := db.CollectionExists(nil, name)
 	require.Nilf(t, err, "CollectionExists('%s') failed: %s", name, describe(err))
 	assert.Equalf(t, false, found, "Collection %s should not exist", name)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionWriteConcernClusterInv tests if WriteConcern is forwarded to ClusterInfo
@@ -1117,6 +1213,10 @@ func TestCollectionWriteConcernClusterInv(t *testing.T) {
 	assert.Equalf(t, minRepl, col.Parameters.WriteConcern,
 		"Collection does not have the correct WriteConcern value, expected `%d`, found `%d`",
 		minRepl, col.Parameters.WriteConcern)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionWriteConcernSetProp updates the WriteConcern using SetProperties
@@ -1142,6 +1242,10 @@ func TestCollectionWriteConcernSetProp(t *testing.T) {
 	require.Nilf(t, err, "Failed to get properties: %s", describe(err))
 
 	assert.Equal(t, writeConcernChanged, prop.WriteConcern)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // TestCollectionWriteConcernSetPropInvalid updates the writeConcern to an invalid value using SetProperties.
@@ -1170,6 +1274,10 @@ func TestCollectionWriteConcernSetPropInvalid(t *testing.T) {
 	require.Nilf(t, err, "Failed to get properties: %s", describe(err))
 	assert.Equalf(t, defaultWriteConcern, prop.WriteConcern, "MinReplicationFactor not updated, expected %d, found %d",
 		minRepl, prop.WriteConcern)
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
 
 // Test_CollectionShards creates a collection and gets the shards' information.
@@ -1225,4 +1333,8 @@ func Test_CollectionShards(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, driver.ReplicationFactorSatellite, shards.ReplicationFactor)
 	})
+	err = db.Remove(nil)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }
