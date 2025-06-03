@@ -34,6 +34,12 @@ func TestRemoveVertex(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "remove_vertex_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "users", t)
 
@@ -60,10 +66,6 @@ func TestRemoveVertex(t *testing.T) {
 	} else if found {
 		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveVertexReturnOld creates a document, removes it checks the ReturnOld value.
@@ -72,6 +74,12 @@ func TestRemoveVertexReturnOld(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "remove_vertex_returnOld_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
@@ -88,10 +96,6 @@ func TestRemoveVertexReturnOld(t *testing.T) {
 
 	// Check an old document
 	require.Equal(t, doc, old)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveVertexSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.
@@ -99,6 +103,12 @@ func TestRemoveVertexSilent(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "remove_vertex_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
@@ -120,10 +130,6 @@ func TestRemoveVertexSilent(t *testing.T) {
 	if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveVertexRevision creates a document, removes it with an incorrect revision.
@@ -131,6 +137,12 @@ func TestRemoveVertexRevision(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "remove_vertex_revision_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "persons", t)
 
@@ -169,10 +181,6 @@ func TestRemoveVertexRevision(t *testing.T) {
 	if _, err := vc.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveVertexKeyEmpty removes a document it with an empty key.
@@ -180,14 +188,16 @@ func TestRemoveVertexKeyEmpty(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "remove_vertex_nil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "hobby", t)
 
 	if _, err := vc.RemoveDocument(nil, ""); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

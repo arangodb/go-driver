@@ -27,9 +27,9 @@ func BenchmarkCreateDocument(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	defer func() {
-		err := db.Remove(ctx)
+		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
@@ -51,9 +51,9 @@ func BenchmarkCreateDocumentParallel(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	defer func() {
-		err := db.Remove(ctx)
+		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
@@ -77,9 +77,9 @@ func BenchmarkReadDocument(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	defer func() {
-		err := db.Remove(ctx)
+		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
@@ -106,9 +106,9 @@ func BenchmarkReadDocumentParallel(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	defer func() {
-		err := db.Remove(ctx)
+		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
@@ -137,9 +137,9 @@ func BenchmarkRemoveDocument(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
 	defer func() {
-		err := db.Remove(ctx)
+		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)

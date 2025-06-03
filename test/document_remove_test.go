@@ -33,6 +33,12 @@ func TestRemoveDocument(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Piere",
@@ -56,10 +62,6 @@ func TestRemoveDocument(t *testing.T) {
 	} else if found {
 		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveDocumentReturnOld creates a document, removes it checks the ReturnOld value.
@@ -68,6 +70,12 @@ func TestRemoveDocumentReturnOld(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Tim",
@@ -91,10 +99,6 @@ func TestRemoveDocumentReturnOld(t *testing.T) {
 	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveDocumentSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.
@@ -102,6 +106,12 @@ func TestRemoveDocumentSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Angela",
@@ -122,10 +132,6 @@ func TestRemoveDocumentSilent(t *testing.T) {
 	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveDocumentRevision creates a document, removes it with an incorrect revision.
@@ -133,6 +139,12 @@ func TestRemoveDocumentRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"DryLake",
@@ -169,23 +181,21 @@ func TestRemoveDocumentRevision(t *testing.T) {
 	if _, err := col.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveDocumentKeyEmpty removes a document it with an empty key.
 func TestRemoveDocumentKeyEmpty(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	if _, err := col.RemoveDocument(nil, ""); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -196,6 +206,12 @@ func TestRemoveDocumentInWaitForSyncCollection(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "TestRemoveDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,
 	}, t)
@@ -220,9 +236,5 @@ func TestRemoveDocumentInWaitForSyncCollection(t *testing.T) {
 		t.Fatalf("DocumentExists failed for '%s': %s", meta.Key, describe(err))
 	} else if found {
 		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
-	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

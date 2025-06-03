@@ -34,6 +34,12 @@ func TestReplaceDocument(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Piere",
@@ -59,10 +65,6 @@ func TestReplaceDocument(t *testing.T) {
 	if !reflect.DeepEqual(replacement, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", replacement, readDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceDocumentReturnOld creates a document, replaces it checks the ReturnOld value.
@@ -71,6 +73,12 @@ func TestReplaceDocumentReturnOld(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Tim",
@@ -93,10 +101,6 @@ func TestReplaceDocumentReturnOld(t *testing.T) {
 	if !reflect.DeepEqual(doc, old) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, old)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceDocumentReturnNew creates a document, replaces it checks the ReturnNew value.
@@ -105,6 +109,12 @@ func TestReplaceDocumentReturnNew(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Tim",
@@ -128,10 +138,6 @@ func TestReplaceDocumentReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(expected, newDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", expected, newDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceDocumentSilent creates a document, replaces it with Silent() and then checks the meta is indeed empty.
@@ -139,6 +145,12 @@ func TestReplaceDocumentSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Angela",
@@ -158,10 +170,6 @@ func TestReplaceDocumentSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceDocumentRevision creates a document, replaces it with a specific (correct) revision.
@@ -170,6 +178,12 @@ func TestReplaceDocumentRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Revision",
@@ -206,16 +220,18 @@ func TestReplaceDocumentRevision(t *testing.T) {
 	if _, err := col.ReplaceDocument(replacedRevCtx, meta.Key, replacement); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceDocumentKeyEmpty replaces a document it with an empty key.
 func TestReplaceDocumentKeyEmpty(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	// Update document
 	replacement := map[string]interface{}{
@@ -224,23 +240,21 @@ func TestReplaceDocumentKeyEmpty(t *testing.T) {
 	if _, err := col.ReplaceDocument(nil, "", replacement); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceDocumentUpdateNil replaces a document it with a nil update.
 func TestReplaceDocumentUpdateNil(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	if _, err := col.ReplaceDocument(nil, "validKey", nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -251,6 +265,12 @@ func TestReplaceDocumentInWaitForSyncCollection(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "TestReplaceDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,
 	}, t)
@@ -277,9 +297,5 @@ func TestReplaceDocumentInWaitForSyncCollection(t *testing.T) {
 	}
 	if !reflect.DeepEqual(replacement, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", replacement, readDoc)
-	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

@@ -34,6 +34,12 @@ func TestReplaceVertices(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "male", t)
 
@@ -73,10 +79,6 @@ func TestReplaceVertices(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, replacements[i], readDoc)
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceVerticesReturnOld creates documents, replaces them checks the ReturnOld values.
@@ -85,6 +87,12 @@ func TestReplaceVerticesReturnOld(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_returnOld_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "pensions", t)
 
@@ -122,10 +130,6 @@ func TestReplaceVerticesReturnOld(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, oldDocs[i])
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceVerticesReturnNew creates documents, replaces them checks the ReturnNew values.
@@ -134,6 +138,12 @@ func TestReplaceVerticesReturnNew(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_returnNew_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
@@ -172,10 +182,6 @@ func TestReplaceVerticesReturnNew(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, expected, newDocs[i])
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceVerticesSilent creates documents, replaces them with Silent() and then checks the meta is indeed empty.
@@ -183,6 +189,12 @@ func TestReplaceVerticesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "moments", t)
 
@@ -220,10 +232,6 @@ func TestReplaceVerticesSilent(t *testing.T) {
 			t.Errorf("Expected 0 metas, got %d", len(metas))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceVerticesRevision creates documents, replaces then with a specific (correct) revisions.
@@ -232,6 +240,12 @@ func TestReplaceVerticesRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_revision_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "planets", t)
 
@@ -293,10 +307,6 @@ func TestReplaceVerticesRevision(t *testing.T) {
 	} else if err := errs.FirstNonNil(); err != nil {
 		t.Fatalf("Expected no errors, got first: %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceVerticesKeyEmpty replaces a document it with an empty key.
@@ -304,6 +314,12 @@ func TestReplaceVerticesKeyEmpty(t *testing.T) {
 	ctx := context.TODO()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_keyEmpty_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "planets", t)
 
@@ -314,10 +330,6 @@ func TestReplaceVerticesKeyEmpty(t *testing.T) {
 	if _, _, err := vc.ReplaceDocuments(nil, []string{""}, replacement); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceVerticesUpdateNil replaces a document it with a nil update.
@@ -325,15 +337,17 @@ func TestReplaceVerticesUpdateNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_updateNil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "relations", t)
 
 	if _, _, err := vc.ReplaceDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -342,6 +356,12 @@ func TestReplaceVerticesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "replace_vertices_updateNil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "failures", t)
 
@@ -355,9 +375,5 @@ func TestReplaceVerticesUpdateLenDiff(t *testing.T) {
 	}
 	if _, _, err := vc.ReplaceDocuments(nil, []string{"only1"}, replacements); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

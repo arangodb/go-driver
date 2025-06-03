@@ -32,6 +32,12 @@ func TestImportVerticesWithKeys(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_withKeys_test", t)
 	docs := []UserDocWithKey{
@@ -68,10 +74,6 @@ func TestImportVerticesWithKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesWithoutKeys imports documents and then checks that it exists.
@@ -79,6 +81,12 @@ func TestImportVerticesWithoutKeys(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_withoutKeys_test", t)
 	docs := []UserDoc{
@@ -112,10 +120,6 @@ func TestImportVerticesWithoutKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesEmptyEntries imports documents and then checks that it exists.
@@ -126,6 +130,12 @@ func TestImportVerticesEmptyEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_emptyEntries_test", t)
 	docs := []*UserDocWithKey{
@@ -163,10 +173,6 @@ func TestImportVerticesEmptyEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesInvalidEntries imports documents and then checks that it exists.
@@ -177,6 +183,12 @@ func TestImportVerticesInvalidEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_invalidEntries_test", t)
 	docs := []interface{}{
@@ -216,10 +228,6 @@ func TestImportVerticesInvalidEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesDuplicateEntries imports documents and then checks that it exists.
@@ -227,6 +235,12 @@ func TestImportVerticesDuplicateEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntries_test", t)
 	docs := []interface{}{
@@ -264,10 +278,6 @@ func TestImportVerticesDuplicateEntries(t *testing.T) {
 			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesDuplicateEntriesComplete imports documents and then checks that it exists.
@@ -275,6 +285,12 @@ func TestImportVerticesDuplicateEntriesComplete(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesComplete_test", t)
 	docs := []interface{}{
@@ -297,10 +313,6 @@ func TestImportVerticesDuplicateEntriesComplete(t *testing.T) {
 	}); !driver.IsConflict(err) {
 		t.Errorf("Expected ConflictError, got %s", describe(err))
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesDuplicateEntriesUpdate imports documents and then checks that it exists.
@@ -308,6 +320,12 @@ func TestImportVerticesDuplicateEntriesUpdate(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesUpdate_test", t)
 	docs := []interface{}{
@@ -358,10 +376,6 @@ func TestImportVerticesDuplicateEntriesUpdate(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesDuplicateEntriesReplace imports documents and then checks that it exists.
@@ -369,6 +383,12 @@ func TestImportVerticesDuplicateEntriesReplace(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesReplace_test", t)
 	docs := []interface{}{
@@ -419,10 +439,6 @@ func TestImportVerticesDuplicateEntriesReplace(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesDuplicateEntriesIgnore imports documents and then checks that it exists.
@@ -430,6 +446,12 @@ func TestImportVerticesDuplicateEntriesIgnore(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_duplicateEntriesIgnore_test", t)
 	docs := []interface{}{
@@ -480,10 +502,6 @@ func TestImportVerticesDuplicateEntriesIgnore(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesDetails imports documents and then checks that it exists.
@@ -491,6 +509,12 @@ func TestImportVerticesDetails(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_details_test", t)
 	docs := []interface{}{
@@ -535,10 +559,6 @@ func TestImportVerticesDetails(t *testing.T) {
 			t.Errorf("Expected details[0] to be '%s', got '%s'", detailsExpected, details[0])
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesOverwriteYes imports documents and then checks that it exists.
@@ -547,6 +567,12 @@ func TestImportVerticesOverwriteYes(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_overwriteYes_test", t)
 	docs := []interface{}{
@@ -581,10 +607,6 @@ func TestImportVerticesOverwriteYes(t *testing.T) {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportVerticesOverwriteNo imports documents and then checks that it exists.
@@ -593,6 +615,12 @@ func TestImportVerticesOverwriteNo(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "import_vertices_test", nil, t)
 	col := ensureVertexCollection(nil, g, "import_overwriteNo_test", t)
 	docs := []interface{}{
@@ -626,9 +654,5 @@ func TestImportVerticesOverwriteNo(t *testing.T) {
 		} else if count != countExpected {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

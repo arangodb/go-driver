@@ -126,7 +126,7 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
 	defer func() {
-		err := db.Remove(ctx)
+		err := db.Remove(nil)
 		if err != nil {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}

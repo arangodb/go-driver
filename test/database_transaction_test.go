@@ -35,6 +35,12 @@ func TestDatabaseTransaction(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.2", t)
 	db := ensureDatabase(nil, c, "transaction_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	const colName = "books"
 	ensureCollection(context.Background(), db, colName, nil, t)
@@ -68,10 +74,6 @@ func TestDatabaseTransaction(t *testing.T) {
 			}
 		})
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 func insertDocument(ctx context.Context, col driver.Collection, t *testing.T) driver.DocumentMeta {
@@ -104,6 +106,12 @@ func TestTransactionCommit(t *testing.T) {
 	colname := "trx_test_col"
 	ctx := context.Background()
 	db := ensureDatabase(ctx, c, "trx_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
 
 	trxid, err := db.BeginTransaction(ctx, driver.TransactionCollections{Exclusive: []string{colname}}, nil)
@@ -131,10 +139,6 @@ func TestTransactionCommit(t *testing.T) {
 
 	// document should exist
 	documentExists(ctx, col, meta1.Key, true, t)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 func TestTransactionAbort(t *testing.T) {
@@ -143,6 +147,12 @@ func TestTransactionAbort(t *testing.T) {
 	colname := "trx_test_col_abort"
 	ctx := context.Background()
 	db := ensureDatabase(ctx, c, "trx_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
 
 	trxid, err := db.BeginTransaction(ctx, driver.TransactionCollections{Exclusive: []string{colname}}, nil)
@@ -166,8 +176,4 @@ func TestTransactionAbort(t *testing.T) {
 
 	// document should exist
 	documentExists(ctx, col, meta1.Key, false, t)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }

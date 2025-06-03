@@ -48,6 +48,12 @@ func ensureVertexCollection(ctx context.Context, g driver.Graph, collection stri
 func TestCreateVertexCollection(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_vertex_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
@@ -90,10 +96,6 @@ func TestCreateVertexCollection(t *testing.T) {
 	} else if vc.Name() != "person" {
 		t.Errorf("VertexCollection return invalid collection, expected 'person', got '%s'", vc.Name())
 	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateSatelliteVertexCollection creates a graph and then adds a Satellite vertex collection in it
@@ -104,6 +106,12 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, "vertex_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	name := "test_create_satellite_vertex_collection"
 	options := driver.CreateGraphOptions{
@@ -152,16 +160,18 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 	// revert
 	err = g.Remove(ctx)
 	require.NoError(t, err)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveVertexCollection creates a graph and then adds an vertex collection in it and then removes the vertex collection.
 func TestRemoveVertexCollection(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_remove_vertex_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
@@ -197,10 +207,6 @@ func TestRemoveVertexCollection(t *testing.T) {
 
 	// Collection must still exist in database
 	assertCollection(nil, db, "friends", t)
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRenameVertexCollection creates a graph and then adds an vertex collection in it and then renames the vertex collection.
@@ -211,6 +217,12 @@ func TestRenameVertexCollection(t *testing.T) {
 	skipNoSingle(c, t)
 
 	db := ensureDatabase(nil, c, "vertex_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_rename_vertex_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
@@ -248,8 +260,4 @@ func TestRenameVertexCollection(t *testing.T) {
 
 	// Collection must still exist in database
 	assertCollection(nil, db, newName, t)
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }

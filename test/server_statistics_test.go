@@ -177,6 +177,13 @@ func TestServerStatisticsTraffic(t *testing.T) {
 	}
 
 	doSomeWrites(t, nil, c)
+	defer func() {
+		db := ensureDatabase(ctx, c, "statistics_test", nil, t)
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	time.Sleep(time.Second) // Wait until statistics updated
 
@@ -209,11 +216,6 @@ func TestServerStatisticsTraffic(t *testing.T) {
 		}
 	} else {
 		t.Log("Skipping ClientUser tests for statistics, since API is not present.")
-	}
-	db := ensureDatabase(ctx, c, "statistics_test", nil, t)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -262,6 +264,13 @@ func TestServerStatisticsForwarding(t *testing.T) {
 
 	// At least 5000 documents in the collection:
 	doSomeWrites(t, ctx1, c)
+	defer func() {
+		db := ensureDatabase(ctx, c, "statistics_test", nil, t)
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	doSomeWrites(t, ctx1, c)
 	doSomeWrites(t, ctx1, c)
 	doSomeWrites(t, ctx1, c)
@@ -359,10 +368,5 @@ func TestServerStatisticsForwarding(t *testing.T) {
 		checkTrafficAtMost(t, &statsBefore1, &statsAfter1, user,
 			&limits{Recv: 0.1, Sent: 0.1,
 				RecvCount: 0, SentCount: 0}, "Mango")
-	}
-	db := ensureDatabase(ctx, c, "statistics_test", nil, t)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

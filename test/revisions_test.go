@@ -41,6 +41,12 @@ func TestRevisionTree(t *testing.T) {
 	skipBelowVersion(c, "3.8", t)
 
 	db := ensureDatabase(nil, c, "revision_tree", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "revision_tree", nil, t)
 
 	var noOfDocuments int = 80000
@@ -141,9 +147,5 @@ func TestRevisionTree(t *testing.T) {
 		bytes, _ := json.Marshal(d)
 		json.Unmarshal(bytes, &user)
 		require.Equalf(t, user, expectedDocuments[i], "Documents should be the same")
-	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

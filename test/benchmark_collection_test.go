@@ -32,7 +32,7 @@ func BenchmarkCollectionExists(b *testing.B) {
 	defer func() {
 		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	col := ensureCollection(nil, db, "collection_exist_test", nil, b)
@@ -52,7 +52,7 @@ func BenchmarkCollection(b *testing.B) {
 	defer func() {
 		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	col := ensureCollection(nil, db, "collection_test", nil, b)
@@ -72,7 +72,7 @@ func BenchmarkCollections(b *testing.B) {
 	defer func() {
 		err := db.Remove(nil)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
 	for i := 0; i < 10; i++ {

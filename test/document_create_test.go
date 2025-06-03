@@ -44,6 +44,12 @@ func TestCreateDocument(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Jan",
@@ -67,10 +73,6 @@ func TestCreateDocument(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateDocumentWithKey creates a document with given key and then checks that it exists.
@@ -78,6 +80,12 @@ func TestCreateDocumentWithKey(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_withKey_test", nil, t)
 	doc := UserDocWithKey{
 		"jan",
@@ -105,10 +113,6 @@ func TestCreateDocumentWithKey(t *testing.T) {
 	if _, err := col.CreateDocument(nil, doc); !driver.IsConflict(err) {
 		t.Fatalf("Expected ConflictError, got %s", describe(err))
 	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateDocumentReturnNew creates a document and checks the document returned in in ReturnNew.
@@ -117,6 +121,12 @@ func TestCreateDocumentReturnNew(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"JanNew",
@@ -150,10 +160,6 @@ func TestCreateDocumentReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateDocumentSilent creates a document with WithSilent.
@@ -161,6 +167,12 @@ func TestCreateDocumentSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "document_test", nil, t)
 	doc := UserDoc{
 		"Sjjjj",
@@ -171,23 +183,21 @@ func TestCreateDocumentSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateDocumentNil creates a document with a nil document.
 func TestCreateDocumentNil(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, t)
 	if _, err := col.CreateDocument(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Fatalf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -197,6 +207,12 @@ func TestCreateDocumentInWaitForSyncCollection(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "TestCreateDocumentInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,
 	}, t)
@@ -221,9 +237,5 @@ func TestCreateDocumentInWaitForSyncCollection(t *testing.T) {
 	}
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
-	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

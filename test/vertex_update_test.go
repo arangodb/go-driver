@@ -33,6 +33,12 @@ func TestUpdateVertex(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "user", t)
 
@@ -60,10 +66,6 @@ func TestUpdateVertex(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexReturnOld creates a document, updates it checks the ReturnOld value.
@@ -72,6 +74,12 @@ func TestUpdateVertexReturnOld(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_returnOld_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
@@ -95,10 +103,6 @@ func TestUpdateVertexReturnOld(t *testing.T) {
 	if !reflect.DeepEqual(doc, old) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, old)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexReturnNew creates a document, updates it checks the ReturnNew value.
@@ -107,6 +111,12 @@ func TestUpdateVertexReturnNew(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_returnNew_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "person", t)
 
@@ -133,10 +143,6 @@ func TestUpdateVertexReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(expected, newDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", expected, newDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexKeepNullTrue creates a document, updates it with KeepNull(true) and then checks the update has succeeded.
@@ -145,6 +151,12 @@ func TestUpdateVertexKeepNullTrue(t *testing.T) {
 	c := createClient(t, nil)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_keepNullTrue_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "accounts", t)
 
@@ -194,10 +206,6 @@ func TestUpdateVertexKeepNullTrue(t *testing.T) {
 			t.Errorf("Expected user to be found and nil, got %s", string(*raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexKeepNullFalse creates a document, updates it with KeepNull(false) and then checks the update has succeeded.
@@ -205,6 +213,12 @@ func TestUpdateVertexKeepNullFalse(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_keepNullFalse_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "accounts", t)
 
@@ -235,10 +249,6 @@ func TestUpdateVertexKeepNullFalse(t *testing.T) {
 	if readDoc.User == nil {
 		t.Errorf("Expected user to be untouched, got %v", readDoc.User)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexSilent creates a document, updates it with Silent() and then checks the meta is indeed empty.
@@ -246,6 +256,12 @@ func TestUpdateVertexSilent(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "moments", t)
 
@@ -266,10 +282,6 @@ func TestUpdateVertexSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexRevision creates a document, updates it with a specific (correct) revision.
@@ -278,6 +290,12 @@ func TestUpdateVertexRevision(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_revision_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
@@ -315,10 +333,6 @@ func TestUpdateVertexRevision(t *testing.T) {
 	if _, err := vc.UpdateDocument(updatedRevCtx, meta.Key, update); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexKeyEmpty updates a document it with an empty key.
@@ -326,6 +340,12 @@ func TestUpdateVertexKeyEmpty(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_keyEmpty_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "tests", t)
 
@@ -336,10 +356,6 @@ func TestUpdateVertexKeyEmpty(t *testing.T) {
 	if _, err := vc.UpdateDocument(nil, "", update); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateVertexUpdateNil updates a document it with a nil update.
@@ -347,14 +363,16 @@ func TestUpdateVertexUpdateNil(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertex_updateNil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "errors", t)
 
 	if _, err := vc.UpdateDocument(nil, "validKey", nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

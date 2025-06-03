@@ -33,6 +33,12 @@ func TestCreateEdge(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "create_edge_test_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -63,10 +69,6 @@ func TestCreateEdge(t *testing.T) {
 			t.Errorf("Got invalid _to. Expected '%s', got '%s'", to.ID, readDoc.To)
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateCustomEdge creates an edge with a custom type and then checks that it exists.
@@ -74,6 +76,12 @@ func TestCreateCustomEdge(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "create_custom_edge_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -98,10 +106,6 @@ func TestCreateCustomEdge(t *testing.T) {
 	} else if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got invalid return document. Expected '%+v', got '%+v'", doc, readDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateEdgeReturnNew creates a document and checks the document returned in in ReturnNew.
@@ -110,6 +114,12 @@ func TestCreateEdgeReturnNew(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "create_edge_return_new_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -140,10 +150,6 @@ func TestCreateEdgeReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateEdgeSilent creates a document with WithSilent.
@@ -151,6 +157,12 @@ func TestCreateEdgeSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "create_edge_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -169,10 +181,6 @@ func TestCreateEdgeSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateEdgeNil creates a document with a nil document.
@@ -180,15 +188,17 @@ func TestCreateEdgeNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "create_edge_nil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 
 	if _, err := ec.CreateDocument(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Fatalf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

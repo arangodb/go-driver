@@ -49,6 +49,12 @@ func TestCreateGraph(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_graph"
 
 	if _, err := db.CreateGraphV2(ctx, name, nil); err != nil {
@@ -81,10 +87,6 @@ func TestCreateGraph(t *testing.T) {
 	} else if g.Name() != name {
 		t.Errorf("Graph.Name wrong. Expected '%s', got '%s'", name, g.Name())
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateGraphWithOptions creates a graph with options then checks if each options is set correctly.
@@ -95,6 +97,12 @@ func TestCreateGraphWithOptions(t *testing.T) {
 	skipNoCluster(c, t)
 
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_graph_2"
 
 	options := &driver.CreateGraphOptions{
@@ -166,10 +174,6 @@ func TestCreateGraphWithOptions(t *testing.T) {
 	if g.OrphanCollections()[0] != options.OrphanVertexCollections[0] && g.OrphanCollections()[1] != options.OrphanVertexCollections[1] {
 		t.Errorf("Graph.IsSmart wrong. Expected '%v', got '%v'", options.OrphanVertexCollections, g.OrphanCollections())
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveGraph creates a graph and then removes it.
@@ -177,6 +181,12 @@ func TestRemoveGraph(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_remove_graph"
 	g, err := db.CreateGraphV2(ctx, name, nil)
 	if err != nil {
@@ -198,10 +208,6 @@ func TestRemoveGraph(t *testing.T) {
 	} else if found {
 		t.Errorf("GraphExists('%s') return true, expected false", name)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveGraphWithOpts creates a graph with collection and then removes it.
@@ -209,6 +215,12 @@ func TestRemoveGraphWithOpts(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test_remove", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_remove_graph_opts"
 	colName := "remove_graph_col"
 
@@ -236,8 +248,4 @@ func TestRemoveGraphWithOpts(t *testing.T) {
 	found, err = db.GraphExists(ctx, name)
 	require.NoError(t, err)
 	require.False(t, found)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }

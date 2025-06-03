@@ -48,6 +48,12 @@ func TestCreateOverwriteDocument(t *testing.T) {
 	defer cancel()
 
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_overwrite_test", nil, t)
 
 	t.Run("Single Doc - replace", func(t *testing.T) {
@@ -89,10 +95,6 @@ func TestCreateOverwriteDocument(t *testing.T) {
 		}
 	})
 
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateOverwriteModeDocument creates a document and then checks that it exists. Check with overwriteMode flag.
@@ -106,6 +108,12 @@ func TestCreateOverwriteModeDocument(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0"))
 
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, t)
 
 	t.Run("Single Doc - ignore", func(t *testing.T) {
@@ -480,8 +488,4 @@ func TestCreateOverwriteModeDocument(t *testing.T) {
 		require.EqualError(t, errSlice[0], "unique constraint violated - in index primary of type primary over '_key'; conflicting key: "+id[0])
 		require.EqualError(t, errSlice[1], "unique constraint violated - in index primary of type primary over '_key'; conflicting key: "+id[1])
 	})
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }

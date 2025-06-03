@@ -172,6 +172,12 @@ func TestDatabaseInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
 	}
+	defer func() {
+		err := d.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", d.Name(), err)
+		}
+	}()
 	info, err = d.Info(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get %s database info: %s", name, describe(err))

@@ -34,6 +34,12 @@ func TestRemoveEdges(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edges_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -75,10 +81,6 @@ func TestRemoveEdges(t *testing.T) {
 			t.Fatalf("Expected NotFoundError at %d, got  %s", i, describe(err))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgesReturnOld creates documents, removes them checks the ReturnOld value.
@@ -86,6 +88,12 @@ func TestRemoveEdgesReturnOld(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	prefix := "remove_edges_returnOld_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
@@ -128,10 +136,6 @@ func TestRemoveEdgesReturnOld(t *testing.T) {
 	for i, doc := range docs {
 		require.Equal(t, doc, oldDocs[i])
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgesSilent creates documents, removes them with Silent() and then checks the meta is indeed empty.
@@ -139,6 +143,12 @@ func TestRemoveEdgesSilent(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edges_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -183,10 +193,6 @@ func TestRemoveEdgesSilent(t *testing.T) {
 			t.Errorf("Expected NotFoundError at %d, got  %s", i, describe(err))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgesRevision creates documents, removes them with an incorrect revisions.
@@ -194,6 +200,12 @@ func TestRemoveEdgesRevision(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edges_revision_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -268,10 +280,6 @@ func TestRemoveEdgesRevision(t *testing.T) {
 			t.Errorf("Expected NotFoundError at %d, got  %s", i, describe(err))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgesKeyEmpty removes a document it with an empty key.
@@ -279,15 +287,17 @@ func TestRemoveEdgesKeyEmpty(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edges_keyEmpty_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 
 	if _, _, err := ec.RemoveDocuments(nil, []string{""}); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

@@ -33,6 +33,12 @@ func TestCreateVertex(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "create_vertex_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "books", t)
 
@@ -57,10 +63,6 @@ func TestCreateVertex(t *testing.T) {
 			t.Errorf("Got invalid document. Expected '%+v', got '%+v'", book, readDoc)
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateVertexReturnNew creates a document and checks the document returned in in ReturnNew.
@@ -69,6 +71,12 @@ func TestCreateVertexReturnNew(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "create_vertex_return_new_est", nil, t)
 	vc := ensureVertexCollection(ctx, g, "users", t)
 
@@ -93,10 +101,6 @@ func TestCreateVertexReturnNew(t *testing.T) {
 	if !reflect.DeepEqual(doc, readDoc) {
 		t.Errorf("Got wrong document. Expected %+v, got %+v", doc, readDoc)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateVertexSilent creates a document with WithSilent.
@@ -104,6 +108,12 @@ func TestCreateVertexSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "create_vertex_silent_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "users", t)
 
@@ -116,10 +126,6 @@ func TestCreateVertexSilent(t *testing.T) {
 	} else if meta.Key != "" {
 		t.Errorf("Expected empty meta, got %v", meta)
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestCreateVertexNil creates a document with a nil document.
@@ -127,14 +133,16 @@ func TestCreateVertexNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertex_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "create_vertex_nil_test", nil, t)
 	vc := ensureVertexCollection(ctx, g, "users", t)
 
 	if _, err := vc.CreateDocument(nil, nil); !driver.IsInvalidArgument(err) {
 		t.Fatalf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

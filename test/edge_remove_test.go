@@ -34,6 +34,12 @@ func TestRemoveEdge(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edge_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -59,10 +65,6 @@ func TestRemoveEdge(t *testing.T) {
 	if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgeReturnOld creates a document, removes it with ReturnOld, which is an invalid argument.
@@ -71,6 +73,12 @@ func TestRemoveEdgeReturnOld(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edge_returnOld_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -95,10 +103,6 @@ func TestRemoveEdgeReturnOld(t *testing.T) {
 
 	// Check an old document
 	require.Equal(t, doc, old)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgeSilent creates a document, removes it with Silent() and then checks the meta is indeed empty.
@@ -106,6 +110,12 @@ func TestRemoveEdgeSilent(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edge_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -134,10 +144,6 @@ func TestRemoveEdgeSilent(t *testing.T) {
 	if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); !driver.IsNotFound(err) {
 		t.Fatalf("Expected NotFoundError, got  %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgeRevision creates a document, removes it with an incorrect revision.
@@ -145,6 +151,12 @@ func TestRemoveEdgeRevision(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edge_revision_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -198,10 +210,6 @@ func TestRemoveEdgeRevision(t *testing.T) {
 	} else if found {
 		t.Errorf("DocumentExists returned true for '%s', expected false", meta.Key)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestRemoveEdgeKeyEmpty removes a document it with an empty key.
@@ -209,15 +217,17 @@ func TestRemoveEdgeKeyEmpty(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edge_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "remove_edge_nil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
 
 	if _, err := ec.RemoveDocument(nil, ""); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

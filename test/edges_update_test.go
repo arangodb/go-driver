@@ -35,6 +35,12 @@ func TestUpdateEdges(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -85,10 +91,6 @@ func TestUpdateEdges(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, readDoc)
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesReturnOld creates documents, updates them checks the ReturnOld values.
@@ -97,6 +99,12 @@ func TestUpdateEdgesReturnOld(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_returnOld_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -143,10 +151,6 @@ func TestUpdateEdgesReturnOld(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, doc, oldDocs[i])
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesReturnNew creates documents, updates them checks the ReturnNew values.
@@ -155,6 +159,12 @@ func TestUpdateEdgesReturnNew(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2363
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_returnOld_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -203,10 +213,6 @@ func TestUpdateEdgesReturnNew(t *testing.T) {
 			t.Errorf("Got wrong document %d. Expected %+v, got %+v", i, expected, newDocs[i])
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesKeepNullTrue creates documents, updates them with KeepNull(true) and then checks the updates have succeeded.
@@ -215,6 +221,12 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 	c := createClient(t, nil)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_keepNullTrue_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -292,10 +304,6 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesKeepNullFalse creates documents, updates them with KeepNull(false) and then checks the updates have succeeded.
@@ -303,6 +311,12 @@ func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_keepNullFalse_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -360,10 +374,6 @@ func TestUpdateEdgesKeepNullFalse(t *testing.T) {
 			t.Errorf("Expected user to be untouched, got %v", readDoc.User)
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesSilent creates documents, updates them with Silent() and then checks the metas are indeed empty.
@@ -371,6 +381,12 @@ func TestUpdateEdgesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_silent_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -412,10 +428,6 @@ func TestUpdateEdgesSilent(t *testing.T) {
 	} else if strings.Join(metas.Keys(), "") != "" {
 		t.Errorf("Expected empty meta, got %v", metas)
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesRevision creates documents, updates them with a specific (correct) revisions.
@@ -424,6 +436,12 @@ func TestUpdateEdgesRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_revision_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -491,10 +509,6 @@ func TestUpdateEdgesRevision(t *testing.T) {
 	if _, _, err := ec.UpdateDocuments(updatedRevCtx, metas.Keys(), updates); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesKeyEmpty updates documents with an empty key.
@@ -502,6 +516,12 @@ func TestUpdateEdgesKeyEmpty(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_keyEmpty_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -515,10 +535,6 @@ func TestUpdateEdgesKeyEmpty(t *testing.T) {
 	if _, _, err := ec.UpdateDocuments(nil, []string{""}, updates); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUpdateEdgesUpdateNil updates documents it with a nil update.
@@ -526,16 +542,18 @@ func TestUpdateEdgesUpdateNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_updateNil_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
 
 	if _, _, err := ec.UpdateDocuments(nil, []string{"validKey"}, nil); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -544,6 +562,12 @@ func TestUpdateEdgesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "update_edges_updateLenDiff_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	ec := ensureEdgeCollection(ctx, g, prefix+"relation", []string{prefix + "male", prefix + "female"}, []string{prefix + "male", prefix + "female"}, t)
@@ -558,9 +582,5 @@ func TestUpdateEdgesUpdateLenDiff(t *testing.T) {
 	}
 	if _, _, err := ec.UpdateDocuments(nil, []string{"only1"}, updates); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
-	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

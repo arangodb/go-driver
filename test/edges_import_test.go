@@ -33,6 +33,12 @@ func TestImportEdgesWithKeys(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -78,10 +84,6 @@ func TestImportEdgesWithKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesWithoutKeys imports documents and then checks that it exists.
@@ -89,6 +91,12 @@ func TestImportEdgesWithoutKeys(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_withhoutKeys_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -134,10 +142,6 @@ func TestImportEdgesWithoutKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesEmptyEntries imports documents and then checks that it exists.
@@ -148,6 +152,12 @@ func TestImportEdgesEmptyEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_emptyEntries_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -194,10 +204,6 @@ func TestImportEdgesEmptyEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesInvalidEntries imports documents and then checks that it exists.
@@ -208,6 +214,12 @@ func TestImportEdgesInvalidEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_invalidEntries_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -256,10 +268,6 @@ func TestImportEdgesInvalidEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesDuplicateEntries imports documents and then checks that it exists.
@@ -267,6 +275,12 @@ func TestImportEdgesDuplicateEntries(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_duplicateEntries_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -312,10 +326,6 @@ func TestImportEdgesDuplicateEntries(t *testing.T) {
 			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesDuplicateEntriesComplete imports documents and then checks that it exists.
@@ -326,6 +336,12 @@ func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_duplicateEntriesComplete_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -357,10 +373,6 @@ func TestImportEdgesDuplicateEntriesComplete(t *testing.T) {
 	}); !driver.IsConflict(err) {
 		t.Errorf("Expected ConflictError, got %s", describe(err))
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesDuplicateEntriesUpdate imports documents and then checks that it exists.
@@ -368,6 +380,12 @@ func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_duplicateEntriesUpdate_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -426,10 +444,6 @@ func TestImportEdgesDuplicateEntriesUpdate(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesDuplicateEntriesReplace imports documents and then checks that it exists.
@@ -437,6 +451,12 @@ func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_duplicateEntriesReplace_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -495,10 +515,6 @@ func TestImportEdgesDuplicateEntriesReplace(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesDuplicateEntriesIgnore imports documents and then checks that it exists.
@@ -506,6 +522,12 @@ func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_duplicateEntriesIgnore_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -564,10 +586,6 @@ func TestImportEdgesDuplicateEntriesIgnore(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesDetails imports documents and then checks that it exists.
@@ -575,6 +593,12 @@ func TestImportEdgesDetails(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_details_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -627,10 +651,6 @@ func TestImportEdgesDetails(t *testing.T) {
 			t.Errorf("Expected details[0] to be '%s', got '%s'", detailsExpected, details[0])
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesOverwriteYes imports documents and then checks that it exists.
@@ -639,6 +659,12 @@ func TestImportEdgesOverwriteYes(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_overwriteYes_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -681,10 +707,6 @@ func TestImportEdgesOverwriteYes(t *testing.T) {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesOverwriteNo imports documents and then checks that it exists.
@@ -693,6 +715,12 @@ func TestImportEdgesOverwriteNo(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_overwriteNo_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -735,10 +763,6 @@ func TestImportEdgesOverwriteNo(t *testing.T) {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
 	}
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportEdgesPrefix imports documents and then checks that it exists.
@@ -747,6 +771,12 @@ func TestImportEdgesPrefix(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "edges_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	prefix := "import_edges_prefix_"
 	g := ensureGraph(ctx, db, prefix+"graph", nil, t)
 	col := ensureEdgeCollection(ctx, g, prefix+"citiesPerState", []string{prefix + "city"}, []string{prefix + "state"}, t)
@@ -787,9 +817,5 @@ func TestImportEdgesPrefix(t *testing.T) {
 		t.Errorf("Failed to count documents: %s", describe(err))
 	} else if count != countExpected {
 		t.Errorf("Expected count to be %d, got %d", countExpected, count)
-	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
