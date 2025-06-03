@@ -207,7 +207,7 @@ func TestReplaceUser(t *testing.T) {
 	c := createClient(t, nil)
 	u := ensureUser(nil, c, "replace_user", nil, t)
 	defer func() {
-	err := u.Remove(nil)
+		err := u.Remove(nil)
 		if err != nil {
 			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
 		}
