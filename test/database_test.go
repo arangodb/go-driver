@@ -147,12 +147,6 @@ func TestDatabaseInfo(t *testing.T) {
 
 	// Test system DB
 	db := ensureDatabase(ctx, c, "_system", nil, t)
-	defer func() {
-		// Cleanup: Remove database
-		if err := db.Remove(context.Background()); err != nil {
-			t.Fatalf("Failed to remove database: %s", describe(err))
-		}
-	}()
 	info, err := db.Info(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get _system database info: %s", describe(err))

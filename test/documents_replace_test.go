@@ -335,10 +335,6 @@ func TestReplaceDocumentsKeyEmpty(t *testing.T) {
 	if _, _, err := col.ReplaceDocuments(nil, []string{""}, replacement); !driver.IsInvalidArgument(err) {
 		t.Errorf("Expected InvalidArgumentError, got %s", describe(err))
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestReplaceDocumentsUpdateNil replaces a document it with a nil update.

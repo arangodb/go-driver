@@ -37,6 +37,12 @@ func TestCreatePregelJob(t *testing.T) {
 	skipNoCluster(c, t)
 
 	db := ensureDatabase(ctx, c, "pregel_job_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "pregel_graph_test", nil, t)
 
 	nameVertex := "test_pregel_vertex"
@@ -91,8 +97,4 @@ func TestCreatePregelJob(t *testing.T) {
 	require.Greater(t, docResult.ResultField, 0.0)
 
 	t.Logf("resultField value: %f", docResult.ResultField)
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }

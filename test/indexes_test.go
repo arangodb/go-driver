@@ -64,12 +64,6 @@ func TestDefaultEdgeIndexes(t *testing.T) {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
-	defer func() {
-		err := db.Remove(nil)
-		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-		}
-	}()
 	col := ensureCollection(nil, db, "def_indexes_edge_test", &driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge}, t)
 
 	// Get list of indexes
