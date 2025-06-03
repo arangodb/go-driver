@@ -354,6 +354,13 @@ func TestBackupRestore(t *testing.T) {
 	colname := "col"
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+	
 	col := ensureCollection(ctx, db, colname, nil, t)
 
 	// Write a document
@@ -403,10 +410,6 @@ func TestBackupRestore(t *testing.T) {
 		t.Errorf("Failed to lookup document: %s", describe(err))
 	} else if ok {
 		t.Errorf("Document should not be there: %s", meta2.Key)
-	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -580,6 +583,12 @@ func TestBackupCompleteCycle(t *testing.T) {
 	colname := "col"
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func () {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
 
 	isSingle := false
@@ -659,10 +668,6 @@ func TestBackupCompleteCycle(t *testing.T) {
 		t.Errorf("Failed to lookup document: %s", describe(err))
 	} else if ok {
 		t.Errorf("Document should not be there: %s", meta2.Key)
-	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
 
@@ -758,6 +763,12 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	trueVar := true
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
 	ensureArangoSearchView(ctx, db, viewname, &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
@@ -863,8 +874,4 @@ func TestBackupRestoreWithViews(t *testing.T) {
 			return interrupt{}
 		}).RetryT(t, 125*time.Millisecond, time.Minute)
 	})
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }

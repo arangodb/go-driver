@@ -26,6 +26,12 @@ import "testing"
 func BenchmarkCreateDocument(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
 
 	b.ResetTimer()
@@ -38,16 +44,18 @@ func BenchmarkCreateDocument(b *testing.B) {
 			b.Fatalf("Failed to create new document: %s", describe(err))
 		}
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // BenchmarkCreateDocumentParallel measures parallel CreateDocument operations for a simple document.
 func BenchmarkCreateDocumentParallel(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
 
 	b.SetParallelism(100)
@@ -62,16 +70,18 @@ func BenchmarkCreateDocumentParallel(b *testing.B) {
 			}
 		}
 	})
-	err := db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // BenchmarkReadDocument measures the ReadDocument operation for a simple document.
 func BenchmarkReadDocument(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
 	doc := UserDoc{
 		"Jan",
@@ -89,16 +99,18 @@ func BenchmarkReadDocument(b *testing.B) {
 			b.Errorf("Failed to read document: %s", describe(err))
 		}
 	}
-	err = db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // BenchmarkReadDocumentParallel measures parallel ReadDocument operations for a simple document.
 func BenchmarkReadDocumentParallel(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
 	doc := UserDoc{
 		"Jan",
@@ -118,16 +130,18 @@ func BenchmarkReadDocumentParallel(b *testing.B) {
 			}
 		}
 	})
-	err = db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // BenchmarkRemoveDocument measures the RemoveDocument operation for a simple document.
 func BenchmarkRemoveDocument(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, b)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, b)
 
 	b.ResetTimer()
@@ -148,9 +162,5 @@ func BenchmarkRemoveDocument(b *testing.B) {
 		if _, err := col.RemoveDocument(nil, meta.Key); err != nil {
 			b.Errorf("Failed to remove document: %s", describe(err))
 		}
-	}
-	err := db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

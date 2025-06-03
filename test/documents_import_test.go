@@ -30,6 +30,12 @@ import (
 func TestImportDocumentsWithKeys(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_withKeys_test", nil, t)
 	docs := []UserDocWithKey{
 		{
@@ -65,16 +71,18 @@ func TestImportDocumentsWithKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsWithoutKeys imports documents and then checks that it exists.
 func TestImportDocumentsWithoutKeys(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_withoutKeys_test", nil, t)
 	docs := []UserDoc{
 		{
@@ -107,10 +115,6 @@ func TestImportDocumentsWithoutKeys(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsEmptyEntries imports documents and then checks that it exists.
@@ -121,6 +125,12 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_emptyEntries_test", nil, t)
 	docs := []*UserDocWithKey{
 		{
@@ -157,10 +167,6 @@ func TestImportDocumentsEmptyEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsInvalidEntries imports documents and then checks that it exists.
@@ -170,6 +176,12 @@ func TestImportDocumentsInvalidEntries(t *testing.T) {
 	}
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_invalidEntries_test", nil, t)
 	docs := []interface{}{
 		&UserDocWithKey{
@@ -208,16 +220,18 @@ func TestImportDocumentsInvalidEntries(t *testing.T) {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 1, stats.Empty, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsDuplicateEntries imports documents and then checks that it exists.
 func TestImportDocumentsDuplicateEntries(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_duplicateEntries_test", nil, t)
 	docs := []interface{}{
 		&UserDocWithKey{
@@ -254,16 +268,18 @@ func TestImportDocumentsDuplicateEntries(t *testing.T) {
 			t.Errorf("Expected %d ignored documents, got %d (json %s)", 0, stats.Ignored, formatRawResponse(raw))
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsDuplicateEntriesComplete imports documents and then checks that it exists.
 func TestImportDocumentsDuplicateEntriesComplete(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_duplicateEntriesComplete_test", nil, t)
 	docs := []interface{}{
 		&UserDocWithKey{
@@ -285,10 +301,6 @@ func TestImportDocumentsDuplicateEntriesComplete(t *testing.T) {
 	}); !driver.IsConflict(err) {
 		t.Errorf("Expected ConflictError, got %s", describe(err))
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsDuplicateEntriesUpdate imports documents and then checks that it exists.
@@ -296,6 +308,12 @@ func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_duplicateEntriesUpdate_test", nil, t)
 	docs := []interface{}{
 		&UserDocWithKey{
@@ -345,10 +363,6 @@ func TestImportDocumentsDuplicateEntriesUpdate(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsDuplicateEntriesReplace imports documents and then checks that it exists.
@@ -356,6 +370,12 @@ func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_duplicateEntriesReplace_test", nil, t)
 	docs := []interface{}{
 		&UserDocWithKey{
@@ -405,10 +425,6 @@ func TestImportDocumentsDuplicateEntriesReplace(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsDuplicateEntriesIgnore imports documents and then checks that it exists.
@@ -416,6 +432,12 @@ func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_duplicateEntriesIgnore_test", nil, t)
 	docs := []interface{}{
 		&UserDocWithKey{
@@ -465,10 +487,6 @@ func TestImportDocumentsDuplicateEntriesIgnore(t *testing.T) {
 			}
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsDetails imports documents and then checks that it exists.
@@ -476,6 +494,12 @@ func TestImportDocumentsDetails(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_details_test", nil, t)
 	docs := []interface{}{
 		&UserDocWithKey{
@@ -519,10 +543,6 @@ func TestImportDocumentsDetails(t *testing.T) {
 			t.Errorf("Expected details[0] to be '%s', got '%s'", detailsExpected, details[0])
 		}
 	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsOverwriteYes imports documents and then checks that it exists.
@@ -530,6 +550,12 @@ func TestImportDocumentsOverwriteYes(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_overwriteYes_test", nil, t)
 	docs := []interface{}{
 		&UserDoc{
@@ -563,10 +589,6 @@ func TestImportDocumentsOverwriteYes(t *testing.T) {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsOverwriteNo imports documents and then checks that it exists.
@@ -574,6 +596,12 @@ func TestImportDocumentsOverwriteNo(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "import_overwriteNo_test", nil, t)
 	docs := []interface{}{
 		&UserDoc{
@@ -607,10 +635,6 @@ func TestImportDocumentsOverwriteNo(t *testing.T) {
 			t.Errorf("Expected count to be %d in round %d, got %d", countExpected, i, count)
 		}
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestImportDocumentsWithKeysInWaitForSyncCollection imports documents into a collection with waitForSync enabled
@@ -618,6 +642,12 @@ func TestImportDocumentsOverwriteNo(t *testing.T) {
 func TestImportDocumentsWithKeysInWaitForSyncCollection(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "TestImportDocumentsWithKeysInWaitForSyncCollection", &driver.CreateCollectionOptions{
 		WaitForSync: true,
 	}, t)
@@ -654,9 +684,5 @@ func TestImportDocumentsWithKeysInWaitForSyncCollection(t *testing.T) {
 		if stats.Empty != 0 {
 			t.Errorf("Expected %d empty documents, got %d (json %s)", 0, stats.Empty, formatRawResponse(raw))
 		}
-	}
-	err = db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }

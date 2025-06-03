@@ -93,21 +93,23 @@ func TestGetDatabase(t *testing.T) {
 func TestCreateDatabase(t *testing.T) {
 	c := createClient(t, nil)
 	name := "create_test1"
-	if _, err := c.CreateDatabase(nil, name, nil); err != nil {
+	db, err := c.CreateDatabase(nil, name, nil)
+	if err != nil {
 		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
 	}
+	defer func() {
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	// Database must exist now
 	if found, err := c.DatabaseExists(nil, name); err != nil {
 		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
 	} else if !found {
 		t.Errorf("DatabaseExists('%s') return false, expected true", name)
 	}
-	db, err := c.Database(driver.WithSkipExistCheck(nil, true), name)
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
-
+	c.Database(driver.WithSkipExistCheck(nil, true), name)
 }
 
 // TestRemoveDatabase creates a database and then removes it.
@@ -145,6 +147,12 @@ func TestDatabaseInfo(t *testing.T) {
 
 	// Test system DB
 	db := ensureDatabase(ctx, c, "_system", nil, t)
+	defer func() {
+		// Cleanup: Remove database
+		if err := db.Remove(context.Background()); err != nil {
+			t.Fatalf("Failed to remove database: %s", describe(err))
+		}
+	}()
 	info, err := db.Info(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get _system database info: %s", describe(err))
@@ -178,10 +186,6 @@ func TestDatabaseInfo(t *testing.T) {
 		t.Error("Empty ID")
 	}
 
-	// Cleanup: Remove database
-	if err := d.Remove(context.Background()); err != nil {
-		t.Fatalf("Failed to remove database: %s", describe(err))
-	}
 }
 
 // --database.extended-names-databases=true are enabled by default in 3.12

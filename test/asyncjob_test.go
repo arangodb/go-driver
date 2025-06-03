@@ -102,7 +102,12 @@ func TestAsyncJobListPending(t *testing.T) {
 	skipResilientSingle(t)
 
 	db := ensureDatabase(ctx, c, databaseName("db", "async"), nil, t)
-	defer db.Remove(ctx)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "frontend", nil, t)
 
 	idTransaction := runLongRequest(t, ctxAsync, db, 2, col.Name())
@@ -135,10 +140,6 @@ func TestAsyncJobListPending(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, jobs, 0)
 	})
-	err := db.Remove(ctx)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 func TestAsyncJobCancel(t *testing.T) {
@@ -149,7 +150,12 @@ func TestAsyncJobCancel(t *testing.T) {
 	skipResilientSingle(t)
 
 	db := ensureDatabase(ctx, c, databaseName("db", "async", "cancel"), nil, t)
-	defer db.Remove(ctx)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	aqlQuery := "FOR i IN 1..10 FOR j IN 1..10 LET x = sleep(1.0) FILTER i == 5 && j == 5 RETURN 42"
 	_, err := db.Query(ctxAsync, aqlQuery, nil)
@@ -196,7 +202,12 @@ func TestAsyncJobDelete(t *testing.T) {
 	skipResilientSingle(t)
 
 	db := ensureDatabase(ctx, c, databaseName("db", "async", "cancel"), nil, t)
-	defer db.Remove(ctx)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "backend", nil, t)
 
 	t.Run("delete all jobs", func(t *testing.T) {

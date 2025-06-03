@@ -45,7 +45,13 @@ func TestUpdateUserPasswordMyself(t *testing.T) {
 	}
 	isv32p := version.Version.CompareTo("3.2") >= 0
 	isVST1_0 := conn.Protocols().Contains(driver.ProtocolVST1_0)
-	ensureUser(nil, c, "user@TestUpdateUserPasswordMyself", &driver.UserOptions{Password: "foo"}, t)
+	u := ensureUser(nil, c, "user@TestUpdateUserPasswordMyself", &driver.UserOptions{Password: "foo"}, t)
+	defer func() {
+		err = u.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+		}
+	}()
 
 	authClient, err := driver.NewClient(driver.ClientConfig{
 		Connection:     createConnectionFromEnv(t),
@@ -84,7 +90,18 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 	isv32p := version.Version.CompareTo("3.2") >= 0
 	isVST1_0 := conn.Protocols().Contains(driver.ProtocolVST1_0)
 	u1 := ensureUser(nil, c, "user1", &driver.UserOptions{Password: "foo"}, t)
-	ensureUser(nil, c, "user2", nil, t)
+	u2 := ensureUser(nil, c, "user2", nil, t)
+	defer func() {
+		err = u2.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u2.Name(), err)
+		}
+		err = u1.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u1.Name(), err)
+		}
+	}()
+
 	systemDb, err := c.Database(nil, "_system")
 	if err != nil {
 		t.Fatalf("Expected success, got %s", describe(err))
@@ -138,6 +155,16 @@ func TestGrantUserDatabase(t *testing.T) {
 	isv32p := version.Version.CompareTo("3.2") >= 0
 	u := ensureUser(nil, c, "grant_user1", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_test", nil, t)
+	defer func() {
+		err = u.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+		}
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	// Grant read/write access
 	if err := u.SetDatabaseAccess(nil, db, driver.GrantReadWrite); err != nil {
@@ -207,10 +234,6 @@ func TestGrantUserDatabase(t *testing.T) {
 	} else {
 		t.Logf("SetDatabaseAccess(ReadOnly) is not supported on versions below 3.2 (got version %s)", version.Version)
 	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestGrantUserDefaultDatabase creates a user & database and granting the user access to the "default" database.
@@ -231,6 +254,16 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 
 	u := ensureUser(nil, c, "grant_user_def", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_def_test", nil, t)
+	defer func() {
+		err = u.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+		}
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	// Grant read/write access to default database
 	if err := u.SetDatabaseAccess(nil, nil, driver.GrantReadWrite); err != nil {
 		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
@@ -338,10 +371,6 @@ func TestGrantUserDefaultDatabase(t *testing.T) {
 			break
 		}
 	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestGrantUserCollection creates a user & database & collection and granting the user access to the collection.
@@ -364,6 +393,16 @@ func TestGrantUserCollection(t *testing.T) {
 
 	u := ensureUser(nil, c, "grant_user_col", &driver.UserOptions{Password: "foo"}, t)
 	db := ensureDatabase(nil, c, "grant_user_col_test", nil, t)
+	defer func() {
+		err = u.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+		}
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	// Grant read/write access to database
 	if err := u.SetDatabaseAccess(nil, db, driver.GrantReadWrite); err != nil {
 		t.Fatalf("SetDatabaseAccess failed: %s", describe(err))
@@ -534,10 +573,6 @@ func TestGrantUserCollection(t *testing.T) {
 	if _, err := authCol.ReadDocument(nil, meta1.Key, &doc); err != nil {
 		t.Errorf("Expected success, got %s", describe(err))
 	}
-	err = db.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // TestUserAccessibleDatabases creates a user & databases and checks the list of accessible databases.
@@ -555,6 +590,20 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	u := ensureUser(nil, c, "accessible_db_user1", nil, t)
 	db1 := ensureDatabase(nil, c, "accessible_db1", nil, t)
 	db2 := ensureDatabase(nil, c, "accessible_db2", nil, t)
+	defer func() {
+		err = u.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+		}
+		err = db1.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db1.Name(), err)
+		}
+		err = db2.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db2.Name(), err)
+		}
+	}()
 
 	contains := func(list []driver.Database, name string) bool {
 		for _, db := range list {
@@ -647,19 +696,6 @@ func TestUserAccessibleDatabases(t *testing.T) {
 	} else {
 		t.Logf("Last part of test fails on version < 3.2 (got version %s)", version.Version)
 	}
-	err = u.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
-	}
-	err = db1.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db1.Name(), err)
-	}
-	err = db2.Remove(nil)
-	if err != nil {
-		t.Logf("Failed to drop database %s: %s ...", db2.Name(), err)
-	}
-	
 }
 
 func waitForDatabaseAccess(authClient driver.Client, dbname string, t *testing.T) driver.Database {

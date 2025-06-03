@@ -29,6 +29,12 @@ import (
 func BenchmarkCollectionExists(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, b)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "collection_exist_test", nil, b)
 
 	b.ResetTimer()
@@ -37,16 +43,18 @@ func BenchmarkCollectionExists(b *testing.B) {
 			b.Errorf("CollectionExists failed: %s", describe(err))
 		}
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // BenchmarkCollection measures the Collection operation.
 func BenchmarkCollection(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, b)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "collection_test", nil, b)
 
 	b.ResetTimer()
@@ -55,16 +63,18 @@ func BenchmarkCollection(b *testing.B) {
 			b.Errorf("Collection failed: %s", describe(err))
 		}
 	}
-	err := db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-	}
 }
 
 // BenchmarkCollections measures the Collections operation.
 func BenchmarkCollections(b *testing.B) {
 	c := createClient(b, nil)
 	db := ensureDatabase(nil, c, "collection_test", nil, b)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	for i := 0; i < 10; i++ {
 		ensureCollection(nil, db, fmt.Sprintf("col%d", i), nil, b)
 	}
@@ -74,9 +84,5 @@ func BenchmarkCollections(b *testing.B) {
 		if _, err := db.Collections(nil); err != nil {
 			b.Errorf("Collections failed: %s", describe(err))
 		}
-	}
-	err := db.Remove(nil)
-	if err != nil {
-		//t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 	}
 }
