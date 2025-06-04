@@ -238,9 +238,16 @@ func TestCreateDatabaseReplication2(t *testing.T) {
 	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
 		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
 	}}
-	if _, err := c.CreateDatabase(nil, name, &opts); err != nil {
+	db, err := c.CreateDatabase(nil, name, &opts)
+	if err != nil {
 		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
 	}
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	// Database must exist now
 	if found, err := c.DatabaseExists(nil, name); err != nil {
 		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
@@ -274,11 +281,16 @@ func databaseReplication2Required(t *testing.T, c driver.Client) {
 		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
 	}}
 
-	db, err := c.CreateDatabase(ctx, dbName, &opts)
-	if err == nil {
+	db, err := c.CreateDatabase(nil, name, &opts)
+	if err != nil {
 		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
-		return
 	}
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
 		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
