@@ -281,12 +281,12 @@ func databaseReplication2Required(t *testing.T, c driver.Client) {
 		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
 	}}
 
-	db, err := c.CreateDatabase(nil, name, &opts)
+	db, err := c.CreateDatabase(ctx, dbName, &opts)
 	if err != nil {
 		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
 	}
 	defer func() {
-		err := db.Remove(nil)
+		err := db.Remove(ctx)
 		if err != nil {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
