@@ -256,7 +256,7 @@ func TestCreateDatabaseReplication2(t *testing.T) {
 	}
 
 	// Read database properties
-	db, err := c.Database(nil, name)
+	db, err = c.Database(nil, name)
 	if err != nil {
 		t.Fatal("Failed to get database ")
 	}
