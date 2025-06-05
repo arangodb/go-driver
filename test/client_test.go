@@ -585,13 +585,11 @@ func TestClientConnectionReuse(t *testing.T) {
 			Options: driver.CreateDatabaseDefaultOptions{},
 		}, t)
 	}
-	defer func () {
+	defer func() {
 		for dbName, user := range dbUsers {
 			t.Logf("Dropping DB %s ...", dbName)
-			db, err := c.Database(ctx, dbName)
-			if err == nil {
-				err = db.Remove(ctx)
-			}
+			db := ensureDatabase(ctx, c, dbName, nil, t)
+			err := db.Remove(ctx)
 			if err != nil {
 				t.Logf("Failed to drop database %s: %s ...", dbName, err)
 			}

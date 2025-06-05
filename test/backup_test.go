@@ -357,10 +357,10 @@ func TestBackupRestore(t *testing.T) {
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			t.Logf("Failed to drop database %s: %s ...", dbname, err)
 		}
 	}()
-	
+
 	col := ensureCollection(ctx, db, colname, nil, t)
 
 	// Write a document
@@ -583,10 +583,10 @@ func TestBackupCompleteCycle(t *testing.T) {
 	colname := "col"
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
-	defer func () {
+	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			t.Logf("Failed to drop database %s: %s ...", dbname, err)
 		}
 	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
@@ -766,7 +766,7 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			t.Logf("Failed to drop database %s: %s ...", dbname, err)
 		}
 	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
