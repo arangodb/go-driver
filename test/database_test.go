@@ -272,30 +272,30 @@ func TestCreateDatabaseReplication2(t *testing.T) {
 
 // databaseReplication2Required skips test if the version is < 3.12.0.
 // It also skips the test if the ArangoDB has not been launched with the option--database.default-replication-version=2.
-func databaseReplication2Required(t *testing.T, c driver.Client) {
-	ctx := context.Background()
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
-
-	dbName := "create_test_replication2"
-	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
-		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
-	}}
-
-	db, err := c.CreateDatabase(ctx, dbName, &opts)
-	if err != nil {
-		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
-	}
-	defer func() {
-		err := db.Remove(ctx)
-		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-		}
-	}()
-
-	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
-		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
-	}
-
-	// Some other error that has not been expected.
-	require.NoError(t, err)
-}
+//func databaseReplication2Required(t *testing.T, c driver.Client) {
+//	ctx := context.Background()
+//	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
+//
+//	dbName := "create_test_replication2"
+//	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
+//		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
+//	}}
+//
+//	db, err := c.CreateDatabase(ctx, dbName, &opts)
+//	if err != nil {
+//		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
+//	}
+//	defer func() {
+//		err := db.Remove(ctx)
+//		if err != nil {
+//			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+//		}
+//	}()
+//
+//	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
+//		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
+//	}
+//
+//	// Some other error that has not been expected.
+//	require.NoError(t, err)
+//}
