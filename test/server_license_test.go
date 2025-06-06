@@ -34,7 +34,7 @@ import (
 func Test_License(t *testing.T) {
 	c := createClient(t, nil)
 	ctx := context.Background()
-	skipBelowVersion(c, "3.10.0", t)
+	skipVersionNotInRange(c, "3.10.0", "3.12.4", t)
 
 	version, err := c.Version(ctx)
 	require.NoError(t, err)

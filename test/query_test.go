@@ -92,7 +92,12 @@ func TestValidateQuery(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "validate_query_test", nil, t)
-
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_test")
 	defer clean(t)
 
@@ -140,7 +145,12 @@ func TestExplainQuery(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "explain_query_test", nil, t)
-
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	db, clean := prepareQueryDatabase(t, ctx, c, "explain_query_test")
 	defer clean(t)
 
@@ -227,6 +237,10 @@ func TestValidateQueryOptionShardIds(t *testing.T) {
 			_, err = db.Query(ctx, "FOR doc in c RETURN doc", map[string]interface{}{})
 			require.NotNil(t, err)
 		})
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 
 	return
@@ -238,6 +252,12 @@ func TestProfileQuery(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "validate_query_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_test")
 	defer clean(t)
@@ -337,6 +357,12 @@ func TestForceOneShardAttributeValue(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, "force_one_shard_attribute_value", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	db, clean := prepareQueryDatabase(t, ctx, c, "force_one_shard_attribute_value")
 	defer clean(t)
@@ -375,6 +401,12 @@ func TestFillBlockCache(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.8.1")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, "fill_block_cache", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	db, clean := prepareQueryDatabase(t, ctx, c, "fill_block_cache")
 	defer clean(t)
@@ -419,6 +451,12 @@ func TestOptimizerRulesForQueries(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.10", t)
 	db := ensureDatabase(ctx, c, "optimizer_rules_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	t.Run(fmt.Sprintf("Fake shards"), func(t *testing.T) {
 		rules, err := db.OptimizerRulesForQueries(ctx)
@@ -448,6 +486,12 @@ func TestRetryReadDocument(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.11.0"))
 
 	db := ensureDatabase(ctx, c, "query_retry_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	db, clean := prepareQueryDatabase(t, ctx, c, "query_retry_test")
 	defer clean(t)
 

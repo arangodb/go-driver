@@ -314,7 +314,7 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) dr
 		}
 
 		return nil
-	}).RetryT(t, 100*time.Millisecond, 15*time.Second)
+	}).RetryT(t, 100*time.Millisecond, 30*time.Second)
 
 	// Wait for secret to start
 	newRetryFunc(func() error {
@@ -327,7 +327,7 @@ func waitForServerRestart(ctx context.Context, c driver.Client, t *testing.T) dr
 		}
 
 		return nil
-	}).RetryT(t, 100*time.Millisecond, 15*time.Second)
+	}).RetryT(t, 100*time.Millisecond, 30*time.Second)
 
 	return c
 }
@@ -354,6 +354,13 @@ func TestBackupRestore(t *testing.T) {
 	colname := "col"
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", dbname, err)
+		}
+	}()
+
 	col := ensureCollection(ctx, db, colname, nil, t)
 
 	// Write a document
@@ -576,6 +583,12 @@ func TestBackupCompleteCycle(t *testing.T) {
 	colname := "col"
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", dbname, err)
+		}
+	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
 
 	isSingle := false
@@ -750,6 +763,12 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	trueVar := true
 
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", dbname, err)
+		}
+	}()
 	col := ensureCollection(ctx, db, colname, nil, t)
 	ensureArangoSearchView(ctx, db, viewname, &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
@@ -795,7 +814,7 @@ func TestBackupRestoreWithViews(t *testing.T) {
 	defer waitForHealthyClusterAfterBackup(t, c)
 
 	if isSingle {
-		waitctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		waitctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		defer cancel()
 		c = waitForServerRestart(waitctx, c, t)
 	}

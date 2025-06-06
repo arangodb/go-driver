@@ -35,6 +35,12 @@ import (
 func TestDefaultIndexes(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "def_indexes_test", nil, t)
 
 	// Get list of indexes
@@ -52,6 +58,12 @@ func TestDefaultIndexes(t *testing.T) {
 func TestDefaultEdgeIndexes(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "def_indexes_edge_test", &driver.CreateCollectionOptions{Type: driver.CollectionTypeEdge}, t)
 
 	// Get list of indexes
@@ -82,6 +94,12 @@ func TestDefaultEdgeIndexes(t *testing.T) {
 func TestIndexes(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "indexes_test", nil, t)
 
 	// Create some indexes
@@ -133,6 +151,12 @@ func TestIndexes(t *testing.T) {
 func TestMultipleIndexes(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "index_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "multiple_indexes_test", nil, t)
 
 	// Create some indexes of same type & fields, but different options
@@ -183,6 +207,12 @@ func TestIndexesDeduplicateHash(t *testing.T) {
 		t.Skip("Test requires 3.2")
 	} else {
 		db := ensureDatabase(nil, c, "index_test", nil, t)
+		defer func() {
+			err := db.Remove(nil)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		{
 			// Create some indexes with de-duplication off
@@ -240,6 +270,12 @@ func TestIndexesDeduplicateSkipList(t *testing.T) {
 		t.Skip("Test requires 3.2")
 	} else {
 		db := ensureDatabase(nil, c, "index_test", nil, t)
+		defer func() {
+			err := db.Remove(nil)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		{
 			// Create some indexes with de-duplication off
@@ -291,6 +327,12 @@ func TestIndexesTTL(t *testing.T) {
 	skipBelowVersion(c, "3.5", t)
 
 	db := ensureDatabase(nil, c, "index_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	// Create some indexes with de-duplication off
 	col := ensureCollection(nil, db, "indexes_ttl_test", nil, t)
@@ -438,6 +480,12 @@ func TestNamedIndexes(t *testing.T) {
 	skipBelowVersion(c, "3.5", t)
 
 	db := ensureDatabase(nil, c, "named_index_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "named_index_test_col", nil, t)
 
 	for _, testCase := range namedIndexTestCases {
@@ -496,6 +544,12 @@ func TestNamedIndexesClusterInventory(t *testing.T) {
 	skipNoCluster(c, t)
 	colname := "named_index_test_col_inv"
 	db := ensureDatabase(nil, c, "named_index_test_inv", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, colname, nil, t)
 
 	cc, err := c.Cluster(nil)
@@ -549,6 +603,12 @@ func TestTTLIndexesClusterInventory(t *testing.T) {
 	ttl := 3600
 	colname := "ttl_index_test_col_inv"
 	db := ensureDatabase(nil, c, "index_test_inv", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, colname, nil, t)
 
 	cc, err := c.Cluster(nil)
@@ -600,7 +660,6 @@ func TestTTLIndexesClusterInventory(t *testing.T) {
 			t.Fatalf("Index not created: %s", describe(ctx.Err()))
 		}
 	}
-
 }
 
 func TestPersistentIndexCreation(t *testing.T) {
@@ -608,6 +667,12 @@ func TestPersistentIndexCreation(t *testing.T) {
 	skipBelowVersion(c, "3.7", t)
 
 	db := ensureDatabase(nil, c, "index_test_creation", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	coll := ensureCollection(nil, db, "index_creation_test_col", nil, t)
 
 	for i := 0; i < 16; i++ {

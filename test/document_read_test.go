@@ -69,4 +69,8 @@ func TestReadDocumentWithIfMatch(t *testing.T) {
 	if resp.StatusCode() != 412 {
 		t.Errorf("Expected status code 412, found %d", resp.StatusCode())
 	}
+	err = db.Remove(ctx)
+	if err != nil {
+		t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+	}
 }

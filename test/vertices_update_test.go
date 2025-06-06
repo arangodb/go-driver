@@ -35,6 +35,12 @@ func TestUpdateVertices(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "relations", t)
 
@@ -84,6 +90,12 @@ func TestUpdateVerticesReturnOld(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_returnOld_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "books", t)
 
@@ -129,6 +141,12 @@ func TestUpdateVerticesReturnNew(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_returnOld_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "users", t)
 
@@ -176,6 +194,12 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 	c := createClient(t, nil)
 	conn := c.Connection()
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_keepNullTrue_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "keepers", t)
 
@@ -253,6 +277,12 @@ func TestUpdateVerticesKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_keepNullFalse_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "accounts", t)
 
@@ -310,6 +340,12 @@ func TestUpdateVerticesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_silent_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "moments", t)
 
@@ -350,6 +386,12 @@ func TestUpdateVerticesRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_revision_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "revisions", t)
 
@@ -415,6 +457,12 @@ func TestUpdateVerticesKeyEmpty(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_keyEmpty_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "lonely", t)
 
@@ -434,6 +482,12 @@ func TestUpdateVerticesUpdateNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_updateNil_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "nilAndSome", t)
 
@@ -447,6 +501,12 @@ func TestUpdateVerticesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	g := ensureGraph(ctx, db, "update_vertices_updateLenDiff_test", nil, t)
 	ec := ensureVertexCollection(ctx, g, "diffs", t)
 
