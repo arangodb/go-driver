@@ -130,17 +130,16 @@ func TestGraphCreationV2(t *testing.T) {
 	ctx := context.Background()
 
 	c := createClient(t, nil)
-	defer func() {
-		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
-		err := db.Remove(ctx)
-		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-		}
-	}()
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0")).Cluster().Enterprise()
 
 	t.Run("Satellite", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -163,6 +162,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Satellite - list", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -190,6 +195,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Standard", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -207,6 +218,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Standard - list", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -229,6 +246,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Disjoint", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -248,6 +271,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Disjoint - list", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
