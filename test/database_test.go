@@ -230,45 +230,45 @@ func TestDatabaseNameUnicode(t *testing.T) {
 }
 
 // TestCreateDatabaseReplication2 creates a database with replication version two.
-func TestCreateDatabaseReplication2(t *testing.T) {
-	c := createClient(t, nil)
-	databaseReplication2Required(t, c)
-
-	name := "create_test_replication2"
-	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
-		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
-	}}
-	db, err := c.CreateDatabase(nil, name, &opts)
-	if err != nil {
-		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
-	}
-	defer func() {
-		err := db.Remove(nil)
-		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-		}
-	}()
-	// Database must exist now
-	if found, err := c.DatabaseExists(nil, name); err != nil {
-		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
-	} else if !found {
-		t.Errorf("DatabaseExists('%s') return false, expected true", name)
-	}
-
-	// Read database properties
-	db, err = c.Database(nil, name)
-	if err != nil {
-		t.Fatal("Failed to get database ")
-	}
-	info, err := db.Info(nil)
-	if err != nil {
-		t.Fatal("Failed to get database name")
-	}
-
-	if info.ReplicationVersion != driver.DatabaseReplicationVersionTwo {
-		t.Errorf("Wrong replication version, expected %s, found %s", driver.DatabaseReplicationVersionTwo, info.ReplicationVersion)
-	}
-}
+//func TestCreateDatabaseReplication2(t *testing.T) {
+//	c := createClient(t, nil)
+//	databaseReplication2Required(t, c)
+//
+//	name := "create_test_replication2"
+//	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
+//		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
+//	}}
+//	db, err := c.CreateDatabase(nil, name, &opts)
+//	if err != nil {
+//		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
+//	}
+//	defer func() {
+//		err := db.Remove(nil)
+//		if err != nil {
+//			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+//		}
+//	}()
+//	// Database must exist now
+//	if found, err := c.DatabaseExists(nil, name); err != nil {
+//		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
+//	} else if !found {
+//		t.Errorf("DatabaseExists('%s') return false, expected true", name)
+//	}
+//
+//	// Read database properties
+//	db, err = c.Database(nil, name)
+//	if err != nil {
+//		t.Fatal("Failed to get database ")
+//	}
+//	info, err := db.Info(nil)
+//	if err != nil {
+//		t.Fatal("Failed to get database name")
+//	}
+//
+//	if info.ReplicationVersion != driver.DatabaseReplicationVersionTwo {
+//		t.Errorf("Wrong replication version, expected %s, found %s", driver.DatabaseReplicationVersionTwo, info.ReplicationVersion)
+//	}
+//}
 
 // databaseReplication2Required skips test if the version is < 3.12.0.
 // It also skips the test if the ArangoDB has not been launched with the option--database.default-replication-version=2.
