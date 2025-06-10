@@ -156,7 +156,6 @@ func Test_Graph_AdvancedCreate_Defaults(t *testing.T) {
 	skipNoCluster(c, t)
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults1"), nil, t)
-	t.Logf(" drop database %s", db.Name())
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
