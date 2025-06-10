@@ -217,11 +217,9 @@ func TestValidateQueryOptionShardIds(t *testing.T) {
 	if driver.IsPreconditionFailed(err) {
 		t.Skip("Not a cluster")
 	} else {
-		db := ensureDatabase(ctx, c, "validate_query_options_test", nil, t)
-		col := ensureCollection(ctx, db, "c", nil, t)
-
 		db, clean := prepareQueryDatabase(t, ctx, c, "validate_query_options_test")
 		defer clean(t)
+		col := ensureCollection(ctx, db, "c", nil, t)
 
 		t.Run(fmt.Sprintf("Real shards"), func(t *testing.T) {
 			shards, err := col.Shards(ctx, true)
@@ -237,10 +235,6 @@ func TestValidateQueryOptionShardIds(t *testing.T) {
 			_, err = db.Query(ctx, "FOR doc in c RETURN doc", map[string]interface{}{})
 			require.NotNil(t, err)
 		})
-		err = db.Remove(ctx)
-		if err != nil {
-			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
-		}
 	}
 
 	return
