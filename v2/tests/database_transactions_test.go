@@ -225,7 +225,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 						LockTimeoutDuration: 1 * time.Second,
 					})
 					require.NoError(t, err)
-					defer abortTransaction(t, t1)
+					defer abortTransaction(t, t2)
 
 					col2, err := t2.GetCollection(ctx, col.Name(), nil)
 					require.NoError(t, err)
@@ -251,10 +251,13 @@ func Test_DatabaseTransactions_List(t *testing.T) {
 				t.Run("List all transactions", func(t *testing.T) {
 					t1, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)
 					require.NoError(t, err)
+					defer abortTransaction(t, t1)
 					t2, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)
 					require.NoError(t, err)
+					defer abortTransaction(t, t2)
 					t3, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)
 					require.NoError(t, err)
+					defer abortTransaction(t, t3)
 
 					transactions, err := db.ListTransactions(ctx)
 					require.NoError(t, err)
@@ -282,6 +285,7 @@ func ensureTransactionStatus(t testing.TB, db arangodb.Database, tid arangodb.Tr
 	withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
 		transaction, err := db.Transaction(ctx, tid)
 		require.NoError(t, err)
+		defer abortTransaction(t, transaction)
 
 		s, err := transaction.Status(ctx)
 		require.NoError(t, err)
