@@ -61,7 +61,7 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		db, err := client.CreateDatabase(ctx, name, opts)
-		require.NoError(t, err, fmt.Sprintf("Failed to create DB %s", name))
+		require.NoError(t, err, fmt.Sprintf("Failed to create DB %s: %s", name, err))
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
