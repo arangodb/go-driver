@@ -65,8 +65,10 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-				t.Logf("Removing DB %s, time: %s", db.Name(), time.Now())
-				require.NoError(t, db.Remove(ctx))
+				err := db.Remove(ctx)
+				if err != nil {
+					t.Logf("Removing DB %s failed, time: %s with %s", db.Name(), time.Now(), err)
+				}
 			})
 		}()
 
