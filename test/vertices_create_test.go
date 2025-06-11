@@ -32,7 +32,7 @@ import (
 func TestCreateVertices(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_create_test1", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -96,7 +96,7 @@ func TestCreateVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_create_test2", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -148,7 +148,7 @@ func TestCreateVerticesReturnNew(t *testing.T) {
 func TestCreateVerticesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_create_test3", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -184,7 +184,7 @@ func TestCreateVerticesSilent(t *testing.T) {
 func TestCreateVerticesNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_create_test4", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -202,7 +202,7 @@ func TestCreateVerticesNil(t *testing.T) {
 func TestCreateVerticesNonSlice(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_create_test5", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {

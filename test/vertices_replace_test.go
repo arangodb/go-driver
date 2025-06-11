@@ -33,7 +33,7 @@ import (
 func TestReplaceVertices(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_replace_test1", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -86,7 +86,7 @@ func TestReplaceVerticesReturnOld(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_test2", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -137,7 +137,7 @@ func TestReplaceVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_replace_test3", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -188,7 +188,7 @@ func TestReplaceVerticesReturnNew(t *testing.T) {
 func TestReplaceVerticesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_replace_test4", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -239,7 +239,7 @@ func TestReplaceVerticesSilent(t *testing.T) {
 func TestReplaceVerticesRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_replace_test5", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -313,7 +313,7 @@ func TestReplaceVerticesRevision(t *testing.T) {
 func TestReplaceVerticesKeyEmpty(t *testing.T) {
 	ctx := context.TODO()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_replace_test6", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -336,7 +336,7 @@ func TestReplaceVerticesKeyEmpty(t *testing.T) {
 func TestReplaceVerticesUpdateNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_replace_test7", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -355,7 +355,7 @@ func TestReplaceVerticesUpdateNil(t *testing.T) {
 func TestReplaceVerticesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_replace_test8", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {

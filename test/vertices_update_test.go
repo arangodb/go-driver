@@ -34,7 +34,7 @@ import (
 func TestUpdateVertices(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test1", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -89,7 +89,7 @@ func TestUpdateVerticesReturnOld(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test2", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -140,7 +140,7 @@ func TestUpdateVerticesReturnNew(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t) // See https://github.com/arangodb/arangodb/issues/2365
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test3", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -193,7 +193,7 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	conn := c.Connection()
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test4", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -276,7 +276,7 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 func TestUpdateVerticesKeepNullFalse(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test5", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -339,7 +339,7 @@ func TestUpdateVerticesKeepNullFalse(t *testing.T) {
 func TestUpdateVerticesSilent(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test6", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -385,7 +385,7 @@ func TestUpdateVerticesSilent(t *testing.T) {
 func TestUpdateVerticesRevision(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test7", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -456,7 +456,7 @@ func TestUpdateVerticesRevision(t *testing.T) {
 func TestUpdateVerticesKeyEmpty(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test8", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -481,7 +481,7 @@ func TestUpdateVerticesKeyEmpty(t *testing.T) {
 func TestUpdateVerticesUpdateNil(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test9", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -500,7 +500,7 @@ func TestUpdateVerticesUpdateNil(t *testing.T) {
 func TestUpdateVerticesUpdateLenDiff(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_update_test10", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {

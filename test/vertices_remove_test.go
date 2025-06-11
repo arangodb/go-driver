@@ -33,7 +33,7 @@ import (
 func TestRemoveVertices(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_remove_test1", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -76,7 +76,7 @@ func TestRemoveVertices(t *testing.T) {
 func TestRemoveVerticesReturnOld(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_remove_test2", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -118,7 +118,7 @@ func TestRemoveVerticesReturnOld(t *testing.T) {
 func TestRemoveVerticesSilent(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_remove_test3", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -166,7 +166,7 @@ func TestRemoveVerticesSilent(t *testing.T) {
 func TestRemoveVerticesRevision(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_remove_test4", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
@@ -240,7 +240,7 @@ func TestRemoveVerticesRevision(t *testing.T) {
 func TestRemoveVerticesKeyEmpty(t *testing.T) {
 	var ctx context.Context
 	c := createClient(t, nil)
-	db := ensureDatabase(ctx, c, "vertices_test", nil, t)
+	db := ensureDatabase(ctx, c, "vertices_remove_test5", nil, t)
 	defer func() {
 		err := db.Remove(ctx)
 		if err != nil {
