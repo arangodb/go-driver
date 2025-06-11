@@ -120,8 +120,8 @@ func TestUpdateUserPasswordOtherUser(t *testing.T) {
 		t.Skip("Cannot update other password using VST in 3.1")
 	} else {
 		// Right now user1 has no right to access user2
-		if _, err := authClient.User(nil, "user2"); !driver.IsForbidden(err) {
-			t.Fatalf("Expected ForbiddenError, got %s", describe(err))
+		if tst, err := authClient.User(nil, "user2"); !driver.IsForbidden(err) {
+			t.Fatalf("Expected ForbiddenError, got %s %s", describe(err), tst)
 		}
 
 		// Grant user1 access to _system db, then it should be able to access user2
