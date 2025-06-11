@@ -36,7 +36,7 @@ func Test_ClusterHealth(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-
+			requireClusterMode(t)
 			health, err := client.Health(ctx)
 			require.NoError(t, err, "Health failed")
 			require.NotNil(t, health, "Health did not return a health")
@@ -74,6 +74,7 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 	requireClusterMode(t)
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		requireClusterMode(t)
 		t.Run("DatabaseInventory simple checks", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 
