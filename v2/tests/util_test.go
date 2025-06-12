@@ -121,7 +121,6 @@ func skipBetweenVersions(c arangodb.Client, ctx context.Context, minVersion, max
 	return x
 }
 
-
 // skipVersionNotInRange skips the test if the current server version is less than
 // the min version or higher/equal max version
 func skipVersionNotInRange(c arangodb.Client, ctx context.Context, minVersion, maxVersion arangodb.Version, t testing.TB) arangodb.VersionInfo {
