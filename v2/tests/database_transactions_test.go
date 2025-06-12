@@ -285,7 +285,13 @@ func ensureTransactionStatus(t testing.TB, db arangodb.Database, tid arangodb.Tr
 	withContextT(t, 30*time.Second, func(ctx context.Context, t testing.TB) {
 		transaction, err := db.Transaction(ctx, tid)
 		require.NoError(t, err)
-		defer abortTransaction(t, transaction)
+		defer func() {
+			status, err := transaction.Status(ctx)
+			require.NoError(t, err)
+			if status.Status != arangodb.TransactionCommitted {
+				abortTransaction(t, transaction)
+			}
+		}()
 
 		s, err := transaction.Status(ctx)
 		require.NoError(t, err)
