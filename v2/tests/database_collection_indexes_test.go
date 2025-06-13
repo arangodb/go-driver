@@ -219,6 +219,10 @@ func Test_TTLIndex(t *testing.T) {
 					t.Run("Removing documents at a fixed period after creation", func(t *testing.T) {
 						idx, created, err := col.EnsureTTLIndex(ctx, []string{"createdAt"}, 5, nil)
 						require.NoError(t, err)
+						defer func() {
+							err := col.DeleteIndexByID(ctx, idx.ID)
+							require.NoError(t, err)
+						}()
 						require.True(t, created)
 						require.Equal(t, *idx.RegularIndex.ExpireAfter, 5)
 						require.Equal(t, arangodb.TTLIndexType, idx.Type)
@@ -248,13 +252,15 @@ func Test_TTLIndex(t *testing.T) {
 							}
 						})
 
-						err = col.DeleteIndexByID(ctx, idx.ID)
-						require.NoError(t, err)
 					})
 
 					t.Run("Removing documents at certain points in time", func(t *testing.T) {
 						idx, created, err := col.EnsureTTLIndex(ctx, []string{"expireDate"}, 0, nil)
 						require.NoError(t, err)
+						defer func() {
+							err := col.DeleteIndexByID(ctx, idx.ID)
+							require.NoError(t, err)
+						}()
 						require.True(t, created)
 						require.Equal(t, *idx.RegularIndex.ExpireAfter, 0)
 						require.Equal(t, arangodb.TTLIndexType, idx.Type)
@@ -283,9 +289,6 @@ func Test_TTLIndex(t *testing.T) {
 								time.Sleep(1 * time.Second)
 							}
 						})
-
-						err = col.DeleteIndexByID(ctx, idx.ID)
-						require.NoError(t, err)
 					})
 				})
 			})
