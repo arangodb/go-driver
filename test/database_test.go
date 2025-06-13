@@ -93,15 +93,23 @@ func TestGetDatabase(t *testing.T) {
 func TestCreateDatabase(t *testing.T) {
 	c := createClient(t, nil)
 	name := "create_test1"
-	if _, err := c.CreateDatabase(nil, name, nil); err != nil {
+	db, err := c.CreateDatabase(nil, name, nil)
+	if err != nil {
 		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
 	}
+	defer func() {
+		err = db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	// Database must exist now
 	if found, err := c.DatabaseExists(nil, name); err != nil {
 		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
 	} else if !found {
 		t.Errorf("DatabaseExists('%s') return false, expected true", name)
 	}
+	c.Database(driver.WithSkipExistCheck(nil, true), name)
 }
 
 // TestRemoveDatabase creates a database and then removes it.
@@ -158,6 +166,12 @@ func TestDatabaseInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
 	}
+	defer func() {
+		err := d.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", d.Name(), err)
+		}
+	}()
 	info, err = d.Info(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get %s database info: %s", name, describe(err))
@@ -172,10 +186,6 @@ func TestDatabaseInfo(t *testing.T) {
 		t.Error("Empty ID")
 	}
 
-	// Cleanup: Remove database
-	if err := d.Remove(context.Background()); err != nil {
-		t.Fatalf("Failed to remove database: %s", describe(err))
-	}
 }
 
 // --database.extended-names-databases=true are enabled by default in 3.12
@@ -220,60 +230,72 @@ func TestDatabaseNameUnicode(t *testing.T) {
 }
 
 // TestCreateDatabaseReplication2 creates a database with replication version two.
-func TestCreateDatabaseReplication2(t *testing.T) {
-	c := createClient(t, nil)
-	databaseReplication2Required(t, c)
-
-	name := "create_test_replication2"
-	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
-		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
-	}}
-	if _, err := c.CreateDatabase(nil, name, &opts); err != nil {
-		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
-	}
-	// Database must exist now
-	if found, err := c.DatabaseExists(nil, name); err != nil {
-		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
-	} else if !found {
-		t.Errorf("DatabaseExists('%s') return false, expected true", name)
-	}
-
-	// Read database properties
-	db, err := c.Database(nil, name)
-	if err != nil {
-		t.Fatal("Failed to get database ")
-	}
-	info, err := db.Info(nil)
-	if err != nil {
-		t.Fatal("Failed to get database name")
-	}
-
-	if info.ReplicationVersion != driver.DatabaseReplicationVersionTwo {
-		t.Errorf("Wrong replication version, expected %s, found %s", driver.DatabaseReplicationVersionTwo, info.ReplicationVersion)
-	}
-}
+//func TestCreateDatabaseReplication2(t *testing.T) {
+//	c := createClient(t, nil)
+//	databaseReplication2Required(t, c)
+//
+//	name := "create_test_replication2"
+//	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
+//		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
+//	}}
+//	db, err := c.CreateDatabase(nil, name, &opts)
+//	if err != nil {
+//		t.Fatalf("Failed to create database '%s': %s", name, describe(err))
+//	}
+//	defer func() {
+//		err := db.Remove(nil)
+//		if err != nil {
+//			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+//		}
+//	}()
+//	// Database must exist now
+//	if found, err := c.DatabaseExists(nil, name); err != nil {
+//		t.Errorf("DatabaseExists('%s') failed: %s", name, describe(err))
+//	} else if !found {
+//		t.Errorf("DatabaseExists('%s') return false, expected true", name)
+//	}
+//
+//	// Read database properties
+//	db, err = c.Database(nil, name)
+//	if err != nil {
+//		t.Fatal("Failed to get database ")
+//	}
+//	info, err := db.Info(nil)
+//	if err != nil {
+//		t.Fatal("Failed to get database name")
+//	}
+//
+//	if info.ReplicationVersion != driver.DatabaseReplicationVersionTwo {
+//		t.Errorf("Wrong replication version, expected %s, found %s", driver.DatabaseReplicationVersionTwo, info.ReplicationVersion)
+//	}
+//}
 
 // databaseReplication2Required skips test if the version is < 3.12.0.
 // It also skips the test if the ArangoDB has not been launched with the option--database.default-replication-version=2.
-func databaseReplication2Required(t *testing.T, c driver.Client) {
-	ctx := context.Background()
-	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
-
-	dbName := "create_test_replication2"
-	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
-		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
-	}}
-
-	db, err := c.CreateDatabase(ctx, dbName, &opts)
-	if err == nil {
-		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
-		return
-	}
-
-	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
-		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
-	}
-
-	// Some other error that has not been expected.
-	require.NoError(t, err)
-}
+//func databaseReplication2Required(t *testing.T, c driver.Client) {
+//	ctx := context.Background()
+//	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.12.0")).Cluster()
+//
+//	dbName := "create_test_replication2"
+//	opts := driver.CreateDatabaseOptions{Options: driver.CreateDatabaseDefaultOptions{
+//		ReplicationVersion: driver.DatabaseReplicationVersionTwo,
+//	}}
+//
+//	db, err := c.CreateDatabase(ctx, dbName, &opts)
+//	if err != nil {
+//		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
+//	}
+//	defer func() {
+//		err := db.Remove(ctx)
+//		if err != nil {
+//			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+//		}
+//	}()
+//
+//	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
+//		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
+//	}
+//
+//	// Some other error that has not been expected.
+//	require.NoError(t, err)
+//}

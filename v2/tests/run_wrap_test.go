@@ -261,10 +261,10 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 					return nil
 				}
 			}
-
+			current := time.Now()
 			resp, err := client.Get(ctx, nil, "_admin", "server", "availability")
 			if err != nil {
-				log.Warn().Err(err).Msgf("Unable to get cluster health")
+				log.Warn().Err(err).Msgf("Unable to get SUT health, deadline: %s", time.Since(current))
 				return nil
 			}
 

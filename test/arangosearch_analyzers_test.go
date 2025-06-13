@@ -83,6 +83,12 @@ func TestArangoSearchAnalyzerEnsureAnalyzer(t *testing.T) {
 
 	dbname := "analyzer_test_ensure"
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	testCases := []struct {
 		Name               string
@@ -444,6 +450,12 @@ func TestArangoSearchAnalyzerGet(t *testing.T) {
 
 	dbname := "analyzer_test_get"
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	aname := "my-ngram"
 	def := driver.ArangoSearchAnalyzerDefinition{
 		Name: aname,
@@ -478,6 +490,12 @@ func TestArangoSearchAnalyzerGetAll(t *testing.T) {
 
 	dbname := "analyzer_test_get_all"
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	aname := "my-ngram"
 	def := driver.ArangoSearchAnalyzerDefinition{
 		Name: aname,
@@ -518,6 +536,12 @@ func TestArangoSearchAnalyzerRemove(t *testing.T) {
 
 	dbname := "analyzer_test_get_all"
 	db := ensureDatabase(ctx, c, dbname, nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	aname := "my-ngram"
 	def := driver.ArangoSearchAnalyzerDefinition{
 		Name: aname,

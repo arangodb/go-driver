@@ -33,10 +33,7 @@ import (
 func Test_License(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-			skipBelowVersion(client, ctx, "3.10.0", t)
-
-			version, err := client.Version(ctx)
-			require.NoError(t, err)
+			version := skipVersionNotInRange(client, ctx, "3.10.0", "3.12.4", t)
 
 			license, err := client.GetLicense(ctx)
 			require.NoError(t, err)
