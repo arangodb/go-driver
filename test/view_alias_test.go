@@ -56,6 +56,12 @@ func TestSearchViewsAlias(t *testing.T) {
 	skipBelowVersion(c, "3.10", t)
 	skipBelowVersion(c, "3.10", t)
 	db := ensureDatabase(ctx, c, "search_view_test_basic", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	nameAlias := "test_add_collection_view_alias"
 	nameCol := "col_in_alias_view"
