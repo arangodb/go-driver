@@ -496,6 +496,12 @@ func TestResponseHeader(t *testing.T) {
 	} else {
 		var resp driver.Response
 		db := ensureDatabase(ctx, c, "_system", nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 		col := ensureCollection(ctx, db, "response_header_test", nil, t)
 		defer clean(t, ctx, col)
 
@@ -579,6 +585,21 @@ func TestClientConnectionReuse(t *testing.T) {
 			Options: driver.CreateDatabaseDefaultOptions{},
 		}, t)
 	}
+	defer func() {
+		for dbName, user := range dbUsers {
+			t.Logf("Dropping DB %s ...", dbName)
+			db := ensureDatabase(ctx, c, dbName, nil, t)
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", dbName, err)
+			}
+			u := ensureUser(ctx, c, user.UserName, nil, t)
+			err = u.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to delete user %s: %s ...", user.UserName, err)
+			}
+		}
+	}()
 
 	var wg sync.WaitGroup
 	const clientsPerDB = 20

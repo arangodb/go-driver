@@ -83,5 +83,9 @@ func TestServerMode(t *testing.T) {
 		if err := col.Remove(ctx); err != nil {
 			t.Fatalf("Collection remove failed: %s", describe(err))
 		}
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 }

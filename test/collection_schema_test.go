@@ -51,6 +51,12 @@ func TestCollectionSchema(t *testing.T) {
 
 	name := "document_schema_validation_test"
 	db := ensureDatabase(nil, c, name, nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	t.Run("Create collection with schema validation", func(t *testing.T) {
 		opts := driver.CreateCollectionOptions{
 			Schema: &driver.CollectionSchemaOptions{

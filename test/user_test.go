@@ -157,7 +157,12 @@ func TestCreateUser(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	c := createClient(t, nil)
 	u := ensureUser(nil, c, "update_user", nil, t)
-
+	defer func() {
+		err := u.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+		}
+	}()
 	if err := u.Update(context.TODO(), driver.UserOptions{}); err != nil {
 		t.Errorf("Cannot update user with empty options: %s", describe(err))
 	}
@@ -201,6 +206,12 @@ func TestUpdateUser(t *testing.T) {
 func TestReplaceUser(t *testing.T) {
 	c := createClient(t, nil)
 	u := ensureUser(nil, c, "replace_user", nil, t)
+	defer func() {
+		err := u.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to delete user %s: %s ...", u.Name(), err)
+		}
+	}()
 
 	if err := u.Replace(context.TODO(), driver.UserOptions{}); err != nil {
 		t.Errorf("Cannot replace user with empty options: %s", describe(err))
