@@ -177,6 +177,13 @@ func TestServerStatisticsTraffic(t *testing.T) {
 	}
 
 	doSomeWrites(t, nil, c)
+	defer func() {
+		db := ensureDatabase(ctx, c, "statistics_test", nil, t)
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	time.Sleep(time.Second) // Wait until statistics updated
 
@@ -257,6 +264,13 @@ func TestServerStatisticsForwarding(t *testing.T) {
 
 	// At least 5000 documents in the collection:
 	doSomeWrites(t, ctx1, c)
+	defer func() {
+		db := ensureDatabase(ctx, c, "statistics_test", nil, t)
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	doSomeWrites(t, ctx1, c)
 	doSomeWrites(t, ctx1, c)
 	doSomeWrites(t, ctx1, c)

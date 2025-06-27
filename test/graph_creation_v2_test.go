@@ -41,6 +41,12 @@ func Test_Graph_AdvancedCreateV2(t *testing.T) {
 	skipNoCluster(c, t)
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "replication"), nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	// Create
 	graphID := db.Name() + "_graph"
@@ -85,6 +91,12 @@ func Test_Graph_AdvancedCreateV2_Defaults(t *testing.T) {
 	skipNoCluster(c, t)
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	// Create
 	graphID := db.Name() + "_graph"
@@ -122,6 +134,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Satellite", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -144,6 +162,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Satellite - list", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -171,6 +195,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Standard", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -188,6 +218,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Standard - list", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -210,6 +246,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Disjoint", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -229,6 +271,12 @@ func TestGraphCreationV2(t *testing.T) {
 
 	t.Run("Disjoint - list", func(t *testing.T) {
 		db := ensureDatabase(ctx, c, databaseName("graph", "create", "defaults"), nil, t)
+		defer func() {
+			err := db.Remove(ctx)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 
 		// Create
 		graphID := db.Name() + "_graph"
@@ -259,6 +307,12 @@ func TestHybridSmartGraphCreationV2(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "hybrid"), nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	name := db.Name() + "_test_create_hybrid_graph"
 	colName := db.Name() + "_create_hybrid_edge_col"
@@ -312,6 +366,12 @@ func TestHybridSmartGraphCreationConditions(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.10.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(ctx, c, databaseName("graph", "create", "hybrid", "options"), nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	t.Run("General Graph - isSmart is False and no smartGraphAttribute", func(t *testing.T) {
 		graphID := db.Name() + "_graph_smart_no_conditions"

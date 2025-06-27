@@ -49,6 +49,12 @@ func TestCreateGraph(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_graph"
 
 	if _, err := db.CreateGraphV2(ctx, name, nil); err != nil {
@@ -91,6 +97,12 @@ func TestCreateGraphWithOptions(t *testing.T) {
 	skipNoCluster(c, t)
 
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_graph_2"
 
 	options := &driver.CreateGraphOptions{
@@ -169,6 +181,12 @@ func TestRemoveGraph(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_remove_graph"
 	g, err := db.CreateGraphV2(ctx, name, nil)
 	if err != nil {
@@ -197,6 +215,12 @@ func TestRemoveGraphWithOpts(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "graph_test_remove", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_remove_graph_opts"
 	colName := "remove_graph_col"
 

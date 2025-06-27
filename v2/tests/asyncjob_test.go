@@ -122,8 +122,8 @@ func TestAsyncJobListPending(t *testing.T) {
 						require.Len(t, jobs, 1)
 					})
 
-					t.Run("wait fot the async jobs to be done", func(t *testing.T) {
-						time.Sleep(4 * time.Second)
+					t.Run("wait for the async jobs to be done", func(t *testing.T) {
+						time.Sleep(12 * time.Second)
 
 						jobs, err := client.AsyncJobList(ctx, arangodb.JobPending, nil)
 						require.NoError(t, err)
@@ -179,7 +179,7 @@ func TestAsyncJobCancel(t *testing.T) {
 					})
 
 					t.Run("cancelled job should move from pending to done state", func(t *testing.T) {
-						time.Sleep(5 * time.Second)
+						time.Sleep(10 * time.Second)
 
 						jobs, err := client.AsyncJobList(ctx, arangodb.JobPending, nil)
 						require.NoError(t, err)

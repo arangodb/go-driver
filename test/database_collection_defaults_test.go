@@ -70,6 +70,12 @@ func TestDatabaseSharding(t *testing.T) {
 
 			db, err := c.CreateDatabase(nil, name, &opt)
 			require.NoError(t, err)
+			defer func() {
+				err := db.Remove(nil)
+				if err != nil {
+					t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+				}
+			}()
 
 			info, err := db.Info(nil)
 			require.NoError(t, err)
@@ -169,6 +175,12 @@ func TestDatabaseDefaults(t *testing.T) {
 
 			db, err := c.CreateDatabase(nil, name, &opt)
 			require.NoError(t, err)
+			defer func() {
+				err := db.Remove(nil)
+				if err != nil {
+					t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+				}
+			}()
 
 			col, err := db.CreateCollection(nil, "test", &scenario.col)
 			require.NoError(t, err)

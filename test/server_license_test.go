@@ -34,7 +34,7 @@ import (
 func Test_License(t *testing.T) {
 	c := createClient(t, nil)
 	ctx := context.Background()
-	skipBelowVersion(c, "3.10.0", t)
+	skipVersionNotInRange(c, "3.10.0", "3.12.4", t)
 
 	version, err := c.Version(ctx)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func Test_License(t *testing.T) {
 
 	if version.IsEnterprise() {
 		assert.Equalf(t, driver.LicenseStatusExpiring, license.Status, "by default status should be expiring")
-		assert.Equalf(t, 1, license.Version, "excpected version should be 1")
+		assert.EqualValuesf(t, 1, license.Version, "excpected version should be 1")
 	} else {
 		assert.Equalf(t, driver.LicenseStatus(""), license.Status, "license status should be empty")
 		assert.Equalf(t, 0, license.Version, "license version should be empty")
