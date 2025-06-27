@@ -85,6 +85,12 @@ func TestCreateArangoSearchView(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	ensureCollection(ctx, db, "someCol", nil, t)
 	name := "test_create_asview"
 	opts := &driver.ArangoSearchViewProperties{
@@ -122,6 +128,12 @@ func TestCreateArangoSearchViewInvalidLinks(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_inv_view"
 	opts := &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
@@ -150,6 +162,12 @@ func TestCreateEmptyArangoSearchView(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_empty_asview"
 	v, err := db.CreateArangoSearchView(ctx, name, nil)
 	if err != nil {
@@ -177,6 +195,12 @@ func TestCreateDuplicateArangoSearchView(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_dup_asview"
 	if _, err := db.CreateArangoSearchView(ctx, name, nil); err != nil {
 		t.Fatalf("Failed to create view '%s': %s", name, describe(err))
@@ -200,6 +224,12 @@ func TestCreateArangoSearchViewThenRemoveCollection(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "someViewTmpCol", nil, t)
 	name := "test_create_view_then_rem_col"
 	opts := &driver.ArangoSearchViewProperties{
@@ -253,6 +283,12 @@ func TestAddCollectionMultipleViews(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "col_in_multi_view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	ensureCollection(ctx, db, "col_in_multi_view", nil, t)
 	v1 := ensureArangoSearchView(ctx, db, "col_in_multi_view_view1", nil, t)
 	if !tryAddArangoSearchLink(ctx, db, v1, "col_in_multi_view", t) {
@@ -271,6 +307,12 @@ func TestAddCollectionMultipleViewsViaCreate(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "col_in_multi_view_create_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	ensureCollection(ctx, db, "col_in_multi_view_create", nil, t)
 	opts := &driver.ArangoSearchViewProperties{
 		Links: driver.ArangoSearchLinks{
@@ -294,6 +336,12 @@ func TestGetArangoSearchOptimizeTopK(t *testing.T) {
 	skipBelowVersion(c, "3.12.0", t)
 	skipNoEnterprise(t)
 	db := ensureDatabase(ctx, c, "view_test_optimize_top_k", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_get_asview"
 	optimizeTopK := []string{"BM25(@doc) DESC", "TFIDF(@doc) DESC"}
 	opts := &driver.ArangoSearchViewProperties{
@@ -329,6 +377,12 @@ func TestGetArangoSearchView(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "someCol", nil, t)
 	name := "test_get_asview"
 	opts := &driver.ArangoSearchViewProperties{
@@ -377,6 +431,12 @@ func TestGetArangoSearchViews(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	// Get views before adding some
 	before, err := db.Views(ctx)
 	if err != nil {
@@ -421,6 +481,12 @@ func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 	skipBelowVersion(c, "3.4", t)
 
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_rename_view"
 	renamedView := "test_rename_view_new"
 	v, err := db.CreateArangoSearchView(ctx, name, nil)
@@ -461,7 +527,6 @@ func TestRenameAndRemoveArangoSearchView(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, found)
 	})
-
 }
 
 // TestUseArangoSearchView tries to create a view and actually use it in
@@ -472,6 +537,12 @@ func TestUseArangoSearchView(t *testing.T) {
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	skipBelowVersion(c, "3.4", t)
 	db := ensureDatabase(nil, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "some_collection", nil, t)
 
 	ensureArangoSearchView(ctx, db, "some_view", &driver.ArangoSearchViewProperties{
@@ -555,6 +626,12 @@ func TestUseArangoSearchViewWithNested(t *testing.T) {
 	skipBelowVersion(c, "3.10", t)
 	skipNoEnterprise(t)
 	db := ensureDatabase(nil, c, "view_nested_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "some_collection", nil, t)
 
 	ensureArangoSearchView(ctx, db, "some_nested_view", &driver.ArangoSearchViewProperties{
@@ -622,6 +699,12 @@ func TestUseArangoSearchViewWithPipelineAnalyzer(t *testing.T) {
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	skipBelowVersion(c, "3.8", t)
 	db := ensureDatabase(nil, c, "view_with_pipeline_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "some_collection_with_analyzer", nil, t)
 
 	analyzer := driver.ArangoSearchAnalyzerDefinition{
@@ -719,6 +802,12 @@ func TestArangoSearchViewProperties35(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.7.1", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	ensureCollection(ctx, db, "someCol", nil, t)
 	commitInterval := int64(100)
 	sortDir := driver.ArangoSearchSortDirectionDesc
@@ -787,6 +876,12 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.5", t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	ensureCollection(ctx, db, "primary_col_sort", nil, t)
 
 	boolTrue := true
@@ -931,6 +1026,12 @@ func TestArangoSearchViewProperties353(t *testing.T) {
 	skipBelowVersion(c, "3.5.3", t)
 	skipNoCluster(c, t)
 	db := ensureDatabase(ctx, c, "view_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	colname := "someCol"
 	ensureCollection(ctx, db, colname, nil, t)
 	name := "test_get_asview_353"
@@ -999,6 +1100,12 @@ func TestArangoSearchViewLinkAndStoredValueCache(t *testing.T) {
 	skipBetweenVersions(c, "3.10.0", "3.10.1", t)
 	skipNoEnterprise(t)
 	db := ensureDatabase(ctx, c, "view_test_links_stored_value_cache", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	linkedColName := "linkedColumn"
 	ensureCollection(ctx, db, linkedColName, nil, t)
 	name := "test_create_asview"
@@ -1045,6 +1152,12 @@ func TestArangoSearchViewInMemoryCache(t *testing.T) {
 
 	skipNoEnterprise(t)
 	db := ensureDatabase(ctx, c, "view_test_in_memory_cache", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	t.Run("primarySortCache", func(t *testing.T) {
 		// feature was introduced in 3.9.5 and in 3.10.2:

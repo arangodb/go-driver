@@ -156,5 +156,9 @@ func TestServerModeAndGrants(t *testing.T) {
 		} else if grant != defaultDBAccess {
 			t.Errorf("Collection access using WithConfigured differs, got '%s', expected '%s'", grant, defaultColAccess)
 		}
+		err = db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
 	}
 }

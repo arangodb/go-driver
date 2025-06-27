@@ -38,7 +38,14 @@ func TestCreateCursorWithMaxRuntime(t *testing.T) {
 	collectionName := "cursor_max_retry_test"
 	c := createClient(t, nil)
 	skipBelowVersion(c, "3.6", t)
-	db := ensureDatabase(context.Background(), c, "cursor_test", nil, t)
+	ctx := context.Background()
+	db := ensureDatabase(ctx, c, "cursor_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	ensureCollection(context.Background(), db, collectionName, nil, t)
 
 	tests := []struct {
@@ -87,7 +94,14 @@ func TestWithQueryOptimizerRules(t *testing.T) {
 	collectionName := "col_query_optimizer_rules"
 	fieldName := "value"
 	c := createClient(t, nil)
-	db := ensureDatabase(context.Background(), c, "query_optimizer_rules", nil, t)
+	ctx := context.Background()
+	db := ensureDatabase(ctx, c, "query_optimizer_rules", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(context.Background(), db, collectionName, nil, t)
 
 	tests := map[string]struct {
@@ -176,6 +190,12 @@ func TestCreateCursor(t *testing.T) {
 	// don't use disallowUnknownFields in this test - we have here custom structs defined
 	c := createClient(t, &testsClientConfig{skipDisallowUnknownFields: true})
 	db := ensureDatabase(ctx, c, "cursor_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	// Create data set
 	collectionData := map[string][]interface{}{
@@ -399,6 +419,12 @@ func TestCreateCursorReturnNull(t *testing.T) {
 	ctx := context.Background()
 	c := createClient(t, nil)
 	db := ensureDatabase(ctx, c, "cursor_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	var result interface{}
 	query := "return null"
@@ -433,6 +459,12 @@ func TestCreateStreamCursor(t *testing.T) {
 	}
 
 	db := ensureDatabase(ctx, c, "cursor_stream_test", nil, t)
+	defer func() {
+		err := db.Remove(ctx)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(ctx, db, "cursor_stream_test", nil, t)
 
 	// Query engine info (on rocksdb, JournalSize is always 0)

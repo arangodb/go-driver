@@ -47,6 +47,12 @@ func ensureEdgeCollection(ctx context.Context, g driver.Graph, collection string
 func TestCreateEdgeCollection(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_create_edge_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
@@ -115,6 +121,12 @@ func TestCreateSatelliteEdgeCollection(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.9.0")).Cluster().Enterprise()
 
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 
 	name := "test_create_sat_edge_collection"
 	options := driver.CreateGraphOptions{
@@ -125,6 +137,8 @@ func TestCreateSatelliteEdgeCollection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create graph '%s': %s", name, describe(err))
 	}
+	// revert
+	defer g.Remove(ctx)
 
 	// List edge collections, must be empty
 	if list, _, err := g.EdgeCollections(nil); err != nil {
@@ -177,14 +191,18 @@ func TestCreateSatelliteEdgeCollection(t *testing.T) {
 		}
 	}
 
-	// revert
-	g.Remove(ctx)
 }
 
 // TestRemoveEdgeCollection creates a graph and then adds an edge collection in it and then removes the edge collection.
 func TestRemoveEdgeCollection(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_remove_edge_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
@@ -227,6 +245,12 @@ func TestRemoveEdgeCollection(t *testing.T) {
 func TestSetVertexConstraints(t *testing.T) {
 	c := createClient(t, nil)
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "set_vertex_constraints"
 	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {
@@ -287,6 +311,12 @@ func TestRenameEdgeCollection(t *testing.T) {
 	skipNoSingle(c, t)
 
 	db := ensureDatabase(nil, c, "edge_collection_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	name := "test_rename_edge_collection"
 	g, err := db.CreateGraphV2(nil, name, nil)
 	if err != nil {

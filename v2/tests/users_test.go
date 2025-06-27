@@ -48,6 +48,12 @@ func Test_Users(t *testing.T) {
 				require.GreaterOrEqual(t, len(users), 1)
 			})
 
+			defer func() {
+				err := client.RemoveUser(ctx, user1Name)
+				if err != nil {
+					t.Logf("Failed to delete user %s: %s ...", user1Name, err)
+				}
+			}()
 			t.Run("Test created user", func(t *testing.T) {
 				u, err := client.CreateUser(ctx, user1Name, nil)
 				require.NoError(t, err)
@@ -61,6 +67,12 @@ func Test_Users(t *testing.T) {
 				require.Equal(t, user1Name, ur.Name())
 			})
 
+			defer func() {
+				err := client.RemoveUser(ctx, user2Name)
+				if err != nil {
+					t.Logf("Failed to delete user %s: %s ...", user2Name, err)
+				}
+			}()
 			t.Run("Test created user with options", func(t *testing.T) {
 				opts := &arangodb.UserOptions{
 					Extra: doc,

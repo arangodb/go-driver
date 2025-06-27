@@ -56,6 +56,12 @@ func TestConcurrentCreateSmallDocuments(t *testing.T) {
 		t.Skip("Skipping VST load test on 3.2")
 	} else {
 		db := ensureDatabase(nil, c, "document_test", nil, t)
+		defer func() {
+			err := db.Remove(nil)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 		col := ensureCollection(nil, db, "TestConcurrentCreateSmallDocuments", nil, t)
 
 		docChan := make(chan driver.DocumentMeta, 128*1024)
@@ -147,6 +153,12 @@ func TestConcurrentCreateBigDocuments(t *testing.T) {
 		t.Skip("Skipping VST load test on 3.2")
 	} else {
 		db := ensureDatabase(nil, c, "document_test", nil, t)
+		defer func() {
+			err := db.Remove(nil)
+			if err != nil {
+				t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+			}
+		}()
 		col := ensureCollection(nil, db, "TestConcurrentCreateBigDocuments", nil, t)
 
 		docChan := make(chan driver.DocumentMeta, 16*1024)

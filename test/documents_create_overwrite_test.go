@@ -48,6 +48,12 @@ func TestCreateOverwriteDocument(t *testing.T) {
 	defer cancel()
 
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_overwrite_test", nil, t)
 
 	t.Run("Single Doc - replace", func(t *testing.T) {
@@ -102,6 +108,12 @@ func TestCreateOverwriteModeDocument(t *testing.T) {
 	EnsureVersion(t, ctx, c).CheckVersion(MinimumVersion("3.7.0"))
 
 	db := ensureDatabase(nil, c, "document_test", nil, t)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
 	col := ensureCollection(nil, db, "document_test", nil, t)
 
 	t.Run("Single Doc - ignore", func(t *testing.T) {
