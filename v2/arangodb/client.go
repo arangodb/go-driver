@@ -36,4 +36,5 @@ type Client interface {
 	ClientAdmin
 	ClientAsyncJob
 	ClientFoxx
+	ClientTasks
 }
