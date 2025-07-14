@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -115,7 +116,7 @@ func (c clientTask) Tasks(ctx context.Context) ([]Task, error) {
 	case http.StatusOK:
 		result := make([]Task, len(response))
 		for i, task := range response {
-			fmt.Printf("Task %d: %+v\n", i, task)
+			log.Printf("Task %d: %+v", i, task)
 			result[i] = newTask(c.client, &task)
 		}
 		return result, nil
@@ -213,7 +214,6 @@ func (c clientTask) RemoveTask(ctx context.Context, id string) error {
 func (c clientTask) CreateTaskWithID(ctx context.Context, id string, options *TaskOptions) (Task, error) {
 	// Check if task already exists
 	existingTask, err := c.Task(ctx, id)
-	fmt.Printf("Checking existing task with ID: %s, existingTask: %v, Error:%v", id, existingTask, err)
 	if err == nil && existingTask != nil {
 		return nil, &shared.ArangoError{
 			Code:         http.StatusConflict,
