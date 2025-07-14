@@ -22,7 +22,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -70,7 +69,7 @@ func Test_CreateNewTask(t *testing.T) {
 				require.NotNil(t, tasks)
 				require.Greater(t, len(tasks), 0, "Expected at least one task to be present")
 				t.Logf("Found tasks: %v", tasks)
-				fmt.Printf("Number of tasks: %s\n", tasks[0].ID())
+				t.Logf("Number of tasks: %s\n", tasks[0].ID())
 
 				require.NoError(t, client.RemoveTask(ctx, createdTask.ID()))
 				t.Logf("Task %s removed successfully", createdTask.ID())
