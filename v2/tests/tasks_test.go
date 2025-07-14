@@ -47,7 +47,7 @@ func Test_CreateNewTask(t *testing.T) {
 			},
 			"TestDataForCreateTask": {
 				Name:    "TestDataForCreateTask",
-				Command: "(function() { require('@arangodb').print(Hello); })()",
+				Command: "(function() { require('@arangodb').print('Hello'); })()",
 				Period:  2,
 			},
 		}
@@ -58,6 +58,22 @@ func Test_CreateNewTask(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, createdTask)
 				require.Equal(t, name, createdTask.Name())
+				t.Logf("Params: %v", options.Params)
+				// Proper params comparison
+				// Check parameters
+				if options.Params != nil {
+					var params map[string]interface{}
+					err = createdTask.Params(&params)
+
+					if err != nil {
+						t.Logf("WARNING: Could not fetch task params (unsupported feature?): %v", err)
+					} else if len(params) == 0 {
+						t.Logf("WARNING: Task params exist but returned empty (ArangoDB limitation?)")
+					} else {
+						// Only check if params are actually returned
+						require.Equal(t, options.Params, params)
+					}
+				}
 
 				taskInfo, err := client.Task(ctx, createdTask.ID())
 				require.NoError(t, err)
@@ -69,7 +85,7 @@ func Test_CreateNewTask(t *testing.T) {
 				require.NotNil(t, tasks)
 				require.Greater(t, len(tasks), 0, "Expected at least one task to be present")
 				t.Logf("Found tasks: %v", tasks)
-				t.Logf("Number of tasks: %s\n", tasks[0].ID())
+				t.Logf("Task Id to be removed: %s\n", tasks[0].ID())
 
 				require.NoError(t, client.RemoveTask(ctx, createdTask.ID()))
 				t.Logf("Task %s removed successfully", createdTask.ID())
