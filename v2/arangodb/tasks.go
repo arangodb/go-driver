@@ -32,10 +32,10 @@ type ClientTasks interface {
 	Tasks(ctx context.Context, databaseName string) ([]Task, error)
 
 	// CreateTask creates a new task with the specified options.
-	CreateTask(ctx context.Context, databaseName string, options *TaskOptions) (Task, error)
+	CreateTask(ctx context.Context, databaseName string, options TaskOptions) (Task, error)
 
 	// If a task with the given ID already exists, a Conflict error is returned.
-	CreateTaskWithID(ctx context.Context, databaseName string, id string, options *TaskOptions) (Task, error)
+	CreateTaskWithID(ctx context.Context, databaseName string, id string, options TaskOptions) (Task, error)
 
 	// RemoveTask deletes an existing task by its ID.
 	RemoveTask(ctx context.Context, databaseName string, id string) error
@@ -44,41 +44,41 @@ type ClientTasks interface {
 // TaskOptions contains options for creating a new task.
 type TaskOptions struct {
 	// ID is an optional identifier for the task.
-	ID string `json:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 	// Name is an optional name for the task.
-	Name string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
 
 	// Command is the JavaScript code to be executed.
-	Command string `json:"command"`
+	Command *string `json:"command"`
 
 	// Params are optional parameters passed to the command.
 	Params interface{} `json:"params,omitempty"`
 
 	// Period is the interval (in seconds) at which the task runs periodically.
 	// If zero, the task runs once after the offset.
-	Period int64 `json:"period,omitempty"`
+	Period *int64 `json:"period,omitempty"`
 
 	// Offset is the delay (in milliseconds) before the task is first executed.
-	Offset float64 `json:"offset,omitempty"`
+	Offset *float64 `json:"offset,omitempty"`
 }
 
 // Task provides access to a single task on the server.
 type Task interface {
 	// ID returns the ID of the task.
-	ID() string
+	ID() *string
 
 	// Name returns the name of the task.
-	Name() string
+	Name() *string
 
 	// Command returns the JavaScript code of the task.
-	Command() string
+	Command() *string
 
 	// Params returns the parameters of the task.
 	Params(result interface{}) error
 
 	// Period returns the period (in seconds) of the task.
-	Period() int64
+	Period() *int64
 
 	// Offset returns the offset (in milliseconds) of the task.
-	Offset() float64
+	Offset() *float64
 }
