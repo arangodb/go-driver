@@ -78,16 +78,16 @@ type task struct {
 }
 
 // Task interface implementation for the task struct.
-func (t *task) ID() string {
-	return t.id
+func (t *task) ID() *string {
+	return &t.id
 }
 
-func (t *task) Name() string {
-	return t.name
+func (t *task) Name() *string {
+	return &t.name
 }
 
-func (t *task) Command() string {
-	return t.command
+func (t *task) Command() *string {
+	return &t.command
 }
 
 func (t *task) Params(result interface{}) error {
@@ -97,17 +97,17 @@ func (t *task) Params(result interface{}) error {
 	return json.Unmarshal(t.params, result)
 }
 
-func (t *task) Period() int64 {
-	return t.period
+func (t *task) Period() *int64 {
+	return &t.period
 }
 
-func (t *task) Offset() float64 {
-	return t.offset
+func (t *task) Offset() *float64 {
+	return &t.offset
 }
 
 // Tasks retrieves all tasks from the specified database.
 // Retuns a slice of Task objects representing the tasks in the database.
-func (c clientTask) Tasks(ctx context.Context, databaseName string) ([]Task, error) {
+func (c *clientTask) Tasks(ctx context.Context, databaseName string) ([]Task, error) {
 	urlEndpoint := connection.NewUrl("_db", url.PathEscape(databaseName), "_api", "tasks")
 	response := make([]taskResponse, 0) // Direct array response
 	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response)
@@ -131,7 +131,7 @@ func (c clientTask) Tasks(ctx context.Context, databaseName string) ([]Task, err
 // Task retrieves a specific task by its ID from the specified database.
 // If the task does not exist, it returns an error.
 // If the task exists, it returns a Task object.
-func (c clientTask) Task(ctx context.Context, databaseName string, id string) (Task, error) {
+func (c *clientTask) Task(ctx context.Context, databaseName string, id string) (Task, error) {
 	urlEndpoint := connection.NewUrl("_db", url.PathEscape(databaseName), "_api", "tasks", url.PathEscape(id))
 	response := struct {
 		taskResponse          `json:",inline"`
@@ -155,7 +155,7 @@ func validateTaskOptions(options *TaskOptions) error {
 	if options == nil {
 		return errors.New("TaskOptions must not be nil")
 	}
-	if options.Command == "" {
+	if options.Command == nil {
 		return errors.New("TaskOptions.Command must not be empty")
 	}
 	return nil
@@ -166,13 +166,13 @@ func validateTaskOptions(options *TaskOptions) error {
 // If the task does not exist, it will create a new task.
 // The options parameter contains the task configuration such as name, command, parameters, period, and offset.
 // The ID field in options is optional; if provided, it will be used as the task identifier.
-func (c clientTask) CreateTask(ctx context.Context, databaseName string, options *TaskOptions) (Task, error) {
-	if err := validateTaskOptions(options); err != nil {
+func (c *clientTask) CreateTask(ctx context.Context, databaseName string, options TaskOptions) (Task, error) {
+	if err := validateTaskOptions(&options); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	var urlEndpoint string
-	if options.ID != "" {
-		urlEndpoint = connection.NewUrl("_db", url.PathEscape(databaseName), "_api", "tasks", url.PathEscape(options.ID))
+	if options.ID != nil {
+		urlEndpoint = connection.NewUrl("_db", url.PathEscape(databaseName), "_api", "tasks", url.PathEscape(*options.ID))
 	} else {
 		urlEndpoint = connection.NewUrl("_db", url.PathEscape(databaseName), "_api", "tasks")
 	}
@@ -184,12 +184,22 @@ func (c clientTask) CreateTask(ctx context.Context, databaseName string, options
 		Params  json.RawMessage `json:"params,omitempty"`
 		Period  int64           `json:"period,omitempty"`
 		Offset  float64         `json:"offset,omitempty"`
-	}{
-		ID:      options.ID,
-		Name:    options.Name,
-		Command: options.Command,
-		Period:  options.Period,
-		Offset:  options.Offset,
+	}{}
+
+	if options.ID != nil {
+		createRequest.ID = *options.ID
+	}
+	if options.Name != nil {
+		createRequest.Name = *options.Name
+	}
+	if options.Command != nil {
+		createRequest.Command = *options.Command
+	}
+	if options.Period != nil {
+		createRequest.Period = *options.Period
+	}
+	if options.Offset != nil {
+		createRequest.Offset = *options.Offset
 	}
 
 	if options.Params != nil {
@@ -227,7 +237,7 @@ func (c clientTask) CreateTask(ctx context.Context, databaseName string, options
 // The ID parameter is the identifier of the task to be removed.
 // The databaseName parameter specifies the database from which the task should be removed.
 // It constructs the URL endpoint for the task API and calls the DELETE method to remove the task
-func (c clientTask) RemoveTask(ctx context.Context, databaseName string, id string) error {
+func (c *clientTask) RemoveTask(ctx context.Context, databaseName string, id string) error {
 	urlEndpoint := connection.NewUrl("_db", url.PathEscape(databaseName), "_api", "tasks", url.PathEscape(id))
 
 	resp, err := connection.CallDelete(ctx, c.client.connection, urlEndpoint, nil)
@@ -246,7 +256,7 @@ func (c clientTask) RemoveTask(ctx context.Context, databaseName string, id stri
 // CreateTaskWithID creates a new task with the specified ID and options.
 // If a task with the given ID already exists, it returns a Conflict error.
 // If the task does not exist, it creates a new task with the provided options.
-func (c clientTask) CreateTaskWithID(ctx context.Context, databaseName string, id string, options *TaskOptions) (Task, error) {
+func (c *clientTask) CreateTaskWithID(ctx context.Context, databaseName string, id string, options TaskOptions) (Task, error) {
 	// Check if task already exists
 	existingTask, err := c.Task(ctx, databaseName, id)
 	if err == nil && existingTask != nil {
@@ -257,6 +267,6 @@ func (c clientTask) CreateTaskWithID(ctx context.Context, databaseName string, i
 	}
 
 	// Set the ID and call CreateTask
-	options.ID = id
+	options.ID = &id
 	return c.CreateTask(ctx, databaseName, options)
 }

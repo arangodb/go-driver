@@ -39,26 +39,26 @@ func Test_CreateNewTask(t *testing.T) {
 		dbName := "_system"
 		testCases := map[string]*arangodb.TaskOptions{
 			"taskWIthParams": {
-				Name:    "taskWIthParams",
-				Command: "(function(params) { require('@arangodb').print(params); })(params)",
-				Period:  2,
+				Name:    utils.NewType("taskWIthParams"),
+				Command: utils.NewType("(function(params) { require('@arangodb').print(params); })(params)"),
+				Period:  utils.NewType(int64(2)),
 				Params: map[string]interface{}{
 					"test": "hello",
 				},
 			},
 			"taskWIthOutParams": {
-				Name:    "taskWIthOutParams",
-				Command: "(function() { require('@arangodb').print('Hello'); })()",
-				Period:  2,
+				Name:    utils.NewType("taskWIthOutParams"),
+				Command: utils.NewType("(function() { require('@arangodb').print('Hello'); })()"),
+				Period:  utils.NewType(int64(2)),
 			},
 		}
 
 		for name, options := range testCases {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				createdTask, err := client.CreateTask(ctx, dbName, options)
+				createdTask, err := client.CreateTask(ctx, dbName, *options)
 				require.NoError(t, err)
 				require.NotNil(t, createdTask)
-				require.Equal(t, name, createdTask.Name())
+				require.Equal(t, name, *createdTask.Name())
 				t.Logf("Params: %v", options.Params)
 				// Proper params comparison
 				// Check parameters
@@ -76,20 +76,27 @@ func Test_CreateNewTask(t *testing.T) {
 					}
 				}
 
-				taskInfo, err := client.Task(ctx, dbName, createdTask.ID())
+				taskInfo, err := client.Task(ctx, dbName, *createdTask.ID())
 				require.NoError(t, err)
 				require.NotNil(t, taskInfo)
-				require.Equal(t, name, taskInfo.Name())
+				require.Equal(t, name, *taskInfo.Name())
 
 				tasks, err := client.Tasks(ctx, dbName)
 				require.NoError(t, err)
 				require.NotNil(t, tasks)
 				require.Greater(t, len(tasks), 0, "Expected at least one task to be present")
 				t.Logf("Found tasks: %v", tasks)
-				t.Logf("Task Id to be removed: %s\n", tasks[0].ID())
-
-				require.NoError(t, client.RemoveTask(ctx, dbName, createdTask.ID()))
-				t.Logf("Task %s removed successfully", createdTask.ID())
+				if len(tasks) > 0 && tasks[0].ID() != nil {
+					t.Logf("Task Id to be removed: %s\n", *tasks[0].ID())
+				} else {
+					t.Logf("Task Id to be removed: <nil>")
+				}
+				if id := createdTask.ID(); id != nil {
+					require.NoError(t, client.RemoveTask(ctx, dbName, *id))
+					t.Logf("Task %s removed successfully", *id)
+				} else {
+					t.Logf("Task ID is nil")
+				}
 			})
 		}
 	}, WrapOptions{
@@ -102,19 +109,26 @@ func Test_ValidationsForCreateNewTask(t *testing.T) {
 		dbName := "_system"
 		testCases := map[string]*arangodb.TaskOptions{
 			"taskWIthOutCommand": {
-				Name:   "taskWIthOutCommand",
-				Period: 2,
+				Name:   utils.NewType("taskWIthOutCommand"),
+				Period: utils.NewType(int64(2)),
 			},
 			"taskWIthOutPeriod": nil,
 		}
 
 		for name, options := range testCases {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				_, err := client.CreateTask(ctx, dbName, options)
+				var err error
+				if options == nil {
+					_, err = client.CreateTask(ctx, dbName, arangodb.TaskOptions{})
+				} else {
+					_, err = client.CreateTask(ctx, dbName, *options)
+				}
+
 				require.Error(t, err)
 				t.Logf("Expected error for task '%s': %v", name, err)
 			})
 		}
+
 	}, WrapOptions{
 		Parallel: utils.NewType(false),
 	})
@@ -126,27 +140,27 @@ func Test_TaskCreationWithId(t *testing.T) {
 			dbName := "_system"
 			taskID := "test-task-id"
 			options := &arangodb.TaskOptions{
-				ID:      taskID, // Optional if CreateTaskWithID sets it, but safe to keep
-				Name:    "TestTaskWithID",
-				Command: "console.log('This is a test task with ID');",
-				Period:  5,
+				ID:      &taskID, // Optional if CreateTaskWithID sets it, but safe to keep
+				Name:    utils.NewType("TestTaskWithID"),
+				Command: utils.NewType("console.log('This is a test task with ID');"),
+				Period:  utils.NewType(int64(5)),
 			}
 
 			// Create the task with explicit ID
-			task, err := client.CreateTaskWithID(ctx, dbName, taskID, options)
+			task, err := client.CreateTaskWithID(ctx, dbName, taskID, *options)
 			require.NoError(t, err, "Expected task creation to succeed")
 			require.NotNil(t, task, "Expected task to be non-nil")
-			require.Equal(t, taskID, task.ID(), "Task ID mismatch")
-			require.Equal(t, options.Name, task.Name(), "Task Name mismatch")
+			require.Equal(t, taskID, *task.ID(), "Task ID mismatch")
+			require.Equal(t, *options.Name, *task.Name(), "Task Name mismatch")
 
 			// Retrieve and validate
 			retrievedTask, err := client.Task(ctx, dbName, taskID)
 			require.NoError(t, err, "Expected task retrieval to succeed")
 			require.NotNil(t, retrievedTask, "Expected retrieved task to be non-nil")
-			require.Equal(t, taskID, retrievedTask.ID(), "Retrieved task ID mismatch")
-			require.Equal(t, options.Name, retrievedTask.Name(), "Retrieved task Name mismatch")
-			// Try to create task again with same ID — expect 429
-			_, err = client.CreateTaskWithID(ctx, dbName, taskID, options)
+			require.Equal(t, taskID, *retrievedTask.ID(), "Retrieved task ID mismatch")
+			require.Equal(t, *options.Name, *retrievedTask.Name(), "Retrieved task Name mismatch")
+
+			_, err = client.CreateTaskWithID(ctx, dbName, taskID, *options)
 			require.Error(t, err, "Creating a duplicate task should fail")
 
 			// Clean up
