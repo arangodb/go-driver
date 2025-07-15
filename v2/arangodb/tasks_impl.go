@@ -155,14 +155,8 @@ func validateTaskOptions(options *TaskOptions) error {
 	if options == nil {
 		return errors.New("TaskOptions must not be nil")
 	}
-	if options.Name == "" {
-		return errors.New("TaskOptions.Name must not be empty")
-	}
 	if options.Command == "" {
 		return errors.New("TaskOptions.Command must not be empty")
-	}
-	if options.Period <= 0 {
-		return errors.New("TaskOptions.Period must be greater than zero")
 	}
 	return nil
 }

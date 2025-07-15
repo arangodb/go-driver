@@ -101,21 +101,11 @@ func Test_ValidationsForCreateNewTask(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		dbName := "_system"
 		testCases := map[string]*arangodb.TaskOptions{
-			"taskWIthOutName": {
-				Command: "(function(params) { require('@arangodb').print(params); })(params)",
-				Period:  2,
-				Params: map[string]interface{}{
-					"test": "hello",
-				},
-			},
 			"taskWIthOutCommand": {
 				Name:   "taskWIthOutCommand",
 				Period: 2,
 			},
-			"taskWIthOutPeriod": {
-				Name:    "taskWIthOutPeriod",
-				Command: "(function() { require('@arangodb').print('Hello'); })()",
-			},
+			"taskWIthOutPeriod": nil,
 		}
 
 		for name, options := range testCases {
