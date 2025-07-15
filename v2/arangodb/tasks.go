@@ -26,19 +26,19 @@ import (
 type ClientTasks interface {
 	// Task retrieves an existing task by its ID.
 	// If no task with the given ID exists, a NotFoundError is returned.
-	Task(ctx context.Context, id string) (Task, error)
+	Task(ctx context.Context, databaseName string, id string) (Task, error)
 
 	// Tasks returns a list of all tasks on the server.
-	Tasks(ctx context.Context) ([]Task, error)
+	Tasks(ctx context.Context, databaseName string) ([]Task, error)
 
 	// CreateTask creates a new task with the specified options.
-	CreateTask(ctx context.Context, options *TaskOptions) (Task, error)
+	CreateTask(ctx context.Context, databaseName string, options *TaskOptions) (Task, error)
 
 	// If a task with the given ID already exists, a Conflict error is returned.
-	CreateTaskWithID(ctx context.Context, id string, options *TaskOptions) (Task, error)
+	CreateTaskWithID(ctx context.Context, databaseName string, id string, options *TaskOptions) (Task, error)
 
 	// RemoveTask deletes an existing task by its ID.
-	RemoveTask(ctx context.Context, id string) error
+	RemoveTask(ctx context.Context, databaseName string, id string) error
 }
 
 // TaskOptions contains options for creating a new task.
