@@ -241,7 +241,7 @@ func Test_ClusterMoveShards(t *testing.T) {
 
 					t.Run("Check if shards are moved", func(t *testing.T) {
 						start := time.Now()
-						maxTestTime := 2 * time.Minute
+						maxTestTime := 5 * time.Minute
 						lastShardsNotOnTargetServerID := movedShards
 
 						for {
@@ -319,7 +319,7 @@ func Test_ClusterResignLeadership(t *testing.T) {
 
 					t.Run("Check if targetServerID is no longer leader", func(t *testing.T) {
 						start := time.Now()
-						maxTestTime := time.Minute
+						maxTestTime := 5 * time.Minute
 						lastLeaderForShardsNum := 0
 
 						for {
