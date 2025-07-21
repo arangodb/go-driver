@@ -45,11 +45,6 @@ type Collection interface {
 	// Properties fetches extended information about the collection.
 	Properties(ctx context.Context) (CollectionProperties, error)
 
-	// Deprecated: use 'SetPropertiesV2' instead
-	//
-	// SetProperties allows modifying collection parameters
-	SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error
-
 	// SetProperties allows modifying collection parameters
 	SetPropertiesV2(ctx context.Context, options SetCollectionPropertiesOptionsV2) error
 

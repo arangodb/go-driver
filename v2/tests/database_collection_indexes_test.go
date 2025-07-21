@@ -405,16 +405,6 @@ func Test_NamedIndexes(t *testing.T) {
 							},
 						},
 						{
-							Name: "ZKD",
-							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
-								idx, _, err := col.EnsureZKDIndex(ctx, []string{"zkd"}, &arangodb.CreateZKDIndexOptions{
-									Name:            name,
-									FieldValueTypes: arangodb.ZKDDoubleFieldType,
-								})
-								return idx, err
-							},
-						},
-						{
 							Name: "MKD",
 							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
 								idx, _, err := col.EnsureMDIIndex(ctx, []string{"mkd"}, &arangodb.CreateMDIIndexOptions{

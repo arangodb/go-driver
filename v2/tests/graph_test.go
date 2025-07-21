@@ -68,7 +68,7 @@ func Test_GraphSimple(t *testing.T) {
 
 					t.Run("Test created collections", func(t *testing.T) {
 						for _, c := range append(g.EdgeDefinitions()[0].To, g.EdgeDefinitions()[0].From...) {
-							col, err := db.Collection(ctx, c)
+							col, err := db.GetCollection(ctx, c, nil)
 							require.NoError(t, err)
 							require.NotNil(t, col)
 
@@ -162,7 +162,7 @@ func Test_GraphCreation(t *testing.T) {
 					require.True(t, g.IsSmart())
 
 					for _, c := range []string{colHybrid, colSat, colNonSat} {
-						col, err := db.Collection(ctx, c)
+						col, err := db.GetCollection(ctx, c, nil)
 						require.NoError(t, err)
 						require.NotNil(t, col)
 

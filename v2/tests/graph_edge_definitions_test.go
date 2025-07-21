@@ -103,7 +103,7 @@ func Test_GraphEdgeDefinitions(t *testing.T) {
 						require.NoError(t, err)
 						require.True(t, exist)
 
-						col, err := db.Collection(ctx, colName)
+						col, err := db.GetCollection(ctx, colName, nil)
 						require.NoError(t, err)
 
 						prop, err := col.Properties(ctx)
@@ -167,14 +167,14 @@ func TestGraphEdgeDefinitionsWithSatellites(t *testing.T) {
 					require.NoError(t, err)
 					require.Len(t, createResp.GraphDefinition.EdgeDefinitions, 1)
 
-					col, err := db.Collection(ctx, colName)
+					col, err := db.GetCollection(ctx, colName, nil)
 					require.NoError(t, err)
 
 					prop, err := col.Properties(ctx)
 					require.NoError(t, err)
 					require.True(t, prop.IsSatellite())
 
-					colFrom, err := db.Collection(ctx, colFromName)
+					colFrom, err := db.GetCollection(ctx, colFromName, nil)
 					require.NoError(t, err)
 
 					propFrom, err := colFrom.Properties(ctx)
@@ -191,7 +191,7 @@ func TestGraphEdgeDefinitionsWithSatellites(t *testing.T) {
 						require.Contains(t, delResp.GraphDefinition.EdgeDefinitions[0].From, newColName)
 						require.Contains(t, delResp.GraphDefinition.OrphanCollections, colFromName)
 
-						colNew, err := db.Collection(ctx, newColName)
+						colNew, err := db.GetCollection(ctx, newColName, nil)
 						require.NoError(t, err)
 
 						propNew, err := colNew.Properties(ctx)

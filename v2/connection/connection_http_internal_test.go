@@ -39,10 +39,6 @@ func Test_httpConnection_Decoder(t *testing.T) {
 			contentType: ApplicationJSON,
 			wantDecoder: getJsonDecoder(),
 		},
-		"VPack response decoder": {
-			contentType: ApplicationVPack,
-			wantDecoder: getVPackDecoder(),
-		},
 		"Bytes response decoder": {
 			contentType: PlainText,
 			wantDecoder: getBytesDecoder(),
@@ -52,12 +48,6 @@ func Test_httpConnection_Decoder(t *testing.T) {
 				contentType: ApplicationJSON,
 			},
 			wantDecoder: getJsonDecoder(),
-		},
-		"VPack HTTP connection decoder": {
-			conn: httpConnection{
-				contentType: ApplicationVPack,
-			},
-			wantDecoder: getVPackDecoder(),
 		},
 		"Bytes HTTP connection decoder": {
 			conn: httpConnection{

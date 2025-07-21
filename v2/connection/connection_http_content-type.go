@@ -30,5 +30,5 @@ const (
 	// ApplicationVPack is the content type for VelocyPack
 	//
 	// Deprecated: Use JSON instead
-	ApplicationVPack = "application/x-velocypack"
+	// ApplicationVPack = "application/x-velocypack"
 )
