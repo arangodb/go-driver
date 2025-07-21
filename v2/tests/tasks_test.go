@@ -38,16 +38,16 @@ func Test_CreateNewTask(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		dbName := "_system"
 		testCases := map[string]*arangodb.TaskOptions{
-			"taskWIthParams": {
-				Name:    utils.NewType("taskWIthParams"),
+			"taskWithParams": {
+				Name:    utils.NewType("taskWithParams"),
 				Command: utils.NewType("(function(params) { require('@arangodb').print(params); })(params)"),
 				Period:  utils.NewType(int64(2)),
 				Params: map[string]interface{}{
 					"test": "hello",
 				},
 			},
-			"taskWIthOutParams": {
-				Name:    utils.NewType("taskWIthOutParams"),
+			"taskWithoutParams": {
+				Name:    utils.NewType("taskWithoutParams"),
 				Command: utils.NewType("(function() { require('@arangodb').print('Hello'); })()"),
 				Period:  utils.NewType(int64(2)),
 			},
@@ -108,11 +108,11 @@ func Test_ValidationsForCreateNewTask(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		dbName := "_system"
 		testCases := map[string]*arangodb.TaskOptions{
-			"taskWIthOutCommand": {
-				Name:   utils.NewType("taskWIthOutCommand"),
+			"taskWithoutCommand": {
+				Name:   utils.NewType("taskWithoutCommand"),
 				Period: utils.NewType(int64(2)),
 			},
-			"taskWIthOutPeriod": nil,
+			"taskWithoutPeriod": nil,
 		}
 
 		for name, options := range testCases {

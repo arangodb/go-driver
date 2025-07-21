@@ -58,36 +58,36 @@ type taskResponse struct {
 func newTask(client *client, resp *taskResponse) Task {
 	return &task{
 		client:  client,
-		id:      resp.ID,
-		name:    resp.Name,
-		command: resp.Command,
+		id:      &resp.ID,
+		name:    &resp.Name,
+		command: &resp.Command,
 		params:  resp.Params,
-		period:  resp.Period,
-		offset:  resp.Offset,
+		period:  &resp.Period,
+		offset:  &resp.Offset,
 	}
 }
 
 type task struct {
 	client  *client
-	id      string
-	name    string
-	command string
+	id      *string
+	name    *string
+	command *string
 	params  json.RawMessage
-	period  int64
-	offset  float64
+	period  *int64
+	offset  *float64
 }
 
 // Task interface implementation for the task struct.
 func (t *task) ID() *string {
-	return &t.id
+	return t.id
 }
 
 func (t *task) Name() *string {
-	return &t.name
+	return t.name
 }
 
 func (t *task) Command() *string {
-	return &t.command
+	return t.command
 }
 
 func (t *task) Params(result interface{}) error {
@@ -98,11 +98,11 @@ func (t *task) Params(result interface{}) error {
 }
 
 func (t *task) Period() *int64 {
-	return &t.period
+	return t.period
 }
 
 func (t *task) Offset() *float64 {
-	return &t.offset
+	return t.offset
 }
 
 // Tasks retrieves all tasks from the specified database.
@@ -178,28 +178,28 @@ func (c *clientTask) CreateTask(ctx context.Context, databaseName string, option
 	}
 	// Prepare the request body
 	createRequest := struct {
-		ID      string          `json:"id,omitempty"`
-		Name    string          `json:"name,omitempty"`
-		Command string          `json:"command,omitempty"`
+		ID      *string         `json:"id,omitempty"`
+		Name    *string         `json:"name,omitempty"`
+		Command *string         `json:"command,omitempty"`
 		Params  json.RawMessage `json:"params,omitempty"`
-		Period  int64           `json:"period,omitempty"`
-		Offset  float64         `json:"offset,omitempty"`
+		Period  *int64          `json:"period,omitempty"`
+		Offset  *float64        `json:"offset,omitempty"`
 	}{}
 
 	if options.ID != nil {
-		createRequest.ID = *options.ID
+		createRequest.ID = options.ID
 	}
 	if options.Name != nil {
-		createRequest.Name = *options.Name
+		createRequest.Name = options.Name
 	}
 	if options.Command != nil {
-		createRequest.Command = *options.Command
+		createRequest.Command = options.Command
 	}
 	if options.Period != nil {
-		createRequest.Period = *options.Period
+		createRequest.Period = options.Period
 	}
 	if options.Offset != nil {
-		createRequest.Offset = *options.Offset
+		createRequest.Offset = options.Offset
 	}
 
 	if options.Params != nil {
