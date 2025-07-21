@@ -159,22 +159,6 @@ func (c *collectionIndexes) EnsureTTLIndex(ctx context.Context, fields []string,
 	return newIndexResponse(&result), created, err
 }
 
-func (c *collectionIndexes) EnsureZKDIndex(ctx context.Context, fields []string, options *CreateZKDIndexOptions) (IndexResponse, bool, error) {
-	reqData := struct {
-		Type   IndexType `json:"type"`
-		Fields []string  `json:"fields"`
-		*CreateZKDIndexOptions
-	}{
-		Type:                  ZKDIndexType,
-		Fields:                fields,
-		CreateZKDIndexOptions: options,
-	}
-
-	result := responseIndex{}
-	created, err := c.ensureIndex(ctx, &reqData, &result)
-	return newIndexResponse(&result), created, err
-}
-
 func (c *collectionIndexes) EnsureMDIIndex(ctx context.Context, fields []string, options *CreateMDIIndexOptions) (IndexResponse, bool, error) {
 	reqData := struct {
 		Type   IndexType `json:"type"`

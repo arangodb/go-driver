@@ -25,12 +25,6 @@ import (
 )
 
 type DatabaseCollection interface {
-	// Deprecated: use GetCollection instead
-	//
-	// Collection opens a connection to an existing collection within the database.
-	// If no collection with given name exists, an NotFoundError is returned.
-	Collection(ctx context.Context, name string) (Collection, error)
-
 	// GetCollection opens a connection to an existing collection within the database.
 	// If no collection with given name exists, an NotFoundError is returned.
 	GetCollection(ctx context.Context, name string, options *GetCollectionOptions) (Collection, error)
@@ -41,21 +35,9 @@ type DatabaseCollection interface {
 	// Collections returns a list of all collections in the database.
 	Collections(ctx context.Context) ([]Collection, error)
 
-	// Deprecated: use CreateCollectionV2 instead
-	//
-	// CreateCollection creates a new collection with given name and options, and opens a connection to it.
-	// If a collection with given name already exists within the database, a DuplicateError is returned.
-	CreateCollection(ctx context.Context, name string, props *CreateCollectionProperties) (Collection, error)
-
 	// CreateCollection creates a new collection with given name and options, and opens a connection to it.
 	// If a collection with given name already exists within the database, a DuplicateError is returned.
 	CreateCollectionV2(ctx context.Context, name string, props *CreateCollectionPropertiesV2) (Collection, error)
-
-	// Deprecated: use CreateCollectionWithOptionsV2 instead
-	//
-	// CreateCollectionWithOptions creates a new collection with given name and options, and opens a connection to it.
-	// If a collection with given name already exists within the database, a DuplicateError is returned.
-	CreateCollectionWithOptions(ctx context.Context, name string, props *CreateCollectionProperties, options *CreateCollectionOptions) (Collection, error)
 
 	// CreateCollectionWithOptions creates a new collection with given name and options, and opens a connection to it.
 	// If a collection with given name already exists within the database, a DuplicateError is returned.
