@@ -216,6 +216,30 @@ func (c collection) Shards(ctx context.Context, details bool) (CollectionShards,
 	}
 }
 
+func (c collection) Figures(ctx context.Context, details bool) (CollectionStatistics, error) {
+	urlEndpoint := c.url("collection", "figures")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		CollectionStatistics  `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(
+		ctx, c.connection(), urlEndpoint, &response,
+		c.withModifiers(connection.WithQuery("details", boolToString(details)))...,
+	)
+	if err != nil {
+		return CollectionStatistics{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.CollectionStatistics, nil
+	default:
+		return CollectionStatistics{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
 type RemoveCollectionOptions struct {
 	// IsSystem when set to true allows to remove system collections.
 	// Use on your own risk!

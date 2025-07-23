@@ -508,3 +508,49 @@ func Test_DatabaseCollectionTruncate(t *testing.T) {
 		})
 	})
 }
+
+func assertCollectionFigures(t *testing.T, col arangodb.Collection, stats arangodb.CollectionStatistics) {
+	assert.NotEmpty(t, stats.ID)
+	assert.Equal(t, col.Name(), stats.Name)
+	assert.NotEmpty(t, stats.Status)
+	assert.Equal(t, arangodb.CollectionTypeDocument, stats.Type)
+	assert.Equal(t, false, stats.IsSystem)
+	assert.NotEmpty(t, stats.GloballyUniqueId)
+	assert.NotEmpty(t, stats.Figures)
+}
+
+func Test_CollectionFigures(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+
+					for _, doc := range docs {
+						_, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+					}
+					_, err := col.DeleteDocument(ctx, "doc2")
+					require.NoError(t, err)
+					stats, err := col.Figures(ctx, true)
+					require.NoError(t, err)
+					assertCollectionFigures(t, col, stats)
+					assert.GreaterOrEqual(t, stats.Figures.Alive.Count, int64(0))
+					assert.GreaterOrEqual(t, stats.Figures.Dead.Count, int64(0))
+					assert.GreaterOrEqual(t, stats.Figures.DataFiles.Count, int64(0))
+					assert.GreaterOrEqual(t, stats.Figures.Journals.FileSize, int64(0))
+					assert.GreaterOrEqual(t, stats.Figures.Revisions.Size, int64(0))
+					t.Run("Figures with details=false", func(t *testing.T) {
+						stats, err := col.Figures(ctx, false)
+						require.NoError(t, err)
+						assertCollectionFigures(t, col, stats)
+					})
+				})
+			})
+		})
+	})
+}

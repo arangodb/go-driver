@@ -51,6 +51,11 @@ type Collection interface {
 	// Count fetches the number of document in the collection.
 	Count(ctx context.Context) (int64, error)
 
+	// Figures fetches the number of documents and statistical information about the collection
+	// If details is true, it includes additional statistics such as index-level and compaction details.
+	// When details is false, it returns summary-level statistics only.
+	Figures(ctx context.Context, details bool) (CollectionStatistics, error)
+
 	CollectionDocuments
 	CollectionIndexes
 }

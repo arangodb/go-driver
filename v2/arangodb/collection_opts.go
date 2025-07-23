@@ -229,6 +229,7 @@ const (
 
 // CollectionStatistics contains the number of documents and additional statistical information about a collection.
 type CollectionStatistics struct {
+	CollectionProperties
 	//The number of documents currently present in the collection.
 	Count int64 `json:"count,omitempty"`
 
@@ -322,6 +323,13 @@ type CollectionStatistics struct {
 			// The memory used for storing the revisions of this collection in the storage engine (in bytes). This figure does not include the document data but only mappings from document revision ids to storage engine datafile positions.
 			Size int64 `json:"size,omitempty"`
 		} `json:"revisions"`
+
+		DocumentsSize *int64 `json:"documentsSize,omitempty"`
+
+		// RocksDB cache statistics
+		CacheInUse *bool  `json:"cacheInUse,omitempty"`
+		CacheSize  *int64 `json:"cacheSize,omitempty"`
+		CacheUsage *int64 `json:"cacheUsage,omitempty"`
 	} `json:"figures"`
 }
 
