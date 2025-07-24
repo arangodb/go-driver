@@ -56,6 +56,11 @@ type Collection interface {
 	// When details is false, it returns summary-level statistics only.
 	Figures(ctx context.Context, details bool) (CollectionStatistics, error)
 
+	// Revision fetches the revision ID of the collection.
+	// The revision ID is a server-generated string that clients can use to check whether data
+	// in a collection has changed since the last revision check.
+	Revision(ctx context.Context) (CollectionProperties, error)
+
 	CollectionDocuments
 	CollectionIndexes
 }

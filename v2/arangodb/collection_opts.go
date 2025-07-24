@@ -72,7 +72,8 @@ type CollectionExtendedInfo struct {
 		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
 		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
 		// the _key attribute of documents is considered an error.
-		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
+		AllowUserKeys bool   `json:"allowUserKeys,omitempty"`
+		LastValue     uint64 `json:"lastValue,omitempty"`
 	} `json:"keyOptions,omitempty"`
 
 	// NumberOfShards is the number of shards of the collection.
@@ -149,6 +150,9 @@ type CollectionProperties struct {
 
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+
+	// The collection revision id as a string.
+	Revision string `json:"revision,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a SatelliteCollection

@@ -240,6 +240,30 @@ func (c collection) Figures(ctx context.Context, details bool) (CollectionStatis
 	}
 }
 
+func (c collection) Revision(ctx context.Context) (CollectionProperties, error) {
+	urlEndpoint := c.url("collection", "revision")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		CollectionProperties  `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(
+		ctx, c.connection(), urlEndpoint, &response, c.withModifiers()...,
+	)
+
+	if err != nil {
+		return CollectionProperties{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.CollectionProperties, nil
+	default:
+		return CollectionProperties{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
 type RemoveCollectionOptions struct {
 	// IsSystem when set to true allows to remove system collections.
 	// Use on your own risk!
