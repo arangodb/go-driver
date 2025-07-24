@@ -554,3 +554,43 @@ func Test_CollectionFigures(t *testing.T) {
 		})
 	})
 }
+
+func Test_CollectionRevision(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					// Get initial revision
+					initialRev, err := col.Revision(ctx)
+					require.NoError(t, err)
+					require.NotEmpty(t, initialRev.Revision)
+
+					// Create documents
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+					for _, doc := range docs {
+						_, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+					}
+
+					// Delete a document
+					_, err = col.DeleteDocument(ctx, "doc2")
+					require.NoError(t, err)
+
+					// Get final revision
+					finalRev, err := col.Revision(ctx)
+					require.NoError(t, err)
+
+					// Ensure finalRev is not nil and can be marshaled
+					require.NotEmpty(t, finalRev.Revision)
+					fmt.Printf("Initial Revision: %s, Final Revision: %s\n", initialRev.Revision, finalRev.Revision)
+					// Ensure revision changed
+					require.NotEqual(t, initialRev.Revision, finalRev.Revision)
+				})
+			})
+		})
+	})
+}
