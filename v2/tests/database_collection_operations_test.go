@@ -519,7 +519,7 @@ func assertCollectionFigures(t *testing.T, col arangodb.Collection, stats arango
 	assert.NotEmpty(t, stats.Figures)
 }
 
-func Test_CollectionFigures(t *testing.T) {
+func Test_CollectionStatistics(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
@@ -536,7 +536,7 @@ func Test_CollectionFigures(t *testing.T) {
 					}
 					_, err := col.DeleteDocument(ctx, "doc2")
 					require.NoError(t, err)
-					stats, err := col.Figures(ctx, true)
+					stats, err := col.Statistics(ctx, true)
 					require.NoError(t, err)
 					assertCollectionFigures(t, col, stats)
 					assert.GreaterOrEqual(t, stats.Figures.Alive.Count, int64(0))
@@ -544,8 +544,8 @@ func Test_CollectionFigures(t *testing.T) {
 					assert.GreaterOrEqual(t, stats.Figures.DataFiles.Count, int64(0))
 					assert.GreaterOrEqual(t, stats.Figures.Journals.FileSize, int64(0))
 					assert.GreaterOrEqual(t, stats.Figures.Revisions.Size, int64(0))
-					t.Run("Figures with details=false", func(t *testing.T) {
-						stats, err := col.Figures(ctx, false)
+					t.Run("Statistics with details=false", func(t *testing.T) {
+						stats, err := col.Statistics(ctx, false)
 						require.NoError(t, err)
 						assertCollectionFigures(t, col, stats)
 					})
@@ -589,6 +589,36 @@ func Test_CollectionRevision(t *testing.T) {
 					fmt.Printf("Initial Revision: %s, Final Revision: %s\n", initialRev.Revision, finalRev.Revision)
 					// Ensure revision changed
 					require.NotEqual(t, initialRev.Revision, finalRev.Revision)
+				})
+			})
+		})
+	})
+}
+
+func Test_CollectionChecksum(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					stats, err := col.Checksum(ctx, false, false)
+					require.NoError(t, err)
+					require.NotEmpty(t, stats.Revision)
+					require.NotEmpty(t, stats.CollectionInfo.ID)
+					require.Equal(t, col.Name(), stats.CollectionInfo.Name)
+					require.NotEmpty(t, stats.CollectionInfo.Status)
+					require.Equal(t, arangodb.CollectionTypeDocument, stats.CollectionInfo.Type)
+					require.NotEmpty(t, stats.CollectionInfo.GloballyUniqueId)
+					t.Run("Checksum with withRevisions=false and withData=true", func(t *testing.T) {
+						stats, err := col.Checksum(ctx, false, true)
+						require.NoError(t, err)
+						require.NotEmpty(t, stats.Revision)
+					})
+
+					t.Run("Checksum with withRevisions=true and withData=true", func(t *testing.T) {
+						stats, err := col.Checksum(ctx, true, true)
+						require.NoError(t, err)
+						require.NotEmpty(t, stats.Revision)
+					})
 				})
 			})
 		})

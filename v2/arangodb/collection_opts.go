@@ -382,3 +382,10 @@ func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
 		Type:  reflect.TypeOf(r).Elem(),
 	}
 }
+
+// CollectionChecksum contains information about a collection checksum response
+type CollectionChecksum struct {
+	CollectionInfo
+	// The collection revision id as a string.
+	Revision string `json:"revision,omitempty"`
+}

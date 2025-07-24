@@ -216,7 +216,7 @@ func (c collection) Shards(ctx context.Context, details bool) (CollectionShards,
 	}
 }
 
-func (c collection) Figures(ctx context.Context, details bool) (CollectionStatistics, error) {
+func (c collection) Statistics(ctx context.Context, details bool) (CollectionStatistics, error) {
 	urlEndpoint := c.url("collection", "figures")
 
 	var response struct {
@@ -261,6 +261,39 @@ func (c collection) Revision(ctx context.Context) (CollectionProperties, error) 
 		return response.CollectionProperties, nil
 	default:
 		return CollectionProperties{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c collection) Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionChecksum, error) {
+	urlEndpoint := c.url("collection", "checksum")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		CollectionChecksum    `json:",inline"`
+	}
+
+	// Prepare query modifiers
+	var modifiers []connection.RequestModifier
+	if withRevisions {
+		modifiers = append(modifiers, connection.WithQuery("withRevisions", boolToString(withRevisions)))
+	}
+	if withData {
+		modifiers = append(modifiers, connection.WithQuery("withData", boolToString(withData)))
+	}
+
+	resp, err := connection.CallGet(
+		ctx, c.connection(), urlEndpoint, &response,
+		c.withModifiers(modifiers...)...,
+	)
+	if err != nil {
+		return CollectionChecksum{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.CollectionChecksum, nil
+	default:
+		return CollectionChecksum{}, response.AsArangoErrorWithCode(code)
 	}
 }
 

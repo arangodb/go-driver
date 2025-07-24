@@ -51,15 +51,18 @@ type Collection interface {
 	// Count fetches the number of document in the collection.
 	Count(ctx context.Context) (int64, error)
 
-	// Figures fetches the number of documents and statistical information about the collection
-	// If details is true, it includes additional statistics such as index-level and compaction details.
-	// When details is false, it returns summary-level statistics only.
-	Figures(ctx context.Context, details bool) (CollectionStatistics, error)
+	// Statistics returns the number of documents and additional statistical information about the collection.
+	Statistics(ctx context.Context, details bool) (CollectionStatistics, error)
 
 	// Revision fetches the revision ID of the collection.
 	// The revision ID is a server-generated string that clients can use to check whether data
 	// in a collection has changed since the last revision check.
 	Revision(ctx context.Context) (CollectionProperties, error)
+
+	// Checksum returns a checksum for the specified collection
+	// withRevisions - Whether to include document revision ids in the checksum calculation.
+	// withData - Whether to include document body data in the checksum calculation.
+	Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionChecksum, error)
 
 	CollectionDocuments
 	CollectionIndexes
