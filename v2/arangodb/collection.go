@@ -67,6 +67,9 @@ type Collection interface {
 	// ResponsibleShard returns the shard responsible for the given options.
 	ResponsibleShard(ctx context.Context, options map[string]interface{}) (string, error)
 
+	// LoadIndexesIntoMemory loads all indexes of the collection into memory.
+	LoadIndexesIntoMemory(ctx context.Context) (bool, error)
+
 	CollectionDocuments
 	CollectionIndexes
 }

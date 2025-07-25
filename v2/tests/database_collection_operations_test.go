@@ -661,3 +661,27 @@ func Test_CollectionResponsibleShard(t *testing.T) {
 		})
 	})
 }
+
+func Test_CollectionLoadIndexesIntoMemory(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			graph := sampleGraphWithEdges(db)
+
+			//Create the graph in the database
+			createdGraph, err := db.CreateGraph(context.Background(), graph.Name, graph, nil)
+			require.NoError(t, err)
+			require.NotNil(t, createdGraph)
+
+			// Now access the edge collection from the created graph
+			col, err := db.GetCollection(context.Background(), graph.EdgeDefinitions[0].Collection, nil)
+			require.NoError(t, err)
+
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// Load indexes into memory
+				loaded, err := col.LoadIndexesIntoMemory(ctx)
+				require.NoError(t, err)
+				require.True(t, loaded, "Expected edge index to be loaded")
+			})
+		})
+	})
+}

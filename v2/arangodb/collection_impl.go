@@ -318,6 +318,27 @@ func (c collection) ResponsibleShard(ctx context.Context, options map[string]int
 	}
 }
 
+func (c collection) LoadIndexesIntoMemory(ctx context.Context) (bool, error) {
+	urlEndpoint := c.url("collection", "loadIndexesIntoMemory")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                bool `json:"result,omitempty"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, nil, c.withModifiers()...)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return false, response.AsArangoErrorWithCode(code)
+	}
+}
+
 type RemoveCollectionOptions struct {
 	// IsSystem when set to true allows to remove system collections.
 	// Use on your own risk!
