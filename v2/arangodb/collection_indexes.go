@@ -59,14 +59,6 @@ type CollectionIndexes interface {
 	// fields The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	EnsureTTLIndex(ctx context.Context, fields []string, expireAfter int, options *CreateTTLIndexOptions) (IndexResponse, bool, error)
 
-	// EnsureZKDIndex
-	// The previously experimental `zkd` index is now stable and has been renamed to `mdi`.
-	// Existing indexes keep the `zkd` type. The HTTP API still allows the old name to create new indexes that behave
-	// exactly like `mdi` indexes but this is discouraged. The `zkd` alias may get removed in a future version.
-	//
-	// Deprecated: since 3.12 version use EnsureMKDIndex instead.
-	EnsureZKDIndex(ctx context.Context, fields []string, options *CreateZKDIndexOptions) (IndexResponse, bool, error)
-
 	// EnsureMDIIndex creates a multidimensional index for the collection, if it does not already exist.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	// Available in ArangoDB 3.12 and later.
@@ -114,12 +106,6 @@ const (
 	// Documents which are expired are eventually removed by a background thread.
 	TTLIndexType = IndexType("ttl")
 
-	// ZKDIndexType == multi-dimensional index. The zkd index type is an experimental index for indexing two- or higher dimensional data such as time ranges,
-	// for efficient intersection of multiple range queries.
-	//
-	// Deprecated: since 3.12 version use MDIIndexType instead.
-	ZKDIndexType = IndexType("zkd")
-
 	// MDIIndexType is multidimensional index for indexing two- or higher dimensional data such as time ranges,
 	// for efficient intersection of multiple range queries.
 	// Available in ArangoDB 3.12 and later.
@@ -132,26 +118,6 @@ const (
 
 	// InvertedIndexType can be used to speed up a broad range of AQL queries, from simple to complex, including full-text search
 	InvertedIndexType = IndexType("inverted")
-
-	// FullTextIndex
-	//
-	// Deprecated: since 3.10 version. Use ArangoSearch view instead.
-	// It is ued just for the read compatibility with older versions.
-	FullTextIndex = IndexType("fulltext")
-
-	// HashIndex are an aliases for the persistent index type and should no longer be used to create new indexes.
-	// The aliases will be removed in a future version.
-	// It is ued just for the read compatibility with older versions.
-	//
-	// Deprecated: use PersistentIndexType instead
-	HashIndex = IndexType("hash")
-
-	// SkipListIndex are an aliases for the persistent index type and should no longer be used to create new indexes.
-	// The aliases will be removed in a future version.
-	// It is ued just for the read compatibility with older versions.
-	//
-	// Deprecated: use PersistentIndexType instead
-	SkipListIndex = IndexType("skiplist")
 )
 
 // IndexResponse is the response from the Index list method
@@ -302,28 +268,9 @@ type CreateTTLIndexOptions struct {
 	InBackground *bool `json:"inBackground,omitempty"`
 }
 
-// ZKDFieldType
-//
-// Deprecated: use MDIFieldType instead
-type ZKDFieldType string
-
-// ZKDDoubleFieldType
-//
-// Deprecated: use MDIDoubleFieldType instead
-const ZKDDoubleFieldType ZKDFieldType = "double"
-
 type MDIFieldType string
 
 const MDIDoubleFieldType MDIFieldType = "double"
-
-// CreateZKDIndexOptions provides specific options for creating a ZKD index
-type CreateZKDIndexOptions struct {
-	// Name optional user defined name used for hints in AQL queries
-	Name string `json:"name,omitempty"`
-
-	// FieldValueTypes is required and the only allowed value is "double". Future extensions of the index will allow other types.
-	FieldValueTypes ZKDFieldType `json:"fieldValueTypes,required"`
-}
 
 // CreateMDIIndexOptions provides specific options for creating a MKD index
 type CreateMDIIndexOptions struct {

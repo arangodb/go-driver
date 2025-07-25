@@ -293,8 +293,6 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 // If contentType is unknown, then nil is returned.
 func getDecoderByContentType(contentType string) Decoder {
 	switch contentType {
-	case ApplicationVPack:
-		return getVPackDecoder()
 	case ApplicationJSON:
 		return getJsonDecoder()
 	case PlainText, ApplicationOctetStream, ApplicationZip:

@@ -25,13 +25,6 @@ import (
 	"sync"
 )
 
-// Deprecated: use NewRoundRobinEndpoints
-//
-// NewEndpoints returns Endpoint manager which runs round-robin
-func NewEndpoints(e ...string) Endpoint {
-	return NewRoundRobinEndpoints(e)
-}
-
 // NewRoundRobinEndpoints returns Endpoint manager which runs round-robin
 func NewRoundRobinEndpoints(e []string) Endpoint {
 	return &roundRobinEndpoints{
