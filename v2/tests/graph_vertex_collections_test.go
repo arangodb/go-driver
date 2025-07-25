@@ -66,7 +66,7 @@ func Test_GraphVertexCollections(t *testing.T) {
 						require.NoError(t, err)
 						require.NotContains(t, delResp.GraphDefinition.OrphanCollections, colName)
 
-						col, err := db.Collection(ctx, colName)
+						col, err := db.GetCollection(ctx, colName, nil)
 						require.NoError(t, err)
 
 						prop, err := col.Properties(ctx)
@@ -105,7 +105,7 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 					require.NoError(t, err)
 					require.True(t, exist, "vertex collection should exist")
 
-					col, err := db.Collection(ctx, colName)
+					col, err := db.GetCollection(ctx, colName, nil)
 					require.NoError(t, err)
 
 					prop, err := col.Properties(ctx)

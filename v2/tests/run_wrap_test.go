@@ -99,23 +99,6 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 		})
 	})
 
-	t.Run("HTTP VPACK", func(t *testing.T) {
-		if parallel {
-			t.Parallel()
-		}
-
-		w(t, func(t *testing.T) connection.Connection {
-			conn := connectionVPACKHttp(t)
-			if async {
-				conn = connection.NewConnectionAsyncWrapper(conn)
-			}
-
-			waitForConnection(t, arangodb.NewClient(conn))
-			applyCompression(conn)
-			return conn
-		})
-	})
-
 	t.Run("HTTP2 JSON", func(t *testing.T) {
 		if version.Version.CompareTo("3.7.1") < 1 {
 			t.Skipf("Not supported")
@@ -126,26 +109,6 @@ func WrapConnectionFactory(t *testing.T, w WrapperConnectionFactory, wo ...WrapO
 
 		w(t, func(t *testing.T) connection.Connection {
 			conn := connectionJsonHttp2(t)
-			if async {
-				conn = connection.NewConnectionAsyncWrapper(conn)
-			}
-
-			waitForConnection(t, arangodb.NewClient(conn))
-			applyCompression(conn)
-			return conn
-		})
-	})
-
-	t.Run("HTTP2 VPACK", func(t *testing.T) {
-		if version.Version.CompareTo("3.7.1") < 1 {
-			t.Skipf("Not supported")
-		}
-		if parallel {
-			t.Parallel()
-		}
-
-		w(t, func(t *testing.T) connection.Connection {
-			conn := connectionVPACKHttp2(t)
 			if async {
 				conn = connection.NewConnectionAsyncWrapper(conn)
 			}
@@ -192,17 +155,6 @@ func WrapB(t *testing.B, w WrapperB) {
 
 	t.Run("HTTP JSON", func(t *testing.B) {
 		w(t, newClient(t, connectionJsonHttp(t)))
-	})
-
-	t.Run("HTTP VPACK", func(t *testing.B) {
-		w(t, newClient(t, connectionVPACKHttp(t)))
-	})
-
-	t.Run("HTTP2 VPACK", func(t *testing.B) {
-		if version.Version.CompareTo("3.7.1") < 1 {
-			t.Skipf("Not supported")
-		}
-		w(t, newClient(t, connectionVPACKHttp2(t)))
 	})
 
 	t.Run("HTTP2 JSON", func(t *testing.B) {
@@ -320,57 +272,11 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 	return c
 }
 
-func connectionVPACKHttp(t testing.TB) connection.Connection {
-	h := connection.HttpConfiguration{
-		Endpoint:    getRandomEndpointsManager(t),
-		ContentType: connection.ApplicationVPack,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 90 * time.Second,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-	}
-
-	c := connection.NewHttpConnection(h)
-
-	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-		c = createAuthenticationFromEnv(t, c)
-	})
-	return c
-}
-
 func connectionJsonHttp2(t testing.TB) connection.Connection {
 	endpoints := getRandomEndpointsManager(t)
 	h := connection.Http2Configuration{
 		Endpoint:    endpoints,
 		ContentType: connection.ApplicationJSON,
-		Transport: &http2.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			AllowHTTP:       true,
-
-			DialTLSContext: connection.NewHTTP2DialForEndpoint(endpoints),
-		},
-	}
-
-	c := connection.NewHttp2Connection(h)
-
-	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-		c = createAuthenticationFromEnv(t, c)
-	})
-	return c
-}
-
-func connectionVPACKHttp2(t testing.TB) connection.Connection {
-	endpoints := getRandomEndpointsManager(t)
-	h := connection.Http2Configuration{
-		Endpoint:    endpoints,
-		ContentType: connection.ApplicationVPack,
 		Transport: &http2.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			AllowHTTP:       true,

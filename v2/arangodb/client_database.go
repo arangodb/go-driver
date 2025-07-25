@@ -25,12 +25,6 @@ import (
 )
 
 type ClientDatabase interface {
-	// Deprecated:  use GetDatabase instead
-	//
-	// Database opens a connection to an existing database.
-	// If no database with given name exists, an NotFoundError is returned.
-	Database(ctx context.Context, name string) (Database, error)
-
 	// GetDatabase opens a connection to an existing database.
 	// If no database with given name exists, an NotFoundError is returned.
 	GetDatabase(ctx context.Context, name string, options *GetDatabaseOptions) (Database, error)

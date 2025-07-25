@@ -43,10 +43,6 @@ type databaseCollection struct {
 	db *database
 }
 
-func (d databaseCollection) Collection(ctx context.Context, name string) (Collection, error) {
-	return d.GetCollection(ctx, name, nil)
-}
-
 func (d databaseCollection) GetCollection(ctx context.Context, name string, options *GetCollectionOptions) (Collection, error) {
 	col := newCollection(d.db, name)
 
@@ -113,45 +109,8 @@ func (d databaseCollection) Collections(ctx context.Context) ([]Collection, erro
 	}
 }
 
-// Deprecated: use CreateCollectionV2 instead
-//
-// CreateCollectionWithOptions
-func (d databaseCollection) CreateCollection(ctx context.Context, name string, props *CreateCollectionProperties) (Collection, error) {
-	return d.CreateCollectionWithOptions(ctx, name, props, nil)
-}
-
 func (d databaseCollection) CreateCollectionV2(ctx context.Context, name string, props *CreateCollectionPropertiesV2) (Collection, error) {
 	return d.CreateCollectionWithOptionsV2(ctx, name, props, nil)
-}
-
-// Deprecated: use CreateCollectionWithOptionsV2 instead
-//
-// CreateCollectionWithOptions
-func (d databaseCollection) CreateCollectionWithOptions(ctx context.Context, name string, props *CreateCollectionProperties, options *CreateCollectionOptions) (Collection, error) {
-	props.Init()
-
-	urlEndpoint := d.db.url("_api", "collection")
-	reqData := struct {
-		Name string `json:"name"`
-		*CreateCollectionProperties
-	}{
-		Name:                       name,
-		CreateCollectionProperties: props,
-	}
-
-	var respData shared.ResponseStruct
-
-	resp, err := connection.CallPost(ctx, d.db.connection(), urlEndpoint, &respData, &reqData, append(d.db.modifiers, options.modifyRequest)...)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		return newCollection(d.db, name), nil
-	default:
-		return nil, respData.AsArangoErrorWithCode(code)
-	}
 }
 
 func (d databaseCollection) CreateCollectionWithOptionsV2(ctx context.Context, name string, props *CreateCollectionPropertiesV2, options *CreateCollectionOptions) (Collection, error) {
