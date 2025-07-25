@@ -297,6 +297,27 @@ func (c collection) Checksum(ctx context.Context, withRevisions bool, withData b
 	}
 }
 
+func (c collection) ResponsibleShard(ctx context.Context, options map[string]interface{}) (string, error) {
+	urlEndpoint := c.url("collection", "responsibleShard")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ShardId               string `json:"shardId,omitempty"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, options, c.withModifiers()...)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ShardId, nil
+	default:
+		return "", response.AsArangoErrorWithCode(code)
+	}
+}
+
 type RemoveCollectionOptions struct {
 	// IsSystem when set to true allows to remove system collections.
 	// Use on your own risk!

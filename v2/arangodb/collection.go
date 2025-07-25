@@ -64,6 +64,9 @@ type Collection interface {
 	// withData - Whether to include document body data in the checksum calculation.
 	Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionChecksum, error)
 
+	// ResponsibleShard returns the shard responsible for the given options.
+	ResponsibleShard(ctx context.Context, options map[string]interface{}) (string, error)
+
 	CollectionDocuments
 	CollectionIndexes
 }

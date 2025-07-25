@@ -389,3 +389,9 @@ type CollectionChecksum struct {
 	// The collection revision id as a string.
 	Revision string `json:"revision,omitempty"`
 }
+
+type ResponsibleShardRequest struct {
+	// Fill with shard key fields expected
+	Key string `json:"_key,omitempty"`
+	// other shard key fields as required
+}
