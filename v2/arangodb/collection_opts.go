@@ -395,3 +395,7 @@ type ResponsibleShardRequest struct {
 	Key string `json:"_key,omitempty"`
 	// other shard key fields as required
 }
+
+type RenameCollectionRequest struct {
+	Name string `json:"name"`
+}

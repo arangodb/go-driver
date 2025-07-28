@@ -339,6 +339,28 @@ func (c collection) LoadIndexesIntoMemory(ctx context.Context) (bool, error) {
 	}
 }
 
+// Renaming collections is not supported in cluster deployments.
+func (c collection) Rename(ctx context.Context, req RenameCollectionRequest) (CollectionInfo, error) {
+	urlEndpoint := c.url("collection", "rename")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		CollectionInfo        `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, req, c.withModifiers()...)
+	if err != nil {
+		return CollectionInfo{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.CollectionInfo, nil
+	default:
+		return CollectionInfo{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
 type RemoveCollectionOptions struct {
 	// IsSystem when set to true allows to remove system collections.
 	// Use on your own risk!

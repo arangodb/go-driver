@@ -685,3 +685,26 @@ func Test_CollectionLoadIndexesIntoMemory(t *testing.T) {
 		})
 	})
 }
+func Test_CollectionRename(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			role, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+
+			if role != arangodb.ServerRoleSingle {
+				t.Skip("Rename collection is not supported in cluster mode")
+			}
+
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+					newName := "test-renamed-collection"
+					info, err := col.Rename(ctx, arangodb.RenameCollectionRequest{
+						Name: newName,
+					})
+					require.NoError(t, err)
+					require.Equal(t, newName, info.Name)
+				})
+			})
+		})
+	})
+}

@@ -70,6 +70,10 @@ type Collection interface {
 	// LoadIndexesIntoMemory loads all indexes of the collection into memory.
 	LoadIndexesIntoMemory(ctx context.Context) (bool, error)
 
+	// Renaming collections is not supported in cluster deployments.
+	// Renaming collections is only supported in single server deployments.
+	Rename(ctx context.Context, req RenameCollectionRequest) (CollectionInfo, error)
+
 	CollectionDocuments
 	CollectionIndexes
 }
