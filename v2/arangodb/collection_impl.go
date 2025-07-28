@@ -385,6 +385,27 @@ func (c collection) RecalculateCount(ctx context.Context) (bool, int64, error) {
 	}
 }
 
+func (c collection) Compact(ctx context.Context) (CollectionInfo, error) {
+	urlEndpoint := c.url("collection", "compact")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		CollectionInfo        `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, nil, c.withModifiers()...)
+	if err != nil {
+		return CollectionInfo{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.CollectionInfo, nil
+	default:
+		return CollectionInfo{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
 type RemoveCollectionOptions struct {
 	// IsSystem when set to true allows to remove system collections.
 	// Use on your own risk!

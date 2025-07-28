@@ -745,3 +745,33 @@ func Test_CollectionRecalculateCount(t *testing.T) {
 		})
 	})
 }
+
+func Test_CollectionCompact(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					role, err := client.ServerRole(ctx)
+					require.NoError(t, err)
+
+					if role == arangodb.ServerRoleSingle {
+						// Create dummy data
+						for i := 0; i < 10; i++ {
+							_, err := col.CreateDocument(ctx, map[string]interface{}{
+								"_key": fmt.Sprintf("key%d", i),
+								"val":  i,
+							})
+							require.NoError(t, err)
+						}
+
+						result, err := col.Compact(ctx)
+						require.NoError(t, err)
+						fmt.Printf("Compacted Collection: %s, ID: %s, Status: %d\n", result.Name, result.ID, result.Status)
+					} else {
+						t.Skip("Compaction is not supported in cluster mode")
+					}
+				})
+			})
+		})
+	})
+}

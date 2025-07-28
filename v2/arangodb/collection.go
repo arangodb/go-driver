@@ -74,7 +74,13 @@ type Collection interface {
 	// Renaming collections is only supported in single server deployments.
 	Rename(ctx context.Context, req RenameCollectionRequest) (CollectionInfo, error)
 
+	// RecalculateCount recalculates the count of documents in the collection.
 	RecalculateCount(ctx context.Context) (bool, int64, error)
+
+	//Compacts the data of a collection in order to reclaim disk space.
+	// This operation is only supported in single server deployments.
+	// In cluster deployments, the compaction is done automatically by the server.
+	Compact(ctx context.Context) (CollectionInfo, error)
 
 	CollectionDocuments
 	CollectionIndexes
