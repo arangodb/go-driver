@@ -74,6 +74,8 @@ type Collection interface {
 	// Renaming collections is only supported in single server deployments.
 	Rename(ctx context.Context, req RenameCollectionRequest) (CollectionInfo, error)
 
+	RecalculateCount(ctx context.Context) (bool, int64, error)
+
 	CollectionDocuments
 	CollectionIndexes
 }

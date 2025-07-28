@@ -708,3 +708,40 @@ func Test_CollectionRename(t *testing.T) {
 		})
 	})
 }
+
+func Test_CollectionRecalculateCount(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					// Create documents
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+					for _, doc := range docs {
+						_, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+					}
+					colCount, err := col.Count(ctx)
+					require.NoError(t, err)
+					require.Equal(t, int64(len(docs)), colCount)
+					role, err := client.ServerRole(ctx)
+					require.NoError(t, err)
+
+					if role == arangodb.ServerRoleSingle {
+						result, colRecalCount, err := col.RecalculateCount(ctx)
+						require.NoError(t, err)
+						require.True(t, result, "Recalculate count should return true")
+						require.Greater(t, colRecalCount, int64(0), "Recalculated count should be greater than 0")
+					} else {
+						result, _, err := col.RecalculateCount(ctx)
+						require.NoError(t, err)
+						require.True(t, result, "Recalculate count should return true")
+					}
+				})
+			})
+		})
+	})
+}

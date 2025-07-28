@@ -22,6 +22,7 @@ package arangodb
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -358,6 +359,29 @@ func (c collection) Rename(ctx context.Context, req RenameCollectionRequest) (Co
 		return response.CollectionInfo, nil
 	default:
 		return CollectionInfo{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c collection) RecalculateCount(ctx context.Context) (bool, int64, error) {
+	urlEndpoint := c.url("collection", "recalculateCount")
+	fmt.Println(387, urlEndpoint)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Count                 int64 `json:"count,omitempty"`
+		Result                bool  `json:"result,omitempty"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, nil, c.withModifiers()...)
+	if err != nil {
+		return false, 0, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, response.Count, nil
+	default:
+		return false, 0, response.AsArangoErrorWithCode(code)
 	}
 }
 
