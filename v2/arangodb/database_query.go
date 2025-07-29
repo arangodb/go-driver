@@ -43,6 +43,11 @@ type DatabaseQuery interface {
 
 	// ExplainQuery explains an AQL query and return information about it.
 	ExplainQuery(ctx context.Context, query string, bindVars map[string]interface{}, opts *ExplainQueryOptions) (ExplainQueryResult, error)
+
+	// GetQueryProperties returns the properties of the query system.
+	GetQueryProperties(ctx context.Context) (QueryProperties, error)
+
+	UpdateQueryProperties(ctx context.Context, options QueryProperties) (QueryProperties, error)
 }
 
 type QuerySubOptions struct {
@@ -329,4 +334,13 @@ type ExplainQueryResult struct {
 	// Cacheable states whether the query results can be cached on the server if the query result cache were used.
 	// This attribute is not present when allPlans is set to true.
 	Cacheable *bool `json:"cacheable,omitempty"`
+}
+
+type QueryProperties struct {
+	Enabled              bool    `json:"enabled"`
+	TrackSlowQueries     bool    `json:"trackSlowQueries"`
+	TrackBindVars        bool    `json:"trackBindVars"`
+	MaxSlowQueries       int     `json:"maxSlowQueries"`
+	SlowQueryThreshold   float64 `json:"slowQueryThreshold"`
+	MaxQueryStringLength int     `json:"maxQueryStringLength"`
 }
