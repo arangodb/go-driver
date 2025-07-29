@@ -629,33 +629,44 @@ func Test_CollectionResponsibleShard(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					stats, err := col.ResponsibleShard(ctx, map[string]interface{}{
-						"_key": "doc10",
-					})
+					role, err := client.ServerRole(ctx)
 					require.NoError(t, err)
-					require.NotEmpty(t, stats, "Responsible shard should not be empty")
-					// Create some documents
+
+					if role != arangodb.ServerRoleCoordinator {
+						t.Skipf("Skipping test: ResponsibleShard is only supported on Coordinator, got role %s", role)
+					}
+
+					// Create some documents first
 					docs := []map[string]interface{}{
 						{"_key": "doc1", "name": "Alice"},
 						{"_key": "doc2", "name": "Bob"},
 						{"_key": "doc3", "name": "Charlie"},
 					}
-
 					for _, doc := range docs {
 						_, err := col.CreateDocument(ctx, doc)
 						require.NoError(t, err)
 					}
+
+					// Check ResponsibleShard for a document key (does not need to exist)
+					stats, err := col.ResponsibleShard(ctx, map[string]interface{}{
+						"_key": "doc10",
+					})
+					require.NoError(t, err)
+					require.NotEmpty(t, stats, "Responsible shard for doc10 should not be empty")
+
+					// Check ResponsibleShard for an existing document
 					stats, err = col.ResponsibleShard(ctx, map[string]interface{}{
 						"_key": "doc1",
 					})
 					require.NoError(t, err)
-					require.NotEmpty(t, stats, "Responsible shard should not be empty")
-					// Check for a non-existing document
+					require.NotEmpty(t, stats, "Responsible shard for doc1 should not be empty")
+
+					// Check ResponsibleShard for a non-existing document
 					stats, err = col.ResponsibleShard(ctx, map[string]interface{}{
 						"_key": "non-existing-doc",
 					})
 					require.NoError(t, err)
-					require.NotEmpty(t, stats, "Responsible shard should not be empty")
+					require.NotEmpty(t, stats, "Responsible shard for non-existing doc should not be empty")
 				})
 			})
 		})
