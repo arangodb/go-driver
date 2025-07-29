@@ -229,3 +229,65 @@ func Test_QueryBatchWithRetries(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetQueryProperties_Success(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			res, err := db.GetQueryProperties(context.Background())
+			require.NoError(t, err)
+			jsonResp, err := utils.ToJSONString(res)
+			require.NoError(t, err)
+			t.Logf("Query Properties: %s", jsonResp)
+			// Check that the response contains expected fields
+			require.NotNil(t, res)
+			require.IsType(t, true, res.Enabled)
+			require.IsType(t, true, res.TrackSlowQueries)
+			require.IsType(t, true, res.TrackBindVars)
+			require.GreaterOrEqual(t, res.MaxSlowQueries, 0)
+			require.Greater(t, res.SlowQueryThreshold, 0.0)
+			require.Greater(t, res.MaxQueryStringLength, 0)
+		})
+	})
+}
+
+func Test_UpdateQueryProperties(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			res, err := db.GetQueryProperties(context.Background())
+			require.NoError(t, err)
+			jsonResp, err := utils.ToJSONString(res)
+			require.NoError(t, err)
+			t.Logf("Query Properties: %s", jsonResp)
+			// Check that the response contains expected fields
+			require.NotNil(t, res)
+			options := arangodb.QueryProperties{
+				Enabled:              true,
+				TrackSlowQueries:     true,
+				TrackBindVars:        false,
+				MaxSlowQueries:       res.MaxSlowQueries + 1,
+				SlowQueryThreshold:   res.SlowQueryThreshold + 0.1,
+				MaxQueryStringLength: res.MaxQueryStringLength + 100,
+			}
+			updateResp, err := db.UpdateQueryProperties(context.Background(), options)
+			require.NoError(t, err)
+			jsonUpdateResp, err := utils.ToJSONString(updateResp)
+			require.NoError(t, err)
+			t.Logf("Updated Query Properties: %s", jsonUpdateResp)
+			// Check that the response contains expected fields
+			require.NotNil(t, updateResp)
+			require.Equal(t, options.Enabled, updateResp.Enabled)
+			require.Equal(t, options.TrackSlowQueries, updateResp.TrackSlowQueries)
+			require.Equal(t, options.TrackBindVars, updateResp.TrackBindVars)
+			require.Equal(t, options.MaxSlowQueries, updateResp.MaxSlowQueries)
+			require.Equal(t, options.SlowQueryThreshold, updateResp.SlowQueryThreshold)
+			require.Equal(t, options.MaxQueryStringLength, updateResp.MaxQueryStringLength)
+			res, err = db.GetQueryProperties(context.Background())
+			require.NoError(t, err)
+			jsonResp, err = utils.ToJSONString(res)
+			require.NoError(t, err)
+			t.Logf("Query Properties 288: %s", jsonResp)
+			// Check that the response contains expected fields
+			require.NotNil(t, res)
+		})
+	})
+}

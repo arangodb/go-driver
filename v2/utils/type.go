@@ -20,7 +20,10 @@
 
 package utils
 
-import "reflect"
+import (
+	"encoding/json"
+	"reflect"
+)
 
 func IsListPtr(i interface{}) bool {
 	t := reflect.ValueOf(i)
@@ -45,4 +48,12 @@ func IsList(i interface{}) bool {
 
 func NewType[T any](val T) *T {
 	return &val
+}
+
+func ToJSONString(i interface{}) (string, error) {
+	data, err := json.MarshalIndent(i, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

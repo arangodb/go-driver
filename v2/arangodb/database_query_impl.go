@@ -134,3 +134,43 @@ func (d databaseQuery) ExplainQuery(ctx context.Context, query string, bindVars 
 		return ExplainQueryResult{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (d databaseQuery) GetQueryProperties(ctx context.Context) (QueryProperties, error) {
+	url := d.db.url("_api", "query", "properties")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		QueryProperties       `json:",inline"`
+	}
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return QueryProperties{}, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.QueryProperties, nil
+	default:
+		return QueryProperties{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (d databaseQuery) UpdateQueryProperties(ctx context.Context, options QueryProperties) (QueryProperties, error) {
+	url := d.db.url("_api", "query", "properties")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		QueryProperties       `json:",inline"`
+	}
+	resp, err := connection.CallPut(ctx, d.db.connection(), url, &response, options, d.db.modifiers...)
+	if err != nil {
+		return QueryProperties{}, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.QueryProperties, nil
+	default:
+		return QueryProperties{}, response.AsArangoErrorWithCode(code)
+	}
+}
