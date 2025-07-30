@@ -101,7 +101,7 @@ func Test_CollectionShards(t *testing.T) {
 				WithCollectionV2(t, db, &optionsSatellite, func(col arangodb.Collection) {
 					shards, err := col.Shards(context.Background(), true)
 					require.NoError(t, err)
-					assert.Equal(t, arangodb.ReplicationFactorSatellite, shards.ReplicationFactor)
+					assert.Equal(t, arangodb.ReplicationFactorSatellite, *shards.ReplicationFactor)
 				})
 			}
 		})
