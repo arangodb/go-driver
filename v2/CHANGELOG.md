@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Add tasks endpoints to v2
 
 ## [2.1.3](https://github.com/arangodb/go-driver/tree/v2.1.3) (2025-02-21)
 - Switch to Go 1.22.11
