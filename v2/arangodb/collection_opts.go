@@ -90,7 +90,7 @@ type CollectionExtendedInfo struct {
 
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
-	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
+	ReplicationFactor *ReplicationFactor `json:"replicationFactor,omitempty"`
 
 	// WaitForSync; If true then creating, changing or removing documents will wait
 	// until the data has been synchronized to disk.
@@ -157,7 +157,7 @@ type CollectionProperties struct {
 
 // IsSatellite returns true if the collection is a SatelliteCollection
 func (p *CollectionProperties) IsSatellite() bool {
-	return p.ReplicationFactor == ReplicationFactorSatellite
+	return *p.ReplicationFactor == ReplicationFactorSatellite
 }
 
 // SetCollectionPropertiesOptions contains data for Collection.SetProperties.

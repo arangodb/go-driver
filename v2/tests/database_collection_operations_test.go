@@ -124,13 +124,14 @@ func Test_CollectionSetProperties(t *testing.T) {
 				ctx := context.Background()
 				props, err := col.Properties(ctx)
 				require.NoError(t, err)
-				require.Equal(t, *createOpts.WaitForSync, props.WaitForSync)
-				// require.Equal(t, *createOpts.CacheEnabled, props.CacheEnabled)
+
+				// Dereference both sides for comparison
+				require.Equal(t, *createOpts.WaitForSync, *props.WaitForSync)
 
 				t.Run("rf-check-before", func(t *testing.T) {
 					requireClusterMode(t)
-					require.Equal(t, *createOpts.ReplicationFactor, props.ReplicationFactor)
-					require.Equal(t, *createOpts.NumberOfShards, props.NumberOfShards)
+					require.Equal(t, *createOpts.ReplicationFactor, *props.ReplicationFactor)
+					require.Equal(t, *createOpts.NumberOfShards, *props.NumberOfShards)
 				})
 
 				newProps := arangodb.SetCollectionPropertiesOptionsV2{
@@ -140,19 +141,22 @@ func Test_CollectionSetProperties(t *testing.T) {
 					CacheEnabled:      utils.NewType(true),
 					Schema:            nil,
 				}
+
 				err = col.SetPropertiesV2(ctx, newProps)
 				require.NoError(t, err)
 
 				props, err = col.Properties(ctx)
 				require.NoError(t, err)
-				require.Equal(t, *newProps.WaitForSync, props.WaitForSync)
+
+				// Dereference both sides
+				require.Equal(t, *newProps.WaitForSync, *props.WaitForSync)
 				require.Equal(t, int64(0), props.JournalSize) // Default JournalSize is 0
-				require.Equal(t, *newProps.CacheEnabled, props.CacheEnabled)
+				require.Equal(t, *newProps.CacheEnabled, *props.CacheEnabled)
 
 				t.Run("rf-check-after", func(t *testing.T) {
 					requireClusterMode(t)
-					require.Equal(t, *newProps.ReplicationFactor, props.ReplicationFactor)
-					require.Equal(t, *createOpts.NumberOfShards, props.NumberOfShards)
+					require.Equal(t, *newProps.ReplicationFactor, *props.ReplicationFactor)
+					require.Equal(t, *createOpts.NumberOfShards, *props.NumberOfShards)
 				})
 			})
 		})
