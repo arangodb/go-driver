@@ -39,6 +39,7 @@ func newClient(connection connection.Connection) *client {
 	c.clientAdmin = newClientAdmin(c)
 	c.clientAsyncJob = newClientAsyncJob(c)
 	c.clientFoxx = newClientFoxx(c)
+	c.clientTask = newClientTask(c)
 
 	c.Requests = NewRequests(connection)
 
@@ -56,6 +57,7 @@ type client struct {
 	*clientAdmin
 	*clientAsyncJob
 	*clientFoxx
+	*clientTask
 
 	Requests
 }
