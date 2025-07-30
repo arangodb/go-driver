@@ -265,7 +265,7 @@ func (c collection) Revision(ctx context.Context) (CollectionProperties, error) 
 	}
 }
 
-func (c collection) Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionChecksum, error) {
+func (c collection) Checksum(ctx context.Context, withRevisions *bool, withData *bool) (CollectionChecksum, error) {
 	urlEndpoint := c.url("collection", "checksum")
 
 	var response struct {
@@ -275,11 +275,11 @@ func (c collection) Checksum(ctx context.Context, withRevisions bool, withData b
 
 	// Prepare query modifiers
 	var modifiers []connection.RequestModifier
-	if withRevisions {
-		modifiers = append(modifiers, connection.WithQuery("withRevisions", boolToString(withRevisions)))
+	if *withRevisions {
+		modifiers = append(modifiers, connection.WithQuery("withRevisions", boolToString(*withRevisions)))
 	}
-	if withData {
-		modifiers = append(modifiers, connection.WithQuery("withData", boolToString(withData)))
+	if *withData {
+		modifiers = append(modifiers, connection.WithQuery("withData", boolToString(*withData)))
 	}
 
 	resp, err := connection.CallGet(
@@ -324,7 +324,7 @@ func (c collection) LoadIndexesIntoMemory(ctx context.Context) (bool, error) {
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
-		Result                bool `json:"result,omitempty"`
+		Result                bool `json:"result"`
 	}
 
 	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, nil, c.withModifiers()...)
@@ -362,26 +362,28 @@ func (c collection) Rename(ctx context.Context, req RenameCollectionRequest) (Co
 	}
 }
 
-func (c collection) RecalculateCount(ctx context.Context) (bool, int64, error) {
+func (c collection) RecalculateCount(ctx context.Context) (bool, *int64, error) {
 	urlEndpoint := c.url("collection", "recalculateCount")
 	fmt.Println(387, urlEndpoint)
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
-		Count                 int64 `json:"count,omitempty"`
-		Result                bool  `json:"result,omitempty"`
+		Count                 *int64 `json:"count,omitempty"`
+		Result                bool   `json:"result"`
 	}
 
 	resp, err := connection.CallPut(ctx, c.connection(), urlEndpoint, &response, nil, c.withModifiers()...)
 	if err != nil {
-		return false, 0, errors.WithStack(err)
+		zero := int64(0)
+		return false, &zero, errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response.Result, response.Count, nil
 	default:
-		return false, 0, response.AsArangoErrorWithCode(code)
+		zero := int64(0)
+		return false, &zero, response.AsArangoErrorWithCode(code)
 	}
 }
 

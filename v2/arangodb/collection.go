@@ -62,7 +62,7 @@ type Collection interface {
 	// Checksum returns a checksum for the specified collection
 	// withRevisions - Whether to include document revision ids in the checksum calculation.
 	// withData - Whether to include document body data in the checksum calculation.
-	Checksum(ctx context.Context, withRevisions bool, withData bool) (CollectionChecksum, error)
+	Checksum(ctx context.Context, withRevisions *bool, withData *bool) (CollectionChecksum, error)
 
 	// ResponsibleShard returns the shard responsible for the given options.
 	ResponsibleShard(ctx context.Context, options map[string]interface{}) (string, error)
@@ -75,7 +75,7 @@ type Collection interface {
 	Rename(ctx context.Context, req RenameCollectionRequest) (CollectionInfo, error)
 
 	// RecalculateCount recalculates the count of documents in the collection.
-	RecalculateCount(ctx context.Context) (bool, int64, error)
+	RecalculateCount(ctx context.Context) (bool, *int64, error)
 
 	//Compacts the data of a collection in order to reclaim disk space.
 	// This operation is only supported in single server deployments.
