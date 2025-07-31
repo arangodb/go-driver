@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
@@ -172,5 +173,26 @@ func (d databaseQuery) UpdateQueryProperties(ctx context.Context, options QueryP
 		return response.QueryProperties, nil
 	default:
 		return QueryProperties{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (d databaseQuery) ListOfRunningAQLQueries(ctx context.Context, all *bool) (ListOfRunningAQLQueriesResponse, error) {
+	url := d.db.url("_api", "query", "current")
+	if *all {
+		url += "?all=true"
+	}
+
+	var response []RunningAQLQuery
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, fmt.Errorf("API returned status %d", code)
 	}
 }

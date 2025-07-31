@@ -47,7 +47,15 @@ type DatabaseQuery interface {
 	// GetQueryProperties returns the properties of the query system.
 	GetQueryProperties(ctx context.Context) (QueryProperties, error)
 
+	// UpdateQueryProperties updates the properties of the query system.
+	// The properties are updated with the provided options.
+	// The updated properties are returned.
 	UpdateQueryProperties(ctx context.Context, options QueryProperties) (QueryProperties, error)
+
+	// ListOfRunningAQLQueries returns a list of currently running AQL queries.
+	// If the all parameter is set to true, it returns all queries, otherwise only the queries that are currently running.
+	// The result is a list of RunningAQLQuery objects.
+	ListOfRunningAQLQueries(ctx context.Context, all *bool) (ListOfRunningAQLQueriesResponse, error)
 }
 
 type QuerySubOptions struct {
@@ -343,4 +351,19 @@ type QueryProperties struct {
 	MaxSlowQueries       int     `json:"maxSlowQueries"`
 	SlowQueryThreshold   float64 `json:"slowQueryThreshold"`
 	MaxQueryStringLength int     `json:"maxQueryStringLength"`
+}
+
+type ListOfRunningAQLQueriesResponse []RunningAQLQuery
+
+type RunningAQLQuery struct {
+	Id              *string                 `json:"id,omitempty"`
+	Database        *string                 `json:"database,omitempty"`
+	User            *string                 `json:"user,omitempty"`
+	Query           *string                 `json:"query,omitempty"`
+	BindVars        *map[string]interface{} `json:"bindVars,omitempty"`
+	Started         *string                 `json:"started,omitempty"`
+	RunTime         *float64                `json:"runTime,omitempty"`
+	PeakMemoryUsage *uint64                 `json:"peakMemoryUsage,omitempty"`
+	State           *string                 `json:"state,omitempty"`
+	Stream          *bool                   `json:"stream,omitempty"`
 }
