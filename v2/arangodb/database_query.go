@@ -55,7 +55,15 @@ type DatabaseQuery interface {
 	// ListOfRunningAQLQueries returns a list of currently running AQL queries.
 	// If the all parameter is set to true, it returns all queries, otherwise only the queries that are currently running.
 	// The result is a list of RunningAQLQuery objects.
-	ListOfRunningAQLQueries(ctx context.Context, all *bool) (ListOfRunningAQLQueriesResponse, error)
+	ListOfRunningAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error)
+
+	// ListOfSlowAQLQueries returns a list of slow AQL queries.
+	// If the all parameter is set to true, it returns all slow queries, otherwise only the queries that are currently running.
+	// The result is a list of RunningAQLQuery objects.
+	// Slow queries are defined as queries that have been running longer than the configured slow query threshold.
+	// The slow query threshold can be configured in the query properties.
+	// The result is a list of RunningAQLQuery objects.
+	ListOfSlowAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error)
 }
 
 type QuerySubOptions struct {
@@ -345,25 +353,38 @@ type ExplainQueryResult struct {
 }
 
 type QueryProperties struct {
-	Enabled              bool    `json:"enabled"`
-	TrackSlowQueries     bool    `json:"trackSlowQueries"`
-	TrackBindVars        bool    `json:"trackBindVars"`
-	MaxSlowQueries       int     `json:"maxSlowQueries"`
-	SlowQueryThreshold   float64 `json:"slowQueryThreshold"`
-	MaxQueryStringLength int     `json:"maxQueryStringLength"`
+	Enabled              *bool    `json:"enabled"`
+	TrackSlowQueries     *bool    `json:"trackSlowQueries"`
+	TrackBindVars        *bool    `json:"trackBindVars"`
+	MaxSlowQueries       *int     `json:"maxSlowQueries"`
+	SlowQueryThreshold   *float64 `json:"slowQueryThreshold"`
+	MaxQueryStringLength *int     `json:"maxQueryStringLength"`
 }
 
-type ListOfRunningAQLQueriesResponse []RunningAQLQuery
-
 type RunningAQLQuery struct {
-	Id              *string                 `json:"id,omitempty"`
-	Database        *string                 `json:"database,omitempty"`
-	User            *string                 `json:"user,omitempty"`
-	Query           *string                 `json:"query,omitempty"`
-	BindVars        *map[string]interface{} `json:"bindVars,omitempty"`
-	Started         *string                 `json:"started,omitempty"`
-	RunTime         *float64                `json:"runTime,omitempty"`
-	PeakMemoryUsage *uint64                 `json:"peakMemoryUsage,omitempty"`
-	State           *string                 `json:"state,omitempty"`
-	Stream          *bool                   `json:"stream,omitempty"`
+	// The unique identifier of the query.
+	Id *string `json:"id,omitempty"`
+	// The database in which the query is running.
+	Database *string `json:"database,omitempty"`
+	// The user who executed the query.
+	// This is the user who executed the query, not the user who is currently running the
+	User *string `json:"user,omitempty"`
+	// The query string.
+	// This is the AQL query string that was executed.
+	Query *string `json:"query,omitempty"`
+	// The bind variables used in the query.
+	BindVars *map[string]interface{} `json:"bindVars,omitempty"`
+	// The time when the query started executing.
+	// This is the time when the query started executing on the server.
+	Started *string `json:"started,omitempty"`
+	// The time when the query was last updated.
+	// This is the time when the query was last updated on the server.
+	RunTime *float64 `json:"runTime,omitempty"`
+	// The PeakMemoryUsage is the peak memory usage of the query in bytes.
+	PeakMemoryUsage *uint64 `json:"peakMemoryUsage,omitempty"`
+	// The State of the query.
+	// This is the current state of the query, e.g. "running", "finished", "executing", etc.
+	State *string `json:"state,omitempty"`
+	// The stream option indicates whether the query is executed in streaming mode.
+	Stream *bool `json:"stream,omitempty"`
 }
