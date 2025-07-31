@@ -22,7 +22,6 @@ package arangodb
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -364,7 +363,6 @@ func (c collection) Rename(ctx context.Context, req RenameCollectionRequest) (Co
 
 func (c collection) RecalculateCount(ctx context.Context) (bool, *int64, error) {
 	urlEndpoint := c.url("collection", "recalculateCount")
-	fmt.Println(387, urlEndpoint)
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`

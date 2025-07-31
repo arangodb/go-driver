@@ -72,8 +72,9 @@ type CollectionExtendedInfo struct {
 		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
 		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
 		// the _key attribute of documents is considered an error.
-		AllowUserKeys *bool   `json:"allowUserKeys,omitempty"`
-		LastValue     *uint64 `json:"lastValue,omitempty"`
+		AllowUserKeys *bool `json:"allowUserKeys,omitempty"`
+		// The initial value for the key generator. This is only used for autoincrement key generators.
+		LastValue *uint64 `json:"lastValue,omitempty"`
 	} `json:"keyOptions,omitempty"`
 
 	// NumberOfShards is the number of shards of the collection.
