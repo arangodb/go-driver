@@ -481,3 +481,94 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 		})
 	})
 }
+
+func Test_ClearSlowAQLQueries(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		// Get the database
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Update query properties to ensure slow queries are tracked
+		t.Logf("Updating query properties to track slow queries")
+		// Set a low threshold to ensure we capture slow queries
+		// and limit the number of slow queries to 1 for testing
+		options := arangodb.QueryProperties{
+			Enabled:            utils.NewType(true),
+			TrackSlowQueries:   utils.NewType(true),
+			TrackBindVars:      utils.NewType(true), // optional but useful for debugging
+			MaxSlowQueries:     utils.NewType(10),
+			SlowQueryThreshold: utils.NewType(0.0001),
+		}
+		// Update the query properties
+		_, err = db.UpdateQueryProperties(ctx, options)
+		require.NoError(t, err)
+		t.Run("ClearSlowQueriesWithAllFalse", func(t *testing.T) {
+			_, err := db.Query(ctx, "FOR i IN 1..1000000 COLLECT WITH COUNT INTO length RETURN length", nil)
+			require.NoError(t, err)
+
+			time.Sleep(2 * time.Second)
+
+			var foundSlowQuery bool
+			for attempt := 0; attempt < 15; attempt++ {
+				queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(true))
+				require.NoError(t, err)
+				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
+
+				if len(queries) > 0 {
+					foundSlowQuery = true
+					t.Logf("Found %d slow queries", len(queries))
+
+					for i, query := range queries {
+						t.Logf("Query %d: ID=%s, State=%s", i, *query.Id, *query.State)
+					}
+
+					err := db.ClearSlowAQLQueries(ctx, utils.NewType(false))
+					require.NoError(t, err)
+					break
+				}
+
+				time.Sleep(300 * time.Millisecond)
+			}
+
+			require.True(t, foundSlowQuery, "Should have found at least one slow query")
+		})
+
+		t.Run("ClearSlowQueriesWithAllTrue", func(t *testing.T) {
+			// Run two different slow queries
+			_, err := db.Query(ctx, "FOR i IN 1..1000000 FILTER i > 500000 RETURN i", nil)
+			require.NoError(t, err)
+
+			_, err = db.Query(ctx, "FOR d IN 1..1000000 COLLECT WITH COUNT INTO length RETURN length", nil)
+			require.NoError(t, err)
+
+			time.Sleep(2 * time.Second)
+
+			var foundSlowQuery bool
+			for attempt := 0; attempt < 15; attempt++ {
+				queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(true))
+				require.NoError(t, err)
+
+				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
+
+				if len(queries) >= 2 {
+					foundSlowQuery = true
+					t.Logf("Found %d slow queries", len(queries))
+
+					for i, query := range queries {
+						t.Logf("Query %d: ID=%s, State=%s", i, *query.Id, *query.State)
+					}
+
+					err := db.ClearSlowAQLQueries(ctx, utils.NewType(true))
+					require.NoError(t, err)
+					break
+				}
+
+				time.Sleep(300 * time.Millisecond)
+			}
+
+			require.True(t, foundSlowQuery, "Should have found at least two slow queries")
+		})
+
+	})
+}

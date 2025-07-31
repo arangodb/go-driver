@@ -64,6 +64,11 @@ type DatabaseQuery interface {
 	// The slow query threshold can be configured in the query properties.
 	// The result is a list of RunningAQLQuery objects.
 	ListOfSlowAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error)
+
+	// ClearSlowAQLQueries clears the list of slow AQL queries.
+	// If the all parameter is set to true, it clears all slow queries, otherwise only
+	// the queries that are currently running.
+	ClearSlowAQLQueries(ctx context.Context, all *bool) error
 }
 
 type QuerySubOptions struct {

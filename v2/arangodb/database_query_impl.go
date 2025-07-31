@@ -202,3 +202,26 @@ func (d databaseQuery) ListOfRunningAQLQueries(ctx context.Context, all *bool) (
 func (d databaseQuery) ListOfSlowAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error) {
 	return d.listAQLQueries(ctx, "slow", all)
 }
+
+func (d databaseQuery) ClearSlowAQLQueries(ctx context.Context, all *bool) error {
+	url := d.db.url("_api", "query", "slow")
+	if all != nil && *all {
+		url += "?all=true"
+	}
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		DeletedQueries        []string `json:"deletedQueries,omitempty"`
+	}
+	resp, err := connection.CallDelete(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return fmt.Errorf("API returned status %d", code)
+	}
+}
