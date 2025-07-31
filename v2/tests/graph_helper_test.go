@@ -46,6 +46,7 @@ func sampleGraphWithEdges(db arangodb.Database) *arangodb.GraphDefinition {
 	from := db.Name() + "_from-coll"
 
 	g := sampleSmartGraph()
+	g.Name = db.Name() + "_graph"
 	g.EdgeDefinitions = []arangodb.EdgeDefinition{
 		{
 			Collection: edge,
