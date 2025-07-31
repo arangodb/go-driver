@@ -176,14 +176,13 @@ func (d databaseQuery) UpdateQueryProperties(ctx context.Context, options QueryP
 	}
 }
 
-func (d databaseQuery) ListOfRunningAQLQueries(ctx context.Context, all *bool) (ListOfRunningAQLQueriesResponse, error) {
-	url := d.db.url("_api", "query", "current")
-	if *all {
+func (d databaseQuery) listAQLQueries(ctx context.Context, endpoint string, all *bool) ([]RunningAQLQuery, error) {
+	url := d.db.url("_api", "query", endpoint)
+	if all != nil && *all {
 		url += "?all=true"
 	}
 
 	var response []RunningAQLQuery
-
 	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
 	if err != nil {
 		return nil, err
@@ -195,4 +194,11 @@ func (d databaseQuery) ListOfRunningAQLQueries(ctx context.Context, all *bool) (
 	default:
 		return nil, fmt.Errorf("API returned status %d", code)
 	}
+}
+func (d databaseQuery) ListOfRunningAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error) {
+	return d.listAQLQueries(ctx, "current", all)
+}
+
+func (d databaseQuery) ListOfSlowAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error) {
+	return d.listAQLQueries(ctx, "slow", all)
 }

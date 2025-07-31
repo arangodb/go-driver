@@ -242,12 +242,12 @@ func Test_GetQueryProperties(t *testing.T) {
 			t.Logf("Query Properties: %s", jsonResp)
 			// Check that the response contains expected fields
 			require.NotNil(t, res)
-			require.IsType(t, true, res.Enabled)
-			require.IsType(t, true, res.TrackSlowQueries)
-			require.IsType(t, true, res.TrackBindVars)
-			require.GreaterOrEqual(t, res.MaxSlowQueries, 0)
-			require.Greater(t, res.SlowQueryThreshold, 0.0)
-			require.Greater(t, res.MaxQueryStringLength, 0)
+			require.IsType(t, true, *res.Enabled)
+			require.IsType(t, true, *res.TrackSlowQueries)
+			require.IsType(t, true, *res.TrackBindVars)
+			require.GreaterOrEqual(t, *res.MaxSlowQueries, 0)
+			require.Greater(t, *res.SlowQueryThreshold, 0.0)
+			require.Greater(t, *res.MaxQueryStringLength, 0)
 		})
 	})
 }
@@ -263,12 +263,12 @@ func Test_UpdateQueryProperties(t *testing.T) {
 			// Check that the response contains expected fields
 			require.NotNil(t, res)
 			options := arangodb.QueryProperties{
-				Enabled:              true,
-				TrackSlowQueries:     true,
-				TrackBindVars:        false,
-				MaxSlowQueries:       res.MaxSlowQueries + 1,
-				SlowQueryThreshold:   res.SlowQueryThreshold + 0.1,
-				MaxQueryStringLength: res.MaxQueryStringLength + 100,
+				Enabled:              utils.NewType(true),
+				TrackSlowQueries:     utils.NewType(true),
+				TrackBindVars:        utils.NewType(false), // optional but useful for debugging
+				MaxSlowQueries:       utils.NewType(*res.MaxSlowQueries + *utils.NewType(1)),
+				SlowQueryThreshold:   utils.NewType(*res.SlowQueryThreshold + *utils.NewType(0.1)),
+				MaxQueryStringLength: utils.NewType(*res.MaxQueryStringLength + *utils.NewType(100)),
 			}
 			updateResp, err := db.UpdateQueryProperties(context.Background(), options)
 			require.NoError(t, err)
@@ -277,12 +277,12 @@ func Test_UpdateQueryProperties(t *testing.T) {
 			t.Logf("Updated Query Properties: %s", jsonUpdateResp)
 			// Check that the response contains expected fields
 			require.NotNil(t, updateResp)
-			require.Equal(t, options.Enabled, updateResp.Enabled)
-			require.Equal(t, options.TrackSlowQueries, updateResp.TrackSlowQueries)
-			require.Equal(t, options.TrackBindVars, updateResp.TrackBindVars)
-			require.Equal(t, options.MaxSlowQueries, updateResp.MaxSlowQueries)
-			require.Equal(t, options.SlowQueryThreshold, updateResp.SlowQueryThreshold)
-			require.Equal(t, options.MaxQueryStringLength, updateResp.MaxQueryStringLength)
+			require.Equal(t, *options.Enabled, *updateResp.Enabled)
+			require.Equal(t, *options.TrackSlowQueries, *updateResp.TrackSlowQueries)
+			require.Equal(t, *options.TrackBindVars, *updateResp.TrackBindVars)
+			require.Equal(t, *options.MaxSlowQueries, *updateResp.MaxSlowQueries)
+			require.Equal(t, *options.SlowQueryThreshold, *updateResp.SlowQueryThreshold)
+			require.Equal(t, *options.MaxQueryStringLength, *updateResp.MaxQueryStringLength)
 			res, err = db.GetQueryProperties(context.Background())
 			require.NoError(t, err)
 			jsonResp, err = utils.ToJSONString(res)
@@ -302,14 +302,14 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 		queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(false))
 		require.NoError(t, err)
 		require.NotNil(t, queries)
-		fmt.Printf("Current running queries (all=false): %d\n", len(queries))
+		t.Logf("Current running queries (all=false): %d\n", len(queries))
 
 		// Test with all=true parameter
 		t.Run("Test with all=true parameter", func(t *testing.T) {
 			allQueries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(true))
 			require.NoError(t, err)
 			require.NotNil(t, allQueries)
-			fmt.Printf("Current running queries (all=true): %d\n", len(allQueries))
+			t.Logf("Current running queries (all=true): %d\n", len(allQueries))
 
 			// The number with all=true should be >= the number with all=false
 			require.GreaterOrEqual(t, len(allQueries), len(queries),
@@ -393,6 +393,88 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 
 			// Cancel the query
 			cancel()
+
+			// Assert we found running queries
+			require.True(t, foundRunningQuery, "Should have found at least one running query")
+		})
+	})
+}
+
+func Test_ListOfSlowAQLQueries(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		// Get the database
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Get the query properties
+		res, err := db.GetQueryProperties(ctx)
+		require.NoError(t, err)
+
+		jsonResp, err := utils.ToJSONString(res)
+		require.NoError(t, err)
+		t.Logf("Query Properties: %s", jsonResp)
+		// Check that the response contains expected fields
+		require.NotNil(t, res)
+		// Test that the endpoint works (should return empty list or some queries)
+		queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(false))
+		require.NoError(t, err)
+		require.NotNil(t, queries)
+		t.Logf("Current running slow queries (all=false): %d\n", len(queries))
+
+		// Test with all=true parameter
+		t.Run("Test with all=true parameter", func(t *testing.T) {
+			allQueries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(true))
+			require.NoError(t, err)
+			require.NotNil(t, allQueries)
+			t.Logf("Current running slow queries (all=true): %d\n", len(allQueries))
+
+			// The number with all=true should be >= the number with all=false
+			require.GreaterOrEqual(t, len(allQueries), len(queries),
+				"all=true should return >= queries than all=false")
+		})
+		// Update query properties to ensure slow queries are tracked
+		t.Logf("Updating query properties to track slow queries")
+		// Set a low threshold to ensure we capture slow queries
+		// and limit the number of slow queries to 1 for testing
+		options := arangodb.QueryProperties{
+			Enabled:            utils.NewType(true),
+			TrackSlowQueries:   utils.NewType(true),
+			TrackBindVars:      utils.NewType(true), // optional but useful for debugging
+			MaxSlowQueries:     utils.NewType(1),
+			SlowQueryThreshold: utils.NewType(0.0001),
+		}
+		// Update the query properties
+		_, err = db.UpdateQueryProperties(ctx, options)
+		require.NoError(t, err)
+		t.Run("Test that queries are not empty", func(t *testing.T) {
+
+			_, err := db.Query(ctx, "FOR i IN 1..1000000 COLLECT WITH COUNT INTO length RETURN length", nil)
+			require.NoError(t, err)
+
+			// Wait for query to start and be registered
+			time.Sleep(2 * time.Second)
+
+			// Check for running queries multiple times
+			var foundRunningQuery bool
+			for attempt := 0; attempt < 15; attempt++ {
+				queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(true))
+				require.NoError(t, err)
+
+				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
+
+				if len(queries) > 0 {
+					foundRunningQuery = true
+					t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
+					// Log query details
+					for i, query := range queries {
+						t.Logf("Query %d: ID=%s, State=%s", i, *query.Id, *query.State)
+					}
+					break
+				}
+
+				time.Sleep(300 * time.Millisecond)
+			}
 
 			// Assert we found running queries
 			require.True(t, foundRunningQuery, "Should have found at least one running query")
