@@ -23,7 +23,9 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -230,7 +232,7 @@ func Test_QueryBatchWithRetries(t *testing.T) {
 	})
 }
 
-func Test_GetQueryProperties_Success(t *testing.T) {
+func Test_GetQueryProperties(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			res, err := db.GetQueryProperties(context.Background())
@@ -288,6 +290,112 @@ func Test_UpdateQueryProperties(t *testing.T) {
 			t.Logf("Query Properties 288: %s", jsonResp)
 			// Check that the response contains expected fields
 			require.NotNil(t, res)
+		})
+	})
+}
+
+func Test_ListOfRunningAQLQueries(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		db, err := client.GetDatabase(context.Background(), "_system", nil)
+		require.NoError(t, err)
+		// Test that the endpoint works (should return empty list or some queries)
+		queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(false))
+		require.NoError(t, err)
+		require.NotNil(t, queries)
+		fmt.Printf("Current running queries (all=false): %d\n", len(queries))
+
+		// Test with all=true parameter
+		t.Run("Test with all=true parameter", func(t *testing.T) {
+			allQueries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(true))
+			require.NoError(t, err)
+			require.NotNil(t, allQueries)
+			fmt.Printf("Current running queries (all=true): %d\n", len(allQueries))
+
+			// The number with all=true should be >= the number with all=false
+			require.GreaterOrEqual(t, len(allQueries), len(queries),
+				"all=true should return >= queries than all=false")
+		})
+
+		t.Run("Test that queries are not empty", func(t *testing.T) {
+
+			// Create a context we can cancel
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			// Start a transaction with a long-running query
+			queryStarted := make(chan struct{})
+			go func() {
+				defer close(queryStarted)
+
+				// Use a streaming query that processes results slowly
+				bindVars := map[string]interface{}{
+					"max": 10000000,
+				}
+
+				cursor, err := db.Query(ctx, `
+	FOR i IN 1..@max
+		LET computation = (
+			FOR x IN 1..100
+				RETURN x * i
+		)
+		RETURN {i: i, sum: SUM(computation)}
+`, &arangodb.QueryOptions{
+					BindVars: bindVars,
+				})
+
+				if err != nil {
+					if !strings.Contains(err.Error(), "canceled") {
+						t.Logf("Query error: %v", err)
+					}
+					return
+				}
+
+				// Process results slowly to keep query active longer
+				if cursor != nil {
+					for cursor.HasMore() {
+						var result interface{}
+						_, err := cursor.ReadDocument(ctx, &result)
+						if err != nil {
+							break
+						}
+						// Add small delay to keep query running longer
+						time.Sleep(10 * time.Millisecond)
+					}
+					cursor.Close()
+				}
+			}()
+
+			// Wait for query to start and be registered
+			time.Sleep(2 * time.Second)
+
+			// Check for running queries multiple times
+			var foundRunningQuery bool
+			for attempt := 0; attempt < 15; attempt++ {
+				queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(true))
+				require.NoError(t, err)
+
+				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
+
+				if len(queries) > 0 {
+					foundRunningQuery = true
+					t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
+					// Log query details
+					for i, query := range queries {
+						bindVarsJSON, _ := utils.ToJSONString(*query.BindVars)
+						t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
+							i, *query.Id, *query.State, bindVarsJSON)
+					}
+					break
+				}
+
+				time.Sleep(300 * time.Millisecond)
+			}
+
+			// Cancel the query
+			cancel()
+
+			// Assert we found running queries
+			require.True(t, foundRunningQuery, "Should have found at least one running query")
 		})
 	})
 }
