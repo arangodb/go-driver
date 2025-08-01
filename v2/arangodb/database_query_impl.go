@@ -235,3 +235,21 @@ func (d databaseQuery) ClearSlowAQLQueries(ctx context.Context, all *bool) error
 func (d databaseQuery) KillAQLQuery(ctx context.Context, queryId string, all *bool) error {
 	return d.deleteQueryEndpoint(ctx, path.Join("_api/query", queryId), all)
 }
+
+func (d databaseQuery) GetAllOptimizerRules(ctx context.Context) ([]OptimizerRules, error) {
+	url := d.db.url("_api", "query", "rules")
+
+	var response []OptimizerRules
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, fmt.Errorf("API returned status %d", code)
+	}
+}
