@@ -69,6 +69,10 @@ type DatabaseQuery interface {
 	// If the all parameter is set to true, it clears all slow queries, otherwise only
 	// the queries that are currently running.
 	ClearSlowAQLQueries(ctx context.Context, all *bool) error
+
+	// KillAQLQuery kills a running AQL query.
+	// The queryId is the unique identifier of the query
+	KillAQLQuery(ctx context.Context, queryId string, all *bool) error
 }
 
 type QuerySubOptions struct {
