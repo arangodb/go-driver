@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 
@@ -203,16 +204,17 @@ func (d databaseQuery) ListOfSlowAQLQueries(ctx context.Context, all *bool) ([]R
 	return d.listAQLQueries(ctx, "slow", all)
 }
 
-func (d databaseQuery) ClearSlowAQLQueries(ctx context.Context, all *bool) error {
-	url := d.db.url("_api", "query", "slow")
+func (d databaseQuery) deleteQueryEndpoint(ctx context.Context, path string, all *bool) error {
+	url := d.db.url(path)
+
 	if all != nil && *all {
 		url += "?all=true"
 	}
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
-		DeletedQueries        []string `json:"deletedQueries,omitempty"`
 	}
+
 	resp, err := connection.CallDelete(ctx, d.db.connection(), url, &response, d.db.modifiers...)
 	if err != nil {
 		return err
@@ -222,6 +224,14 @@ func (d databaseQuery) ClearSlowAQLQueries(ctx context.Context, all *bool) error
 	case http.StatusOK:
 		return nil
 	default:
-		return fmt.Errorf("API returned status %d", code)
+		return response.AsArangoErrorWithCode(code)
 	}
+}
+
+func (d databaseQuery) ClearSlowAQLQueries(ctx context.Context, all *bool) error {
+	return d.deleteQueryEndpoint(ctx, "_api/query/slow", all)
+}
+
+func (d databaseQuery) KillAQLQuery(ctx context.Context, queryId string, all *bool) error {
+	return d.deleteQueryEndpoint(ctx, path.Join("_api/query", queryId), all)
 }
