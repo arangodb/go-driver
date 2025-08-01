@@ -574,3 +574,23 @@ func Test_KillAQLQuery(t *testing.T) {
 		require.True(t, foundRunningQuery, "Should have found at least one running query")
 	})
 }
+
+func Test_GetAllOptimizerRules(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			res, err := db.GetAllOptimizerRules(context.Background())
+			require.NoError(t, err)
+			// Check that the response contains expected fields
+			require.NotNil(t, res)
+			require.GreaterOrEqual(t, len(res), 1, "Should return at least one optimizer rule")
+			require.NotNil(t, res[0].Name, "Optimizer rule name should not be empty")
+			require.NotNil(t, res[0].Flags, "Optimizer rule flags should not be empty")
+			require.NotNil(t, res[0].Flags.CanBeDisabled, "Optimizer flags canBeDisabled should not be empty")
+			require.NotNil(t, res[0].Flags.CanCreateAdditionalPlans, "Optimizer flags canCreateAdditionalPlans should not be empty")
+			require.NotNil(t, res[0].Flags.ClusterOnly, "Optimizer flags clusterOnly should not be empty")
+			require.NotNil(t, res[0].Flags.DisabledByDefault, "Optimizer flags disabledByDefault should not be empty")
+			require.NotNil(t, res[0].Flags.EnterpriseOnly, "Optimizer flags enterpriseOnly should not be empty")
+			require.NotNil(t, res[0].Flags.Hidden, "Optimizer flags hidden should not be empty")
+		})
+	})
+}

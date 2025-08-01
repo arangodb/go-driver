@@ -73,6 +73,10 @@ type DatabaseQuery interface {
 	// KillAQLQuery kills a running AQL query.
 	// The queryId is the unique identifier of the query
 	KillAQLQuery(ctx context.Context, queryId string, all *bool) error
+
+	// GetAllOptimizerRules returns all optimizer rules available in the database.
+	// The result is a list of OptimizerRule objects.
+	GetAllOptimizerRules(ctx context.Context) ([]OptimizerRules, error)
 }
 
 type QuerySubOptions struct {
@@ -396,4 +400,26 @@ type RunningAQLQuery struct {
 	State *string `json:"state,omitempty"`
 	// The stream option indicates whether the query is executed in streaming mode.
 	Stream *bool `json:"stream,omitempty"`
+}
+
+type Flags struct {
+	// CanBeDisabled indicates whether the query can be disabled.
+	CanBeDisabled *bool `json:"canBeDisabled,omitempty"`
+	// CanBeExecuted indicates whether the query can be executed.
+	CanCreateAdditionalPlans *bool `json:"canCreateAdditionalPlans,omitempty"`
+	//ClusterOnly indicates whether the query is only available in a cluster environment.
+	ClusterOnly *bool `json:"clusterOnly,omitempty"`
+	// DisabledByDefault indicates whether the query is disabled by default.
+	// This means that the query is not executed unless explicitly enabled.
+	DisabledByDefault *bool `json:"disabledByDefault,omitempty"`
+	// EnterpriseOnly indicates whether the query is only available in the Enterprise Edition.
+	EnterpriseOnly *bool `json:"enterpriseOnly,omitempty"`
+	// Hidden indicates whether the query is hidden from the user.
+	Hidden *bool `json:"hidden,omitempty"`
+}
+
+type OptimizerRules struct {
+	// Name of the optimizer rule.
+	Name  string `json:"name,omitempty"`
+	Flags `json:"flags,omitempty"`
 }
