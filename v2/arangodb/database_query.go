@@ -81,6 +81,9 @@ type DatabaseQuery interface {
 	// GetQueryPlanCache returns a list of cached query plans.
 	// The result is a list of QueryPlanChcheRespObject objects.
 	GetQueryPlanCache(ctx context.Context) ([]QueryPlanCacheRespObject, error)
+
+	// ClearQueryPlanCache clears the query plan cache.
+	ClearQueryPlanCache(ctx context.Context) error
 }
 
 type QuerySubOptions struct {

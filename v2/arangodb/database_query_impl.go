@@ -271,3 +271,23 @@ func (d databaseQuery) GetQueryPlanCache(ctx context.Context) ([]QueryPlanCacheR
 		return nil, fmt.Errorf("API returned status %d", code)
 	}
 }
+
+func (d databaseQuery) ClearQueryPlanCache(ctx context.Context) error {
+	url := d.db.url("_api", "query-plan-cache")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallDelete(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
