@@ -77,6 +77,10 @@ type DatabaseQuery interface {
 	// GetAllOptimizerRules returns all optimizer rules available in the database.
 	// The result is a list of OptimizerRule objects.
 	GetAllOptimizerRules(ctx context.Context) ([]OptimizerRules, error)
+
+	// GetQueryPlanCache returns a list of cached query plans.
+	// The result is a list of QueryPlanChcheRespObject objects.
+	GetQueryPlanCache(ctx context.Context) ([]QueryPlanCacheRespObject, error)
 }
 
 type QuerySubOptions struct {
@@ -422,4 +426,26 @@ type OptimizerRules struct {
 	// Name of the optimizer rule.
 	Name  string `json:"name,omitempty"`
 	Flags `json:"flags,omitempty"`
+}
+
+type QueryPlanCacheRespObject struct {
+	// Hash is the plan cache key.
+	Hash *string `json:"hash,omitempty"`
+	// Query is the AQL query string.
+	Query *string `json:"query,omitempty"`
+	// QueryHash is the hash of the AQL query string.
+	QueryHash *uint64 `json:"queryHash,omitempty"`
+	// BindVars are the bind variables used in the query.
+	BindVars map[string]interface{} `json:"bindVars,omitempty"`
+	// FullCount indicates whether the query result contains the full count of documents.
+	FullCount *bool `json:"fullCount,omitempty"`
+	// DataSources is a list of data sources used in the query.
+	DataSources *[]string `json:"dataSources,omitempty"`
+	// Created is the time when the query plan has been added to the cache.
+	Created *string `json:"created,omitempty"`
+	// Hits is the number of times the cached plan has been utilized so far.
+	Hits *int `json:"hits,omitempty"`
+	// MemoryUsage is the memory usage of the cached plan in bytes.
+	// This is the amount of memory used by the cached plan on the server.
+	MemoryUsage *int `json:"memoryUsage,omitempty"`
 }

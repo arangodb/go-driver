@@ -253,3 +253,21 @@ func (d databaseQuery) GetAllOptimizerRules(ctx context.Context) ([]OptimizerRul
 		return nil, fmt.Errorf("API returned status %d", code)
 	}
 }
+
+func (d databaseQuery) GetQueryPlanCache(ctx context.Context) ([]QueryPlanCacheRespObject, error) {
+	url := d.db.url("_api", "query-plan-cache")
+
+	var response []QueryPlanCacheRespObject
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, fmt.Errorf("API returned status %d", code)
+	}
+}
