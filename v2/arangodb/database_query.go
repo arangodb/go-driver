@@ -92,6 +92,10 @@ type DatabaseQuery interface {
 	// ClearQueryCache clears the query cache.
 	// This will remove all cached query entries.
 	ClearQueryCache(ctx context.Context) error
+
+	// GetQueryCacheProperties returns the properties of the query cache.
+	// The result is a QueryCatcheProperties object.
+	GetQueryCacheProperties(ctx context.Context) (QueryCatcheProperties, error)
 }
 
 type QuerySubOptions struct {
@@ -475,4 +479,21 @@ type QueryCacheEntriesRespObject struct {
 	// Started is the time when the query has been started.
 	// Date and time at which the query result has been added to the cache.
 	Started *string `json:"started,omitempty"`
+}
+
+type QueryCatcheProperties struct {
+	// IncludesSystem indicates whether the query cache includes system collections.
+	IncludeSystem *bool `json:"includeSystem,omitempty"`
+	// MaxEntrySize is the maximum size of a single query cache entry in bytes.
+	MaxEntrySize *uint64 `json:"maxEntrySize,omitempty"`
+	// MaxResults is the maximum number of results that can be stored in the query cache.
+	MaxResults *uint16 `json:"maxResults,omitempty"`
+	// MaxResultsSize is the maximum size of the query cache in bytes.
+	MaxResultsSize *uint64 `json:"maxResultsSize,omitempty"`
+	// Mode is the query cache mode.
+	// The mode can be one of the following values:
+	// "on" - the query cache is enabled and will be used for all queries.
+	// "off" - the query cache is disabled and will not be used for any queries.
+	// "demand" - the query cache is enabled, but will only be used for queries that explicitly request it.
+	Mode *string `json:"mode,omitempty"`
 }

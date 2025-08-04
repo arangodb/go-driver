@@ -1196,3 +1196,25 @@ func Test_ClearQueryCache(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func Test_GetQueryCacheProperties(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		queryCatcheProperties, err := db.GetQueryCacheProperties(ctx)
+		require.NoError(t, err)
+		propsJson, err := utils.ToJSONString(queryCatcheProperties)
+		require.NoError(t, err)
+		t.Logf("Query Properties: %s", propsJson)
+		require.NotNil(t, queryCatcheProperties)
+		require.NotNil(t, queryCatcheProperties.IncludeSystem, "IncludeSystem should not be nil")
+		require.NotNil(t, queryCatcheProperties.MaxEntrySize, "MaxEntrySize should not be nil")
+		require.NotNil(t, queryCatcheProperties.MaxResults, "MaxResults should not be nil")
+		require.NotNil(t, queryCatcheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
+		require.NotNil(t, queryCatcheProperties.Mode, "Mode should not be nil")
+	})
+}
