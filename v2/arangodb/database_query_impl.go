@@ -291,3 +291,21 @@ func (d databaseQuery) ClearQueryPlanCache(ctx context.Context) error {
 		return response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (d databaseQuery) GetQueryEntriesCache(ctx context.Context) ([]QueryCacheEntriesRespObject, error) {
+	url := d.db.url("_api", "query-cache", "entries")
+
+	var response []QueryCacheEntriesRespObject
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, fmt.Errorf("API returned status %d", code)
+	}
+}

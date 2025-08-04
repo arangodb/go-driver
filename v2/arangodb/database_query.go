@@ -84,6 +84,10 @@ type DatabaseQuery interface {
 
 	// ClearQueryPlanCache clears the query plan cache.
 	ClearQueryPlanCache(ctx context.Context) error
+
+	// GetQueryEntriesCache returns a list of cached query entries.
+	// The result is a list of QueryCacheEntriesRespObject objects.
+	GetQueryEntriesCache(ctx context.Context) ([]QueryCacheEntriesRespObject, error)
 }
 
 type QuerySubOptions struct {
@@ -430,25 +434,41 @@ type OptimizerRules struct {
 	Name  string `json:"name,omitempty"`
 	Flags `json:"flags,omitempty"`
 }
-
-type QueryPlanCacheRespObject struct {
-	// Hash is the plan cache key.
-	Hash *string `json:"hash,omitempty"`
-	// Query is the AQL query string.
-	Query *string `json:"query,omitempty"`
-	// QueryHash is the hash of the AQL query string.
-	QueryHash *uint64 `json:"queryHash,omitempty"`
+type CacheRespObject struct {
 	// BindVars are the bind variables used in the query.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
-	// FullCount indicates whether the query result contains the full count of documents.
-	FullCount *bool `json:"fullCount,omitempty"`
 	// DataSources is a list of data sources used in the query.
 	DataSources *[]string `json:"dataSources,omitempty"`
+	// Hash is the plan cache key.
+	Hash *string `json:"hash,omitempty"`
+	// Hits is the number of times the cached plan has been utilized so far.
+	Hits *uint32 `json:"hits,omitempty"`
+	// Query is the AQL query string.
+	Query *string `json:"query,omitempty"`
+}
+
+type QueryPlanCacheRespObject struct {
+	CacheRespObject `json:",inline"`
+	// QueryHash is the hash of the AQL query string.
+	QueryHash *uint32 `json:"queryHash,omitempty"`
+	// FullCount indicates whether the query result contains the full count of documents.
+	FullCount *bool `json:"fullCount,omitempty"`
 	// Created is the time when the query plan has been added to the cache.
 	Created *string `json:"created,omitempty"`
-	// Hits is the number of times the cached plan has been utilized so far.
-	Hits *int `json:"hits,omitempty"`
 	// MemoryUsage is the memory usage of the cached plan in bytes.
 	// This is the amount of memory used by the cached plan on the server.
-	MemoryUsage *int `json:"memoryUsage,omitempty"`
+	MemoryUsage *uint64 `json:"memoryUsage,omitempty"`
+}
+
+type QueryCacheEntriesRespObject struct {
+	CacheRespObject `json:",inline"`
+	// Result is the number of documents in the query result.
+	Results *uint32 `json:"results,omitempty"`
+	// RunTime is the time it took to execute the query in seconds.
+	RunTime string `json:"runTime,omitempty"`
+	// Size is the size of the query result in bytes.
+	Size *uint64 `json:"size,omitempty"`
+	// Started is the time when the query has been started.
+	// Date and time at which the query result has been added to the cache.
+	Started *string `json:"started,omitempty"`
 }
