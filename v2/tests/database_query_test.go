@@ -1205,16 +1205,50 @@ func Test_GetQueryCacheProperties(t *testing.T) {
 		db, err := client.GetDatabase(ctx, "_system", nil)
 		require.NoError(t, err)
 
-		queryCatcheProperties, err := db.GetQueryCacheProperties(ctx)
+		queryCacheProperties, err := db.GetQueryCacheProperties(ctx)
 		require.NoError(t, err)
-		propsJson, err := utils.ToJSONString(queryCatcheProperties)
+		propsJson, err := utils.ToJSONString(queryCacheProperties)
 		require.NoError(t, err)
 		t.Logf("Query Properties: %s", propsJson)
-		require.NotNil(t, queryCatcheProperties)
-		require.NotNil(t, queryCatcheProperties.IncludeSystem, "IncludeSystem should not be nil")
-		require.NotNil(t, queryCatcheProperties.MaxEntrySize, "MaxEntrySize should not be nil")
-		require.NotNil(t, queryCatcheProperties.MaxResults, "MaxResults should not be nil")
-		require.NotNil(t, queryCatcheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
-		require.NotNil(t, queryCatcheProperties.Mode, "Mode should not be nil")
+		require.NotNil(t, queryCacheProperties)
+		require.NotNil(t, queryCacheProperties.IncludeSystem, "IncludeSystem should not be nil")
+		require.NotNil(t, queryCacheProperties.MaxEntrySize, "MaxEntrySize should not be nil")
+		require.NotNil(t, queryCacheProperties.MaxResults, "MaxResults should not be nil")
+		require.NotNil(t, queryCacheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
+		require.NotNil(t, queryCacheProperties.Mode, "Mode should not be nil")
+	})
+}
+
+func Test_SetQueryCacheProperties(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+		queryCacheProperties, err := db.GetQueryCacheProperties(ctx)
+		require.NoError(t, err)
+		propsJson, err := utils.ToJSONString(queryCacheProperties)
+		require.NoError(t, err)
+		t.Logf("Before Query Properties: %s", propsJson)
+		SetQueryCacheProperties, err := db.SetQueryCacheProperties(ctx, arangodb.QueryCacheProperties{
+			IncludeSystem: utils.NewType(true),
+			MaxResults:    utils.NewType(uint16(32)),
+		})
+		require.NoError(t, err)
+		SetQueryCachePropertiesJson, err := utils.ToJSONString(SetQueryCacheProperties)
+		require.NoError(t, err)
+		t.Logf("After Setting - Query Properties: %s", SetQueryCachePropertiesJson)
+		require.NotNil(t, SetQueryCacheProperties)
+		require.NotNil(t, SetQueryCacheProperties.IncludeSystem, "IncludeSystem should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.MaxEntrySize, "MaxEntrySize should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.MaxResults, "MaxResults should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.Mode, "Mode should not be nil")
+		AfterSetQueryCacheProperties, err := db.GetQueryCacheProperties(ctx)
+		require.NoError(t, err)
+		AfterSetQueryCachePropertiesJson, err := utils.ToJSONString(AfterSetQueryCacheProperties)
+		require.NoError(t, err)
+		t.Logf("After Query Properties: %s", AfterSetQueryCachePropertiesJson)
 	})
 }

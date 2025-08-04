@@ -330,23 +330,44 @@ func (d databaseQuery) ClearQueryCache(ctx context.Context) error {
 	}
 }
 
-func (d databaseQuery) GetQueryCacheProperties(ctx context.Context) (QueryCatcheProperties, error) {
+func (d databaseQuery) GetQueryCacheProperties(ctx context.Context) (QueryCacheProperties, error) {
 	url := d.db.url("_api", "query-cache", "properties")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
-		QueryCatcheProperties `json:",inline"`
+		QueryCacheProperties  `json:",inline"`
 	}
 
 	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
 	if err != nil {
-		return QueryCatcheProperties{}, err
+		return QueryCacheProperties{}, err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return response.QueryCatcheProperties, nil
+		return response.QueryCacheProperties, nil
 	default:
-		return QueryCatcheProperties{}, response.AsArangoErrorWithCode(code)
+		return QueryCacheProperties{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (d databaseQuery) SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error) {
+	url := d.db.url("_api", "query-cache", "properties")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		QueryCacheProperties  `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, d.db.connection(), url, &response, options, d.db.modifiers...)
+	if err != nil {
+		return QueryCacheProperties{}, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.QueryCacheProperties, nil
+	default:
+		return QueryCacheProperties{}, response.AsArangoErrorWithCode(code)
 	}
 }

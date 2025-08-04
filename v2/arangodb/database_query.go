@@ -94,8 +94,12 @@ type DatabaseQuery interface {
 	ClearQueryCache(ctx context.Context) error
 
 	// GetQueryCacheProperties returns the properties of the query cache.
-	// The result is a QueryCatcheProperties object.
-	GetQueryCacheProperties(ctx context.Context) (QueryCatcheProperties, error)
+	// The result is a QueryCacheProperties object.
+	GetQueryCacheProperties(ctx context.Context) (QueryCacheProperties, error)
+
+	// SetQueryCacheProperties sets the properties of the query cache.
+	// The properties are updated with the provided options.
+	SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error)
 }
 
 type QuerySubOptions struct {
@@ -442,6 +446,7 @@ type OptimizerRules struct {
 	Name  string `json:"name,omitempty"`
 	Flags `json:"flags,omitempty"`
 }
+
 type CacheRespObject struct {
 	// BindVars are the bind variables used in the query.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
@@ -481,7 +486,7 @@ type QueryCacheEntriesRespObject struct {
 	Started *string `json:"started,omitempty"`
 }
 
-type QueryCatcheProperties struct {
+type QueryCacheProperties struct {
 	// IncludesSystem indicates whether the query cache includes system collections.
 	IncludeSystem *bool `json:"includeSystem,omitempty"`
 	// MaxEntrySize is the maximum size of a single query cache entry in bytes.
