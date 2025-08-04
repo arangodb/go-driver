@@ -88,6 +88,10 @@ type DatabaseQuery interface {
 	// GetQueryEntriesCache returns a list of cached query entries.
 	// The result is a list of QueryCacheEntriesRespObject objects.
 	GetQueryEntriesCache(ctx context.Context) ([]QueryCacheEntriesRespObject, error)
+
+	// ClearQueryCache clears the query cache.
+	// This will remove all cached query entries.
+	ClearQueryCache(ctx context.Context) error
 }
 
 type QuerySubOptions struct {
