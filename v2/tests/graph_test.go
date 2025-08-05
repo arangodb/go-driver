@@ -74,9 +74,9 @@ func Test_GraphSimple(t *testing.T) {
 
 							prop, err := col.Properties(ctx)
 							require.NoError(t, err)
-							require.Equal(t, *g.NumberOfShards(), *prop.NumberOfShards)
-							require.Equal(t, g.ReplicationFactor(), int(*prop.ReplicationFactor))
-							require.Equal(t, *g.WriteConcern(), *prop.WriteConcern)
+							require.Equal(t, *g.NumberOfShards(), prop.NumberOfShards)
+							require.Equal(t, g.ReplicationFactor(), int(prop.ReplicationFactor))
+							require.Equal(t, *g.WriteConcern(), prop.WriteConcern)
 						}
 					})
 					require.NoError(t, g.Remove(ctx, nil))
@@ -170,8 +170,8 @@ func Test_GraphCreation(t *testing.T) {
 						require.NoError(t, err)
 
 						if c == colNonSat {
-							require.Equal(t, 2, int(*prop.ReplicationFactor))
-							require.Equal(t, 2, *prop.NumberOfShards)
+							require.Equal(t, 2, int(prop.ReplicationFactor))
+							require.Equal(t, 2, prop.NumberOfShards)
 							require.False(t, prop.IsSatellite())
 						} else {
 							require.True(t, prop.IsSatellite())

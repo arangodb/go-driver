@@ -70,15 +70,15 @@ func Test_CollectionShards(t *testing.T) {
 				assert.Equal(t, col.Name(), shards.Name)
 				assert.NotEmpty(t, shards.Status)
 				assert.Equal(t, arangodb.CollectionTypeDocument, shards.Type)
-				assert.Equal(t, false, *shards.IsSystem)
-				assert.NotEmpty(t, *shards.GloballyUniqueId)
-				assert.Equal(t, false, *shards.CacheEnabled)
-				assert.Equal(t, false, *shards.IsSmart)
+				assert.Equal(t, false, shards.IsSystem)
+				assert.NotEmpty(t, shards.GloballyUniqueId)
+				assert.Equal(t, false, shards.CacheEnabled)
+				assert.Equal(t, false, shards.IsSmart)
 				assert.Equal(t, arangodb.KeyGeneratorTraditional, shards.KeyOptions.Type)
-				assert.Equal(t, true, *shards.KeyOptions.AllowUserKeys)
-				assert.Equal(t, 2, *shards.NumberOfShards)
+				assert.Equal(t, true, shards.KeyOptions.AllowUserKeys)
+				assert.Equal(t, 2, shards.NumberOfShards)
 				assert.Equal(t, arangodb.ShardingStrategyHash, shards.ShardingStrategy)
-				assert.Equal(t, []string{"_key"}, *shards.ShardKeys)
+				assert.Equal(t, []string{"_key"}, shards.ShardKeys)
 				require.Len(t, shards.Shards, 2, "expected 2 shards")
 				var leaders []arangodb.ServerID
 				for _, dbServers := range shards.Shards {
@@ -86,9 +86,9 @@ func Test_CollectionShards(t *testing.T) {
 					leaders = append(leaders, dbServers[0])
 				}
 				assert.NotEqualf(t, leaders[0], leaders[1], "the leader shard can not be on the same server")
-				assert.Equal(t, rf, *shards.ReplicationFactor)
-				assert.Equal(t, false, *shards.WaitForSync)
-				assert.Equal(t, 1, *shards.WriteConcern)
+				assert.Equal(t, rf, shards.ReplicationFactor)
+				assert.Equal(t, false, shards.WaitForSync)
+				assert.Equal(t, 1, shards.WriteConcern)
 			})
 
 			version, err := client.Version(context.Background())
@@ -101,7 +101,7 @@ func Test_CollectionShards(t *testing.T) {
 				WithCollectionV2(t, db, &optionsSatellite, func(col arangodb.Collection) {
 					shards, err := col.Shards(context.Background(), true)
 					require.NoError(t, err)
-					assert.Equal(t, arangodb.ReplicationFactorSatellite, *shards.ReplicationFactor)
+					assert.Equal(t, arangodb.ReplicationFactorSatellite, shards.ReplicationFactor)
 				})
 			}
 		})
@@ -124,14 +124,13 @@ func Test_CollectionSetProperties(t *testing.T) {
 				ctx := context.Background()
 				props, err := col.Properties(ctx)
 				require.NoError(t, err)
-
-				// Dereference both sides for comparison
-				require.Equal(t, *createOpts.WaitForSync, *props.WaitForSync)
+				require.Equal(t, *createOpts.WaitForSync, props.WaitForSync)
+				// require.Equal(t, *createOpts.CacheEnabled, props.CacheEnabled)
 
 				t.Run("rf-check-before", func(t *testing.T) {
 					requireClusterMode(t)
-					require.Equal(t, *createOpts.ReplicationFactor, *props.ReplicationFactor)
-					require.Equal(t, *createOpts.NumberOfShards, *props.NumberOfShards)
+					require.Equal(t, *createOpts.ReplicationFactor, props.ReplicationFactor)
+					require.Equal(t, *createOpts.NumberOfShards, props.NumberOfShards)
 				})
 
 				newProps := arangodb.SetCollectionPropertiesOptionsV2{
@@ -141,22 +140,19 @@ func Test_CollectionSetProperties(t *testing.T) {
 					CacheEnabled:      utils.NewType(true),
 					Schema:            nil,
 				}
-
 				err = col.SetPropertiesV2(ctx, newProps)
 				require.NoError(t, err)
 
 				props, err = col.Properties(ctx)
 				require.NoError(t, err)
-
-				// Dereference both sides
-				require.Equal(t, *newProps.WaitForSync, *props.WaitForSync)
+				require.Equal(t, *newProps.WaitForSync, props.WaitForSync)
 				require.Equal(t, int64(0), props.JournalSize) // Default JournalSize is 0
-				require.Equal(t, *newProps.CacheEnabled, *props.CacheEnabled)
+				require.Equal(t, *newProps.CacheEnabled, props.CacheEnabled)
 
 				t.Run("rf-check-after", func(t *testing.T) {
 					requireClusterMode(t)
-					require.Equal(t, *newProps.ReplicationFactor, *props.ReplicationFactor)
-					require.Equal(t, *createOpts.NumberOfShards, *props.NumberOfShards)
+					require.Equal(t, *newProps.ReplicationFactor, props.ReplicationFactor)
+					require.Equal(t, *createOpts.NumberOfShards, props.NumberOfShards)
 				})
 			})
 		})
@@ -513,25 +509,13 @@ func Test_DatabaseCollectionTruncate(t *testing.T) {
 	})
 }
 
-func assertCollectionFigures(t *testing.T, col arangodb.Collection, stats arangodb.CollectionStatistics) {
+func assertCollectionFigures(t *testing.T, col arangodb.Collection, stats arangodb.CollectionFigures) {
 	assert.NotEmpty(t, stats.ID)
 	assert.Equal(t, col.Name(), stats.Name)
 	assert.NotEmpty(t, stats.Status)
 	assert.Equal(t, arangodb.CollectionTypeDocument, stats.Type)
-
-	// Safe nil checks before dereferencing
-	if stats.IsSystem != nil {
-		assert.Equal(t, false, *stats.IsSystem)
-	} else {
-		t.Log("IsSystem field is nil, skipping assertion")
-	}
-
-	if stats.GloballyUniqueId != nil {
-		assert.NotEmpty(t, *stats.GloballyUniqueId)
-	} else {
-		t.Log("GloballyUniqueId field is nil, skipping assertion")
-	}
-
+	assert.Equal(t, false, stats.IsSystem)
+	assert.NotEmpty(t, stats.GloballyUniqueId)
 	assert.NotEmpty(t, stats.Figures)
 }
 
@@ -558,21 +542,15 @@ func Test_CollectionStatistics(t *testing.T) {
 					assertCollectionFigures(t, col, stats)
 
 					// Safe nil checks before dereferencing
-					if stats.Figures.Alive.Count != nil {
-						assert.GreaterOrEqual(t, *stats.Figures.Alive.Count, int64(0))
-					}
-					if stats.Figures.Dead.Count != nil {
-						assert.GreaterOrEqual(t, *stats.Figures.Dead.Count, int64(0))
-					}
-					if stats.Figures.DataFiles.Count != nil {
-						assert.GreaterOrEqual(t, *stats.Figures.DataFiles.Count, int64(0))
-					}
-					if stats.Figures.Journals.FileSize != nil {
-						assert.GreaterOrEqual(t, *stats.Figures.Journals.FileSize, int64(0))
-					}
-					if stats.Figures.Revisions.Size != nil {
-						assert.GreaterOrEqual(t, *stats.Figures.Revisions.Size, int64(0))
-					}
+					assert.GreaterOrEqual(t, stats.Figures.Alive.Count, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.Dead.Count, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.DataFiles.Count, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.Journals.FileSize, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.Revisions.Size, int64(0))
 
 					t.Run("Statistics with details=false", func(t *testing.T) {
 						stats, err := col.Statistics(ctx, false)
@@ -809,7 +787,7 @@ func Test_CollectionCompact(t *testing.T) {
 
 						result, err := col.Compact(ctx)
 						require.NoError(t, err)
-						fmt.Printf("Compacted Collection: %s, ID: %s, Status: %d\n", result.Name, *result.ID, result.Status)
+						fmt.Printf("Compacted Collection: %s, ID: %s, Status: %d\n", result.Name, result.ID, result.Status)
 					} else {
 						t.Skip("Compaction is not supported in cluster mode")
 					}

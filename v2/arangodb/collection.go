@@ -52,7 +52,7 @@ type Collection interface {
 	Count(ctx context.Context) (int64, error)
 
 	// Statistics returns the number of documents and additional statistical information about the collection.
-	Statistics(ctx context.Context, details bool) (CollectionStatistics, error)
+	Statistics(ctx context.Context, details bool) (CollectionFigures, error)
 
 	// Revision fetches the revision ID of the collection.
 	// The revision ID is a server-generated string that clients can use to check whether data

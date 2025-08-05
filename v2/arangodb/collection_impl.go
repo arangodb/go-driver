@@ -216,12 +216,12 @@ func (c collection) Shards(ctx context.Context, details bool) (CollectionShards,
 	}
 }
 
-func (c collection) Statistics(ctx context.Context, details bool) (CollectionStatistics, error) {
+func (c collection) Statistics(ctx context.Context, details bool) (CollectionFigures, error) {
 	urlEndpoint := c.url("collection", "figures")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
-		CollectionStatistics  `json:",inline"`
+		CollectionFigures     `json:",inline"`
 	}
 
 	resp, err := connection.CallGet(
@@ -229,14 +229,14 @@ func (c collection) Statistics(ctx context.Context, details bool) (CollectionSta
 		c.withModifiers(connection.WithQuery("details", boolToString(details)))...,
 	)
 	if err != nil {
-		return CollectionStatistics{}, errors.WithStack(err)
+		return CollectionFigures{}, errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return response.CollectionStatistics, nil
+		return response.CollectionFigures, nil
 	default:
-		return CollectionStatistics{}, response.AsArangoErrorWithCode(code)
+		return CollectionFigures{}, response.AsArangoErrorWithCode(code)
 	}
 }
 

@@ -162,7 +162,7 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 
 							foundSmartJoin := false
 							for _, cl := range inv.Collections {
-								if cl.Parameters.Name == col.Name() && *cl.Parameters.SmartJoinAttribute == "smart" {
+								if cl.Parameters.Name == col.Name() && cl.Parameters.SmartJoinAttribute == "smart" {
 									foundSmartJoin = true
 								}
 							}
