@@ -787,7 +787,7 @@ func Test_CollectionCompact(t *testing.T) {
 
 						result, err := col.Compact(ctx)
 						require.NoError(t, err)
-						fmt.Printf("Compacted Collection: %s, ID: %s, Status: %d\n", result.Name, result.ID, result.Status)
+						t.Logf("Compacted Collection: %s, ID: %s, Status: %d\n", result.Name, result.ID, result.Status)
 					} else {
 						t.Skip("Compaction is not supported in cluster mode")
 					}

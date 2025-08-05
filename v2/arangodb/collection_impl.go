@@ -274,10 +274,10 @@ func (c collection) Checksum(ctx context.Context, withRevisions *bool, withData 
 
 	// Prepare query modifiers
 	var modifiers []connection.RequestModifier
-	if *withRevisions {
+	if withRevisions != nil && *withRevisions {
 		modifiers = append(modifiers, connection.WithQuery("withRevisions", boolToString(*withRevisions)))
 	}
-	if *withData {
+	if withData != nil && *withData {
 		modifiers = append(modifiers, connection.WithQuery("withData", boolToString(*withData)))
 	}
 
