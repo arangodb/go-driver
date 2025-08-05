@@ -371,3 +371,24 @@ func (d databaseQuery) SetQueryCacheProperties(ctx context.Context, options Quer
 		return QueryCacheProperties{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (d databaseQuery) CreateUserDefinedFunction(ctx context.Context, options UserDefinedFunctionObject) (bool, error) {
+	url := d.db.url("_api", "aqlfunction")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		IsNewlyCreated        bool `json:"isNewlyCreated,omitempty"`
+	}
+
+	resp, err := connection.CallPost(ctx, d.db.connection(), url, &response, options, d.db.modifiers...)
+	if err != nil {
+		return false, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK, http.StatusCreated:
+		return response.IsNewlyCreated, nil
+	default:
+		return false, response.AsArangoErrorWithCode(code)
+	}
+}

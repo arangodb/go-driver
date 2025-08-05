@@ -1252,3 +1252,23 @@ func Test_SetQueryCacheProperties(t *testing.T) {
 		t.Logf("After Query Properties: %s", AfterSetQueryCachePropertiesJson)
 	})
 }
+
+func Test_CreateUserDefinedFunction(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+		createUserDefinedFunctions, err := db.CreateUserDefinedFunction(ctx, arangodb.UserDefinedFunctionObject{
+			Name:            "myfunctions::temperature::celsiustofahrenheit",
+			Code:            "function (celsius) { return celsius * 9 / 5 + 32; }",
+			IsDeterministic: true,
+		})
+		require.NoError(t, err)
+		createUserDefinedFunctionsJson, err := utils.ToJSONString(createUserDefinedFunctions)
+		require.NoError(t, err)
+		t.Logf("Create User Defined Functions: %s", createUserDefinedFunctionsJson)
+		require.NotNil(t, createUserDefinedFunctions)
+	})
+}

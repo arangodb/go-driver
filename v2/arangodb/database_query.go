@@ -100,6 +100,13 @@ type DatabaseQuery interface {
 	// SetQueryCacheProperties sets the properties of the query cache.
 	// The properties are updated with the provided options.
 	SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error)
+
+	// CreateUserDefinedFunction creates a user-defined function in the database.
+	// The function is created with the provided options.
+	// The function is created in the system collection `_aqlfunctions`.
+	// The function is created with the provided code and name.
+	// If the function already exists, it will be updated with the new code.
+	CreateUserDefinedFunction(ctx context.Context, options UserDefinedFunctionObject) (bool, error)
 }
 
 type QuerySubOptions struct {
@@ -501,4 +508,13 @@ type QueryCacheProperties struct {
 	// "off" - the query cache is disabled and will not be used for any queries.
 	// "demand" - the query cache is enabled, but will only be used for queries that explicitly request it.
 	Mode *string `json:"mode,omitempty"`
+}
+
+type UserDefinedFunctionObject struct {
+	// Code is a string representation of the function body.
+	Code string `json:"code"`
+	// Name is the fully qualified name of the user functions.
+	Name string `json:"name"`
+	// IsDeterministic indicates whether the user-defined function is deterministic.
+	IsDeterministic bool `json:"isDeterministic"`
 }
