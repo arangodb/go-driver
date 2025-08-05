@@ -28,6 +28,7 @@ import (
 	"path"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/arangodb/go-driver/v2/connection"
 )
@@ -390,5 +391,50 @@ func (d databaseQuery) CreateUserDefinedFunction(ctx context.Context, options Us
 		return response.IsNewlyCreated, nil
 	default:
 		return false, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (d databaseQuery) DeleteUserDefinedFunction(ctx context.Context, name string, group bool) (*int, error) {
+	url := d.db.url("_api", "aqlfunction", name)
+
+	// Add query param ?group=true or ?group=false
+	url = fmt.Sprintf("%s?group=%t", url, group)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		DeletedCount          *int `json:"deletedCount,omitempty"`
+	}
+
+	resp, err := connection.CallDelete(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return utils.NewType(0), err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK, http.StatusCreated:
+		return response.DeletedCount, nil
+	default:
+		return utils.NewType(0), response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (d databaseQuery) GetUserDefinedFunctions(ctx context.Context) ([]UserDefinedFunctionObject, error) {
+	url := d.db.url("_api", "aqlfunction")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                []UserDefinedFunctionObject `json:"result"`
+	}
+
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }

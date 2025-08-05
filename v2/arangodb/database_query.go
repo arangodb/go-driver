@@ -107,6 +107,17 @@ type DatabaseQuery interface {
 	// The function is created with the provided code and name.
 	// If the function already exists, it will be updated with the new code.
 	CreateUserDefinedFunction(ctx context.Context, options UserDefinedFunctionObject) (bool, error)
+
+	// DeleteUserDefinedFunction removes a user-defined AQL function from the current database.
+	// If group is true, all functions with the given name as a namespace prefix will be deleted.
+	// If group is false, only the function with the fully qualified name will be removed.
+	// It returns the number of functions deleted.
+	DeleteUserDefinedFunction(ctx context.Context, name string, group bool) (*int, error)
+
+	// GetUserDefinedFunctions retrieves all user-defined AQL functions registered in the current database.
+	// It returns a list of UserDefinedFunctionObject, each containing the function's name, code, and isDeterministic.
+	// The returned list may be empty array if no user-defined functions are registered.
+	GetUserDefinedFunctions(ctx context.Context) ([]UserDefinedFunctionObject, error)
 }
 
 type QuerySubOptions struct {
@@ -511,10 +522,12 @@ type QueryCacheProperties struct {
 }
 
 type UserDefinedFunctionObject struct {
-	// Code is a string representation of the function body.
-	Code string `json:"code"`
-	// Name is the fully qualified name of the user functions.
-	Name string `json:"name"`
-	// IsDeterministic indicates whether the user-defined function is deterministic.
-	IsDeterministic bool `json:"isDeterministic"`
+	// Code is the JavaScript function body as a string.
+	Code *string `json:"code"`
+
+	// Name is the fully qualified name of the user-defined function, including namespace.
+	Name *string `json:"name"`
+
+	// IsDeterministic indicates whether the function always produces the same output for identical input.
+	IsDeterministic *bool `json:"isDeterministic"`
 }

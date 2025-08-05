@@ -1253,22 +1253,47 @@ func Test_SetQueryCacheProperties(t *testing.T) {
 	})
 }
 
-func Test_CreateUserDefinedFunction(t *testing.T) {
+func Test_UserDefinedFunctions(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		ctx := context.Background()
 
-		// Use _system or test DB
 		db, err := client.GetDatabase(ctx, "_system", nil)
 		require.NoError(t, err)
-		createUserDefinedFunctions, err := db.CreateUserDefinedFunction(ctx, arangodb.UserDefinedFunctionObject{
-			Name:            "myfunctions::temperature::celsiustofahrenheit",
-			Code:            "function (celsius) { return celsius * 9 / 5 + 32; }",
-			IsDeterministic: true,
+
+		// Define UDF details
+		namespace := "myfunctions::temperature"
+		functionName := namespace + "::celsiustofahrenheit"
+		code := "function (celsius) { return celsius * 9 / 5 + 32; }"
+
+		// Create UDF
+		createdFn, err := db.CreateUserDefinedFunction(ctx, arangodb.UserDefinedFunctionObject{
+			Name:            &functionName,
+			Code:            &code,
+			IsDeterministic: utils.NewType(true),
 		})
 		require.NoError(t, err)
-		createUserDefinedFunctionsJson, err := utils.ToJSONString(createUserDefinedFunctions)
+		require.NotNil(t, createdFn)
+
+		// Get all UDFs
+		fns, err := db.GetUserDefinedFunctions(ctx)
 		require.NoError(t, err)
-		t.Logf("Create User Defined Functions: %s", createUserDefinedFunctionsJson)
-		require.NotNil(t, createUserDefinedFunctions)
+		require.NotNil(t, fns)
+
+		// Optionally validate that our created function exists in the list
+		var found bool
+		for _, fn := range fns {
+			if fn.Name != nil && *fn.Name == functionName {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "Created function not found in list of user-defined functions")
+
+		// Delete all functions in the namespace
+		deletedCount, err := db.DeleteUserDefinedFunction(ctx, namespace, true)
+		require.NoError(t, err)
+		require.NotNil(t, deletedCount)
+		t.Logf("Deleted user-defined function(s): %d", *deletedCount)
+		require.Greater(t, *deletedCount, 0, "Expected at least one function to be deleted")
 	})
 }
