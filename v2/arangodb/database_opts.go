@@ -63,3 +63,7 @@ func (t EngineType) String() string {
 type EngineInfo struct {
 	Type EngineType `json:"name"`
 }
+
+type KeyGeneratorsResponse struct {
+	KeyGenerators []string `json:"keyGenerators"`
+}

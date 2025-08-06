@@ -38,6 +38,9 @@ type Database interface {
 	// TransactionJS performs a javascript transaction. The result of the transaction function is returned.
 	TransactionJS(ctx context.Context, options TransactionJSOptions) (interface{}, error)
 
+	// Returns the available key generators for collections.
+	KeyGenerators(ctx context.Context) (KeyGeneratorsResponse, error)
+
 	DatabaseCollection
 	DatabaseTransaction
 	DatabaseQuery
