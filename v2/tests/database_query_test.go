@@ -304,19 +304,6 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, queries)
 		t.Logf("Current running queries (all=false): %d\n", len(queries))
-
-		// // Test with all=true parameter
-		// t.Run("Test with all=true parameter", func(t *testing.T) {
-		// 	allQueries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(true))
-		// 	require.NoError(t, err)
-		// 	require.NotNil(t, allQueries)
-		// 	t.Logf("Current running queries (all=true): %d\n", len(allQueries))
-
-		// 	// The number with all=true should be >= the number with all=false
-		// 	require.GreaterOrEqual(t, len(allQueries), len(queries),
-		// 		"all=true should return >= queries than all=false")
-		// })
-
 		t.Run("Test that queries are not empty", func(t *testing.T) {
 
 			// Create a context we can cancel
