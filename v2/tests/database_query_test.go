@@ -257,10 +257,6 @@ func Test_UpdateQueryProperties(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			res, err := db.GetQueryProperties(context.Background())
 			require.NoError(t, err)
-			jsonResp, err := utils.ToJSONString(res)
-			require.NoError(t, err)
-			t.Logf("Query Properties: %s", jsonResp)
-			// Check that the response contains expected fields
 			require.NotNil(t, res)
 			options := arangodb.QueryProperties{
 				Enabled:              utils.NewType(true),
@@ -272,10 +268,6 @@ func Test_UpdateQueryProperties(t *testing.T) {
 			}
 			updateResp, err := db.UpdateQueryProperties(context.Background(), options)
 			require.NoError(t, err)
-			jsonUpdateResp, err := utils.ToJSONString(updateResp)
-			require.NoError(t, err)
-			t.Logf("Updated Query Properties: %s", jsonUpdateResp)
-			// Check that the response contains expected fields
 			require.NotNil(t, updateResp)
 			require.Equal(t, *options.Enabled, *updateResp.Enabled)
 			require.Equal(t, *options.TrackSlowQueries, *updateResp.TrackSlowQueries)
@@ -285,10 +277,6 @@ func Test_UpdateQueryProperties(t *testing.T) {
 			require.Equal(t, *options.MaxQueryStringLength, *updateResp.MaxQueryStringLength)
 			res, err = db.GetQueryProperties(context.Background())
 			require.NoError(t, err)
-			jsonResp, err = utils.ToJSONString(res)
-			require.NoError(t, err)
-			t.Logf("Query Properties 288: %s", jsonResp)
-			// Check that the response contains expected fields
 			require.NotNil(t, res)
 		})
 	})
@@ -438,11 +426,12 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 		// Set a low threshold to ensure we capture slow queries
 		// and limit the number of slow queries to 1 for testing
 		options := arangodb.QueryProperties{
-			Enabled:            utils.NewType(true),
-			TrackSlowQueries:   utils.NewType(true),
-			TrackBindVars:      utils.NewType(true), // optional but useful for debugging
-			MaxSlowQueries:     utils.NewType(1),
-			SlowQueryThreshold: utils.NewType(0.0001),
+			Enabled:              utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			TrackBindVars:        utils.NewType(true), // optional but useful for debugging
+			MaxSlowQueries:       utils.NewType(1),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxQueryStringLength: utils.NewType(3096),
 		}
 		// Update the query properties
 		_, err = db.UpdateQueryProperties(ctx, options)
@@ -605,10 +594,12 @@ func Test_GetQueryPlanCache(t *testing.T) {
 
 		// Enable query tracking AND plan caching
 		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
-			Enabled:            utils.NewType(true),
-			TrackBindVars:      utils.NewType(true),
-			TrackSlowQueries:   utils.NewType(true),
-			SlowQueryThreshold: utils.NewType(0.0001),
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
 		})
 		require.NoError(t, err)
 
@@ -773,10 +764,12 @@ func Test_ClearQueryPlanCache(t *testing.T) {
 
 		// Enable query tracking AND plan caching
 		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
-			Enabled:            utils.NewType(true),
-			TrackBindVars:      utils.NewType(true),
-			TrackSlowQueries:   utils.NewType(true),
-			SlowQueryThreshold: utils.NewType(0.0001),
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
 		})
 		require.NoError(t, err)
 
@@ -906,10 +899,12 @@ func Test_GetQueryEntriesCache(t *testing.T) {
 
 		// Enable query tracking AND plan caching
 		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
-			Enabled:            utils.NewType(true),
-			TrackBindVars:      utils.NewType(true),
-			TrackSlowQueries:   utils.NewType(true),
-			SlowQueryThreshold: utils.NewType(0.0001),
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
 		})
 		require.NoError(t, err)
 
@@ -1074,10 +1069,12 @@ func Test_ClearQueryCache(t *testing.T) {
 
 		// Enable query tracking AND plan caching
 		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
-			Enabled:            utils.NewType(true),
-			TrackBindVars:      utils.NewType(true),
-			TrackSlowQueries:   utils.NewType(true),
-			SlowQueryThreshold: utils.NewType(0.0001),
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
 		})
 		require.NoError(t, err)
 
@@ -1290,7 +1287,7 @@ func Test_UserDefinedFunctions(t *testing.T) {
 		require.True(t, found, "Created function not found in list of user-defined functions")
 
 		// Delete all functions in the namespace
-		deletedCount, err := db.DeleteUserDefinedFunction(ctx, namespace, true)
+		deletedCount, err := db.DeleteUserDefinedFunction(ctx, &namespace, utils.NewType(true))
 		require.NoError(t, err)
 		require.NotNil(t, deletedCount)
 		t.Logf("Deleted user-defined function(s): %d", *deletedCount)

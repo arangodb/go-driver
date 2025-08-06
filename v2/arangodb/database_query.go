@@ -112,7 +112,7 @@ type DatabaseQuery interface {
 	// If group is true, all functions with the given name as a namespace prefix will be deleted.
 	// If group is false, only the function with the fully qualified name will be removed.
 	// It returns the number of functions deleted.
-	DeleteUserDefinedFunction(ctx context.Context, name string, group bool) (*int, error)
+	DeleteUserDefinedFunction(ctx context.Context, name *string, group *bool) (*int, error)
 
 	// GetUserDefinedFunctions retrieves all user-defined AQL functions registered in the current database.
 	// It returns a list of UserDefinedFunctionObject, each containing the function's name, code, and isDeterministic.

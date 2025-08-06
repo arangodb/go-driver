@@ -158,8 +158,35 @@ func (d databaseQuery) GetQueryProperties(ctx context.Context) (QueryProperties,
 	}
 }
 
+func validateQueryPropertiesFields(options QueryProperties) error {
+	if options.Enabled == nil {
+		return RequiredFieldError("enabled")
+	}
+	if options.TrackSlowQueries == nil {
+		return RequiredFieldError("trackSlowQueries")
+	}
+	if options.TrackBindVars == nil {
+		return RequiredFieldError("trackBindVars")
+	}
+	if options.MaxSlowQueries == nil {
+		return RequiredFieldError("maxSlowQueries")
+	}
+	if options.SlowQueryThreshold == nil {
+		return RequiredFieldError("slowQueryThreshold")
+	}
+	if options.MaxQueryStringLength == nil {
+		return RequiredFieldError("maxQueryStringLength")
+	}
+	return nil
+}
+
 func (d databaseQuery) UpdateQueryProperties(ctx context.Context, options QueryProperties) (QueryProperties, error) {
 	url := d.db.url("_api", "query", "properties")
+
+	// Validate all fields are set
+	if err := validateQueryPropertiesFields(options); err != nil {
+		return QueryProperties{}, err
+	}
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
@@ -352,9 +379,22 @@ func (d databaseQuery) GetQueryCacheProperties(ctx context.Context) (QueryCacheP
 	}
 }
 
+func validateQueryCachePropertiesFields(options QueryCacheProperties) error {
+	if options.Mode != nil {
+		validModes := map[string]bool{"on": true, "off": true, "demand": true}
+		if !validModes[*options.Mode] {
+			return fmt.Errorf("invalid mode: %s. Valid values are 'on', 'off', or 'demand'", *options.Mode)
+		}
+	}
+	return nil
+}
+
 func (d databaseQuery) SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error) {
 	url := d.db.url("_api", "query-cache", "properties")
-
+	// Validate all fields are set
+	if err := validateQueryCachePropertiesFields(options); err != nil {
+		return QueryCacheProperties{}, err
+	}
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		QueryCacheProperties  `json:",inline"`
@@ -373,9 +413,26 @@ func (d databaseQuery) SetQueryCacheProperties(ctx context.Context, options Quer
 	}
 }
 
+func validateUserDefinedFunctionFields(options UserDefinedFunctionObject) error {
+	if options.Code == nil {
+		return RequiredFieldError("code")
+	}
+	if options.IsDeterministic == nil {
+		return RequiredFieldError("isDeterministic")
+	}
+	if options.Name == nil {
+		return RequiredFieldError("name")
+	}
+	return nil
+
+}
+
 func (d databaseQuery) CreateUserDefinedFunction(ctx context.Context, options UserDefinedFunctionObject) (bool, error) {
 	url := d.db.url("_api", "aqlfunction")
-
+	// Validate all fields are set
+	if err := validateUserDefinedFunctionFields(options); err != nil {
+		return false, err
+	}
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		IsNewlyCreated        bool `json:"isNewlyCreated,omitempty"`
@@ -394,11 +451,19 @@ func (d databaseQuery) CreateUserDefinedFunction(ctx context.Context, options Us
 	}
 }
 
-func (d databaseQuery) DeleteUserDefinedFunction(ctx context.Context, name string, group bool) (*int, error) {
-	url := d.db.url("_api", "aqlfunction", name)
+func (d databaseQuery) DeleteUserDefinedFunction(ctx context.Context, name *string, group *bool) (*int, error) {
+	// Validate 'name' is required
+	if name == nil || *name == "" {
+		return nil, RequiredFieldError("name") // You must return the error
+	}
 
-	// Add query param ?group=true or ?group=false
-	url = fmt.Sprintf("%s?group=%t", url, group)
+	// Construct URL with name
+	url := d.db.url("_api", "aqlfunction", *name)
+
+	// Append optional group query parameter
+	if group != nil {
+		url = fmt.Sprintf("%s?group=%t", url, *group)
+	}
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
