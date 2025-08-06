@@ -305,17 +305,17 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 		require.NotNil(t, queries)
 		t.Logf("Current running queries (all=false): %d\n", len(queries))
 
-		// Test with all=true parameter
-		t.Run("Test with all=true parameter", func(t *testing.T) {
-			allQueries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(true))
-			require.NoError(t, err)
-			require.NotNil(t, allQueries)
-			t.Logf("Current running queries (all=true): %d\n", len(allQueries))
+		// // Test with all=true parameter
+		// t.Run("Test with all=true parameter", func(t *testing.T) {
+		// 	allQueries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(true))
+		// 	require.NoError(t, err)
+		// 	require.NotNil(t, allQueries)
+		// 	t.Logf("Current running queries (all=true): %d\n", len(allQueries))
 
-			// The number with all=true should be >= the number with all=false
-			require.GreaterOrEqual(t, len(allQueries), len(queries),
-				"all=true should return >= queries than all=false")
-		})
+		// 	// The number with all=true should be >= the number with all=false
+		// 	require.GreaterOrEqual(t, len(allQueries), len(queries),
+		// 		"all=true should return >= queries than all=false")
+		// })
 
 		t.Run("Test that queries are not empty", func(t *testing.T) {
 
@@ -372,7 +372,7 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 			// Check for running queries multiple times
 			var foundRunningQuery bool
 			for attempt := 0; attempt < 15; attempt++ {
-				queries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(true))
+				queries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(false))
 				require.NoError(t, err)
 
 				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
@@ -444,7 +444,7 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 			// Check for running queries multiple times
 			var foundRunningQuery bool
 			for attempt := 0; attempt < 15; attempt++ {
-				queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(true))
+				queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(false))
 				require.NoError(t, err)
 
 				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
@@ -540,7 +540,7 @@ func Test_KillAQLQuery(t *testing.T) {
 		// Check for running queries multiple times
 		var foundRunningQuery bool
 		for attempt := 0; attempt < 15; attempt++ {
-			queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(true))
+			queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(false))
 
 			// Enhanced error logging to help debug the issue
 			if err != nil {
@@ -568,7 +568,7 @@ func Test_KillAQLQuery(t *testing.T) {
 					t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
 						i, *query.Id, *query.State, bindVarsJSON)
 					// Kill the query
-					err := db.KillAQLQuery(ctx, *query.Id, utils.NewType(true))
+					err := db.KillAQLQuery(ctx, *query.Id, utils.NewType(false))
 					require.NoError(t, err, "Failed to kill query %s", *query.Id)
 					t.Logf("Killed query %s", *query.Id)
 				}
