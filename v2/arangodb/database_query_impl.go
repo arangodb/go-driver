@@ -211,19 +211,20 @@ func (d databaseQuery) listAQLQueries(ctx context.Context, endpoint string, all 
 		url += "?all=true"
 	}
 
-	var response []RunningAQLQuery
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &response, d.db.modifiers...)
+	var result []RunningAQLQuery
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &result, d.db.modifiers...)
 	if err != nil {
 		return nil, err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return response, nil
+		return result, nil
 	default:
-		return nil, fmt.Errorf("API returned status %d", code)
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
+
 func (d databaseQuery) ListOfRunningAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error) {
 	return d.listAQLQueries(ctx, "current", all)
 }
