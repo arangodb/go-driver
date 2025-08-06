@@ -245,7 +245,9 @@ func (d databaseQuery) listAQLQueries(ctx context.Context, endpoint string, all 
 
 		// If both fail, return the unmarshal error
 		return nil, fmt.Errorf("cannot unmarshal response into []RunningAQLQuery or object with result field: %s", string(rawResult))
-
+	case http.StatusForbidden:
+		// 🔍 Add custom 403 error message here
+		return nil, fmt.Errorf("403 Forbidden: likely insufficient permissions to access /_api/query/%s", endpoint)
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}

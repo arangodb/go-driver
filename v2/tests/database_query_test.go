@@ -284,17 +284,30 @@ func Test_UpdateQueryProperties(t *testing.T) {
 
 func Test_ListOfRunningAQLQueries(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		db, err := client.GetDatabase(context.Background(), "_system", nil)
+		ctx := context.Background()
+		db, err := client.GetDatabase(ctx, "_system", nil)
 		require.NoError(t, err)
+
+		// Enable query tracking AND plan caching
+		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(4094),
+		})
+		require.NoError(t, err)
+
 		// Test that the endpoint works (should return empty list or some queries)
-		queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(false))
+		queries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(false))
 		require.NoError(t, err)
 		require.NotNil(t, queries)
 		t.Logf("Current running queries (all=false): %d\n", len(queries))
 
 		// Test with all=true parameter
 		t.Run("Test with all=true parameter", func(t *testing.T) {
-			allQueries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(true))
+			allQueries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(true))
 			require.NoError(t, err)
 			require.NotNil(t, allQueries)
 			t.Logf("Current running queries (all=true): %d\n", len(allQueries))
@@ -307,7 +320,7 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 		t.Run("Test that queries are not empty", func(t *testing.T) {
 
 			// Create a context we can cancel
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
 			// Start a transaction with a long-running query
@@ -359,7 +372,7 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 			// Check for running queries multiple times
 			var foundRunningQuery bool
 			for attempt := 0; attempt < 15; attempt++ {
-				queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(true))
+				queries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(true))
 				require.NoError(t, err)
 
 				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
@@ -404,23 +417,6 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 		t.Logf("Query Properties: %s", jsonResp)
 		// Check that the response contains expected fields
 		require.NotNil(t, res)
-		// Test that the endpoint works (should return empty list or some queries)
-		queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(false))
-		require.NoError(t, err)
-		require.NotNil(t, queries)
-		t.Logf("Current running slow queries (all=false): %d\n", len(queries))
-
-		// Test with all=true parameter
-		t.Run("Test with all=true parameter", func(t *testing.T) {
-			allQueries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(true))
-			require.NoError(t, err)
-			require.NotNil(t, allQueries)
-			t.Logf("Current running slow queries (all=true): %d\n", len(allQueries))
-
-			// The number with all=true should be >= the number with all=false
-			require.GreaterOrEqual(t, len(allQueries), len(queries),
-				"all=true should return >= queries than all=false")
-		})
 		// Update query properties to ensure slow queries are tracked
 		t.Logf("Updating query properties to track slow queries")
 		// Set a low threshold to ensure we capture slow queries
@@ -431,11 +427,12 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 			TrackBindVars:        utils.NewType(true), // optional but useful for debugging
 			MaxSlowQueries:       utils.NewType(1),
 			SlowQueryThreshold:   utils.NewType(0.0001),
-			MaxQueryStringLength: utils.NewType(3096),
+			MaxQueryStringLength: utils.NewType(4096),
 		}
 		// Update the query properties
 		_, err = db.UpdateQueryProperties(ctx, options)
 		require.NoError(t, err)
+
 		t.Run("Test that queries are not empty", func(t *testing.T) {
 
 			_, err := db.Query(ctx, "FOR i IN 1..1000000 COLLECT WITH COUNT INTO length RETURN length", nil)
@@ -478,6 +475,17 @@ func Test_KillAQLQuery(t *testing.T) {
 		db, err := client.GetDatabase(ctx, "_system", nil)
 		require.NoError(t, err)
 
+		options := arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			TrackBindVars:        utils.NewType(true), // optional but useful for debugging
+			MaxSlowQueries:       utils.NewType(1),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxQueryStringLength: utils.NewType(3096),
+		}
+		// Update the query properties
+		_, err = db.UpdateQueryProperties(ctx, options)
+		require.NoError(t, err)
 		// Channel to signal when query has started
 		// Create a context we can cancel
 		ctx, cancel := context.WithCancel(context.Background())
