@@ -508,3 +508,291 @@ func Test_DatabaseCollectionTruncate(t *testing.T) {
 		})
 	})
 }
+
+func assertCollectionFigures(t *testing.T, col arangodb.Collection, stats arangodb.CollectionFigures) {
+	assert.NotEmpty(t, stats.ID)
+	assert.Equal(t, col.Name(), stats.Name)
+	assert.NotEmpty(t, stats.Status)
+	assert.Equal(t, arangodb.CollectionTypeDocument, stats.Type)
+	assert.Equal(t, false, stats.IsSystem)
+	assert.NotEmpty(t, stats.GloballyUniqueId)
+	assert.NotEmpty(t, stats.Figures)
+}
+
+func Test_CollectionStatistics(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+
+					for _, doc := range docs {
+						_, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+					}
+					_, err := col.DeleteDocument(ctx, "doc2")
+					require.NoError(t, err)
+
+					stats, err := col.Statistics(ctx, true)
+					require.NoError(t, err)
+					assertCollectionFigures(t, col, stats)
+
+					// Safe nil checks before dereferencing
+					assert.GreaterOrEqual(t, stats.Figures.Alive.Count, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.Dead.Count, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.DataFiles.Count, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.Journals.FileSize, int64(0))
+
+					assert.GreaterOrEqual(t, stats.Figures.Revisions.Size, int64(0))
+
+					t.Run("Statistics with details=false", func(t *testing.T) {
+						stats, err := col.Statistics(ctx, false)
+						require.NoError(t, err)
+						assertCollectionFigures(t, col, stats)
+					})
+				})
+			})
+		})
+	})
+}
+
+func Test_CollectionRevision(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					// Get initial revision
+					initialRev, err := col.Revision(ctx)
+					require.NoError(t, err)
+					require.NotEmpty(t, initialRev.Revision)
+
+					// Create documents
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+					for _, doc := range docs {
+						_, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+					}
+
+					// Delete a document
+					_, err = col.DeleteDocument(ctx, "doc2")
+					require.NoError(t, err)
+
+					// Get final revision
+					finalRev, err := col.Revision(ctx)
+					require.NoError(t, err)
+
+					// Ensure finalRev is not nil and can be marshaled
+					require.NotEmpty(t, finalRev.Revision)
+					// Ensure revision changed
+					require.NotEqual(t, initialRev.Revision, finalRev.Revision)
+				})
+			})
+		})
+	})
+}
+
+func Test_CollectionChecksum(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					trueValue := true
+					falseValue := false
+					stats, err := col.Checksum(ctx, &falseValue, &falseValue)
+					require.NoError(t, err)
+					require.NotEmpty(t, stats.Revision)
+					require.NotEmpty(t, stats.CollectionInfo.ID)
+					require.Equal(t, col.Name(), stats.CollectionInfo.Name)
+					require.NotEmpty(t, stats.CollectionInfo.Status)
+					require.Equal(t, arangodb.CollectionTypeDocument, stats.CollectionInfo.Type)
+					require.NotEmpty(t, stats.CollectionInfo.GloballyUniqueId)
+					t.Run("Checksum with withRevisions=false and withData=true", func(t *testing.T) {
+						stats, err := col.Checksum(ctx, &falseValue, &trueValue)
+						require.NoError(t, err)
+						require.NotEmpty(t, stats.Revision)
+					})
+
+					t.Run("Checksum with withRevisions=true and withData=true", func(t *testing.T) {
+						stats, err := col.Checksum(ctx, &trueValue, &trueValue)
+						require.NoError(t, err)
+						require.NotEmpty(t, stats.Revision)
+					})
+				})
+			})
+		})
+	})
+}
+
+func Test_CollectionResponsibleShard(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					role, err := client.ServerRole(ctx)
+					require.NoError(t, err)
+
+					if role != arangodb.ServerRoleCoordinator {
+						t.Skipf("Skipping test: ResponsibleShard is only supported on Coordinator, got role %s", role)
+					}
+
+					// Create some documents first
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+					for _, doc := range docs {
+						_, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+					}
+
+					// Check ResponsibleShard for a document key (does not need to exist)
+					stats, err := col.ResponsibleShard(ctx, map[string]interface{}{
+						"_key": "doc10",
+					})
+					require.NoError(t, err)
+					require.NotEmpty(t, stats, "Responsible shard for doc10 should not be empty")
+
+					// Check ResponsibleShard for an existing document
+					stats, err = col.ResponsibleShard(ctx, map[string]interface{}{
+						"_key": "doc1",
+					})
+					require.NoError(t, err)
+					require.NotEmpty(t, stats, "Responsible shard for doc1 should not be empty")
+
+					// Check ResponsibleShard for a non-existing document
+					stats, err = col.ResponsibleShard(ctx, map[string]interface{}{
+						"_key": "non-existing-doc",
+					})
+					require.NoError(t, err)
+					require.NotEmpty(t, stats, "Responsible shard for non-existing doc should not be empty")
+				})
+			})
+		})
+	})
+}
+
+func Test_CollectionLoadIndexesIntoMemory(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			graph := sampleGraphWithEdges(db)
+
+			//Create the graph in the database
+			createdGraph, err := db.CreateGraph(context.Background(), graph.Name, graph, nil)
+			require.NoError(t, err)
+			require.NotNil(t, createdGraph)
+
+			// Now access the edge collection from the created graph
+			col, err := db.GetCollection(context.Background(), graph.EdgeDefinitions[0].Collection, nil)
+			require.NoError(t, err)
+
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// Load indexes into memory
+				loaded, err := col.LoadIndexesIntoMemory(ctx)
+				require.NoError(t, err)
+				require.True(t, loaded, "Expected edge index to be loaded")
+			})
+		})
+	})
+}
+func Test_CollectionRename(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			role, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+
+			if role != arangodb.ServerRoleSingle {
+				t.Skip("Rename collection is not supported in cluster mode")
+			}
+
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+					newName := "test-renamed-collection"
+					info, err := col.Rename(ctx, arangodb.RenameCollectionRequest{
+						Name: newName,
+					})
+					require.NoError(t, err)
+					require.Equal(t, newName, info.Name)
+				})
+			})
+		})
+	})
+}
+
+func Test_CollectionRecalculateCount(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					// Create documents
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+					for _, doc := range docs {
+						_, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+					}
+					colCount, err := col.Count(ctx)
+					require.NoError(t, err)
+					require.Equal(t, int64(len(docs)), colCount)
+					role, err := client.ServerRole(ctx)
+					require.NoError(t, err)
+
+					if role == arangodb.ServerRoleSingle {
+						result, colRecalCount, err := col.RecalculateCount(ctx)
+						require.NoError(t, err)
+						require.True(t, result, "Recalculate count should return true")
+						require.Greater(t, *colRecalCount, int64(0), "Recalculated count should be greater than 0")
+					} else {
+						result, _, err := col.RecalculateCount(ctx)
+						require.NoError(t, err)
+						require.True(t, result, "Recalculate count should return true")
+					}
+				})
+			})
+		})
+	})
+}
+
+func Test_CollectionCompact(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					role, err := client.ServerRole(ctx)
+					require.NoError(t, err)
+
+					if role == arangodb.ServerRoleSingle {
+						// Create dummy data
+						for i := 0; i < 10; i++ {
+							_, err := col.CreateDocument(ctx, map[string]interface{}{
+								"_key": fmt.Sprintf("key%d", i),
+								"val":  i,
+							})
+							require.NoError(t, err)
+						}
+
+						result, err := col.Compact(ctx)
+						require.NoError(t, err)
+						t.Logf("Compacted Collection: %s, ID: %s, Status: %d\n", result.Name, result.ID, result.Status)
+					} else {
+						t.Skip("Compaction is not supported in cluster mode")
+					}
+				})
+			})
+		})
+	})
+}

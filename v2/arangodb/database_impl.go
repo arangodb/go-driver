@@ -128,3 +128,24 @@ func (d database) TransactionJS(ctx context.Context, options TransactionJSOption
 		return nil, transactionResponse.AsArangoError()
 	}
 }
+
+func (d database) KeyGenerators(ctx context.Context) (KeyGeneratorsResponse, error) {
+	urlEndpoint := d.url("_api", "key-generators")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		KeyGeneratorsResponse `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, d.client.connection, urlEndpoint, &response)
+	if err != nil {
+		return KeyGeneratorsResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.KeyGeneratorsResponse, nil
+	default:
+		return KeyGeneratorsResponse{}, response.AsArangoError()
+	}
+}

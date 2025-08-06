@@ -73,6 +73,8 @@ type CollectionExtendedInfo struct {
 		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
 		// the _key attribute of documents is considered an error.
 		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
+		// The initial value for the key generator. This is only used for autoincrement key generators.
+		LastValue *uint64 `json:"lastValue,omitempty"`
 	} `json:"keyOptions,omitempty"`
 
 	// NumberOfShards is the number of shards of the collection.
@@ -149,6 +151,9 @@ type CollectionProperties struct {
 
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+
+	// The collection revision id as a string.
+	Revision string `json:"revision,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a SatelliteCollection
@@ -322,6 +327,13 @@ type CollectionStatistics struct {
 			// The memory used for storing the revisions of this collection in the storage engine (in bytes). This figure does not include the document data but only mappings from document revision ids to storage engine datafile positions.
 			Size int64 `json:"size,omitempty"`
 		} `json:"revisions"`
+
+		DocumentsSize int64 `json:"documentsSize,omitempty"`
+
+		// RocksDB cache statistics
+		CacheInUse *bool  `json:"cacheInUse,omitempty"`
+		CacheSize  *int64 `json:"cacheSize,omitempty"`
+		CacheUsage *int64 `json:"cacheUsage,omitempty"`
 	} `json:"figures"`
 }
 
@@ -369,4 +381,26 @@ func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
 		Value: string(d),
 		Type:  reflect.TypeOf(r).Elem(),
 	}
+}
+
+type CollectionFigures struct {
+	CollectionProperties
+	CollectionStatistics
+}
+
+// CollectionChecksum contains information about a collection checksum response
+type CollectionChecksum struct {
+	CollectionInfo
+	// The collection revision id as a string.
+	Revision string `json:"revision,omitempty"`
+}
+
+type ResponsibleShardRequest struct {
+	// Fill with shard key fields expected
+	Key string `json:"_key,omitempty"`
+	// other shard key fields as required
+}
+
+type RenameCollectionRequest struct {
+	Name string `json:"name"`
 }
