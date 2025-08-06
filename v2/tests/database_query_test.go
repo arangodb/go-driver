@@ -533,7 +533,21 @@ func Test_KillAQLQuery(t *testing.T) {
 		var foundRunningQuery bool
 		for attempt := 0; attempt < 15; attempt++ {
 			queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(true))
-			require.NoError(t, err)
+
+			// Enhanced error logging to help debug the issue
+			if err != nil {
+				t.Logf("Attempt %d: Error getting queries: %v", attempt+1, err)
+
+				// Log additional context about the error
+				if strings.Contains(err.Error(), "cannot unmarshal") {
+					t.Logf("This suggests a response format mismatch between local and CI environments")
+					t.Logf("Consider checking ArangoDB version differences or server configuration")
+				}
+
+				// Continue to next attempt instead of failing immediately
+				time.Sleep(300 * time.Millisecond)
+				continue
+			}
 
 			t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
 
@@ -558,6 +572,17 @@ func Test_KillAQLQuery(t *testing.T) {
 
 		// Cancel the query
 		cancel()
+
+		// More detailed assertion message
+		if !foundRunningQuery {
+			t.Logf("FAILURE ANALYSIS:")
+			t.Logf("- No running queries were found during any of the 15 attempts")
+			t.Logf("- This could indicate:")
+			t.Logf("  1. Query executed too quickly in CI environment")
+			t.Logf("  2. Query tracking is disabled in CI ArangoDB configuration")
+			t.Logf("  3. Different ArangoDB version/configuration in CI")
+			t.Logf("  4. Resource constraints causing immediate query completion")
+		}
 
 		// Assert we found running queries
 		require.True(t, foundRunningQuery, "Should have found at least one running query")

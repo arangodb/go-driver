@@ -211,15 +211,41 @@ func (d databaseQuery) listAQLQueries(ctx context.Context, endpoint string, all 
 		url += "?all=true"
 	}
 
-	var result []RunningAQLQuery
-	resp, err := connection.CallGet(ctx, d.db.connection(), url, &result, d.db.modifiers...)
+	// Use json.RawMessage to capture raw response for debugging
+	var rawResult json.RawMessage
+	resp, err := connection.CallGet(ctx, d.db.connection(), url, &rawResult, d.db.modifiers...)
 	if err != nil {
 		return nil, err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return result, nil
+		// Log the raw response for debugging (remove in production)
+		fmt.Printf("DEBUG: Raw response from %s: %s\n", endpoint, string(rawResult))
+
+		// Try to unmarshal as array first
+		var result []RunningAQLQuery
+		if err := json.Unmarshal(rawResult, &result); err == nil {
+			return result, nil
+		}
+
+		// If array unmarshaling fails, try as object with result field
+		var objResult struct {
+			Result []RunningAQLQuery `json:"result"`
+			Error  bool              `json:"error"`
+			Code   int               `json:"code"`
+		}
+
+		if err := json.Unmarshal(rawResult, &objResult); err == nil {
+			if objResult.Error {
+				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
+			}
+			return objResult.Result, nil
+		}
+
+		// If both fail, return the unmarshal error
+		return nil, fmt.Errorf("cannot unmarshal response into []RunningAQLQuery or object with result field: %s", string(rawResult))
+
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
