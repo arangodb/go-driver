@@ -21,7 +21,10 @@ package arangodb
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
@@ -96,5 +99,51 @@ func (c *clientFoxx) UninstallFoxxService(ctx context.Context, dbName string, op
 		return nil
 	default:
 		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetInstalledFoxxService retrieves the list of Foxx services.
+func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceObject, error) {
+	// Ensure the URL starts with a slash
+	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "foxx")
+
+	// Append query param if needed
+	if excludeSystem != nil {
+		urlEndpoint += fmt.Sprintf("?excludeSystem=%t", *excludeSystem)
+	}
+
+	// Use json.RawMessage to capture raw response for debugging
+	var rawResult json.RawMessage
+	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &rawResult)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		// Try to unmarshal as array first
+		var result []FoxxServiceObject
+		if err := json.Unmarshal(rawResult, &result); err == nil {
+			return result, nil
+		}
+
+		// If array unmarshaling fails, try as object with result field
+		var objResult struct {
+			Result []FoxxServiceObject `json:"result"`
+			Error  bool                `json:"error"`
+			Code   int                 `json:"code"`
+		}
+
+		if err := json.Unmarshal(rawResult, &objResult); err == nil {
+			if objResult.Error {
+				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
+			}
+			return objResult.Result, nil
+		}
+
+		// If both fail, return the unmarshal error
+		return nil, fmt.Errorf("cannot unmarshal response into []FoxxServiceObject or object with result field: %s", string(rawResult))
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
