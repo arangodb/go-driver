@@ -81,3 +81,34 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetInstalledFoxxService(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		excludeSystem := false
+		services, err := client.GetInstalledFoxxService(ctx, db.Name(), &excludeSystem)
+		require.NoError(t, err)
+		require.NotEmpty(t, services)
+		require.GreaterOrEqual(t, len(services), 0)
+
+		if len(services) == 0 {
+			t.Log("No Foxx services found.")
+			return
+		}
+
+		for _, service := range services {
+			require.NotEmpty(t, service.Mount)
+			require.NotEmpty(t, service.Name)
+			require.NotEmpty(t, service.Version)
+			require.NotNil(t, service.Development)
+			require.NotNil(t, service.Provides)
+			require.NotNil(t, service.Legacy)
+		}
+	})
+}

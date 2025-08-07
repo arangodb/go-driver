@@ -36,6 +36,10 @@ type ClientFoxxService interface {
 	InstallFoxxService(ctx context.Context, dbName string, zipFile string, options *FoxxCreateOptions) error
 	// UninstallFoxxService uninstalls service at a given mount path.
 	UninstallFoxxService(ctx context.Context, dbName string, options *FoxxDeleteOptions) error
+	// GetInstalledFoxxService retrieves the list of Foxx services installed in the specified database.
+	// If excludeSystem is true, system services (like _admin/aardvark) will be excluded from the result,
+	// returning only custom-installed Foxx services.
+	GetInstalledFoxxService(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceObject, error)
 }
 
 type FoxxCreateOptions struct {
@@ -76,4 +80,31 @@ func (c *UninstallFoxxServiceRequest) modifyRequest(r connection.Request) error 
 	r.AddQuery("teardown", strconv.FormatBool(*c.Teardown))
 	return nil
 
+}
+
+// FoxxServiceObject represents a single Foxx service installed in an ArangoDB database.
+type FoxxServiceObject struct {
+	// Mount is the mount path of the Foxx service in the database (e.g., "/my-service").
+	// This determines the URL path at which the service can be accessed.
+	Mount *string `json:"mount"`
+
+	// Development indicates whether the service is in development mode.
+	// When true, the service is not cached and changes are applied immediately.
+	Development *bool `json:"development"`
+
+	// Legacy indicates whether the service uses a legacy format or API.
+	// This may be used for backward compatibility checks.
+	Legacy *bool `json:"legacy"`
+
+	// Provides lists the capabilities or interfaces the service provides.
+	// This is a flexible map that may contain metadata like API contracts or service roles.
+	Provides map[string]interface{} `json:"provides"`
+
+	// Name is the name of the Foxx service (optional).
+	// This may be defined in the service manifest (manifest.json).
+	Name *string `json:"name,omitempty"`
+
+	// Version is the version of the Foxx service (optional).
+	// This is useful for managing service upgrades or deployments.
+	Version *string `json:"version,omitempty"`
 }
