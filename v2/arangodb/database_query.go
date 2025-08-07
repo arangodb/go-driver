@@ -79,7 +79,7 @@ type DatabaseQuery interface {
 	GetAllOptimizerRules(ctx context.Context) ([]OptimizerRules, error)
 
 	// GetQueryPlanCache returns a list of cached query plans.
-	// The result is a list of QueryPlanChcheRespObject objects.
+	// The result is a list of QueryPlanCacheRespObject objects.
 	GetQueryPlanCache(ctx context.Context) ([]QueryPlanCacheRespObject, error)
 
 	// ClearQueryPlanCache clears the query plan cache.
@@ -505,7 +505,7 @@ type QueryCacheEntriesRespObject struct {
 }
 
 type QueryCacheProperties struct {
-	// IncludesSystem indicates whether the query cache includes system collections.
+	// IncludeSystem indicates whether the query cache includes system collections.
 	IncludeSystem *bool `json:"includeSystem,omitempty"`
 	// MaxEntrySize is the maximum size of a single query cache entry in bytes.
 	MaxEntrySize *uint64 `json:"maxEntrySize,omitempty"`

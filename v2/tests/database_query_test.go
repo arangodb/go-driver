@@ -262,9 +262,9 @@ func Test_UpdateQueryProperties(t *testing.T) {
 				Enabled:              utils.NewType(true),
 				TrackSlowQueries:     utils.NewType(true),
 				TrackBindVars:        utils.NewType(false), // optional but useful for debugging
-				MaxSlowQueries:       utils.NewType(*res.MaxSlowQueries + *utils.NewType(1)),
-				SlowQueryThreshold:   utils.NewType(*res.SlowQueryThreshold + *utils.NewType(0.1)),
-				MaxQueryStringLength: utils.NewType(*res.MaxQueryStringLength + *utils.NewType(100)),
+				MaxSlowQueries:       utils.NewType(*res.MaxSlowQueries + 1),
+				SlowQueryThreshold:   utils.NewType(*res.SlowQueryThreshold + 0.1),
+				MaxQueryStringLength: utils.NewType(*res.MaxQueryStringLength + 100),
 			}
 			updateResp, err := db.UpdateQueryProperties(context.Background(), options)
 			require.NoError(t, err)
@@ -673,13 +673,10 @@ func Test_GetQueryPlanCache(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				// Process all results
-				var results []map[string]interface{}
 				for cursor.HasMore() {
-					var doc map[string]interface{}
+					var doc interface{}
 					_, err := cursor.ReadDocument(ctx, &doc)
 					require.NoError(t, err)
-					results = append(results, doc)
 				}
 				cursor.Close()
 
@@ -726,8 +723,9 @@ func Test_GetQueryPlanCache(t *testing.T) {
 					require.NoError(t, err)
 
 					for cursor.HasMore() {
-						var doc map[string]interface{}
-						cursor.ReadDocument(ctx, &doc)
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
 					}
 					cursor.Close()
 				}
@@ -841,12 +839,10 @@ func Test_ClearQueryPlanCache(t *testing.T) {
 				require.NoError(t, err)
 
 				// Process all results
-				var results []map[string]interface{}
 				for cursor.HasMore() {
-					var doc map[string]interface{}
+					var doc interface{}
 					_, err := cursor.ReadDocument(ctx, &doc)
 					require.NoError(t, err)
-					results = append(results, doc)
 				}
 				cursor.Close()
 
@@ -893,8 +889,9 @@ func Test_ClearQueryPlanCache(t *testing.T) {
 					require.NoError(t, err)
 
 					for cursor.HasMore() {
-						var doc map[string]interface{}
-						cursor.ReadDocument(ctx, &doc)
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
 					}
 					cursor.Close()
 				}
@@ -978,13 +975,10 @@ func Test_GetQueryEntriesCache(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				// Process all results
-				var results []map[string]interface{}
 				for cursor.HasMore() {
-					var doc map[string]interface{}
+					var doc interface{}
 					_, err := cursor.ReadDocument(ctx, &doc)
 					require.NoError(t, err)
-					results = append(results, doc)
 				}
 				cursor.Close()
 
@@ -1031,8 +1025,9 @@ func Test_GetQueryEntriesCache(t *testing.T) {
 					require.NoError(t, err)
 
 					for cursor.HasMore() {
-						var doc map[string]interface{}
-						cursor.ReadDocument(ctx, &doc)
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
 					}
 					cursor.Close()
 				}
@@ -1145,13 +1140,10 @@ func Test_ClearQueryCache(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				// Process all results
-				var results []map[string]interface{}
 				for cursor.HasMore() {
-					var doc map[string]interface{}
+					var doc interface{}
 					_, err := cursor.ReadDocument(ctx, &doc)
 					require.NoError(t, err)
-					results = append(results, doc)
 				}
 				cursor.Close()
 
@@ -1198,8 +1190,9 @@ func Test_ClearQueryCache(t *testing.T) {
 					require.NoError(t, err)
 
 					for cursor.HasMore() {
-						var doc map[string]interface{}
-						cursor.ReadDocument(ctx, &doc)
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
 					}
 					cursor.Close()
 				}

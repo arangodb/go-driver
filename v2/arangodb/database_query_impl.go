@@ -158,6 +158,8 @@ func (d databaseQuery) GetQueryProperties(ctx context.Context) (QueryProperties,
 	}
 }
 
+// Validation for all fields is required by the ArangoDB API spec for PUT /_api/query/properties.
+// Partial updates are not supported; all fields must be included in the request.
 func validateQueryPropertiesFields(options QueryProperties) error {
 	if options.Enabled == nil {
 		return RequiredFieldError("enabled")
@@ -220,9 +222,6 @@ func (d databaseQuery) listAQLQueries(ctx context.Context, endpoint string, all 
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		// Log the raw response for debugging (remove in production)
-		fmt.Printf("DEBUG: Raw response from %s: %s\n", endpoint, string(rawResult))
-
 		// Try to unmarshal as array first
 		var result []RunningAQLQuery
 		if err := json.Unmarshal(rawResult, &result); err == nil {
