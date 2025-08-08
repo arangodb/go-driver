@@ -36,10 +36,17 @@ type ClientFoxxService interface {
 	InstallFoxxService(ctx context.Context, dbName string, zipFile string, options *FoxxCreateOptions) error
 	// UninstallFoxxService uninstalls service at a given mount path.
 	UninstallFoxxService(ctx context.Context, dbName string, options *FoxxDeleteOptions) error
-	// GetInstalledFoxxService retrieves the list of Foxx services installed in the specified database.
+	// ListInstalledFoxxServices retrieves the list of Foxx services installed in the specified database.
 	// If excludeSystem is true, system services (like _admin/aardvark) will be excluded from the result,
 	// returning only custom-installed Foxx services.
-	GetInstalledFoxxService(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceObject, error)
+	ListInstalledFoxxServices(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceListItem, error)
+	// GetInstalledFoxxService retrieves detailed information about a specific Foxx service
+	// installed in the specified database.
+	// The service is identified by its mount path, which must be provided and non-empty.
+	// If the mount path is missing or empty, a RequiredFieldError is returned.
+	// The returned FoxxServiceObject contains the full metadata and configuration details
+	// for the specified service.
+	GetInstalledFoxxService(ctx context.Context, dbName string, mount *string) (FoxxServiceObject, error)
 }
 
 type FoxxCreateOptions struct {
@@ -82,8 +89,7 @@ func (c *UninstallFoxxServiceRequest) modifyRequest(r connection.Request) error 
 
 }
 
-// FoxxServiceObject represents a single Foxx service installed in an ArangoDB database.
-type FoxxServiceObject struct {
+type CommonFoxxServiceFields struct {
 	// Mount is the mount path of the Foxx service in the database (e.g., "/my-service").
 	// This determines the URL path at which the service can be accessed.
 	Mount *string `json:"mount"`
@@ -95,11 +101,6 @@ type FoxxServiceObject struct {
 	// Legacy indicates whether the service uses a legacy format or API.
 	// This may be used for backward compatibility checks.
 	Legacy *bool `json:"legacy"`
-
-	// Provides lists the capabilities or interfaces the service provides.
-	// This is a flexible map that may contain metadata like API contracts or service roles.
-	Provides map[string]interface{} `json:"provides"`
-
 	// Name is the name of the Foxx service (optional).
 	// This may be defined in the service manifest (manifest.json).
 	Name *string `json:"name,omitempty"`
@@ -107,4 +108,99 @@ type FoxxServiceObject struct {
 	// Version is the version of the Foxx service (optional).
 	// This is useful for managing service upgrades or deployments.
 	Version *string `json:"version,omitempty"`
+}
+
+// FoxxServiceListItem represents a single Foxx service installed in an ArangoDB database.
+type FoxxServiceListItem struct {
+	CommonFoxxServiceFields
+	// Provides lists the capabilities or interfaces the service provides.
+	// This is a flexible map that may contain metadata like API contracts or service roles.
+	Provides map[string]interface{} `json:"provides"`
+}
+
+// Repository describes the version control repository for the Foxx service.
+type Repository struct {
+	// Type is the type of repository (e.g., "git").
+	Type *string `json:"type,omitempty"`
+
+	// URL is the link to the repository.
+	URL *string `json:"url,omitempty"`
+}
+
+// Contributor represents a person who contributed to the Foxx service.
+type Contributor struct {
+	// Name is the contributor's name.
+	Name *string `json:"name,omitempty"`
+
+	// Email is the contributor's contact email.
+	Email *string `json:"email,omitempty"`
+}
+
+// Engines specifies the ArangoDB engine requirements for the Foxx service.
+type Engines struct {
+	// Arangodb specifies the required ArangoDB version range (semver format).
+	Arangodb *string `json:"arangodb,omitempty"`
+}
+
+// Manifest represents the normalized manifest.json of the Foxx service.
+type Manifest struct {
+	// Schema is the JSON schema URL for the manifest structure.
+	Schema *string `json:"$schema,omitempty"`
+
+	// Name is the name of the Foxx service.
+	Name *string `json:"name,omitempty"`
+
+	// Version is the service's semantic version.
+	Version *string `json:"version,omitempty"`
+
+	// License is the license identifier (e.g., "Apache-2.0").
+	License *string `json:"license,omitempty"`
+
+	// Repository contains details about the service's source repository.
+	Repository *Repository `json:"repository,omitempty"`
+
+	// Author is the main author of the service.
+	Author *string `json:"author,omitempty"`
+
+	// Contributors is a list of people who contributed to the service.
+	Contributors []*Contributor `json:"contributors,omitempty"`
+
+	// Description provides a human-readable explanation of the service.
+	Description *string `json:"description,omitempty"`
+
+	// Engines specifies the engine requirements for running the service.
+	Engines *Engines `json:"engines,omitempty"`
+
+	// DefaultDocument specifies the default document to serve (e.g., "index.html").
+	DefaultDocument *string `json:"defaultDocument,omitempty"`
+
+	// Main specifies the main entry point JavaScript file of the service.
+	Main *string `json:"main,omitempty"`
+
+	// Configuration contains service-specific configuration options.
+	Configuration map[string]interface{} `json:"configuration,omitempty"`
+
+	// Dependencies defines other services or packages this service depends on.
+	Dependencies map[string]interface{} `json:"dependencies,omitempty"`
+
+	// Files maps URL paths to static files or directories included in the service.
+	Files map[string]interface{} `json:"files,omitempty"`
+
+	// Scripts contains script definitions for service lifecycle hooks or tasks.
+	Scripts map[string]interface{} `json:"scripts,omitempty"`
+}
+
+// FoxxServiceObject is the top-level response object for a Foxx service details request.
+type FoxxServiceObject struct {
+	// Common fields for all Foxx services.
+	CommonFoxxServiceFields
+
+	// Path is the local filesystem path where the service is installed.
+	Path *string `json:"path,omitempty"`
+
+	// Manifest contains the normalized manifest.json of the service.
+	Manifest *Manifest `json:"manifest,omitempty"`
+
+	// Options contains optional runtime options defined for the service.
+	Options map[string]interface{} `json:"options,omitempty"`
 }
