@@ -22,6 +22,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -82,7 +83,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 	})
 }
 
-func Test_GetInstalledFoxxService(t *testing.T) {
+func Test_ListInstalledFoxxServices(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -91,8 +92,8 @@ func Test_GetInstalledFoxxService(t *testing.T) {
 		db, err := client.GetDatabase(ctx, "_system", nil)
 		require.NoError(t, err)
 
-		excludeSystem := false
-		services, err := client.GetInstalledFoxxService(ctx, db.Name(), &excludeSystem)
+		// excludeSystem := false
+		services, err := client.ListInstalledFoxxServices(ctx, db.Name(), nil)
 		require.NoError(t, err)
 		require.NotEmpty(t, services)
 		require.GreaterOrEqual(t, len(services), 0)
@@ -110,5 +111,24 @@ func Test_GetInstalledFoxxService(t *testing.T) {
 			require.NotNil(t, service.Provides)
 			require.NotNil(t, service.Legacy)
 		}
+	})
+}
+
+func Test_GetInstalledFoxxService(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		mount := "/_api/foxx"
+		serviceDetails, err := client.GetInstalledFoxxService(ctx, db.Name(), &mount)
+		require.NoError(t, err)
+		require.NotEmpty(t, serviceDetails)
+		servicesJson, err := utils.ToJSONString(serviceDetails)
+		require.NoError(t, err)
+		fmt.Printf("serviceDetails after marshalling : %s", servicesJson)
 	})
 }

@@ -102,8 +102,8 @@ func (c *clientFoxx) UninstallFoxxService(ctx context.Context, dbName string, op
 	}
 }
 
-// GetInstalledFoxxService retrieves the list of Foxx services.
-func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceObject, error) {
+// ListInstalledFoxxServices retrieves the list of Foxx services.
+func (c *clientFoxx) ListInstalledFoxxServices(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceListItem, error) {
 	// Ensure the URL starts with a slash
 	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "foxx")
 
@@ -122,16 +122,16 @@ func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string,
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		// Try to unmarshal as array first
-		var result []FoxxServiceObject
+		var result []FoxxServiceListItem
 		if err := json.Unmarshal(rawResult, &result); err == nil {
 			return result, nil
 		}
 
 		// If array unmarshaling fails, try as object with result field
 		var objResult struct {
-			Result []FoxxServiceObject `json:"result"`
-			Error  bool                `json:"error"`
-			Code   int                 `json:"code"`
+			Result []FoxxServiceListItem `json:"result"`
+			Error  bool                  `json:"error"`
+			Code   int                   `json:"code"`
 		}
 
 		if err := json.Unmarshal(rawResult, &objResult); err == nil {
@@ -142,8 +142,38 @@ func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string,
 		}
 
 		// If both fail, return the unmarshal error
-		return nil, fmt.Errorf("cannot unmarshal response into []FoxxServiceObject or object with result field: %s", string(rawResult))
+		return nil, fmt.Errorf("cannot unmarshal response into []FoxxServiceListItem or object with result field: %s", string(rawResult))
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// GetInstalledFoxxService retrieves detailed information about a specific Foxx service
+func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string, mount *string) (FoxxServiceObject, error) {
+	// Ensure the URL starts with a slash
+	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "foxx", "service")
+
+	// Append query param if needed
+	if mount == nil || *mount == "" {
+		return FoxxServiceObject{}, RequiredFieldError("mount")
+	}
+
+	urlEndpoint += fmt.Sprintf("?mount=%s", url.PathEscape(*mount))
+
+	// Use json.RawMessage to capture raw response for debugging
+	var result struct {
+		shared.ResponseStruct `json:",inline"`
+		FoxxServiceObject     `json:",inline"`
+	}
+	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &result)
+	if err != nil {
+		return FoxxServiceObject{}, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return result.FoxxServiceObject, nil
+	default:
+		return FoxxServiceObject{}, result.AsArangoErrorWithCode(code)
 	}
 }
