@@ -22,7 +22,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -127,8 +126,12 @@ func Test_GetInstalledFoxxService(t *testing.T) {
 		serviceDetails, err := client.GetInstalledFoxxService(ctx, db.Name(), &mount)
 		require.NoError(t, err)
 		require.NotEmpty(t, serviceDetails)
-		servicesJson, err := utils.ToJSONString(serviceDetails)
-		require.NoError(t, err)
-		fmt.Printf("serviceDetails after marshalling : %s", servicesJson)
+		require.NotNil(t, serviceDetails.Mount)
+		require.NotNil(t, serviceDetails.Name)
+		require.NotNil(t, serviceDetails.Version)
+		require.NotNil(t, serviceDetails.Development)
+		require.NotNil(t, serviceDetails.Path)
+		require.NotNil(t, serviceDetails.Legacy)
+		require.NotNil(t, serviceDetails.Manifest)
 	})
 }
