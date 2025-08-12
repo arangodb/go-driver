@@ -44,6 +44,33 @@ func newClientFoxx(client *client) *clientFoxx {
 	}
 }
 
+func (c *clientFoxx) url(dbName string, pathSegments []string, queryParams map[string]interface{}) string {
+
+	base := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "foxx")
+	for _, seg := range pathSegments {
+		base = fmt.Sprintf("%s/%s", base, url.PathEscape(seg))
+	}
+
+	if len(queryParams) > 0 {
+		q := url.Values{}
+		for k, v := range queryParams {
+			switch val := v.(type) {
+			case string:
+				q.Set(k, val)
+			case bool:
+				q.Set(k, fmt.Sprintf("%t", val))
+			case int, int64, float64:
+				q.Set(k, fmt.Sprintf("%v", val))
+			default:
+				// skip unsupported types or handle as needed
+			}
+			fmt.Printf("Valueeeeeee of Q is %+v", q)
+		}
+		base = fmt.Sprintf("%s?%s", base, q.Encode())
+	}
+	return base
+}
+
 // InstallFoxxService installs a new service at a given mount path.
 func (c *clientFoxx) InstallFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxCreateOptions) error {
 
@@ -68,7 +95,7 @@ func (c *clientFoxx) InstallFoxxService(ctx context.Context, dbName string, zipF
 	}
 
 	switch code := resp.Code(); code {
-	case http.StatusOK:
+	case http.StatusCreated:
 		return nil
 	default:
 		return response.AsArangoErrorWithCode(code)
@@ -78,6 +105,7 @@ func (c *clientFoxx) InstallFoxxService(ctx context.Context, dbName string, zipF
 
 // UninstallFoxxService uninstalls service at a given mount path.
 func (c *clientFoxx) UninstallFoxxService(ctx context.Context, dbName string, opts *FoxxDeleteOptions) error {
+
 	url := connection.NewUrl("_db", dbName, "_api/foxx/service")
 
 	var response struct {
@@ -89,13 +117,13 @@ func (c *clientFoxx) UninstallFoxxService(ctx context.Context, dbName string, op
 		request.FoxxDeleteOptions = *opts
 	}
 
-	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil, request.modifyRequest)
+	resp, err := connection.CallDelete(ctx, c.client.connection, url, &response, request.modifyRequest)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
-	case http.StatusOK:
+	case http.StatusNoContent:
 		return nil
 	default:
 		return response.AsArangoErrorWithCode(code)
@@ -104,14 +132,13 @@ func (c *clientFoxx) UninstallFoxxService(ctx context.Context, dbName string, op
 
 // ListInstalledFoxxServices retrieves the list of Foxx services.
 func (c *clientFoxx) ListInstalledFoxxServices(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceListItem, error) {
-	// Ensure the URL starts with a slash
-	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "foxx")
-
-	// Append query param if needed
+	query := map[string]interface{}{}
+	// query params
 	if excludeSystem != nil {
-		urlEndpoint += fmt.Sprintf("?excludeSystem=%t", *excludeSystem)
+		query["excludeSystem"] = *excludeSystem
 	}
 
+	urlEndpoint := c.url(dbName, nil, query)
 	// Use json.RawMessage to capture raw response for debugging
 	var rawResult json.RawMessage
 	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &rawResult)
@@ -150,15 +177,14 @@ func (c *clientFoxx) ListInstalledFoxxServices(ctx context.Context, dbName strin
 
 // GetInstalledFoxxService retrieves detailed information about a specific Foxx service
 func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string, mount *string) (FoxxServiceObject, error) {
-	// Ensure the URL starts with a slash
-	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "foxx", "service")
 
-	// Append query param if needed
 	if mount == nil || *mount == "" {
 		return FoxxServiceObject{}, RequiredFieldError("mount")
 	}
 
-	urlEndpoint += fmt.Sprintf("?mount=%s", url.PathEscape(*mount))
+	urlEndpoint := c.url(dbName, []string{"service"}, map[string]interface{}{
+		"mount": *mount,
+	})
 
 	// Use json.RawMessage to capture raw response for debugging
 	var result struct {
