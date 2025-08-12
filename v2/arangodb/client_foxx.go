@@ -73,8 +73,10 @@ func (c *InstallFoxxServiceRequest) modifyRequest(r connection.Request) error {
 	}
 
 	r.AddHeader(connection.ContentType, "application/zip")
-	r.AddQuery("mount", *c.Mount)
-
+	if c.Mount != nil && *c.Mount != "" {
+		mount := *c.Mount
+		r.AddQuery("mount", mount)
+	}
 	return nil
 }
 
@@ -83,10 +85,16 @@ func (c *UninstallFoxxServiceRequest) modifyRequest(r connection.Request) error 
 		return nil
 	}
 
-	r.AddQuery("mount", *c.Mount)
-	r.AddQuery("teardown", strconv.FormatBool(*c.Teardown))
-	return nil
+	if c.Mount != nil && *c.Mount != "" {
+		mount := *c.Mount
+		r.AddQuery("mount", mount)
+	}
 
+	if c.Teardown != nil {
+		r.AddQuery("teardown", strconv.FormatBool(*c.Teardown))
+	}
+
+	return nil
 }
 
 type CommonFoxxServiceFields struct {
