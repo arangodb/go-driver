@@ -34,27 +34,31 @@ import (
 
 func Test_FoxxItzpapalotlService(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		t.Run("Deploy and uninstall Foxx service", func(t *testing.T) {
+
+		ctx := context.Background()
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		if os.Getenv("TEST_CONNECTION") == "vst" {
+			skipBelowVersion(client, ctx, "3.6", t)
+		}
+
+		// /tmp/resources/ directory is provided by .travis.yml
+		zipFilePath := "/tmp/resources/itzpapalotl-v1.2.0.zip"
+		if _, err := os.Stat(zipFilePath); os.IsNotExist(err) {
+			// Test works only via travis pipeline unless the above file exists locally
+			t.Skipf("file %s does not exist", zipFilePath)
+		}
+		mountName := "test"
+		options := &arangodb.FoxxDeploymentOptions{
+			Mount: utils.NewType[string]("/" + mountName),
+		}
+
+		// InstallFoxxService
+		t.Run("Install and verify installed Foxx service", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-				db, err := client.GetDatabase(ctx, "_system", nil)
-				require.NoError(t, err)
-				if os.Getenv("TEST_CONNECTION") == "vst" {
-					skipBelowVersion(client, ctx, "3.6", t)
-				}
-
-				// /tmp/resources/ directory is provided by .travis.yml
-				zipFilePath := "/tmp/resources/itzpapalotl-v1.2.0.zip"
-				if _, err := os.Stat(zipFilePath); os.IsNotExist(err) {
-					// Test works only via travis pipeline unless the above file exists locally
-					t.Skipf("file %s does not exist", zipFilePath)
-				}
-
-				// InstallFoxxService
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
-				mountName := "test"
-				options := &arangodb.FoxxDeploymentOptions{
-					Mount: utils.NewType[string]("/" + mountName),
-				}
+
 				err = client.InstallFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
 				cancel()
 				require.NoError(t, err)
@@ -72,21 +76,44 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				require.Equal(t, true, ok)
 				require.NotEmpty(t, value)
 				cancel()
+			})
+		})
 
-				// ReplaceFoxxService
-				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Minute*30)
+		// ReplaceFoxxService
+		t.Run("Replace Foxx service", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
 				err = client.ReplaceFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
 				cancel()
 				require.NoError(t, err)
+			})
+		})
 
-				// UpgradeFoxxService
-				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Minute*30)
+		// UpgradeFoxxService
+		t.Run("Upgrade Foxx service", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
 				err = client.UpgradeFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
 				cancel()
 				require.NoError(t, err)
+			})
+		})
 
-				// UninstallFoxxService
-				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Second*30)
+		// Foxx Service Configurations
+		t.Run("Fetch Foxx service Configuration", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.GetFoxxServiceConfiguration(timeoutCtx, db.Name(), options.Mount)
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+
+		// UninstallFoxxService
+		t.Run("Uninstall Foxx service", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 				deleteOptions := &arangodb.FoxxDeleteOptions{
 					Mount:    utils.NewType[string]("/" + mountName),
 					Teardown: utils.NewType[bool](true),
