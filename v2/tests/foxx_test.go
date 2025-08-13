@@ -51,7 +51,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
 				mountName := "test"
-				options := &arangodb.FoxxCreateOptions{
+				options := &arangodb.FoxxDeploymentOptions{
 					Mount: utils.NewType[string]("/" + mountName),
 				}
 				err = client.InstallFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
@@ -70,6 +70,11 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				require.Equal(t, true, ok)
 				require.NotEmpty(t, value)
 				cancel()
+
+				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Minute*30)
+				err = client.ReplaceAFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
+				cancel()
+				require.NoError(t, err)
 
 				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Second*30)
 				deleteOptions := &arangodb.FoxxDeleteOptions{

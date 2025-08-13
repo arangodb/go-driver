@@ -33,7 +33,7 @@ type ClientFoxx interface {
 
 type ClientFoxxService interface {
 	// InstallFoxxService installs a new service at a given mount path.
-	InstallFoxxService(ctx context.Context, dbName string, zipFile string, options *FoxxCreateOptions) error
+	InstallFoxxService(ctx context.Context, dbName string, zipFile string, options *FoxxDeploymentOptions) error
 	// UninstallFoxxService uninstalls service at a given mount path.
 	UninstallFoxxService(ctx context.Context, dbName string, options *FoxxDeleteOptions) error
 	// ListInstalledFoxxServices retrieves the list of Foxx services installed in the specified database.
@@ -47,9 +47,12 @@ type ClientFoxxService interface {
 	// The returned FoxxServiceObject contains the full metadata and configuration details
 	// for the specified service.
 	GetInstalledFoxxService(ctx context.Context, dbName string, mount *string) (FoxxServiceObject, error)
+	//ReplaceAFoxxService removes the service at the given mount path from the database and file system
+	//installs the given new service at the same mount path.
+	ReplaceAFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error
 }
 
-type FoxxCreateOptions struct {
+type FoxxDeploymentOptions struct {
 	Mount *string
 }
 
@@ -59,15 +62,15 @@ type FoxxDeleteOptions struct {
 }
 
 // ImportDocumentRequest holds Query parameters for /import.
-type InstallFoxxServiceRequest struct {
-	FoxxCreateOptions `json:",inline"`
+type DeployFoxxServiceRequest struct {
+	FoxxDeploymentOptions `json:",inline"`
 }
 
 type UninstallFoxxServiceRequest struct {
 	FoxxDeleteOptions `json:",inline"`
 }
 
-func (c *InstallFoxxServiceRequest) modifyRequest(r connection.Request) error {
+func (c *DeployFoxxServiceRequest) modifyRequest(r connection.Request) error {
 	if c == nil {
 		return nil
 	}

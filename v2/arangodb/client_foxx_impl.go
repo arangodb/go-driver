@@ -72,16 +72,16 @@ func (c *clientFoxx) url(dbName string, pathSegments []string, queryParams map[s
 }
 
 // InstallFoxxService installs a new service at a given mount path.
-func (c *clientFoxx) InstallFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxCreateOptions) error {
+func (c *clientFoxx) InstallFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error {
 
 	url := connection.NewUrl("_db", dbName, "_api/foxx")
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	request := &InstallFoxxServiceRequest{}
+	request := &DeployFoxxServiceRequest{}
 	if opts != nil {
-		request.FoxxCreateOptions = *opts
+		request.FoxxDeploymentOptions = *opts
 	}
 
 	bytes, err := os.ReadFile(zipFile)
@@ -201,5 +201,36 @@ func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string,
 		return result.FoxxServiceObject, nil
 	default:
 		return FoxxServiceObject{}, result.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientFoxx) ReplaceAFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error {
+
+	// url := connection.NewUrl("_db", dbName, "_api/foxx/service")
+	url := c.url(dbName, []string{"service"}, nil)
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	request := &DeployFoxxServiceRequest{}
+	if opts != nil {
+		request.FoxxDeploymentOptions = *opts
+	}
+
+	bytes, err := os.ReadFile(zipFile)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, bytes, request.modifyRequest)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
 	}
 }
