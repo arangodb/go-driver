@@ -34,7 +34,7 @@ import (
 
 func Test_FoxxItzpapalotlService(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		t.Run("Install and uninstall Foxx", func(t *testing.T) {
+		t.Run("Deploy and uninstall Foxx service", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 				db, err := client.GetDatabase(ctx, "_system", nil)
 				require.NoError(t, err)
@@ -49,6 +49,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 					t.Skipf("file %s does not exist", zipFilePath)
 				}
 
+				// InstallFoxxService
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
 				mountName := "test"
 				options := &arangodb.FoxxDeploymentOptions{
@@ -58,6 +59,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				cancel()
 				require.NoError(t, err)
 
+				// Try to fetch random name from installed foxx sercice
 				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Second*30)
 				connection := client.Connection()
 				req, err := connection.NewRequest("GET", "_db/"+db.Name()+"/"+mountName+"/random")
@@ -71,11 +73,19 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				require.NotEmpty(t, value)
 				cancel()
 
+				// ReplaceFoxxService
 				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Minute*30)
-				err = client.ReplaceAFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
+				err = client.ReplaceFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
 				cancel()
 				require.NoError(t, err)
 
+				// UpgradeFoxxService
+				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Minute*30)
+				err = client.UpgradeFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
+				cancel()
+				require.NoError(t, err)
+
+				// UninstallFoxxService
 				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Second*30)
 				deleteOptions := &arangodb.FoxxDeleteOptions{
 					Mount:    utils.NewType[string]("/" + mountName),
