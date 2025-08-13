@@ -54,6 +54,8 @@ type ClientFoxxService interface {
 	// at the specified mount path, retaining the existing service’s configuration and dependencies.
 	// This should be used only when upgrading to a newer or equivalent version of the same service.
 	UpgradeFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error
+
+	GetFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 }
 
 type FoxxDeploymentOptions struct {
