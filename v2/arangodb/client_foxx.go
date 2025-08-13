@@ -47,9 +47,13 @@ type ClientFoxxService interface {
 	// The returned FoxxServiceObject contains the full metadata and configuration details
 	// for the specified service.
 	GetInstalledFoxxService(ctx context.Context, dbName string, mount *string) (FoxxServiceObject, error)
-	//ReplaceAFoxxService removes the service at the given mount path from the database and file system
-	//installs the given new service at the same mount path.
-	ReplaceAFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error
+	// ReplaceFoxxService removes the service at the given mount path from the database and file system
+	// and installs the given new service at the same mount path.
+	ReplaceFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error
+	// UpgradeFoxxService installs the given new service on top of the service currently installed
+	// at the specified mount path, retaining the existing service’s configuration and dependencies.
+	// This should be used only when upgrading to a newer or equivalent version of the same service.
+	UpgradeFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error
 }
 
 type FoxxDeploymentOptions struct {
