@@ -204,7 +204,7 @@ func (c *clientFoxx) GetInstalledFoxxService(ctx context.Context, dbName string,
 	}
 }
 
-func (c *clientFoxx) ReplaceAFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error {
+func (c *clientFoxx) ReplaceFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error {
 
 	// url := connection.NewUrl("_db", dbName, "_api/foxx/service")
 	url := c.url(dbName, []string{"service"}, nil)
@@ -223,6 +223,37 @@ func (c *clientFoxx) ReplaceAFoxxService(ctx context.Context, dbName string, zip
 	}
 
 	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, bytes, request.modifyRequest)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientFoxx) UpgradeFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error {
+
+	// url := connection.NewUrl("_db", dbName, "_api/foxx/service")
+	url := c.url(dbName, []string{"service"}, nil)
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	request := &DeployFoxxServiceRequest{}
+	if opts != nil {
+		request.FoxxDeploymentOptions = *opts
+	}
+
+	bytes, err := os.ReadFile(zipFile)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	resp, err := connection.CallPatch(ctx, c.client.connection, url, &response, bytes, request.modifyRequest)
 	if err != nil {
 		return errors.WithStack(err)
 	}
