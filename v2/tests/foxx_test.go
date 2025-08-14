@@ -138,6 +138,17 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 			})
 		})
 
+		// Fetch Foxx Service Dependencies
+		t.Run("Fetch Foxx Service Dependencies", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.GetFoxxServiceDependencies(timeoutCtx, db.Name(), options.Mount)
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+
 		// UninstallFoxxService
 		t.Run("Uninstall Foxx service", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
