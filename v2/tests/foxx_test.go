@@ -177,6 +177,31 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 			})
 		})
 
+		// Fetch Foxx Service Scripts
+		t.Run("Fetch Foxx Service Scripts", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.GetFoxxServiceScripts(timeoutCtx, db.Name(), options.Mount)
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+
+		// Run Foxx Service Script
+		t.Run("Run Foxx Service Script", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				scriptName := "cleanupData"
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				_, err := client.RunFoxxServiceScript(timeoutCtx, db.Name(), scriptName, options.Mount,
+					map[string]interface{}{
+						"cleanupData": "Cleanup Old Data",
+					})
+				cancel()
+				require.Error(t, err)
+			})
+		})
+
 		// UninstallFoxxService
 		t.Run("Uninstall Foxx service", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {

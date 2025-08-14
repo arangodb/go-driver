@@ -87,6 +87,10 @@ type ClientFoxxService interface {
 	// in the "warnings" field of the response.
 	// The caller is responsible for validating allowed keys before calling this method.
 	ReplaceFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
+	// GetFoxxServiceScripts retrieves the scripts associated with a specific Foxx service.
+	GetFoxxServiceScripts(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
+	// RunFoxxServiceScript executes a specific script associated with a Foxx service.
+	RunFoxxServiceScript(ctx context.Context, dbName string, name string, mount *string, body map[string]interface{}) (map[string]interface{}, error)
 }
 
 type FoxxDeploymentOptions struct {
