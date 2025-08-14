@@ -77,6 +77,11 @@ type ClientFoxxService interface {
 	//  * mount: Current mount path of the dependency service (if set)
 	// An error if the request fails or the mount is missing.
 	GetFoxxServiceDependencies(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
+	// UpdateFoxxServiceDependencies updates the configured dependencies of a specific Foxx service.
+	// If the Foxx service does not allow a particular dependency key, it will appear
+	// in the "warnings" field of the response.
+	// The caller is responsible for ensuring that only allowed dependency keys are provided.
+	UpdateFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 }
 
 type FoxxDeploymentOptions struct {

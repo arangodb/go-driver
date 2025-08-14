@@ -265,38 +265,53 @@ func (c *clientFoxx) UpgradeFoxxService(ctx context.Context, dbName string, zipF
 	}
 }
 
-// GetFoxxServiceConfiguration retrieves the configuration for a specific Foxx service.
-func (c *clientFoxx) GetFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error) {
+func (c *clientFoxx) callFoxxServiceAPI(
+	ctx context.Context,
+	dbName string,
+	mount *string,
+	path string, // "configuration" or "dependencies"
+	method string, // "GET", "PATCH", "PUT"
+	body map[string]interface{}, // nil for GET
+) (map[string]interface{}, error) {
 	if mount == nil || *mount == "" {
 		return nil, RequiredFieldError("mount")
 	}
 
-	urlEndpoint := c.url(dbName, []string{"configuration"}, map[string]interface{}{
+	urlEndpoint := c.url(dbName, []string{path}, map[string]interface{}{
 		"mount": *mount,
 	})
 
 	var rawResult json.RawMessage
+	var resp connection.Response
+	var err error
 
-	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &rawResult)
+	switch method {
+	case http.MethodGet:
+		resp, err = connection.CallGet(ctx, c.client.connection, urlEndpoint, &rawResult)
+	case http.MethodPatch:
+		resp, err = connection.CallPatch(ctx, c.client.connection, urlEndpoint, &rawResult, body)
+	case http.MethodPut:
+		resp, err = connection.CallPut(ctx, c.client.connection, urlEndpoint, &rawResult, body)
+	default:
+		return nil, fmt.Errorf("unsupported HTTP method: %s", method)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		// Try to unmarshal as array first
 		var result map[string]interface{}
 		if err := json.Unmarshal(rawResult, &result); err == nil {
 			return result, nil
 		}
 
-		// If array unmarshaling fails, try as object with result field
 		var objResult struct {
 			Result map[string]interface{} `json:"result"`
 			Error  bool                   `json:"error"`
 			Code   int                    `json:"code"`
 		}
-
 		if err := json.Unmarshal(rawResult, &objResult); err == nil {
 			if objResult.Error {
 				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
@@ -304,145 +319,31 @@ func (c *clientFoxx) GetFoxxServiceConfiguration(ctx context.Context, dbName str
 			return objResult.Result, nil
 		}
 
-		// If both fail, return the unmarshal error
-		return nil, fmt.Errorf("cannot unmarshal response into []FoxxServiceListItem or object with result field: %s", string(rawResult))
+		return nil, fmt.Errorf(
+			"cannot unmarshal response into map or object with result field: %s",
+			string(rawResult),
+		)
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
+}
+
+func (c *clientFoxx) GetFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error) {
+	return c.callFoxxServiceAPI(ctx, dbName, mount, "configuration", http.MethodGet, nil)
 }
 
 func (c *clientFoxx) UpdateFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error) {
-	if mount == nil || *mount == "" {
-		return nil, RequiredFieldError("mount")
-	}
-
-	urlEndpoint := c.url(dbName, []string{"configuration"}, map[string]interface{}{
-		"mount": *mount,
-	})
-
-	var rawResult json.RawMessage
-
-	resp, err := connection.CallPatch(ctx, c.client.connection, urlEndpoint, &rawResult, opt)
-	if err != nil {
-		return nil, err
-	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		// Try to unmarshal as array first
-		var result map[string]interface{}
-		if err := json.Unmarshal(rawResult, &result); err == nil {
-			return result, nil
-		}
-
-		// If array unmarshaling fails, try as object with result field
-		var objResult struct {
-			Result map[string]interface{} `json:"result"`
-			Error  bool                   `json:"error"`
-			Code   int                    `json:"code"`
-		}
-
-		if err := json.Unmarshal(rawResult, &objResult); err == nil {
-			if objResult.Error {
-				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
-			}
-			return objResult.Result, nil
-		}
-
-		// If both fail, return the unmarshal error
-		return nil, fmt.Errorf("cannot unmarshal response into []FoxxServiceListItem or object with result field: %s", string(rawResult))
-	default:
-		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
-	}
+	return c.callFoxxServiceAPI(ctx, dbName, mount, "configuration", http.MethodPatch, opt)
 }
 
 func (c *clientFoxx) ReplaceFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error) {
-	if mount == nil || *mount == "" {
-		return nil, RequiredFieldError("mount")
-	}
-
-	urlEndpoint := c.url(dbName, []string{"configuration"}, map[string]interface{}{
-		"mount": *mount,
-	})
-
-	var rawResult json.RawMessage
-
-	resp, err := connection.CallPut(ctx, c.client.connection, urlEndpoint, &rawResult, opt)
-	if err != nil {
-		return nil, err
-	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		// Try to unmarshal as array first
-		var result map[string]interface{}
-		if err := json.Unmarshal(rawResult, &result); err == nil {
-			return result, nil
-		}
-
-		// If array unmarshaling fails, try as object with result field
-		var objResult struct {
-			Result map[string]interface{} `json:"result"`
-			Error  bool                   `json:"error"`
-			Code   int                    `json:"code"`
-		}
-
-		if err := json.Unmarshal(rawResult, &objResult); err == nil {
-			if objResult.Error {
-				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
-			}
-			return objResult.Result, nil
-		}
-
-		// If both fail, return the unmarshal error
-		return nil, fmt.Errorf("cannot unmarshal response into []FoxxServiceListItem or object with result field: %s", string(rawResult))
-	default:
-		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
-	}
+	return c.callFoxxServiceAPI(ctx, dbName, mount, "configuration", http.MethodPut, opt)
 }
 
-// GetFoxxServiceConfiguration retrieves the configuration for a specific Foxx service.
 func (c *clientFoxx) GetFoxxServiceDependencies(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error) {
-	if mount == nil || *mount == "" {
-		return nil, RequiredFieldError("mount")
-	}
+	return c.callFoxxServiceAPI(ctx, dbName, mount, "dependencies", http.MethodGet, nil)
+}
 
-	urlEndpoint := c.url(dbName, []string{"dependencies"}, map[string]interface{}{
-		"mount": *mount,
-	})
-
-	var rawResult json.RawMessage
-
-	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &rawResult)
-	if err != nil {
-		return nil, err
-	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		// Try to unmarshal as array first
-		var result map[string]interface{}
-		if err := json.Unmarshal(rawResult, &result); err == nil {
-			return result, nil
-		}
-
-		// If array unmarshaling fails, try as object with result field
-		var objResult struct {
-			Result map[string]interface{} `json:"result"`
-			Error  bool                   `json:"error"`
-			Code   int                    `json:"code"`
-		}
-
-		if err := json.Unmarshal(rawResult, &objResult); err == nil {
-			if objResult.Error {
-				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
-			}
-			return objResult.Result, nil
-		}
-
-		// If both fail, return the unmarshal error
-		return nil, fmt.Errorf("cannot unmarshal response into []FoxxServiceListItem or object with result field: %s", string(rawResult))
-	default:
-		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
-	}
+func (c *clientFoxx) UpdateFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error) {
+	return c.callFoxxServiceAPI(ctx, dbName, mount, "dependencies", http.MethodPatch, opt)
 }
