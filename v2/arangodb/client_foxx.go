@@ -64,6 +64,11 @@ type ClientFoxxService interface {
 	// in the response warnings.
 	// The caller is responsible for validating allowed keys before calling this method.
 	UpdateFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
+	// ReplaceFoxxServiceConfiguration replaces the given Foxx service's dependencies entirely.
+	// If the Foxx service does not allow a particular configuration key, it will appear
+	// in the response warnings.
+	// The caller is responsible for validating allowed keys before calling this method.
+	ReplaceFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 }
 
 type FoxxDeploymentOptions struct {
