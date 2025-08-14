@@ -82,6 +82,11 @@ type ClientFoxxService interface {
 	// in the "warnings" field of the response.
 	// The caller is responsible for ensuring that only allowed dependency keys are provided.
 	UpdateFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
+	// ReplaceFoxxServiceDependencies replaces the given Foxx service's dependencies entirely.
+	// If the Foxx service does not allow a particular dependency key, it will appear
+	// in the "warnings" field of the response.
+	// The caller is responsible for validating allowed keys before calling this method.
+	ReplaceFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 }
 
 type FoxxDeploymentOptions struct {

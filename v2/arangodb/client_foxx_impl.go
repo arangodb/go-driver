@@ -347,3 +347,7 @@ func (c *clientFoxx) GetFoxxServiceDependencies(ctx context.Context, dbName stri
 func (c *clientFoxx) UpdateFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error) {
 	return c.callFoxxServiceAPI(ctx, dbName, mount, "dependencies", http.MethodPatch, opt)
 }
+
+func (c *clientFoxx) ReplaceFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error) {
+	return c.callFoxxServiceAPI(ctx, dbName, mount, "dependencies", http.MethodPut, opt)
+}

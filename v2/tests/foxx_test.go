@@ -162,6 +162,21 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 			})
 		})
 
+		// Replace Foxx Service Dependencies
+		t.Run("Replace Foxx Service Dependencies", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.ReplaceFoxxServiceDependencies(timeoutCtx, db.Name(), options.Mount, map[string]interface{}{
+					"title":       "Auth Service",
+					"description": "Service that handles authentication",
+					"mount":       "/auth-v2",
+				})
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+
 		// UninstallFoxxService
 		t.Run("Uninstall Foxx service", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
