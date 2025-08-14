@@ -351,3 +351,52 @@ func (c *clientFoxx) UpdateFoxxServiceDependencies(ctx context.Context, dbName s
 func (c *clientFoxx) ReplaceFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error) {
 	return c.callFoxxServiceAPI(ctx, dbName, mount, "dependencies", http.MethodPut, opt)
 }
+
+func (c *clientFoxx) GetFoxxServiceScripts(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error) {
+	return c.callFoxxServiceAPI(ctx, dbName, mount, "scripts", http.MethodGet, nil)
+}
+
+func (c *clientFoxx) RunFoxxServiceScript(ctx context.Context, dbName string, name string, mount *string, body map[string]interface{}) (map[string]interface{}, error) {
+
+	if mount == nil || *mount == "" {
+		return nil, RequiredFieldError("mount")
+	}
+
+	urlEndpoint := c.url(dbName, []string{"scripts", name}, map[string]interface{}{
+		"mount": *mount,
+	})
+
+	var rawResult json.RawMessage
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &rawResult, body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		var result map[string]interface{}
+		if err := json.Unmarshal(rawResult, &result); err == nil {
+			return result, nil
+		}
+
+		var objResult struct {
+			Result map[string]interface{} `json:"result"`
+			Error  bool                   `json:"error"`
+			Code   int                    `json:"code"`
+		}
+		if err := json.Unmarshal(rawResult, &objResult); err == nil {
+			if objResult.Error {
+				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
+			}
+			return objResult.Result, nil
+		}
+
+		return nil, fmt.Errorf(
+			"cannot unmarshal response into map or object with result field: %s",
+			string(rawResult),
+		)
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
