@@ -110,6 +110,20 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 			})
 		})
 
+		// Update Foxx service Configuration
+		t.Run("Update Foxx service Configuration", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.UpdateFoxxServiceConfiguration(timeoutCtx, db.Name(), options.Mount, map[string]interface{}{
+					"apiKey":   "abcdef",
+					"maxItems": 100,
+				})
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+
 		// UninstallFoxxService
 		t.Run("Uninstall Foxx service", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {

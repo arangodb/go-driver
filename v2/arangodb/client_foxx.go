@@ -59,6 +59,11 @@ type ClientFoxxService interface {
 	// The mount parameter must not be nil or empty.
 	// Returns a map containing the current configuration key-value pairs.
 	GetFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
+	// UpdateFoxxServiceConfiguration updates the configuration of a specific Foxx service.
+	// If the Foxx service does not allow a particular configuration key, it will appear
+	// in the response warnings.
+	// The caller is responsible for validating allowed keys before calling this method.
+	UpdateFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 }
 
 type FoxxDeploymentOptions struct {
