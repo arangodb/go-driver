@@ -25,10 +25,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
-	"github.com/arangodb/go-driver/v2/utils"
 
 	"github.com/arangodb/go-driver/v2/connection"
 )
@@ -289,7 +287,7 @@ func (d databaseQuery) ClearSlowAQLQueries(ctx context.Context, all *bool) error
 }
 
 func (d databaseQuery) KillAQLQuery(ctx context.Context, queryId string, all *bool) error {
-	return d.deleteQueryEndpoint(ctx, path.Join("_api/query", queryId), all)
+	return d.deleteQueryEndpoint(ctx, "_api/query/"+queryId, all)
 }
 
 func (d databaseQuery) GetAllOptimizerRules(ctx context.Context) ([]OptimizerRules, error) {
@@ -500,14 +498,14 @@ func (d databaseQuery) DeleteUserDefinedFunction(ctx context.Context, name *stri
 
 	resp, err := connection.CallDelete(ctx, d.db.connection(), url, &response, d.db.modifiers...)
 	if err != nil {
-		return utils.NewType(0), err
+		return nil, err
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK, http.StatusCreated:
 		return response.DeletedCount, nil
 	default:
-		return utils.NewType(0), response.AsArangoErrorWithCode(code)
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 

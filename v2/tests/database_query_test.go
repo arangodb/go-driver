@@ -1056,7 +1056,7 @@ func Test_GetQueryEntriesCache(t *testing.T) {
 		// If still empty, check if the feature is supported
 		if len(resp) == 0 {
 			t.Logf("Query plan cache is empty. This might be because:")
-			t.Logf("1. Query query entries caching is disabled in ArangoDB configuration")
+			t.Logf("1. Query entries caching is disabled in ArangoDB configuration")
 			t.Logf("2. Queries are too simple to warrant caching")
 			t.Logf("3. Not enough executions to trigger caching")
 			t.Logf("4. Feature might not be available in this ArangoDB version")
