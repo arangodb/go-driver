@@ -156,42 +156,14 @@ func (d databaseQuery) GetQueryProperties(ctx context.Context) (QueryProperties,
 	}
 }
 
-// Validation for all fields is required by the ArangoDB API spec for PUT /_api/query/properties.
-// Partial updates are not supported; all fields must be included in the request.
-func validateQueryPropertiesFields(options QueryProperties) error {
-	if options.Enabled == nil {
-		return RequiredFieldError("enabled")
-	}
-	if options.TrackSlowQueries == nil {
-		return RequiredFieldError("trackSlowQueries")
-	}
-	if options.TrackBindVars == nil {
-		return RequiredFieldError("trackBindVars")
-	}
-	if options.MaxSlowQueries == nil {
-		return RequiredFieldError("maxSlowQueries")
-	}
-	if options.SlowQueryThreshold == nil {
-		return RequiredFieldError("slowQueryThreshold")
-	}
-	if options.MaxQueryStringLength == nil {
-		return RequiredFieldError("maxQueryStringLength")
-	}
-	return nil
-}
-
 func (d databaseQuery) UpdateQueryProperties(ctx context.Context, options QueryProperties) (QueryProperties, error) {
 	url := d.db.url("_api", "query", "properties")
-
-	// Validate all fields are set
-	if err := validateQueryPropertiesFields(options); err != nil {
-		return QueryProperties{}, err
-	}
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		QueryProperties       `json:",inline"`
 	}
+
 	resp, err := connection.CallPut(ctx, d.db.connection(), url, &response, options, d.db.modifiers...)
 	if err != nil {
 		return QueryProperties{}, err
