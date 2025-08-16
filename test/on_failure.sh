@@ -1,4 +1,5 @@
 #!/bin/bash
+exit 1
 echo "failure!\n"
 
 echo "\nARANGODB-STARTER logs: "
