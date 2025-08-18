@@ -201,6 +201,48 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				require.Error(t, err)
 			})
 		})
+		// Test Foxx Service
+		t.Run("Test Foxx Service", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.RunFoxxServiceTests(timeoutCtx, db.Name(), arangodb.FoxxTestOptions{
+					FoxxDeploymentOptions: arangodb.FoxxDeploymentOptions{
+						Mount: utils.NewType("/" + mountName),
+					},
+				})
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+
+		// Enable Development Mode For Foxx Service
+		t.Run("Enable Development Mode For Foxx Service", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				// if getTestMode() == string(testModeCluster) {
+				// 	t.Skipf("It's a cluster mode")
+				// }
+				resp, err := client.EnableDevelopmentMode(timeoutCtx, db.Name(), options.Mount)
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+
+		// Disable Development Mode For Foxx Service
+		t.Run("Disable Development Mode For Foxx Service", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				// if getTestMode() == string(testModeCluster) {
+				// 	t.Skipf("It's a cluster mode")
+				// }
+				resp, err := client.DisableDevelopmentMode(timeoutCtx, db.Name(), options.Mount)
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
 
 		// UninstallFoxxService
 		t.Run("Uninstall Foxx service", func(t *testing.T) {
