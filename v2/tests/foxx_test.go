@@ -44,7 +44,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 		}
 
 		// /tmp/resources/ directory is provided by .travis.yml
-		zipFilePath := "/tmp/resources/itzpapalotl-v1.2.0.zip"
+		zipFilePath := "tmp/resources/itzpapalotl-v1.2.0.zip"
 		if _, err := os.Stat(zipFilePath); os.IsNotExist(err) {
 			// Test works only via travis pipeline unless the above file exists locally
 			t.Skipf("file %s does not exist", zipFilePath)
@@ -55,29 +55,31 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 		}
 
 		// InstallFoxxService
-		t.Run("Install and verify installed Foxx service", func(t *testing.T) {
-			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
 
-				err = client.InstallFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
-				cancel()
-				require.NoError(t, err)
+		err = client.InstallFoxxService(timeoutCtx, db.Name(), zipFilePath, options)
+		cancel()
+		require.NoError(t, err)
 
-				// Try to fetch random name from installed foxx sercice
-				timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Second*30)
-				connection := client.Connection()
-				req, err := connection.NewRequest("GET", "_db/"+db.Name()+"/"+mountName+"/random")
-				require.NoError(t, err)
-				resp, err := connection.Do(timeoutCtx, req, nil)
-				require.NoError(t, err)
-				require.NotNil(t, resp)
-
-				value, ok := resp, true
-				require.Equal(t, true, ok)
-				require.NotEmpty(t, value)
-				cancel()
-			})
+		// UninstallFoxxService
+		defer client.UninstallFoxxService(context.Background(), db.Name(), &arangodb.FoxxDeleteOptions{
+			Mount:    utils.NewType[string]("/" + mountName),
+			Teardown: utils.NewType[bool](true),
 		})
+
+		// Try to fetch random name from installed foxx sercice
+		timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Second*30)
+		connection := client.Connection()
+		req, err := connection.NewRequest("GET", "_db/"+db.Name()+"/"+mountName+"/random")
+		require.NoError(t, err)
+		resp, err := connection.Do(timeoutCtx, req, nil)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		value, ok := resp, true
+		require.Equal(t, true, ok)
+		require.NotEmpty(t, value)
+		cancel()
 
 		// ReplaceFoxxService
 		t.Run("Replace Foxx service", func(t *testing.T) {
@@ -244,17 +246,14 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 			})
 		})
 
-		// UninstallFoxxService
-		t.Run("Uninstall Foxx service", func(t *testing.T) {
+		// Get Foxx Service Readme
+		t.Run("Get Foxx Service Readme", func(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-				deleteOptions := &arangodb.FoxxDeleteOptions{
-					Mount:    utils.NewType[string]("/" + mountName),
-					Teardown: utils.NewType[bool](true),
-				}
-				err = client.UninstallFoxxService(timeoutCtx, db.Name(), deleteOptions)
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+				resp, err := client.GetFoxxServiceReadme(timeoutCtx, db.Name(), options.Mount)
 				cancel()
 				require.NoError(t, err)
+				require.NotNil(t, resp)
 			})
 		})
 	})
