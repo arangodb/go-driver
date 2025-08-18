@@ -630,3 +630,30 @@ func (c *clientFoxx) CommitFoxxService(ctx context.Context, dbName string, repla
 		return result.AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientFoxx) DownloadFoxxServiceBundle(ctx context.Context, dbName string, mount *string) ([]byte, error) {
+	if mount == nil || *mount == "" {
+		return nil, RequiredFieldError("mount")
+	}
+
+	urlEndpoint := c.url(dbName, []string{"download"}, map[string]interface{}{
+		"mount": *mount,
+	})
+	// Create request
+	req, err := c.client.Connection().NewRequest(http.MethodPost, urlEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	var data []byte
+	// Call Do with nil result (we'll handle body manually)
+	resp, err := c.client.Connection().Do(ctx, req, &data, http.StatusOK, http.StatusNoContent)
+	if err != nil {
+		return nil, err
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return data, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}

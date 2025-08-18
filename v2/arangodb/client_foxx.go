@@ -108,6 +108,10 @@ type ClientFoxxService interface {
 	// CommitFoxxService commits the local Foxx service state of the Coordinator
 	// to the database. This can resolve service conflicts between Coordinators.
 	CommitFoxxService(ctx context.Context, dbName string, replace *bool) error
+	// DownloadFoxxServiceBundle downloads a zip bundle of the Foxx service directory
+	// from the specified database and mount point.
+	// Note: The response is the raw zip data (binary).
+	DownloadFoxxServiceBundle(ctx context.Context, dbName string, mount *string) ([]byte, error)
 }
 
 type FoxxDeploymentOptions struct {
