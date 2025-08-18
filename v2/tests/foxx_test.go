@@ -281,6 +281,17 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				}
 			})
 		})
+
+		// Download Foxx Service Bundle
+		t.Run("Download Foxx Service Bundle ", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.DownloadFoxxServiceBundle(timeoutCtx, db.Name(), options.Mount)
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
 	})
 }
 
