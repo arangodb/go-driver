@@ -605,3 +605,28 @@ func (c *clientFoxx) GetFoxxServiceSwagger(ctx context.Context, dbName string, m
 		return SwaggerResponse{}, result.AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientFoxx) CommitFoxxService(ctx context.Context, dbName string, replace *bool) error {
+	queryParams := make(map[string]interface{})
+	if replace != nil {
+		queryParams["replace"] = *replace
+	}
+
+	urlEndpoint := c.url(dbName, []string{"commit"}, queryParams)
+
+	var result struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &result, nil)
+	if err != nil {
+		return err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusNoContent: // 204 expected
+		return nil
+	default:
+		return result.AsArangoErrorWithCode(code)
+	}
+}

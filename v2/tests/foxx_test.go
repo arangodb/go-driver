@@ -267,6 +267,20 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				require.NotNil(t, resp)
 			})
 		})
+
+		// Commit Foxx Service
+		t.Run("Commit Foxx Service ", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				role, err := client.ServerRole(ctx)
+				require.NoError(t, err)
+				if role != "Single" {
+					timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+					err := client.CommitFoxxService(timeoutCtx, db.Name(), utils.NewType(false))
+					cancel()
+					require.NoError(t, err)
+				}
+			})
+		})
 	})
 }
 
