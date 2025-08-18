@@ -44,7 +44,8 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 		}
 
 		// /tmp/resources/ directory is provided by .travis.yml
-		zipFilePath := "/tmp/resources/itzpapalotl-v1.2.0.zip"
+		// zipFilePath := "/tmp/resources/itzpapalotl-v1.2.0.zip"
+		zipFilePath := os.Getenv("HOME") + "/resources/itzpapalotl-v1.2.0.zip"
 		if _, err := os.Stat(zipFilePath); os.IsNotExist(err) {
 			// Test works only via travis pipeline unless the above file exists locally
 			t.Skipf("file %s does not exist", zipFilePath)
