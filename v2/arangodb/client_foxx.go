@@ -100,6 +100,8 @@ type ClientFoxxService interface {
 	EnableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// DisableDevelopmentMode disables the development mode for a specific Foxx service.
 	DisableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
+	// GetFoxxServiceReadme retrieves the README file for a specific Foxx service.
+	GetFoxxServiceReadme(ctx context.Context, dbName string, mount *string) ([]byte, error)
 }
 
 type FoxxDeploymentOptions struct {
