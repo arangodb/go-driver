@@ -102,6 +102,9 @@ type ClientFoxxService interface {
 	DisableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// GetFoxxServiceReadme retrieves the README file for a specific Foxx service.
 	GetFoxxServiceReadme(ctx context.Context, dbName string, mount *string) ([]byte, error)
+	// GetFoxxServiceSwagger retrieves the Swagger specification
+	// for a specific Foxx service mounted in the given database.
+	GetFoxxServiceSwagger(ctx context.Context, dbName string, mount *string) (SwaggerResponse, error)
 }
 
 type FoxxDeploymentOptions struct {
@@ -273,4 +276,30 @@ type FoxxTestOptions struct {
 	Reporter  *string `json:"reporter,omitempty"`
 	Idiomatic *bool   `json:"idiomatic,omitempty"`
 	Filter    *string `json:"filter,omitempty"`
+}
+
+// SwaggerInfo contains general metadata about the API, typically displayed
+// in tools like Swagger UI.
+type SwaggerInfo struct {
+	// Title is the title of the API.
+	Title *string `json:"title,omitempty"`
+	// Description provides a short description of the API.
+	Description *string `json:"description,omitempty"`
+	// Version specifies the version of the API.
+	Version *string `json:"version,omitempty"`
+	// License provides licensing information for the API.
+	License map[string]interface{} `json:"license,omitempty"`
+}
+
+// SwaggerResponse represents the root object of a Swagger (OpenAPI 2.0) specification.
+// It contains metadata, versioning information, available API paths, and additional details.
+type SwaggerResponse struct {
+	// Swagger specifies the Swagger specification version (e.g., "2.0").
+	Swagger *string `json:"swagger,omitempty"`
+	// BasePath defines the base path on which the API is served, relative to the host.
+	BasePath *string `json:"basePath,omitempty"`
+	// Paths holds the available endpoints and their supported operations.
+	Paths map[string]interface{} `json:"paths,omitempty"`
+	// Info provides metadata about the API, such as title, version, and license.
+	Info *SwaggerInfo `json:"info,omitempty"`
 }

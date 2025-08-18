@@ -256,6 +256,17 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				require.NotNil(t, resp)
 			})
 		})
+
+		// Get Foxx Service Swagger
+		t.Run("Get Foxx Service Swagger ", func(t *testing.T) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Minute*30)
+				resp, err := client.GetFoxxServiceSwagger(timeoutCtx, db.Name(), options.Mount)
+				cancel()
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
 	})
 }
 

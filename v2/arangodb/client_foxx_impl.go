@@ -578,3 +578,30 @@ func (c *clientFoxx) GetFoxxServiceReadme(ctx context.Context, dbName string, mo
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
 	}
 }
+
+func (c *clientFoxx) GetFoxxServiceSwagger(ctx context.Context, dbName string, mount *string) (SwaggerResponse, error) {
+	if mount == nil || *mount == "" {
+		return SwaggerResponse{}, RequiredFieldError("mount")
+	}
+
+	urlEndpoint := c.url(dbName, []string{"swagger"}, map[string]interface{}{
+		"mount": *mount,
+	})
+
+	var result struct {
+		shared.ResponseStruct `json:",inline"`
+		SwaggerResponse       `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &result)
+	if err != nil {
+		return SwaggerResponse{}, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return result.SwaggerResponse, nil
+	default:
+		return SwaggerResponse{}, result.AsArangoErrorWithCode(code)
+	}
+}
