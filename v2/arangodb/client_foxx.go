@@ -91,6 +91,15 @@ type ClientFoxxService interface {
 	GetFoxxServiceScripts(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// RunFoxxServiceScript executes a specific script associated with a Foxx service.
 	RunFoxxServiceScript(ctx context.Context, dbName string, name string, mount *string, body map[string]interface{}) (map[string]interface{}, error)
+	// RunFoxxServiceTests executes the test suite of a specific Foxx service
+	// deployed in an ArangoDB database.
+	RunFoxxServiceTests(ctx context.Context, dbName string, opt FoxxTestOptions) (map[string]interface{}, error)
+	// EnableDevelopmentMode enables the development mode for a specific Foxx service.
+	// Development mode causes the Foxx service to be reloaded from the filesystem and its setup
+	// script (if present) to be re-executed every time the service handles a request.
+	EnableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
+	// DisableDevelopmentMode disables the development mode for a specific Foxx service.
+	DisableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 }
 
 type FoxxDeploymentOptions struct {
@@ -255,4 +264,11 @@ type FoxxServiceObject struct {
 
 	// Options contains optional runtime options defined for the service.
 	Options map[string]interface{} `json:"options,omitempty"`
+}
+
+type FoxxTestOptions struct {
+	FoxxDeploymentOptions
+	Reporter  *string `json:"reporter,omitempty"`
+	Idiomatic *bool   `json:"idiomatic,omitempty"`
+	Filter    *string `json:"filter,omitempty"`
 }

@@ -400,3 +400,150 @@ func (c *clientFoxx) RunFoxxServiceScript(ctx context.Context, dbName string, na
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientFoxx) RunFoxxServiceTests(ctx context.Context, dbName string, opt FoxxTestOptions) (map[string]interface{}, error) {
+
+	if opt.Mount == nil || *opt.Mount == "" {
+		return nil, RequiredFieldError("mount")
+	}
+
+	queryParams := map[string]interface{}{
+		"mount": *opt.Mount,
+	}
+
+	if opt.Reporter != nil {
+		queryParams["reporter"] = *opt.Reporter
+	}
+	if opt.Idiomatic != nil {
+		queryParams["idiomatic"] = *opt.Idiomatic
+	}
+	if opt.Filter != nil {
+		queryParams["filter"] = *opt.Filter
+	}
+
+	urlEndpoint := c.url(dbName, []string{"tests"}, queryParams)
+
+	var rawResult json.RawMessage
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &rawResult, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		var result map[string]interface{}
+		if err := json.Unmarshal(rawResult, &result); err == nil {
+			return result, nil
+		}
+
+		var objResult struct {
+			Result map[string]interface{} `json:"result"`
+			Error  bool                   `json:"error"`
+			Code   int                    `json:"code"`
+		}
+		if err := json.Unmarshal(rawResult, &objResult); err == nil {
+			if objResult.Error {
+				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
+			}
+			return objResult.Result, nil
+		}
+
+		return nil, fmt.Errorf(
+			"cannot unmarshal response into map or object with result field: %s",
+			string(rawResult),
+		)
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientFoxx) EnableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error) {
+
+	if mount == nil || *mount == "" {
+		return nil, RequiredFieldError("mount")
+	}
+
+	urlEndpoint := c.url(dbName, []string{"development"}, map[string]interface{}{
+		"mount": *mount,
+	})
+
+	var rawResult json.RawMessage
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &rawResult, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		var result map[string]interface{}
+		if err := json.Unmarshal(rawResult, &result); err == nil {
+			return result, nil
+		}
+
+		var objResult struct {
+			Result map[string]interface{} `json:"result"`
+			Error  bool                   `json:"error"`
+			Code   int                    `json:"code"`
+		}
+		if err := json.Unmarshal(rawResult, &objResult); err == nil {
+			if objResult.Error {
+				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
+			}
+			return objResult.Result, nil
+		}
+
+		return nil, fmt.Errorf(
+			"cannot unmarshal response into map or object with result field: %s",
+			string(rawResult),
+		)
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientFoxx) DisableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error) {
+
+	if mount == nil || *mount == "" {
+		return nil, RequiredFieldError("mount")
+	}
+
+	urlEndpoint := c.url(dbName, []string{"development"}, map[string]interface{}{
+		"mount": *mount,
+	})
+
+	var rawResult json.RawMessage
+	resp, err := connection.CallDelete(ctx, c.client.connection, urlEndpoint, &rawResult)
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		var result map[string]interface{}
+		if err := json.Unmarshal(rawResult, &result); err == nil {
+			return result, nil
+		}
+
+		var objResult struct {
+			Result map[string]interface{} `json:"result"`
+			Error  bool                   `json:"error"`
+			Code   int                    `json:"code"`
+		}
+		if err := json.Unmarshal(rawResult, &objResult); err == nil {
+			if objResult.Error {
+				return nil, fmt.Errorf("ArangoDB API error: code %d", objResult.Code)
+			}
+			return objResult.Result, nil
+		}
+
+		return nil, fmt.Errorf(
+			"cannot unmarshal response into map or object with result field: %s",
+			string(rawResult),
+		)
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
