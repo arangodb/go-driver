@@ -105,6 +105,9 @@ type ClientFoxxService interface {
 	// GetFoxxServiceSwagger retrieves the Swagger specification
 	// for a specific Foxx service mounted in the given database.
 	GetFoxxServiceSwagger(ctx context.Context, dbName string, mount *string) (SwaggerResponse, error)
+	// CommitFoxxService commits the local Foxx service state of the Coordinator
+	// to the database. This can resolve service conflicts between Coordinators.
+	CommitFoxxService(ctx context.Context, dbName string, replace *bool) error
 }
 
 type FoxxDeploymentOptions struct {
