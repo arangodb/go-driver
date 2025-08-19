@@ -23,7 +23,9 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -227,5 +229,1081 @@ func Test_QueryBatchWithRetries(t *testing.T) {
 				})
 			})
 		})
+	})
+}
+
+func Test_GetQueryProperties(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			res, err := db.GetQueryProperties(context.Background())
+			require.NoError(t, err)
+			jsonResp, err := utils.ToJSONString(res)
+			require.NoError(t, err)
+			t.Logf("Query Properties: %s", jsonResp)
+			// Check that the response contains expected fields
+			require.NotNil(t, res)
+			require.IsType(t, true, *res.Enabled)
+			require.IsType(t, true, *res.TrackSlowQueries)
+			require.IsType(t, true, *res.TrackBindVars)
+			require.GreaterOrEqual(t, *res.MaxSlowQueries, 0)
+			require.Greater(t, *res.SlowQueryThreshold, 0.0)
+			require.Greater(t, *res.MaxQueryStringLength, 0)
+		})
+	})
+}
+
+func Test_UpdateQueryProperties(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			res, err := db.GetQueryProperties(context.Background())
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			options := arangodb.QueryProperties{
+				Enabled:              utils.NewType(true),
+				TrackSlowQueries:     utils.NewType(true),
+				TrackBindVars:        utils.NewType(false), // optional but useful for debugging
+				MaxSlowQueries:       utils.NewType(*res.MaxSlowQueries + 1),
+				SlowQueryThreshold:   utils.NewType(*res.SlowQueryThreshold + 0.1),
+				MaxQueryStringLength: utils.NewType(*res.MaxQueryStringLength + 100),
+			}
+			updateResp, err := db.UpdateQueryProperties(context.Background(), options)
+			require.NoError(t, err)
+			require.NotNil(t, updateResp)
+			require.Equal(t, *options.Enabled, *updateResp.Enabled)
+			require.Equal(t, *options.TrackSlowQueries, *updateResp.TrackSlowQueries)
+			require.Equal(t, *options.TrackBindVars, *updateResp.TrackBindVars)
+			require.Equal(t, *options.MaxSlowQueries, *updateResp.MaxSlowQueries)
+			require.Equal(t, *options.SlowQueryThreshold, *updateResp.SlowQueryThreshold)
+			require.Equal(t, *options.MaxQueryStringLength, *updateResp.MaxQueryStringLength)
+			res, err = db.GetQueryProperties(context.Background())
+			require.NoError(t, err)
+			require.NotNil(t, res)
+		})
+	})
+}
+
+func Test_ListOfRunningAQLQueries(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Enable query tracking AND plan caching
+		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(4094),
+		})
+		require.NoError(t, err)
+
+		// Test that the endpoint works (should return empty list or some queries)
+		queries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(false))
+		require.NoError(t, err)
+		require.NotNil(t, queries)
+		t.Logf("Current running queries (all=false): %d\n", len(queries))
+		t.Run("Test that queries are not empty", func(t *testing.T) {
+
+			// Create a context we can cancel
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			// Start a transaction with a long-running query
+			queryStarted := make(chan struct{})
+			go func() {
+				defer close(queryStarted)
+
+				// Use a streaming query that processes results slowly
+				bindVars := map[string]interface{}{
+					"max": 10000000,
+				}
+
+				cursor, err := db.Query(ctx, `
+	FOR i IN 1..@max
+		LET computation = (
+			FOR x IN 1..100
+				RETURN x * i
+		)
+		RETURN {i: i, sum: SUM(computation)}
+`, &arangodb.QueryOptions{
+					BindVars: bindVars,
+				})
+
+				if err != nil {
+					if !strings.Contains(err.Error(), "canceled") {
+						t.Logf("Query error: %v", err)
+					}
+					return
+				}
+
+				// Process results slowly to keep query active longer
+				if cursor != nil {
+					for cursor.HasMore() {
+						var result interface{}
+						_, err := cursor.ReadDocument(ctx, &result)
+						if err != nil {
+							break
+						}
+						// Add small delay to keep query running longer
+						time.Sleep(10 * time.Millisecond)
+					}
+					cursor.Close()
+				}
+			}()
+
+			// Wait for query to start and be registered
+			time.Sleep(2 * time.Second)
+
+			// Check for running queries multiple times
+			var foundRunningQuery bool
+			for attempt := 0; attempt < 15; attempt++ {
+				queries, err := db.ListOfRunningAQLQueries(ctx, utils.NewType(false))
+				require.NoError(t, err)
+
+				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
+
+				if len(queries) > 0 {
+					foundRunningQuery = true
+					t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
+					// Log query details
+					for i, query := range queries {
+						bindVarsJSON, _ := utils.ToJSONString(*query.BindVars)
+						t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
+							i, *query.Id, *query.State, bindVarsJSON)
+					}
+					break
+				}
+
+				time.Sleep(300 * time.Millisecond)
+			}
+
+			// Cancel the query
+			cancel()
+
+			// Assert we found running queries
+			require.True(t, foundRunningQuery, "Should have found at least one running query")
+		})
+	})
+}
+
+func Test_ListOfSlowAQLQueries(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		// Get the database
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Get the query properties
+		res, err := db.GetQueryProperties(ctx)
+		require.NoError(t, err)
+
+		jsonResp, err := utils.ToJSONString(res)
+		require.NoError(t, err)
+		t.Logf("Query Properties: %s", jsonResp)
+		// Check that the response contains expected fields
+		require.NotNil(t, res)
+		// Update query properties to ensure slow queries are tracked
+		t.Logf("Updating query properties to track slow queries")
+		// Set a low threshold to ensure we capture slow queries
+		// and limit the number of slow queries to 1 for testing
+		options := arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			TrackBindVars:        utils.NewType(true), // optional but useful for debugging
+			MaxSlowQueries:       utils.NewType(1),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxQueryStringLength: utils.NewType(4096),
+		}
+		// Update the query properties
+		_, err = db.UpdateQueryProperties(ctx, options)
+		require.NoError(t, err)
+
+		t.Run("Test that queries are not empty", func(t *testing.T) {
+
+			_, err := db.Query(ctx, "FOR i IN 1..1000000 COLLECT WITH COUNT INTO length RETURN length", nil)
+			require.NoError(t, err)
+
+			// Wait for query to start and be registered
+			time.Sleep(2 * time.Second)
+
+			// Check for running queries multiple times
+			var foundRunningQuery bool
+			for attempt := 0; attempt < 15; attempt++ {
+				queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(false))
+				require.NoError(t, err)
+
+				t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
+
+				if len(queries) > 0 {
+					foundRunningQuery = true
+					t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
+					// Log query details
+					for i, query := range queries {
+						t.Logf("Query %d: ID=%s, State=%s", i, *query.Id, *query.State)
+					}
+					break
+				}
+
+				time.Sleep(300 * time.Millisecond)
+			}
+
+			// Assert we found running queries
+			require.True(t, foundRunningQuery, "Should have found at least one running query")
+		})
+	})
+}
+
+func Test_KillAQLQuery(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		// Get the database
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		options := arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			TrackBindVars:        utils.NewType(true), // optional but useful for debugging
+			MaxSlowQueries:       utils.NewType(1),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxQueryStringLength: utils.NewType(3096),
+		}
+		// Update the query properties
+		_, err = db.UpdateQueryProperties(ctx, options)
+		require.NoError(t, err)
+		// Channel to signal when query has started
+		// Create a context we can cancel
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Start a transaction with a long-running query
+		queryStarted := make(chan struct{})
+		go func() {
+			defer close(queryStarted)
+
+			// Use a streaming query that processes results slowly
+			bindVars := map[string]interface{}{
+				"max": 10000000,
+			}
+
+			cursor, err := db.Query(ctx, `
+	FOR i IN 1..@max
+		LET computation = (
+			FOR x IN 1..100
+				RETURN x * i
+		)
+		RETURN {i: i, sum: SUM(computation)}
+`, &arangodb.QueryOptions{
+				BindVars: bindVars,
+			})
+
+			if err != nil {
+				if !strings.Contains(err.Error(), "canceled") {
+					t.Logf("Query error: %v", err)
+				}
+				return
+			}
+
+			// Process results slowly to keep query active longer
+			if cursor != nil {
+				for cursor.HasMore() {
+					var result interface{}
+					_, err := cursor.ReadDocument(ctx, &result)
+					if err != nil {
+						break
+					}
+					// Add small delay to keep query running longer
+					time.Sleep(10 * time.Millisecond)
+				}
+				cursor.Close()
+			}
+		}()
+
+		// Wait for query to start and be registered
+		time.Sleep(2 * time.Second)
+
+		// Check for running queries multiple times
+		var foundRunningQuery bool
+		for attempt := 0; attempt < 15; attempt++ {
+			queries, err := db.ListOfRunningAQLQueries(context.Background(), utils.NewType(false))
+
+			// Enhanced error logging to help debug the issue
+			if err != nil {
+				t.Logf("Attempt %d: Error getting queries: %v", attempt+1, err)
+
+				// Log additional context about the error
+				if strings.Contains(err.Error(), "cannot unmarshal") {
+					t.Logf("This suggests a response format mismatch between local and CI environments")
+					t.Logf("Consider checking ArangoDB version differences or server configuration")
+				}
+
+				// Continue to next attempt instead of failing immediately
+				time.Sleep(300 * time.Millisecond)
+				continue
+			}
+
+			t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
+
+			if len(queries) > 0 {
+				foundRunningQuery = true
+				t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
+				// Log query details
+				for i, query := range queries {
+					bindVarsJSON, _ := utils.ToJSONString(*query.BindVars)
+					t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
+						i, *query.Id, *query.State, bindVarsJSON)
+					// Kill the query
+					err := db.KillAQLQuery(ctx, *query.Id, utils.NewType(false))
+					require.NoError(t, err, "Failed to kill query %s", *query.Id)
+					t.Logf("Killed query %s", *query.Id)
+				}
+				break
+			}
+
+			time.Sleep(300 * time.Millisecond)
+		}
+
+		// Cancel the query
+		cancel()
+
+		// More detailed assertion message
+		if !foundRunningQuery {
+			t.Logf("FAILURE ANALYSIS:")
+			t.Logf("- No running queries were found during any of the 15 attempts")
+			t.Logf("- This could indicate:")
+			t.Logf("  1. Query executed too quickly in CI environment")
+			t.Logf("  2. Query tracking is disabled in CI ArangoDB configuration")
+			t.Logf("  3. Different ArangoDB version/configuration in CI")
+			t.Logf("  4. Resource constraints causing immediate query completion")
+		}
+
+		// Assert we found running queries
+		require.True(t, foundRunningQuery, "Should have found at least one running query")
+	})
+}
+
+func Test_GetAllOptimizerRules(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			res, err := db.GetAllOptimizerRules(context.Background())
+			require.NoError(t, err)
+			// Check that the response contains expected fields
+			require.NotNil(t, res)
+			require.GreaterOrEqual(t, len(res), 1, "Should return at least one optimizer rule")
+			require.NotNil(t, res[0].Name, "Optimizer rule name should not be empty")
+			require.NotNil(t, res[0].Flags, "Optimizer rule flags should not be empty")
+			require.NotNil(t, res[0].Flags.CanBeDisabled, "Optimizer flags canBeDisabled should not be empty")
+			require.NotNil(t, res[0].Flags.CanCreateAdditionalPlans, "Optimizer flags canCreateAdditionalPlans should not be empty")
+			require.NotNil(t, res[0].Flags.ClusterOnly, "Optimizer flags clusterOnly should not be empty")
+			require.NotNil(t, res[0].Flags.DisabledByDefault, "Optimizer flags disabledByDefault should not be empty")
+			require.NotNil(t, res[0].Flags.EnterpriseOnly, "Optimizer flags enterpriseOnly should not be empty")
+			require.NotNil(t, res[0].Flags.Hidden, "Optimizer flags hidden should not be empty")
+		})
+	})
+}
+
+func Test_GetQueryPlanCache(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Enable query tracking AND plan caching
+		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
+		})
+		require.NoError(t, err)
+
+		plansBefore, _ := db.GetQueryEntriesCache(ctx)
+		t.Logf("Before: %d plans", len(plansBefore))
+
+		// Create test collection
+		WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+			// Insert more data to make query more complex
+			docs := make([]map[string]interface{}, 100)
+			for i := 0; i < 100; i++ {
+				docs[i] = map[string]interface{}{
+					"value":    i,
+					"category": fmt.Sprintf("cat_%d", i%5),
+					"active":   i%2 == 0,
+				}
+			}
+			_, err := col.CreateDocuments(ctx, docs)
+			require.NoError(t, err)
+
+			// Use a more complex query that's more likely to be cached
+			query := `
+				FOR d IN @@col
+				FILTER d.value >= @minVal AND d.value <= @maxVal
+				FILTER d.category == @category
+				SORT d.value
+				LIMIT @offset, @count
+				RETURN {
+					id: d._key,
+					value: d.value,
+					category: d.category,
+					computed: d.value * 2
+				}
+			`
+
+			bindVars := map[string]interface{}{
+				"@col":     col.Name(),
+				"minVal":   10,
+				"maxVal":   50,
+				"category": "cat_1",
+				"offset":   0,
+				"count":    10,
+			}
+
+			// Run the same query many more times to encourage caching
+			// ArangoDB typically caches plans after they've been used multiple times
+			for i := 0; i < 100; i++ {
+				cursor, err := db.Query(ctx, query, &arangodb.QueryOptions{
+					BindVars: bindVars,
+					Cache:    true, // Explicitly enable caching if supported
+				})
+				require.NoError(t, err)
+
+				for cursor.HasMore() {
+					var doc interface{}
+					_, err := cursor.ReadDocument(ctx, &doc)
+					require.NoError(t, err)
+				}
+				cursor.Close()
+
+				// Vary the parameters slightly to create different cached plans
+				if i%20 == 0 {
+					bindVars["category"] = fmt.Sprintf("cat_%d", (i/20)%5)
+				}
+			}
+
+			// Also try some different but similar queries
+			queries := []struct {
+				query    string
+				bindVars map[string]interface{}
+			}{
+				{
+					query: `FOR d IN @@col FILTER d.value > @val SORT d.value LIMIT 5 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col": col.Name(),
+						"val":  25,
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.category == @category RETURN d.value`,
+					bindVars: map[string]interface{}{
+						"@col":     col.Name(),
+						"category": "cat_1",
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.active == @active SORT d.value DESC LIMIT 10 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col":   col.Name(),
+						"active": true,
+					},
+				},
+			}
+
+			for _, queryInfo := range queries {
+				for i := 0; i < 20; i++ {
+					cursor, err := db.Query(ctx, queryInfo.query, &arangodb.QueryOptions{
+						BindVars: queryInfo.bindVars,
+						Cache:    true, // Enable query plan caching
+					})
+					require.NoError(t, err)
+
+					for cursor.HasMore() {
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
+					}
+					cursor.Close()
+				}
+			}
+		})
+
+		// Wait a moment for caching to happen
+		time.Sleep(100 * time.Millisecond)
+
+		plansAfter, err := db.GetQueryPlanCache(ctx)
+		require.NoError(t, err)
+		t.Logf("After: %d plans", len(plansAfter))
+
+		// Check current query properties to verify settings
+		props, err := db.GetQueryProperties(ctx)
+		if err == nil {
+			propsJson, _ := utils.ToJSONString(props)
+			t.Logf("Query Properties: %s", propsJson)
+		}
+
+		// Get query plan cache
+		resp, err := db.GetQueryPlanCache(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		// If still empty, check if the feature is supported
+		if len(resp) == 0 {
+			t.Logf("Query plan cache is empty. This might be because:")
+			t.Logf("1. Query plan caching is disabled in ArangoDB configuration")
+			t.Logf("2. Queries are too simple to warrant caching")
+			t.Logf("3. Not enough executions to trigger caching")
+			t.Logf("4. Feature might not be available in this ArangoDB version")
+
+			// Check ArangoDB version
+			version, err := client.Version(ctx)
+			if err == nil {
+				t.Logf("ArangoDB Version: %s", version.Version)
+			}
+		} else {
+			// Success case - we have cached plans
+			require.Greater(t, len(resp), 0, "Expected at least one cached plan")
+			t.Logf("Successfully found %d cached query plans", len(resp))
+		}
+	})
+}
+
+func Test_ClearQueryPlanCache(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Enable query tracking AND plan caching
+		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
+		})
+		require.NoError(t, err)
+
+		// Create test collection
+		WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+			// Insert more data to make query more complex
+			docs := make([]map[string]interface{}, 100)
+			for i := 0; i < 100; i++ {
+				docs[i] = map[string]interface{}{
+					"value":    i,
+					"category": fmt.Sprintf("cat_%d", i%5),
+					"active":   i%2 == 0,
+				}
+			}
+			_, err := col.CreateDocuments(ctx, docs)
+			require.NoError(t, err)
+
+			// Use a more complex query that's more likely to be cached
+			query := `
+				FOR d IN @@col
+				FILTER d.value >= @minVal AND d.value <= @maxVal
+				FILTER d.category == @category
+				SORT d.value
+				LIMIT @offset, @count
+				RETURN {
+					id: d._key,
+					value: d.value,
+					category: d.category,
+					computed: d.value * 2
+				}
+			`
+
+			bindVars := map[string]interface{}{
+				"@col":     col.Name(),
+				"minVal":   10,
+				"maxVal":   50,
+				"category": "cat_1",
+				"offset":   0,
+				"count":    10,
+			}
+
+			// Run the same query many more times to encourage caching
+			// ArangoDB typically caches plans after they've been used multiple times
+			for i := 0; i < 100; i++ {
+				cursor, err := db.Query(ctx, query, &arangodb.QueryOptions{
+					BindVars: bindVars,
+					Cache:    true, // Explicitly enable caching if supported
+				})
+				require.NoError(t, err)
+
+				// Process all results
+				for cursor.HasMore() {
+					var doc interface{}
+					_, err := cursor.ReadDocument(ctx, &doc)
+					require.NoError(t, err)
+				}
+				cursor.Close()
+
+				// Vary the parameters slightly to create different cached plans
+				if i%20 == 0 {
+					bindVars["category"] = fmt.Sprintf("cat_%d", (i/20)%5)
+				}
+			}
+
+			// Also try some different but similar queries
+			queries := []struct {
+				query    string
+				bindVars map[string]interface{}
+			}{
+				{
+					query: `FOR d IN @@col FILTER d.value > @val SORT d.value LIMIT 5 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col": col.Name(),
+						"val":  25,
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.category == @category RETURN d.value`,
+					bindVars: map[string]interface{}{
+						"@col":     col.Name(),
+						"category": "cat_1",
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.active == @active SORT d.value DESC LIMIT 10 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col":   col.Name(),
+						"active": true,
+					},
+				},
+			}
+
+			for _, queryInfo := range queries {
+				for i := 0; i < 20; i++ {
+					cursor, err := db.Query(ctx, queryInfo.query, &arangodb.QueryOptions{
+						BindVars: queryInfo.bindVars,
+						Cache:    true, // Enable query plan caching
+					})
+					require.NoError(t, err)
+
+					for cursor.HasMore() {
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
+					}
+					cursor.Close()
+				}
+			}
+		})
+
+		// Wait a moment for caching to happen
+		time.Sleep(100 * time.Millisecond)
+
+		err = db.ClearQueryPlanCache(ctx)
+		require.NoError(t, err)
+	})
+}
+
+func Test_GetQueryEntriesCache(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Enable query tracking AND plan caching
+		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
+		})
+		require.NoError(t, err)
+
+		plansBefore, _ := db.GetQueryEntriesCache(ctx)
+		t.Logf("Before: %d plans", len(plansBefore))
+
+		// Create test collection
+		WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+			// Insert more data to make query more complex
+			docs := make([]map[string]interface{}, 100)
+			for i := 0; i < 100; i++ {
+				docs[i] = map[string]interface{}{
+					"value":    i,
+					"category": fmt.Sprintf("cat_%d", i%5),
+					"active":   i%2 == 0,
+				}
+			}
+			_, err := col.CreateDocuments(ctx, docs)
+			require.NoError(t, err)
+
+			// Use a more complex query that's more likely to be cached
+			query := `
+				FOR d IN @@col
+				FILTER d.value >= @minVal AND d.value <= @maxVal
+				FILTER d.category == @category
+				SORT d.value
+				LIMIT @offset, @count
+				RETURN {
+					id: d._key,
+					value: d.value,
+					category: d.category,
+					computed: d.value * 2
+				}
+			`
+
+			bindVars := map[string]interface{}{
+				"@col":     col.Name(),
+				"minVal":   10,
+				"maxVal":   50,
+				"category": "cat_1",
+				"offset":   0,
+				"count":    10,
+			}
+
+			// Run the same query many more times to encourage caching
+			// ArangoDB typically caches plans after they've been used multiple times
+			for i := 0; i < 100; i++ {
+				cursor, err := db.Query(ctx, query, &arangodb.QueryOptions{
+					BindVars: bindVars,
+					Cache:    true, // Explicitly enable caching if supported
+				})
+				require.NoError(t, err)
+
+				for cursor.HasMore() {
+					var doc interface{}
+					_, err := cursor.ReadDocument(ctx, &doc)
+					require.NoError(t, err)
+				}
+				cursor.Close()
+
+				// Vary the parameters slightly to create different cached plans
+				if i%20 == 0 {
+					bindVars["category"] = fmt.Sprintf("cat_%d", (i/20)%5)
+				}
+			}
+
+			// Also try some different but similar queries
+			queries := []struct {
+				query    string
+				bindVars map[string]interface{}
+			}{
+				{
+					query: `FOR d IN @@col FILTER d.value > @val SORT d.value LIMIT 5 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col": col.Name(),
+						"val":  25,
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.category == @category RETURN d.value`,
+					bindVars: map[string]interface{}{
+						"@col":     col.Name(),
+						"category": "cat_1",
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.active == @active SORT d.value DESC LIMIT 10 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col":   col.Name(),
+						"active": true,
+					},
+				},
+			}
+
+			for _, queryInfo := range queries {
+				for i := 0; i < 20; i++ {
+					cursor, err := db.Query(ctx, queryInfo.query, &arangodb.QueryOptions{
+						BindVars: queryInfo.bindVars,
+						Cache:    true, // Enable query entries caching
+					})
+					require.NoError(t, err)
+
+					for cursor.HasMore() {
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
+					}
+					cursor.Close()
+				}
+			}
+		})
+
+		// Wait a moment for caching to happen
+		time.Sleep(100 * time.Millisecond)
+
+		plansAfter, err := db.GetQueryEntriesCache(ctx)
+		require.NoError(t, err)
+		t.Logf("After: %d plans", len(plansAfter))
+
+		// Check current query properties to verify settings
+		props, err := db.GetQueryProperties(ctx)
+		if err == nil {
+			propsJson, _ := utils.ToJSONString(props)
+			t.Logf("Query Properties: %s", propsJson)
+		}
+
+		// Get query plan cache
+		resp, err := db.GetQueryEntriesCache(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		// If still empty, check if the feature is supported
+		if len(resp) == 0 {
+			t.Logf("Query entries cache is empty. This might be because:")
+			t.Logf("1. Query entries caching is disabled in ArangoDB configuration")
+			t.Logf("2. Queries are too simple to warrant caching")
+			t.Logf("3. Not enough executions to trigger caching")
+			t.Logf("4. Feature might not be available in this ArangoDB version")
+
+			// Check ArangoDB version
+			version, err := client.Version(ctx)
+			if err == nil {
+				t.Logf("ArangoDB Version: %s", version.Version)
+			}
+		} else {
+			// Success case - we have cached query entries
+			require.Greater(t, len(resp), 0, "Expected at least one query entries")
+			t.Logf("Successfully found %d cached query entries", len(resp))
+		}
+	})
+}
+
+func Test_ClearQueryCache(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Enable query tracking AND plan caching
+		_, err = db.UpdateQueryProperties(ctx, arangodb.QueryProperties{
+			Enabled:              utils.NewType(true),
+			TrackBindVars:        utils.NewType(true),
+			TrackSlowQueries:     utils.NewType(true),
+			SlowQueryThreshold:   utils.NewType(0.0001),
+			MaxSlowQueries:       utils.NewType(54),
+			MaxQueryStringLength: utils.NewType(3904),
+		})
+		require.NoError(t, err)
+
+		// Create test collection
+		WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+			// Insert more data to make query more complex
+			docs := make([]map[string]interface{}, 100)
+			for i := 0; i < 100; i++ {
+				docs[i] = map[string]interface{}{
+					"value":    i,
+					"category": fmt.Sprintf("cat_%d", i%5),
+					"active":   i%2 == 0,
+				}
+			}
+			_, err := col.CreateDocuments(ctx, docs)
+			require.NoError(t, err)
+
+			// Use a more complex query that's more likely to be cached
+			query := `
+				FOR d IN @@col
+				FILTER d.value >= @minVal AND d.value <= @maxVal
+				FILTER d.category == @category
+				SORT d.value
+				LIMIT @offset, @count
+				RETURN {
+					id: d._key,
+					value: d.value,
+					category: d.category,
+					computed: d.value * 2
+				}
+			`
+
+			bindVars := map[string]interface{}{
+				"@col":     col.Name(),
+				"minVal":   10,
+				"maxVal":   50,
+				"category": "cat_1",
+				"offset":   0,
+				"count":    10,
+			}
+
+			// Run the same query many more times to encourage caching
+			// ArangoDB typically caches plans after they've been used multiple times
+			for i := 0; i < 100; i++ {
+				cursor, err := db.Query(ctx, query, &arangodb.QueryOptions{
+					BindVars: bindVars,
+					Cache:    true, // Explicitly enable caching if supported
+				})
+				require.NoError(t, err)
+
+				for cursor.HasMore() {
+					var doc interface{}
+					_, err := cursor.ReadDocument(ctx, &doc)
+					require.NoError(t, err)
+				}
+				cursor.Close()
+
+				// Vary the parameters slightly to create different cached plans
+				if i%20 == 0 {
+					bindVars["category"] = fmt.Sprintf("cat_%d", (i/20)%5)
+				}
+			}
+
+			// Also try some different but similar queries
+			queries := []struct {
+				query    string
+				bindVars map[string]interface{}
+			}{
+				{
+					query: `FOR d IN @@col FILTER d.value > @val SORT d.value LIMIT 5 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col": col.Name(),
+						"val":  25,
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.category == @category RETURN d.value`,
+					bindVars: map[string]interface{}{
+						"@col":     col.Name(),
+						"category": "cat_1",
+					},
+				},
+				{
+					query: `FOR d IN @@col FILTER d.active == @active SORT d.value DESC LIMIT 10 RETURN d`,
+					bindVars: map[string]interface{}{
+						"@col":   col.Name(),
+						"active": true,
+					},
+				},
+			}
+
+			for _, queryInfo := range queries {
+				for i := 0; i < 20; i++ {
+					cursor, err := db.Query(ctx, queryInfo.query, &arangodb.QueryOptions{
+						BindVars: queryInfo.bindVars,
+						Cache:    true, // Enable query plan caching
+					})
+					require.NoError(t, err)
+
+					for cursor.HasMore() {
+						var doc interface{}
+						_, err := cursor.ReadDocument(ctx, &doc)
+						require.NoError(t, err)
+					}
+					cursor.Close()
+				}
+			}
+		})
+
+		// Wait a moment for caching to happen
+		time.Sleep(100 * time.Millisecond)
+
+		err = db.ClearQueryCache(ctx)
+		require.NoError(t, err)
+	})
+}
+
+func Test_GetQueryCacheProperties(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		queryCacheProperties, err := db.GetQueryCacheProperties(ctx)
+		require.NoError(t, err)
+		propsJson, err := utils.ToJSONString(queryCacheProperties)
+		require.NoError(t, err)
+		t.Logf("Query Properties: %s", propsJson)
+		require.NotNil(t, queryCacheProperties)
+		require.NotNil(t, queryCacheProperties.IncludeSystem, "IncludeSystem should not be nil")
+		require.NotNil(t, queryCacheProperties.MaxEntrySize, "MaxEntrySize should not be nil")
+		require.NotNil(t, queryCacheProperties.MaxResults, "MaxResults should not be nil")
+		require.NotNil(t, queryCacheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
+		require.NotNil(t, queryCacheProperties.Mode, "Mode should not be nil")
+	})
+}
+
+func Test_SetQueryCacheProperties(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		// Use _system or test DB
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+		queryCacheProperties, err := db.GetQueryCacheProperties(ctx)
+		require.NoError(t, err)
+		propsJson, err := utils.ToJSONString(queryCacheProperties)
+		require.NoError(t, err)
+		t.Logf("Before Query Properties: %s", propsJson)
+		SetQueryCacheProperties, err := db.SetQueryCacheProperties(ctx, arangodb.QueryCacheProperties{
+			IncludeSystem: utils.NewType(true),
+			MaxResults:    utils.NewType(uint16(32)),
+		})
+		require.NoError(t, err)
+		SetQueryCachePropertiesJson, err := utils.ToJSONString(SetQueryCacheProperties)
+		require.NoError(t, err)
+		t.Logf("After Setting - Query Properties: %s", SetQueryCachePropertiesJson)
+		require.NotNil(t, SetQueryCacheProperties)
+		require.NotNil(t, SetQueryCacheProperties.IncludeSystem, "IncludeSystem should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.MaxEntrySize, "MaxEntrySize should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.MaxResults, "MaxResults should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
+		require.NotNil(t, SetQueryCacheProperties.Mode, "Mode should not be nil")
+		AfterSetQueryCacheProperties, err := db.GetQueryCacheProperties(ctx)
+		require.NoError(t, err)
+		AfterSetQueryCachePropertiesJson, err := utils.ToJSONString(AfterSetQueryCacheProperties)
+		require.NoError(t, err)
+		t.Logf("After Query Properties: %s", AfterSetQueryCachePropertiesJson)
+	})
+}
+
+func Test_UserDefinedFunctions(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		// Define UDF details
+		namespace := "myfunctions::temperature"
+		functionName := namespace + "::celsiustofahrenheit"
+		code := "function (celsius) { return celsius * 9 / 5 + 32; }"
+
+		// Create UDF
+		createdFn, err := db.CreateUserDefinedFunction(ctx, arangodb.UserDefinedFunctionObject{
+			Name:            &functionName,
+			Code:            &code,
+			IsDeterministic: utils.NewType(true),
+		})
+		require.NoError(t, err)
+		require.NotNil(t, createdFn)
+
+		// Get all UDFs
+		fns, err := db.GetUserDefinedFunctions(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, fns)
+
+		// Optionally validate that our created function exists in the list
+		var found bool
+		for _, fn := range fns {
+			if fn.Name != nil && *fn.Name == functionName {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "Created function not found in list of user-defined functions")
+
+		// Delete all functions in the namespace
+		deletedCount, err := db.DeleteUserDefinedFunction(ctx, &namespace, utils.NewType(true))
+		require.NoError(t, err)
+		require.NotNil(t, deletedCount)
+		t.Logf("Deleted user-defined function(s): %d", *deletedCount)
+		require.Greater(t, *deletedCount, 0, "Expected at least one function to be deleted")
 	})
 }

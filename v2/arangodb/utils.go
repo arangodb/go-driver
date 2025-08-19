@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
 
@@ -107,4 +108,8 @@ func CreateDocuments(ctx context.Context, col Collection, docCount int, generato
 
 	_, err := col.CreateDocuments(ctx, docs)
 	return err
+}
+
+func RequiredFieldError(field string) error {
+	return fmt.Errorf("%s field must be set", field)
 }
