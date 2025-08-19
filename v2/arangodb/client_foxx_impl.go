@@ -83,6 +83,10 @@ func (c *clientFoxx) InstallFoxxService(ctx context.Context, dbName string, zipF
 		request.FoxxDeploymentOptions = *opts
 	}
 
+	if _, err := os.Stat(zipFile); os.IsNotExist(err) {
+		return errors.WithStack(err)
+	}
+
 	bytes, err := os.ReadFile(zipFile)
 	if err != nil {
 		return errors.WithStack(err)
@@ -216,6 +220,10 @@ func (c *clientFoxx) ReplaceFoxxService(ctx context.Context, dbName string, zipF
 		request.FoxxDeploymentOptions = *opts
 	}
 
+	if _, err := os.Stat(zipFile); os.IsNotExist(err) {
+		return errors.WithStack(err)
+	}
+
 	bytes, err := os.ReadFile(zipFile)
 	if err != nil {
 		return errors.WithStack(err)
@@ -245,6 +253,10 @@ func (c *clientFoxx) UpgradeFoxxService(ctx context.Context, dbName string, zipF
 	request := &DeployFoxxServiceRequest{}
 	if opts != nil {
 		request.FoxxDeploymentOptions = *opts
+	}
+
+	if _, err := os.Stat(zipFile); os.IsNotExist(err) {
+		return errors.WithStack(err)
 	}
 
 	bytes, err := os.ReadFile(zipFile)
