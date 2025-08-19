@@ -61,11 +61,6 @@ jobs:
     steps:
       - checkout
       - run:
-        name: "Check resources before tests"
-        command: |
-          echo "HOME is $HOME"
-          ls -l $HOME/resources || echo "No resources in $HOME/resources"
-      - run:
           name: make << parameters.test-to-run >>
           command: |
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
@@ -73,10 +68,6 @@ jobs:
               exit 0
             fi
             make << parameters.test-to-run >>
-      - run:
-        name: "Check resources inside container"
-        command: |
-          docker run --rm -v $HOME/resources:/tmp/resources alpine ls -l /tmp/resources
     environment:
       TEST_RESOURCES: "${HOME}/resources/"
       ARANGODB: << pipeline.parameters.arangodbImage >>
