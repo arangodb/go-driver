@@ -60,18 +60,40 @@ jobs:
         default: false
     steps:
       - checkout
+      - run:
+          name: Debug - Check if this is a PR
+          command: |
+            echo "CIRCLE_PULL_REQUEST: $CIRCLE_PULL_REQUEST"
+            echo "CIRCLE_PR_NUMBER: $CIRCLE_PR_NUMBER"
       - attach_workspace:
           at: ~/
+      - run:
+          name: Debug - Check workspace contents
+          command: |
+            echo "Contents of HOME directory:"
+            ls -la $HOME/
+            echo "Looking for resources directory:"
+            find $HOME -name "resources" -type d 2>/dev/null || echo "No resources directory found"
       - run:
           name: Create resources symlink
           command: |
             if [ -d "${HOME}/resources" ]; then
+              echo "Found ${HOME}/resources, copying to /tmp/resources"
               sudo mkdir -p /tmp/resources
               sudo cp -r ${HOME}/resources/* /tmp/resources/
               ls -la /tmp/resources/
+            else
+              echo "Directory ${HOME}/resources does not exist"
+              echo "Creating empty /tmp/resources for fallback"
+              sudo mkdir -p /tmp/resources
             fi
       - run: echo "TEST_RESOURCES=$TEST_RESOURCES"
-      - run: ls -l $TEST_RESOURCES
+      - run: |
+          if [ -d "$TEST_RESOURCES" ]; then
+            ls -l $TEST_RESOURCES
+          else
+            echo "TEST_RESOURCES directory $TEST_RESOURCES does not exist"
+          fi
       - run:
           name: make << parameters.test-to-run >>
           command: |
