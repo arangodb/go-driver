@@ -61,6 +61,11 @@ jobs:
     steps:
       - checkout
       - run:
+        name: "Check resources before tests"
+        command: |
+          echo "HOME is $HOME"
+          ls -l $HOME/resources || echo "No resources in $HOME/resources"
+      - run:
           name: make << parameters.test-to-run >>
           command: |
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
@@ -68,6 +73,10 @@ jobs:
               exit 0
             fi
             make << parameters.test-to-run >>
+      - run:
+        name: "Check resources inside container"
+        command: |
+          docker run --rm -v $HOME/resources:/tmp/resources alpine ls -l /tmp/resources
     environment:
       TEST_RESOURCES: "${HOME}/resources/"
       ARANGODB: << pipeline.parameters.arangodbImage >>
@@ -92,6 +101,7 @@ jobs:
             if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
               curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
+      - run: ls -l $HOME/resources
 
   vulncheck:
     executor: golang-executor
@@ -127,13 +137,16 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
+          environment:
+            TEST_RESOURCES: "${HOME}/resources/"
       - run-integration-tests:
           name: Test V2 cluster - DB extra features (compression)
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
           enable-extra-db-features: true
-
+        environment:
+            TEST_RESOURCES: "${HOME}/resources/"
       - run-integration-tests:
           name: Test V1 single
           requires:
@@ -144,7 +157,8 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
-
+          environment:
+            TEST_RESOURCES: "${HOME}/resources/"
   # Weekly vulnerability check
   weekly_vulncheck:
     jobs:
