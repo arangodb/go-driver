@@ -129,8 +129,7 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
-          environment:
-            TEST_RESOURCES: "${HOME}/resources/"
+          resources-path: "${HOME}/resources/"
 
       - run-integration-tests:
           name: Test V2 cluster - DB extra features (compression)
@@ -138,8 +137,7 @@ workflows:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
           enable-extra-db-features: true
-          environment:
-            TEST_RESOURCES: "${HOME}/resources/"
+          resources-path: "${HOME}/resources/"
 
       - run-integration-tests:
           name: Test V1 single
@@ -152,8 +150,7 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
-          environment:
-            TEST_RESOURCES: "${HOME}/resources/"
+          resources-path: "${HOME}/resources/"
   # Weekly vulnerability check
   weekly_vulncheck:
     jobs:
