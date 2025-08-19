@@ -123,6 +123,7 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-tests-cluster
+
       - run-integration-tests:
           name: Test V2 cluster
           requires:
@@ -130,19 +131,22 @@ workflows:
           test-to-run: run-v2-tests-cluster
           environment:
             TEST_RESOURCES: "${HOME}/resources/"
+
       - run-integration-tests:
           name: Test V2 cluster - DB extra features (compression)
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
           enable-extra-db-features: true
-        environment:
+          environment:
             TEST_RESOURCES: "${HOME}/resources/"
+
       - run-integration-tests:
           name: Test V1 single
           requires:
             - download-demo-data
           test-to-run: run-tests-single
+
       - run-integration-tests:
           name: Test V2 single
           requires:
