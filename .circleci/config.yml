@@ -49,6 +49,26 @@ jobs:
     environment:
       GOIMAGE: << pipeline.parameters.goImage >>
 
+  download-demo-data:
+    executor: machine-executor
+    steps:
+      - run: mkdir -p $HOME/resources
+      - run:
+          name: Download itzpapalotl demo foxx service
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping..."
+              exit 0
+            fi
+            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
+              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+            fi
+      - run: ls -l $HOME/resources
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - resources
+
   run-integration-tests:
     executor: machine-executor
     parameters:
@@ -77,22 +97,6 @@ jobs:
       ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
       TEST_DISALLOW_UNKNOWN_FIELDS: false
       VERBOSE: 1
-
-  download-demo-data:
-    executor: machine-executor
-    steps:
-      - run: mkdir -p $HOME/resources
-      - run:
-          name: Download itzpapalotl demo foxx service
-          command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping..."
-              exit 0
-            fi
-            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
-            fi
-      - run: ls -l $HOME/resources
 
   vulncheck:
     executor: golang-executor
