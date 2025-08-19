@@ -80,6 +80,10 @@ jobs:
         default: false
     steps:
       - checkout
+      - attach_workspace:
+        at: ~/
+      - run: echo "TEST_RESOURCES=$TEST_RESOURCES"
+      - run: ls -l $TEST_RESOURCES
       - run:
           name: make << parameters.test-to-run >>
           command: |
