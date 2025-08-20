@@ -37,4 +37,5 @@ type Client interface {
 	ClientAsyncJob
 	ClientFoxx
 	ClientTasks
+	ClientReplication
 }
