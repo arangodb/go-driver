@@ -30,6 +30,7 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 type clientReplication struct {
@@ -109,5 +110,64 @@ func (c *clientReplication) CreateNewBatch(ctx context.Context, dbName string, D
 		return response.CreateNewBatchResponse, nil
 	default:
 		return CreateNewBatchResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientReplication) GetInventory(ctx context.Context, dbName string, params InventoryQueryParams) (InventoryResponse, error) {
+	// Build query params
+	queryParams := map[string]interface{}{}
+
+	if params.IncludeSystem == nil {
+		queryParams["includeSystem"] = utils.NewType(true)
+	} else {
+		queryParams["includeSystem"] = *params.IncludeSystem
+	}
+
+	if params.Global == nil {
+		queryParams["global"] = utils.NewType(false)
+	} else {
+		queryParams["global"] = *params.Global
+	}
+
+	if params.BatchID == 0 {
+		return InventoryResponse{}, errors.New("batchId must be specified when querying inventory")
+	}
+	queryParams["batchId"] = params.BatchID
+
+	if params.Collection != nil {
+		queryParams["collection"] = *params.Collection
+	}
+
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return InventoryResponse{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		if params.DBserver == nil || *params.DBserver == "" {
+			return InventoryResponse{}, errors.New("DBserver must be specified when querying inventory on a coordinator")
+		}
+		queryParams["DBserver"] = *params.DBserver
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"inventory"}, queryParams)
+
+	// Prepare response wrapper
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		InventoryResponse     `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return InventoryResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.InventoryResponse, nil
+	default:
+		return InventoryResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
