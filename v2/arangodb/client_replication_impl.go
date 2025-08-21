@@ -99,7 +99,7 @@ func (c *clientReplication) CreateNewBatch(ctx context.Context, dbName string, D
 		CreateNewBatchResponse `json:",inline"`
 	}
 
-	resp, err := connection.CallPost(ctx, c.client.connection, url, opt, &response)
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, opt)
 	if err != nil {
 		return CreateNewBatchResponse{}, errors.WithStack(err)
 	}
