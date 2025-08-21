@@ -129,7 +129,7 @@ func (c *clientReplication) GetInventory(ctx context.Context, dbName string, par
 		queryParams["global"] = *params.Global
 	}
 
-	if params.BatchID == 0 {
+	if params.BatchID == "" {
 		return InventoryResponse{}, errors.New("batchId must be specified when querying inventory")
 	}
 	queryParams["batchId"] = params.BatchID

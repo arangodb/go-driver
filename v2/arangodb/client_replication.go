@@ -56,7 +56,7 @@ type InventoryQueryParams struct {
 	// If true, the inventory will include all collections across all DBServers.
 	Global *bool `json:"global"`
 	// BatchID is the ID of the replication batch to query.
-	BatchID int64 `json:"batchId"`
+	BatchID string `json:"batchId"`
 	// Collection is the name of the collection to restrict inventory to.
 	Collection *string `json:"collection,omitempty"`
 
@@ -90,6 +90,8 @@ type CollectionsInventoryResponse struct {
 
 // ParametersInventoryResponse represents metadata and settings of a collection.
 type ParametersInventoryResponse struct {
+	// Reusable basic properties like ID and Name
+	BasicProperties
 	// AllowUserKeys indicates whether user keys are allowed.
 	AllowUserKeys *bool `json:"allowUserKeys,omitempty"`
 	// CacheEnabled indicates whether in-memory cache is enabled.
@@ -102,8 +104,6 @@ type ParametersInventoryResponse struct {
 	Deleted *bool `json:"deleted,omitempty"`
 	// GloballyUniqueId is the globally unique identifier for the collection.
 	GloballyUniqueId *string `json:"globallyUniqueId,omitempty"`
-	// ID is the collection ID.
-	ID *string `json:"id,omitempty"`
 	// InternalValidatorType is the internal validator type.
 	InternalValidatorType *int `json:"internalValidatorType,omitempty"`
 	// IsDisjoint indicates whether disjoint smart graphs are used.
@@ -118,14 +118,12 @@ type ParametersInventoryResponse struct {
 	KeyOptions *KeyOpts `json:"keyOptions,omitempty"`
 	// MinReplicationFactor defines the minimum replication factor for the collection.
 	MinReplicationFactor *int `json:"minReplicationFactor,omitempty"`
-	// Name is the name of the collection.
-	Name *string `json:"name,omitempty"`
 	// NumberOfShards defines the number of shards for the collection.
 	NumberOfShards *int `json:"numberOfShards,omitempty"`
 	// PlanId is the plan ID for the collection.
 	PlanId *string `json:"planId,omitempty"`
 	// ReplicationFactor defines the replication factor for the collection.
-	ReplicationFactor *int `json:"replicationFactor,omitempty"`
+	ReplicationFactor interface{} `json:"replicationFactor,omitempty"`
 	// Schema defines the schema for the collection.
 	Schema interface{} `json:"schema,omitempty"`
 	// ShardKeys defines the shard keys for the collection.
@@ -152,12 +150,10 @@ type ParametersInventoryResponse struct {
 
 // IndexesInventoryResponse represents metadata for an index in the collection.
 type IndexesInventoryResponse struct {
-	// Index ID
-	ID *string `json:"id,omitempty"`
+	// Reusable basic properties like ID and Name
+	BasicProperties
 	// Index type (hash, skiplist, etc.)
 	Type *string `json:"type,omitempty"`
-	// Index name
-	Name *string `json:"name,omitempty"`
 	// Indexed fields
 	Fields []string `json:"fields,omitempty"`
 	// Unique indicates whether the index enforces uniqueness.
@@ -184,16 +180,14 @@ type KeyOpts struct {
 
 // PropertiesInventoryResponse represents database-level properties.
 type PropertiesInventoryResponse struct {
-	// Database ID
-	ID *string `json:"id,omitempty"`
-	// Database name
-	Name *string `json:"name,omitempty"`
+	// Reusable basic properties like ID and Name
+	BasicProperties
 	// Whether this is a system database
 	IsSystem *bool `json:"isSystem,omitempty"`
 	// Default sharding method
 	Sharding *string `json:"sharding,omitempty"`
 	// Default replication factor
-	ReplicationFactor *int `json:"replicationFactor,omitempty"`
+	ReplicationFactor interface{} `json:"replicationFactor,omitempty"`
 	// Default write concern
 	WriteConcern *int `json:"writeConcern,omitempty"`
 	// Replication protocol version
@@ -216,10 +210,18 @@ type StateInventoryResponse struct {
 
 // ViewInventoryResponse represents a view entry in the inventory.
 type ViewInventoryResponse struct {
-	// View ID
-	ID *string `json:"id,omitempty"`
-	// View name
-	Name *string `json:"name,omitempty"`
+	// Reusable basic properties like ID and Name
+	BasicProperties
 	// View type (e.g. "arangosearch")
 	Type *string `json:"type,omitempty"`
+	// View properties
+	Properties map[string]interface{} `json:"properties,omitempty"`
+}
+
+// BasicProperties represents reusable ID and Name fields common to collections, views, etc.
+type BasicProperties struct {
+	// Unique identifier (collection ID, view ID, etc.)
+	ID *string `json:"id,omitempty"`
+	// Human-readable name
+	Name *string `json:"name,omitempty"`
 }
