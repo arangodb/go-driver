@@ -20,12 +20,17 @@
 
 package arangodb
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // ClientReplication defines replication API methods.
 type ClientReplication interface {
 	// CreateNewBatch creates a new replication batch.
 	CreateNewBatch(ctx context.Context, dbName string, DBserver *string, state *bool, opt CreateNewBatchOptions) (CreateNewBatchResponse, error)
+	// GetInventory retrieves the inventory of a replication batch.
+	GetInventory(ctx context.Context, dbName string, params InventoryQueryParams) (InventoryResponse, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -41,4 +46,180 @@ type CreateNewBatchResponse struct {
 	LastTick string `json:"lastTick"`
 	// Only present if the state URL parameter was set to true
 	State map[string]interface{} `json:"state,omitempty"`
+}
+
+// InventoryQueryParams represents the query parameters for the replication inventory API.
+type InventoryQueryParams struct {
+	// IncludeSystem indicates whether to include system collections in the inventory.
+	IncludeSystem *bool `json:"includeSystem"`
+	// Global indicates whether to return global inventory or not.
+	// If true, the inventory will include all collections across all DBServers.
+	Global *bool `json:"global"`
+	// BatchID is the ID of the replication batch to query.
+	BatchID int64 `json:"batchId"`
+	// Collection is the name of the collection to restrict inventory to.
+	Collection *string `json:"collection,omitempty"`
+
+	// Only for Coordinators
+	// Restrict to a specific DBserver in cluster
+	DBserver *string `json:"DBserver,omitempty"`
+}
+
+// InventoryResponse represents the full response from the replication inventory API.
+type InventoryResponse struct {
+	// Collections is the list of collections in the inventory.
+	Collections []CollectionsInventoryResponse `json:"collections,omitempty"`
+	// Database properties.
+	Properties PropertiesInventoryResponse `json:"properties,omitempty"`
+	// Views present in the database.
+	Views []ViewInventoryResponse `json:"views,omitempty"`
+	// Replication state information.
+	State StateInventoryResponse `json:"state,omitempty"`
+	// Last log tick at the time of inventory.
+	Tick *string `json:"tick,omitempty"`
+}
+
+// CollectionsInventoryResponse represents a collection entry in the inventory.
+type CollectionsInventoryResponse struct {
+	// Indexes defined on the collection.
+	// Note: Primary indexes and edge indexes are not included in this array.
+	Indexes []IndexesInventoryResponse `json:"indexes,omitempty"`
+	// Collection properties and metadata.
+	Parameters ParametersInventoryResponse `json:"parameters,omitempty"`
+}
+
+// ParametersInventoryResponse represents metadata and settings of a collection.
+type ParametersInventoryResponse struct {
+	// AllowUserKeys indicates whether user keys are allowed.
+	AllowUserKeys *bool `json:"allowUserKeys,omitempty"`
+	// CacheEnabled indicates whether in-memory cache is enabled.
+	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
+	// Cid is the collection ID.
+	Cid *string `json:"cid,omitempty"`
+	// ComputedValues holds the computed values for the collection.
+	ComputedValues interface{} `json:"computedValues,omitempty"`
+	// Deleted indicates whether the collection is deleted.
+	Deleted *bool `json:"deleted,omitempty"`
+	// GloballyUniqueId is the globally unique identifier for the collection.
+	GloballyUniqueId *string `json:"globallyUniqueId,omitempty"`
+	// ID is the collection ID.
+	ID *string `json:"id,omitempty"`
+	// InternalValidatorType is the internal validator type.
+	InternalValidatorType *int `json:"internalValidatorType,omitempty"`
+	// IsDisjoint indicates whether disjoint smart graphs are used.
+	IsDisjoint *bool `json:"isDisjoint,omitempty"`
+	// IsSmart indicates whether the collection is a smart graph collection.
+	IsSmart *bool `json:"isSmart,omitempty"`
+	// IsSmartChild indicates whether the collection this is a child shard of a smart graph.
+	IsSmartChild *bool `json:"isSmartChild,omitempty"`
+	// IsSystem indicates whether the collection is a system collection.
+	IsSystem *bool `json:"isSystem,omitempty"`
+	// KeyOptions defines the key generation options for the collection.
+	KeyOptions *KeyOpts `json:"keyOptions,omitempty"`
+	// MinReplicationFactor defines the minimum replication factor for the collection.
+	MinReplicationFactor *int `json:"minReplicationFactor,omitempty"`
+	// Name is the name of the collection.
+	Name *string `json:"name,omitempty"`
+	// NumberOfShards defines the number of shards for the collection.
+	NumberOfShards *int `json:"numberOfShards,omitempty"`
+	// PlanId is the plan ID for the collection.
+	PlanId *string `json:"planId,omitempty"`
+	// ReplicationFactor defines the replication factor for the collection.
+	ReplicationFactor *int `json:"replicationFactor,omitempty"`
+	// Schema defines the schema for the collection.
+	Schema interface{} `json:"schema,omitempty"`
+	// ShardKeys defines the shard keys for the collection.
+	ShardKeys []string `json:"shardKeys,omitempty"`
+	// ShardingStrategy defines the sharding strategy for the collection.
+	ShardingStrategy *string `json:"shardingStrategy,omitempty"`
+	// Shards defines the shards for the collection.
+	Shards map[string][]string `json:"shards,omitempty"`
+	// Status defines the Collection status code.
+	Status *int `json:"status,omitempty"`
+	// SyncByRevision indicates whether the collection is synced by revision.
+	SyncByRevision *bool `json:"syncByRevision,omitempty"`
+	// Type defines the Collection type (document/edge).
+	Type *int `json:"type,omitempty"`
+	// UsesRevisionsAsDocumentIds indicates whether document revisions are used as document IDs.
+	UsesRevisionsAsDocumentIds *bool `json:"usesRevisionsAsDocumentIds,omitempty"`
+	// Version defines the version of the collection.
+	Version *int `json:"version,omitempty"`
+	// WaitForSync indicates whether the collection should wait for sync.
+	WaitForSync *bool `json:"waitForSync,omitempty"`
+	// WriteConcern defines the write concern level for the collection.
+	WriteConcern *int `json:"writeConcern,omitempty"`
+}
+
+// IndexesInventoryResponse represents metadata for an index in the collection.
+type IndexesInventoryResponse struct {
+	// Index ID
+	ID *string `json:"id,omitempty"`
+	// Index type (hash, skiplist, etc.)
+	Type *string `json:"type,omitempty"`
+	// Index name
+	Name *string `json:"name,omitempty"`
+	// Indexed fields
+	Fields []string `json:"fields,omitempty"`
+	// Unique indicates whether the index enforces uniqueness.
+	Unique *bool `json:"unique,omitempty"`
+	// Sparse indicates whether the index skips null values.
+	Sparse *bool `json:"sparse,omitempty"`
+	// Deduplicate indicates whether the index enforces deduplication.
+	Deduplicate *bool `json:"deduplicate,omitempty"`
+	// Estimates indicates whether the index supports estimates.
+	Estimates *bool `json:"estimates,omitempty"`
+	// CacheEnabled indicates whether the index is cache enabled.
+	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
+}
+
+// KeyOpts represents options for document key generation.
+type KeyOpts struct {
+	// Whether user-supplied keys are allowed
+	AllowUserKeys *bool `json:"allowUserKeys,omitempty"`
+	// Key type (autoincrement, traditional, etc.)
+	Type *string `json:"type,omitempty"`
+	// Last value for autoincrement keys
+	LastValue *int `json:"lastValue,omitempty"`
+}
+
+// PropertiesInventoryResponse represents database-level properties.
+type PropertiesInventoryResponse struct {
+	// Database ID
+	ID *string `json:"id,omitempty"`
+	// Database name
+	Name *string `json:"name,omitempty"`
+	// Whether this is a system database
+	IsSystem *bool `json:"isSystem,omitempty"`
+	// Default sharding method
+	Sharding *string `json:"sharding,omitempty"`
+	// Default replication factor
+	ReplicationFactor *int `json:"replicationFactor,omitempty"`
+	// Default write concern
+	WriteConcern *int `json:"writeConcern,omitempty"`
+	// Replication protocol version
+	ReplicationVersion *string `json:"replicationVersion,omitempty"`
+}
+
+// StateInventoryResponse represents replication state at the time of inventory.
+type StateInventoryResponse struct {
+	// Whether replication is running
+	Running *bool `json:"running,omitempty"`
+	// Last committed log tick
+	LastLogTick *string `json:"lastLogTick,omitempty"`
+	// Last uncommitted log tick
+	LastUncommittedLogTick *string `json:"lastUncommittedLogTick,omitempty"`
+	// Total number of events
+	TotalEvents *int `json:"totalEvents,omitempty"`
+	// Timestamp of the state
+	Time *time.Time `json:"time,omitempty"`
+}
+
+// ViewInventoryResponse represents a view entry in the inventory.
+type ViewInventoryResponse struct {
+	// View ID
+	ID *string `json:"id,omitempty"`
+	// View name
+	Name *string `json:"name,omitempty"`
+	// View type (e.g. "arangosearch")
+	Type *string `json:"type,omitempty"`
 }
