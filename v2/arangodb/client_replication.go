@@ -31,6 +31,8 @@ type ClientReplication interface {
 	CreateNewBatch(ctx context.Context, dbName string, DBserver *string, state *bool, opt CreateNewBatchOptions) (CreateNewBatchResponse, error)
 	// GetInventory retrieves the inventory of a replication batch.
 	GetInventory(ctx context.Context, dbName string, params InventoryQueryParams) (InventoryResponse, error)
+	// DeleteBatch deletes a replication batch.
+	DeleteBatch(ctx context.Context, dbName string, DBserver *string, batchId string) error
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.

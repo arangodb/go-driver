@@ -64,12 +64,19 @@ func Test_CreateNewBatch(t *testing.T) {
 			require.NotEmpty(t, batch.LastTick)
 			require.NotNil(t, batch.State)
 
-			resp, err := client.GetInventory(ctx, db.Name(), arangodb.InventoryQueryParams{
-				BatchID:  batch.ID,
-				DBserver: dbServer,
+			t.Run("GetInventory", func(t *testing.T) {
+				resp, err := client.GetInventory(ctx, db.Name(), arangodb.InventoryQueryParams{
+					BatchID:  batch.ID,
+					DBserver: dbServer,
+				})
+				require.NoError(t, err)
+				require.NotNil(t, resp)
 			})
-			require.NoError(t, err)
-			require.NotNil(t, resp)
+
+			t.Run("DeleteBatch", func(t *testing.T) {
+				err := client.DeleteBatch(ctx, db.Name(), dbServer, batch.ID)
+				require.NoError(t, err)
+			})
 		})
 	})
 }
