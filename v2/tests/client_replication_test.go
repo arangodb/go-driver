@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/utils"
@@ -78,6 +79,34 @@ func Test_CreateNewBatch(t *testing.T) {
 					Ttl: 600,
 				})
 				require.NoError(t, err)
+			})
+
+			t.Run("GetReplicationDump", func(t *testing.T) {
+				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+					docs := []map[string]interface{}{
+						{"_key": "doc1", "name": "Alice"},
+						{"_key": "doc2", "name": "Bob"},
+						{"_key": "doc3", "name": "Charlie"},
+					}
+					for _, doc := range docs {
+						resp, err := col.CreateDocument(ctx, doc)
+						require.NoError(t, err)
+						require.NotNil(t, resp)
+					}
+
+					// Give Arango some time to flush
+					time.Sleep(200 * time.Millisecond)
+					// Attempt to dump the collection
+					if serverRole == arangodb.ServerRoleSingle {
+						_, err := client.Dump(ctx, db.Name(), arangodb.ReplicationDumpParams{
+							BatchID:    batch.ID,
+							Collection: col.Name(),
+						})
+						require.NoError(t, err)
+					} else {
+						t.Skipf("Dump only allowed for single server deployments. This is a %s server", serverRole)
+					}
+				})
 			})
 
 			t.Run("DeleteBatch", func(t *testing.T) {
