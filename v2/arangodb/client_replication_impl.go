@@ -189,9 +189,43 @@ func (c *clientReplication) DeleteBatch(ctx context.Context, dbName string, DBse
 	// Build URL
 	url := c.url(dbName, []string{"batch", batchId}, params)
 
-	// Prepare response wrapper
-	// var response shared.ResponseStruct
 	resp, err := connection.CallDelete(ctx, c.client.connection, url, nil)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusNoContent:
+		return nil
+	default:
+		return shared.NewResponseStruct().AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientReplication) ExtendBatch(ctx context.Context, dbName string, DBserver *string, batchId string, opt CreateNewBatchOptions) error {
+
+	if batchId == "" {
+		return errors.New("batchId must be specified for extend batch")
+	}
+
+	// Build query params
+	queryParams := map[string]interface{}{}
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		if DBserver == nil || *DBserver == "" {
+			return errors.New("DBserver must be specified when extending a batch on a coordinator")
+		}
+		queryParams["DBserver"] = *DBserver
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"batch", batchId}, queryParams)
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, nil, opt)
 	if err != nil {
 		return errors.WithStack(err)
 	}
