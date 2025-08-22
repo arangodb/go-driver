@@ -73,6 +73,13 @@ func Test_CreateNewBatch(t *testing.T) {
 				require.NotNil(t, resp)
 			})
 
+			t.Run("ExtendBatch", func(t *testing.T) {
+				err := client.ExtendBatch(ctx, db.Name(), dbServer, batch.ID, arangodb.CreateNewBatchOptions{
+					Ttl: 600,
+				})
+				require.NoError(t, err)
+			})
+
 			t.Run("DeleteBatch", func(t *testing.T) {
 				err := client.DeleteBatch(ctx, db.Name(), dbServer, batch.ID)
 				require.NoError(t, err)

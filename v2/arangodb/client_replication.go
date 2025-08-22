@@ -33,6 +33,8 @@ type ClientReplication interface {
 	GetInventory(ctx context.Context, dbName string, params InventoryQueryParams) (InventoryResponse, error)
 	// DeleteBatch deletes a replication batch.
 	DeleteBatch(ctx context.Context, dbName string, DBserver *string, batchId string) error
+	// ExtendBatch extends the TTL of a replication batch.
+	ExtendBatch(ctx context.Context, dbName string, DBserver *string, batchId string, opt CreateNewBatchOptions) error
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
