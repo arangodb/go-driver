@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -236,4 +237,53 @@ func (c *clientReplication) ExtendBatch(ctx context.Context, dbName string, DBse
 	default:
 		return shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}
+}
+
+func (c *clientReplication) Dump(ctx context.Context, dbName string, params ReplicationDumpParams) ([]byte, error) {
+
+	role, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if role != ServerRoleSingle {
+		return nil, errors.Errorf("replication dump not supported on role %s", role)
+	}
+
+	// Build query params
+	queryParams := map[string]interface{}{}
+	if params.ChunkSize != nil && *params.ChunkSize != 0 {
+		queryParams["chunkSize"] = params.ChunkSize
+	}
+	if params.Collection == "" {
+		return nil, errors.New("collection must be specified when querying replication dump")
+	}
+	queryParams["collection"] = params.Collection
+	if params.BatchID == "" {
+		return nil, errors.New("batchId must be specified when querying replication dump")
+	}
+	queryParams["batchId"] = params.BatchID
+
+	// Build URL
+	url := c.url(dbName, []string{"dump"}, queryParams)
+	req, err := c.client.Connection().NewRequest(http.MethodGet, url)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []byte
+	// Call Do with nil result (we'll handle body manually)
+	resp, err := c.client.Connection().Do(ctx, req, &data, http.StatusOK, http.StatusNoContent)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.RawResponse().Body.Close()
+
+	if resp.Code() == http.StatusNoContent {
+		return nil, nil
+	}
+	if resp.Code() != http.StatusOK {
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+
+	return io.ReadAll(resp.RawResponse().Body)
 }

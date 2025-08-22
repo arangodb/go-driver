@@ -35,6 +35,8 @@ type ClientReplication interface {
 	DeleteBatch(ctx context.Context, dbName string, DBserver *string, batchId string) error
 	// ExtendBatch extends the TTL of a replication batch.
 	ExtendBatch(ctx context.Context, dbName string, DBserver *string, batchId string, opt CreateNewBatchOptions) error
+
+	Dump(ctx context.Context, dbName string, params ReplicationDumpParams) ([]byte, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -228,4 +230,13 @@ type BasicProperties struct {
 	ID *string `json:"id,omitempty"`
 	// Human-readable name
 	Name *string `json:"name,omitempty"`
+}
+
+type ReplicationDumpParams struct {
+	// Collection name
+	Collection string `json:"collection"`
+	// Size of each chunk in bytes
+	ChunkSize *int32 `json:"chunkSize,omitempty"`
+	// BatchID is the ID of the replication batch.
+	BatchID string `json:"batchId"`
 }
