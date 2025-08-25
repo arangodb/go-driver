@@ -67,7 +67,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 			Teardown: utils.NewType[bool](true),
 		})
 
-		// Try to fetch random name from installed foxx sercice
+		// Try to fetch random name from installed foxx service
 		timeoutCtx, cancel = context.WithTimeout(context.Background(), time.Second*30)
 		connection := client.Connection()
 		req, err := connection.NewRequest("GET", "_db/"+db.Name()+"/"+mountName+"/random")
