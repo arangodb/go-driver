@@ -4,6 +4,7 @@
 - Add tasks endpoints to v2
 - Add missing endpoints from collections to v2
 - Add missing endpoints from query to v2
+- Add SSO auth token implementation
 
 ## [2.1.3](https://github.com/arangodb/go-driver/tree/v2.1.3) (2025-02-21)
 - Switch to Go 1.22.11
