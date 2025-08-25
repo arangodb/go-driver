@@ -98,7 +98,7 @@ func (c *clientFoxx) InstallFoxxService(ctx context.Context, dbName string, zipF
 	}
 
 	switch code := resp.Code(); code {
-	case http.StatusCreated:
+	case http.StatusCreated: // Foxx install returns 201 Created as per ArangoDB API
 		return nil
 	default:
 		return response.AsArangoErrorWithCode(code)
@@ -120,6 +120,7 @@ func (c *clientFoxx) UninstallFoxxService(ctx context.Context, dbName string, op
 		request.FoxxDeleteOptions = *opts
 	}
 
+	// UninstallFoxxService removes a Foxx service using DELETE as per ArangoDB API
 	resp, err := connection.CallDelete(ctx, c.client.connection, url, &response, request.modifyRequest)
 	if err != nil {
 		return errors.WithStack(err)
