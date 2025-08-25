@@ -35,8 +35,10 @@ type ClientReplication interface {
 	DeleteBatch(ctx context.Context, dbName string, DBserver *string, batchId string) error
 	// ExtendBatch extends the TTL of a replication batch.
 	ExtendBatch(ctx context.Context, dbName string, DBserver *string, batchId string, opt CreateNewBatchOptions) error
-
+	// Dump retrieves a chunk of data from a collection in a replication batch.
 	Dump(ctx context.Context, dbName string, params ReplicationDumpParams) ([]byte, error)
+	// LoggerState retrieves the state of the replication logger.
+	LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -239,4 +241,31 @@ type ReplicationDumpParams struct {
 	ChunkSize *int32 `json:"chunkSize,omitempty"`
 	// BatchID is the ID of the replication batch.
 	BatchID string `json:"batchId"`
+}
+
+type State struct {
+	// Whether replication is running
+	Running *bool `json:"running"`
+	// Last committed log tick
+	LastLogTick *string `json:"lastLogTick"`
+	// Last uncommitted log tick
+	LastUncommittedLogTick *string `json:"lastUncommittedLogTick"`
+	// Total number of events
+	TotalEvents *int64 `json:"totalEvents"`
+	// Timestamp of the state
+	Time *time.Time `json:"time"`
+}
+
+type Server struct {
+	// Version of the server
+	Version  *string `json:"version"`
+	ServerId *string `json:"serverId"`
+	// Engine of the server
+	Engine *string `json:"engine"`
+}
+
+type LoggerStateResponse struct {
+	State   State                    `json:"state"`
+	Server  Server                   `json:"server"`
+	Clients []map[string]interface{} `json:"clients,inline"`
 }

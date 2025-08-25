@@ -116,3 +116,34 @@ func Test_CreateNewBatch(t *testing.T) {
 		})
 	})
 }
+
+func Test_LoggerState(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				serverRole, err := client.ServerRole(ctx)
+				require.NoError(t, err)
+				t.Logf("ServerRole is %s\n", serverRole)
+
+				var dbServer *string
+				if serverRole == arangodb.ServerRoleCoordinator {
+					clusterHealth, err := client.Health(ctx) // Ensure the client is healthy
+					require.NoError(t, err)
+					for id, db := range clusterHealth.Health {
+						if db.Role == arangodb.ServerRoleDBServer {
+							s := string(id)
+							dbServer = &s
+							break
+						}
+					}
+				}
+				resp, err := client.LoggerState(ctx, db.Name(), dbServer)
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				require.NotEmpty(t, resp.State)
+				require.NotEmpty(t, resp.Server)
+				require.GreaterOrEqual(t, len(resp.Clients), 0)
+			})
+		})
+	})
+}

@@ -287,3 +287,37 @@ func (c *clientReplication) Dump(ctx context.Context, dbName string, params Repl
 
 	return io.ReadAll(resp.RawResponse().Body)
 }
+
+func (c *clientReplication) LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error) {
+	// Build query params
+	queryParams := map[string]interface{}{}
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return LoggerStateResponse{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		if DBserver == nil || *DBserver == "" {
+			return LoggerStateResponse{}, errors.New("DBserver must be specified when creating a batch on a coordinator")
+		}
+		queryParams["DBserver"] = *DBserver
+	}
+	// Build URL
+	url := c.url(dbName, []string{"logger-state"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		LoggerStateResponse   `json:",inline"`
+	}
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return LoggerStateResponse{}, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.LoggerStateResponse, nil
+	default:
+		return LoggerStateResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
