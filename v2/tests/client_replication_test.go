@@ -168,3 +168,23 @@ func Test_LoggerFirstTick(t *testing.T) {
 		})
 	})
 }
+
+func Test_LoggerTickRange(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				serverRole, err := client.ServerRole(ctx)
+				require.NoError(t, err)
+				t.Logf("ServerRole is %s\n", serverRole)
+
+				if serverRole == arangodb.ServerRoleCoordinator {
+					t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
+				}
+
+				resp, err := client.LoggerTickRange(ctx, db.Name())
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+	})
+}

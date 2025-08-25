@@ -351,3 +351,28 @@ func (c *clientReplication) LoggerFirstTick(ctx context.Context, dbName string) 
 		return LoggerFirstTickResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientReplication) LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return nil, errors.New("replication logger-tick-ranges is not supported on Coordinators")
+	}
+	// Build URL
+	url := c.url(dbName, []string{"logger-tick-ranges"}, nil)
+
+	var response []LoggerTickRangeResponseObj
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
