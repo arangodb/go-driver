@@ -119,7 +119,6 @@ func (c *clientFoxx) UninstallFoxxService(ctx context.Context, dbName string, op
 	if opts != nil {
 		request.FoxxDeleteOptions = *opts
 	}
-
 	// UninstallFoxxService removes a Foxx service using DELETE as per ArangoDB API
 	resp, err := connection.CallDelete(ctx, c.client.connection, url, &response, request.modifyRequest)
 	if err != nil {
