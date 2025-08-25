@@ -39,6 +39,8 @@ type ClientReplication interface {
 	Dump(ctx context.Context, dbName string, params ReplicationDumpParams) ([]byte, error)
 	// LoggerState retrieves the state of the replication logger.
 	LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error)
+	// LoggerFirstTick retrieves the first tick of the replication logger.
+	LoggerFirstTick(ctx context.Context, dbName string) (LoggerFirstTickResponse, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -268,4 +270,9 @@ type LoggerStateResponse struct {
 	State   State                    `json:"state"`
 	Server  Server                   `json:"server"`
 	Clients []map[string]interface{} `json:"clients,inline"`
+}
+
+type LoggerFirstTickResponse struct {
+	// The first tick of the logger
+	FirstTick *string `json:"firstTick,omitempty"`
 }
