@@ -41,6 +41,8 @@ type ClientReplication interface {
 	LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error)
 	// LoggerFirstTick retrieves the first tick of the replication logger.
 	LoggerFirstTick(ctx context.Context, dbName string) (LoggerFirstTickResponse, error)
+	// LoggerTickRange retrieves the currently available ranges of tick values for all currently available WAL logfiles.
+	LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -275,4 +277,15 @@ type LoggerStateResponse struct {
 type LoggerFirstTickResponse struct {
 	// The first tick of the logger
 	FirstTick *string `json:"firstTick,omitempty"`
+}
+
+type LoggerTickRangeResponseObj struct {
+	// Name of the logfile
+	Datafile *string `json:"datafile,omitempty"`
+	// Status of the datafile, in textual form (e.g. "sealed", "open")
+	Status *string `json:"status,omitempty"`
+	// Minimum tick value contained in logfile
+	TickMin *string `json:"tickMin,omitempty"`
+	// Maximum tick value contained in logfile
+	TickMax *string `json:"tickMax,omitempty"`
 }
