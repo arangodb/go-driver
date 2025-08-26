@@ -43,6 +43,8 @@ type ClientReplication interface {
 	LoggerFirstTick(ctx context.Context, dbName string) (LoggerFirstTickResponse, error)
 	// LoggerTickRange retrieves the currently available ranges of tick values for all currently available WAL logfiles.
 	LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error)
+	// GetApplierConfig retrieves the configuration of the replication applier.
+	GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -288,4 +290,61 @@ type LoggerTickRangeResponseObj struct {
 	TickMin *string `json:"tickMin,omitempty"`
 	// Maximum tick value contained in logfile
 	TickMax *string `json:"tickMax,omitempty"`
+}
+
+type ApplierConfigResponse struct {
+	// Logger server endpoint (e.g., tcp://127.0.0.1:8529)
+	Endpoint *string `json:"endpoint,omitempty"`
+	// Database name (e.g., "_system")
+	Database *string `json:"database,omitempty"`
+	// Optional username for authentication
+	Username *string `json:"username,omitempty"`
+	// Password for authentication
+	Password *string `json:"password,omitempty"`
+	// Maximum connection attempts before stopping
+	MaxConnectRetries int `json:"maxConnectRetries"`
+	// Timeout (seconds) for connecting to endpoint
+	ConnectTimeout int `json:"connectTimeout"`
+	// Timeout (seconds) for individual requests
+	RequestTimeout int `json:"requestTimeout"`
+	// Max size of log transfer packets
+	ChunkSize int `json:"chunkSize"`
+	// Whether applier auto-starts on server startup
+	AutoStart bool `json:"autoStart"`
+	// Whether adaptive polling is used
+	AdaptivePolling bool `json:"adaptivePolling"`
+	// Whether system collections are included
+	IncludeSystem bool `json:"includeSystem"`
+	// Whether full automatic resync is performed if needed
+	AutoResync bool `json:"autoResync"`
+	// Number of auto-resync retries before giving up
+	AutoResyncRetries int `json:"autoResyncRetries"`
+	// Max wait time (seconds) for initial sync
+	InitialSyncMaxWaitTime int `json:"initialSyncMaxWaitTime"`
+	// Idle time (seconds) before retrying failed connection
+	ConnectionRetryWaitTime int `json:"connectionRetryWaitTime"`
+	// Minimum idle wait time (seconds) when no new data
+	IdleMinWaitTime int `json:"idleMinWaitTime"`
+	// Maximum idle wait time (seconds) when no new data (may be fractional, hence float64)
+	IdleMaxWaitTime float64 `json:"idleMaxWaitTime"`
+	// If true, aborts if start tick not available on leader
+	RequireFromPresent bool `json:"requireFromPresent"`
+	// If true, logs each applier operation (debugging only)
+	Verbose bool `json:"verbose"`
+	// Type of collection restriction ("include" or "exclude")
+	RestrictType string `json:"restrictType"`
+	// Collections included/excluded depending on RestrictType
+	RestrictCollections []string `json:"restrictCollections"`
+	// Max number of errors to ignore
+	IgnoreErrors *int `json:"ignoreErrors,omitempty"`
+	// SSL protocol version
+	SslProtocol *int `json:"sslProtocol,omitempty"`
+	// Whether to skip create/drop collection operations
+	SkipCreateDrop *bool `json:"skipCreateDrop,omitempty"`
+	// Max packet size (bytes)
+	MaxPacketSize *int64 `json:"maxPacketSize,omitempty"`
+	// Whether to include Foxx queues
+	IncludeFoxxQueues *bool `json:"includeFoxxQueues,omitempty"`
+	// Whether incremental sync is used
+	Incremental *bool `json:"incremental,omitempty"`
 }

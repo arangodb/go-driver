@@ -331,7 +331,6 @@ func (c *clientReplication) LoggerFirstTick(ctx context.Context, dbName string) 
 	}
 	if serverRole == ServerRoleCoordinator {
 		return LoggerFirstTickResponse{}, errors.New("replication logger-first-tick is not supported on Coordinators")
-
 	}
 	// Build URL
 	url := c.url(dbName, []string{"logger-first-tick"}, nil)
@@ -374,5 +373,42 @@ func (c *clientReplication) LoggerTickRange(ctx context.Context, dbName string) 
 		return response, nil
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
+
+func (c *clientReplication) GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return ApplierConfigResponse{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return ApplierConfigResponse{}, errors.New("replication applier-config is not supported on Coordinators")
+	}
+
+	// Build query params
+	queryParams := map[string]interface{}{}
+	if global != nil {
+		queryParams["global"] = *global
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"applier-config"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ApplierConfigResponse `json:",inline"`
+	}
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ApplierConfigResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ApplierConfigResponse, nil
+	default:
+		return ApplierConfigResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
