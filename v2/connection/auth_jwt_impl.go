@@ -27,6 +27,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -55,7 +56,12 @@ func NewJWTAuthWrapper(username, password string) Wrapper {
 		}
 
 		token = data.Token
-		expiry, _ = parseJWTExpiry(token) // ignore error, just fallback to immediate refresh next time
+		expiry, err = parseJWTExpiry(token)
+		if err != nil {
+			// Log for visibility but don't break functionality
+			log.Printf("failed to parse JWT expiry: %v", err)
+			expiry = time.Now().Add(1 * time.Minute) // fallback, so it will refresh immediately next time
+		}
 		return nil
 	}
 
@@ -106,10 +112,19 @@ func parseJWTExpiry(token string) (time.Time, error) {
 func NewSSOAuthWrapper(initialToken string) Wrapper {
 	var token = initialToken
 	var expiry time.Time
-
+	// setToken updates the current JWT and its expiry time.
+	// If expiry parsing fails, we log the error and fall back to a short 1-minute lifetime.
+	// This ensures the token will be refreshed soon without breaking functionality.
 	setToken := func(newToken string) {
 		token = newToken
-		expiry, _ = parseJWTExpiry(newToken)
+		expiryTime, err := parseJWTExpiry(newToken)
+		if err != nil {
+			// Log for visibility but don't break functionality
+			log.Printf("failed to parse JWT expiry: %v", err)
+			expiry = time.Now().Add(1 * time.Minute) // fallback, so it will refresh immediately next time
+		} else {
+			expiry = expiryTime
+		}
 	}
 
 	// If we already have a token (from an SSO login), parse expiry now
@@ -123,7 +138,7 @@ func NewSSOAuthWrapper(initialToken string) Wrapper {
 			// Try a call to _open/auth just to see if server sends 307
 			url := NewUrl("_open", "auth")
 			var data jwtOpenResponse
-
+			// Intentionally passing nil: in SSO mode, /_open/auth expects no body
 			resp, err := CallPost(ctx, conn, url, &data, nil)
 			if err != nil {
 				return nil, err
