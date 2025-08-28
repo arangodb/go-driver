@@ -412,3 +412,117 @@ func (c *clientReplication) GetApplierConfig(ctx context.Context, dbName string,
 		return ApplierConfigResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func formUpdateApplierConfigParams(opts UpdateApplierConfigOptions) (map[string]interface{}, error) {
+	params := map[string]interface{}{}
+
+	// Required
+	if opts.Endpoint == nil || *opts.Endpoint == "" {
+		return nil, RequiredFieldError("endpoint")
+	}
+	params["endpoint"] = *opts.Endpoint
+
+	// Optional
+	if opts.Database != nil {
+		params["database"] = *opts.Database
+	}
+	if opts.Username != nil {
+		params["username"] = *opts.Username
+	}
+	if opts.Password != nil {
+		params["password"] = *opts.Password
+	}
+	if opts.MaxConnectRetries != nil {
+		params["maxConnectRetries"] = *opts.MaxConnectRetries
+	}
+	if opts.ConnectTimeout != nil {
+		params["connectTimeout"] = *opts.ConnectTimeout
+	}
+	if opts.RequestTimeout != nil {
+		params["requestTimeout"] = *opts.RequestTimeout
+	}
+	if opts.IdleMinWaitTime != nil {
+		params["idleMinWaitTime"] = *opts.IdleMinWaitTime
+	}
+	if opts.IdleMaxWaitTime != nil {
+		params["idleMaxWaitTime"] = *opts.IdleMaxWaitTime
+	}
+	if opts.InitialSyncMaxWaitTime != nil {
+		params["initialSyncMaxWaitTime"] = *opts.InitialSyncMaxWaitTime
+	}
+	if opts.IncludeSystem != nil {
+		params["includeSystem"] = *opts.IncludeSystem
+	}
+	if opts.ChunkSize != nil {
+		params["chunkSize"] = *opts.ChunkSize
+	}
+	if opts.AutoStart != nil {
+		params["autoStart"] = *opts.AutoStart
+	}
+	if opts.RestrictCollections != nil {
+		params["restrictCollections"] = *opts.RestrictCollections
+	}
+	if opts.RestrictType != nil {
+		params["restrictType"] = *opts.RestrictType
+	}
+	if opts.AdaptivePolling != nil {
+		params["adaptivePolling"] = *opts.AdaptivePolling
+	}
+	if opts.AutoResync != nil {
+		params["autoResync"] = *opts.AutoResync
+	}
+	if opts.AutoResyncRetries != nil {
+		params["autoResyncRetries"] = *opts.AutoResyncRetries
+	}
+	if opts.RequireFromPresent != nil {
+		params["requireFromPresent"] = *opts.RequireFromPresent
+	}
+	if opts.Verbose != nil {
+		params["verbose"] = *opts.Verbose
+	}
+
+	return params, nil
+}
+
+func (c *clientReplication) UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts UpdateApplierConfigOptions) (ApplierConfigResponse, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return ApplierConfigResponse{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return ApplierConfigResponse{}, errors.New("replication applier-config is not supported on Coordinators")
+	}
+
+	// Build query params
+	queryParams := map[string]interface{}{}
+	if global != nil {
+		queryParams["global"] = *global
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"applier-config"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ApplierConfigResponse `json:",inline"`
+	}
+
+	requestParams, err := formUpdateApplierConfigParams(opts)
+	if err != nil {
+		return ApplierConfigResponse{}, errors.WithStack(err)
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, requestParams)
+	if err != nil {
+		return ApplierConfigResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ApplierConfigResponse, nil
+	default:
+		return ApplierConfigResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}

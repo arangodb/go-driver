@@ -215,3 +215,40 @@ func Test_GetApplierConfig(t *testing.T) {
 		})
 	})
 }
+
+func Test_UpdateApplierConfig(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
+			}
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			t.Run("Update applier config with setting global:true", func(t *testing.T) {
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.UpdateApplierConfigOptions{
+					ChunkSize: utils.NewType(1234),
+					AutoStart: utils.NewType(true),
+					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+					Database:  utils.NewType(db.Name()),
+					Username:  utils.NewType("root"),
+				})
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+			t.Run("Update applier config with setting global:false", func(t *testing.T) {
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(false), arangodb.UpdateApplierConfigOptions{
+					ChunkSize: utils.NewType(2596),
+					AutoStart: utils.NewType(false),
+					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+					Database:  utils.NewType(db.Name()),
+				})
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+	})
+}

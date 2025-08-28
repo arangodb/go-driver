@@ -45,6 +45,8 @@ type ClientReplication interface {
 	LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error)
 	// GetApplierConfig retrieves the configuration of the replication applier.
 	GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error)
+	// UpdateApplierConfig updates the configuration of the replication applier.
+	UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts UpdateApplierConfigOptions) (ApplierConfigResponse, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -297,7 +299,7 @@ type ApplierConfigResponse struct {
 	Endpoint *string `json:"endpoint,omitempty"`
 	// Database name (e.g., "_system")
 	Database *string `json:"database,omitempty"`
-	// Optional username for authentication
+	// Username for authentication
 	Username *string `json:"username,omitempty"`
 	// Password for authentication
 	Password *string `json:"password,omitempty"`
@@ -347,4 +349,88 @@ type ApplierConfigResponse struct {
 	IncludeFoxxQueues *bool `json:"includeFoxxQueues,omitempty"`
 	// Whether incremental sync is used
 	Incremental *bool `json:"incremental,omitempty"`
+}
+
+// UpdateApplierConfigOptions holds the configuration options for the replication applier.
+// These settings can only be changed when the applier is not running.
+type UpdateApplierConfigOptions struct {
+	// AdaptivePolling controls whether the replication applier uses adaptive polling.
+	AdaptivePolling *bool `json:"adaptivePolling"`
+
+	// AutoResync, if set to true, allows the applier to automatically
+	// trigger a full resynchronization if it falls too far behind.
+	AutoResync *bool `json:"autoResync"`
+
+	// AutoResyncRetries defines how many times the applier should retry
+	// automatic resynchronization after failure.
+	AutoResyncRetries *int `json:"autoResyncRetries"`
+
+	// AutoStart indicates if the applier should start automatically
+	// once configured.
+	AutoStart *bool `json:"autoStart"`
+
+	// ChunkSize is the maximum size (in bytes) of the data batches
+	// fetched by the applier.
+	ChunkSize *int `json:"chunkSize"`
+
+	// ConnectTimeout is the timeout (in seconds) for the initial
+	// connection attempt to the master endpoint.
+	ConnectTimeout *int `json:"connectTimeout"`
+
+	// ConnectionRetryWaitTime is the wait time (in seconds) before retrying
+	// a failed connection attempt.
+	ConnectionRetryWaitTime *int `json:"connectionRetryWaitTime"`
+
+	// Database is the name of the database on the master that the applier
+	// should replicate from.
+	Database *string `json:"database"`
+
+	// Endpoint specifies the master server endpoint (e.g., "tcp://127.0.0.1:8529")
+	// from which replication data is pulled. This is required.
+	Endpoint *string `json:"endpoint"`
+
+	// IdleMaxWaitTime is the maximum wait time (in seconds) between
+	// polling requests when the applier is idle.
+	IdleMaxWaitTime *int `json:"idleMaxWaitTime"`
+
+	// IdleMinWaitTime is the minimum wait time (in seconds) between
+	// polling requests when the applier is idle.
+	IdleMinWaitTime *int `json:"idleMinWaitTime"`
+
+	// IncludeSystem specifies whether system collections should be
+	// replicated as well.
+	IncludeSystem *bool `json:"includeSystem"`
+
+	// InitialSyncMaxWaitTime defines the maximum wait time (in seconds)
+	// for the initial synchronization step.
+	InitialSyncMaxWaitTime *int `json:"initialSyncMaxWaitTime"`
+
+	// MaxConnectRetries is the maximum number of retries for
+	// initial connection attempts.
+	MaxConnectRetries *int `json:"maxConnectRetries"`
+
+	// Password is the password used when connecting to the master.
+	Password *string `json:"password"`
+
+	// RequestTimeout specifies the timeout (in seconds) for individual
+	// HTTP requests made by the applier.
+	RequestTimeout *int `json:"requestTimeout"`
+
+	// RequireFromPresent, if true, requires the replication to start from
+	// the present and not accept missing history.
+	RequireFromPresent *bool `json:"requireFromPresent"`
+
+	// RestrictCollections is an optional list of collections to include
+	// or exclude in replication, depending on RestrictType.
+	RestrictCollections *[]string `json:"restrictCollections"`
+
+	// RestrictType determines how RestrictCollections is interpreted:
+	// "include" or "exclude".
+	RestrictType *string `json:"restrictType"`
+
+	// Username is the username used when connecting to the master.
+	Username *string `json:"username"`
+
+	// Verbose controls the verbosity of the applier's logging.
+	Verbose *bool `json:"verbose"`
 }
