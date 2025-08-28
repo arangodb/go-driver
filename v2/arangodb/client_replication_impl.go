@@ -526,3 +526,120 @@ func (c *clientReplication) UpdateApplierConfig(ctx context.Context, dbName stri
 		return ApplierConfigResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientReplication) ApplierStart(ctx context.Context, dbName string, global *bool, from *string) (ApplierStateResp, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return ApplierStateResp{}, errors.New("replication applier-start is not supported on Coordinators")
+	}
+
+	// Build query params
+	queryParams := map[string]interface{}{}
+	if global != nil {
+		queryParams["global"] = *global
+	}
+	if from != nil && *from != "" {
+		queryParams["from"] = *from
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"applier-start"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ApplierStateResp      `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ApplierStateResp, nil
+	default:
+		return ApplierStateResp{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientReplication) ApplierStop(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return ApplierStateResp{}, errors.New("replication applier-stop is not supported on Coordinators")
+	}
+
+	// Build query params
+	queryParams := map[string]interface{}{}
+	if global != nil {
+		queryParams["global"] = *global
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"applier-stop"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ApplierStateResp      `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ApplierStateResp, nil
+	default:
+		return ApplierStateResp{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientReplication) GetApplierState(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return ApplierStateResp{}, errors.New("replication applier-stop is not supported on Coordinators")
+	}
+
+	// Build query params
+	queryParams := map[string]interface{}{}
+	if global != nil {
+		queryParams["global"] = *global
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"applier-state"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ApplierStateResp      `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ApplierStateResp, nil
+	default:
+		return ApplierStateResp{}, response.AsArangoErrorWithCode(code)
+	}
+}

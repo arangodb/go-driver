@@ -252,3 +252,126 @@ func Test_UpdateApplierConfig(t *testing.T) {
 		})
 	})
 }
+
+func Test_ApplierStart(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+			time.Sleep(1 * time.Second)
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
+			}
+
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			batch, err := client.CreateNewBatch(ctx, db.Name(), nil, utils.NewType(true), arangodb.CreateNewBatchOptions{
+				Ttl: 600,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, batch)
+			t.Run("Update applier config with setting global:true", func(t *testing.T) {
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.UpdateApplierConfigOptions{
+					ChunkSize: utils.NewType(2596),
+					AutoStart: utils.NewType(false),
+					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+					Database:  utils.NewType(db.Name()),
+				})
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+			t.Logf("Batch ID: %s", batch.ID)
+			t.Run("Applier Start with query params", func(t *testing.T) {
+				resp, err := client.ApplierStart(ctx, db.Name(), utils.NewType(true), utils.NewType(batch.ID))
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				// Log useful debug info
+				t.Logf("Applier start:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+					*resp.State.Running,
+					*resp.State.Phase,
+					*resp.State.Progress.Message,
+					*resp.State.Progress.FailedConnects,
+				)
+			})
+			t.Run("Applier_State_with_query_params", func(t *testing.T) {
+				ctx := context.Background()
+
+				state, err := client.GetApplierState(ctx, db.Name(), utils.NewType(true))
+				require.NoError(t, err, "failed to get applier state")
+				require.NotNil(t, state.State)
+
+				// Log useful debug info
+				t.Logf("Applier state:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+					*state.State.Running,
+					*state.State.Phase,
+					*state.State.Progress.Message,
+					*state.State.Progress.FailedConnects,
+				)
+			})
+			t.Run("Applier Stop with query params", func(t *testing.T) {
+				resp, err := client.ApplierStop(ctx, db.Name(), utils.NewType(true))
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				// Log useful debug info
+				t.Logf("Applier stop:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+					*resp.State.Running,
+					*resp.State.Phase,
+					*resp.State.Progress.Message,
+					*resp.State.Progress.FailedConnects,
+				)
+			})
+			t.Run("Update applier config with out query params", func(t *testing.T) {
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.UpdateApplierConfigOptions{
+					ChunkSize: utils.NewType(2596),
+					AutoStart: utils.NewType(false),
+					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+					Database:  utils.NewType(db.Name()),
+				})
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+			t.Logf("Batch ID: %s", batch.ID)
+			t.Run("Applier Start with out query params", func(t *testing.T) {
+				resp, err := client.ApplierStart(ctx, db.Name(), nil, nil)
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				// Log useful debug info
+				t.Logf("Applier start 346:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+					*resp.State.Running,
+					*resp.State.Phase,
+					*resp.State.Progress.Message,
+					*resp.State.Progress.FailedConnects,
+				)
+			})
+			t.Run("Applier State with out query params", func(t *testing.T) {
+				ctx := context.Background()
+
+				state, err := client.GetApplierState(ctx, db.Name(), nil)
+				require.NoError(t, err, "failed to get applier state")
+				require.NotNil(t, state.State)
+
+				// Log useful debug info
+				t.Logf("Applier state:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+					*state.State.Running,
+					*state.State.Phase,
+					*state.State.Progress.Message,
+					*state.State.Progress.FailedConnects,
+				)
+			})
+			t.Run("Applier Stop with out query params", func(t *testing.T) {
+				resp, err := client.ApplierStop(ctx, db.Name(), nil)
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				// Log useful debug info
+				t.Logf("Applier stop:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+					*resp.State.Running,
+					*resp.State.Phase,
+					*resp.State.Progress.Message,
+					*resp.State.Progress.FailedConnects,
+				)
+			})
+		})
+	})
+}

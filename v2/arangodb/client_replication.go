@@ -47,6 +47,12 @@ type ClientReplication interface {
 	GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error)
 	// UpdateApplierConfig updates the configuration of the replication applier.
 	UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts UpdateApplierConfigOptions) (ApplierConfigResponse, error)
+	// ApplierStart starts the replication applier.
+	ApplierStart(ctx context.Context, dbName string, global *bool, from *string) (ApplierStateResp, error)
+	// ApplierStop stops the replication applier.
+	ApplierStop(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
+	// GetApplierState retrieves the state of the replication applier.
+	GetApplierState(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -67,10 +73,10 @@ type CreateNewBatchResponse struct {
 // InventoryQueryParams represents the query parameters for the replication inventory API.
 type InventoryQueryParams struct {
 	// IncludeSystem indicates whether to include system collections in the inventory.
-	IncludeSystem *bool `json:"includeSystem"`
+	IncludeSystem *bool `json:"includeSystem,omitempty"`
 	// Global indicates whether to return global inventory or not.
 	// If true, the inventory will include all collections across all DBServers.
-	Global *bool `json:"global"`
+	Global *bool `json:"global,omitempty"`
 	// BatchID is the ID of the replication batch to query.
 	BatchID string `json:"batchId"`
 	// Collection is the name of the collection to restrict inventory to.
@@ -355,82 +361,183 @@ type ApplierConfigResponse struct {
 // These settings can only be changed when the applier is not running.
 type UpdateApplierConfigOptions struct {
 	// AdaptivePolling controls whether the replication applier uses adaptive polling.
-	AdaptivePolling *bool `json:"adaptivePolling"`
+	AdaptivePolling *bool `json:"adaptivePolling,omitempty"`
 
 	// AutoResync, if set to true, allows the applier to automatically
 	// trigger a full resynchronization if it falls too far behind.
-	AutoResync *bool `json:"autoResync"`
+	AutoResync *bool `json:"autoResync,omitempty"`
 
 	// AutoResyncRetries defines how many times the applier should retry
 	// automatic resynchronization after failure.
-	AutoResyncRetries *int `json:"autoResyncRetries"`
+	AutoResyncRetries *int `json:"autoResyncRetries,omitempty"`
 
 	// AutoStart indicates if the applier should start automatically
 	// once configured.
-	AutoStart *bool `json:"autoStart"`
+	AutoStart *bool `json:"autoStart,omitempty"`
 
 	// ChunkSize is the maximum size (in bytes) of the data batches
 	// fetched by the applier.
-	ChunkSize *int `json:"chunkSize"`
+	ChunkSize *int `json:"chunkSize,omitempty"`
 
 	// ConnectTimeout is the timeout (in seconds) for the initial
 	// connection attempt to the master endpoint.
-	ConnectTimeout *int `json:"connectTimeout"`
+	ConnectTimeout *int `json:"connectTimeout,omitempty"`
 
 	// ConnectionRetryWaitTime is the wait time (in seconds) before retrying
 	// a failed connection attempt.
-	ConnectionRetryWaitTime *int `json:"connectionRetryWaitTime"`
+	ConnectionRetryWaitTime *int `json:"connectionRetryWaitTime,omitempty"`
 
 	// Database is the name of the database on the master that the applier
 	// should replicate from.
-	Database *string `json:"database"`
+	Database *string `json:"database,omitempty"`
 
 	// Endpoint specifies the master server endpoint (e.g., "tcp://127.0.0.1:8529")
 	// from which replication data is pulled. This is required.
-	Endpoint *string `json:"endpoint"`
+	Endpoint *string `json:"endpoint,omitempty"`
 
 	// IdleMaxWaitTime is the maximum wait time (in seconds) between
 	// polling requests when the applier is idle.
-	IdleMaxWaitTime *int `json:"idleMaxWaitTime"`
+	IdleMaxWaitTime *int `json:"idleMaxWaitTime,omitempty"`
 
 	// IdleMinWaitTime is the minimum wait time (in seconds) between
 	// polling requests when the applier is idle.
-	IdleMinWaitTime *int `json:"idleMinWaitTime"`
+	IdleMinWaitTime *int `json:"idleMinWaitTime,omitempty"`
 
 	// IncludeSystem specifies whether system collections should be
 	// replicated as well.
-	IncludeSystem *bool `json:"includeSystem"`
+	IncludeSystem *bool `json:"includeSystem,omitempty"`
 
 	// InitialSyncMaxWaitTime defines the maximum wait time (in seconds)
 	// for the initial synchronization step.
-	InitialSyncMaxWaitTime *int `json:"initialSyncMaxWaitTime"`
+	InitialSyncMaxWaitTime *int `json:"initialSyncMaxWaitTime,omitempty"`
 
 	// MaxConnectRetries is the maximum number of retries for
 	// initial connection attempts.
-	MaxConnectRetries *int `json:"maxConnectRetries"`
+	MaxConnectRetries *int `json:"maxConnectRetries,omitempty"`
 
 	// Password is the password used when connecting to the master.
-	Password *string `json:"password"`
+	Password *string `json:"password,omitempty"`
 
 	// RequestTimeout specifies the timeout (in seconds) for individual
 	// HTTP requests made by the applier.
-	RequestTimeout *int `json:"requestTimeout"`
+	RequestTimeout *int `json:"requestTimeout,omitempty"`
 
 	// RequireFromPresent, if true, requires the replication to start from
 	// the present and not accept missing history.
-	RequireFromPresent *bool `json:"requireFromPresent"`
+	RequireFromPresent *bool `json:"requireFromPresent,omitempty"`
 
 	// RestrictCollections is an optional list of collections to include
 	// or exclude in replication, depending on RestrictType.
-	RestrictCollections *[]string `json:"restrictCollections"`
+	RestrictCollections *[]string `json:"restrictCollections,omitempty"`
 
 	// RestrictType determines how RestrictCollections is interpreted:
 	// "include" or "exclude".
-	RestrictType *string `json:"restrictType"`
+	RestrictType *string `json:"restrictType,omitempty"`
 
 	// Username is the username used when connecting to the master.
-	Username *string `json:"username"`
+	Username *string `json:"username,omitempty"`
 
 	// Verbose controls the verbosity of the applier's logging.
-	Verbose *bool `json:"verbose"`
+	Verbose *bool `json:"verbose,omitempty"`
+}
+
+// ApplierState represents the current state of the replication applier.
+type ApplierState struct {
+	// Started indicates when the applier was started.
+	Started *string `json:"started"`
+
+	// Running is true if the applier is currently running.
+	Running *bool `json:"running"`
+
+	// Phase describes the current applier phase (e.g., "running", "inactive").
+	Phase *string `json:"phase"`
+
+	// LastAppliedContinuousTick is the tick of the last operation applied by the applier.
+	LastAppliedContinuousTick *string `json:"lastAppliedContinuousTick"`
+
+	// LastProcessedContinuousTick is the tick of the last operation processed.
+	LastProcessedContinuousTick *string `json:"lastProcessedContinuousTick"`
+
+	// LastAvailableContinuousTick is the last tick available on the replication logger.
+	LastAvailableContinuousTick *string `json:"lastAvailableContinuousTick"`
+
+	// SafeResumeTick is the tick from which the applier can safely resume.
+	SafeResumeTick *string `json:"safeResumeTick"`
+
+	// TicksBehind indicates how many ticks the applier is behind the latest log.
+	TicksBehind *int64 `json:"ticksBehind,omitempty"`
+
+	// Progress provides detailed information about the last progress event.
+	Progress *ApplierProgress `json:"progress,omitempty"`
+
+	// TotalRequests is the total number of requests made by the applier.
+	TotalRequests *int `json:"totalRequests,omitempty"`
+
+	// TotalFailedConnects counts the number of failed connection attempts.
+	TotalFailedConnects *int `json:"totalFailedConnects,omitempty"`
+
+	// TotalEvents is the total number of replication events processed.
+	TotalEvents *int `json:"totalEvents,omitempty"`
+
+	// TotalDocuments is the number of document operations applied.
+	TotalDocuments *int `json:"totalDocuments,omitempty"`
+
+	// TotalRemovals is the number of document removal operations applied.
+	TotalRemovals *int `json:"totalRemovals,omitempty"`
+
+	// TotalResyncs counts how many times a resync was triggered.
+	TotalResyncs *int `json:"totalResyncs,omitempty"`
+
+	// TotalOperationsExcluded is the number of operations ignored (due to filters, etc.).
+	TotalOperationsExcluded *int `json:"totalOperationsExcluded,omitempty"`
+
+	// TotalApplyTime is the cumulative time (in ms) spent applying operations.
+	TotalApplyTime *int `json:"totalApplyTime,omitempty"`
+
+	// AverageApplyTime is the average time (in ms) spent applying operations.
+	AverageApplyTime *int `json:"averageApplyTime,omitempty"`
+
+	// TotalFetchTime is the cumulative time (in ms) spent fetching operations.
+	TotalFetchTime *int `json:"totalFetchTime,omitempty"`
+
+	// AverageFetchTime is the average time (in ms) spent fetching operations.
+	AverageFetchTime *int `json:"averageFetchTime,omitempty"`
+
+	// LastError contains information about the last error, if any.
+	LastError *struct {
+		// ErrorNum is the numeric error code of the last error.
+		ErrorNum *int `json:"errorNum,omitempty"`
+	} `json:"lastError,omitempty"`
+
+	// Time is the timestamp of this applier state snapshot.
+	Time time.Time `json:"time,omitempty"`
+}
+
+// ApplierProgress contains details about the applier's last progress event.
+type ApplierProgress struct {
+	// Time is when the progress message was recorded.
+	Time *string `json:"time,omitempty"`
+
+	// Message provides a short description of the progress (e.g., "applied batch").
+	Message *string `json:"message,omitempty"`
+
+	// FailedConnects counts failed connection attempts at this progress point.
+	FailedConnects *int `json:"failedConnects,omitempty"`
+}
+
+type ApplierStateResp struct {
+	// State holds detailed information about the applier's current state.
+	State ApplierState `json:"state"`
+
+	// Server contains information about the server providing this state.
+	Server struct {
+		// Version is the ArangoDB version.
+		Version *string `json:"version"`
+
+		// ServerId is the unique ID of the server.
+		ServerId *string `json:"serverId"`
+	} `json:"server"`
+
+	// Endpoint is the endpoint this applier is connected to.
+	Endpoint *string `json:"endpoint"`
 }
