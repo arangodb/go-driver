@@ -229,7 +229,7 @@ func Test_UpdateApplierConfig(t *testing.T) {
 			db, err := client.GetDatabase(ctx, "_system", nil)
 			require.NoError(t, err)
 			t.Run("Update applier config with setting global:true", func(t *testing.T) {
-				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.UpdateApplierConfigOptions{
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.ApplierOptions{
 					ChunkSize: utils.NewType(1234),
 					AutoStart: utils.NewType(true),
 					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
@@ -240,7 +240,7 @@ func Test_UpdateApplierConfig(t *testing.T) {
 				require.NotNil(t, resp)
 			})
 			t.Run("Update applier config with setting global:false", func(t *testing.T) {
-				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(false), arangodb.UpdateApplierConfigOptions{
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(false), arangodb.ApplierOptions{
 					ChunkSize: utils.NewType(2596),
 					AutoStart: utils.NewType(false),
 					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
@@ -273,7 +273,7 @@ func Test_ApplierStart(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, batch)
 			t.Run("Update applier config with setting global:true", func(t *testing.T) {
-				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.UpdateApplierConfigOptions{
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.ApplierOptions{
 					ChunkSize: utils.NewType(2596),
 					AutoStart: utils.NewType(false),
 					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
@@ -323,7 +323,7 @@ func Test_ApplierStart(t *testing.T) {
 				)
 			})
 			t.Run("Update applier config with out query params", func(t *testing.T) {
-				resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.UpdateApplierConfigOptions{
+				resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
 					ChunkSize: utils.NewType(2596),
 					AutoStart: utils.NewType(false),
 					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
@@ -386,6 +386,32 @@ func Test_GetReplicationServerId(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, resp)
 				t.Logf("Replication Server ID: %s", resp)
+			})
+		})
+	})
+}
+
+func Test_MakeFollower(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
+			}
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			t.Run("Make Follower", func(t *testing.T) {
+				resp, err := client.MakeFollower(ctx, db.Name(), arangodb.ApplierOptions{
+					ChunkSize: utils.NewType(1234),
+					Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+					Database:  utils.NewType(db.Name()),
+					Username:  utils.NewType("root"),
+				})
+				require.NoError(t, err)
+				require.NotNil(t, resp)
 			})
 		})
 	})

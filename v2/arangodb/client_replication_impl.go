@@ -413,7 +413,7 @@ func (c *clientReplication) GetApplierConfig(ctx context.Context, dbName string,
 	}
 }
 
-func formUpdateApplierConfigParams(opts UpdateApplierConfigOptions) (map[string]interface{}, error) {
+func formApplierParams(opts ApplierOptions) (map[string]interface{}, error) {
 	params := map[string]interface{}{}
 
 	// Required
@@ -484,7 +484,7 @@ func formUpdateApplierConfigParams(opts UpdateApplierConfigOptions) (map[string]
 	return params, nil
 }
 
-func (c *clientReplication) UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts UpdateApplierConfigOptions) (ApplierConfigResponse, error) {
+func (c *clientReplication) UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts ApplierOptions) (ApplierConfigResponse, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
 
@@ -509,7 +509,7 @@ func (c *clientReplication) UpdateApplierConfig(ctx context.Context, dbName stri
 		ApplierConfigResponse `json:",inline"`
 	}
 
-	requestParams, err := formUpdateApplierConfigParams(opts)
+	requestParams, err := formApplierParams(opts)
 	if err != nil {
 		return ApplierConfigResponse{}, errors.WithStack(err)
 	}
@@ -664,5 +664,41 @@ func (c *clientReplication) GetReplicationServerId(ctx context.Context, dbName s
 		return response.ServerId, nil
 	default:
 		return "", response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *clientReplication) MakeFollower(ctx context.Context, dbName string, opts ApplierOptions) (ApplierStateResp, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return ApplierStateResp{}, errors.New("replication make-follower is not supported on Coordinators")
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"make-follower"}, nil)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ApplierStateResp      `json:",inline"`
+	}
+	requestParams, err := formApplierParams(opts)
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, requestParams)
+	if err != nil {
+		return ApplierStateResp{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ApplierStateResp, nil
+	default:
+		return ApplierStateResp{}, response.AsArangoErrorWithCode(code)
 	}
 }

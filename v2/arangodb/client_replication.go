@@ -46,7 +46,7 @@ type ClientReplication interface {
 	// GetApplierConfig retrieves the configuration of the replication applier.
 	GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error)
 	// UpdateApplierConfig updates the configuration of the replication applier.
-	UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts UpdateApplierConfigOptions) (ApplierConfigResponse, error)
+	UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts ApplierOptions) (ApplierConfigResponse, error)
 	// ApplierStart starts the replication applier.
 	ApplierStart(ctx context.Context, dbName string, global *bool, from *string) (ApplierStateResp, error)
 	// ApplierStop stops the replication applier.
@@ -55,6 +55,8 @@ type ClientReplication interface {
 	GetApplierState(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
 	// GetReplicationServerId retrieves the server ID used for replication.
 	GetReplicationServerId(ctx context.Context, dbName string) (string, error)
+	// MakeFollower makes the current server a follower of the specified leader.
+	MakeFollower(ctx context.Context, dbName string, opts ApplierOptions) (ApplierStateResp, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -359,9 +361,9 @@ type ApplierConfigResponse struct {
 	Incremental *bool `json:"incremental,omitempty"`
 }
 
-// UpdateApplierConfigOptions holds the configuration options for the replication applier.
+// ApplierOptions holds the configuration options for the replication applier.
 // These settings can only be changed when the applier is not running.
-type UpdateApplierConfigOptions struct {
+type ApplierOptions struct {
 	// AdaptivePolling controls whether the replication applier uses adaptive polling.
 	AdaptivePolling *bool `json:"adaptivePolling,omitempty"`
 
@@ -509,6 +511,10 @@ type ApplierState struct {
 	LastError *struct {
 		// ErrorNum is the numeric error code of the last error.
 		ErrorNum *int `json:"errorNum,omitempty"`
+		// ErrorMessage is the descriptive message of the last error.
+		ErrorMessage *string `json:"errorMessage,omitempty"`
+		// Time is the timestamp of the last error.
+		Time time.Time `json:"time,omitempty"`
 	} `json:"lastError,omitempty"`
 
 	// Time is the timestamp of this applier state snapshot.
