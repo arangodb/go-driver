@@ -57,8 +57,10 @@ type ClientReplication interface {
 	GetReplicationServerId(ctx context.Context, dbName string) (string, error)
 	// MakeFollower makes the current server a follower of the specified leader.
 	MakeFollower(ctx context.Context, dbName string, opts ApplierOptions) (ApplierStateResp, error)
-	// GetWalRange retrieves the WAL range information.
-	GetWalRange(ctx context.Context, dbName string) (WalRangeResponse, error)
+	// GetWALRange retrieves the WAL range information.
+	GetWALRange(ctx context.Context, dbName string) (WALRangeResponse, error)
+	// GetWALLastTick retrieves the last available tick information.
+	GetWALLastTick(ctx context.Context, dbName string) (WALLastTickResponse, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -554,13 +556,22 @@ type ApplierServer struct {
 	ServerId *string `json:"serverId"`
 }
 
-type WalRangeResponse struct {
+type WALRangeResponse struct {
 	// Time is the timestamp when the range was recorded.
 	Time time.Time `json:"time"`
 	// Minimum tick in the range
 	TickMin string `json:"tickMin"`
 	// Maximum tick in the range
 	TickMax string `json:"tickMax"`
+	// Server information
+	Server ApplierServer `json:"server"`
+}
+
+type WALLastTickResponse struct {
+	// Time is the timestamp when the range was recorded.
+	Time time.Time `json:"time"`
+	// Tick contains the last available tick
+	Tick string `json:"tick"`
 	// Server information
 	Server ApplierServer `json:"server"`
 }

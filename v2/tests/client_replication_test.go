@@ -417,7 +417,7 @@ func Test_MakeFollower(t *testing.T) {
 	})
 }
 
-func Test_GetWalRange(t *testing.T) {
+func Test_GetWALReplicationEndpoints(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			db, err := client.GetDatabase(ctx, "_system", nil)
@@ -431,7 +431,13 @@ func Test_GetWalRange(t *testing.T) {
 			}
 
 			t.Run("Get WAL range", func(t *testing.T) {
-				resp, err := client.GetWalRange(ctx, db.Name())
+				resp, err := client.GetWALRange(ctx, db.Name())
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+
+			t.Run("Get WAL last tick", func(t *testing.T) {
+				resp, err := client.GetWALLastTick(ctx, db.Name())
 				require.NoError(t, err)
 				require.NotNil(t, resp)
 			})
