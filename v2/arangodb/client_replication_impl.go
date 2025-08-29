@@ -643,3 +643,26 @@ func (c *clientReplication) GetApplierState(ctx context.Context, dbName string, 
 		return ApplierStateResp{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientReplication) GetReplicationServerId(ctx context.Context, dbName string) (string, error) {
+
+	// Build URL
+	url := c.url(dbName, []string{"server-id"}, nil)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ServerId              string `json:"serverId"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ServerId, nil
+	default:
+		return "", response.AsArangoErrorWithCode(code)
+	}
+}

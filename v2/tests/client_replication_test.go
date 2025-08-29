@@ -375,3 +375,18 @@ func Test_ApplierStart(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetReplicationServerId(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			t.Run("Get replication server ID", func(t *testing.T) {
+				resp, err := client.GetReplicationServerId(ctx, db.Name())
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				t.Logf("Replication Server ID: %s", resp)
+			})
+		})
+	})
+}

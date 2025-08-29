@@ -53,6 +53,8 @@ type ClientReplication interface {
 	ApplierStop(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
 	// GetApplierState retrieves the state of the replication applier.
 	GetApplierState(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
+	// GetReplicationServerId retrieves the server ID used for replication.
+	GetReplicationServerId(ctx context.Context, dbName string) (string, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
