@@ -416,3 +416,25 @@ func Test_MakeFollower(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetWalRange(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
+			}
+
+			t.Run("Get WAL range", func(t *testing.T) {
+				resp, err := client.GetWalRange(ctx, db.Name())
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			})
+		})
+	})
+}

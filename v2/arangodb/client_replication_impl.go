@@ -702,3 +702,34 @@ func (c *clientReplication) MakeFollower(ctx context.Context, dbName string, opt
 		return ApplierStateResp{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientReplication) GetWalRange(ctx context.Context, dbName string) (WalRangeResponse, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return WalRangeResponse{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return WalRangeResponse{}, errors.New("WAL range is not supported on Coordinators")
+	}
+	// Build URL
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "wal", "range")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		WalRangeResponse      `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return WalRangeResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.WalRangeResponse, nil
+	default:
+		return WalRangeResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}

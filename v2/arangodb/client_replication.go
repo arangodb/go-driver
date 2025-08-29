@@ -57,6 +57,8 @@ type ClientReplication interface {
 	GetReplicationServerId(ctx context.Context, dbName string) (string, error)
 	// MakeFollower makes the current server a follower of the specified leader.
 	MakeFollower(ctx context.Context, dbName string, opts ApplierOptions) (ApplierStateResp, error)
+	// GetWalRange retrieves the WAL range information.
+	GetWalRange(ctx context.Context, dbName string) (WalRangeResponse, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -538,14 +540,27 @@ type ApplierStateResp struct {
 	State ApplierState `json:"state"`
 
 	// Server contains information about the server providing this state.
-	Server struct {
-		// Version is the ArangoDB version.
-		Version *string `json:"version"`
-
-		// ServerId is the unique ID of the server.
-		ServerId *string `json:"serverId"`
-	} `json:"server"`
+	Server ApplierServer `json:"server"`
 
 	// Endpoint is the endpoint this applier is connected to.
 	Endpoint *string `json:"endpoint"`
+}
+
+type ApplierServer struct {
+	// Version is the ArangoDB version.
+	Version *string `json:"version"`
+
+	// ServerId is the unique ID of the server.
+	ServerId *string `json:"serverId"`
+}
+
+type WalRangeResponse struct {
+	// Time is the timestamp when the range was recorded.
+	Time time.Time `json:"time"`
+	// Minimum tick in the range
+	TickMin string `json:"tickMin"`
+	// Maximum tick in the range
+	TickMax string `json:"tickMax"`
+	// Server information
+	Server ApplierServer `json:"server"`
 }
