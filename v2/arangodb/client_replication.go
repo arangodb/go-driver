@@ -61,6 +61,8 @@ type ClientReplication interface {
 	GetWALRange(ctx context.Context, dbName string) (WALRangeResponse, error)
 	// GetWALLastTick retrieves the last available tick information.
 	GetWALLastTick(ctx context.Context, dbName string) (WALLastTickResponse, error)
+	// GetWALTail retrieves the tail of the WAL.
+	GetWALTail(ctx context.Context, dbName string, params *WALTailOptions) ([]byte, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -574,4 +576,34 @@ type WALLastTickResponse struct {
 	Tick string `json:"tick"`
 	// Server information
 	Server ApplierServer `json:"server"`
+}
+
+type WALTailOptions struct {
+	// Global indicates whether operations for all databases should be included.
+	// If set to false, only the operations for the current database are included.
+	// The value true is only valid on the _system database.
+	Global *bool `json:"global,omitempty"`
+
+	// From specifies the exclusive lower bound tick value for the replication.
+	From *int64 `json:"from,omitempty"`
+
+	// To specifies the inclusive upper bound tick value for the replication.
+	To *int64 `json:"to,omitempty"`
+
+	// LastScanned specifies the last scanned tick value (for RocksDB multi-response support).
+	LastScanned *int `json:"lastScanned,omitempty"`
+
+	// ChunkSize specifies the approximate maximum size of the returned result in bytes.
+	ChunkSize *int `json:"chunkSize,omitempty"`
+
+	// SyncerId specifies the ID of the client used to tail results.
+	// Required if ServerId is not provided.
+	SyncerId *int64 `json:"syncerId,omitempty"`
+
+	// ServerId specifies the ID of the client machine.
+	// Required if SyncerId is not provided.
+	ServerId *int64 `json:"serverId,omitempty"`
+
+	// ClientInfo provides a short description of the client (informational only).
+	ClientInfo *string `json:"clientInfo,omitempty"`
 }

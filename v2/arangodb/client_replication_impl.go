@@ -21,6 +21,7 @@
 package arangodb
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -763,4 +764,81 @@ func (c *clientReplication) GetWALLastTick(ctx context.Context, dbName string) (
 	default:
 		return WALLastTickResponse{}, response.AsArangoErrorWithCode(code)
 	}
+}
+
+func (c *clientReplication) formQueryParamsForTail(params *WALTailOptions) map[string]interface{} {
+	queryParams := map[string]interface{}{}
+	if params == nil {
+		return nil
+	}
+	if params.Global != nil {
+		queryParams["global"] = *params.Global
+	}
+	if params.From != nil {
+		queryParams["from"] = *params.From
+	}
+	if params.To != nil {
+		queryParams["to"] = *params.To
+	}
+	if params.LastScanned != nil {
+		queryParams["lastScanned"] = *params.LastScanned
+	}
+	if params.ChunkSize != nil {
+		queryParams["chunkSize"] = *params.ChunkSize
+	}
+	if params.SyncerId != nil {
+		queryParams["syncerId"] = *params.SyncerId
+	}
+	if params.ServerId != nil {
+		queryParams["serverId"] = *params.ServerId
+	}
+	if params.ClientInfo != nil {
+		queryParams["clientInfo"] = *params.ClientInfo
+	}
+	return queryParams
+}
+
+func (c *clientReplication) GetWALTail(ctx context.Context, dbName string, params *WALTailOptions) ([]byte, error) {
+
+	role, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if role == ServerRoleCoordinator {
+		return nil, errors.Errorf("replication Tail not supported on role %s", role)
+	}
+
+	// Build query params
+	queryParams := c.formQueryParamsForTail(params)
+
+	// Build URL
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_api", "wal", "tail")
+	req, err := c.client.Connection().NewRequest(http.MethodGet, url)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add query params
+	for k, v := range queryParams {
+		req.AddQuery(k, fmt.Sprintf("%v", v))
+	}
+
+	// Use a bytes.Buffer to capture the response
+	var buf bytes.Buffer
+	resp, err := c.client.Connection().Do(ctx, req, &buf, http.StatusOK, http.StatusNoContent)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("resp code %d\n", resp.Code())
+
+	if resp.Code() == http.StatusNoContent {
+		return nil, nil
+	}
+
+	if resp.Code() != http.StatusOK {
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+
+	return buf.Bytes(), nil
 }

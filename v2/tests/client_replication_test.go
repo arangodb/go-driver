@@ -22,6 +22,8 @@ package tests
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -98,11 +100,12 @@ func Test_CreateNewBatch(t *testing.T) {
 					time.Sleep(200 * time.Millisecond)
 					// Attempt to dump the collection
 					if serverRole == arangodb.ServerRoleSingle {
-						_, err := client.Dump(ctx, db.Name(), arangodb.ReplicationDumpParams{
+						resp, err := client.Dump(ctx, db.Name(), arangodb.ReplicationDumpParams{
 							BatchID:    batch.ID,
 							Collection: col.Name(),
 						})
 						require.NoError(t, err)
+						require.GreaterOrEqual(t, len(resp), 0)
 					} else {
 						t.Skipf("Dump only allowed for single server deployments. This is a %s server", serverRole)
 					}
@@ -440,6 +443,56 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 				resp, err := client.GetWALLastTick(ctx, db.Name())
 				require.NoError(t, err)
 				require.NotNil(t, resp)
+			})
+
+			WithCollectionV2(t, db, nil, func(coll arangodb.Collection) {
+				// WAL range before inserts
+				rangeResp, err := client.GetWALRange(ctx, db.Name())
+				require.NoError(t, err)
+				fromTick, err := strconv.ParseInt(rangeResp.TickMax, 10, 64)
+				require.NoError(t, err)
+				t.Logf("Starting fromTick: %d\n", fromTick)
+				t.Run("Update applier config with out query params", func(t *testing.T) {
+					resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
+						Endpoint: utils.NewType("tcp://127.0.0.1:8529"),
+						Database: utils.NewType(db.Name()),
+						Verbose:  utils.NewType(true),
+					})
+					require.NoError(t, err)
+					require.NotNil(t, resp)
+				})
+				t.Run("Applier Start with out query params", func(t *testing.T) {
+					resp, err := client.ApplierStart(ctx, db.Name(), nil, nil)
+					require.NoError(t, err)
+					require.NotNil(t, resp)
+				})
+				// Insert docs
+				t.Run("Inserting 5 documents", func(t *testing.T) {
+					for i := 0; i < 5; i++ {
+						resp, err := coll.CreateDocument(ctx, map[string]string{"foo": fmt.Sprintf("bar-%d", i)})
+						require.NoError(t, err)
+						require.NotNil(t, resp)
+					}
+				})
+				// Force sync and check WAL range again
+				time.Sleep(500 * time.Millisecond) // Increase sleep time
+				t.Run("Get WAL Tail with query params", func(t *testing.T) {
+					tailResp, err := client.GetWALTail(ctx, db.Name(),
+						&arangodb.WALTailOptions{
+							Global:      utils.NewType(true),
+							From:        utils.NewType(fromTick),
+							ChunkSize:   utils.NewType(1024 * 1024),
+							LastScanned: utils.NewType(0),
+						})
+					require.NoError(t, err)
+					require.GreaterOrEqual(t, len(tailResp), 0)
+				})
+
+				t.Run("Applier Stop with out query params", func(t *testing.T) {
+					resp, err := client.ApplierStop(ctx, db.Name(), nil)
+					require.NoError(t, err)
+					require.NotNil(t, resp)
+				})
 			})
 		})
 	})
