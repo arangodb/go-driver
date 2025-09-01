@@ -23,6 +23,7 @@ package arangodb
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -188,6 +189,9 @@ func (c *clientReplication) DeleteBatch(ctx context.Context, dbName string, DBse
 		params["DBserver"] = *DBserver
 	}
 
+	if batchId == "" {
+		return errors.New("batchId must be specified for delete batch")
+	}
 	// Build URL
 	url := c.url(dbName, []string{"batch", batchId}, params)
 
@@ -701,6 +705,84 @@ func (c *clientReplication) MakeFollower(ctx context.Context, dbName string, opt
 		return response.ApplierStateResp, nil
 	default:
 		return ApplierStateResp{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// RebuildShardRevisionTree triggers a rebuild of the Merkle tree for a specific shard.
+// This API must be called directly against a DBServer (not a Coordinator).
+func (c *clientReplication) RebuildShardRevisionTree(ctx context.Context, dbName string, shardID ShardID) error {
+	// Ensure we are on a DBServer
+	role, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if role != ServerRoleDBServer {
+		return fmt.Errorf("rebuild revision tree is only supported on DBServers, got role=%s", role)
+	}
+
+	if shardID == "" {
+		return RequiredFieldError("shardID")
+	}
+
+	// Build URL
+	queryParams := map[string]interface{}{
+		"collection": shardID,
+	}
+	url := c.url(dbName, []string{"revisions", "tree"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if resp.Code() == http.StatusNoContent {
+		return nil
+	}
+	return response.AsArangoErrorWithCode(resp.Code())
+}
+
+func (c *clientReplication) GetShardRevisionTree(ctx context.Context, dbName string, shardID ShardID, batchId string) (json.RawMessage, error) {
+	role, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if role != ServerRoleDBServer {
+		return nil, fmt.Errorf("get revision tree is only supported on DBServers, got role=%s", role)
+	}
+
+	if shardID == "" {
+		return nil, RequiredFieldError("shardID")
+	}
+	if batchId == "" {
+		return nil, RequiredFieldError("batchId")
+	}
+
+	queryParams := map[string]interface{}{
+		"collection": shardID,
+		"batchId":    batchId,
+	}
+
+	url := c.url(dbName, []string{"revisions", "tree"}, queryParams)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		RevisionTree          json.RawMessage `json:"revisionTree,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.RevisionTree, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
 

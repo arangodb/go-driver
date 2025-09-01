@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -493,6 +494,53 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 					require.NoError(t, err)
 					require.NotNil(t, resp)
 				})
+			})
+		})
+	})
+}
+
+func Test_RebuildShardRevisionTree(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			if os.Getenv("TEST_CONNECTION") == "vst" {
+				skipBelowVersion(client, ctx, "3.8", t)
+			}
+
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			if serverRole != arangodb.ServerRoleDBServer {
+				t.Skipf("Not supported on role: %s", serverRole)
+			}
+
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				docs := []map[string]interface{}{
+					{"_key": "doc1", "name": "Alice"},
+					{"_key": "doc2", "name": "Bob"},
+					{"_key": "doc3", "name": "Charlie"},
+				}
+				for _, doc := range docs {
+					resp, err := col.CreateDocument(ctx, doc)
+					require.NoError(t, err)
+					require.NotNil(t, resp)
+				}
+
+				var shardId arangodb.ShardID
+				shards, err := col.Shards(ctx, true)
+				require.NoError(t, err)
+				require.NotNil(t, shards)
+
+				for existingShardId := range shards.Shards {
+					shardId = existingShardId
+					break
+				}
+
+				err = client.RebuildShardRevisionTree(ctx, db.Name(), shardId)
+				require.NoError(t, err)
 			})
 		})
 	})

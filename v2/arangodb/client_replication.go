@@ -22,6 +22,7 @@ package arangodb
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -63,6 +64,10 @@ type ClientReplication interface {
 	GetWALLastTick(ctx context.Context, dbName string) (WALLastTickResponse, error)
 	// GetWALTail retrieves the tail of the WAL.
 	GetWALTail(ctx context.Context, dbName string, params *WALTailOptions) ([]byte, error)
+	// RebuildShardRevisionTree rebuilds the Merkle tree for a shard.
+	RebuildShardRevisionTree(ctx context.Context, dbName string, shardID ShardID) error
+	// GetShardRevisionTree retrieves the Merkle tree for a shard.
+	GetShardRevisionTree(ctx context.Context, dbName string, shardID ShardID, batchId string) (json.RawMessage, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
