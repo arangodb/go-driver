@@ -68,6 +68,8 @@ type ClientReplication interface {
 	RebuildShardRevisionTree(ctx context.Context, dbName string, shardID ShardID) error
 	// GetShardRevisionTree retrieves the Merkle tree for a shard.
 	GetShardRevisionTree(ctx context.Context, dbName string, shardID ShardID, batchId string) (json.RawMessage, error)
+	// ListDocumentRevisionsInRange retrieves documents by their revision IDs.
+	ListDocumentRevisionsInRange(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts [][2]string) ([][2]string, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -611,4 +613,12 @@ type WALTailOptions struct {
 
 	// ClientInfo provides a short description of the client (informational only).
 	ClientInfo *string `json:"clientInfo,omitempty"`
+}
+
+type RevisionQueryParams struct {
+	// Collection Name
+	Collection string `json:"collection"`
+	BatchId    string `json:"batchId"`
+	// The revisionId at which to resume, if a previous request was truncated
+	Resume *string `json:"resume,omitempty"`
 }

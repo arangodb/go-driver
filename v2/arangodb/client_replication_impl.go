@@ -786,6 +786,59 @@ func (c *clientReplication) GetShardRevisionTree(ctx context.Context, dbName str
 	}
 }
 
+func (c *clientReplication) checkRevisionQueryParams(queryParams RevisionQueryParams) (map[string]interface{}, error) {
+	params := map[string]interface{}{}
+	if queryParams.Collection == "" {
+		return nil, RequiredFieldError("collection")
+	}
+	if queryParams.BatchId == "" {
+		return nil, RequiredFieldError("batchId")
+	}
+	if queryParams.Resume != nil {
+		params["resume"] = *queryParams.Resume
+	}
+	params["collection"] = queryParams.Collection
+	params["batchId"] = queryParams.BatchId
+	return params, nil
+}
+
+func (c *clientReplication) ListDocumentRevisionsInRange(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts [][2]string) ([][2]string, error) {
+
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return nil, errors.New("WAL range is not supported on Coordinators")
+	}
+	params, err := c.checkRevisionQueryParams(queryParams)
+	if err != nil {
+		return nil, err
+	}
+	// Build URL
+
+	url := c.url(dbName, []string{"revisions", "ranges"}, params)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Ranges                [][2]string `json:"ranges,omitempty"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, opts)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Ranges, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
 func (c *clientReplication) GetWALRange(ctx context.Context, dbName string) (WALRangeResponse, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)

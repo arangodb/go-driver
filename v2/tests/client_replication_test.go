@@ -545,3 +545,71 @@ func Test_RebuildShardRevisionTree(t *testing.T) {
 		})
 	})
 }
+func Test_ListDocumentRevisionsInRange(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			if os.Getenv("TEST_CONNECTION") == "vst" {
+				skipBelowVersion(client, ctx, "3.8", t)
+			}
+
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				var revs []string
+				// Insert documents
+				for i := 1; i <= 10; i++ {
+					doc := map[string]interface{}{
+						"_key": fmt.Sprintf("doc%d", i),
+						"name": fmt.Sprintf("User %d", i),
+					}
+					resp, err := col.CreateDocument(ctx, doc)
+					require.NoError(t, err)
+					require.NotNil(t, resp)
+					revs = append(revs, resp.Rev)
+				}
+				require.NotEmpty(t, revs)
+				time.Sleep(500 * time.Millisecond)
+
+				// Determine DBServer for cluster
+				var dbServer *string
+				state := utils.NewType(true)
+				serverRole, err := client.ServerRole(ctx)
+				require.NoError(t, err)
+				t.Logf("ServerRole: %s", serverRole)
+
+				if serverRole == arangodb.ServerRoleCoordinator {
+					clusterHealth, err := client.Health(ctx)
+					require.NoError(t, err)
+					for id, db := range clusterHealth.Health {
+						if db.Role == arangodb.ServerRoleDBServer {
+							s := string(id)
+							dbServer = &s
+							break
+						}
+					}
+				}
+
+				// Create a replication batch
+				batch, err := client.CreateNewBatch(ctx, db.Name(), dbServer, state, arangodb.CreateNewBatchOptions{Ttl: 300})
+				require.NoError(t, err)
+				require.NotNil(t, batch)
+				require.NotEmpty(t, batch.ID)
+
+				// Prepare pairs for ListDocumentRevisionsInRange
+				var opts [][2]string
+				for i := 0; i < len(revs)-1; i++ {
+					opts = append(opts, [2]string{revs[i], revs[i+1]})
+				}
+
+				// Call ListDocumentRevisionsInRange
+				revIds, err := client.ListDocumentRevisionsInRange(ctx, db.Name(), arangodb.RevisionQueryParams{
+					BatchId:    batch.ID,
+					Collection: col.Name(),
+				}, opts)
+				require.NoError(t, err)
+				require.NotNil(t, revIds)
+			})
+		})
+	})
+}
