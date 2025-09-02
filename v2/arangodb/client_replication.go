@@ -70,6 +70,8 @@ type ClientReplication interface {
 	GetShardRevisionTree(ctx context.Context, dbName string, shardID ShardID, batchId string) (json.RawMessage, error)
 	// ListDocumentRevisionsInRange retrieves documents by their revision IDs.
 	ListDocumentRevisionsInRange(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts [][2]string) ([][2]string, error)
+	// FetchRevisionDocuments retrieves documents by their revision IDs.
+	FetchRevisionDocuments(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts []string) ([]map[string]interface{}, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.

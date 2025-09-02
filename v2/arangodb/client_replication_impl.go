@@ -811,7 +811,7 @@ func (c *clientReplication) ListDocumentRevisionsInRange(ctx context.Context, db
 		return nil, errors.WithStack(err)
 	}
 	if serverRole == ServerRoleCoordinator {
-		return nil, errors.New("WAL range is not supported on Coordinators")
+		return nil, errors.New("replication revisions range is not supported on Coordinators")
 	}
 	params, err := c.checkRevisionQueryParams(queryParams)
 	if err != nil {
@@ -838,6 +838,42 @@ func (c *clientReplication) ListDocumentRevisionsInRange(ctx context.Context, db
 		return nil, response.AsArangoErrorWithCode(code)
 	}
 }
+
+func (c *clientReplication) FetchRevisionDocuments(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts []string) ([]map[string]interface{}, error) {
+
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return nil, errors.New("replication revisions documents is not supported on Coordinators")
+	}
+	params, err := c.checkRevisionQueryParams(queryParams)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"revisions", "documents"}, params)
+
+	var response []map[string]interface{}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, opts)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
+
+//startReplicationSync
 
 func (c *clientReplication) GetWALRange(ctx context.Context, dbName string) (WALRangeResponse, error) {
 	// Check server role

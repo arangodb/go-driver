@@ -502,10 +502,12 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 func Test_RebuildShardRevisionTree(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			// Version checking
 			if os.Getenv("TEST_CONNECTION") == "vst" {
 				skipBelowVersion(client, ctx, "3.8", t)
 			}
 
+			// Role check
 			serverRole, err := client.ServerRole(ctx)
 			require.NoError(t, err)
 			t.Logf("ServerRole is %s\n", serverRole)
@@ -514,10 +516,12 @@ func Test_RebuildShardRevisionTree(t *testing.T) {
 				t.Skipf("Not supported on role: %s", serverRole)
 			}
 
+			// Check for DB existence
 			db, err := client.GetDatabase(ctx, "_system", nil)
 			require.NoError(t, err)
 
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				// Insert documents
 				docs := []map[string]interface{}{
 					{"_key": "doc1", "name": "Alice"},
 					{"_key": "doc2", "name": "Bob"},
@@ -538,7 +542,7 @@ func Test_RebuildShardRevisionTree(t *testing.T) {
 					shardId = existingShardId
 					break
 				}
-
+				// Call Rebuild Shard Revision Tree
 				err = client.RebuildShardRevisionTree(ctx, db.Name(), shardId)
 				require.NoError(t, err)
 			})
@@ -548,10 +552,20 @@ func Test_RebuildShardRevisionTree(t *testing.T) {
 func Test_ListDocumentRevisionsInRange(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			// Version checking
 			if os.Getenv("TEST_CONNECTION") == "vst" {
 				skipBelowVersion(client, ctx, "3.8", t)
 			}
+			// Role check
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole: %s", serverRole)
 
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
+			}
+
+			// Check for DB existence
 			db, err := client.GetDatabase(ctx, "_system", nil)
 			require.NoError(t, err)
 
@@ -571,27 +585,9 @@ func Test_ListDocumentRevisionsInRange(t *testing.T) {
 				require.NotEmpty(t, revs)
 				time.Sleep(500 * time.Millisecond)
 
-				// Determine DBServer for cluster
-				var dbServer *string
-				state := utils.NewType(true)
-				serverRole, err := client.ServerRole(ctx)
-				require.NoError(t, err)
-				t.Logf("ServerRole: %s", serverRole)
-
-				if serverRole == arangodb.ServerRoleCoordinator {
-					clusterHealth, err := client.Health(ctx)
-					require.NoError(t, err)
-					for id, db := range clusterHealth.Health {
-						if db.Role == arangodb.ServerRoleDBServer {
-							s := string(id)
-							dbServer = &s
-							break
-						}
-					}
-				}
-
 				// Create a replication batch
-				batch, err := client.CreateNewBatch(ctx, db.Name(), dbServer, state, arangodb.CreateNewBatchOptions{Ttl: 300})
+				state := utils.NewType(true)
+				batch, err := client.CreateNewBatch(ctx, db.Name(), nil, state, arangodb.CreateNewBatchOptions{Ttl: 300})
 				require.NoError(t, err)
 				require.NotNil(t, batch)
 				require.NotEmpty(t, batch.ID)
@@ -609,6 +605,64 @@ func Test_ListDocumentRevisionsInRange(t *testing.T) {
 				}, opts)
 				require.NoError(t, err)
 				require.NotNil(t, revIds)
+			})
+		})
+	})
+}
+
+func Test_FetchRevisionDocuments(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			// Version checking
+			if os.Getenv("TEST_CONNECTION") == "vst" {
+				skipBelowVersion(client, ctx, "3.8", t)
+			}
+
+			// Role check
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole: %s", serverRole)
+
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
+			}
+
+			// Check for DB existence
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				var revs []string
+				// Insert documents
+				docs := []map[string]interface{}{}
+				docs = append(docs, map[string]interface{}{"_key": "doc1", "name": "Alice"})
+				docs = append(docs, map[string]interface{}{"_key": "doc2", "subjects": []string{"English", "Maths"}})
+				docs = append(docs, map[string]interface{}{"_key": "doc3", "age": 30, "active": true})
+				docs = append(docs, map[string]interface{}{"_key": "doc4", "profile": map[string]interface{}{"city": "Berlin", "country": "Germany"}})
+
+				for _, doc := range docs {
+					resp, err := col.CreateDocument(ctx, doc)
+					require.NoError(t, err)
+					require.NotNil(t, resp)
+					revs = append(revs, resp.Rev)
+				}
+				require.NotEmpty(t, revs)
+				time.Sleep(500 * time.Millisecond)
+
+				// Create a replication batch
+				state := utils.NewType(true)
+				batch, err := client.CreateNewBatch(ctx, db.Name(), nil, state, arangodb.CreateNewBatchOptions{Ttl: 300})
+				require.NoError(t, err)
+				require.NotNil(t, batch)
+				require.NotEmpty(t, batch.ID)
+
+				// Call FetchRevisionDocuments
+				revDocs, err := client.FetchRevisionDocuments(ctx, db.Name(), arangodb.RevisionQueryParams{
+					BatchId:    batch.ID,
+					Collection: col.Name(),
+				}, revs)
+				require.NoError(t, err)
+				require.NotNil(t, revDocs)
 			})
 		})
 	})
