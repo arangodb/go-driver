@@ -72,6 +72,8 @@ type ClientReplication interface {
 	ListDocumentRevisionsInRange(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts [][2]string) ([][2]string, error)
 	// FetchRevisionDocuments retrieves documents by their revision IDs.
 	FetchRevisionDocuments(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts []string) ([]map[string]interface{}, error)
+	// StartReplicationSync starts the replication synchronization process.
+	StartReplicationSync(ctx context.Context, dbName string, opts ReplicationSyncOptions) (ReplicationSyncResult, error)
 }
 
 // CreateNewBatchOptions represents the request body for creating a batch.
@@ -623,4 +625,59 @@ type RevisionQueryParams struct {
 	BatchId    string `json:"batchId"`
 	// The revisionId at which to resume, if a previous request was truncated
 	Resume *string `json:"resume,omitempty"`
+}
+
+// ReplicationSyncResult is the response format from /_api/replication/sync
+type ReplicationSyncResult struct {
+	// Collections is an array of collections that were synchronized
+	// from the leader to the local database.
+	Collections []map[string]interface{} `json:"collections"`
+
+	// LastLogTick is the log tick value from the leader at the time
+	// the synchronization started. This value can be used later as
+	// the "from" tick when setting up continuous replication.
+	LastLogTick string `json:"lastLogTick"`
+}
+
+// ReplicationSyncOptions holds optional parameters for sync
+type ReplicationSyncOptions struct {
+	// Database specifies the name of the leader database to replicate from.
+	// If not provided, defaults to the current database.
+	Database *string `json:"database,omitempty"`
+
+	// Endpoint is the leader endpoint (e.g., "http+tcp://192.168.1.65:8529").
+	// This field is required.
+	Endpoint string `json:"endpoint,omitempty"`
+
+	// Username is the login name used for authentication on the leader endpoint.
+	Username string `json:"username,omitempty"`
+
+	// Password is the corresponding password used for authentication
+	// on the leader endpoint.
+	Password string `json:"password,omitempty"`
+
+	// IncludeSystem determines whether system collections should be included
+	// in the synchronization. Defaults to false.
+	IncludeSystem *bool `json:"includeSystem,omitempty"`
+
+	// Incremental indicates if incremental synchronization should be used.
+	// When true, only differences are transferred, which is faster if the
+	// local database already has some of the leader’s data.
+	// When false (default), a full synchronization is performed.
+	Incremental *bool `json:"incremental,omitempty"`
+
+	// RestrictType controls how RestrictCollections is applied.
+	// Possible values:
+	//   - "include": only collections listed in RestrictCollections are replicated.
+	//   - "exclude": all collections except those listed are replicated.
+	RestrictType *string `json:"restrictType,omitempty"`
+
+	// RestrictCollections is the list of collections used together with
+	// RestrictType to filter which collections are synchronized.
+	RestrictCollections *[]string `json:"restrictCollections,omitempty"`
+
+	// InitialSyncMaxWaitSec specifies the maximum wait time (in seconds)
+	// the synchronization will wait for a response from the leader during
+	// initial collection data fetch. A value of 0 disables the wait time limit.
+	InitialSyncMaxWaitSec int `json:"initialSyncMaxWaitSec,omitempty"`
 }

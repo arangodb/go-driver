@@ -873,7 +873,73 @@ func (c *clientReplication) FetchRevisionDocuments(ctx context.Context, dbName s
 	}
 }
 
-//startReplicationSync
+func (c *clientReplication) formSyncBodyParams(opts ReplicationSyncOptions) (map[string]interface{}, error) {
+	params := map[string]interface{}{}
+	if opts.Endpoint == "" {
+		return nil, RequiredFieldError("endpoint")
+	}
+	params["endpoint"] = opts.Endpoint
+	if opts.Database != nil && *opts.Database != "" {
+		params["database"] = *opts.Database
+	}
+	if opts.Username != "" {
+		params["username"] = opts.Username
+	}
+	if opts.Password != "" {
+		params["password"] = opts.Password
+	}
+	if opts.IncludeSystem != nil {
+		params["includeSystem"] = *opts.IncludeSystem
+	}
+	if opts.Incremental != nil {
+		params["incremental"] = *opts.Incremental
+	}
+	if opts.RestrictType != nil && *opts.RestrictType != "" {
+		params["restrictType"] = *opts.RestrictType
+	}
+	if opts.RestrictCollections != nil && len(*opts.RestrictCollections) > 0 {
+		params["restrictCollections"] = *opts.RestrictCollections
+	}
+	params["initialSyncMaxWaitTime"] = opts.InitialSyncMaxWaitSec
+	return params, nil
+}
+
+func (c *clientReplication) StartReplicationSync(ctx context.Context, dbName string, opts ReplicationSyncOptions) (ReplicationSyncResult, error) {
+	// Check server role
+	serverRole, err := c.client.ServerRole(ctx)
+
+	if err != nil {
+		return ReplicationSyncResult{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return ReplicationSyncResult{}, errors.New("replication sync is not supported on Coordinators")
+	}
+	// Form request body params
+	body, err := c.formSyncBodyParams(opts)
+	if err != nil {
+		return ReplicationSyncResult{}, err
+	}
+
+	// Build URL
+	url := c.url(dbName, []string{"sync"}, nil)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ReplicationSyncResult `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, body)
+	if err != nil {
+		return ReplicationSyncResult{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ReplicationSyncResult, nil
+	default:
+		return ReplicationSyncResult{}, response.AsArangoErrorWithCode(code)
+	}
+}
 
 func (c *clientReplication) GetWALRange(ctx context.Context, dbName string) (WALRangeResponse, error) {
 	// Check server role

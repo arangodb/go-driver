@@ -667,3 +667,47 @@ func Test_FetchRevisionDocuments(t *testing.T) {
 		})
 	})
 }
+
+func Test_StartReplicationSync(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			// Version checking
+			if os.Getenv("TEST_CONNECTION") == "vst" {
+				skipBelowVersion(client, ctx, "3.8", t)
+			}
+
+			// Role check
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole: %s", serverRole)
+
+			if serverRole == arangodb.ServerRoleCoordinator || serverRole == arangodb.ServerRoleSingle {
+				t.Skipf("Replication sync not supported on role: %s", serverRole)
+			}
+
+			// Check for DB existence
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			opts := arangodb.ReplicationSyncOptions{
+				Endpoint: "http+tcp://127.0.0.1:8529",
+				Username: "root",
+				// Password:            "passwd",
+				// RestrictType:        utils.NewType("include"),
+				// RestrictCollections: utils.NewType([]string{"airports"}),
+			}
+
+			result, err := client.StartReplicationSync(ctx, db.Name(), opts)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(result.Collections) == 0 {
+				t.Errorf("expected collections in result")
+			}
+			if result.LastLogTick == "" {
+				t.Errorf("expected lastLogTick in result")
+			}
+		})
+	})
+}
