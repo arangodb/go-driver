@@ -9,6 +9,7 @@
 - Add SSO auth token implementation
 - Add missing endpoints from foxx to v2
 - Switch to Go 1.23.12
+- Add missing endpoints from replication to v2
 
 ## [2.1.3](https://github.com/arangodb/go-driver/tree/v2.1.3) (2025-02-21)
 - Switch to Go 1.22.11
