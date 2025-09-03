@@ -176,3 +176,20 @@ func Test_Logs(t *testing.T) {
 		})
 	}, wrapOpts)
 }
+
+func Test_DeleteLogLevels(t *testing.T) {
+	// This test cannot run subtests parallel, because it changes admin settings.
+	wrapOpts := WrapOptions{
+		Parallel: utils.NewType(false),
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.12.1", t)
+
+			logsResp, err := client.DeleteLogLevels(ctx, nil)
+			require.NoError(t, err)
+			require.NotNil(t, logsResp)
+		})
+	}, wrapOpts)
+}

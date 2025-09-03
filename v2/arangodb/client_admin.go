@@ -63,6 +63,9 @@ type ClientAdminLicense interface {
 	// SetLicense Set a new license for an Enterprise Edition instance.
 	// Can be called on single servers, Coordinators, and DB-Servers.
 	SetLicense(ctx context.Context, license string, force bool) error
+
+	// DeleteLogLevels removes log levels for a specific server.
+	DeleteLogLevels(ctx context.Context, serverId *string) (LogLevelResponse, error)
 }
 
 type AdminLogEntriesOptions struct {
@@ -113,4 +116,116 @@ type MessageObject struct {
 	Date string `json:"date"`
 	// Log message
 	Message string `json:"message"`
+}
+
+type LogLevelResponse struct {
+	Agency string `json:"agency"`
+	// Communication between Agency instances.
+	AgencyComm string `json:"agencycomm"`
+	// Agency's Raft store operations.
+	AgencyStore string `json:"agencystore"`
+	// Backup and restore processes.
+	Backup string `json:"backup"`
+	// Benchmarking and performance test logs.
+	Bench string `json:"bench"`
+	// General cluster-level logs.
+	Cluster string `json:"cluster"`
+	// Network communication between servers.
+	Communication string `json:"communication"`
+	// User authentication activities.
+	Authentication string `json:"authentication"`
+	// Configuration-related logs.
+	Config string `json:"config"`
+	// Crash handling.
+	Crash string `json:"crash"`
+	// Data export (dump) operations.
+	Dump string `json:"dump"`
+	// Storage engines (RocksDB)
+	Engines string `json:"engines"`
+	// General server logs not tied to a specific topic.
+	General string `json:"general"`
+	// Cluster heartbeat monitoring.
+	Heartbeat string `json:"heartbeat"`
+	// AQL query execution and planning.
+	Aql string `json:"aql"`
+	// Graph operations and traversals.
+	Graphs string `json:"graphs"`
+	// Maintenance operations in cluster.
+	Maintenance string `json:"maintenance"`
+	// User authorization and permissions.
+	Authorization string `json:"authorization"`
+	// Query execution and lifecycle.
+	Queries string `json:"queries"`
+	// Development/debugging logs.
+	Development string `json:"development"`
+	// Replication processes (followers, leaders).
+	Replication string `json:"replication"`
+	// V8 JavaScript engine logs.
+	V8 string `json:"v8"`
+	// Usage of deprecated features.
+	Deprecation string `json:"deprecation"`
+	// RocksDB storage engine-specific logs
+	RocksDB string `json:"rocksdb"`
+	// Audit logs for database operations.
+	AuditDatabase string `json:"audit-database"`
+	// Data validation errors/warnings.
+	Validation string `json:"validation"`
+	// RocksDB flush operations.
+	Flush string `json:"flush"`
+	// Audit logs for authorization events.
+	AuditAuthorization string `json:"audit-authorization"`
+	// System calls made by the server.
+	Syscall string `json:"syscall"`
+	// In-memory cache usage and performance.
+	Cache string `json:"cache"`
+	// Security-related logs.
+	Security string `json:"security"`
+	// Memory allocation and usage.
+	Memory string `json:"memory"`
+	// Restore operations from backup.
+	Restore string `json:"restore"`
+	// HTTP client communication logs.
+	HTTPClient string `json:"httpclient"`
+	// Audit logs for view operations.
+	AuditView string `json:"audit-view"`
+	// Audit logs for document operations.
+	AuditDocument string `json:"audit-document"`
+	// Audit logs for hot backup.
+	AuditHotBackup string `json:"audit-hotbackup"`
+	// Audit logs for collection operations.
+	AuditCollection string `json:"audit-collection"`
+	// Server statistics collection.
+	Statistics string `json:"statistics"`
+	// Incoming client requests.
+	Requests string `json:"requests"`
+	// Audit logs for service-level actions.
+	AuditService string `json:"audit-service"`
+	// TTL (Time-to-Live) expiration logs.
+	TTL string `json:"ttl"`
+	// Next-gen replication subsystem logs.
+	Replication2 string `json:"replication2"`
+	// SSL/TLS communication logs.
+	SSL string `json:"ssl"`
+	// Thread management logs.
+	Threads string `json:"threads"`
+	// License-related logs.
+	License string `json:"license"`
+	// IResearch (ArangoSearch) library logs.
+	Libiresearch string `json:"libiresearch"`
+	// Transactions.
+	Trx string `json:"trx"`
+	// Supervision process in the cluster.
+	Supervision string `json:"supervision"`
+	// Server startup sequence.
+	Startup string `json:"startup"`
+	// Audit logs for authentication events.
+	AuditAuthentication string `json:"audit-authentication"`
+	// Replication Write-Ahead Log.
+	RepWal string `json:"rep-wal"`
+	// View-related logs.
+	Views string `json:"views"`
+	// ArangoSearch engine logs.
+	ArangoSearch string `json:"arangosearch"`
+	// Replication state machine logs.
+	RepState string `json:"rep-state"`
 }

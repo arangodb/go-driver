@@ -171,3 +171,30 @@ func (c *clientAdmin) Logs(ctx context.Context, queryParams *AdminLogEntriesOpti
 		return AdminLogEntriesResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// DeleteLogLevels is for reset the server log levels from server in ArangoDB 3.12.1+ format
+func (c *clientAdmin) DeleteLogLevels(ctx context.Context, serverId *string) (LogLevelResponse, error) {
+	url := connection.NewUrl("_admin", "log", "level")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		LogLevelResponse      `json:",inline"`
+	}
+
+	var mods []connection.RequestModifier
+	if serverId != nil {
+		mods = append(mods, connection.WithQuery("serverId", *serverId))
+	}
+
+	resp, err := connection.CallDelete(ctx, c.client.connection, url, &response, mods...)
+	if err != nil {
+		return LogLevelResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.LogLevelResponse, nil
+	default:
+		return LogLevelResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
