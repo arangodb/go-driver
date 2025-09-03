@@ -145,3 +145,34 @@ func changeLogLevel(l string) string {
 
 	return "INFO"
 }
+
+func Test_Logs(t *testing.T) {
+	// This test cannot run subtests parallel, because it changes admin settings.
+	wrapOpts := WrapOptions{
+		Parallel: utils.NewType(false),
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.8.0", t)
+
+			logsResp, err := client.Logs(ctx, &arangodb.AdminLogEntriesOptions{
+				Start:  0,
+				Offset: 0,
+				Upto:   "3",
+				Sort:   "asc",
+			})
+			require.NoError(t, err)
+			require.NotNil(t, logsResp)
+
+			_, err = client.Logs(ctx, &arangodb.AdminLogEntriesOptions{
+				Start:  0,
+				Offset: 0,
+				Upto:   "3",
+				Sort:   "asc",
+				Level:  utils.NewType("DEBUG"),
+			})
+			require.Error(t, err)
+		})
+	}, wrapOpts)
+}

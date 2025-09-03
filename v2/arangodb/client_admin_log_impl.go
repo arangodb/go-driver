@@ -22,7 +22,9 @@ package arangodb
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -96,5 +98,76 @@ func (c *clientAdmin) SetLogLevels(ctx context.Context, logLevels LogLevels, opt
 		return nil
 	default:
 		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+func defaultAdminLogEntriesOptions() *AdminLogEntriesOptions {
+	return &AdminLogEntriesOptions{
+		Start:  0,
+		Offset: 0,
+		Upto:   "info",
+		Sort:   "asc",
+	}
+}
+
+func (c *clientAdmin) formServerLogEntriesParams(opts *AdminLogEntriesOptions) ([]connection.RequestModifier, error) {
+	var mods []connection.RequestModifier
+	if opts == nil {
+		opts = defaultAdminLogEntriesOptions()
+	}
+
+	if opts.Level != nil && opts.Upto != "" {
+		return nil, errors.New("parameters 'level' and 'upto' cannot be used together")
+	}
+
+	if opts.Upto != "" {
+		mods = append(mods, connection.WithQuery("upto", opts.Upto))
+	}
+	if opts.Level != nil && *opts.Level != "" {
+		mods = append(mods, connection.WithQuery("level", *opts.Level))
+	}
+	if opts.Size != nil {
+		mods = append(mods, connection.WithQuery("size", fmt.Sprintf("%d", *opts.Size)))
+	}
+	if opts.Search != nil && *opts.Search != "" {
+		mods = append(mods, connection.WithQuery("search", *opts.Search))
+	}
+	if opts.Sort != "" {
+		mods = append(mods, connection.WithQuery("sort", opts.Sort))
+	}
+	if opts.ServerId != nil && *opts.ServerId != "" {
+		mods = append(mods, connection.WithQuery("serverId", *opts.ServerId))
+	}
+	if opts.Start >= 0 {
+		mods = append(mods, connection.WithQuery("start", strconv.Itoa(opts.Start)))
+	}
+	if opts.Offset >= 0 {
+		mods = append(mods, connection.WithQuery("offset", strconv.Itoa(opts.Offset)))
+	}
+	return mods, nil
+}
+
+// Logs retrieve logs from server in ArangoDB 3.8.0+ format
+func (c *clientAdmin) Logs(ctx context.Context, queryParams *AdminLogEntriesOptions) (AdminLogEntriesResponse, error) {
+	url := connection.NewUrl("_admin", "log", "entries")
+
+	var response struct {
+		shared.ResponseStruct   `json:",inline"`
+		AdminLogEntriesResponse `json:",inline"`
+	}
+	mods, err := c.formServerLogEntriesParams(queryParams)
+	if err != nil {
+		return AdminLogEntriesResponse{}, err
+	}
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, mods...)
+	if err != nil {
+		return AdminLogEntriesResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.AdminLogEntriesResponse, nil
+	default:
+		return AdminLogEntriesResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
