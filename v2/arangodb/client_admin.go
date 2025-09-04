@@ -66,6 +66,12 @@ type ClientAdminLicense interface {
 
 	// DeleteLogLevels removes log levels for a specific server.
 	DeleteLogLevels(ctx context.Context, serverId *string) (LogLevelResponse, error)
+
+	// GetStructuredLogSettings returns the server's current structured log settings.
+	GetStructuredLogSettings(ctx context.Context) (LogSettingsOptions, error)
+
+	// UpdateStructuredLogSettings modifies and returns the server's current structured log settings.
+	UpdateStructuredLogSettings(ctx context.Context, opts *LogSettingsOptions) (LogSettingsOptions, error)
 }
 
 type AdminLogEntriesOptions struct {
@@ -228,4 +234,22 @@ type LogLevelResponse struct {
 	ArangoSearch string `json:"arangosearch"`
 	// Replication state machine logs.
 	RepState string `json:"rep-state"`
+}
+
+// LogSettingsOptions represents configurable flags for including
+// specific fields in structured log output. It is used both in
+// requests (to configure log behavior) and responses (to indicate
+// which fields are currently enabled).
+type LogSettingsOptions struct {
+	// Database indicates whether the database name should be included
+	// in structured log entries.
+	Database *bool `json:"database,omitempty"`
+
+	// Url indicates whether the request URL should be included
+	// in structured log entries.
+	Url *bool `json:"url,omitempty"`
+
+	// Username indicates whether the authenticated username should be included
+	// in structured log entries.
+	Username *bool `json:"username,omitempty"`
 }

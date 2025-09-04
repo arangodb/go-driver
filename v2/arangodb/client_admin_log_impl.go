@@ -198,3 +198,60 @@ func (c *clientAdmin) DeleteLogLevels(ctx context.Context, serverId *string) (Lo
 		return LogLevelResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// GetStructuredLogSettings returns the server's current structured log settings.
+func (c *clientAdmin) GetStructuredLogSettings(ctx context.Context) (LogSettingsOptions, error) {
+	url := connection.NewUrl("_admin", "log", "structured")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		LogSettingsOptions    `json:",inline"`
+	}
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return LogSettingsOptions{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.LogSettingsOptions, nil
+	default:
+		return LogSettingsOptions{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func formStructuredLogParams(opt *LogSettingsOptions) map[string]bool {
+	params := map[string]bool{}
+	if opt.Database != nil {
+		params["database"] = *opt.Database
+	}
+	if opt.Url != nil {
+		params["url"] = *opt.Url
+	}
+	if opt.Username != nil {
+		params["username"] = *opt.Username
+	}
+	return params
+}
+
+// UpdateStructuredLogSettings modifies and returns the server's current structured log settings.
+func (c *clientAdmin) UpdateStructuredLogSettings(ctx context.Context, opts *LogSettingsOptions) (LogSettingsOptions, error) {
+	url := connection.NewUrl("_admin", "log", "structured")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		LogSettingsOptions    `json:",inline"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, formStructuredLogParams(opts))
+	if err != nil {
+		return LogSettingsOptions{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.LogSettingsOptions, nil
+	default:
+		return LogSettingsOptions{}, response.AsArangoErrorWithCode(code)
+	}
+}

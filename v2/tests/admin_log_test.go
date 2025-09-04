@@ -204,3 +204,26 @@ func Test_DeleteLogLevels(t *testing.T) {
 		})
 	}, wrapOpts)
 }
+
+func Test_StructuredLogSettings(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.12.0", t)
+
+			opts := arangodb.LogSettingsOptions{
+				Database: utils.NewType(true),
+			}
+			modifiedResp, err := client.UpdateStructuredLogSettings(ctx, &opts)
+			require.NoError(t, err)
+			require.NotEmpty(t, modifiedResp)
+			require.NotNil(t, modifiedResp.Database)
+			require.Equal(t, *modifiedResp.Database, *opts.Database)
+
+			getResp, err := client.GetStructuredLogSettings(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, getResp)
+			require.NotNil(t, getResp.Database)
+			require.Equal(t, *getResp.Database, *opts.Database)
+		})
+	})
+}
