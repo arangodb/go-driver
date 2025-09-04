@@ -186,8 +186,19 @@ func Test_DeleteLogLevels(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 			skipBelowVersion(client, ctx, "3.12.1", t)
+			// Role check
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole: %s", serverRole)
 
-			logsResp, err := client.DeleteLogLevels(ctx, nil)
+			var serverId *string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				serverID, err := client.ServerID(ctx)
+				require.NoError(t, err)
+				serverId = &serverID
+			}
+
+			logsResp, err := client.DeleteLogLevels(ctx, serverId)
 			require.NoError(t, err)
 			require.NotNil(t, logsResp)
 		})
