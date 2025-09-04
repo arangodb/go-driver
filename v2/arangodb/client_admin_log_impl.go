@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -199,7 +200,7 @@ func (c *clientAdmin) DeleteLogLevels(ctx context.Context, serverId *string) (Lo
 	}
 }
 
-// GetStructuredLogSettings returns the server's current structured log settings.
+// GetStructuredLogSettings returns the server's current structured log settings in ArangoDB 3.12.0+ format.
 func (c *clientAdmin) GetStructuredLogSettings(ctx context.Context) (LogSettingsOptions, error) {
 	url := connection.NewUrl("_admin", "log", "structured")
 
@@ -234,7 +235,7 @@ func formStructuredLogParams(opt *LogSettingsOptions) map[string]bool {
 	return params
 }
 
-// UpdateStructuredLogSettings modifies and returns the server's current structured log settings.
+// UpdateStructuredLogSettings modifies and returns the server's current structured log settings in ArangoDB 3.12.0+ format.
 func (c *clientAdmin) UpdateStructuredLogSettings(ctx context.Context, opts *LogSettingsOptions) (LogSettingsOptions, error) {
 	url := connection.NewUrl("_admin", "log", "structured")
 
@@ -253,5 +254,26 @@ func (c *clientAdmin) UpdateStructuredLogSettings(ctx context.Context, opts *Log
 		return response.LogSettingsOptions, nil
 	default:
 		return LogSettingsOptions{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// Get a list of the most recent requests with a timestamp and the endpoint in ArangoDB 3.12.5+ format.
+func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (ApiCallsResponse, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "api-calls")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                ApiCallsResponse `json:"result"`
+	}
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ApiCallsResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return ApiCallsResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }

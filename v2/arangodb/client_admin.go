@@ -54,15 +54,6 @@ type ClientAdminLog interface {
 
 	// Logs retrieve logs from server in ArangoDB 3.8.0+ format
 	Logs(ctx context.Context, queryParams *AdminLogEntriesOptions) (AdminLogEntriesResponse, error)
-}
-
-type ClientAdminLicense interface {
-	// GetLicense returns license of an ArangoDB deployment.
-	GetLicense(ctx context.Context) (License, error)
-
-	// SetLicense Set a new license for an Enterprise Edition instance.
-	// Can be called on single servers, Coordinators, and DB-Servers.
-	SetLicense(ctx context.Context, license string, force bool) error
 
 	// DeleteLogLevels removes log levels for a specific server.
 	DeleteLogLevels(ctx context.Context, serverId *string) (LogLevelResponse, error)
@@ -72,6 +63,18 @@ type ClientAdminLicense interface {
 
 	// UpdateStructuredLogSettings modifies and returns the server's current structured log settings.
 	UpdateStructuredLogSettings(ctx context.Context, opts *LogSettingsOptions) (LogSettingsOptions, error)
+
+	// Get a list of the most recent requests with a timestamp and the endpoint
+	GetRecentAPICalls(ctx context.Context, dbName string) (ApiCallsResponse, error)
+}
+
+type ClientAdminLicense interface {
+	// GetLicense returns license of an ArangoDB deployment.
+	GetLicense(ctx context.Context) (License, error)
+
+	// SetLicense Set a new license for an Enterprise Edition instance.
+	// Can be called on single servers, Coordinators, and DB-Servers.
+	SetLicense(ctx context.Context, license string, force bool) error
 }
 
 type AdminLogEntriesOptions struct {
@@ -252,4 +255,22 @@ type LogSettingsOptions struct {
 	// Username indicates whether the authenticated username should be included
 	// in structured log entries.
 	Username *bool `json:"username,omitempty"`
+}
+
+type ApiCallsObject struct {
+	// TimeStamp is the UTC timestamp when the API call was executed.
+	TimeStamp string `json:"timeStamp"`
+
+	// RequestType is the HTTP method used for the call (e.g., GET, POST).
+	RequestType string `json:"requestType"`
+
+	// Path is the HTTP request path that was accessed.
+	Path string `json:"path"`
+
+	// Database is the name of the database the API call was executed against.
+	Database string `json:"database"`
+}
+
+type ApiCallsResponse struct {
+	Calls []ApiCallsObject `json:"calls"`
 }

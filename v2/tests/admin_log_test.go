@@ -227,3 +227,22 @@ func Test_StructuredLogSettings(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetRecentAPICalls(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.12.5-2", t)
+
+			resp, err := client.Version(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, resp)
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			require.NotEmpty(t, db)
+
+			recentApisResp, err := client.GetRecentAPICalls(ctx, db.Name())
+			require.NoError(t, err)
+			require.NotEmpty(t, recentApisResp)
+		})
+	})
+}
