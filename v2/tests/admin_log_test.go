@@ -246,3 +246,29 @@ func Test_GetRecentAPICalls(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetMetrics(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			require.NotEmpty(t, db)
+			// Role check
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole: %s", serverRole)
+
+			var serverId *string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				serverID, err := client.ServerID(ctx)
+				require.NoError(t, err)
+				serverId = &serverID
+			}
+
+			metricsResp, err := client.GetMetrics(ctx, db.Name(), serverId)
+			require.NoError(t, err)
+			require.NotEmpty(t, metricsResp)
+		})
+	})
+}

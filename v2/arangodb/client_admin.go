@@ -66,6 +66,9 @@ type ClientAdminLog interface {
 
 	// Get a list of the most recent requests with a timestamp and the endpoint
 	GetRecentAPICalls(ctx context.Context, dbName string) (ApiCallsResponse, error)
+
+	//GetMetrics returns the instance's current metrics in Prometheus format
+	GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error)
 }
 
 type ClientAdminLicense interface {

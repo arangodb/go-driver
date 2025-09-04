@@ -277,3 +277,26 @@ func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (Api
 		return ApiCallsResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// GetMetrics returns the instance's current metrics in Prometheus format
+func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics", "v2")
+
+	var mods []connection.RequestModifier
+	if serverId != nil {
+		mods = append(mods, connection.WithQuery("serverId", *serverId))
+	}
+	var output []byte
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &output, mods...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return output, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
