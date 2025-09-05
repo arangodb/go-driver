@@ -89,3 +89,18 @@ func Test_Version(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetSystemTime(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(context.Background(), "_system", nil)
+			require.NoError(t, err)
+			require.NotEmpty(t, db)
+
+			time, err := client.GetSystemTime(context.Background(), db.Name())
+			require.NoError(t, err)
+			require.NotEmpty(t, time)
+			t.Logf("Current time in Unix timestamp with microsecond precision is:%f", time)
+		})
+	})
+}

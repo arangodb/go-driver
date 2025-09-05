@@ -43,6 +43,9 @@ type ClientAdmin interface {
 	// Use ClientAdminCluster.Health() to fetch the Endpoint list.
 	// For ActiveFailover, it will return an error (503 code) if the server is not the leader.
 	CheckAvailability(ctx context.Context, serverEndpoint string) error
+
+	//GetSystemTime returns the current system time as a Unix timestamp with microsecond precision
+	GetSystemTime(ctx context.Context, dbName string) (float64, error)
 }
 
 type ClientAdminLog interface {
