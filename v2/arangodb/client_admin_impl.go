@@ -195,3 +195,26 @@ func (c *clientAdmin) GetSystemTime(ctx context.Context, dbName string) (float64
 		return 0, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// GetServerStatus returns status information about the server
+func (c *clientAdmin) GetServerStatus(ctx context.Context, dbName string) (ServerStatusResponse, error) {
+	// url := connection.NewUrl("_admin", "server", "mode")
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "status")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ServerStatusResponse  `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ServerStatusResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ServerStatusResponse, nil
+	default:
+		return ServerStatusResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
