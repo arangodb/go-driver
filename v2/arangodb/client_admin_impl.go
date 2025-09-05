@@ -198,7 +198,6 @@ func (c *clientAdmin) GetSystemTime(ctx context.Context, dbName string) (float64
 
 // GetServerStatus returns status information about the server
 func (c *clientAdmin) GetServerStatus(ctx context.Context, dbName string) (ServerStatusResponse, error) {
-	// url := connection.NewUrl("_admin", "server", "mode")
 	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "status")
 
 	var response struct {
@@ -216,5 +215,27 @@ func (c *clientAdmin) GetServerStatus(ctx context.Context, dbName string) (Serve
 		return response.ServerStatusResponse, nil
 	default:
 		return ServerStatusResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetDeploymentSupportInfo retrieves deployment information for support purposes.
+func (c *clientAdmin) GetDeploymentSupportInfo(ctx context.Context) (SupportInfoResponse, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "support-info")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		SupportInfoResponse   `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return SupportInfoResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.SupportInfoResponse, nil
+	default:
+		return SupportInfoResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }

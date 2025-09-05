@@ -118,3 +118,25 @@ func Test_GetServerStatus(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetDeploymentSupportInfo(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			resp, err := client.GetDeploymentSupportInfo(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, resp)
+			require.NotEmpty(t, resp.Date)
+			require.NotEmpty(t, resp.Deployment)
+			require.NotEmpty(t, resp.Deployment.Type)
+			if serverRole == arangodb.ServerRoleCoordinator {
+				require.NotEmpty(t, resp.Deployment.Servers)
+			}
+			if serverRole == arangodb.ServerRoleSingle {
+				require.NotEmpty(t, resp.Host)
+			}
+		})
+	})
+}
