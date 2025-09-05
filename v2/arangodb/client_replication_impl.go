@@ -1067,8 +1067,6 @@ func (c *clientReplication) GetWALTail(ctx context.Context, dbName string, param
 		return nil, err
 	}
 
-	fmt.Printf("resp code %d\n", resp.Code())
-
 	if resp.Code() == http.StatusNoContent {
 		return nil, nil
 	}

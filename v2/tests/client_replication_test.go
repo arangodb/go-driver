@@ -342,7 +342,7 @@ func Test_ApplierStart(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, resp)
 				// Log useful debug info
-				t.Logf("Applier start 346:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+				t.Logf("Applier start:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
 					*resp.State.Running,
 					*resp.State.Phase,
 					*resp.State.Progress.Message,
