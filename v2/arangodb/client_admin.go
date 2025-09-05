@@ -44,10 +44,10 @@ type ClientAdmin interface {
 	// For ActiveFailover, it will return an error (503 code) if the server is not the leader.
 	CheckAvailability(ctx context.Context, serverEndpoint string) error
 
-	//GetSystemTime returns the current system time as a Unix timestamp with microsecond precision.
+	// GetSystemTime returns the current system time as a Unix timestamp with microsecond precision.
 	GetSystemTime(ctx context.Context, dbName string) (float64, error)
 
-	//GetServerStatus returns status information about the server.
+	// GetServerStatus returns status information about the server.
 	GetServerStatus(ctx context.Context, dbName string) (ServerStatusResponse, error)
 
 	// GetDeploymentSupportInfo retrieves deployment information for support purposes.
