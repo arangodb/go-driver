@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -171,4 +172,26 @@ func (c *clientAdmin) CheckAvailability(ctx context.Context, serverEndpoint stri
 
 	_, err = c.client.Connection().Do(ctx, req, nil, http.StatusOK)
 	return errors.WithStack(err)
+}
+
+// GetSystemTime returns the current system time as a Unix timestamp with microsecond precision
+func (c *clientAdmin) GetSystemTime(ctx context.Context, dbName string) (float64, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "time")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Time                  float64 `json:"time,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Time, nil
+	default:
+		return 0, response.AsArangoErrorWithCode(code)
+	}
 }
