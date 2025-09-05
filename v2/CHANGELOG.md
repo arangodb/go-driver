@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Add missing endpoints from replication to v2
+- Add missing endpoints from monitoring to v2
 
 ## [2.1.5](https://github.com/arangodb/go-driver/tree/v2.1.5) (2025-08-31)
 - Add tasks endpoints to v2
