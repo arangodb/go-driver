@@ -64,10 +64,10 @@ type ClientAdminLog interface {
 	// UpdateStructuredLogSettings modifies and returns the server's current structured log settings.
 	UpdateStructuredLogSettings(ctx context.Context, opts *LogSettingsOptions) (LogSettingsOptions, error)
 
-	// Get a list of the most recent requests with a timestamp and the endpoint
+	// GetRecentAPICalls gets a list of the most recent requests with a timestamp and the endpoint
 	GetRecentAPICalls(ctx context.Context, dbName string) (ApiCallsResponse, error)
 
-	//GetMetrics returns the instance's current metrics in Prometheus format
+	// GetMetrics returns the instance's current metrics in Prometheus format
 	GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error)
 }
 

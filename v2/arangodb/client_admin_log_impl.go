@@ -118,7 +118,7 @@ func (c *clientAdmin) formServerLogEntriesParams(opts *AdminLogEntriesOptions) (
 	}
 
 	if opts.Level != nil && opts.Upto != "" {
-		return nil, errors.New("parameters 'level' and 'upto' cannot be used together")
+		return nil, errors.New("level and upto parameters are mutually exclusive")
 	}
 
 	if opts.Upto != "" {
@@ -257,7 +257,7 @@ func (c *clientAdmin) UpdateStructuredLogSettings(ctx context.Context, opts *Log
 	}
 }
 
-// Get a list of the most recent requests with a timestamp and the endpoint in ArangoDB 3.12.5+ format.
+// GetRecentAPICalls gets a list of the most recent requests with a timestamp and the endpoint in ArangoDB 3.12.5+ format.
 func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (ApiCallsResponse, error) {
 	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "api-calls")
 
