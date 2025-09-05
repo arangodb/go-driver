@@ -104,3 +104,17 @@ func Test_GetSystemTime(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetServerStatus(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(context.Background(), "_system", nil)
+			require.NoError(t, err)
+			require.NotEmpty(t, db)
+
+			resp, err := client.GetServerStatus(context.Background(), db.Name())
+			require.NoError(t, err)
+			require.NotEmpty(t, resp)
+		})
+	})
+}
