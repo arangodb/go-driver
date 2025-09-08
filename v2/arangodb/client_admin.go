@@ -55,6 +55,10 @@ type ClientAdmin interface {
 
 	// GetStartupConfiguration return the effective configuration of the queried arangod instance.
 	GetStartupConfiguration(ctx context.Context) (map[string]interface{}, error)
+
+	// GetStartupConfigurationDescription fetches the available startup configuration
+	// options of the queried arangod instance.
+	GetStartupConfigurationDescription(ctx context.Context) (map[string]interface{}, error)
 }
 
 type ClientAdminLog interface {

@@ -22,7 +22,6 @@ package arangodb
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -251,12 +250,34 @@ func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]i
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	fmt.Printf("Response code : %d", resp.Code())
+
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response, nil
 	case http.StatusForbidden:
 		return nil, errors.New("insufficient permissions to access server options")
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
+
+// GetStartupConfigurationDescription fetches the available startup configuration
+// options of the queried arangod instance.
+func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (map[string]interface{}, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "options-description")
+
+	var response map[string]interface{}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	case http.StatusForbidden:
+		return nil, errors.New("insufficient permissions to access startup configuration description")
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
 	}

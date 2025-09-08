@@ -21,6 +21,7 @@ package tests
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -29,6 +30,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 func Test_ServerMode(t *testing.T) {
@@ -147,6 +150,35 @@ func Test_GetStartupConfiguration(t *testing.T) {
 			resp, err := client.GetStartupConfiguration(ctx)
 			require.NoError(t, err)
 			require.NotEmpty(t, resp)
+
+			configDesc, err := client.GetStartupConfigurationDescription(ctx)
+			if err != nil {
+				var arangoErr *shared.ArangoError
+				t.Logf("arangoErr code:%d", arangoErr.Code)
+				if errors.As(err, &arangoErr) {
+					if arangoErr.Code == 403 || arangoErr.Code == 500 {
+						t.Skip("startup configuration description API not enabled on this server")
+					}
+				}
+				require.NoError(t, err)
+			}
+			require.NotEmpty(t, configDesc)
+
+			// Assert that certain well-known options exist
+			_, hasEndpoint := configDesc["server.endpoint"]
+			require.True(t, hasEndpoint, "expected server.endpoint option to be present")
+
+			_, hasAuth := configDesc["server.authentication"]
+			require.True(t, hasAuth, "expected server.authentication option to be present")
+
+			// Optionally assert that each entry has a description
+			for key, value := range configDesc {
+				option, ok := value.(map[string]interface{})
+				require.True(t, ok, "expected value for %s to be a map", key)
+
+				_, hasDesc := option["description"]
+				require.True(t, hasDesc, "expected option %s to have a description", key)
+			}
 		})
 	})
 }
