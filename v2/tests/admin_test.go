@@ -140,3 +140,13 @@ func Test_GetDeploymentSupportInfo(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetStartupConfiguration(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			resp, err := client.GetStartupConfiguration(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, resp)
+		})
+	})
+}

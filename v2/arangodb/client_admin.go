@@ -52,6 +52,9 @@ type ClientAdmin interface {
 
 	// GetDeploymentSupportInfo retrieves deployment information for support purposes.
 	GetDeploymentSupportInfo(ctx context.Context) (SupportInfoResponse, error)
+
+	// GetStartupConfiguration return the effective configuration of the queried arangod instance.
+	GetStartupConfiguration(ctx context.Context) (map[string]interface{}, error)
 }
 
 type ClientAdminLog interface {

@@ -22,6 +22,7 @@ package arangodb
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -237,5 +238,26 @@ func (c *clientAdmin) GetDeploymentSupportInfo(ctx context.Context) (SupportInfo
 		return response.SupportInfoResponse, nil
 	default:
 		return SupportInfoResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetStartupConfiguration returns the effective configuration of the queried arangod instance.
+func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]interface{}, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "options")
+
+	var response map[string]interface{}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	fmt.Printf("Response code : %d", resp.Code())
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	case http.StatusForbidden:
+		return nil, errors.New("insufficient permissions to access server options")
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
 	}
 }
