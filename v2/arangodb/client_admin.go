@@ -62,6 +62,10 @@ type ClientAdmin interface {
 
 	// ReloadRoutingTable reloads the routing information from the _routing system collection.
 	ReloadRoutingTable(ctx context.Context, dbName string) error
+
+	// ExecuteAdminScript executes JavaScript code on the server.
+	// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
+	ExecuteAdminScript(ctx context.Context, dbName string, script string) (interface{}, error)
 }
 
 type ClientAdminLog interface {

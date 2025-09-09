@@ -22,6 +22,7 @@ package tests
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -191,5 +192,58 @@ func Test_ReloadRoutingTable(t *testing.T) {
 			err = client.ReloadRoutingTable(ctx, db.Name())
 			require.NoError(t, err)
 		})
+	})
+}
+
+func Test_ExecuteAdminScript(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		ctx := context.Background()
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		require.NoError(t, err)
+
+		tests := []struct {
+			name   string
+			script string
+		}{
+			{
+				name:   "ReturnObject",
+				script: "return {hello: 'world'};",
+			},
+			{
+				name: "ReturnNumber",
+				script: `
+                    var sum = 0;
+                    for (var i = 1; i <= 5; i++) {
+                        sum += i;
+                    }
+                    return sum;
+                `,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result, err := client.ExecuteAdminScript(ctx, db.Name(), tt.script)
+				var arangoErr *shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("arangoErr code:%d\n", arangoErr.Code)
+					if arangoErr.Code == http.StatusNotFound {
+						t.Skip("javascript.allow-admin-execute is disabled")
+					}
+				}
+				require.NoError(t, err)
+
+				switch v := result.(type) {
+				case map[string]interface{}:
+					t.Logf("Got object result: %+v", v)
+					require.Contains(t, v, "hello")
+				case float64:
+					t.Logf("Got number result: %v", v)
+					require.Equal(t, float64(15), v)
+				default:
+					t.Fatalf("Unexpected result type: %T, value: %+v", v, v)
+				}
+			})
+		}
 	})
 }

@@ -257,7 +257,7 @@ func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]i
 	case http.StatusForbidden:
 		return nil, errors.New("insufficient permissions to access server options")
 	default:
-		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
 
@@ -279,7 +279,7 @@ func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (m
 	case http.StatusForbidden:
 		return nil, errors.New("insufficient permissions to access startup configuration description")
 	default:
-		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
 
@@ -297,5 +297,37 @@ func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) err
 		return nil
 	default:
 		return (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
+
+// ExecuteAdminScript executes JavaScript code on the server.
+// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
+func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, script string) (interface{}, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "execute")
+
+	req, err := c.client.Connection().NewRequest("POST", url)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := req.SetBody(script); err != nil {
+		return nil, err
+	}
+	var result interface{}
+	resp, err := c.client.Connection().Do(ctx, req, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return result, nil
+	case http.StatusNotFound:
+		return nil, (&shared.ArangoError{
+			Code:         resp.Code(),
+			ErrorMessage: "javascript.allow-admin-execute is disabled",
+		})
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
