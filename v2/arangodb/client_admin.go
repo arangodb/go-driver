@@ -59,6 +59,9 @@ type ClientAdmin interface {
 	// GetStartupConfigurationDescription fetches the available startup configuration
 	// options of the queried arangod instance.
 	GetStartupConfigurationDescription(ctx context.Context) (map[string]interface{}, error)
+
+	// ReloadRoutingTable reloads the routing information from the _routing system collection.
+	ReloadRoutingTable(ctx context.Context, dbName string) error
 }
 
 type ClientAdminLog interface {

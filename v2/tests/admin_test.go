@@ -153,7 +153,7 @@ func Test_GetStartupConfiguration(t *testing.T) {
 
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
 			if err != nil {
-				var arangoErr *shared.ArangoError
+				var arangoErr shared.ArangoError
 				t.Logf("arangoErr code:%d", arangoErr.Code)
 				if errors.As(err, &arangoErr) {
 					if arangoErr.Code == 403 || arangoErr.Code == 500 {
@@ -179,6 +179,17 @@ func Test_GetStartupConfiguration(t *testing.T) {
 				_, hasDesc := option["description"]
 				require.True(t, hasDesc, "expected option %s to have a description", key)
 			}
+		})
+	})
+}
+
+func Test_ReloadRoutingTable(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			err = client.ReloadRoutingTable(ctx, db.Name())
+			require.NoError(t, err)
 		})
 	})
 }

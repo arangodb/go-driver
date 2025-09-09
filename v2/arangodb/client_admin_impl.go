@@ -282,3 +282,20 @@ func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (m
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
 	}
 }
+
+// ReloadRoutingTable reloads the routing information from the _routing system collection.
+func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) error {
+	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "routing", "reload")
+
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK, http.StatusNoContent:
+		return nil
+	default:
+		return (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
