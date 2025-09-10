@@ -149,6 +149,16 @@ func Test_GetStartupConfiguration(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			resp, err := client.GetStartupConfiguration(ctx)
+			if err != nil {
+				var arangoErr shared.ArangoError
+				t.Logf("arangoErr code:%d", arangoErr.Code)
+				if errors.As(err, &arangoErr) {
+					if arangoErr.Code == 403 || arangoErr.Code == 500 {
+						t.Skip("startup configuration API not enabled on this server")
+					}
+				}
+				require.NoError(t, err)
+			}
 			require.NoError(t, err)
 			require.NotEmpty(t, resp)
 
@@ -252,6 +262,16 @@ func Test_CompactDatabases(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			resp, err := client.CompactDatabases(ctx, nil)
+			if err != nil {
+				var arangoErr shared.ArangoError
+				t.Logf("arangoErr code:%d", arangoErr.Code)
+				if errors.As(err, &arangoErr) {
+					if arangoErr.Code == 403 || arangoErr.Code == 500 {
+						t.Skip("The endpoint requires superuser access")
+					}
+				}
+				require.NoError(t, err)
+			}
 			require.NoError(t, err)
 			require.Empty(t, resp)
 
@@ -260,6 +280,16 @@ func Test_CompactDatabases(t *testing.T) {
 				CompactBottomMostLevel: false,
 			}
 			resp, err = client.CompactDatabases(ctx, opts)
+			if err != nil {
+				var arangoErr shared.ArangoError
+				t.Logf("arangoErr code:%d", arangoErr.Code)
+				if errors.As(err, &arangoErr) {
+					if arangoErr.Code == 403 || arangoErr.Code == 500 {
+						t.Skip("The endpoint requires superuser access")
+					}
+				}
+				require.NoError(t, err)
+			}
 			require.NoError(t, err)
 			require.Empty(t, resp)
 		})

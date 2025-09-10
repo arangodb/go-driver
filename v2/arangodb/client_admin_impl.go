@@ -347,6 +347,8 @@ func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response, nil
+	case http.StatusForbidden:
+		return nil, errors.New("This endpoint requires superuser access")
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
