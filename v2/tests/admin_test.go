@@ -152,9 +152,9 @@ func Test_GetStartupConfiguration(t *testing.T) {
 			t.Logf("Error type: %T,  Error:%v\n", err, err)
 
 			if err != nil {
-				var arangoErr shared.ArangoError
-				t.Logf("arangoErr code:%d", arangoErr.Code)
+				var arangoErr *shared.ArangoError
 				if errors.As(err, &arangoErr) {
+					t.Logf("arangoErr code:%d", arangoErr.Code)
 					if arangoErr.Code == 403 || arangoErr.Code == 500 {
 						t.Skip("startup configuration API not enabled on this server")
 					}
@@ -166,9 +166,9 @@ func Test_GetStartupConfiguration(t *testing.T) {
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
 			t.Logf("Error type: %T,  Error:%v\n", err, err)
 			if err != nil {
-				var arangoErr shared.ArangoError
-				t.Logf("arangoErr code:%d", arangoErr.Code)
+				var arangoErr *shared.ArangoError
 				if errors.As(err, &arangoErr) {
+					t.Logf("arangoErr code:%d", arangoErr.Code)
 					if arangoErr.Code == 403 || arangoErr.Code == 500 {
 						t.Skip("startup configuration description API not enabled on this server")
 					}
@@ -267,9 +267,9 @@ func Test_CompactDatabases(t *testing.T) {
 			t.Logf("Error type: %T,  Error:%v\n", err, err)
 
 			if err != nil {
-				var arangoErr shared.ArangoError
-				t.Logf("arangoErr code:%d", arangoErr.Code)
+				var arangoErr *shared.ArangoError
 				if errors.As(err, &arangoErr) {
+					t.Logf("arangoErr code:%d", arangoErr.Code)
 					if arangoErr.Code == 403 || arangoErr.Code == 500 {
 						t.Skip("The endpoint requires superuser access")
 					}
@@ -285,9 +285,9 @@ func Test_CompactDatabases(t *testing.T) {
 			}
 			resp, err = client.CompactDatabases(ctx, opts)
 			if err != nil {
-				var arangoErr shared.ArangoError
-				t.Logf("arangoErr code:%d", arangoErr.Code)
+				var arangoErr *shared.ArangoError
 				if errors.As(err, &arangoErr) {
+					t.Logf("arangoErr code:%d", arangoErr.Code)
 					if arangoErr.Code == 403 || arangoErr.Code == 500 {
 						t.Skip("The endpoint requires superuser access")
 					}

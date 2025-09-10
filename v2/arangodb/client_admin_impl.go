@@ -255,7 +255,10 @@ func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]i
 	case http.StatusOK:
 		return response, nil
 	case http.StatusForbidden:
-		return nil, errors.New("insufficient permissions to access server options")
+		return nil, (&shared.ArangoError{
+			Code:         resp.Code(),
+			ErrorMessage: "insufficient permissions to access server options",
+		})
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
@@ -277,7 +280,10 @@ func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (m
 	case http.StatusOK:
 		return response, nil
 	case http.StatusForbidden:
-		return nil, errors.New("insufficient permissions to access startup configuration description")
+		return nil, (&shared.ArangoError{
+			Code:         resp.Code(),
+			ErrorMessage: "insufficient permissions to access startup configuration description",
+		})
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
@@ -348,7 +354,10 @@ func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (
 	case http.StatusOK:
 		return response, nil
 	case http.StatusForbidden:
-		return nil, errors.New("This endpoint requires superuser access")
+		return nil, (&shared.ArangoError{
+			Code:         resp.Code(),
+			ErrorMessage: "This endpoint requires superuser access",
+		})
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
