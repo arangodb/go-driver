@@ -148,14 +148,19 @@ func Test_GetDeploymentSupportInfo(t *testing.T) {
 func Test_GetStartupConfiguration(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+
 			resp, err := client.GetStartupConfiguration(ctx)
 			t.Logf("Error type: %T,  Error:%v\n", err, err)
-
 			if err != nil {
-				var arangoErr *shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("arangoErr code:%d", arangoErr.Code)
-					if arangoErr.Code == 403 || arangoErr.Code == 500 {
+				switch e := err.(type) {
+				case *shared.ArangoError:
+					t.Logf("arangoErr code:%d", e.Code)
+					if e.Code == 403 || e.Code == 500 {
+						t.Skip("startup configuration API not enabled on this server")
+					}
+				case shared.ArangoError:
+					t.Logf("arangoErr code:%d", e.Code)
+					if e.Code == 403 || e.Code == 500 {
 						t.Skip("startup configuration API not enabled on this server")
 					}
 				}
@@ -166,15 +171,20 @@ func Test_GetStartupConfiguration(t *testing.T) {
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
 			t.Logf("Error type: %T,  Error:%v\n", err, err)
 			if err != nil {
-				var arangoErr *shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("arangoErr code:%d", arangoErr.Code)
-					if arangoErr.Code == 403 || arangoErr.Code == 500 {
+				switch e := err.(type) {
+				case *shared.ArangoError:
+					t.Logf("arangoErr code:%d", e.Code)
+					if e.Code == 403 || e.Code == 500 {
+						t.Skip("startup configuration description API not enabled on this server")
+					}
+				case shared.ArangoError:
+					t.Logf("arangoErr code:%d", e.Code)
+					if e.Code == 403 || e.Code == 500 {
 						t.Skip("startup configuration description API not enabled on this server")
 					}
 				}
-				require.NoError(t, err)
 			}
+			require.NoError(t, err)
 			require.NotEmpty(t, configDesc)
 
 			// Assert that certain well-known options exist
