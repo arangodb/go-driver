@@ -149,6 +149,8 @@ func Test_GetStartupConfiguration(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			resp, err := client.GetStartupConfiguration(ctx)
+			t.Logf("Error type: %T,  Error:%v\n", err, err)
+
 			if err != nil {
 				var arangoErr shared.ArangoError
 				t.Logf("arangoErr code:%d", arangoErr.Code)
@@ -157,12 +159,12 @@ func Test_GetStartupConfiguration(t *testing.T) {
 						t.Skip("startup configuration API not enabled on this server")
 					}
 				}
-				require.NoError(t, err)
 			}
 			require.NoError(t, err)
 			require.NotEmpty(t, resp)
 
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
+			t.Logf("Error type: %T,  Error:%v\n", err, err)
 			if err != nil {
 				var arangoErr shared.ArangoError
 				t.Logf("arangoErr code:%d", arangoErr.Code)
@@ -262,6 +264,8 @@ func Test_CompactDatabases(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			resp, err := client.CompactDatabases(ctx, nil)
+			t.Logf("Error type: %T,  Error:%v\n", err, err)
+
 			if err != nil {
 				var arangoErr shared.ArangoError
 				t.Logf("arangoErr code:%d", arangoErr.Code)
