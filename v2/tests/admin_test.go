@@ -150,7 +150,6 @@ func Test_GetStartupConfiguration(t *testing.T) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 
 			resp, err := client.GetStartupConfiguration(ctx)
-			t.Logf("Error type: %T,  Error:%v\n", err, err)
 			if err != nil {
 				switch e := err.(type) {
 				case *shared.ArangoError:
@@ -169,7 +168,6 @@ func Test_GetStartupConfiguration(t *testing.T) {
 			require.NotEmpty(t, resp)
 
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
-			t.Logf("Error type: %T,  Error:%v\n", err, err)
 			if err != nil {
 				switch e := err.(type) {
 				case *shared.ArangoError:
@@ -274,8 +272,6 @@ func Test_CompactDatabases(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			resp, err := client.CompactDatabases(ctx, nil)
-			t.Logf("Error type: %T,  Error:%v\n", err, err)
-
 			if err != nil {
 				var arangoErr *shared.ArangoError
 				if errors.As(err, &arangoErr) {
