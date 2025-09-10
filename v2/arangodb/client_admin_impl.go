@@ -331,3 +331,23 @@ func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, scr
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
+
+// CompactDatabases  can be used to reclaim disk space after substantial data deletions have taken place,
+// by compacting the entire database system data.
+// The endpoint requires superuser access.
+func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error) {
+	url := connection.NewUrl("_admin", "compact")
+
+	var response map[string]interface{}
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}

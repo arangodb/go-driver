@@ -66,6 +66,11 @@ type ClientAdmin interface {
 	// ExecuteAdminScript executes JavaScript code on the server.
 	// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
 	ExecuteAdminScript(ctx context.Context, dbName string, script string) (interface{}, error)
+
+	// CompactDatabases  can be used to reclaim disk space after substantial data deletions have taken place,
+	// by compacting the entire database system data.
+	// The endpoint requires superuser access.
+	CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error)
 }
 
 type ClientAdminLog interface {
@@ -528,4 +533,11 @@ type SupportInfoResponse struct {
 
 	// Timestamp when the data was collected
 	Date string `json:"date"`
+}
+
+type CompactOpts struct {
+	//whether or not compacted data should be moved to the minimum possible level.
+	ChangeLevel bool `json:"changeLevel"`
+	// Whether or not to compact the bottommost level of data.
+	CompactBottomMostLevel bool `json:"compactBottomMostLevel"`
 }

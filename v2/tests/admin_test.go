@@ -247,3 +247,21 @@ func Test_ExecuteAdminScript(t *testing.T) {
 		}
 	})
 }
+
+func Test_CompactDatabases(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			resp, err := client.CompactDatabases(ctx, nil)
+			require.NoError(t, err)
+			require.Empty(t, resp)
+
+			opts := &arangodb.CompactOpts{
+				ChangeLevel:            true,
+				CompactBottomMostLevel: false,
+			}
+			resp, err = client.CompactDatabases(ctx, opts)
+			require.NoError(t, err)
+			require.Empty(t, resp)
+		})
+	})
+}
