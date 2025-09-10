@@ -67,7 +67,7 @@ type ClientAdmin interface {
 	// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
 	ExecuteAdminScript(ctx context.Context, dbName string, script string) (interface{}, error)
 
-	// CompactDatabases  can be used to reclaim disk space after substantial data deletions have taken place,
+	// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
 	// by compacting the entire database system data.
 	// The endpoint requires superuser access.
 	CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error)

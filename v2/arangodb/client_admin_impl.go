@@ -332,7 +332,7 @@ func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, scr
 	}
 }
 
-// CompactDatabases  can be used to reclaim disk space after substantial data deletions have taken place,
+// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
 // by compacting the entire database system data.
 // The endpoint requires superuser access.
 func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error) {
