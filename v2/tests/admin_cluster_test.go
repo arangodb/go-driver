@@ -378,3 +378,15 @@ func Test_ClusterStatistics(t *testing.T) {
 		})
 	})
 }
+
+func Test_ClusterEndpoints(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			requireClusterMode(t)
+			endpoints, err := client.ClusterEndpoints(ctx)
+			require.NoError(t, err)
+			require.NotNil(t, endpoints)
+			require.Greater(t, len(endpoints.Endpoints), 1)
+		})
+	})
+}

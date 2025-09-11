@@ -53,6 +53,9 @@ type ClientAdminCluster interface {
 	// in an ArangoDB cluster. The statistics include system, client, HTTP, and server
 	// metrics such as CPU usage, memory, connections, requests, and transaction details.
 	ClusterStatistics(ctx context.Context, DBserver string) (ClusterStatisticsResponse, error)
+
+	// ClusterEndpoints returns the endpoints of a cluster.
+	ClusterEndpoints(ctx context.Context) (ClusterEndpointsResponse, error)
 }
 
 type NumberOfServersResponse struct {
@@ -236,4 +239,20 @@ type ThreadStats struct {
 	Queued           int `json:"queued"`
 	InProgress       int `json:"in-progress"`
 	DirectExec       int `json:"direct-exec"`
+}
+
+// It contains a list of cluster endpoints that a client can use
+// to connect to the ArangoDB cluster.
+type ClusterEndpointsResponse struct {
+	// Endpoints is the list of cluster endpoints (usually coordinators)
+	// that the client can use to connect to the cluster.
+	Endpoints []ClusterEndpoint `json:"endpoints,omitempty"`
+}
+
+// ClusterEndpoint represents a single cluster endpoint.
+// Each endpoint provides a URL to connect to a coordinator.
+type ClusterEndpoint struct {
+	// Endpoint is the connection string (protocol + host + port)
+	// of a coordinator in the cluster, e.g. "tcp://127.0.0.1:8529".
+	Endpoint string `json:"endpoint,omitempty"`
 }
