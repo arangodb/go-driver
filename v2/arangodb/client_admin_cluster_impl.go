@@ -247,3 +247,24 @@ func (c *clientAdmin) ClusterStatistics(ctx context.Context, DBserver string) (C
 		return ClusterStatisticsResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// ClusterEndpoints returns the endpoints of a cluster.
+func (c *clientAdmin) ClusterEndpoints(ctx context.Context) (ClusterEndpointsResponse, error) {
+	url := connection.NewUrl("_api", "cluster", "endpoints")
+
+	var response struct {
+		shared.ResponseStruct    `json:",inline"`
+		ClusterEndpointsResponse `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ClusterEndpointsResponse{}, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ClusterEndpointsResponse, nil
+	default:
+		return ClusterEndpointsResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
