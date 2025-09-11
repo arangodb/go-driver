@@ -216,3 +216,34 @@ func (c *clientAdmin) RemoveServer(ctx context.Context, serverID ServerID) error
 		return response.AsArangoErrorWithCode(code)
 	}
 }
+
+// ClusterStatistics retrieves statistical information from a specific DBServer
+// in an ArangoDB cluster. The statistics include system, client, HTTP, and server
+// metrics such as CPU usage, memory, connections, requests, and transaction details.
+func (c *clientAdmin) ClusterStatistics(ctx context.Context, DBserver string) (ClusterStatisticsResponse, error) {
+	if DBserver == "" {
+		return ClusterStatisticsResponse{}, RequiredFieldError("DBserver")
+	}
+	// Form URL
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "statistics")
+
+	var response struct {
+		shared.ResponseStruct     `json:",inline"`
+		ClusterStatisticsResponse `json:",inline"`
+	}
+
+	//Adding request params
+	var mod []connection.RequestModifier
+	mod = append(mod, connection.WithQuery("DBserver", DBserver))
+	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response, mod...)
+	if err != nil {
+		return ClusterStatisticsResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ClusterStatisticsResponse, nil
+	default:
+		return ClusterStatisticsResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}

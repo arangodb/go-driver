@@ -364,3 +364,17 @@ func Test_ClusterResignLeadership(t *testing.T) {
 		})
 	})
 }
+
+func Test_ClusterStatistics(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			requireClusterMode(t)
+			skipBelowVersion(client, ctx, "3.7", t)
+			dbServerId, err := client.ServerID(ctx)
+			require.NoError(t, err)
+			statistics, err := client.ClusterStatistics(ctx, dbServerId)
+			require.NoError(t, err)
+			require.NotNil(t, statistics)
+		})
+	})
+}
