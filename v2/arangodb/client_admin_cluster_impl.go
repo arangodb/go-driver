@@ -269,10 +269,10 @@ func (c *clientAdmin) ClusterEndpoints(ctx context.Context) (ClusterEndpointsRes
 	}
 }
 
-// GetClusterMaintenance retrieves the maintenance status of a given DB-Server.
+// GetDBServerMaintenance retrieves the maintenance status of a given DB-Server.
 // It checks whether the specified DB-Server is in maintenance mode and,
 // if so, until what date and time (in ISO 8601 format) the maintenance will last.
-func (c *clientAdmin) GetClusterMaintenance(ctx context.Context, dbServer string) (ClusterMaintenanceResponse, error) {
+func (c *clientAdmin) GetDBServerMaintenance(ctx context.Context, dbServer string) (ClusterMaintenanceResponse, error) {
 	if dbServer == "" {
 		return ClusterMaintenanceResponse{}, RequiredFieldError("dbServer")
 	}

@@ -57,10 +57,10 @@ type ClientAdminCluster interface {
 	// ClusterEndpoints returns the endpoints of a cluster.
 	ClusterEndpoints(ctx context.Context) (ClusterEndpointsResponse, error)
 
-	// GetClusterMaintenance retrieves the maintenance status of a given DB-Server.
+	// GetDBServerMaintenance retrieves the maintenance status of a given DB-Server.
 	// It checks whether the specified DB-Server is in maintenance mode and,
 	// if so, until what date and time (in ISO 8601 format) the maintenance will last.
-	GetClusterMaintenance(ctx context.Context, dbServer string) (ClusterMaintenanceResponse, error)
+	GetDBServerMaintenance(ctx context.Context, dbServer string) (ClusterMaintenanceResponse, error)
 
 	// SetDBServerMaintenance sets the maintenance mode for a specific DB-Server.
 	// This endpoint affects only the given DB-Server. When in maintenance mode,
