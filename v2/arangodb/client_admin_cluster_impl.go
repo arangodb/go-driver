@@ -220,9 +220,9 @@ func (c *clientAdmin) RemoveServer(ctx context.Context, serverID ServerID) error
 // ClusterStatistics retrieves statistical information from a specific DBServer
 // in an ArangoDB cluster. The statistics include system, client, HTTP, and server
 // metrics such as CPU usage, memory, connections, requests, and transaction details.
-func (c *clientAdmin) ClusterStatistics(ctx context.Context, DBserver string) (ClusterStatisticsResponse, error) {
-	if DBserver == "" {
-		return ClusterStatisticsResponse{}, RequiredFieldError("DBserver")
+func (c *clientAdmin) ClusterStatistics(ctx context.Context, dbServer string) (ClusterStatisticsResponse, error) {
+	if dbServer == "" {
+		return ClusterStatisticsResponse{}, RequiredFieldError("dbServer")
 	}
 	// Form URL
 	urlEndpoint := connection.NewUrl("_admin", "cluster", "statistics")
@@ -234,7 +234,7 @@ func (c *clientAdmin) ClusterStatistics(ctx context.Context, DBserver string) (C
 
 	//Adding request params
 	var mod []connection.RequestModifier
-	mod = append(mod, connection.WithQuery("DBserver", DBserver))
+	mod = append(mod, connection.WithQuery("DBserver", dbServer))
 	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response, mod...)
 	if err != nil {
 		return ClusterStatisticsResponse{}, errors.WithStack(err)
@@ -266,5 +266,116 @@ func (c *clientAdmin) ClusterEndpoints(ctx context.Context) (ClusterEndpointsRes
 		return response.ClusterEndpointsResponse, nil
 	default:
 		return ClusterEndpointsResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetClusterMaintenance retrieves the maintenance status of a given DB-Server.
+// It checks whether the specified DB-Server is in maintenance mode and,
+// if so, until what date and time (in ISO 8601 format) the maintenance will last.
+func (c *clientAdmin) GetClusterMaintenance(ctx context.Context, dbServer string) (ClusterMaintenanceResponse, error) {
+	if dbServer == "" {
+		return ClusterMaintenanceResponse{}, RequiredFieldError("dbServer")
+	}
+
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "maintenance", dbServer)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                ClusterMaintenanceResponse `json:"result"`
+	}
+
+	// Perform GET request
+	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response)
+	if err != nil {
+		return ClusterMaintenanceResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return ClusterMaintenanceResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// SetDBServerMaintenance sets the maintenance mode for a specific DB-Server.
+// This endpoint affects only the given DB-Server. When in maintenance mode,
+// the server is excluded from supervision actions such as shard distribution
+// or failover. This is typically used during planned restarts or upgrades.
+func (c *clientAdmin) SetDBServerMaintenance(ctx context.Context, dbServer string, opts *ClusterMaintenanceOpts) error {
+	if dbServer == "" {
+		return RequiredFieldError("dbServer")
+	}
+
+	if opts == nil {
+		return RequiredFieldError("opts")
+	}
+	if opts.Mode == "" {
+		return RequiredFieldError("mode")
+	}
+
+	// Build request body with optional timeout
+	body := ClusterMaintenanceOpts{
+		Mode: opts.Mode,
+	}
+	if opts.Timeout != nil {
+		body.Timeout = opts.Timeout
+	}
+
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "maintenance", dbServer)
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	// Perform PUT request
+	resp, err := connection.CallPut(ctx, c.client.connection, urlEndpoint, &response, body)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+// SetClusterMaintenance sets the cluster-wide supervision maintenance mode.
+// This endpoint affects the supervision (Agency) component of the cluster.
+// While enabled, automatic failovers, shard movements, and repair jobs
+// are suspended. The mode can be:
+//
+//   - "on":   Enable maintenance mode for the default 60 minutes.
+//   - "off":  Disable maintenance mode immediately.
+//   - "<number>":  Enable maintenance mode for <number> seconds.
+//
+// Be aware that no automatic failovers of any kind will take place while
+// the maintenance mode is enabled. The supervision will reactivate itself
+// automatically after the duration expires.
+func (c *clientAdmin) SetClusterMaintenance(ctx context.Context, mode string) error {
+
+	if mode == "" {
+		return RequiredFieldError("mode")
+	}
+
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "maintenance")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	// Perform PUT request
+	resp, err := connection.CallPut(ctx, c.client.connection, urlEndpoint, &response, mode)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
 	}
 }

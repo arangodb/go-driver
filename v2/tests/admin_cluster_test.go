@@ -390,3 +390,80 @@ func Test_ClusterEndpoints(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetClusterMaintenance(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			requireClusterMode(t)
+			skipBelowVersion(client, ctx, "3.10", t)
+
+			// Detect DB-Server ID
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			var dbServerId string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				clusterHealth, err := client.Health(ctx)
+				require.NoError(t, err)
+
+				// Pick first DBServer ID
+				for id, db := range clusterHealth.Health {
+					if db.Role == arangodb.ServerRoleDBServer {
+						dbServerId = string(id)
+						break
+					}
+				}
+
+				// Toggle cluster maintenance (cluster-wide, no need to check agents)
+				err = client.SetClusterMaintenance(ctx, "on")
+				require.NoError(t, err, "failed to enable cluster maintenance")
+
+				// Give cluster time to apply state
+				time.Sleep(1 * time.Second)
+
+				err = client.SetClusterMaintenance(ctx, "off")
+				require.NoError(t, err, "failed to disable cluster maintenance")
+			}
+
+			require.NotEmpty(t, dbServerId, "expected to find a DB-Server ID")
+
+			// Call GetClusterMaintenance
+			clusterMaintenanceInfo, err := client.GetClusterMaintenance(ctx, dbServerId)
+			require.NoError(t, err)
+			require.NotNil(t, clusterMaintenanceInfo)
+
+			// Validate fields if in maintenance
+			if clusterMaintenanceInfo.Mode != "" {
+				require.Equal(t, "maintenance", clusterMaintenanceInfo.Mode)
+				require.NotEmpty(t, clusterMaintenanceInfo.Until)
+			}
+
+			respJson, err := utils.ToJSONString(clusterMaintenanceInfo)
+			require.NoError(t, err)
+			t.Logf("Before Cluster Maintenance Response: %s\n", respJson)
+
+			// Update DBServer Maintenance
+			err = client.SetDBServerMaintenance(ctx, dbServerId, &arangodb.ClusterMaintenanceOpts{
+				Mode:    "maintenance",
+				Timeout: utils.NewType(30),
+			})
+			require.NoError(t, err)
+
+			// Call GetClusterMaintenance
+			clusterMaintenanceInfo, err = client.GetClusterMaintenance(ctx, dbServerId)
+			require.NoError(t, err)
+			require.NotNil(t, clusterMaintenanceInfo)
+
+			// Validate fields if in maintenance
+			if clusterMaintenanceInfo.Mode != "" {
+				require.Equal(t, "maintenance", clusterMaintenanceInfo.Mode)
+				require.NotEmpty(t, clusterMaintenanceInfo.Until)
+			}
+
+			respJson, err = utils.ToJSONString(clusterMaintenanceInfo)
+			require.NoError(t, err)
+			t.Logf("After ClusterMaintenanceResponse: %s\n", respJson)
+		})
+	})
+}
