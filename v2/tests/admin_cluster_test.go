@@ -391,7 +391,7 @@ func Test_ClusterEndpoints(t *testing.T) {
 	})
 }
 
-func Test_GetClusterMaintenance(t *testing.T) {
+func Test_DBServerMaintenance(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			requireClusterMode(t)
@@ -428,8 +428,8 @@ func Test_GetClusterMaintenance(t *testing.T) {
 
 			require.NotEmpty(t, dbServerId, "expected to find a DB-Server ID")
 
-			// Call GetClusterMaintenance
-			clusterMaintenanceInfo, err := client.GetClusterMaintenance(ctx, dbServerId)
+			// Call GetDBServerMaintenance
+			clusterMaintenanceInfo, err := client.GetDBServerMaintenance(ctx, dbServerId)
 			require.NoError(t, err)
 			require.NotNil(t, clusterMaintenanceInfo)
 
@@ -450,8 +450,8 @@ func Test_GetClusterMaintenance(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			// Call GetClusterMaintenance
-			clusterMaintenanceInfo, err = client.GetClusterMaintenance(ctx, dbServerId)
+			// Call GetDBServerMaintenance
+			clusterMaintenanceInfo, err = client.GetDBServerMaintenance(ctx, dbServerId)
 			require.NoError(t, err)
 			require.NotNil(t, clusterMaintenanceInfo)
 
