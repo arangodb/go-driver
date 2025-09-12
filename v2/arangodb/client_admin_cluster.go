@@ -52,10 +52,35 @@ type ClientAdminCluster interface {
 	// ClusterStatistics retrieves statistical information from a specific DBServer
 	// in an ArangoDB cluster. The statistics include system, client, HTTP, and server
 	// metrics such as CPU usage, memory, connections, requests, and transaction details.
-	ClusterStatistics(ctx context.Context, DBserver string) (ClusterStatisticsResponse, error)
+	ClusterStatistics(ctx context.Context, dbServer string) (ClusterStatisticsResponse, error)
 
 	// ClusterEndpoints returns the endpoints of a cluster.
 	ClusterEndpoints(ctx context.Context) (ClusterEndpointsResponse, error)
+
+	// GetClusterMaintenance retrieves the maintenance status of a given DB-Server.
+	// It checks whether the specified DB-Server is in maintenance mode and,
+	// if so, until what date and time (in ISO 8601 format) the maintenance will last.
+	GetClusterMaintenance(ctx context.Context, dbServer string) (ClusterMaintenanceResponse, error)
+
+	// SetDBServerMaintenance sets the maintenance mode for a specific DB-Server.
+	// This endpoint affects only the given DB-Server. When in maintenance mode,
+	// the server is excluded from supervision actions such as shard distribution
+	// or failover. This is typically used during planned restarts or upgrades.
+	SetDBServerMaintenance(ctx context.Context, dbServer string, opts *ClusterMaintenanceOpts) error
+
+	// SetClusterMaintenance sets the cluster-wide supervision maintenance mode.
+	// This endpoint affects the supervision (Agency) component of the cluster.
+	// While enabled, automatic failovers, shard movements, and repair jobs
+	// are suspended. The mode can be:
+	//
+	//   - "on":   Enable maintenance mode for the default 60 minutes.
+	//   - "off":  Disable maintenance mode immediately.
+	//   - "<number>":  Enable maintenance mode for <number> seconds.
+	//
+	// Be aware that no automatic failovers of any kind will take place while
+	// the maintenance mode is enabled. The supervision will reactivate itself
+	// automatically after the duration expires.
+	SetClusterMaintenance(ctx context.Context, mode string) error
 }
 
 type NumberOfServersResponse struct {
@@ -255,4 +280,29 @@ type ClusterEndpoint struct {
 	// Endpoint is the connection string (protocol + host + port)
 	// of a coordinator in the cluster, e.g. "tcp://127.0.0.1:8529".
 	Endpoint string `json:"endpoint,omitempty"`
+}
+
+// ClusterMaintenanceResponse represents the maintenance status of a DB-Server.
+type ClusterMaintenanceResponse struct {
+	// The mode of the DB-Server. The value is "maintenance".
+	Mode string `json:"mode,omitempty"`
+
+	// Until what date and time the maintenance mode currently lasts,
+	// in the ISO 8601 date/time format.
+	Until string `json:"until,omitempty"`
+}
+
+// ClusterMaintenanceOpts represents the options for setting maintenance mode
+// on a DB-Server in an ArangoDB cluster.
+type ClusterMaintenanceOpts struct {
+	// Mode specifies the maintenance mode to apply to the DB-Server.
+	// Possible values:
+	//   - "maintenance": enable maintenance mode
+	//   - "normal": disable maintenance mode
+	// This field is required.
+	Mode string `json:"mode"`
+
+	// Timeout specifies how long the maintenance mode should last, in seconds.
+	// This field is optional; if nil, the server will use the default timeout (usually 3600 seconds).
+	Timeout *int `json:"timeout"`
 }
