@@ -29,6 +29,7 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func (c *clientAdmin) Health(ctx context.Context) (ClusterHealth, error) {
@@ -224,7 +225,7 @@ func (c *clientAdmin) ClusterStatistics(ctx context.Context, dbServer string) (C
 	if dbServer == "" {
 		return ClusterStatisticsResponse{}, RequiredFieldError("dbServer")
 	}
-	// Form URL
+
 	urlEndpoint := connection.NewUrl("_admin", "cluster", "statistics")
 
 	var response struct {
@@ -284,7 +285,6 @@ func (c *clientAdmin) GetDBServerMaintenance(ctx context.Context, dbServer strin
 		Result                ClusterMaintenanceResponse `json:"result"`
 	}
 
-	// Perform GET request
 	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response)
 	if err != nil {
 		return ClusterMaintenanceResponse{}, errors.WithStack(err)
@@ -328,7 +328,6 @@ func (c *clientAdmin) SetDBServerMaintenance(ctx context.Context, dbServer strin
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	// Perform PUT request
 	resp, err := connection.CallPut(ctx, c.client.connection, urlEndpoint, &response, body)
 	if err != nil {
 		return errors.WithStack(err)
@@ -366,7 +365,6 @@ func (c *clientAdmin) SetClusterMaintenance(ctx context.Context, mode string) er
 		shared.ResponseStruct `json:",inline"`
 	}
 
-	// Perform PUT request
 	resp, err := connection.CallPut(ctx, c.client.connection, urlEndpoint, &response, mode)
 	if err != nil {
 		return errors.WithStack(err)
@@ -392,7 +390,6 @@ func (c *clientAdmin) GetClusterRebalance(ctx context.Context) (RebalanceRespons
 		Result                RebalanceResponse `json:"result"`
 	}
 
-	// Perform GET request
 	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response)
 	if err != nil {
 		return RebalanceResponse{}, errors.WithStack(err)
@@ -403,5 +400,168 @@ func (c *clientAdmin) GetClusterRebalance(ctx context.Context) (RebalanceRespons
 		return response.Result, nil
 	default:
 		return RebalanceResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func buildComputeClusterRebalanceParams(body *RebalanceRequestBody) (map[string]interface{}, error) {
+
+	result := make(map[string]interface{})
+	if body == nil {
+		return nil, errors.Errorf("body must not be nil")
+	}
+	if body.Version == nil {
+		return nil, RequiredFieldError("version")
+	}
+	result["version"] = *body.Version
+
+	if body.ExcludeSystemCollections == nil {
+		result["excludeSystemCollections"] = utils.NewType(false)
+	} else {
+		result["excludeSystemCollections"] = *body.ExcludeSystemCollections
+	}
+
+	if body.LeaderChanges == nil {
+		result["leaderChanges"] = utils.NewType(true)
+	} else {
+		result["leaderChanges"] = *body.LeaderChanges
+	}
+
+	if body.MaximumNumberOfMoves == nil {
+		result["maximumNumberOfMoves"] = utils.NewType(1000)
+	} else {
+		result["maximumNumberOfMoves"] = *body.MaximumNumberOfMoves
+	}
+
+	if body.MoveFollowers == nil {
+		result["moveFollowers"] = utils.NewType(false)
+	} else {
+		result["moveFollowers"] = *body.MoveFollowers
+	}
+
+	if body.MoveLeaders == nil {
+		result["moveLeaders"] = utils.NewType(false)
+	} else {
+		result["moveLeaders"] = *body.MoveLeaders
+	}
+
+	if len(body.DatabasesExcluded) > 0 {
+		result["databasesExcluded"] = body.DatabasesExcluded
+	}
+
+	if body.PiFactor == nil {
+		result["piFactor"] = utils.NewType(256000000)
+	} else {
+		result["piFactor"] = *body.PiFactor
+	}
+
+	return result, nil
+}
+
+// ComputeClusterRebalance computes a set of move shard operations to improve cluster balance.
+func (c *clientAdmin) ComputeClusterRebalance(ctx context.Context, opts *RebalanceRequestBody) (RebalancePlan, error) {
+	// Build URL
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "rebalance")
+
+	// Convert request body options into a map or params for the request body.
+	bodyParams, err := buildComputeClusterRebalanceParams(opts)
+	if err != nil {
+		return RebalancePlan{}, errors.WithStack(err)
+	}
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                RebalancePlan `json:"result"`
+	}
+
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &response, bodyParams)
+	if err != nil {
+		return RebalancePlan{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return RebalancePlan{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func buildExecuteClusterRebalanceParams(body *ExecuteRebalanceRequestBody) (map[string]interface{}, error) {
+
+	result := make(map[string]interface{})
+	if body == nil {
+		return nil, errors.Errorf("body must not be nil")
+	}
+	if body.Version == nil {
+		return nil, RequiredFieldError("version")
+	}
+	result["version"] = *body.Version
+
+	if len(body.Moves) == 0 {
+		return nil, RequiredFieldError("moves")
+	} else {
+		movesList := make([]map[string]interface{}, 0, len(body.Moves))
+		for _, move := range body.Moves {
+			moveMap := make(map[string]interface{})
+			if move.Shard == nil || *move.Shard == "" {
+				return nil, RequiredFieldError("moves.shard")
+			}
+			if move.From == nil || *move.From == "" {
+				return nil, RequiredFieldError("moves.from")
+			}
+			if move.To == nil || *move.To == "" {
+				return nil, RequiredFieldError("moves.to")
+			}
+			if move.IsLeader == nil {
+				return nil, RequiredFieldError("moves.isLeader")
+			}
+			if move.Collection == nil || *move.Collection == "" {
+				return nil, RequiredFieldError("moves.collection")
+			}
+			if move.Database == nil || *move.Database == "" {
+				return nil, RequiredFieldError("moves.database")
+			}
+
+			moveMap["shard"] = *move.Shard
+			moveMap["from"] = *move.From
+			moveMap["to"] = *move.To
+			moveMap["isLeader"] = *move.IsLeader
+			moveMap["collection"] = *move.Collection
+			moveMap["database"] = *move.Database
+
+			movesList = append(movesList, moveMap)
+		}
+		result["moves"] = movesList
+
+	}
+
+	return result, nil
+}
+
+// ExecuteClusterRebalance executes a set of shard move operations on the cluster.
+func (c *clientAdmin) ExecuteClusterRebalance(ctx context.Context, opts *ExecuteRebalanceRequestBody) error {
+	// Build URL
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "rebalance", "execute")
+
+	// Convert request body options into a map or params for the request body.
+	bodyParams, err := buildExecuteClusterRebalanceParams(opts)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+	}
+
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, &response, bodyParams)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK, http.StatusAccepted:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
 	}
 }

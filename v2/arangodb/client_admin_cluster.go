@@ -86,6 +86,12 @@ type ClientAdminCluster interface {
 	// It computes the imbalance across leaders and shards, and includes the number of
 	// ongoing and pending move shard operations.
 	GetClusterRebalance(ctx context.Context) (RebalanceResponse, error)
+
+	// ComputeClusterRebalance computes a set of move shard operations to improve cluster balance.
+	ComputeClusterRebalance(ctx context.Context, opts *RebalanceRequestBody) (RebalancePlan, error)
+
+	// ExecuteClusterRebalance executes a set of shard move operations on the cluster.
+	ExecuteClusterRebalance(ctx context.Context, opts *ExecuteRebalanceRequestBody) error
 }
 
 type NumberOfServersResponse struct {
@@ -358,4 +364,75 @@ type ShardStats struct {
 	TotalShardsFromSystemCollections *int64 `json:"totalShardsFromSystemCollections,omitempty"`
 	// Computed imbalance factor for shards
 	Imbalance *float64 `json:"imbalance,omitempty"`
+}
+
+// RebalanceRequestBody provides a default configuration for rebalancing requests.
+// RebalanceRequestBody provides the options for computing a rebalance plan.
+// It corresponds to the request body for POST /_admin/cluster/rebalance.
+type RebalanceRequestBody struct {
+	// DatabasesExcluded is a list of database names to exclude from analysis.
+	DatabasesExcluded []string `json:"databasesExcluded,omitempty"`
+	// ExcludeSystemCollections indicates whether to exclude system collections.
+	ExcludeSystemCollections *bool `json:"excludeSystemCollections,omitempty"`
+	// LeaderChanges indicates whether leader changes are allowed.
+	LeaderChanges *bool `json:"leaderChanges,omitempty"`
+	// MaximumNumberOfMoves is the maximum number of shard move operations to generate.
+	MaximumNumberOfMoves *int `json:"maximumNumberOfMoves,omitempty"`
+	// MoveFollowers indicates whether follower shard moves are allowed.
+	MoveFollowers *bool `json:"moveFollowers,omitempty"`
+	// MoveLeaders indicates whether leader shard moves are allowed.
+	MoveLeaders *bool `json:"moveLeaders,omitempty"`
+	// PiFactor is the weighting factor used in imbalance computation.
+	PiFactor *int `json:"piFactor,omitempty"`
+	// Version must be set to 1.
+	Version *int `json:"version"`
+}
+
+// RebalancePlan contains the imbalance statistics before
+// and after rebalancing, along with the list of suggested move operations.
+type RebalancePlan struct {
+	// ImbalanceBefore shows the imbalance metrics before applying the plan.
+	ImbalanceBefore ImbalanceStats `json:"imbalanceBefore"`
+	// ImbalanceAfter shows the imbalance metrics after applying the plan.
+	ImbalanceAfter ImbalanceStats `json:"imbalanceAfter"`
+	// Moves contains the list of suggested shard move operations.
+	Moves []MoveOperation `json:"moves"`
+}
+
+// ImbalanceStats holds leader and shard distribution statistics
+// used to measure cluster imbalance.
+type ImbalanceStats struct {
+	// Leader contains statistics related to leader distribution.
+	Leader LeaderStats `json:"leader,omitempty"`
+	// Shards contains statistics related to shard distribution.
+	Shards ShardStats `json:"shards,omitempty"`
+}
+
+// MoveOperation describes a suggested shard move as part of the rebalance plan.
+type MoveOperation struct {
+	// Collection is the collection identifier for the shard.
+	Collection *string `json:"collection,omitempty"`
+	// From is the source server ID.
+	From *string `json:"from,omitempty"`
+	// IsLeader indicates if the move involves a leader shard.
+	IsLeader *bool `json:"isLeader,omitempty"`
+	// Shard is the shard identifier being moved.
+	Shard *string `json:"shard,omitempty"`
+	// To is the destination server ID.
+	To *string `json:"to,omitempty"`
+
+	// Database is the database name containing the collection.
+	Database *string `json:"database,omitempty"`
+}
+
+// It contains the set of shard move operations to perform and the version of the rebalance plan.
+type ExecuteRebalanceRequestBody struct {
+	// Moves is a list of shard move operations that should be executed.
+	// Each move specifies which shard to move, from which server to which server,
+	// whether it is a leader shard, the collection, and the database.
+	Moves []MoveOperation `json:"moves"`
+
+	// Version specifies the version of the rebalance plan that this request applies to.
+	// This should match the version returned by ComputeClusterRebalance.
+	Version *int `json:"version"`
 }
