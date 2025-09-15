@@ -467,3 +467,28 @@ func Test_DBServerMaintenance(t *testing.T) {
 		})
 	})
 }
+
+func Test_GetClusterRebalance(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			// Ensure the test only runs in cluster mode
+			requireClusterMode(t)
+
+			// Call the API
+			rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
+			require.NoError(t, err)
+			require.NotNil(t, rebalanceShardInfo)
+
+			// Validate leader stats
+			require.NotNil(t, rebalanceShardInfo.Leader)
+			// Validate shard stats
+			require.NotNil(t, rebalanceShardInfo.Shards)
+
+			// Validate pending and todo move shard counts
+			require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
+			require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
+			require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
+			require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
+		})
+	})
+}

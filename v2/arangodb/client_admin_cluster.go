@@ -81,6 +81,11 @@ type ClientAdminCluster interface {
 	// the maintenance mode is enabled. The supervision will reactivate itself
 	// automatically after the duration expires.
 	SetClusterMaintenance(ctx context.Context, mode string) error
+
+	// GetClusterRebalance retrieves the current cluster imbalance status.
+	// It computes the imbalance across leaders and shards, and includes the number of
+	// ongoing and pending move shard operations.
+	GetClusterRebalance(ctx context.Context) (RebalanceResponse, error)
 }
 
 type NumberOfServersResponse struct {
@@ -305,4 +310,52 @@ type ClusterMaintenanceOpts struct {
 	// Timeout specifies how long the maintenance mode should last, in seconds.
 	// This field is optional; if nil, the server will use the default timeout (usually 3600 seconds).
 	Timeout *int `json:"timeout"`
+}
+
+// It contains leader statistics, shard statistics, and the count of ongoing/pending move shard operations.
+type RebalanceResponse struct {
+	// Statistics related to leader distribution
+	Leader LeaderStats `json:"leader,omitempty"`
+	// Statistics related to shard distribution (JSON key is "shards", not "shard")
+	Shards ShardStats `json:"shards,omitempty"`
+	// Number of ongoing move shard operations
+	PendingMoveShards *int64 `json:"pendingMoveShards,omitempty"`
+	// Number of pending (scheduled) move shard operations
+	TodoMoveShards *int64 `json:"todoMoveShards,omitempty"`
+}
+
+// LeaderStats holds information about leader balancing across DB-Servers.
+type LeaderStats struct {
+	// Actual leader weight used per server
+	WeightUsed []int `json:"weightUsed,omitempty"`
+	// Target leader weight per server
+	TargetWeight []float64 `json:"targetWeight,omitempty"`
+	// Number of leader shards per server
+	NumberShards []int `json:"numberShards,omitempty"`
+	// Number of duplicated leaders per server
+	LeaderDupl []int `json:"leaderDupl,omitempty"`
+	// Total leader weight
+	TotalWeight *int `json:"totalWeight,omitempty"`
+	// Computed imbalance percentage
+	Imbalance *float64 `json:"imbalance,omitempty"`
+	// Total number of leader shards
+	TotalShards *int64 `json:"totalShards,omitempty"`
+}
+
+// ShardStats holds information about shard balancing across DB-Servers.
+type ShardStats struct {
+	// Actual size used per server
+	SizeUsed []int64 `json:"sizeUsed,omitempty"`
+	// Target size per server
+	TargetSize []float64 `json:"targetSize,omitempty"`
+	// Number of shards per server
+	NumberShards []int `json:"numberShards,omitempty"`
+	// Total size used across servers
+	TotalUsed *int64 `json:"totalUsed,omitempty"`
+	// Total number of shards
+	TotalShards *int64 `json:"totalShards,omitempty"`
+	// Number of shards belonging to system collections
+	TotalShardsFromSystemCollections *int64 `json:"totalShardsFromSystemCollections,omitempty"`
+	// Computed imbalance factor for shards
+	Imbalance *float64 `json:"imbalance,omitempty"`
 }

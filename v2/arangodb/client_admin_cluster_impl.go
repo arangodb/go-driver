@@ -379,3 +379,29 @@ func (c *clientAdmin) SetClusterMaintenance(ctx context.Context, mode string) er
 		return response.AsArangoErrorWithCode(code)
 	}
 }
+
+// GetClusterRebalance retrieves the current cluster imbalance status.
+// It computes the imbalance across leaders and shards, and includes the number of
+// ongoing and pending move shard operations.
+func (c *clientAdmin) GetClusterRebalance(ctx context.Context) (RebalanceResponse, error) {
+
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "rebalance")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                RebalanceResponse `json:"result"`
+	}
+
+	// Perform GET request
+	resp, err := connection.CallGet(ctx, c.client.connection, urlEndpoint, &response)
+	if err != nil {
+		return RebalanceResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return RebalanceResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
