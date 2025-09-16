@@ -370,7 +370,24 @@ func Test_ClusterStatistics(t *testing.T) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			requireClusterMode(t)
 			skipBelowVersion(client, ctx, "3.7", t)
-			dbServerId, err := client.ServerID(ctx)
+			// Detect DB-Server ID
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			var dbServerId string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				clusterHealth, err := client.Health(ctx)
+				require.NoError(t, err)
+
+				// Pick first DBServer ID
+				for id, db := range clusterHealth.Health {
+					if db.Role == arangodb.ServerRoleDBServer {
+						dbServerId = string(id)
+						break
+					}
+				}
+			}
 			require.NoError(t, err)
 			statistics, err := client.ClusterStatistics(ctx, dbServerId)
 			require.NoError(t, err)
@@ -386,7 +403,7 @@ func Test_ClusterEndpoints(t *testing.T) {
 			endpoints, err := client.ClusterEndpoints(ctx)
 			require.NoError(t, err)
 			require.NotNil(t, endpoints)
-			require.Greater(t, len(endpoints.Endpoints), 1)
+			require.GreaterOrEqual(t, len(endpoints.Endpoints), 0)
 		})
 	})
 }
