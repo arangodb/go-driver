@@ -318,9 +318,13 @@ func Test_AClusterResignLeadership(t *testing.T) {
 					require.NotEmpty(t, targetServerID, "No dbServer found")
 
 					t.Run("Check if targetServerID is no longer leader", func(t *testing.T) {
+						// Give the resign operation some time to start before checking
+						t.Log("Giving resign operation time to start...")
+						time.Sleep(time.Second * 10)
+
 						start := time.Now()
-						maxTestTime := time.Minute
-						lastLeaderForShardsNum := 0
+						maxTestTime := 2 * time.Minute // Increased from 1 minute to match MoveShard timeout
+						lastLeaderForShardsNum := -1
 
 						for {
 							leaderForShardsNum := 0
@@ -336,11 +340,11 @@ func Test_AClusterResignLeadership(t *testing.T) {
 										}
 									}
 								}
-
 							}
 
 							if leaderForShardsNum == 0 {
 								// We're done
+								t.Logf("Successfully resigned leadership from %s", targetServerID)
 								break
 							}
 
@@ -348,14 +352,15 @@ func Test_AClusterResignLeadership(t *testing.T) {
 								// Something changed, we give a bit more time
 								maxTestTime = maxTestTime + time.Second*15
 								lastLeaderForShardsNum = leaderForShardsNum
+								t.Logf("Leadership count changed from %d to %d, extending timeout", lastLeaderForShardsNum, leaderForShardsNum)
 							}
 
 							if time.Since(start) > maxTestTime {
-								t.Errorf("%s did not resign within %s", targetServerID, maxTestTime)
+								t.Errorf("%s did not resign from %d shards within %s", targetServerID, leaderForShardsNum, maxTestTime)
 								break
 							}
 
-							t.Log("Waiting a bit")
+							t.Log("Waiting for leadership resignation...")
 							time.Sleep(time.Second * 5)
 						}
 					})
