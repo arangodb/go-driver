@@ -287,7 +287,7 @@ func Test_ClusterMoveShards(t *testing.T) {
 	})
 }
 
-func Test_ClusterResignLeadership(t *testing.T) {
+func Test_AClusterResignLeadership(t *testing.T) {
 	requireClusterMode(t)
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
