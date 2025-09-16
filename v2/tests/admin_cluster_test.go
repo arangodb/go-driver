@@ -346,8 +346,8 @@ func Test_ClusterResignLeadership(t *testing.T) {
 						time.Sleep(time.Second * 10)
 
 						start := time.Now()
-						maxTestTime := 2 * time.Minute             // Increased from 1 minute to match MoveShard timeout
-						lastLeaderForShardsNum := leaderShardCount // Start with the expected initial count
+						maxTestTime := 2 * time.Minute // Increased from 1 minute to match MoveShard timeout
+						lastLeaderForShardsNum := -1   // Initialize to -1 to track first check
 
 						for {
 							leaderForShardsNum := 0
