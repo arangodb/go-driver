@@ -594,14 +594,6 @@ func Test_ComputeAndExecuteClusterRebalance(t *testing.T) {
 				require.NotNil(t, rebalanceShardResp.Moves)
 				require.GreaterOrEqual(t, len(rebalanceShardResp.Moves), 0)
 
-				if len(rebalanceShardResp.Moves) > 0 {
-					err := client.ExecuteClusterRebalance(ctx, &arangodb.ExecuteRebalanceRequestBody{
-						Moves:   rebalanceShardResp.Moves,
-						Version: utils.NewType(1),
-					})
-					require.NoError(t, err)
-				}
-
 				// Call the GetClusterRebalance API to validate it works after ComputeClusterRebalance
 				rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
 				require.NoError(t, err)

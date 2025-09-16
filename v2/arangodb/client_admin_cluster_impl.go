@@ -29,7 +29,6 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
-	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func (c *clientAdmin) Health(ctx context.Context) (ClusterHealth, error) {
@@ -415,31 +414,31 @@ func buildComputeClusterRebalanceParams(body *RebalanceRequestBody) (map[string]
 	result["version"] = *body.Version
 
 	if body.ExcludeSystemCollections == nil {
-		result["excludeSystemCollections"] = utils.NewType(false)
+		result["excludeSystemCollections"] = false
 	} else {
 		result["excludeSystemCollections"] = *body.ExcludeSystemCollections
 	}
 
 	if body.LeaderChanges == nil {
-		result["leaderChanges"] = utils.NewType(true)
+		result["leaderChanges"] = true
 	} else {
 		result["leaderChanges"] = *body.LeaderChanges
 	}
 
 	if body.MaximumNumberOfMoves == nil {
-		result["maximumNumberOfMoves"] = utils.NewType(1000)
+		result["maximumNumberOfMoves"] = 1000
 	} else {
 		result["maximumNumberOfMoves"] = *body.MaximumNumberOfMoves
 	}
 
 	if body.MoveFollowers == nil {
-		result["moveFollowers"] = utils.NewType(false)
+		result["moveFollowers"] = false
 	} else {
 		result["moveFollowers"] = *body.MoveFollowers
 	}
 
 	if body.MoveLeaders == nil {
-		result["moveLeaders"] = utils.NewType(false)
+		result["moveLeaders"] = false
 	} else {
 		result["moveLeaders"] = *body.MoveLeaders
 	}
@@ -449,7 +448,7 @@ func buildComputeClusterRebalanceParams(body *RebalanceRequestBody) (map[string]
 	}
 
 	if body.PiFactor == nil {
-		result["piFactor"] = utils.NewType(256000000)
+		result["piFactor"] = 256000000
 	} else {
 		result["piFactor"] = *body.PiFactor
 	}
