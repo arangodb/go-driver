@@ -565,3 +565,32 @@ func (c *clientAdmin) ExecuteClusterRebalance(ctx context.Context, opts *Execute
 		return response.AsArangoErrorWithCode(code)
 	}
 }
+
+// ComputeAndExecuteClusterRebalance computes moves internally then executes them.
+func (c *clientAdmin) ComputeAndExecuteClusterRebalance(ctx context.Context, opts *RebalanceRequestBody) (RebalancePlan, error) {
+	// Build URL
+	urlEndpoint := connection.NewUrl("_admin", "cluster", "rebalance")
+
+	// Convert request body options into a map or params for the request body.
+	bodyParams, err := buildComputeClusterRebalanceParams(opts)
+	if err != nil {
+		return RebalancePlan{}, errors.WithStack(err)
+	}
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                RebalancePlan `json:"result"`
+	}
+
+	resp, err := connection.CallPut(ctx, c.client.connection, urlEndpoint, &response, bodyParams)
+	if err != nil {
+		return RebalancePlan{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK, http.StatusAccepted:
+		return response.Result, nil
+	default:
+		return RebalancePlan{}, response.AsArangoErrorWithCode(code)
+	}
+}

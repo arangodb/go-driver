@@ -92,6 +92,9 @@ type ClientAdminCluster interface {
 
 	// ExecuteClusterRebalance executes a set of shard move operations on the cluster.
 	ExecuteClusterRebalance(ctx context.Context, opts *ExecuteRebalanceRequestBody) error
+
+	// ComputeAndExecuteClusterRebalance computes moves internally then executes them.
+	ComputeAndExecuteClusterRebalance(ctx context.Context, opts *RebalanceRequestBody) (RebalancePlan, error)
 }
 
 type NumberOfServersResponse struct {
