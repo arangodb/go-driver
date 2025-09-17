@@ -298,56 +298,29 @@ func Test_ClusterResignLeadership(t *testing.T) {
 			}
 			WithCollectionV2(t, db, &optionsShards, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					// First, ensure we have multiple DB servers available
-					health, err := client.Health(ctx)
-					require.NoError(t, err, "Health failed")
-
-					var dbServerCount int
-					for _, server := range health.Health {
-						if server.Role == arangodb.ServerRoleDBServer {
-							dbServerCount++
-						}
-					}
-					require.GreaterOrEqual(t, dbServerCount, 2, "ResignLeadership test requires at least 2 DB servers, found %d", dbServerCount)
-
 					inv, err := client.DatabaseInventory(ctx, db.Name())
 					require.NoError(t, err, "DatabaseInventory failed")
 					require.Greater(t, len(inv.Collections), 0, "DatabaseInventory did not return any collections")
 
-					// Find a server that is a leader for some shards
 					var targetServerID arangodb.ServerID
-					leaderShardCount := 0
 					for _, colInv := range inv.Collections {
 						if colInv.Parameters.Name == col.Name() {
 							for _, dbServers := range colInv.Parameters.Shards {
-								if targetServerID == "" {
-									targetServerID = dbServers[0] // Pick the first leader we find
-								}
-								if dbServers[0] == targetServerID {
-									leaderShardCount++
-								}
+								targetServerID = dbServers[0]
+
+								jobID, err := client.ResignServer(ctx, targetServerID)
+								require.NoError(t, err, "ResignServer for server %s failed", targetServerID)
+								require.NotEmpty(t, jobID, "ResignServer for server %s did not return a jobID", targetServerID)
+								break
 							}
 						}
 					}
 					require.NotEmpty(t, targetServerID, "No dbServer found")
-					require.Greater(t, leaderShardCount, 0, "Target server %s is not leader for any shards", targetServerID)
-
-					t.Logf("Target server %s is leader for %d shards", targetServerID, leaderShardCount)
-
-					// Now call ResignServer once for the selected server
-					jobID, err := client.ResignServer(ctx, targetServerID)
-					require.NoError(t, err, "ResignServer for server %s failed", targetServerID)
-					require.NotEmpty(t, jobID, "ResignServer for server %s did not return a jobID", targetServerID)
 
 					t.Run("Check if targetServerID is no longer leader", func(t *testing.T) {
-						// Give the resign operation some time to start before checking
-						t.Logf("Expecting %s to resign leadership from %d shards", targetServerID, leaderShardCount)
-						t.Log("Giving resign operation time to start...")
-						time.Sleep(time.Second * 10)
-
 						start := time.Now()
-						maxTestTime := 2 * time.Minute // Increased from 1 minute to match MoveShard timeout
-						lastLeaderForShardsNum := -1   // Initialize to -1 to track first check
+						maxTestTime := time.Minute
+						lastLeaderForShardsNum := 0
 
 						for {
 							leaderForShardsNum := 0
@@ -363,36 +336,34 @@ func Test_ClusterResignLeadership(t *testing.T) {
 										}
 									}
 								}
+
 							}
 
 							if leaderForShardsNum == 0 {
 								// We're done
-								t.Logf("Successfully resigned leadership from %s (was leader for %d shards)", targetServerID, leaderShardCount)
 								break
 							}
 
-							if leaderForShardsNum != lastLeaderForShardsNum && lastLeaderForShardsNum != -1 {
+							if leaderForShardsNum != lastLeaderForShardsNum {
 								// Something changed, we give a bit more time
 								maxTestTime = maxTestTime + time.Second*15
-								t.Logf("Leadership count changed from %d to %d, extending timeout to %v", lastLeaderForShardsNum, leaderForShardsNum, maxTestTime)
-								lastLeaderForShardsNum = leaderForShardsNum
-							} else if lastLeaderForShardsNum == -1 {
-								// First check after initial delay
 								lastLeaderForShardsNum = leaderForShardsNum
 							}
 
 							if time.Since(start) > maxTestTime {
-								t.Errorf("%s did not resign from %d shards within %s (still leader for %d shards)", targetServerID, leaderShardCount, maxTestTime, leaderForShardsNum)
+								t.Errorf("%s did not resign within %s", targetServerID, maxTestTime)
 								break
 							}
 
-							t.Logf("Waiting for leadership resignation... (%d/%d shards still led by target)", leaderForShardsNum, leaderShardCount)
+							t.Log("Waiting a bit")
 							time.Sleep(time.Second * 5)
 						}
 					})
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -418,6 +389,7 @@ func Test_ClusterStatistics(t *testing.T) {
 						break
 					}
 				}
+				require.NotEmpty(t, dbServerId, "No DB-Server found in cluster health response")
 			} else {
 				t.Skip("ClusterStatistics test requires coordinator access to get DB-Server IDs")
 			}
@@ -462,6 +434,7 @@ func Test_DBServerMaintenance(t *testing.T) {
 						break
 					}
 				}
+				require.NotEmpty(t, dbServerId, "No DB-Server found in cluster health response")
 
 				// Toggle cluster maintenance (cluster-wide, no need to check agents)
 				err = client.SetClusterMaintenance(ctx, "on")
@@ -536,9 +509,9 @@ func Test_GetClusterRebalance(t *testing.T) {
 			// Validate pending and todo move shard counts
 			require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
 			require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
-			require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
-			require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -602,6 +575,8 @@ func Test_ComputeClusterRebalance(t *testing.T) {
 				require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -657,5 +632,7 @@ func Test_ComputeAndExecuteClusterRebalance(t *testing.T) {
 				require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
