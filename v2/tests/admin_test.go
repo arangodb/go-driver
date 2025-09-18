@@ -280,7 +280,6 @@ func Test_CompactDatabases(t *testing.T) {
 						t.Skip("The endpoint requires superuser access")
 					}
 				}
-				require.NoError(t, err)
 			}
 			require.NoError(t, err)
 			require.Empty(t, resp)
@@ -298,7 +297,6 @@ func Test_CompactDatabases(t *testing.T) {
 						t.Skip("The endpoint requires superuser access")
 					}
 				}
-				require.NoError(t, err)
 			}
 			require.NoError(t, err)
 			require.Empty(t, resp)

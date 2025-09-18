@@ -456,10 +456,10 @@ type ProcessStatsInfo struct {
 	ResidentSetSize int64 `json:"residentSetSize"`
 
 	// Number of open file descriptors
-	FileDescrtors int `json:"fileDescrtors"`
+	FileDescriptors int `json:"fileDescriptors"`
 
 	// Limit on the number of file descriptors
-	FileDescrtorsLimit int64 `json:"fileDescrtorsLimit"`
+	FileDescriptorsLimit int64 `json:"fileDescriptorsLimit"`
 }
 
 // CpuStatsInfo contains CPU usage percentages.
