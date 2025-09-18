@@ -244,7 +244,7 @@ func Test_ExecuteAdminScript(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result, err := client.ExecuteAdminScript(ctx, db.Name(), tt.script)
-				var arangoErr *shared.ArangoError
+				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) {
 					t.Logf("arangoErr code:%d\n", arangoErr.Code)
 					if arangoErr.Code == http.StatusNotFound {
@@ -273,7 +273,7 @@ func Test_CompactDatabases(t *testing.T) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 			resp, err := client.CompactDatabases(ctx, nil)
 			if err != nil {
-				var arangoErr *shared.ArangoError
+				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) {
 					t.Logf("arangoErr code:%d", arangoErr.Code)
 					if arangoErr.Code == 403 || arangoErr.Code == 500 {
@@ -290,7 +290,7 @@ func Test_CompactDatabases(t *testing.T) {
 			}
 			resp, err = client.CompactDatabases(ctx, opts)
 			if err != nil {
-				var arangoErr *shared.ArangoError
+				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) {
 					t.Logf("arangoErr code:%d", arangoErr.Code)
 					if arangoErr.Code == 403 || arangoErr.Code == 500 {

@@ -254,11 +254,6 @@ func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]i
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response, nil
-	case http.StatusForbidden:
-		return nil, (&shared.ArangoError{
-			Code:         resp.Code(),
-			ErrorMessage: "insufficient permissions to access server options",
-		})
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
@@ -279,11 +274,6 @@ func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (m
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response, nil
-	case http.StatusForbidden:
-		return nil, (&shared.ArangoError{
-			Code:         resp.Code(),
-			ErrorMessage: "insufficient permissions to access startup configuration description",
-		})
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
@@ -295,7 +285,7 @@ func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) err
 
 	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, nil, nil)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
@@ -313,26 +303,21 @@ func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, scr
 
 	req, err := c.client.Connection().NewRequest("POST", url)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	if err := req.SetBody(script); err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
-	var result interface{}
-	resp, err := c.client.Connection().Do(ctx, req, &result)
+	var response interface{}
+	resp, err := c.client.Connection().Do(ctx, req, &response)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
-		return result, nil
-	case http.StatusNotFound:
-		return nil, (&shared.ArangoError{
-			Code:         resp.Code(),
-			ErrorMessage: "javascript.allow-admin-execute is disabled",
-		})
+		return response, nil
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
@@ -347,17 +332,12 @@ func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (
 	var response map[string]interface{}
 	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, opts)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	switch code := resp.Code(); code {
 	case http.StatusOK:
 		return response, nil
-	case http.StatusForbidden:
-		return nil, (&shared.ArangoError{
-			Code:         resp.Code(),
-			ErrorMessage: "This endpoint requires superuser access",
-		})
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
