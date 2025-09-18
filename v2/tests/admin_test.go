@@ -163,8 +163,8 @@ func Test_GetStartupConfiguration(t *testing.T) {
 						t.Skip("startup configuration API not enabled on this server")
 					}
 				}
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
 			require.NotEmpty(t, resp)
 
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
@@ -181,8 +181,8 @@ func Test_GetStartupConfiguration(t *testing.T) {
 						t.Skip("startup configuration description API not enabled on this server")
 					}
 				}
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
 			require.NotEmpty(t, configDesc)
 
 			// Assert that certain well-known options exist
@@ -280,8 +280,8 @@ func Test_CompactDatabases(t *testing.T) {
 						t.Skip("The endpoint requires superuser access")
 					}
 				}
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
 			require.Empty(t, resp)
 
 			opts := &arangodb.CompactOpts{
@@ -297,8 +297,8 @@ func Test_CompactDatabases(t *testing.T) {
 						t.Skip("The endpoint requires superuser access")
 					}
 				}
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
 			require.Empty(t, resp)
 		})
 	})
