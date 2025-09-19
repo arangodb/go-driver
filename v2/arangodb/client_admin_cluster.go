@@ -314,7 +314,7 @@ type ClusterMaintenanceOpts struct {
 	//   - "maintenance": enable maintenance mode
 	//   - "normal": disable maintenance mode
 	// This field is required.
-	Mode string `json:"mode"`
+	Mode *string `json:"mode"`
 
 	// Timeout specifies how long the maintenance mode should last, in seconds.
 	// This field is optional; if nil, the server will use the default timeout (usually 3600 seconds).

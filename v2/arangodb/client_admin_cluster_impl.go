@@ -309,7 +309,7 @@ func (c *clientAdmin) SetDBServerMaintenance(ctx context.Context, dbServer strin
 	if opts == nil {
 		return RequiredFieldError("opts")
 	}
-	if opts.Mode == "" {
+	if opts.Mode == nil {
 		return RequiredFieldError("mode")
 	}
 

@@ -22,6 +22,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -411,6 +412,25 @@ func Test_ClusterEndpoints(t *testing.T) {
 	})
 }
 
+// waitForDBServerClusterMaintenance polls cluster maintenance state until it matches expected
+func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Client, expectedMode string, dbServerId string,
+	timeout time.Duration) error {
+	start := time.Now()
+	for {
+		info, err := client.GetDBServerMaintenance(ctx, dbServerId)
+		if err != nil {
+			return err
+		}
+		if info.Mode == expectedMode {
+			return nil
+		}
+		if time.Since(start) > timeout {
+			return fmt.Errorf("timeout waiting for maintenance mode %s", expectedMode)
+		}
+		time.Sleep(200 * time.Millisecond) // short sleep between retries
+	}
+}
+
 func Test_DBServerMaintenance(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
@@ -436,55 +456,39 @@ func Test_DBServerMaintenance(t *testing.T) {
 				}
 				require.NotEmpty(t, dbServerId, "No DB-Server found in cluster health response")
 
-				// Toggle cluster maintenance (cluster-wide, no need to check agents)
+				// Enable cluster maintenance
 				err = client.SetClusterMaintenance(ctx, "on")
 				require.NoError(t, err, "failed to enable cluster maintenance")
 
-				// Give cluster time to apply state
-				time.Sleep(1 * time.Second)
-
+				// Disable cluster maintenance
 				err = client.SetClusterMaintenance(ctx, "off")
 				require.NoError(t, err, "failed to disable cluster maintenance")
 			} else {
 				t.Skip("DBServerMaintenance test requires coordinator access to get DB-Server IDs")
 			}
 
-			// Call GetDBServerMaintenance
-			clusterMaintenanceInfo, err := client.GetDBServerMaintenance(ctx, dbServerId)
-			require.NoError(t, err)
-			require.NotNil(t, clusterMaintenanceInfo)
-
-			// Validate fields if in maintenance
-			if clusterMaintenanceInfo.Mode != "" {
-				require.Equal(t, "maintenance", clusterMaintenanceInfo.Mode)
-				require.NotEmpty(t, clusterMaintenanceInfo.Until)
-			}
-
-			respJson, err := utils.ToJSONString(clusterMaintenanceInfo)
-			require.NoError(t, err)
-			t.Logf("Before Cluster Maintenance Response: %s\n", respJson)
-
+			t.Logf("=============Before DBserver Cluster Maintenance ===================")
+			err = waitForDBServerClusterMaintenance(ctx, client, "", dbServerId, 10*time.Second)
+			require.NoError(t, err, "maintenance mode not disabled in time")
+			// Enable the maintenance mode of a DB-Server
 			// Update DBServer Maintenance
 			err = client.SetDBServerMaintenance(ctx, dbServerId, &arangodb.ClusterMaintenanceOpts{
-				Mode:    "maintenance",
+				Mode:    utils.NewType("maintenance"),
 				Timeout: utils.NewType(30),
 			})
 			require.NoError(t, err)
 
-			// Call GetDBServerMaintenance
-			clusterMaintenanceInfo, err = client.GetDBServerMaintenance(ctx, dbServerId)
+			t.Logf("=============After DBserver Cluster Maintenance ===================")
+			err = waitForDBServerClusterMaintenance(ctx, client, "maintenance", dbServerId, 10*time.Second)
+			require.NoError(t, err, "maintenance mode not enabled in time")
+			// Disable the maintenance mode of a DB-Server
+			err = client.SetDBServerMaintenance(ctx, dbServerId, &arangodb.ClusterMaintenanceOpts{
+				Mode: utils.NewType("normal"),
+			})
 			require.NoError(t, err)
-			require.NotNil(t, clusterMaintenanceInfo)
 
-			// Validate fields if in maintenance
-			if clusterMaintenanceInfo.Mode != "" {
-				require.Equal(t, "maintenance", clusterMaintenanceInfo.Mode)
-				require.NotEmpty(t, clusterMaintenanceInfo.Until)
-			}
-
-			respJson, err = utils.ToJSONString(clusterMaintenanceInfo)
-			require.NoError(t, err)
-			t.Logf("After ClusterMaintenanceResponse: %s\n", respJson)
+			err = waitForDBServerClusterMaintenance(ctx, client, "", dbServerId, 10*time.Second)
+			require.NoError(t, err, "maintenance mode not disabled in time")
 		})
 	})
 }
