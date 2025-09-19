@@ -65,7 +65,7 @@ type ClientAdmin interface {
 
 	// ExecuteAdminScript executes JavaScript code on the server.
 	// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
-	ExecuteAdminScript(ctx context.Context, dbName string, script string) (interface{}, error)
+	ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error)
 
 	// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
 	// by compacting the entire database system data.
@@ -308,23 +308,23 @@ type ApiCallsResponse struct {
 
 type ServerStatusResponse struct {
 	// The server type (e.g., "arango")
-	Server string `json:"server"`
+	Server *string `json:"server,omitempty"`
 	// The server version string (e.g,. "3.12.*")
-	Version string `json:"version"`
+	Version *string `json:"version,omitempty"`
 	// Process ID of the server
-	Pid int `json:"pid"`
+	Pid *int `json:"pid,omitempty"`
 	// License type (e.g., "community" or "enterprise")
-	License string `json:"license"`
+	License *string `json:"license,omitempty"`
 	// Mode in which the server is running
-	Mode string `json:"mode"`
+	Mode *string `json:"mode,omitempty"`
 	// Operational mode (e.g., "server", "coordinator")
-	OperationMode string `json:"operationMode"`
+	OperationMode *string `json:"operationMode,omitempty"`
 	// Whether the Foxx API is enabled
-	FoxxApi bool `json:"foxxApi"`
+	FoxxApi *bool `json:"foxxApi,omitempty"`
 	// Host of the server
-	Host string `json:"host"`
+	Host *string `json:"host,omitempty"`
 	// System hostname of the server
-	Hostname string `json:"hostname"`
+	Hostname *string `json:"hostname,omitempty"`
 	// Nested server information details
 	ServerInfo ServerInformation `json:"serverInfo"`
 
@@ -339,13 +339,13 @@ type ServerInformation struct {
 	// Current progress of the server
 	Progress ServerProgress `json:"progress"`
 	// Whether the server is in maintenance mode
-	Maintenance bool `json:"maintenance"`
+	Maintenance *bool `json:"maintenance,omitempty"`
 	// Role of the server (e.g., "SINGLE", "COORDINATOR")
-	Role string `json:"role"`
+	Role *string `json:"role,omitempty"`
 	// Whether write operations are enabled
-	WriteOpsEnabled bool `json:"writeOpsEnabled"`
+	WriteOpsEnabled *bool `json:"writeOpsEnabled,omitempty"`
 	// Whether the server is in read-only mode
-	ReadOnly bool `json:"readOnly"`
+	ReadOnly *bool `json:"readOnly,omitempty"`
 
 	// Persisted server identifier (cluster only)
 	PersistedId *string `json:"persistedId,omitempty"`
@@ -362,11 +362,11 @@ type ServerInformation struct {
 // ServerProgress contains information about the startup or recovery phase.
 type ServerProgress struct {
 	// Current phase of the server (e.g., "in wait")
-	Phase string `json:"phase"`
+	Phase *string `json:"phase,omitempty"`
 	// Current feature being processed (if any)
-	Feature string `json:"feature"`
+	Feature *string `json:"feature,omitempty"`
 	// Recovery tick value
-	RecoveryTick int `json:"recoveryTick"`
+	RecoveryTick *int `json:"recoveryTick,omitempty"`
 }
 
 // CoordinatorInfo provides information specific to the coordinator role (cluster only).
@@ -393,28 +393,28 @@ type AgencyCommInfo struct {
 // (in single-server deployments) or individual servers (in cluster deployments).
 type ServerInfo struct {
 	// Role of the server (e.g., SINGLE, COORDINATOR, DBServer, etc.)
-	Role string `json:"role"`
+	Role *string `json:"role,omitempty"`
 
 	// Whether the server is in maintenance mode
-	Maintenance bool `json:"maintenance"`
+	Maintenance *bool `json:"maintenance,omitempty"`
 
 	// Whether the server is in read-only mode
-	ReadOnly bool `json:"readOnly"`
+	ReadOnly *bool `json:"readOnly,omitempty"`
 
 	// ArangoDB version running on the server
-	Version string `json:"version"`
+	Version *string `json:"version,omitempty"`
 
 	// Build identifier of the ArangoDB binary
-	Build string `json:"build"`
+	Build *string `json:"build,omitempty"`
 
 	// License type (e.g., community, enterprise)
-	License string `json:"license"`
+	License *string `json:"license,omitempty"`
 
 	// Operating system information string
-	Os string `json:"os"`
+	Os *string `json:"os,omitempty"`
 
 	// Platform (e.g., linux, windows, macos)
-	Platform string `json:"platform"`
+	Platform *string `json:"platform,omitempty"`
 
 	// Information about the physical memory of the host
 	PhysicalMemory PhysicalMemoryInfo `json:"physicalMemory"`
@@ -435,65 +435,65 @@ type ServerInfo struct {
 // PhysicalMemoryInfo represents a numeric system property and whether it was overridden.
 type PhysicalMemoryInfo struct {
 	// The value of the property (e.g., memory size, CPU cores)
-	Value int64 `json:"value"`
+	Value *int64 `json:"value,omitempty"`
 
 	// Whether this value was overridden by configuration
-	Overridden bool `json:"overridden"`
+	Overridden *bool `json:"overridden,omitempty"`
 }
 
 // ProcessStatsInfo contains runtime statistics of the ArangoDB process.
 type ProcessStatsInfo struct {
 	// Uptime of the process in seconds
-	ProcessUptime float64 `json:"processUptime"`
+	ProcessUptime *float64 `json:"processUptime,omitempty"`
 
 	// Number of active threads
-	NumberOfThreads int `json:"numberOfThreads"`
+	NumberOfThreads *int `json:"numberOfThreads,omitempty"`
 
 	// Virtual memory size in bytes
-	VirtualSize int64 `json:"virtualSize"`
+	VirtualSize *int64 `json:"virtualSize,omitempty"`
 
 	// Resident set size (RAM in use) in bytes
-	ResidentSetSize int64 `json:"residentSetSize"`
+	ResidentSetSize *int64 `json:"residentSetSize,omitempty"`
 
 	// Number of open file descriptors
-	FileDescriptors int `json:"fileDescriptors"`
+	FileDescriptors *int `json:"fileDescriptors,omitempty"`
 
 	// Limit on the number of file descriptors
-	FileDescriptorsLimit int64 `json:"fileDescriptorsLimit"`
+	FileDescriptorsLimit *int64 `json:"fileDescriptorsLimit,omitempty"`
 }
 
 // CpuStatsInfo contains CPU usage percentages.
 type CpuStatsInfo struct {
 	// Percentage of CPU time spent in user mode
-	UserPercent float64 `json:"userPercent"`
+	UserPercent *float64 `json:"userPercent,omitempty"`
 
 	// Percentage of CPU time spent in system/kernel mode
-	SystemPercent float64 `json:"systemPercent"`
+	SystemPercent *float64 `json:"systemPercent,omitempty"`
 
 	// Percentage of CPU time spent idle
-	IdlePercent float64 `json:"idlePercent"`
+	IdlePercent *float64 `json:"idlePercent,omitempty"`
 
 	// Percentage of CPU time spent waiting for I/O
-	IowaitPercent float64 `json:"iowaitPercent"`
+	IowaitPercent *float64 `json:"iowaitPercent,omitempty"`
 }
 
 // EngineStatsInfo contains metrics from the RocksDB storage engine and cache.
 type EngineStatsInfo struct {
-	CacheLimit                  *int64 `json:"cache.limit"`
-	CacheAllocated              *int64 `json:"cache.allocated"`
-	RocksdbEstimateNumKeys      *int   `json:"rocksdb.estimate-num-keys"`
-	RocksdbEstimateLiveDataSize *int   `json:"rocksdb.estimate-live-data-size"`
-	RocksdbLiveSstFilesSize     *int   `json:"rocksdb.live-sst-files-size"`
-	RocksdbBlockCacheCapacity   *int64 `json:"rocksdb.block-cache-capacity"`
-	RocksdbBlockCacheUsage      *int   `json:"rocksdb.block-cache-usage"`
-	RocksdbFreeDiskSpace        *int64 `json:"rocksdb.free-disk-space"`
-	RocksdbTotalDiskSpace       *int64 `json:"rocksdb.total-disk-space"`
+	CacheLimit                  *int64 `json:"cache.limit,omitempty"`
+	CacheAllocated              *int64 `json:"cache.allocated,omitempty"`
+	RocksdbEstimateNumKeys      *int   `json:"rocksdb.estimate-num-keys,omitempty"`
+	RocksdbEstimateLiveDataSize *int   `json:"rocksdb.estimate-live-data-size,omitempty"`
+	RocksdbLiveSstFilesSize     *int   `json:"rocksdb.live-sst-files-size,omitempty"`
+	RocksdbBlockCacheCapacity   *int64 `json:"rocksdb.block-cache-capacity,omitempty"`
+	RocksdbBlockCacheUsage      *int   `json:"rocksdb.block-cache-usage,omitempty"`
+	RocksdbFreeDiskSpace        *int64 `json:"rocksdb.free-disk-space,omitempty"`
+	RocksdbTotalDiskSpace       *int64 `json:"rocksdb.total-disk-space,omitempty"`
 }
 
 // DeploymentInfo contains information about the deployment type and cluster layout.
 type DeploymentInfo struct {
 	// Type of deployment ("single" or "cluster")
-	Type string `json:"type"`
+	Type *string `json:"type,omitempty"`
 
 	// Map of servers in the cluster, keyed by server ID (only present in cluster mode)
 	Servers *map[ServerID]ServerInfo `json:"servers,omitempty"`
@@ -532,12 +532,12 @@ type SupportInfoResponse struct {
 	Host *ServerInfo `json:"host,omitempty"`
 
 	// Timestamp when the data was collected
-	Date string `json:"date"`
+	Date *string `json:"date,omitempty"`
 }
 
 type CompactOpts struct {
 	//whether or not compacted data should be moved to the minimum possible level.
-	ChangeLevel bool `json:"changeLevel"`
+	ChangeLevel *bool `json:"changeLevel,omitempty"`
 	// Whether or not to compact the bottommost level of data.
-	CompactBottomMostLevel bool `json:"compactBottomMostLevel"`
+	CompactBottomMostLevel *bool `json:"compactBottomMostLevel,omitempty"`
 }

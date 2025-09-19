@@ -24,6 +24,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -298,15 +299,17 @@ func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) err
 
 // ExecuteAdminScript executes JavaScript code on the server.
 // Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
-func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, script string) (interface{}, error) {
+func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error) {
 	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "execute")
 
 	req, err := c.client.Connection().NewRequest("POST", url)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-
-	if err := req.SetBody(script); err != nil {
+	if script == nil {
+		return nil, RequiredFieldError("script")
+	}
+	if err := req.SetBody(*script); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	var response interface{}
@@ -329,8 +332,28 @@ func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, scr
 func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error) {
 	url := connection.NewUrl("_admin", "compact")
 
+	// In client_admin_impl.go, consider this cleaner approach:
+	var modifyRequest []connection.RequestModifier
+
+	// Always add both parameters with appropriate defaults
+	changeLevel := false
+	compactBottomMost := false
+
+	if opts != nil {
+		if opts.ChangeLevel != nil {
+			changeLevel = *opts.ChangeLevel
+		}
+		if opts.CompactBottomMostLevel != nil {
+			compactBottomMost = *opts.CompactBottomMostLevel
+		}
+	}
+
+	modifyRequest = append(modifyRequest,
+		connection.WithQuery("changeLevel", strconv.FormatBool(changeLevel)),
+		connection.WithQuery("compactBottomMostLevel", strconv.FormatBool(compactBottomMost)))
+
 	var response map[string]interface{}
-	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, opts)
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, nil, modifyRequest...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

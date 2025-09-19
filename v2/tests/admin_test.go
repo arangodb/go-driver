@@ -243,7 +243,7 @@ func Test_ExecuteAdminScript(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				result, err := client.ExecuteAdminScript(ctx, db.Name(), tt.script)
+				result, err := client.ExecuteAdminScript(ctx, db.Name(), &tt.script)
 				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) {
 					t.Logf("arangoErr code:%d\n", arangoErr.Code)
@@ -271,35 +271,41 @@ func Test_ExecuteAdminScript(t *testing.T) {
 func Test_CompactDatabases(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			resp, err := client.CompactDatabases(ctx, nil)
-			if err != nil {
-				var arangoErr shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("arangoErr code:%d", arangoErr.Code)
-					if arangoErr.Code == 403 || arangoErr.Code == 500 {
-						t.Skip("The endpoint requires superuser access")
-					}
-				}
-				require.NoError(t, err)
-			}
-			require.Empty(t, resp)
 
-			opts := &arangodb.CompactOpts{
-				ChangeLevel:            true,
-				CompactBottomMostLevel: false,
-			}
-			resp, err = client.CompactDatabases(ctx, opts)
-			if err != nil {
-				var arangoErr shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("arangoErr code:%d", arangoErr.Code)
-					if arangoErr.Code == 403 || arangoErr.Code == 500 {
-						t.Skip("The endpoint requires superuser access")
+			checkCompact := func(opts *arangodb.CompactOpts) {
+				resp, err := client.CompactDatabases(ctx, opts)
+				if err != nil {
+					var arangoErr shared.ArangoError
+					if errors.As(err, &arangoErr) {
+						t.Logf("arangoErr code:%d", arangoErr.Code)
+						if arangoErr.Code == 403 || arangoErr.Code == 500 {
+							t.Skip("The endpoint requires superuser access")
+						}
 					}
+					require.NoError(t, err)
 				}
-				require.NoError(t, err)
+				require.Empty(t, resp)
 			}
-			require.Empty(t, resp)
+
+			checkCompact(&arangodb.CompactOpts{
+				ChangeLevel:            utils.NewType(true),
+				CompactBottomMostLevel: utils.NewType(false),
+			})
+
+			checkCompact(&arangodb.CompactOpts{
+				ChangeLevel:            utils.NewType(true),
+				CompactBottomMostLevel: utils.NewType(true),
+			})
+
+			checkCompact(&arangodb.CompactOpts{
+				ChangeLevel: utils.NewType(true),
+			})
+
+			checkCompact(&arangodb.CompactOpts{
+				CompactBottomMostLevel: utils.NewType(true),
+			})
+
+			checkCompact(nil)
 		})
 	})
 }
