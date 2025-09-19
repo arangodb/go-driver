@@ -332,7 +332,6 @@ func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, scr
 func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error) {
 	url := connection.NewUrl("_admin", "compact")
 
-	// In client_admin_impl.go, consider this cleaner approach:
 	var modifyRequest []connection.RequestModifier
 
 	// Always add both parameters with appropriate defaults
