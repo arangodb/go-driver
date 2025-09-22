@@ -352,9 +352,9 @@ func (c *clientAdmin) SetDBServerMaintenance(ctx context.Context, dbServer strin
 // Be aware that no automatic failovers of any kind will take place while
 // the maintenance mode is enabled. The supervision will reactivate itself
 // automatically after the duration expires.
-func (c *clientAdmin) SetClusterMaintenance(ctx context.Context, mode string) error {
+func (c *clientAdmin) SetClusterMaintenance(ctx context.Context, mode *string) error {
 
-	if mode == "" {
+	if mode == nil {
 		return RequiredFieldError("mode")
 	}
 

@@ -413,7 +413,7 @@ func Test_ClusterEndpoints(t *testing.T) {
 }
 
 // waitForDBServerClusterMaintenance polls cluster maintenance state until it matches expected
-func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Client, expectedMode string, dbServerId string,
+func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Client, expectedMode *string, dbServerId string,
 	timeout time.Duration) error {
 	start := time.Now()
 	for {
@@ -421,11 +421,14 @@ func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Clie
 		if err != nil {
 			return err
 		}
-		if info.Mode == expectedMode {
+
+		if (info.Mode == nil && expectedMode == nil) ||
+			(info.Mode != nil && expectedMode != nil && *info.Mode == *expectedMode) {
 			return nil
 		}
+
 		if time.Since(start) > timeout {
-			return fmt.Errorf("timeout waiting for maintenance mode %s", expectedMode)
+			return fmt.Errorf("timeout waiting for maintenance mode %s", *expectedMode)
 		}
 		time.Sleep(200 * time.Millisecond) // short sleep between retries
 	}
@@ -457,18 +460,18 @@ func Test_DBServerMaintenance(t *testing.T) {
 				require.NotEmpty(t, dbServerId, "No DB-Server found in cluster health response")
 
 				// Enable cluster maintenance
-				err = client.SetClusterMaintenance(ctx, "on")
+				err = client.SetClusterMaintenance(ctx, utils.NewType("on"))
 				require.NoError(t, err, "failed to enable cluster maintenance")
 
 				// Disable cluster maintenance
-				err = client.SetClusterMaintenance(ctx, "off")
+				err = client.SetClusterMaintenance(ctx, utils.NewType("off"))
 				require.NoError(t, err, "failed to disable cluster maintenance")
 			} else {
 				t.Skip("DBServerMaintenance test requires coordinator access to get DB-Server IDs")
 			}
 
 			t.Logf("=============Before DBserver Cluster Maintenance ===================")
-			err = waitForDBServerClusterMaintenance(ctx, client, "", dbServerId, 10*time.Second)
+			err = waitForDBServerClusterMaintenance(ctx, client, nil, dbServerId, 10*time.Second)
 			require.NoError(t, err, "maintenance mode not disabled in time")
 			// Enable the maintenance mode of a DB-Server
 			// Update DBServer Maintenance
@@ -479,7 +482,7 @@ func Test_DBServerMaintenance(t *testing.T) {
 			require.NoError(t, err)
 
 			t.Logf("=============After DBserver Cluster Maintenance ===================")
-			err = waitForDBServerClusterMaintenance(ctx, client, "maintenance", dbServerId, 10*time.Second)
+			err = waitForDBServerClusterMaintenance(ctx, client, utils.NewType("maintenance"), dbServerId, 10*time.Second)
 			require.NoError(t, err, "maintenance mode not enabled in time")
 			// Disable the maintenance mode of a DB-Server
 			err = client.SetDBServerMaintenance(ctx, dbServerId, &arangodb.ClusterMaintenanceOpts{
@@ -487,7 +490,7 @@ func Test_DBServerMaintenance(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			err = waitForDBServerClusterMaintenance(ctx, client, "", dbServerId, 10*time.Second)
+			err = waitForDBServerClusterMaintenance(ctx, client, nil, dbServerId, 10*time.Second)
 			require.NoError(t, err, "maintenance mode not disabled in time")
 		})
 	})

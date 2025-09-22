@@ -80,7 +80,7 @@ type ClientAdminCluster interface {
 	// Be aware that no automatic failovers of any kind will take place while
 	// the maintenance mode is enabled. The supervision will reactivate itself
 	// automatically after the duration expires.
-	SetClusterMaintenance(ctx context.Context, mode string) error
+	SetClusterMaintenance(ctx context.Context, mode *string) error
 
 	// GetClusterRebalance retrieves the current cluster imbalance status.
 	// It computes the imbalance across leaders and shards, and includes the number of
@@ -176,8 +176,8 @@ func (i DatabaseInventory) ViewByName(name string) (InventoryView, bool) {
 
 // ClusterStatisticsResponse contains statistical data about the server as a whole.
 type ClusterStatisticsResponse struct {
-	Time       float64     `json:"time"`
-	Enabled    bool        `json:"enabled"`
+	Time       *float64    `json:"time,omitempty"`
+	Enabled    *bool       `json:"enabled,omitempty"`
 	System     SystemStats `json:"system"`
 	Client     ClientStats `json:"client"`
 	ClientUser ClientStats `json:"clientUser"`
@@ -187,18 +187,18 @@ type ClusterStatisticsResponse struct {
 
 // SystemStats contains statistical data about the system, this is part of
 type SystemStats struct {
-	MinorPageFaults     int64   `json:"minorPageFaults"`
-	MajorPageFaults     int64   `json:"majorPageFaults"`
-	UserTime            float32 `json:"userTime"`
-	SystemTime          float32 `json:"systemTime"`
-	NumberOfThreads     int     `json:"numberOfThreads"`
-	ResidentSize        int64   `json:"residentSize"`
-	ResidentSizePercent float64 `json:"residentSizePercent"`
-	VirtualSize         int64   `json:"virtualSize"`
+	MinorPageFaults     *int64   `json:"minorPageFaults,omitempty"`
+	MajorPageFaults     *int64   `json:"majorPageFaults,omitempty"`
+	UserTime            *float32 `json:"userTime,omitempty"`
+	SystemTime          *float32 `json:"systemTime,omitempty"`
+	NumberOfThreads     *int     `json:"numberOfThreads,omitempty"`
+	ResidentSize        *int64   `json:"residentSize,omitempty"`
+	ResidentSizePercent *float64 `json:"residentSizePercent,omitempty"`
+	VirtualSize         *int64   `json:"virtualSize,omitempty"`
 }
 
 type ClientStats struct {
-	HttpConnections int       `json:"httpConnections"`
+	HttpConnections *int      `json:"httpConnections,omitempty"`
 	ConnectionTime  TimeStats `json:"connectionTime"`
 	TotalTime       TimeStats `json:"totalTime"`
 	RequestTime     TimeStats `json:"requestTime"`
@@ -210,31 +210,31 @@ type ClientStats struct {
 
 // TimeStats is used for various time-related statistics.
 type TimeStats struct {
-	Sum    float64 `json:"sum"`
-	Count  int     `json:"count"`
-	Counts []int   `json:"counts"`
+	Sum    *float64 `json:"sum,omitempty"`
+	Count  *int     `json:"count,omitempty"`
+	Counts []int    `json:"counts"`
 }
 
 // HTTPStats contains statistics about the HTTP traffic.
 type HTTPStats struct {
-	RequestsTotal     int `json:"requestsTotal"`
-	RequestsSuperuser int `json:"requestsSuperuser"`
-	RequestsUser      int `json:"requestsUser"`
-	RequestsAsync     int `json:"requestsAsync"`
-	RequestsGet       int `json:"requestsGet"`
-	RequestsHead      int `json:"requestsHead"`
-	RequestsPost      int `json:"requestsPost"`
-	RequestsPut       int `json:"requestsPut"`
-	RequestsPatch     int `json:"requestsPatch"`
-	RequestsDelete    int `json:"requestsDelete"`
-	RequestsOptions   int `json:"requestsOptions"`
-	RequestsOther     int `json:"requestsOther"`
+	RequestsTotal     *int `json:"requestsTotal,omitempty"`
+	RequestsSuperuser *int `json:"requestsSuperuser,omitempty"`
+	RequestsUser      *int `json:"requestsUser,omitempty"`
+	RequestsAsync     *int `json:"requestsAsync,omitempty"`
+	RequestsGet       *int `json:"requestsGet,omitempty"`
+	RequestsHead      *int `json:"requestsHead,omitempty"`
+	RequestsPost      *int `json:"requestsPost,omitempty"`
+	RequestsPut       *int `json:"requestsPut,omitempty"`
+	RequestsPatch     *int `json:"requestsPatch,omitempty"`
+	RequestsDelete    *int `json:"requestsDelete,omitempty"`
+	RequestsOptions   *int `json:"requestsOptions,omitempty"`
+	RequestsOther     *int `json:"requestsOther,omitempty"`
 }
 
 // ServerStats contains statistics about the server.
 type ServerStats struct {
-	Uptime         float64          `json:"uptime"`
-	PhysicalMemory int64            `json:"physicalMemory"`
+	Uptime         *float64         `json:"uptime,omitempty"`
+	PhysicalMemory *int64           `json:"physicalMemory,omitempty"`
 	Transactions   TransactionStats `json:"transactions"`
 	V8Context      V8ContextStats   `json:"v8Context"`
 	Threads        ThreadStats      `json:"threads"`
@@ -242,42 +242,42 @@ type ServerStats struct {
 
 // TransactionStats contains statistics about transactions.
 type TransactionStats struct {
-	Started             int `json:"started"`
-	Aborted             int `json:"aborted"`
-	Committed           int `json:"committed"`
-	IntermediateCommits int `json:"intermediateCommits"`
-	ReadOnly            int `json:"readOnly,omitempty"`
-	DirtyReadOnly       int `json:"dirtyReadOnly,omitempty"`
+	Started             *int `json:"started,omitempty"`
+	Aborted             *int `json:"aborted,omitempty"`
+	Committed           *int `json:"committed,omitempty"`
+	IntermediateCommits *int `json:"intermediateCommits,omitempty"`
+	ReadOnly            *int `json:"readOnly,omitempty"`
+	DirtyReadOnly       *int `json:"dirtyReadOnly,omitempty"`
 }
 
 // V8ContextStats contains statistics about V8 contexts.
 type V8ContextStats struct {
-	Available int           `json:"available"`
-	Busy      int           `json:"busy"`
-	Dirty     int           `json:"dirty"`
-	Free      int           `json:"free"`
-	Max       int           `json:"max"`
-	Min       int           `json:"min"`
+	Available *int          `json:"available,omitempty"`
+	Busy      *int          `json:"busy,omitempty"`
+	Dirty     *int          `json:"dirty,omitempty"`
+	Free      *int          `json:"free,omitempty"`
+	Max       *int          `json:"max,omitempty"`
+	Min       *int          `json:"min,omitempty"`
 	Memory    []MemoryStats `json:"memory"`
 }
 
 // MemoryStats contains statistics about memory usage.
 type MemoryStats struct {
-	ContextId    int     `json:"contextId"`
-	TMax         float64 `json:"tMax"`
-	CountOfTimes int     `json:"countOfTimes"`
-	HeapMax      int64   `json:"heapMax"`
-	HeapMin      int64   `json:"heapMin"`
-	Invocations  int     `json:"invocations"`
+	ContextId    *int     `json:"contextId,omitempty"`
+	TMax         *float64 `json:"tMax,omitempty"`
+	CountOfTimes *int     `json:"countOfTimes,omitempty"`
+	HeapMax      *int64   `json:"heapMax,omitempty"`
+	HeapMin      *int64   `json:"heapMin,omitempty"`
+	Invocations  *int     `json:"invocations,omitempty"`
 }
 
 // ThreadStats contains statistics about threads.
 type ThreadStats struct {
-	SchedulerThreads int `json:"scheduler-threads"`
-	Blocked          int `json:"blocked"`
-	Queued           int `json:"queued"`
-	InProgress       int `json:"in-progress"`
-	DirectExec       int `json:"direct-exec"`
+	SchedulerThreads *int `json:"scheduler-threads,omitempty"`
+	Blocked          *int `json:"blocked,omitempty"`
+	Queued           *int `json:"queued,omitempty"`
+	InProgress       *int `json:"in-progress,omitempty"`
+	DirectExec       *int `json:"direct-exec,omitempty"`
 }
 
 // It contains a list of cluster endpoints that a client can use
@@ -293,17 +293,17 @@ type ClusterEndpointsResponse struct {
 type ClusterEndpoint struct {
 	// Endpoint is the connection string (protocol + host + port)
 	// of a coordinator in the cluster, e.g. "tcp://127.0.0.1:8529".
-	Endpoint string `json:"endpoint,omitempty"`
+	Endpoint *string `json:"endpoint,omitempty"`
 }
 
 // ClusterMaintenanceResponse represents the maintenance status of a DB-Server.
 type ClusterMaintenanceResponse struct {
 	// The mode of the DB-Server. The value is "maintenance".
-	Mode string `json:"mode,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 
 	// Until what date and time the maintenance mode currently lasts,
 	// in the ISO 8601 date/time format.
-	Until string `json:"until,omitempty"`
+	Until *string `json:"until,omitempty"`
 }
 
 // ClusterMaintenanceOpts represents the options for setting maintenance mode
