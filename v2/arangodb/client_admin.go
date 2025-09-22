@@ -43,6 +43,34 @@ type ClientAdmin interface {
 	// Use ClientAdminCluster.Health() to fetch the Endpoint list.
 	// For ActiveFailover, it will return an error (503 code) if the server is not the leader.
 	CheckAvailability(ctx context.Context, serverEndpoint string) error
+
+	// GetSystemTime returns the current system time as a Unix timestamp with microsecond precision.
+	GetSystemTime(ctx context.Context, dbName string) (float64, error)
+
+	// GetServerStatus returns status information about the server.
+	GetServerStatus(ctx context.Context, dbName string) (ServerStatusResponse, error)
+
+	// GetDeploymentSupportInfo retrieves deployment information for support purposes.
+	GetDeploymentSupportInfo(ctx context.Context) (SupportInfoResponse, error)
+
+	// GetStartupConfiguration return the effective configuration of the queried arangod instance.
+	GetStartupConfiguration(ctx context.Context) (map[string]interface{}, error)
+
+	// GetStartupConfigurationDescription fetches the available startup configuration
+	// options of the queried arangod instance.
+	GetStartupConfigurationDescription(ctx context.Context) (map[string]interface{}, error)
+
+	// ReloadRoutingTable reloads the routing information from the _routing system collection.
+	ReloadRoutingTable(ctx context.Context, dbName string) error
+
+	// ExecuteAdminScript executes JavaScript code on the server.
+	// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
+	ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error)
+
+	// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
+	// by compacting the entire database system data.
+	// The endpoint requires superuser access.
+	CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error)
 }
 
 type ClientAdminLog interface {
@@ -276,4 +304,240 @@ type ApiCallsObject struct {
 
 type ApiCallsResponse struct {
 	Calls []ApiCallsObject `json:"calls"`
+}
+
+type ServerStatusResponse struct {
+	// The server type (e.g., "arango")
+	Server *string `json:"server,omitempty"`
+	// The server version string (e.g,. "3.12.*")
+	Version *string `json:"version,omitempty"`
+	// Process ID of the server
+	Pid *int `json:"pid,omitempty"`
+	// License type (e.g., "community" or "enterprise")
+	License *string `json:"license,omitempty"`
+	// Mode in which the server is running
+	Mode *string `json:"mode,omitempty"`
+	// Operational mode (e.g., "server", "coordinator")
+	OperationMode *string `json:"operationMode,omitempty"`
+	// Whether the Foxx API is enabled
+	FoxxApi *bool `json:"foxxApi,omitempty"`
+	// Host of the server
+	Host *string `json:"host,omitempty"`
+	// System hostname of the server
+	Hostname *string `json:"hostname,omitempty"`
+	// Nested server information details
+	ServerInfo ServerInformation `json:"serverInfo"`
+
+	// Present only in cluster mode
+	Coordinator *CoordinatorInfo `json:"coordinator,omitempty"`
+	Agency      *AgencyInfo      `json:"agency,omitempty"`
+}
+
+// ServerInformation provides detailed information about the server’s state.
+// Some fields are present only in cluster deployments.
+type ServerInformation struct {
+	// Current progress of the server
+	Progress ServerProgress `json:"progress"`
+	// Whether the server is in maintenance mode
+	Maintenance *bool `json:"maintenance,omitempty"`
+	// Role of the server (e.g., "SINGLE", "COORDINATOR")
+	Role *string `json:"role,omitempty"`
+	// Whether write operations are enabled
+	WriteOpsEnabled *bool `json:"writeOpsEnabled,omitempty"`
+	// Whether the server is in read-only mode
+	ReadOnly *bool `json:"readOnly,omitempty"`
+
+	// Persisted server identifier (cluster only)
+	PersistedId *string `json:"persistedId,omitempty"`
+	// Reboot ID
+	RebootId *int `json:"rebootId,omitempty"`
+	// Network address
+	Address *string `json:"address,omitempty"`
+	// Unique server identifier
+	ServerId *string `json:"serverId,omitempty"`
+	// Current server state
+	State *string `json:"state,omitempty"`
+}
+
+// ServerProgress contains information about the startup or recovery phase.
+type ServerProgress struct {
+	// Current phase of the server (e.g., "in wait")
+	Phase *string `json:"phase,omitempty"`
+	// Current feature being processed (if any)
+	Feature *string `json:"feature,omitempty"`
+	// Recovery tick value
+	RecoveryTick *int `json:"recoveryTick,omitempty"`
+}
+
+// CoordinatorInfo provides information specific to the coordinator role (cluster only).
+type CoordinatorInfo struct {
+	// ID of the Foxxmaster coordinator
+	Foxxmaster *string `json:"foxxmaster,omitempty"`
+	// Whether this server is the Foxxmaster
+	IsFoxxmaster *bool `json:"isFoxxmaster,omitempty"`
+}
+
+// AgencyInfo contains information about the agency configuration (cluster only).
+type AgencyInfo struct {
+	// Agency communication details
+	AgencyComm *AgencyCommInfo `json:"agencyComm,omitempty"`
+}
+
+// AgencyCommInfo contains communication endpoints for the agency.
+type AgencyCommInfo struct {
+	// List of agency endpoints
+	Endpoints *[]string `json:"endpoints,omitempty"`
+}
+
+// ServerInfo contains details about either a single server host
+// (in single-server deployments) or individual servers (in cluster deployments).
+type ServerInfo struct {
+	// Role of the server (e.g., SINGLE, COORDINATOR, DBServer, etc.)
+	Role *string `json:"role,omitempty"`
+
+	// Whether the server is in maintenance mode
+	Maintenance *bool `json:"maintenance,omitempty"`
+
+	// Whether the server is in read-only mode
+	ReadOnly *bool `json:"readOnly,omitempty"`
+
+	// ArangoDB version running on the server
+	Version *string `json:"version,omitempty"`
+
+	// Build identifier of the ArangoDB binary
+	Build *string `json:"build,omitempty"`
+
+	// License type (e.g., community, enterprise)
+	License *string `json:"license,omitempty"`
+
+	// Operating system information string
+	Os *string `json:"os,omitempty"`
+
+	// Platform (e.g., linux, windows, macos)
+	Platform *string `json:"platform,omitempty"`
+
+	// Information about the physical memory of the host
+	PhysicalMemory PhysicalMemoryInfo `json:"physicalMemory"`
+
+	// Information about the number of CPU cores
+	NumberOfCores PhysicalMemoryInfo `json:"numberOfCores"`
+
+	// Process statistics (uptime, memory, threads, etc.)
+	ProcessStats ProcessStatsInfo `json:"processStats"`
+
+	// CPU utilization statistics
+	CpuStats CpuStatsInfo `json:"cpuStats"`
+
+	// Optional storage engine statistics (only present in some responses)
+	EngineStats *EngineStatsInfo `json:"engineStats,omitempty"`
+}
+
+// PhysicalMemoryInfo represents a numeric system property and whether it was overridden.
+type PhysicalMemoryInfo struct {
+	// The value of the property (e.g., memory size, CPU cores)
+	Value *int64 `json:"value,omitempty"`
+
+	// Whether this value was overridden by configuration
+	Overridden *bool `json:"overridden,omitempty"`
+}
+
+// ProcessStatsInfo contains runtime statistics of the ArangoDB process.
+type ProcessStatsInfo struct {
+	// Uptime of the process in seconds
+	ProcessUptime *float64 `json:"processUptime,omitempty"`
+
+	// Number of active threads
+	NumberOfThreads *int `json:"numberOfThreads,omitempty"`
+
+	// Virtual memory size in bytes
+	VirtualSize *int64 `json:"virtualSize,omitempty"`
+
+	// Resident set size (RAM in use) in bytes
+	ResidentSetSize *int64 `json:"residentSetSize,omitempty"`
+
+	// Number of open file descriptors
+	FileDescriptors *int `json:"fileDescriptors,omitempty"`
+
+	// Limit on the number of file descriptors
+	FileDescriptorsLimit *int64 `json:"fileDescriptorsLimit,omitempty"`
+}
+
+// CpuStatsInfo contains CPU usage percentages.
+type CpuStatsInfo struct {
+	// Percentage of CPU time spent in user mode
+	UserPercent *float64 `json:"userPercent,omitempty"`
+
+	// Percentage of CPU time spent in system/kernel mode
+	SystemPercent *float64 `json:"systemPercent,omitempty"`
+
+	// Percentage of CPU time spent idle
+	IdlePercent *float64 `json:"idlePercent,omitempty"`
+
+	// Percentage of CPU time spent waiting for I/O
+	IowaitPercent *float64 `json:"iowaitPercent,omitempty"`
+}
+
+// EngineStatsInfo contains metrics from the RocksDB storage engine and cache.
+type EngineStatsInfo struct {
+	CacheLimit                  *int64 `json:"cache.limit,omitempty"`
+	CacheAllocated              *int64 `json:"cache.allocated,omitempty"`
+	RocksdbEstimateNumKeys      *int   `json:"rocksdb.estimate-num-keys,omitempty"`
+	RocksdbEstimateLiveDataSize *int   `json:"rocksdb.estimate-live-data-size,omitempty"`
+	RocksdbLiveSstFilesSize     *int   `json:"rocksdb.live-sst-files-size,omitempty"`
+	RocksdbBlockCacheCapacity   *int64 `json:"rocksdb.block-cache-capacity,omitempty"`
+	RocksdbBlockCacheUsage      *int   `json:"rocksdb.block-cache-usage,omitempty"`
+	RocksdbFreeDiskSpace        *int64 `json:"rocksdb.free-disk-space,omitempty"`
+	RocksdbTotalDiskSpace       *int64 `json:"rocksdb.total-disk-space,omitempty"`
+}
+
+// DeploymentInfo contains information about the deployment type and cluster layout.
+type DeploymentInfo struct {
+	// Type of deployment ("single" or "cluster")
+	Type *string `json:"type,omitempty"`
+
+	// Map of servers in the cluster, keyed by server ID (only present in cluster mode)
+	Servers *map[ServerID]ServerInfo `json:"servers,omitempty"`
+
+	// Number of agents in the cluster (cluster only)
+	Agents *int `json:"agents,omitempty"`
+
+	// Number of coordinators in the cluster (cluster only)
+	Coordinators *int `json:"coordinators,omitempty"`
+
+	// Number of DB servers in the cluster (cluster only)
+	DbServers *int `json:"dbServers,omitempty"`
+
+	// Shard distribution details (cluster only)
+	Shards *ShardsInfo `json:"shards,omitempty"`
+}
+
+// ShardsInfo contains information about shard distribution in a cluster deployment.
+type ShardsInfo struct {
+	Databases   *int `json:"databases,omitempty"`
+	Collections *int `json:"collections,omitempty"`
+	Shards      *int `json:"shards,omitempty"`
+	Leaders     *int `json:"leaders,omitempty"`
+	RealLeaders *int `json:"realLeaders,omitempty"`
+	Followers   *int `json:"followers,omitempty"`
+	Servers     *int `json:"servers,omitempty"`
+}
+
+// SupportInfoResponse is the top-level response for GET /_db/_system/_admin/support-info.
+// It provides details about the current deployment and server environment.
+type SupportInfoResponse struct {
+	// Deployment information (single or cluster, with related details)
+	Deployment DeploymentInfo `json:"deployment"`
+
+	// Host/server details (only present in single-server mode)
+	Host *ServerInfo `json:"host,omitempty"`
+
+	// Timestamp when the data was collected
+	Date *string `json:"date,omitempty"`
+}
+
+type CompactOpts struct {
+	//whether or not compacted data should be moved to the minimum possible level.
+	ChangeLevel *bool `json:"changeLevel,omitempty"`
+	// Whether or not to compact the bottommost level of data.
+	CompactBottomMostLevel *bool `json:"compactBottomMostLevel,omitempty"`
 }
