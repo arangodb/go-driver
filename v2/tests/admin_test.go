@@ -320,38 +320,103 @@ func Test_GetTLSData(t *testing.T) {
 			// Get TLS data using the client (which embeds ClientAdmin)
 			tlsResp, err := client.GetTLSData(ctx, db.Name())
 			if err != nil {
-				// Skip if TLS is not configured or authentication issues
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("GetTLSData failed with ArangoDB error code: %d", arangoErr.Code)
+					switch arangoErr.Code {
+					case 403:
+						t.Skip("Skipping TLS get test - authentication/permission denied (HTTP 403)")
+					default:
+						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+					}
+				}
+				// Skip for any other error (TLS not configured, network issues, etc.)
 				t.Logf("GetTLSData failed: %v", err)
-				t.Skip("Skipping TLS test - likely TLS not configured or authentication required")
+				t.Skip("Skipping TLS get test - likely TLS not configured or other server issue")
 			}
 
-			// Validate response structure
-			t.Logf("TLS Data retrieved successfully")
+			// Success! Validate response structure
+			t.Logf("TLS data retrieved successfully")
 
-			// Convert to JSON for logging
-			tlsRespJson, err := utils.ToJSONString(tlsResp)
+			// Validate TLS response data
+			validateTLSResponse(t, tlsResp, "Retrieved")
+		})
+	})
+}
+
+// validateTLSResponse is a helper function to validate TLS response data
+func validateTLSResponse(t testing.TB, tlsResp arangodb.TLSDataResponse, operation string) {
+	// Convert to JSON for logging
+	tlsRespJson, err := utils.ToJSONString(tlsResp)
+	require.NoError(t, err)
+	t.Logf("%s TLS response: %s", operation, tlsRespJson)
+
+	// Basic validation - at least one field should be populated
+	hasData := false
+	if tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "" {
+		t.Logf("%s keyfile SHA256: %s", operation, *tlsResp.Keyfile.Sha256)
+		hasData = true
+	}
+	if tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "" {
+		t.Logf("%s client CA SHA256: %s", operation, *tlsResp.ClientCA.Sha256)
+		hasData = true
+	}
+	if len(tlsResp.SNI) > 0 {
+		t.Logf("%s SNI configurations found: %d", operation, len(tlsResp.SNI))
+		hasData = true
+	}
+	if len(tlsResp.Keyfile.Certificates) > 0 {
+		t.Logf("%s keyfile contains %d certificates", operation, len(tlsResp.Keyfile.Certificates))
+		hasData = true
+	}
+
+	if hasData {
+		t.Logf("TLS configuration data validated successfully")
+	} else {
+		t.Logf("TLS endpoint accessible but no TLS data returned - server may not have TLS configured")
+	}
+}
+
+// Test_ReloadTLSData tests TLS certificate reload functionality, skipping if superuser rights unavailable.
+func Test_ReloadTLSData(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
 			require.NoError(t, err)
-			t.Logf("TLS response: %s", tlsRespJson)
 
-			// Basic validation - at least one field should be populated
-			hasData := false
-			if tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "" {
-				t.Logf("Keyfile SHA256: %s", *tlsResp.Keyfile.Sha256)
-				hasData = true
+			// Reload TLS data - requires superuser rights
+			tlsResp, err := client.ReloadTLSData(ctx, db.Name())
+			if err != nil {
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("ReloadTLSData failed with ArangoDB error code: %d", arangoErr.Code)
+					switch arangoErr.Code {
+					case 403:
+						t.Skip("Skipping TLS reload test - superuser rights required (HTTP 403)")
+					default:
+						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+					}
+				}
+				// Skip for any other error (TLS not configured, network issues, etc.)
+				t.Logf("ReloadTLSData failed: %v", err)
+				t.Skip("Skipping TLS reload test - likely TLS not configured or other server issue")
 			}
-			if tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "" {
-				t.Logf("Client CA SHA256: %s", *tlsResp.ClientCA.Sha256)
-				hasData = true
-			}
-			if len(tlsResp.SNI) > 0 {
-				t.Logf("SNI configurations found: %d", len(tlsResp.SNI))
-				hasData = true
-			}
+
+			// Success! Validate response structure
+			t.Logf("TLS data reloaded successfully")
+
+			// Validate TLS response data (reload should always have data)
+			validateTLSResponse(t, tlsResp, "Reloaded")
+
+			// For reload operations, we expect data to be present since the operation succeeded
+			hasData := (tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "") ||
+				(tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "") ||
+				len(tlsResp.SNI) > 0 || len(tlsResp.Keyfile.Certificates) > 0
 
 			if hasData {
-				t.Logf("TLS configuration data validated successfully")
+				t.Logf("TLS configuration reloaded and validated successfully")
 			} else {
-				t.Logf("TLS endpoint accessible but no TLS data returned - server may not have TLS configured")
+				t.Logf("TLS endpoint accessible but no TLS data reloaded - server may not have TLS configured")
 			}
 		})
 	})

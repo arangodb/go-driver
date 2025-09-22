@@ -387,3 +387,28 @@ func (c *clientAdmin) GetTLSData(ctx context.Context, dbName string) (TLSDataRes
 		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// ReloadTLSData triggers a reload of all TLS data (server key, client-auth CA)
+// and returns the updated TLS configuration summary.
+// Requires superuser rights.
+func (c *clientAdmin) ReloadTLSData(ctx context.Context, dbName string) (TLSDataResponse, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "tls")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                TLSDataResponse `json:"result,omitempty"`
+	}
+
+	// POST request, no body required
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return TLSDataResponse{}, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	// Requires superuser rights, otherwise returns 403 Forbidden
+	default:
+		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}

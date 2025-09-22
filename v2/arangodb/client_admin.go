@@ -75,6 +75,11 @@ type ClientAdmin interface {
 	// GetTLSData returns information about the server's TLS configuration.
 	// This call requires authentication.
 	GetTLSData(ctx context.Context, dbName string) (TLSDataResponse, error)
+
+	// ReloadTLSData triggers a reload of all TLS data (server key, client-auth CA)
+	// and returns the updated TLS configuration summary.
+	// Requires superuser rights.
+	ReloadTLSData(ctx context.Context, dbName string) (TLSDataResponse, error)
 }
 
 type ClientAdminLog interface {
