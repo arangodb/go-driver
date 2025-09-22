@@ -23,6 +23,8 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -171,4 +173,194 @@ func (c *clientAdmin) CheckAvailability(ctx context.Context, serverEndpoint stri
 
 	_, err = c.client.Connection().Do(ctx, req, nil, http.StatusOK)
 	return errors.WithStack(err)
+}
+
+// GetSystemTime returns the current system time as a Unix timestamp with microsecond precision
+func (c *clientAdmin) GetSystemTime(ctx context.Context, dbName string) (float64, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "time")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Time                  float64 `json:"time,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Time, nil
+	default:
+		return 0, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetServerStatus returns status information about the server
+func (c *clientAdmin) GetServerStatus(ctx context.Context, dbName string) (ServerStatusResponse, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "status")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ServerStatusResponse  `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ServerStatusResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ServerStatusResponse, nil
+	default:
+		return ServerStatusResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetDeploymentSupportInfo retrieves deployment information for support purposes.
+func (c *clientAdmin) GetDeploymentSupportInfo(ctx context.Context) (SupportInfoResponse, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "support-info")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		SupportInfoResponse   `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return SupportInfoResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.SupportInfoResponse, nil
+	default:
+		return SupportInfoResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetStartupConfiguration returns the effective configuration of the queried arangod instance.
+func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]interface{}, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "options")
+
+	var response map[string]interface{}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// GetStartupConfigurationDescription fetches the available startup configuration
+// options of the queried arangod instance.
+func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (map[string]interface{}, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "options-description")
+
+	var response map[string]interface{}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// ReloadRoutingTable reloads the routing information from the _routing system collection.
+func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) error {
+	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "routing", "reload")
+
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, nil, nil)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK, http.StatusNoContent:
+		return nil
+	default:
+		return (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
+
+// ExecuteAdminScript executes JavaScript code on the server.
+// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
+func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "execute")
+
+	req, err := c.client.Connection().NewRequest("POST", url)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if script == nil {
+		return nil, RequiredFieldError("script")
+	}
+	if err := req.SetBody(*script); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	var response interface{}
+	resp, err := c.client.Connection().Do(ctx, req, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
+// by compacting the entire database system data.
+// The endpoint requires superuser access.
+func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error) {
+	url := connection.NewUrl("_admin", "compact")
+
+	var modifyRequest []connection.RequestModifier
+
+	// Always add both parameters with appropriate defaults
+	changeLevel := false
+	compactBottomMost := false
+
+	if opts != nil {
+		if opts.ChangeLevel != nil {
+			changeLevel = *opts.ChangeLevel
+		}
+		if opts.CompactBottomMostLevel != nil {
+			compactBottomMost = *opts.CompactBottomMostLevel
+		}
+	}
+
+	modifyRequest = append(modifyRequest,
+		connection.WithQuery("changeLevel", strconv.FormatBool(changeLevel)),
+		connection.WithQuery("compactBottomMostLevel", strconv.FormatBool(compactBottomMost)))
+
+	var response map[string]interface{}
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, nil, modifyRequest...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
 }
