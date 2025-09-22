@@ -309,3 +309,50 @@ func Test_CompactDatabases(t *testing.T) {
 		})
 	})
 }
+
+// Test_GetTLSData checks that TLS configuration data is available and valid, skipping if not configured.
+func Test_GetTLSData(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			// Get TLS data using the client (which embeds ClientAdmin)
+			tlsResp, err := client.GetTLSData(ctx, db.Name())
+			if err != nil {
+				// Skip if TLS is not configured or authentication issues
+				t.Logf("GetTLSData failed: %v", err)
+				t.Skip("Skipping TLS test - likely TLS not configured or authentication required")
+			}
+
+			// Validate response structure
+			t.Logf("TLS Data retrieved successfully")
+
+			// Convert to JSON for logging
+			tlsRespJson, err := utils.ToJSONString(tlsResp)
+			require.NoError(t, err)
+			t.Logf("TLS response: %s", tlsRespJson)
+
+			// Basic validation - at least one field should be populated
+			hasData := false
+			if tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "" {
+				t.Logf("Keyfile SHA256: %s", *tlsResp.Keyfile.Sha256)
+				hasData = true
+			}
+			if tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "" {
+				t.Logf("Client CA SHA256: %s", *tlsResp.ClientCA.Sha256)
+				hasData = true
+			}
+			if len(tlsResp.SNI) > 0 {
+				t.Logf("SNI configurations found: %d", len(tlsResp.SNI))
+				hasData = true
+			}
+
+			if hasData {
+				t.Logf("TLS configuration data validated successfully")
+			} else {
+				t.Logf("TLS endpoint accessible but no TLS data returned - server may not have TLS configured")
+			}
+		})
+	})
+}

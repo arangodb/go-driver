@@ -364,3 +364,26 @@ func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
+
+// GetTLSData returns information about the server's TLS configuration.
+// This call requires authentication.
+func (c *clientAdmin) GetTLSData(ctx context.Context, dbName string) (TLSDataResponse, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "tls")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                TLSDataResponse `json:"result,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return TLSDataResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
