@@ -415,7 +415,15 @@ func Test_ClusterEndpoints(t *testing.T) {
 // waitForDBServerClusterMaintenance polls cluster maintenance state until it matches expected
 func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Client, expectedMode *string, dbServerId string,
 	timeout time.Duration) error {
+
 	start := time.Now()
+	var modeStr string
+	if expectedMode == nil {
+		modeStr = "<nil>"
+	} else {
+		modeStr = *expectedMode
+	}
+
 	for {
 		info, err := client.GetDBServerMaintenance(ctx, dbServerId)
 		if err != nil {
@@ -428,7 +436,7 @@ func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Clie
 		}
 
 		if time.Since(start) > timeout {
-			return fmt.Errorf("timeout waiting for maintenance mode %s", *expectedMode)
+			return fmt.Errorf("timeout waiting for maintenance mode %s", modeStr)
 		}
 		time.Sleep(200 * time.Millisecond) // short sleep between retries
 	}
