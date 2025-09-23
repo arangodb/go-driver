@@ -412,3 +412,27 @@ func (c *clientAdmin) ReloadTLSData(ctx context.Context) (TLSDataResponse, error
 		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// RotateEncryptionAtRestKey reloads the user-supplied encryption key from
+// the --rocksdb.encryption-keyfolder and re-encrypts the internal encryption key.
+// Requires superuser rights and is not available on Coordinators.
+func (c *clientAdmin) RotateEncryptionAtRestKey(ctx context.Context) ([]EncryptionKey, error) {
+	url := connection.NewUrl("_admin", "server", "encryption")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                []EncryptionKey `json:"result,omitempty"`
+	}
+
+	// POST request, no body required
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
+	}
+}

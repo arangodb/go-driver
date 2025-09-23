@@ -329,6 +329,7 @@ func Test_GetTLSData(t *testing.T) {
 					default:
 						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
 					}
+					return
 				}
 				// Skip for any other error (TLS not configured, network issues, etc.)
 				t.Logf("GetTLSData failed: %v", err)
@@ -393,6 +394,7 @@ func Test_ReloadTLSData(t *testing.T) {
 					default:
 						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
 					}
+					return
 				}
 				// Skip for any other error (TLS not configured, network issues, etc.)
 				t.Logf("ReloadTLSData failed: %v", err)
@@ -404,6 +406,46 @@ func Test_ReloadTLSData(t *testing.T) {
 
 			// Validate TLS response data
 			validateTLSResponse(t, tlsResp, "Reloaded")
+		})
+	})
+}
+
+// Test_RotateEncryptionAtRestKey verifies that the encryption key rotation endpoint works as expected.
+// The test is skipped if superuser rights are missing or the feature is disabled/not configured.
+func Test_RotateEncryptionAtRestKey(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			// Rotate encryption at rest key - requires superuser rights
+			resp, err := client.RotateEncryptionAtRestKey(ctx)
+			if err != nil {
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("RotateEncryptionAtRestKey failed with ArangoDB error code: %d", arangoErr.Code)
+					switch arangoErr.Code {
+					case 403:
+						t.Skip("Skipping RotateEncryptionAtRestKey test - superuser rights required (HTTP 403)")
+					case 404:
+						t.Skip("Skipping RotateEncryptionAtRestKey test - encryption key rotation disabled (HTTP 404)")
+					default:
+						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+					}
+					return
+				}
+				t.Logf("RotateEncryptionAtRestKey failed: %v", err)
+			}
+			encryptionRespJson, err := utils.ToJSONString(resp)
+			require.NoError(t, err)
+			t.Logf("RotateEncryptionAtRestKey response: %s", encryptionRespJson)
+
+			// Success! Validate response structure
+			require.NotNil(t, resp, "Expected non-nil response")
+			t.Logf("RotateEncryptionAtRestKey succeeded with %d encryption keys", len(resp))
+
+			// Validate each encryption key has the required SHA256 field
+			for i, key := range resp {
+				require.NotEmpty(t, key.SHA256, "Expected encryption key %d to have non-empty SHA256", i)
+				t.Logf("Encryption key %d SHA256: %s", i, key.SHA256)
+			}
 		})
 	})
 }

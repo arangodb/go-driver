@@ -80,6 +80,11 @@ type ClientAdmin interface {
 	// and returns the updated TLS configuration summary.
 	// Requires superuser rights.
 	ReloadTLSData(ctx context.Context) (TLSDataResponse, error)
+
+	// RotateEncryptionAtRestKey reloads the user-supplied encryption key from
+	// the --rocksdb.encryption-keyfolder and re-encrypts the internal encryption key.
+	// Requires superuser rights and is not available on Coordinators.
+	RotateEncryptionAtRestKey(ctx context.Context) ([]EncryptionKey, error)
 }
 
 type ClientAdminLog interface {
@@ -572,4 +577,14 @@ type TLSDataResponse struct {
 	ClientCA TLSDataObject `json:"clientCA,omitempty"`
 	// Optional mapping of server names (via SNI) to their respective TLS configurations.
 	SNI map[ServerName]TLSDataObject `json:"sni,omitempty"`
+}
+
+// EncryptionKey represents metadata about an encryption key used for
+// RocksDB encryption-at-rest in ArangoDB.
+// The server exposes only the SHA-256 hash of the key for identification.
+// The actual key material is never returned for security reasons.
+type EncryptionKey struct {
+	// SHA256 is the SHA-256 hash of the encryption key, encoded as a hex string.
+	// This is used to uniquely identify which key is active/available.
+	SHA256 string `json:"sha256,omitempty"`
 }
