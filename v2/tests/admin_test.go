@@ -381,11 +381,8 @@ func validateTLSResponse(t testing.TB, tlsResp arangodb.TLSDataResponse, operati
 func Test_ReloadTLSData(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			db, err := client.GetDatabase(ctx, "_system", nil)
-			require.NoError(t, err)
-
 			// Reload TLS data - requires superuser rights
-			tlsResp, err := client.ReloadTLSData(ctx, db.Name())
+			tlsResp, err := client.ReloadTLSData(ctx)
 			if err != nil {
 				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) {
@@ -405,19 +402,8 @@ func Test_ReloadTLSData(t *testing.T) {
 			// Success! Validate response structure
 			t.Logf("TLS data reloaded successfully")
 
-			// Validate TLS response data (reload should always have data)
+			// Validate TLS response data
 			validateTLSResponse(t, tlsResp, "Reloaded")
-
-			// For reload operations, we expect data to be present since the operation succeeded
-			hasData := (tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "") ||
-				(tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "") ||
-				len(tlsResp.SNI) > 0 || len(tlsResp.Keyfile.Certificates) > 0
-
-			if hasData {
-				t.Logf("TLS configuration reloaded and validated successfully")
-			} else {
-				t.Logf("TLS endpoint accessible but no TLS data reloaded - server may not have TLS configured")
-			}
 		})
 	})
 }

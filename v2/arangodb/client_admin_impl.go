@@ -391,8 +391,8 @@ func (c *clientAdmin) GetTLSData(ctx context.Context, dbName string) (TLSDataRes
 // ReloadTLSData triggers a reload of all TLS data (server key, client-auth CA)
 // and returns the updated TLS configuration summary.
 // Requires superuser rights.
-func (c *clientAdmin) ReloadTLSData(ctx context.Context, dbName string) (TLSDataResponse, error) {
-	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "tls")
+func (c *clientAdmin) ReloadTLSData(ctx context.Context) (TLSDataResponse, error) {
+	url := connection.NewUrl("_admin", "server", "tls")
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`

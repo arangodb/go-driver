@@ -79,7 +79,7 @@ type ClientAdmin interface {
 	// ReloadTLSData triggers a reload of all TLS data (server key, client-auth CA)
 	// and returns the updated TLS configuration summary.
 	// Requires superuser rights.
-	ReloadTLSData(ctx context.Context, dbName string) (TLSDataResponse, error)
+	ReloadTLSData(ctx context.Context) (TLSDataResponse, error)
 }
 
 type ClientAdminLog interface {
