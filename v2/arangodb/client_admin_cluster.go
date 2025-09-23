@@ -176,13 +176,13 @@ func (i DatabaseInventory) ViewByName(name string) (InventoryView, bool) {
 
 // ClusterStatisticsResponse contains statistical data about the server as a whole.
 type ClusterStatisticsResponse struct {
-	Time       *float64    `json:"time,omitempty"`
-	Enabled    *bool       `json:"enabled,omitempty"`
-	System     SystemStats `json:"system"`
-	Client     ClientStats `json:"client"`
-	ClientUser ClientStats `json:"clientUser"`
-	HTTP       HTTPStats   `json:"http"`
-	Server     ServerStats `json:"server"`
+	Time       *float64     `json:"time,omitempty"`
+	Enabled    *bool        `json:"enabled,omitempty"`
+	System     *SystemStats `json:"system,omitempty"`
+	Client     *ClientStats `json:"client,omitempty"`
+	ClientUser *ClientStats `json:"clientUser,omitempty"`
+	HTTP       *HTTPStats   `json:"http,omitempty"`
+	Server     *ServerStats `json:"server,omitempty"`
 }
 
 // SystemStats contains statistical data about the system, this is part of
@@ -198,14 +198,14 @@ type SystemStats struct {
 }
 
 type ClientStats struct {
-	HttpConnections *int      `json:"httpConnections,omitempty"`
-	ConnectionTime  TimeStats `json:"connectionTime"`
-	TotalTime       TimeStats `json:"totalTime"`
-	RequestTime     TimeStats `json:"requestTime"`
-	QueueTime       TimeStats `json:"queueTime"`
-	IoTime          TimeStats `json:"ioTime"`
-	BytesSent       TimeStats `json:"bytesSent"`
-	BytesReceived   TimeStats `json:"bytesReceived"`
+	HttpConnections *int       `json:"httpConnections,omitempty"`
+	ConnectionTime  *TimeStats `json:"connectionTime,omitempty"`
+	TotalTime       *TimeStats `json:"totalTime,omitempty"`
+	RequestTime     *TimeStats `json:"requestTime,omitempty"`
+	QueueTime       *TimeStats `json:"queueTime,omitempty"`
+	IoTime          *TimeStats `json:"ioTime,omitempty"`
+	BytesSent       *TimeStats `json:"bytesSent,omitempty"`
+	BytesReceived   *TimeStats `json:"bytesReceived,omitempty"`
 }
 
 // TimeStats is used for various time-related statistics.
@@ -233,11 +233,11 @@ type HTTPStats struct {
 
 // ServerStats contains statistics about the server.
 type ServerStats struct {
-	Uptime         *float64         `json:"uptime,omitempty"`
-	PhysicalMemory *int64           `json:"physicalMemory,omitempty"`
-	Transactions   TransactionStats `json:"transactions"`
-	V8Context      V8ContextStats   `json:"v8Context"`
-	Threads        ThreadStats      `json:"threads"`
+	Uptime         *float64          `json:"uptime,omitempty"`
+	PhysicalMemory *int64            `json:"physicalMemory,omitempty"`
+	Transactions   *TransactionStats `json:"transactions,omitempty"`
+	V8Context      *V8ContextStats   `json:"v8Context,omitempty"`
+	Threads        *ThreadStats      `json:"threads,omitempty"`
 }
 
 // TransactionStats contains statistics about transactions.
@@ -324,9 +324,9 @@ type ClusterMaintenanceOpts struct {
 // It contains leader statistics, shard statistics, and the count of ongoing/pending move shard operations.
 type RebalanceResponse struct {
 	// Statistics related to leader distribution
-	Leader LeaderStats `json:"leader,omitempty"`
+	Leader *LeaderStats `json:"leader,omitempty"`
 	// Statistics related to shard distribution (JSON key is "shards", not "shard")
-	Shards ShardStats `json:"shards,omitempty"`
+	Shards *ShardStats `json:"shards,omitempty"`
 	// Number of ongoing move shard operations
 	PendingMoveShards *int64 `json:"pendingMoveShards,omitempty"`
 	// Number of pending (scheduled) move shard operations
@@ -395,9 +395,9 @@ type RebalanceRequestBody struct {
 // and after rebalancing, along with the list of suggested move operations.
 type RebalancePlan struct {
 	// ImbalanceBefore shows the imbalance metrics before applying the plan.
-	ImbalanceBefore ImbalanceStats `json:"imbalanceBefore"`
+	ImbalanceBefore *ImbalanceStats `json:"imbalanceBefore,omitempty"`
 	// ImbalanceAfter shows the imbalance metrics after applying the plan.
-	ImbalanceAfter ImbalanceStats `json:"imbalanceAfter"`
+	ImbalanceAfter *ImbalanceStats `json:"imbalanceAfter,omitempty"`
 	// Moves contains the list of suggested shard move operations.
 	Moves []MoveOperation `json:"moves"`
 }
@@ -406,9 +406,9 @@ type RebalancePlan struct {
 // used to measure cluster imbalance.
 type ImbalanceStats struct {
 	// Leader contains statistics related to leader distribution.
-	Leader LeaderStats `json:"leader,omitempty"`
+	Leader *LeaderStats `json:"leader,omitempty"`
 	// Shards contains statistics related to shard distribution.
-	Shards ShardStats `json:"shards,omitempty"`
+	Shards *ShardStats `json:"shards,omitempty"`
 }
 
 // MoveOperation describes a suggested shard move as part of the rebalance plan.
@@ -437,5 +437,5 @@ type ExecuteRebalanceRequestBody struct {
 
 	// Version specifies the version of the rebalance plan that this request applies to.
 	// This should match the version returned by ComputeClusterRebalance.
-	Version *int `json:"version"`
+	Version *int `json:"version,omitempty"`
 }
