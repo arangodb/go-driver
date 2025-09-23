@@ -415,7 +415,8 @@ func Test_ReloadTLSData(t *testing.T) {
 func Test_RotateEncryptionAtRestKey(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			// Rotate encryption at rest key - requires superuser rights
+
+			// Attempt to rotate encryption at rest key - requires superuser rights
 			resp, err := client.RotateEncryptionAtRestKey(ctx)
 			if err != nil {
 				var arangoErr shared.ArangoError
@@ -428,23 +429,29 @@ func Test_RotateEncryptionAtRestKey(t *testing.T) {
 						t.Skip("Skipping RotateEncryptionAtRestKey test - encryption key rotation disabled (HTTP 404)")
 					default:
 						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+						t.FailNow()
 					}
-					return
+				} else {
+					t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: %v", err)
 				}
-				t.Logf("RotateEncryptionAtRestKey failed: %v", err)
+				return
 			}
+
+			// Convert response to JSON for logging
 			encryptionRespJson, err := utils.ToJSONString(resp)
 			require.NoError(t, err)
 			t.Logf("RotateEncryptionAtRestKey response: %s", encryptionRespJson)
 
-			// Success! Validate response structure
+			// Validate the response is not nil
 			require.NotNil(t, resp, "Expected non-nil response")
 			t.Logf("RotateEncryptionAtRestKey succeeded with %d encryption keys", len(resp))
 
-			// Validate each encryption key has the required SHA256 field
+			// Validate each encryption key
 			for i, key := range resp {
-				require.NotEmpty(t, key.SHA256, "Expected encryption key %d to have non-empty SHA256", i)
-				t.Logf("Encryption key %d SHA256: %s", i, key.SHA256)
+				// Explicit nil check for pointer
+				require.NotNil(t, key.SHA256, "Expected encryption key %d SHA256 not to be nil", i)
+				require.NotEmpty(t, *key.SHA256, "Expected encryption key %d SHA256 not to be empty", i)
+				t.Logf("Encryption key %d SHA256: %s", i, *key.SHA256)
 			}
 		})
 	})

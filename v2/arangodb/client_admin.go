@@ -586,5 +586,5 @@ type TLSDataResponse struct {
 type EncryptionKey struct {
 	// SHA256 is the SHA-256 hash of the encryption key, encoded as a hex string.
 	// This is used to uniquely identify which key is active/available.
-	SHA256 string `json:"sha256,omitempty"`
+	SHA256 *string `json:"sha256,omitempty"`
 }
