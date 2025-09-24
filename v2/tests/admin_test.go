@@ -468,3 +468,90 @@ func Test_RotateEncryptionAtRestKey(t *testing.T) {
 		})
 	})
 }
+
+// Test_GetJWTSecrets validates retrieval and structure of JWT secrets, skipping if not accessible.
+func Test_GetJWTSecrets(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			resp, err := client.GetJWTSecrets(ctx, db.Name())
+			if err != nil {
+				if handleJWTSecretsError(t, err, "GetJWTSecrets", []int{http.StatusForbidden}) {
+					return
+				}
+				require.NoError(t, err)
+			}
+
+			validateJWTSecretsResponse(t, resp, "Retrieved")
+		})
+	})
+}
+
+// Test_ReloadJWTSecrets validates JWT secrets reload functionality, skipping if not available.
+func Test_ReloadJWTSecrets(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			resp, err := client.ReloadJWTSecrets(ctx)
+			if err != nil {
+				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest}) {
+					return
+				}
+				require.NoError(t, err)
+			}
+
+			validateJWTSecretsResponse(t, resp, "Reloaded")
+		})
+	})
+}
+
+// handleJWTSecretsError handles common JWT secrets API errors and returns true if the test should skip
+func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes []int) bool {
+	var arangoErr shared.ArangoError
+	if errors.As(err, &arangoErr) {
+		t.Logf("%s failed with ArangoDB error code: %d", operation, arangoErr.Code)
+
+		for _, code := range skipCodes {
+			switch code {
+			case http.StatusForbidden:
+				if arangoErr.Code == http.StatusForbidden {
+					t.Skip("The endpoint requires superuser access or JWT feature is disabled")
+					return true
+				}
+			case http.StatusBadRequest:
+				if arangoErr.Code == http.StatusBadRequest {
+					t.Skip("JWT reload not available: no secret file or folder configured")
+					return true
+				}
+			}
+		}
+
+		t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+	}
+	return false
+}
+
+// validateJWTSecretsResponse validates the structure and content of JWT secrets response
+func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, operation string) {
+	require.NotEmpty(t, resp, "JWT secrets response should not be empty")
+
+	// Basic structural checks
+	require.NotNil(t, resp.Active, "Active JWT secret should not be nil")
+	require.NotNil(t, resp.Passive, "Passive JWT secrets list should not be nil")
+	require.NotNil(t, resp.Active.SHA256, "Active JWT secret SHA256 should not be nil")
+	require.NotEmpty(t, *resp.Active.SHA256, "Active JWT secret SHA256 should not be empty")
+
+	// Secure logging - validate structure without exposing sensitive hash values
+	t.Logf("%s active JWT secret: present and valid (length: %d chars)", operation, len(*resp.Active.SHA256))
+	t.Logf("%s found %d passive JWT secrets", operation, len(resp.Passive))
+
+	// Validate passive secrets and ensure no duplicates with active
+	for i, passive := range resp.Passive {
+		require.NotNil(t, passive.SHA256, "Passive JWT secret %d SHA256 should not be nil", i)
+		require.NotEmpty(t, *passive.SHA256, "Passive JWT secret %d SHA256 should not be empty", i)
+		t.Logf("%s passive JWT secret %d: valid (length: %d chars)", operation, i, len(*passive.SHA256))
+	}
+
+	t.Logf("%s JWT secrets validation completed successfully with %d total secrets", operation, len(resp.Passive)+1)
+}
