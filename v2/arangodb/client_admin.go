@@ -76,6 +76,10 @@ type ClientAdmin interface {
 	// for a given database.
 	// Requires a superuser JWT for authorization.
 	GetJWTSecrets(ctx context.Context, dbName string) (JWTSecretsResult, error)
+
+	// ReloadJWTSecrets forces the server to reload the JWT secrets from disk.
+	// Requires a superuser JWT for authorization.
+	ReloadJWTSecrets(ctx context.Context) (JWTSecretsResult, error)
 }
 
 type ClientAdminLog interface {

@@ -386,6 +386,30 @@ func (c *clientAdmin) GetJWTSecrets(ctx context.Context, dbName string) (JWTSecr
 	case http.StatusOK:
 		return response.Result, nil
 	default:
-		return JWTSecretsResult{}, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+		return JWTSecretsResult{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// ReloadJWTSecrets forces the server to reload the JWT secrets from disk.
+// Requires a superuser JWT for authorization.
+func (c *clientAdmin) ReloadJWTSecrets(ctx context.Context) (JWTSecretsResult, error) {
+	// Build the URL for the JWT secrets endpoint, safely escaping the database name
+	url := connection.NewUrl("_admin", "server", "jwt")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"` // Common fields: error, code, etc.
+		Result                JWTSecretsResult `json:"result"` // Contains active and passive JWT secrets
+	}
+
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return JWTSecretsResult{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return JWTSecretsResult{}, response.AsArangoErrorWithCode(code)
 	}
 }
