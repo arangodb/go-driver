@@ -71,6 +71,20 @@ type ClientAdmin interface {
 	// by compacting the entire database system data.
 	// The endpoint requires superuser access.
 	CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error)
+
+	// GetTLSData returns information about the server's TLS configuration.
+	// This call requires authentication.
+	GetTLSData(ctx context.Context, dbName string) (TLSDataResponse, error)
+
+	// ReloadTLSData triggers a reload of all TLS data (server key, client-auth CA)
+	// and returns the updated TLS configuration summary.
+	// Requires superuser rights.
+	ReloadTLSData(ctx context.Context) (TLSDataResponse, error)
+
+	// RotateEncryptionAtRestKey reloads the user-supplied encryption key from
+	// the --rocksdb.encryption-keyfolder and re-encrypts the internal encryption key.
+	// Requires superuser rights and is not available on Coordinators.
+	RotateEncryptionAtRestKey(ctx context.Context) ([]EncryptionKey, error)
 }
 
 type ClientAdminLog interface {
@@ -540,4 +554,37 @@ type CompactOpts struct {
 	ChangeLevel *bool `json:"changeLevel,omitempty"`
 	// Whether or not to compact the bottommost level of data.
 	CompactBottomMostLevel *bool `json:"compactBottomMostLevel,omitempty"`
+}
+
+// ServerName represents the hostname used in SNI configuration.
+type ServerName string
+
+// TLSConfigObject describes the details of a TLS keyfile or CA file.
+type TLSDataObject struct {
+	// SHA-256 hash of the whole input file (certificate or CA file).
+	Sha256 *string `json:"sha256,omitempty"`
+	// Public certificates in the chain, in PEM format.
+	Certificates []string `json:"certificates,omitempty"`
+	// SHA-256 hash of the private key (only present for keyfile).
+	PrivateKeySha256 *string `json:"privateKeySha256,omitempty"`
+}
+
+// TLSConfigResponse represents the response of the TLS configuration endpoint.
+type TLSDataResponse struct {
+	// Information about the server TLS keyfile (certificate + private key).
+	Keyfile *TLSDataObject `json:"keyfile,omitempty"`
+	// Information about the CA certificates used for client verification.
+	ClientCA *TLSDataObject `json:"clientCA,omitempty"`
+	// Optional mapping of server names (via SNI) to their respective TLS configurations.
+	SNI map[ServerName]TLSDataObject `json:"sni,omitempty"`
+}
+
+// EncryptionKey represents metadata about an encryption key used for
+// RocksDB encryption-at-rest in ArangoDB.
+// The server exposes only the SHA-256 hash of the key for identification.
+// The actual key material is never returned for security reasons.
+type EncryptionKey struct {
+	// SHA256 is the SHA-256 hash of the encryption key, encoded as a hex string.
+	// This is used to uniquely identify which key is active/available.
+	SHA256 *string `json:"sha256,omitempty"`
 }

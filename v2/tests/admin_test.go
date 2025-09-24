@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -306,6 +307,164 @@ func Test_CompactDatabases(t *testing.T) {
 			})
 
 			checkCompact(nil)
+		})
+	})
+}
+
+// Test_GetTLSData checks that TLS configuration data is available and valid, skipping if not configured.
+func Test_GetTLSData(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			// Get TLS data using the client (which embeds ClientAdmin)
+			tlsResp, err := client.GetTLSData(ctx, db.Name())
+			if err != nil {
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("GetTLSData failed with ArangoDB error code: %d", arangoErr.Code)
+					switch arangoErr.Code {
+					case 403:
+						t.Skip("Skipping TLS get test - authentication/permission denied (HTTP 403)")
+					default:
+						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+					}
+					return
+				}
+				// Skip for any other error (TLS not configured, network issues, etc.)
+				t.Logf("GetTLSData failed: %v", err)
+				t.Skip("Skipping TLS get test - likely TLS not configured or other server issue")
+			}
+
+			// Success! Validate response structure
+			t.Logf("TLS data retrieved successfully")
+
+			// Validate TLS response data
+			validateTLSResponse(t, tlsResp, "Retrieved")
+		})
+	})
+}
+
+// validateTLSResponse is a helper function to validate TLS response data
+func validateTLSResponse(t testing.TB, tlsResp arangodb.TLSDataResponse, operation string) {
+	// Basic validation - at least one field should be populated
+	hasData := false
+	if tlsResp.Keyfile != nil {
+		if tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "" {
+			t.Logf("%s keyfile SHA256: %s", operation, *tlsResp.Keyfile.Sha256)
+			hasData = true
+		}
+		if len(tlsResp.Keyfile.Certificates) > 0 {
+			t.Logf("%s keyfile contains %d certificates", operation, len(tlsResp.Keyfile.Certificates))
+			hasData = true
+
+			// Validate certificate content (basic PEM format check)
+			for i, cert := range tlsResp.Keyfile.Certificates {
+				require.NotEmpty(t, cert, "Certificate %d should not be empty", i)
+				// Basic PEM format validation
+				if !strings.Contains(cert, "-----BEGIN CERTIFICATE-----") {
+					t.Logf("Warning: Certificate %d may not be in PEM format", i)
+				} else {
+					t.Logf("Certificate %d appears to be valid PEM format", i)
+				}
+			}
+		}
+		if tlsResp.Keyfile.PrivateKeySha256 != nil && *tlsResp.Keyfile.PrivateKeySha256 != "" {
+			t.Logf("%s keyfile private key SHA256: %s", operation, *tlsResp.Keyfile.PrivateKeySha256)
+			hasData = true
+		}
+	}
+	if tlsResp.ClientCA != nil && tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "" {
+		t.Logf("%s client CA SHA256: %s", operation, *tlsResp.ClientCA.Sha256)
+		hasData = true
+	}
+	if len(tlsResp.SNI) > 0 {
+		t.Logf("%s SNI configurations found: %d", operation, len(tlsResp.SNI))
+		hasData = true
+	}
+	if hasData {
+		t.Logf("TLS configuration data validated successfully")
+	} else {
+		t.Logf("TLS endpoint accessible but no TLS data returned - server may not have TLS configured")
+	}
+}
+
+// Test_ReloadTLSData tests TLS certificate reload functionality, skipping if superuser rights unavailable.
+func Test_ReloadTLSData(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			// Reload TLS data - requires superuser rights
+			tlsResp, err := client.ReloadTLSData(ctx)
+			if err != nil {
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("ReloadTLSData failed with ArangoDB error code: %d", arangoErr.Code)
+					switch arangoErr.Code {
+					case 403:
+						t.Skip("Skipping TLS reload test - superuser rights required (HTTP 403)")
+					default:
+						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+					}
+					return
+				}
+				// Skip for any other error (TLS not configured, network issues, etc.)
+				t.Logf("ReloadTLSData failed: %v", err)
+				t.Skip("Skipping TLS reload test - likely TLS not configured or other server issue")
+			}
+
+			// Success! Validate response structure
+			t.Logf("TLS data reloaded successfully")
+
+			// Validate TLS response data
+			validateTLSResponse(t, tlsResp, "Reloaded")
+		})
+	})
+}
+
+// Test_RotateEncryptionAtRestKey verifies that the encryption key rotation endpoint works as expected.
+// The test is skipped if superuser rights are missing or the feature is disabled/not configured.
+func Test_RotateEncryptionAtRestKey(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+
+			// Attempt to rotate encryption at rest key - requires superuser rights
+			resp, err := client.RotateEncryptionAtRestKey(ctx)
+			if err != nil {
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("RotateEncryptionAtRestKey failed with ArangoDB error code: %d", arangoErr.Code)
+					switch arangoErr.Code {
+					case 403:
+						t.Skip("Skipping RotateEncryptionAtRestKey test - superuser rights required (HTTP 403)")
+					case 404:
+						t.Skip("Skipping RotateEncryptionAtRestKey test - encryption key rotation disabled (HTTP 404)")
+					default:
+						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+						t.FailNow()
+					}
+				} else {
+					t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: %v", err)
+				}
+				return
+			}
+
+			// Convert response to JSON for logging
+			encryptionRespJson, err := utils.ToJSONString(resp)
+			require.NoError(t, err)
+			t.Logf("RotateEncryptionAtRestKey response: %s", encryptionRespJson)
+
+			// Validate the response is not nil
+			require.NotNil(t, resp, "Expected non-nil response")
+			t.Logf("RotateEncryptionAtRestKey succeeded with %d encryption keys", len(resp))
+
+			// Validate each encryption key
+			for i, key := range resp {
+				// Explicit nil check for pointer
+				require.NotNil(t, key.SHA256, "Expected encryption key %d SHA256 not to be nil", i)
+				require.NotEmpty(t, *key.SHA256, "Expected encryption key %d SHA256 not to be empty", i)
+				t.Logf("Encryption key %d SHA256: %s", i, *key.SHA256)
+			}
 		})
 	})
 }

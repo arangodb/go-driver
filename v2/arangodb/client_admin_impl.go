@@ -364,3 +364,75 @@ func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
+
+// GetTLSData returns information about the server's TLS configuration.
+// This call requires authentication.
+func (c *clientAdmin) GetTLSData(ctx context.Context, dbName string) (TLSDataResponse, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "tls")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                TLSDataResponse `json:"result,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return TLSDataResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// ReloadTLSData triggers a reload of all TLS data (server key, client-auth CA)
+// and returns the updated TLS configuration summary.
+// Requires superuser rights.
+func (c *clientAdmin) ReloadTLSData(ctx context.Context) (TLSDataResponse, error) {
+	url := connection.NewUrl("_admin", "server", "tls")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                TLSDataResponse `json:"result,omitempty"`
+	}
+
+	// POST request, no body required
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return TLSDataResponse{}, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	// Requires superuser rights, otherwise returns 403 Forbidden
+	default:
+		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// RotateEncryptionAtRestKey reloads the user-supplied encryption key from
+// the --rocksdb.encryption-keyfolder and re-encrypts the internal encryption key.
+// Requires superuser rights and is not available on Coordinators.
+func (c *clientAdmin) RotateEncryptionAtRestKey(ctx context.Context) ([]EncryptionKey, error) {
+	url := connection.NewUrl("_admin", "server", "encryption")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                []EncryptionKey `json:"result,omitempty"`
+	}
+
+	// POST request, no body required
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
+	}
+}
