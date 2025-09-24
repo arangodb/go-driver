@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -347,18 +348,34 @@ func Test_GetTLSData(t *testing.T) {
 
 // validateTLSResponse is a helper function to validate TLS response data
 func validateTLSResponse(t testing.TB, tlsResp arangodb.TLSDataResponse, operation string) {
-	// Convert to JSON for logging
-	tlsRespJson, err := utils.ToJSONString(tlsResp)
-	require.NoError(t, err)
-	t.Logf("%s TLS response: %s", operation, tlsRespJson)
-
 	// Basic validation - at least one field should be populated
 	hasData := false
-	if tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "" {
-		t.Logf("%s keyfile SHA256: %s", operation, *tlsResp.Keyfile.Sha256)
-		hasData = true
+	if tlsResp.Keyfile != nil {
+		if tlsResp.Keyfile.Sha256 != nil && *tlsResp.Keyfile.Sha256 != "" {
+			t.Logf("%s keyfile SHA256: %s", operation, *tlsResp.Keyfile.Sha256)
+			hasData = true
+		}
+		if len(tlsResp.Keyfile.Certificates) > 0 {
+			t.Logf("%s keyfile contains %d certificates", operation, len(tlsResp.Keyfile.Certificates))
+			hasData = true
+
+			// Validate certificate content (basic PEM format check)
+			for i, cert := range tlsResp.Keyfile.Certificates {
+				require.NotEmpty(t, cert, "Certificate %d should not be empty", i)
+				// Basic PEM format validation
+				if !strings.Contains(cert, "-----BEGIN CERTIFICATE-----") {
+					t.Logf("Warning: Certificate %d may not be in PEM format", i)
+				} else {
+					t.Logf("Certificate %d appears to be valid PEM format", i)
+				}
+			}
+		}
+		if tlsResp.Keyfile.PrivateKeySha256 != nil && *tlsResp.Keyfile.PrivateKeySha256 != "" {
+			t.Logf("%s keyfile private key SHA256: %s", operation, *tlsResp.Keyfile.PrivateKeySha256)
+			hasData = true
+		}
 	}
-	if tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "" {
+	if tlsResp.ClientCA != nil && tlsResp.ClientCA.Sha256 != nil && *tlsResp.ClientCA.Sha256 != "" {
 		t.Logf("%s client CA SHA256: %s", operation, *tlsResp.ClientCA.Sha256)
 		hasData = true
 	}
@@ -366,11 +383,6 @@ func validateTLSResponse(t testing.TB, tlsResp arangodb.TLSDataResponse, operati
 		t.Logf("%s SNI configurations found: %d", operation, len(tlsResp.SNI))
 		hasData = true
 	}
-	if len(tlsResp.Keyfile.Certificates) > 0 {
-		t.Logf("%s keyfile contains %d certificates", operation, len(tlsResp.Keyfile.Certificates))
-		hasData = true
-	}
-
 	if hasData {
 		t.Logf("TLS configuration data validated successfully")
 	} else {

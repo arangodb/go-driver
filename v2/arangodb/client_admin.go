@@ -572,9 +572,9 @@ type TLSDataObject struct {
 // TLSConfigResponse represents the response of the TLS configuration endpoint.
 type TLSDataResponse struct {
 	// Information about the server TLS keyfile (certificate + private key).
-	Keyfile TLSDataObject `json:"keyfile,omitempty"`
+	Keyfile *TLSDataObject `json:"keyfile,omitempty"`
 	// Information about the CA certificates used for client verification.
-	ClientCA TLSDataObject `json:"clientCA,omitempty"`
+	ClientCA *TLSDataObject `json:"clientCA,omitempty"`
 	// Optional mapping of server names (via SNI) to their respective TLS configurations.
 	SNI map[ServerName]TLSDataObject `json:"sni,omitempty"`
 }
