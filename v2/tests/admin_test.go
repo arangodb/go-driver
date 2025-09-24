@@ -309,3 +309,48 @@ func Test_CompactDatabases(t *testing.T) {
 		})
 	})
 }
+
+// Test_GetJWTSecrets validates retrieval and structure of JWT secrets, skipping if not accessible.
+func Test_GetJWTSecrets(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+
+			resp, err := client.GetJWTSecrets(ctx, db.Name())
+			if err != nil {
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					t.Logf("arangoErr code:%d", arangoErr.Code)
+					if arangoErr.Code == http.StatusForbidden {
+						t.Skip("The endpoint requires superuser access or JWT feature is disabled")
+						return
+					}
+				}
+				require.NoError(t, err)
+			}
+			require.NotEmpty(t, resp)
+
+			// Basic checks
+			require.NotNil(t, resp.Active, "Active JWT secret should not be nil")
+			require.NotNil(t, resp.Passive, "Passive JWT secrets list should not be nil")
+			require.NotNil(t, resp.Active.SHA256, "Active JWT secret SHA256 should not be nil")
+			require.NotEmpty(t, *resp.Active.SHA256, "Active JWT secret SHA256 should not be empty")
+
+			t.Logf("Active JWT secret SHA256: %s", *resp.Active.SHA256)
+			t.Logf("Found %d passive JWT secrets", len(resp.Passive))
+
+			// Validate passive secrets and check they're not the same as active
+			for i, passive := range resp.Passive {
+				require.NotNil(t, passive.SHA256, "Passive JWT secret %d SHA256 should not be nil", i)
+				require.NotEmpty(t, *passive.SHA256, "Passive JWT secret %d SHA256 should not be empty", i)
+
+				// Compare the actual string values, not pointers
+				require.NotEqual(t, *resp.Active.SHA256, *passive.SHA256,
+					"Active JWT secret should not be in passive list (found duplicate at index %d)", i)
+
+				t.Logf("Passive JWT secret %d SHA256: %s", i, *passive.SHA256)
+			}
+		})
+	})
+}

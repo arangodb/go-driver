@@ -71,6 +71,11 @@ type ClientAdmin interface {
 	// by compacting the entire database system data.
 	// The endpoint requires superuser access.
 	CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error)
+
+	// GetJWTSecrets retrieves information about the currently loaded JWT secrets
+	// for a given database.
+	// Requires a superuser JWT for authorization.
+	GetJWTSecrets(ctx context.Context, dbName string) (JWTSecretsResult, error)
 }
 
 type ClientAdminLog interface {
@@ -540,4 +545,15 @@ type CompactOpts struct {
 	ChangeLevel *bool `json:"changeLevel,omitempty"`
 	// Whether or not to compact the bottommost level of data.
 	CompactBottomMostLevel *bool `json:"compactBottomMostLevel,omitempty"`
+}
+
+// JWTSecretsResult contains the active and passive JWT secrets
+type JWTSecretsResult struct {
+	Active  *JWTSecret  `json:"active,omitempty"`  // The currently active JWT secret
+	Passive []JWTSecret `json:"passive,omitempty"` // List of passive JWT secrets (may be empty)
+}
+
+// JWTSecret represents a single JWT secret's SHA-256 hash
+type JWTSecret struct {
+	SHA256 *string `json:"sha256,omitempty"` // SHA-256 hash of the JWT secret
 }
