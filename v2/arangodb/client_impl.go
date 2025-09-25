@@ -41,6 +41,7 @@ func newClient(connection connection.Connection) *client {
 	c.clientFoxx = newClientFoxx(c)
 	c.clientTask = newClientTask(c)
 	c.clientReplication = newClientReplication(c)
+	c.clientAccessTokens = newClientAccessTokens(c)
 
 	c.Requests = NewRequests(connection)
 
@@ -60,6 +61,7 @@ type client struct {
 	*clientFoxx
 	*clientTask
 	*clientReplication
+	*clientAccessTokens
 
 	Requests
 }
