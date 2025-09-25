@@ -90,6 +90,7 @@ func (c *clientAccessTokens) CreateAccessToken(ctx context.Context, user *string
 	}
 }
 
+// DeleteAccessToken deletes a specific access token for a given user.
 func (c *clientAccessTokens) DeleteAccessToken(ctx context.Context, user *string, tokenId *int) error {
 	if user == nil {
 		return RequiredFieldError("user")
@@ -113,6 +114,7 @@ func (c *clientAccessTokens) DeleteAccessToken(ctx context.Context, user *string
 	}
 }
 
+// GetAllAccessToken retrieves all access tokens for a given user.
 func (c *clientAccessTokens) GetAllAccessToken(ctx context.Context, user *string) (AccessTokenResponse, error) {
 	if user == nil {
 		return AccessTokenResponse{}, RequiredFieldError("user")
