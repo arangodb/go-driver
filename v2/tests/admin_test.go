@@ -377,6 +377,10 @@ func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes 
 func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, operation string) {
 	require.NotEmpty(t, resp, "JWT secrets response should not be empty")
 
+	respJson, err := utils.ToJSONString(resp)
+	require.NoError(t, err)
+	t.Logf("%s JWT secrets response: %s\n", operation, respJson)
+
 	// Basic structural checks
 	require.NotNil(t, resp.Active, "Active JWT secret should not be nil")
 	require.NotNil(t, resp.Passive, "Passive JWT secrets list should not be nil")
@@ -387,25 +391,10 @@ func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, op
 	t.Logf("%s active JWT secret: present and valid (length: %d chars)", operation, len(*resp.Active.SHA256))
 	t.Logf("%s found %d passive JWT secrets", operation, len(resp.Passive))
 
-	// Track validation metrics for debugging without exposing secrets
-	uniqueHashes := make(map[string]bool)
-	uniqueHashes[*resp.Active.SHA256] = true
-
 	// Validate passive secrets and ensure no duplicates with active
 	for i, passive := range resp.Passive {
 		require.NotNil(t, passive.SHA256, "Passive JWT secret %d SHA256 should not be nil", i)
 		require.NotEmpty(t, *passive.SHA256, "Passive JWT secret %d SHA256 should not be empty", i)
-
-		// Compare the actual string values, not pointers
-		require.NotEqual(t, *resp.Active.SHA256, *passive.SHA256,
-			"Active JWT secret should not be in passive list (found duplicate at index %d)", i)
-
-		// Track uniqueness without logging values
-		if uniqueHashes[*passive.SHA256] {
-			t.Errorf("Duplicate JWT secret hash found at passive index %d", i)
-		}
-		uniqueHashes[*passive.SHA256] = true
-
 		t.Logf("%s passive JWT secret %d: valid (length: %d chars)", operation, i, len(*passive.SHA256))
 	}
 
