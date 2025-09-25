@@ -536,6 +536,10 @@ func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes 
 func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, operation string) {
 	require.NotEmpty(t, resp, "JWT secrets response should not be empty")
 
+	respJson, err := utils.ToJSONString(resp)
+	require.NoError(t, err)
+	t.Logf("%s JWT secrets response: %s\n", operation, respJson)
+
 	// Basic structural checks
 	require.NotNil(t, resp.Active, "Active JWT secret should not be nil")
 	require.NotNil(t, resp.Passive, "Passive JWT secrets list should not be nil")
