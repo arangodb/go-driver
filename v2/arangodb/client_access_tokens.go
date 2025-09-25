@@ -31,8 +31,10 @@ type ClientAccessTokens interface {
 	//     to the _system database.
 	CreateAccessToken(ctx context.Context, user *string, req AccessTokenRequest) (CreateAccessTokenResponse, error)
 
+	// DeleteAccessToken deletes a specific access token for a given user.
 	DeleteAccessToken(ctx context.Context, user *string, tokenId *int) error
 
+	// GetAllAccessToken retrieves all access tokens for a given user.
 	GetAllAccessToken(ctx context.Context, user *string) (AccessTokenResponse, error)
 }
 
