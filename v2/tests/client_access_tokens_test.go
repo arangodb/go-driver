@@ -24,13 +24,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/utils"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,7 +44,8 @@ func Test_AccessTokens(t *testing.T) {
 			user := "root"
 
 			t.Run("Create Access Token With All valid data", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d-%s", time.Now().UnixNano(), uuid.New().String())
+				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
+				t.Logf("Create Access Token With All valid data - Creating token with name: %s\n", tokenName)
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
 					ValidUntil: utils.NewType(expiresAt),
@@ -87,6 +88,7 @@ func Test_AccessTokens(t *testing.T) {
 				if tokenResp.Name == nil {
 					t.Skip("Skipping delete test because token creation failed")
 				}
+				t.Logf("Client try to create duplicate access token name - token name: %s\n", *tokenResp.Name)
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(*tokenResp.Name),
 					ValidUntil: utils.NewType(expiresAt),
@@ -115,7 +117,8 @@ func Test_AccessTokens(t *testing.T) {
 
 			t.Run("Create Access Token With invalid user", func(t *testing.T) {
 				invalidUser := "roothyd"
-				tokenName := fmt.Sprintf("Token-%d-%s", time.Now().UnixNano(), uuid.New().String())
+				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
+				t.Logf("Create Access Token With invalid user - Creating token with name: %s\n", tokenName)
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
 					ValidUntil: utils.NewType(expiresAt),
@@ -133,7 +136,8 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Create Access Token With missing user", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d-%s", time.Now().UnixNano(), uuid.New().String())
+				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
+				t.Logf("Create Access Token With missing user - Creating token with name: %s\n", tokenName)
 				localExpiresAt := time.Now().Add(5 * time.Minute).Unix()
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
