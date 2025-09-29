@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -39,12 +40,11 @@ func Test_AccessTokens(t *testing.T) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 
 			var tokenResp arangodb.CreateAccessTokenResponse
-			// tokenName := fmt.Sprintf("Token-%d", time.Now().UnixNano())
 			expiresAt := time.Now().Add(5 * time.Minute).Unix()
 			user := "root"
 
 			t.Run("Create Access Token With All valid data", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d", time.Now().UnixNano())
+				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
 					ValidUntil: utils.NewType(expiresAt),
@@ -64,7 +64,7 @@ func Test_AccessTokens(t *testing.T) {
 			t.Run("Get All Access Tokens", func(t *testing.T) {
 				tokens, err := client.GetAllAccessToken(ctx, &user)
 				require.NoError(t, err)
-				if tokens.Tokens != nil || len(tokens.Tokens) > 0 {
+				if len(tokens.Tokens) > 0 {
 					found := false
 					for _, token := range tokens.Tokens {
 						if token.Id != nil && tokenResp.Id != nil && *token.Id == *tokenResp.Id {
@@ -126,7 +126,7 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Create Access Token With missing user", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d", time.Now().UnixNano())
+				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
 				expiresAt := time.Now().Add(5 * time.Minute).Unix()
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
