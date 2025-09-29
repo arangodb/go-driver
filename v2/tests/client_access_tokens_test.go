@@ -39,7 +39,7 @@ func Test_AccessTokens(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 
-			var tokenResp arangodb.CreateAccessTokenResponse
+			var tokenResp *arangodb.CreateAccessTokenResponse
 			expiresAt := time.Now().Add(5 * time.Minute).Unix()
 			user := "root"
 
@@ -51,9 +51,10 @@ func Test_AccessTokens(t *testing.T) {
 					ValidUntil: utils.NewType(expiresAt),
 				}
 				var err error
-				tokenResp, err = client.CreateAccessToken(ctx, &user, req)
+				resp, err := client.CreateAccessToken(ctx, &user, req)
 				require.NoError(t, err)
-				require.NotNil(t, tokenResp)
+				require.NotNil(t, resp)
+				tokenResp = &resp
 				require.NotNil(t, tokenResp.Id)
 				require.NotNil(t, tokenResp.Token)
 				require.NotNil(t, tokenResp.Fingerprint)
