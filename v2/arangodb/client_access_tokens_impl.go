@@ -23,6 +23,7 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
@@ -64,8 +65,8 @@ func (c *clientAccessTokens) CreateAccessToken(ctx context.Context, user *string
 	if user == nil {
 		return CreateAccessTokenResponse{}, RequiredFieldError("user")
 	}
-	// Build the URL for the JWT secrets endpoint, safely escaping the database name
-	url := connection.NewUrl("_api", "token", *user)
+	// Build the URL for the access token endpoint, safely escaping the username
+	url := connection.NewUrl("_api", "token", url.PathEscape(*user))
 
 	var response struct {
 		shared.ResponseStruct     `json:",inline"`
@@ -98,8 +99,8 @@ func (c *clientAccessTokens) DeleteAccessToken(ctx context.Context, user *string
 	if tokenId == nil {
 		return RequiredFieldError("token-id")
 	}
-	// Build the URL for the JWT secrets endpoint, safely escaping the database name
-	url := connection.NewUrl("_api", "token", *user, strconv.Itoa(*tokenId))
+	// Build the URL for the access token endpoint, safely escaping the username
+	url := connection.NewUrl("_api", "token", url.PathEscape(*user), url.PathEscape(strconv.Itoa(*tokenId)))
 
 	resp, err := connection.CallDelete(ctx, c.client.connection, url, nil)
 	if err != nil {
@@ -119,8 +120,8 @@ func (c *clientAccessTokens) GetAllAccessToken(ctx context.Context, user *string
 	if user == nil {
 		return AccessTokenResponse{}, RequiredFieldError("user")
 	}
-	// Build the URL for the JWT secrets endpoint, safely escaping the database name
-	url := connection.NewUrl("_api", "token", *user)
+	// Build the URL for the access token endpoint, safely escaping the username
+	url := connection.NewUrl("_api", "token", url.PathEscape(*user))
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
