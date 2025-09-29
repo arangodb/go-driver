@@ -24,13 +24,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/utils"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,7 +44,7 @@ func Test_AccessTokens(t *testing.T) {
 			user := "root"
 
 			t.Run("Create Access Token With All valid data", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
+				tokenName := fmt.Sprintf("Token-%d-%s", time.Now().UnixNano(), uuid.New().String())
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
 					ValidUntil: utils.NewType(expiresAt),
@@ -64,6 +64,7 @@ func Test_AccessTokens(t *testing.T) {
 			t.Run("Get All Access Tokens", func(t *testing.T) {
 				tokens, err := client.GetAllAccessToken(ctx, &user)
 				require.NoError(t, err)
+				require.NotNil(t, tokens.Tokens)
 				if len(tokens.Tokens) > 0 {
 					found := false
 					for _, token := range tokens.Tokens {
@@ -83,6 +84,9 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Client try to create duplicate access token name", func(t *testing.T) {
+				if tokenResp.Name == nil {
+					t.Skip("Skipping delete test because token creation failed")
+				}
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(*tokenResp.Name),
 					ValidUntil: utils.NewType(expiresAt),
@@ -99,6 +103,9 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Delete Access Token", func(t *testing.T) {
+				if tokenResp.Id == nil {
+					t.Skip("Skipping delete test because token creation failed")
+				}
 				err := client.DeleteAccessToken(ctx, &user, tokenResp.Id)
 				if err != nil {
 					t.Logf("DeleteAccessToken failed: %v", err)
@@ -108,7 +115,7 @@ func Test_AccessTokens(t *testing.T) {
 
 			t.Run("Create Access Token With invalid user", func(t *testing.T) {
 				invalidUser := "roothyd"
-				tokenName := fmt.Sprintf("Token-%d", time.Now().UnixNano())
+				tokenName := fmt.Sprintf("Token-%d-%s", time.Now().UnixNano(), uuid.New().String())
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
 					ValidUntil: utils.NewType(expiresAt),
@@ -126,7 +133,7 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Create Access Token With missing user", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
+				tokenName := fmt.Sprintf("Token-%d-%s", time.Now().UnixNano(), uuid.New().String())
 				localExpiresAt := time.Now().Add(5 * time.Minute).Unix()
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
