@@ -127,10 +127,10 @@ func Test_AccessTokens(t *testing.T) {
 
 			t.Run("Create Access Token With missing user", func(t *testing.T) {
 				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
-				expiresAt := time.Now().Add(5 * time.Minute).Unix()
+				localExpiresAt := time.Now().Add(5 * time.Minute).Unix()
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
-					ValidUntil: utils.NewType(expiresAt),
+					ValidUntil: utils.NewType(localExpiresAt),
 				}
 
 				_, err := client.CreateAccessToken(ctx, nil, req)
