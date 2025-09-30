@@ -217,7 +217,13 @@ func (c clientServerInfo) HandleAdminVersion(ctx context.Context, opts *GetVersi
 		AdminVersionInfo
 	}
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, opts.modifyRequest)
+	// Always provide a non-nil modifier
+	modifier := func(r connection.Request) error { return nil }
+	if opts != nil {
+		modifier = opts.modifyRequest
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, modifier)
 	if err != nil {
 		return AdminVersionInfo{}, errors.WithStack(err)
 	}

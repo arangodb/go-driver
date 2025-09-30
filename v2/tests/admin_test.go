@@ -575,15 +575,15 @@ func Test_HandleAdminVersion(t *testing.T) {
 					Details: utils.NewType(true),
 				})
 				require.NoError(t, err)
-				require.NotEmpty(t, resp.Version)
+				require.NotNil(t, resp.Version)
 				require.NotNil(t, resp.Server)
 				require.NotNil(t, resp.License)
 				require.NotEmpty(t, resp.Details)
 			})
-			t.Run("With out options", func(t *testing.T) {
+			t.Run("Without options", func(t *testing.T) {
 				resp, err := client.HandleAdminVersion(context.Background(), nil)
 				require.NoError(t, err)
-				require.NotEmpty(t, resp.Version)
+				require.NotNil(t, resp.Version)
 				require.NotNil(t, resp.Server)
 				require.NotNil(t, resp.License)
 			})
