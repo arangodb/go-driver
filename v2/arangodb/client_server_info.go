@@ -43,7 +43,7 @@ type ClientServerInfo interface {
 
 	// HandleAdminVersion retrieves the ArangoDB server version information
 	// This endpoint is an alias for `GET /_api/version`.
-	HandleAdminVersion(ctx context.Context, opts *GetVersionOptions) (AdminVersionInfo, error)
+	HandleAdminVersion(ctx context.Context, opts *GetVersionOptions) (VersionInfo, error)
 }
 
 // VersionInfo describes the version of a database server.
@@ -78,22 +78,4 @@ func (v VersionInfo) String() string {
 		result = result + "\n" + strings.Join(lines, "\n")
 	}
 	return result
-}
-
-// AdminVersionInfo contains version and license details of an ArangoDB server.
-type AdminVersionInfo struct {
-	// Server identifies the server name.
-	// This field is always present and has the value "arango".
-	Server *string `json:"server,omitempty"`
-
-	// Version is the server version string in the format "major.minor.sub".
-	// Major and minor are numeric; sub may contain either a number or a textual version.
-	Version *string `json:"version,omitempty"`
-
-	// License indicates the type of license used by the server (e.g., "community" or "enterprise").
-	License *string `json:"license,omitempty"`
-
-	// Details provides optional additional information.
-	// This field is included only if requested via query parameters (e.g., `details=true`).
-	Details map[string]interface{} `json:"details,omitempty"`
 }
