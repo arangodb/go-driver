@@ -6,6 +6,7 @@
 - Add missing endpoints from administration to v2
 - Add missing endpoints from cluster to v2
 - Add missing endpoints from security to v2
+- Add missing endpoints from authentication to v2
 
 ## [2.1.5](https://github.com/arangodb/go-driver/tree/v2.1.5) (2025-08-31)
 - Add tasks endpoints to v2
