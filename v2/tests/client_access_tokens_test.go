@@ -24,13 +24,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/utils"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,8 +48,8 @@ func Test_AccessTokens(t *testing.T) {
 				maxRetries := 3
 
 				for i := 0; i < maxRetries; i++ {
-					tokenName := fmt.Sprintf("Token-%d-%d-%d", time.Now().UnixNano(), rand.Int(), i)
-					cleanupToken(ctx, client, user, tokenName) // optional, safe to call repeatedly
+					tokenName := fmt.Sprintf("Token-%s", uuid.New().String())
+					cleanupToken(ctx, t, client, user, tokenName)
 
 					req := arangodb.AccessTokenRequest{
 						Name:       utils.NewType(tokenName),
@@ -59,6 +59,13 @@ func Test_AccessTokens(t *testing.T) {
 					resp, err := client.CreateAccessToken(ctx, &user, req)
 					if err == nil {
 						tokenResp = &resp
+						require.NotNil(t, tokenResp)
+						require.NotNil(t, tokenResp.Id)
+						require.NotNil(t, tokenResp.Token)
+						require.NotNil(t, tokenResp.Fingerprint)
+						require.Equal(t, tokenName, *tokenResp.Name)
+						require.Equal(t, true, *tokenResp.Active)
+						require.Equal(t, expiresAt, *tokenResp.ValidUntil)
 						break // success
 					}
 
@@ -71,14 +78,7 @@ func Test_AccessTokens(t *testing.T) {
 						break
 					}
 				}
-
 				require.NoError(t, err)
-				require.NotNil(t, tokenResp)
-				require.NotNil(t, tokenResp.Id)
-				require.NotNil(t, tokenResp.Token)
-				require.NotNil(t, tokenResp.Fingerprint)
-				require.Equal(t, true, *tokenResp.Active)
-				require.Equal(t, expiresAt, *tokenResp.ValidUntil)
 			})
 
 			t.Run("Get All Access Tokens", func(t *testing.T) {
@@ -136,7 +136,7 @@ func Test_AccessTokens(t *testing.T) {
 
 			t.Run("Create Access Token With invalid user", func(t *testing.T) {
 				invalidUser := "roothyd"
-				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
+				tokenName := fmt.Sprintf("Token-%s", uuid.New().String())
 				t.Logf("Create Access Token With invalid user - Creating token with name: %s\n", tokenName)
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
@@ -155,7 +155,7 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Create Access Token With missing user", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
+				tokenName := fmt.Sprintf("Token-%s", uuid.New().String())
 				t.Logf("Create Access Token With missing user - Creating token with name: %s\n", tokenName)
 				localExpiresAt := time.Now().Add(5 * time.Minute).Unix()
 				req := arangodb.AccessTokenRequest{
@@ -194,11 +194,10 @@ func Test_AccessTokens(t *testing.T) {
 }
 
 // Cleanup tokens with the same name
-func cleanupToken(ctx context.Context, client arangodb.Client, user string, tokenName string) {
+func cleanupToken(ctx context.Context, t *testing.T, client arangodb.Client, user string, tokenName string) {
 	tokens, err := client.GetAllAccessToken(ctx, &user)
 	if err != nil {
-		// log and continue
-		fmt.Printf("Failed to list tokens for cleanup: %v\n", err)
+		t.Logf("Failed to list tokens for cleanup: %v", err)
 		return
 	}
 
@@ -207,7 +206,7 @@ func cleanupToken(ctx context.Context, client arangodb.Client, user string, toke
 			if token.Id != nil {
 				err := client.DeleteAccessToken(ctx, &user, token.Id)
 				if err != nil {
-					fmt.Printf("Failed to delete token %s: %v\n", *token.Name, err)
+					t.Logf("Failed to delete token %s: %v", *token.Name, err)
 				}
 			}
 		}
