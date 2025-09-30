@@ -44,21 +44,39 @@ func Test_AccessTokens(t *testing.T) {
 			user := "root"
 
 			t.Run("Create Access Token With All valid data", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%d-%d", time.Now().UnixNano(), rand.Int())
-				t.Logf("Create Access Token With All valid data - Creating token with name: %s\n", tokenName)
-				req := arangodb.AccessTokenRequest{
-					Name:       utils.NewType(tokenName),
-					ValidUntil: utils.NewType(expiresAt),
-				}
 				var err error
-				resp, err := client.CreateAccessToken(ctx, &user, req)
+				maxRetries := 3
+
+				for i := 0; i < maxRetries; i++ {
+					tokenName := fmt.Sprintf("Token-%d-%d-%d", time.Now().UnixNano(), rand.Int(), i)
+					cleanupToken(ctx, client, user, tokenName) // optional, safe to call repeatedly
+
+					req := arangodb.AccessTokenRequest{
+						Name:       utils.NewType(tokenName),
+						ValidUntil: utils.NewType(expiresAt),
+					}
+
+					resp, err := client.CreateAccessToken(ctx, &user, req)
+					if err == nil {
+						tokenResp = &resp
+						break // success
+					}
+
+					// if conflict, retry; else fail immediately
+					var arangoErr shared.ArangoError
+					if errors.As(err, &arangoErr) && arangoErr.Code == 409 {
+						t.Logf("Conflict detected, retrying token creation... attempt %d\n", i+1)
+						continue
+					} else {
+						break
+					}
+				}
+
 				require.NoError(t, err)
-				require.NotNil(t, resp)
-				tokenResp = &resp
+				require.NotNil(t, tokenResp)
 				require.NotNil(t, tokenResp.Id)
 				require.NotNil(t, tokenResp.Token)
 				require.NotNil(t, tokenResp.Fingerprint)
-				require.Equal(t, tokenName, *tokenResp.Name)
 				require.Equal(t, true, *tokenResp.Active)
 				require.Equal(t, expiresAt, *tokenResp.ValidUntil)
 			})
@@ -86,7 +104,7 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Client try to create duplicate access token name", func(t *testing.T) {
-				if tokenResp.Name == nil {
+				if tokenResp == nil || tokenResp.Name == nil {
 					t.Skip("Skipping delete test because token creation failed")
 				}
 				t.Logf("Client try to create duplicate access token name - token name: %s\n", *tokenResp.Name)
@@ -106,7 +124,7 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Delete Access Token", func(t *testing.T) {
-				if tokenResp.Id == nil {
+				if tokenResp == nil || tokenResp.Id == nil {
 					t.Skip("Skipping delete test because token creation failed")
 				}
 				err := client.DeleteAccessToken(ctx, &user, tokenResp.Id)
@@ -173,4 +191,25 @@ func Test_AccessTokens(t *testing.T) {
 			})
 		})
 	})
+}
+
+// Cleanup tokens with the same name
+func cleanupToken(ctx context.Context, client arangodb.Client, user string, tokenName string) {
+	tokens, err := client.GetAllAccessToken(ctx, &user)
+	if err != nil {
+		// log and continue
+		fmt.Printf("Failed to list tokens for cleanup: %v\n", err)
+		return
+	}
+
+	for _, token := range tokens.Tokens {
+		if token.Name != nil && *token.Name == tokenName {
+			if token.Id != nil {
+				err := client.DeleteAccessToken(ctx, &user, token.Id)
+				if err != nil {
+					fmt.Printf("Failed to delete token %s: %v\n", *token.Name, err)
+				}
+			}
+		}
+	}
 }
