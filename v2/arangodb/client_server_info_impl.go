@@ -206,3 +206,26 @@ func (o *GetVersionOptions) modifyRequest(r connection.Request) error {
 	}
 	return nil
 }
+
+// HandleAdminVersion retrieves the ArangoDB server version information
+// This endpoint is an alias for `GET /_api/version`.
+func (c clientServerInfo) HandleAdminVersion(ctx context.Context, opts *GetVersionOptions) (AdminVersionInfo, error) {
+	url := connection.NewUrl("_admin", "version")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		AdminVersionInfo
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, opts.modifyRequest)
+	if err != nil {
+		return AdminVersionInfo{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.AdminVersionInfo, nil
+	default:
+		return AdminVersionInfo{}, response.AsArangoErrorWithCode(code)
+	}
+}

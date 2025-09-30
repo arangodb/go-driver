@@ -199,14 +199,19 @@ func (c *clientAdmin) GetSystemTime(ctx context.Context, dbName string) (float64
 
 // GetServerStatus returns status information about the server
 func (c *clientAdmin) GetServerStatus(ctx context.Context, dbName string) (ServerStatusResponse, error) {
-	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "status")
+	var endPoint string
+	if dbName == "" {
+		endPoint = connection.NewUrl("_admin", "status")
+	} else {
+		endPoint = connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "status")
+	}
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
 		ServerStatusResponse  `json:",inline"`
 	}
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	resp, err := connection.CallGet(ctx, c.client.connection, endPoint, &response)
 	if err != nil {
 		return ServerStatusResponse{}, errors.WithStack(err)
 	}
