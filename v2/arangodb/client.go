@@ -38,4 +38,5 @@ type Client interface {
 	ClientFoxx
 	ClientTasks
 	ClientReplication
+	ClientAccessTokens
 }
