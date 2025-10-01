@@ -112,14 +112,26 @@ func Test_GetSystemTime(t *testing.T) {
 
 func Test_GetServerStatus(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			db, err := client.GetDatabase(context.Background(), "_system", nil)
-			require.NoError(t, err)
-			require.NotEmpty(t, db)
+		withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
+			t.Run("WithoutDBName", func(t *testing.T) {
+				resp, err := client.GetServerStatus(context.Background(), "")
+				require.NoError(t, err)
+				require.NotEmpty(t, resp)
+			})
+			t.Run("WithDBName", func(t *testing.T) {
+				db, err := client.GetDatabase(context.Background(), "_system", nil)
+				require.NoError(t, err)
+				require.NotEmpty(t, db)
 
-			resp, err := client.GetServerStatus(context.Background(), db.Name())
-			require.NoError(t, err)
-			require.NotEmpty(t, resp)
+				resp, err := client.GetServerStatus(context.Background(), db.Name())
+				require.NoError(t, err)
+				require.NotEmpty(t, resp)
+			})
+			t.Run("InvalidDBName", func(t *testing.T) {
+				_, err := client.GetServerStatus(context.Background(), "invalid/db/name")
+				t.Logf("error :%v\n", err)
+				require.Error(t, err)
+			})
 		})
 	})
 }
@@ -554,4 +566,27 @@ func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, op
 	}
 
 	t.Logf("%s JWT secrets validation completed successfully with %d total secrets", operation, len(resp.Passive)+1)
+}
+func Test_HandleAdminVersion(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
+			t.Run("With Options", func(t *testing.T) {
+				resp, err := client.HandleAdminVersion(context.Background(), &arangodb.GetVersionOptions{
+					Details: utils.NewType(true),
+				})
+				require.NoError(t, err)
+				require.NotEmpty(t, resp.Version)
+				require.NotEmpty(t, resp.Server)
+				require.NotEmpty(t, resp.License)
+				require.NotEmpty(t, resp.Details)
+			})
+			t.Run("Without options", func(t *testing.T) {
+				resp, err := client.HandleAdminVersion(context.Background(), nil)
+				require.NoError(t, err)
+				require.NotEmpty(t, resp.Version)
+				require.NotEmpty(t, resp.Server)
+				require.NotEmpty(t, resp.License)
+			})
+		})
+	})
 }
