@@ -40,6 +40,10 @@ type ClientServerInfo interface {
 	// ServerID Gets the ID of this server in the cluster.
 	// An error is returned when calling this to a server that is not part of a cluster.
 	ServerID(ctx context.Context) (string, error)
+
+	// HandleAdminVersion retrieves the ArangoDB server version information
+	// This endpoint is an alias for `GET /_api/version`.
+	HandleAdminVersion(ctx context.Context, opts *GetVersionOptions) (VersionInfo, error)
 }
 
 // VersionInfo describes the version of a database server.
