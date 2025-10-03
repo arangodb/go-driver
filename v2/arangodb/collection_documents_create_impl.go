@@ -133,6 +133,7 @@ func newCollectionDocumentCreateResponseReader(array *connection.Array, options 
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
 
+	c.ReadAllReader = shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]{Reader: c}
 	return c
 }
 
@@ -147,6 +148,12 @@ type collectionDocumentCreateResponseReader struct {
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}
+	shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]
+
+	// Cache for len() method
+	cachedResults []CollectionDocumentCreateResponse
+	cachedErrors  []error
+	cached        bool
 }
 
 func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreateResponse, error) {
@@ -171,9 +178,24 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 		return CollectionDocumentCreateResponse{}, err
 	}
 
+	// Update meta with the unmarshaled data
+	meta.DocumentMeta = *c.response.DocumentMeta
+	meta.ResponseStruct = *c.response.ResponseStruct
+	meta.Old = c.response.Old
+	meta.New = c.response.New
+
 	if meta.Error != nil && *meta.Error {
 		return meta, meta.AsArangoError()
 	}
 
 	return meta, nil
+}
+
+// Len returns the number of items in the response
+func (c *collectionDocumentCreateResponseReader) Len() int {
+	if !c.cached {
+		c.cachedResults, c.cachedErrors = c.ReadAll()
+		c.cached = true
+	}
+	return len(c.cachedResults)
 }

@@ -24,6 +24,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -132,7 +133,7 @@ func newCollectionDocumentUpdateResponseReader(array *connection.Array, options 
 		c.response.Old = newUnmarshalInto(c.options.OldObject)
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
-
+	c.ReadAllReader = shared.ReadAllReader[CollectionDocumentUpdateResponse, *collectionDocumentUpdateResponseReader]{Reader: c}
 	return c
 }
 
@@ -147,6 +148,12 @@ type collectionDocumentUpdateResponseReader struct {
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}
+	shared.ReadAllReader[CollectionDocumentUpdateResponse, *collectionDocumentUpdateResponseReader]
+
+	// Cache for len() method
+	cachedResults []CollectionDocumentUpdateResponse
+	cachedErrors  []error
+	cached        bool
 }
 
 func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdateResponse, error) {
@@ -157,8 +164,15 @@ func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdat
 	var meta CollectionDocumentUpdateResponse
 
 	if c.options != nil {
-		meta.Old = c.options.OldObject
-		meta.New = c.options.NewObject
+		// Create new instances for each document to avoid reusing the same pointers
+		if c.options.OldObject != nil {
+			oldObjectType := reflect.TypeOf(c.options.OldObject).Elem()
+			meta.Old = reflect.New(oldObjectType).Interface()
+		}
+		if c.options.NewObject != nil {
+			newObjectType := reflect.TypeOf(c.options.NewObject).Elem()
+			meta.New = reflect.New(newObjectType).Interface()
+		}
 	}
 
 	c.response.DocumentMetaWithOldRev = &meta.DocumentMetaWithOldRev
@@ -171,9 +185,24 @@ func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdat
 		return CollectionDocumentUpdateResponse{}, err
 	}
 
+	// Update meta with the unmarshaled data
+	meta.DocumentMetaWithOldRev = *c.response.DocumentMetaWithOldRev
+	meta.ResponseStruct = *c.response.ResponseStruct
+	meta.Old = c.response.Old
+	meta.New = c.response.New
+
 	if meta.Error != nil && *meta.Error {
 		return meta, meta.AsArangoError()
 	}
 
 	return meta, nil
+}
+
+// Len returns the number of items in the response
+func (c *collectionDocumentUpdateResponseReader) Len() int {
+	if !c.cached {
+		c.cachedResults, c.cachedErrors = c.ReadAll()
+		c.cached = true
+	}
+	return len(c.cachedResults)
 }

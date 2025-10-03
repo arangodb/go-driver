@@ -270,6 +270,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 						require.NoError(t, err)
 
 						r, err := col.ReadDocuments(ctx, docsIds)
+						require.NoError(t, err)
 
 						nd := docs
 
@@ -472,6 +473,127 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 						}
 
 						require.Len(t, nd, 0)
+					})
+
+					t.Run("Replace", func(t *testing.T) {
+						// Create some documents to replace
+						replaceDocs := newDocs(5)
+						for i := 0; i < 5; i++ {
+							replaceDocs[i].Fields = GenerateUUID("replace-test")
+						}
+
+						// Create the documents first
+						_, err := col.CreateDocuments(ctx, replaceDocs)
+						require.NoError(t, err)
+
+						// Now replace them
+						for i := 0; i < 5; i++ {
+							replaceDocs[i].Fields = GenerateUUID("replaced-test")
+						}
+
+						var oldDoc document
+						var newDoc document
+
+						_, err = col.ReplaceDocumentsWithOptions(ctx, replaceDocs, &arangodb.CollectionDocumentReplaceOptions{
+							OldObject: &oldDoc,
+							NewObject: &newDoc,
+						})
+						require.NoError(t, err)
+					})
+				})
+			})
+		})
+	})
+}
+
+func Test_DatabaseCollectionBulkOperations(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					size := 10
+					docs := newDocs(size)
+
+					for i := 0; i < size; i++ {
+						docs[i].Fields = GenerateUUID("test-doc-bulk")
+					}
+
+					docsIds := docs.asBasic().getKeys()
+
+					t.Run("Create_Bulk", func(t *testing.T) {
+						createReader, err := col.CreateDocuments(ctx, docs)
+						require.NoError(t, err)
+
+						// Test bulk create operation
+						createResults, createErrs := createReader.ReadAll()
+						require.Equal(t, size, len(createResults))
+						require.Equal(t, size, len(createErrs))
+						for _, err := range createErrs {
+							require.NoError(t, err)
+						}
+					})
+
+					t.Run("Read_Bulk", func(t *testing.T) {
+						readReader, err := col.ReadDocuments(ctx, docsIds)
+						require.NoError(t, err)
+
+						// Test bulk read operation
+						var readResults []document
+						readResponses, readErrs := readReader.ReadAll(&readResults)
+						require.Equal(t, size, len(readResponses))
+						require.Equal(t, size, len(readErrs))
+						require.Equal(t, size, len(readResults))
+						for _, err := range readErrs {
+							require.NoError(t, err)
+						}
+					})
+
+					t.Run("Update_Bulk", func(t *testing.T) {
+						// Update the documents
+						for i := 0; i < size; i++ {
+							docs[i].Fields = GenerateUUID("updated-test-doc")
+						}
+
+						var oldDoc document
+						var newDoc document
+
+						updateReader, err := col.UpdateDocumentsWithOptions(ctx, docs, &arangodb.CollectionDocumentUpdateOptions{
+							OldObject: &oldDoc,
+							NewObject: &newDoc,
+						})
+						require.NoError(t, err)
+
+						// Test bulk update operation
+						updateResults, updateErrs := updateReader.ReadAll()
+						require.Equal(t, size, len(updateResults))
+						require.Equal(t, size, len(updateErrs))
+						for _, err := range updateErrs {
+							require.NoError(t, err)
+						}
+					})
+
+					t.Run("Replace_Bulk", func(t *testing.T) {
+						// Replace the documents
+						for i := 0; i < size; i++ {
+							docs[i].Fields = GenerateUUID("replaced-test-doc")
+						}
+
+						var oldDoc document
+						var newDoc document
+
+						replaceReader, err := col.ReplaceDocumentsWithOptions(ctx, docs, &arangodb.CollectionDocumentReplaceOptions{
+							OldObject: &oldDoc,
+							NewObject: &newDoc,
+						})
+						require.NoError(t, err)
+
+						// Test bulk replace operation
+						replaceResults, replaceErrs := replaceReader.ReadAll()
+						require.Equal(t, size, len(replaceResults))
+						require.Equal(t, size, len(replaceErrs))
+						for _, err := range replaceErrs {
+							require.NoError(t, err)
+						}
 					})
 				})
 			})

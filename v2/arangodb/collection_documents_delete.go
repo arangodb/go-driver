@@ -63,7 +63,9 @@ type CollectionDocumentDeleteResponse struct {
 }
 
 type CollectionDocumentDeleteResponseReader interface {
+	shared.ReadAllIntoReadable[CollectionDocumentDeleteResponse]
 	Read(i interface{}) (CollectionDocumentDeleteResponse, error)
+	Len() int
 }
 
 type CollectionDocumentDeleteOptions struct {
@@ -82,6 +84,7 @@ type CollectionDocumentDeleteOptions struct {
 	WithWaitForSync *bool
 
 	// Return additionally the complete previous revision of the changed document
+	// Should be a pointer to an object
 	OldObject interface{}
 
 	// If set to true, an empty object is returned as response if the document operation succeeds.
