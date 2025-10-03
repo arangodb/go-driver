@@ -60,6 +60,7 @@ type CollectionDocumentRead interface {
 type CollectionDocumentReadResponseReader interface {
 	Read(i interface{}) (CollectionDocumentReadResponse, error)
 	shared.ReadAllIntoReadable[CollectionDocumentReadResponse]
+	Len() int
 }
 
 type CollectionDocumentReadResponse struct {

@@ -38,69 +38,69 @@ type DocWithCode struct {
 func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		// COMMENTED OUT FOR DEBUGGING ONLY
-		// WithDatabase(t, client, nil, func(db arangodb.Database) {
-		// 	WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-		// 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-		// 			doc := DocWithCode{
-		// 				Key: "test",
-		// 			}
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					doc := DocWithCode{
+						Key: "test",
+					}
 
-		// 			meta, err := col.CreateDocumentWithOptions(ctx, doc, &arangodb.CollectionDocumentCreateOptions{})
-		// 			require.NoError(t, err)
-		// 			require.NotEmpty(t, meta.Rev)
-		// 			require.Empty(t, meta.Old)
-		// 			require.Empty(t, meta.New)
+					meta, err := col.CreateDocumentWithOptions(ctx, doc, &arangodb.CollectionDocumentCreateOptions{})
+					require.NoError(t, err)
+					require.NotEmpty(t, meta.Rev)
+					require.Empty(t, meta.Old)
+					require.Empty(t, meta.New)
 
-		// 			rdoc, err := col.ReadDocument(ctx, "test", &doc)
-		// 			require.NoError(t, err)
+					rdoc, err := col.ReadDocument(ctx, "test", &doc)
+					require.NoError(t, err)
 
-		// 			require.EqualValues(t, "test", rdoc.Key)
-		// 		})
-		// 	})
-		// })
+					require.EqualValues(t, "test", rdoc.Key)
+				})
+			})
+		})
 
-		// WithDatabase(t, client, nil, func(db arangodb.Database) {
-		// 	WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-		// 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-		// 			doc := DocWithCode{
-		// 				Key: "test",
-		// 			}
-		// 			doc2 := DocWithCode{
-		// 				Key: "test2",
-		// 			}
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					doc := DocWithCode{
+						Key: "test",
+					}
+					doc2 := DocWithCode{
+						Key: "test2",
+					}
 
-		// 			_, err := col.CreateDocuments(ctx, []any{
-		// 				doc, doc2,
-		// 			})
-		// 			require.NoError(t, err)
+					_, err := col.CreateDocuments(ctx, []any{
+						doc, doc2,
+					})
+					require.NoError(t, err)
 
-		// 			docs, err := col.ReadDocuments(ctx, []string{
-		// 				"test",
-		// 				"tz44",
-		// 				"test2",
-		// 			})
-		// 			require.NoError(t, err)
+					docs, err := col.ReadDocuments(ctx, []string{
+						"test",
+						"tz44",
+						"test2",
+					})
+					require.NoError(t, err)
 
-		// 			var z DocWithCode
+					var z DocWithCode
 
-		// 			meta, err := docs.Read(&z)
-		// 			require.NoError(t, err)
-		// 			require.Equal(t, "test", meta.Key)
+					meta, err := docs.Read(&z)
+					require.NoError(t, err)
+					require.Equal(t, "test", meta.Key)
 
-		// 			_, err = docs.Read(&z)
-		// 			require.Error(t, err)
-		// 			require.True(t, shared.IsNotFound(err))
+					_, err = docs.Read(&z)
+					require.Error(t, err)
+					require.True(t, shared.IsNotFound(err))
 
-		// 			meta, err = docs.Read(&z)
-		// 			require.NoError(t, err)
-		// 			require.Equal(t, "test2", meta.Key)
+					meta, err = docs.Read(&z)
+					require.NoError(t, err)
+					require.Equal(t, "test2", meta.Key)
 
-		// 			_, err = docs.Read(&z)
-		// 			require.Error(t, err)
-		// 			require.True(t, shared.IsNoMoreDocuments(err))
-		// 		})
-		// 	})
-		// })
+					_, err = docs.Read(&z)
+					require.Error(t, err)
+					require.True(t, shared.IsNoMoreDocuments(err))
+				})
+			})
+		})
 
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
@@ -113,12 +113,10 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						Key:  "test2",
 						Code: "code2",
 					}
-
 					readerCrt, err := col.CreateDocuments(ctx, []any{doc1, doc2})
 					require.NoError(t, err)
-
 					metaCrt, errs := readerCrt.ReadAll()
-
+					require.Equal(t, 2, len(metaCrt)) // Verify we got 2 results
 					require.ElementsMatch(t, []any{doc1.Key, doc2.Key}, []any{metaCrt[0].Key, metaCrt[1].Key})
 					require.ElementsMatch(t, []any{nil, nil}, errs)
 
@@ -141,13 +139,12 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						"test", "test2", "nonexistent",
 					}, &arangodb.CollectionDocumentDeleteOptions{OldObject: &docOldObject})
 					require.NoError(t, err)
-
 					metaDel, errs := readerDel.ReadAll(&docDelRead)
 
 					require.ElementsMatch(t, []any{doc1.Key, doc2.Key, ""}, []any{metaDel[0].Key, metaDel[1].Key, metaDel[2].Key})
 					require.ElementsMatch(t, []any{nil, nil, shared.ErrArangoDocumentNotFound}, []any{errs[0], errs[1], errs[2].(shared.ArangoError).ErrorNum})
 
-					// Will fail as the OldObject is not supported by the ReadAll
+					// Now this should work correctly with separate Old objects
 					require.ElementsMatch(t, []any{doc1.Code, doc2.Code}, []any{metaDel[0].Old.(*DocWithCode).Code, metaDel[1].Old.(*DocWithCode).Code})
 
 				})

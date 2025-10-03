@@ -65,6 +65,7 @@ type CollectionDocumentDeleteResponse struct {
 type CollectionDocumentDeleteResponseReader interface {
 	shared.ReadAllIntoReadable[CollectionDocumentDeleteResponse]
 	Read(i interface{}) (CollectionDocumentDeleteResponse, error)
+	Len() int
 }
 
 type CollectionDocumentDeleteOptions struct {

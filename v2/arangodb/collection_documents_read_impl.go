@@ -107,6 +107,10 @@ type collectionDocumentReadResponseReader struct {
 	array   *connection.Array
 	options *CollectionDocumentReadOptions
 	shared.ReadAllIntoReader[CollectionDocumentReadResponse, *collectionDocumentReadResponseReader]
+	// Cache for len() method
+	cachedResults []CollectionDocumentReadResponse
+	cachedErrors  []error
+	cached        bool
 }
 
 func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDocumentReadResponse, error) {
@@ -142,4 +146,14 @@ func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDo
 	}
 
 	return meta, nil
+}
+
+// Len returns the number of items in the response
+func (c *collectionDocumentReadResponseReader) Len() int {
+	if !c.cached {
+		var dummySlice []interface{}
+		c.cachedResults, c.cachedErrors = c.ReadAll(&dummySlice)
+		c.cached = true
+	}
+	return len(c.cachedResults)
 }
