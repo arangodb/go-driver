@@ -151,7 +151,8 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 							}
 							require.NoError(t, err, meta)
 							require.Equal(t, keys[i], meta.Key)
-							require.Equal(t, keys[i], oldDoc.Key)
+							require.NotNil(t, meta.Old)
+							require.Equal(t, keys[i], meta.Old.(*document).Key)
 						}
 					})
 				})

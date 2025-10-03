@@ -62,7 +62,9 @@ type CollectionDocumentUpdate interface {
 }
 
 type CollectionDocumentUpdateResponseReader interface {
+	shared.ReadAllReadable[CollectionDocumentUpdateResponse]
 	Read() (CollectionDocumentUpdateResponse, error)
+	Len() int
 }
 
 type CollectionDocumentUpdateResponse struct {

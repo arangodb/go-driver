@@ -71,7 +71,9 @@ type CollectionDocumentCreate interface {
 }
 
 type CollectionDocumentCreateResponseReader interface {
+	shared.ReadAllReadable[CollectionDocumentCreateResponse]
 	Read() (CollectionDocumentCreateResponse, error)
+	Len() int
 }
 
 type CollectionDocumentCreateResponse struct {

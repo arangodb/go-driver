@@ -61,7 +61,9 @@ type CollectionDocumentReplace interface {
 }
 
 type CollectionDocumentReplaceResponseReader interface {
+	shared.ReadAllReadable[CollectionDocumentReplaceResponse]
 	Read() (CollectionDocumentReplaceResponse, error)
+	Len() int
 }
 
 type CollectionDocumentReplaceResponse struct {
