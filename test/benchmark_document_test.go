@@ -20,7 +20,12 @@
 
 package test
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	driver "github.com/arangodb/go-driver"
+)
 
 // BenchmarkCreateDocument measures the CreateDocument operation for a simple document.
 func BenchmarkCreateDocument(b *testing.B) {
@@ -161,6 +166,58 @@ func BenchmarkRemoveDocument(b *testing.B) {
 		b.StartTimer()
 		if _, err := col.RemoveDocument(nil, meta.Key); err != nil {
 			b.Errorf("Failed to remove document: %s", describe(err))
+		}
+	}
+}
+
+// BenchmarkBatchReadDocuments measures the time to read multiple documents in a batch.
+func BenchmarkBatchReadDocuments(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(nil, c, "benchmark_batch_read_test", nil, b)
+	defer func() {
+		err := db.Remove(nil)
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+
+	col := ensureCollection(nil, db, "benchmark_batch_read_docs", nil, b)
+
+	// Use batch size of 50 documents
+	batchSize := 50
+	if b.N < batchSize {
+		batchSize = b.N
+	}
+
+	// Pre-create documents to read
+	metas := make([]driver.DocumentMeta, b.N)
+	for i := 0; i < b.N; i++ {
+		doc := UserDoc{
+			Name: fmt.Sprintf("BatchReadUser_%d", i),
+			Age:  20 + (i % 50),
+		}
+		meta, err := col.CreateDocument(nil, doc)
+		if err != nil {
+			b.Fatalf("Failed to create document %d: %s", i, describe(err))
+		}
+		metas[i] = meta
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i += batchSize {
+		currentBatchSize := batchSize
+		if i+batchSize > b.N {
+			currentBatchSize = b.N - i
+		}
+
+		keys := make([]string, currentBatchSize)
+		for j := 0; j < currentBatchSize; j++ {
+			keys[j] = metas[i+j].Key
+		}
+
+		results := make([]UserDoc, currentBatchSize)
+		if _, _, err := col.ReadDocuments(nil, keys, results); err != nil {
+			b.Errorf("ReadDocuments failed: %s", describe(err))
 		}
 	}
 }

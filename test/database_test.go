@@ -42,7 +42,7 @@ func databaseName(parts ...string) string {
 // It will fail the test when an error occurs.
 func ensureDatabase(ctx context.Context, c driver.Client, name string, options *driver.CreateDatabaseOptions, t testEnv) driver.Database {
 	db, err := c.Database(ctx, name)
-	if driver.IsNotFound(err) {
+	if driver.IsNotFoundGeneral(err) {
 		db, err = c.CreateDatabase(ctx, name, options)
 		if err != nil {
 			if driver.IsConflict(err) {

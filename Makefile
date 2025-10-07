@@ -145,7 +145,7 @@ ifeq ("$(DEBUG)", "true")
 	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 --accept-multiclient exec /test_debug.test -- $(TESTOPTIONS)
 	DOCKER_V2_RUN_CMD := $(DOCKER_RUN_CMD)
 else
-    DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
+    DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TAGS) $(TESTS)
     DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -parallel $(TESTV2PARALLEL) ./tests
 endif
 
@@ -459,6 +459,15 @@ __test_v2_go_test:
 	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
+# Internal V2 benchmark tasks
+__run_v2_benchmarks: __test_v2_debug__ __test_prepare __test_v2_benchmark_test __test_cleanup
+
+DOCKER_V2_BENCHMARK_CMD := $(GOV2IMAGE) go test -bench=. -benchmem -run=^$$ -timeout 60m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -parallel $(TESTV2PARALLEL) ./tests
+
+__test_v2_benchmark_test:
+	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_BENCHMARK_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
+	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
+
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
 	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
@@ -507,6 +516,52 @@ run-benchmarks-single-json-no-auth:
 run-benchmarks-single-vpack-no-auth: 
 	@echo "Benchmarks: Single server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" TEST_BENCHMARK="true" __run_tests
+
+# V2 Benchmarks
+run-v2-benchmarks-single-no-auth:
+	@echo "V2 Benchmarks: Single server, without authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" __run_v2_benchmarks
+
+run-v2-benchmarks-single-with-auth:
+	@echo "V2 Benchmarks: Single server, with authentication"
+	@${MAKE} TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v2_benchmarks
+
+# Combined V2 benchmark targets for convenience
+run-v2-benchmarks: run-v2-benchmarks-single-no-auth run-v2-benchmarks-single-with-auth
+	@echo "All V2 benchmarks completed"
+
+# Combined V1 and V2 Benchmarks
+run-all-benchmarks: run-benchmarks-single-json-no-auth run-v2-benchmarks-single-no-auth
+	@echo "All benchmarks completed"
+
+V1_RESULTS = test/v1_benchmarks.txt
+V2_RESULTS = v2/tests/v2_benchmarks.txt
+# Benchmark comparison target
+benchmark-compare:
+	@echo "=== V1 vs V2 Benchmark Comparison ==="
+	@echo "Running V1 benchmarks..."
+	@${MAKE} run-benchmarks-single-json-no-auth > $(V1_RESULTS) 2>&1 || true
+	@echo "Running V2 benchmarks..."
+	@${MAKE} run-v2-benchmarks-single-no-auth > $(V2_RESULTS) 2>&1 || true
+	@echo ""
+	@echo "=== BENCHMARK COMPARISON RESULTS ==="
+	@echo "Format: Benchmark Name | V1 (ns/op) | V2 (ns/op) | V2/V1 Ratio"
+	@echo "=================================================================="
+	@echo "Connection Initialization:"
+	@grep "BenchmarkConnectionInitialization" $(V1_RESULTS) | grep "ns/op" | awk '{print "V1: " $$3}' || echo "V1: N/A"
+	@grep "BenchmarkV2ConnectionInitialization" $(V2_RESULTS) | grep "ns/op" | awk '{print "V2: " $$3}' || echo "V2: N/A"
+	@echo ""
+	@echo "Create Collection:"
+	@grep "BenchmarkCreateCollection" $(V1_RESULTS) | grep "ns/op" | awk '{print "V1: " $$3}' || echo "V1: N/A"
+	@grep "BenchmarkV2CreateCollection" $(V2_RESULTS) | grep "ns/op" | awk '{print "V2: " $$3}' || echo "V2: N/A"
+	@echo ""
+	@echo "Insert Single Document:"
+	@grep "BenchmarkInsertSingleDocument" $(V1_RESULTS) | grep "ns/op" | awk '{print "V1: " $$3}' || echo "V1: N/A"
+	@grep "BenchmarkV2InsertSingleDocument" $(V2_RESULTS) | grep "ns/op" | awk '{print "V2: " $$3}' || echo "V2: N/A"
+	@echo ""
+	@echo "=== Full Results Saved ==="
+	@echo "V1 Results: $(V1_RESULTS)"
+	@echo "V2 Results: $(V2_RESULTS)"
 
 ## Lint
 
@@ -616,3 +671,15 @@ release-v2-minor:
 
 release-v2-major:
 	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
+
+# Convenient benchmark shortcuts
+benchmark: run-v2-benchmarks-single-no-auth
+	@echo "Quick benchmark run completed"
+
+benchmark-v2: run-v2-benchmarks
+	@echo "V2 benchmarks completed"
+
+benchmark-all: run-all-benchmarks
+	@echo "All benchmarks completed"
+
+# Note: benchmark-compare target is defined above in the benchmark section
