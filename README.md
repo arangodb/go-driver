@@ -55,6 +55,55 @@ Before running benchmarks, ensure you have:
 3. **Go 1.21+** installed
 4. **ArangoDB Enterprise** Docker image available (will be pulled automatically)
 
+### Benchmark Result Files
+
+When you run benchmark comparisons, results are automatically saved to:
+
+- **V1 Results**: `test/v1_benchmarks.txt`
+- **V2 Results**: `v2/tests/v2_benchmarks.txt`
+
+These files contain the complete benchmark output and can be used for:
+- **Detailed analysis** of individual benchmark results
+- **Historical comparison** between different runs
+- **Debugging** benchmark failures or performance regressions
+
+### Available Benchmark Names
+
+#### V1 Benchmarks
+- `BenchmarkConnectionInitialization`
+- `BenchmarkCreateCollection`
+- `BenchmarkInsertSingleDocument`
+- `BenchmarkInsertBatchDocuments`
+- `BenchmarkSimpleQuery`
+- `BenchmarkAQLWithBindParameters`
+- `BenchmarkCursorIteration`
+- `BenchmarkUpdateDocument`
+- `BenchmarkDeleteDocument`
+- `BenchmarkBatchUpdateDocuments`
+- `BenchmarkBatchDeleteDocuments`
+- `BenchmarkCreateDocument`
+- `BenchmarkReadDocument`
+- `BenchmarkCollectionExists`
+- `BenchmarkCollections`
+
+#### V2 Benchmarks
+- `BenchmarkV2ConnectionInitialization`
+- `BenchmarkV2CreateCollection`
+- `BenchmarkV2InsertSingleDocument`
+- `BenchmarkV2InsertBatchDocuments`
+- `BenchmarkV2SimpleQuery`
+- `BenchmarkV2AQLWithBindParameters`
+- `BenchmarkV2CursorIteration`
+- `BenchmarkV2UpdateDocument`
+- `BenchmarkV2DeleteDocument`
+- `BenchmarkV2BatchUpdateDocuments`
+- `BenchmarkV2BatchDeleteDocuments`
+- `BenchmarkV2ReadDocument`
+- `BenchmarkV2CollectionExists`
+- `BenchmarkV2ListCollections`
+- `BenchmarkV2DatabaseExists`
+
+
 ### Quick Start
 
 ```bash
