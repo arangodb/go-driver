@@ -76,6 +76,7 @@ func BenchmarkV2ConnectionInitialization(b *testing.B) {
 			b.Error("Failed to create V2 client")
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkCreateDocument measures the CreateDocument operation for a simple document.
@@ -101,10 +102,11 @@ func BenchmarkCreateDocumentV2(b *testing.B) {
 			"Jan",
 			40 + i,
 		}
-		if _, err := col.CreateDocument(nil, doc); err != nil {
+		if _, err := col.CreateDocument(context.Background(), doc); err != nil {
 			b.Fatalf("Failed to create new document: %v", err)
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkCreateDocumentParallel measures parallel CreateDocument operations for a simple document.
@@ -136,6 +138,7 @@ func BenchmarkCreateDocumentParallel(b *testing.B) {
 			}
 		}
 	})
+	b.ReportAllocs()
 }
 
 // BenchmarkV2CreateCollection measures the time to create a new collection using V2 API.
@@ -157,6 +160,7 @@ func BenchmarkV2CreateCollection(b *testing.B) {
 			}
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2InsertSingleDocument measures the time to insert a single document using V2 API.
@@ -180,6 +184,7 @@ func BenchmarkV2InsertSingleDocument(b *testing.B) {
 			b.Errorf("CreateDocument failed: %s", err)
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2InsertBatchDocuments measures the time to insert documents in batches using V2 API.
@@ -226,6 +231,7 @@ func BenchmarkV2InsertBatchDocuments(b *testing.B) {
 			}
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2SimpleQuery measures the time to execute simple AQL queries using V2 API.
@@ -268,6 +274,7 @@ func BenchmarkV2SimpleQuery(b *testing.B) {
 			cur.Close()
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2AQLWithBindParameters measures the time to execute AQL queries with bind parameters using V2 API.
@@ -316,6 +323,7 @@ func BenchmarkV2AQLWithBindParameters(b *testing.B) {
 			cur.Close()
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2CursorIteration measures the time to iterate over query results using V2 API.
@@ -371,6 +379,7 @@ func BenchmarkV2CursorIteration(b *testing.B) {
 		}
 		cur.Close()
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2UpdateDocument measures the time to update documents using V2 API.
@@ -402,6 +411,7 @@ func BenchmarkV2UpdateDocument(b *testing.B) {
 			b.Errorf("UpdateDocument failed: %s", err)
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2DeleteDocument measures the time to delete documents using V2 API.
@@ -437,6 +447,7 @@ func BenchmarkV2DeleteDocument(b *testing.B) {
 			b.Errorf("DeleteDocument failed: %s", err)
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2BatchUpdateDocuments measures the time to update multiple documents in a batch using V2 API.
@@ -503,6 +514,7 @@ func BenchmarkV2BatchUpdateDocuments(b *testing.B) {
 			}
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2BatchDeleteDocuments measures the time to delete multiple documents in a batch using V2 API.
@@ -568,6 +580,7 @@ func BenchmarkV2BatchDeleteDocuments(b *testing.B) {
 			}
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2ReadDocument measures the time to read documents using V2 API.
@@ -597,6 +610,7 @@ func BenchmarkV2ReadDocument(b *testing.B) {
 			b.Errorf("ReadDocument failed: %s", err)
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkReadDocumentParallel measures parallel ReadDocument operations for a simple document.
@@ -634,6 +648,7 @@ func BenchmarkV2ReadDocumentParallel(b *testing.B) {
 			}
 		}
 	})
+	b.ReportAllocs()
 }
 
 // BenchmarkV2BatchReadDocuments measures the time to read multiple documents in a batch using V2 API.
@@ -692,6 +707,7 @@ func BenchmarkV2BatchReadDocuments(b *testing.B) {
 			}
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2CollectionExists measures the time to check if a collection exists.
@@ -717,6 +733,7 @@ func BenchmarkV2CollectionExists(b *testing.B) {
 			b.Error("Collection should exist")
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2ListCollections measures the time to list all collections in a database.
@@ -745,6 +762,7 @@ func BenchmarkV2ListCollections(b *testing.B) {
 			b.Error("Should have collections")
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkV2DatabaseExists measures the time to check if a database exists.
@@ -765,4 +783,5 @@ func BenchmarkV2DatabaseExists(b *testing.B) {
 			b.Error("Database should exist")
 		}
 	}
+	b.ReportAllocs()
 }

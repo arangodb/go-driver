@@ -45,6 +45,7 @@ func BenchmarkCollectionExists(b *testing.B) {
 			b.Errorf("CollectionExists failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkCollection measures the Collection operation.
@@ -65,6 +66,7 @@ func BenchmarkCollection(b *testing.B) {
 			b.Errorf("Collection failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkCollections measures the Collections operation.
@@ -87,6 +89,7 @@ func BenchmarkCollections(b *testing.B) {
 			b.Errorf("Collections failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkConnectionInitialization measures the time to create a new client connection.
@@ -98,6 +101,7 @@ func BenchmarkConnectionInitialization(b *testing.B) {
 			b.Error("Failed to create client")
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkCreateCollection measures the time to create a new collection.
@@ -123,6 +127,7 @@ func BenchmarkCreateCollection(b *testing.B) {
 			b.Logf("Failed to remove collection %s: %s", colName, err)
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkInsertSingleDocument measures the time to insert a single document.
@@ -152,6 +157,7 @@ func BenchmarkInsertSingleDocument(b *testing.B) {
 			b.Errorf("CreateDocument failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkInsertBatchDocuments measures the time to insert documents in batches.
@@ -191,6 +197,7 @@ func BenchmarkInsertBatchDocuments(b *testing.B) {
 			b.Errorf("CreateDocuments failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkSimpleQuery measures the time to execute simple AQL queries.
@@ -227,6 +234,7 @@ func BenchmarkSimpleQuery(b *testing.B) {
 			cur.Close()
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkAQLWithBindParameters measures the time to execute AQL queries with bind parameters.
@@ -268,6 +276,7 @@ func BenchmarkAQLWithBindParameters(b *testing.B) {
 			cur.Close()
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkCursorIteration measures the time to iterate over query results.
@@ -314,6 +323,7 @@ func BenchmarkCursorIteration(b *testing.B) {
 		}
 		cur.Close()
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkUpdateDocument measures the time to update documents.
@@ -351,6 +361,7 @@ func BenchmarkUpdateDocument(b *testing.B) {
 			b.Errorf("UpdateDocument failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkDeleteDocument measures the time to delete documents.
@@ -388,6 +399,7 @@ func BenchmarkDeleteDocument(b *testing.B) {
 			b.Errorf("RemoveDocument failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkBatchUpdateDocuments measures the time to update multiple documents in a batch.
@@ -446,6 +458,7 @@ func BenchmarkBatchUpdateDocuments(b *testing.B) {
 			b.Errorf("UpdateDocuments failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkBatchDeleteDocuments measures the time to delete multiple documents in a batch.
@@ -499,4 +512,5 @@ func BenchmarkBatchDeleteDocuments(b *testing.B) {
 			b.Errorf("RemoveDocuments failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }

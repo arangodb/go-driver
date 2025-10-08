@@ -49,6 +49,7 @@ func BenchmarkCreateDocument(b *testing.B) {
 			b.Fatalf("Failed to create new document: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkCreateDocumentParallel measures parallel CreateDocument operations for a simple document.
@@ -75,6 +76,7 @@ func BenchmarkCreateDocumentParallel(b *testing.B) {
 			}
 		}
 	})
+	b.ReportAllocs()
 }
 
 // BenchmarkReadDocument measures the ReadDocument operation for a simple document.
@@ -104,6 +106,7 @@ func BenchmarkReadDocument(b *testing.B) {
 			b.Errorf("Failed to read document: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkReadDocumentParallel measures parallel ReadDocument operations for a simple document.
@@ -135,6 +138,7 @@ func BenchmarkReadDocumentParallel(b *testing.B) {
 			}
 		}
 	})
+	b.ReportAllocs()
 }
 
 // BenchmarkRemoveDocument measures the RemoveDocument operation for a simple document.
@@ -168,6 +172,7 @@ func BenchmarkRemoveDocument(b *testing.B) {
 			b.Errorf("Failed to remove document: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
 
 // BenchmarkBatchReadDocuments measures the time to read multiple documents in a batch.
@@ -220,4 +225,5 @@ func BenchmarkBatchReadDocuments(b *testing.B) {
 			b.Errorf("ReadDocuments failed: %s", describe(err))
 		}
 	}
+	b.ReportAllocs()
 }
