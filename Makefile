@@ -114,7 +114,14 @@ endif
 endif
 
 ifeq ("$(TEST_BENCHMARK)", "true")
-	TAGS := -bench=. -run=notests -cpu=1,2,4
+	# Check if TESTOPTIONS already contains a specific benchmark filter
+	ifneq (,$(findstring -bench=,$(TESTOPTIONS)))
+		# TESTOPTIONS contains a specific benchmark filter, don't add generic -bench=.
+		TAGS := -run=notests -cpu=1,2,4
+	else
+		# No specific benchmark filter, use generic -bench=. to run all benchmarks
+		TAGS := -bench=. -run=notests -cpu=1,2,4
+	endif
 	TESTS := $(REPOPATH)/test
 endif
 
@@ -145,8 +152,8 @@ ifeq ("$(DEBUG)", "true")
 	DOCKER_RUN_CMD := $(DOCKER_DEBUG_ARGS) $(GOIMAGE) /go/bin/dlv --listen=:$(DEBUG_PORT) --headless=true --api-version=2 --accept-multiclient exec /test_debug.test -- $(TESTOPTIONS)
 	DOCKER_V2_RUN_CMD := $(DOCKER_RUN_CMD)
 else
-    DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TESTS)
-    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -parallel $(TESTV2PARALLEL) ./tests
+    DOCKER_RUN_CMD := $(GOIMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TAGS) $(TESTS)
+    DOCKER_V2_RUN_CMD := $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TAGS) -parallel $(TESTV2PARALLEL) ./tests
 endif
 
 ifeq ("$(ADD_TIMESTAMP)", "true")
@@ -507,6 +514,10 @@ run-benchmarks-single-json-no-auth:
 run-benchmarks-single-vpack-no-auth: 
 	@echo "Benchmarks: Single server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" TEST_BENCHMARK="true" __run_tests
+
+run-benchmarks-v2-single-json-no-auth: 
+	@echo "V2 Benchmarks: Single server, JSON no authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="json" TEST_BENCHMARK="true" __run_v2_tests
 
 ## Lint
 
