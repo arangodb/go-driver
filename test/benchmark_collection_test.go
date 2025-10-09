@@ -28,6 +28,70 @@ import (
 	driver "github.com/arangodb/go-driver"
 )
 
+// BenchmarkConnectionInitialization measures the time to create a new client connection.
+func BenchmarkConnectionInitialization(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c := createClient(b, nil)
+		if c == nil {
+			b.Error("Failed to create client")
+		}
+	}
+	b.ReportAllocs()
+	b.ReportMetric(float64(b.N)/b.Elapsed().Seconds(), "ops/sec")
+}
+
+// BenchmarkCollectionCreation measures the time to create a new collection.
+func BenchmarkCollectionCreation(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(context.TODO(), c, "collection_creation_test", nil, b)
+	defer func() {
+		err := db.Remove(context.TODO())
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		colName := fmt.Sprintf("benchmark_col_%d", i)
+		_, err := db.CreateCollection(context.TODO(), colName, nil)
+		if err != nil {
+			b.Errorf("CreateCollection failed: %s", describe(err))
+		}
+	}
+	b.ReportAllocs()
+	b.ReportMetric(float64(b.N)/b.Elapsed().Seconds(), "ops/sec")
+}
+
+// BenchmarkCollectionCreationWithProperties measures the time to create a new collection with properties.
+func BenchmarkCollectionCreationWithProperties(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(context.TODO(), c, "collection_creation_props_test", nil, b)
+	defer func() {
+		err := db.Remove(context.TODO())
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+
+	options := &driver.CreateCollectionOptions{
+		NumberOfShards:    1,
+		ReplicationFactor: 1,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		colName := fmt.Sprintf("benchmark_col_props_%d", i)
+		_, err := db.CreateCollection(context.TODO(), colName, options)
+		if err != nil {
+			b.Errorf("CreateCollectionWithProperties failed: %s", describe(err))
+		}
+	}
+	b.ReportAllocs()
+	b.ReportMetric(float64(b.N)/b.Elapsed().Seconds(), "ops/sec")
+}
+
 // BenchmarkCollectionExists measures the CollectionExists operation.
 func BenchmarkCollectionExists(b *testing.B) {
 	c := createClient(b, nil)
@@ -209,4 +273,97 @@ func BenchmarkComprehensiveDocumentOperations_10K(b *testing.B) {
 	col := ensureCollection(context.TODO(), db, "benchmark_comprehensive_10k_docs", nil, b)
 
 	runComprehensiveDocumentOperationsV1(b, col, 10000)
+}
+
+// BenchmarkSingleDocumentInsert measures single document insertion performance
+func BenchmarkSingleDocumentInsert(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(context.TODO(), c, "insert_test", nil, b)
+	defer func() {
+		err := db.Remove(context.TODO())
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+	col := ensureCollection(context.TODO(), db, "insert_test", nil, b)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		doc := UserDoc{
+			Name: fmt.Sprintf("V2SingleUser_%d", i),
+			Age:  20 + (i % 50),
+		}
+		if _, err := col.CreateDocument(context.TODO(), doc); err != nil {
+			b.Errorf("CreateDocument failed: %s", err)
+		}
+	}
+	b.ReportAllocs()
+	b.ReportMetric(float64(b.N)/b.Elapsed().Seconds(), "ops/sec")
+}
+
+// runBatchDocumentInsertBenchmark runs batch document insertion benchmark with specified batch size
+func runBatchDocumentInsertBenchmark(b *testing.B, col driver.Collection, batchSize int) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		docs := make([]UserDoc, batchSize)
+		for j := 0; j < batchSize; j++ {
+			docs[j] = UserDoc{
+				Name: fmt.Sprintf("BatchUser_%d_%d", i, j),
+				Age:  20 + (j % 50),
+			}
+		}
+		metas, errs, err := col.CreateDocuments(context.TODO(), docs)
+		if err != nil {
+			b.Errorf("CreateDocuments failed: %s", describe(err))
+			continue
+		}
+		if err := errs.FirstNonNil(); err != nil {
+			b.Errorf("Expected no errors, got first: %s", describe(err))
+		}
+		// In V1 API, metas is already a slice, no need to read from it
+		_ = metas // Use metas to avoid unused variable warning
+	}
+	b.ReportAllocs()
+	b.ReportMetric(float64(b.N)/b.Elapsed().Seconds(), "ops/sec")
+}
+
+// BenchmarkBatchDocumentInsert_10 measures batch document insertion with 10 documents per batch
+func BenchmarkBatchDocumentInsert_10(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(context.TODO(), c, "batch_insert_test", nil, b)
+	defer func() {
+		err := db.Remove(context.TODO())
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+	col := ensureCollection(context.TODO(), db, "batch_insert_test", nil, b)
+	runBatchDocumentInsertBenchmark(b, col, 10)
+}
+
+// BenchmarkBatchDocumentInsert_100 measures batch document insertion with 100 documents per batch
+func BenchmarkBatchDocumentInsert_100(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(context.TODO(), c, "batch_insert_test", nil, b)
+	defer func() {
+		err := db.Remove(context.TODO())
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+	col := ensureCollection(context.TODO(), db, "batch_insert_test", nil, b)
+	runBatchDocumentInsertBenchmark(b, col, 100)
+}
+
+// BenchmarkBatchDocumentInsert_1000 measures batch document insertion with 1000 documents per batch
+func BenchmarkBatchDocumentInsert_1000(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(context.TODO(), c, "batch_insert_test", nil, b)
+	defer func() {
+		err := db.Remove(context.TODO())
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+	col := ensureCollection(context.TODO(), db, "batch_insert_test", nil, b)
+	runBatchDocumentInsertBenchmark(b, col, 1000)
 }
