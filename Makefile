@@ -519,6 +519,24 @@ run-benchmarks-v2-single-json-no-auth:
 	@echo "V2 Benchmarks: Single server, JSON no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="json" TEST_BENCHMARK="true" __run_v2_tests
 
+run-benchmarks-v2-single-vpack-no-auth: 
+	@echo "V2 Benchmarks: Single server, Velocypack no authentication"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" TEST_BENCHMARK="true" __run_v2_tests
+
+# V1 Cluster benchmarks
+run-benchmarks-cluster-json-no-auth: 
+	@echo "V1 Benchmarks: Cluster server, JSON no authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="json" TEST_BENCHMARK="true" __run_tests
+
+run-benchmarks-cluster-vpack-no-auth: 
+	@echo "V1 Benchmarks: Cluster server, Velocypack no authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" TEST_BENCHMARK="true" __run_tests
+
+# V2 Cluster benchmarks
+run-benchmarks-v2-cluster-json-no-auth: 
+	@echo "V2 Benchmarks: Cluster server, JSON no authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="json" TEST_BENCHMARK="true" __run_v2_tests
+
 ## Lint
 
 .PHONY: tools
