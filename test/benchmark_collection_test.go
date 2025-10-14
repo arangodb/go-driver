@@ -275,6 +275,21 @@ func BenchmarkComprehensiveDocumentOperations_10K(b *testing.B) {
 	runComprehensiveDocumentOperationsV1(b, col, 10000)
 }
 
+// BenchmarkComprehensiveDocumentOperations_100K measures comprehensive document operations with 100000 pre-created documents using V1 API
+func BenchmarkComprehensiveDocumentOperations_100K(b *testing.B) {
+	c := createClient(b, nil)
+	db := ensureDatabase(context.TODO(), c, "benchmark_comprehensive_100k_test", nil, b)
+	defer func() {
+		err := db.Remove(context.TODO())
+		if err != nil {
+			b.Logf("Failed to drop database %s: %s ...", db.Name(), err)
+		}
+	}()
+	col := ensureCollection(context.TODO(), db, "benchmark_comprehensive_100k_docs", nil, b)
+
+	runComprehensiveDocumentOperationsV1(b, col, 100000)
+}
+
 // BenchmarkSingleDocumentInsert measures single document insertion performance
 func BenchmarkSingleDocumentInsert(b *testing.B) {
 	c := createClient(b, nil)

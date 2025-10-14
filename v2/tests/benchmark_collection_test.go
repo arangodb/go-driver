@@ -268,6 +268,17 @@ func BenchmarkV2ComprehensiveDocumentOperations_10K(b *testing.B) {
 	})
 }
 
+// BenchmarkV2ComprehensiveDocumentOperations_100K measures comprehensive document operations with 100000 pre-created documents
+func BenchmarkV2ComprehensiveDocumentOperations_100K(b *testing.B) {
+	WrapB(b, func(b *testing.B, client arangodb.Client) {
+		WithDatabase(b, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(b, db, nil, func(col arangodb.Collection) {
+				runComprehensiveDocumentOperations(b, col, 100000)
+			})
+		})
+	})
+}
+
 // BenchmarkV2SingleDocumentInsert measures single document insertion performance
 func BenchmarkV2SingleDocumentInsert(b *testing.B) {
 	WrapB(b, func(b *testing.B, client arangodb.Client) {
