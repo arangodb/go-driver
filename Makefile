@@ -508,6 +508,22 @@ run-benchmarks-single-vpack-no-auth:
 	@echo "Benchmarks: Single server, Velocypack, no authentication"
 	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TEST_CONTENT_TYPE="vpack" TEST_BENCHMARK="true" __run_tests
 
+# V1 Cluster benchmarks
+run-benchmarks-cluster-json-no-auth: 
+	@echo "V1 Benchmarks: Cluster server, JSON no authentication"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="json" TEST_BENCHMARK="true" __run_tests
+
+# V2 Cluster benchmarks
+run-benchmarks-v2-cluster-json-no-auth: 
+		@echo "V2 Benchmarks: Cluster server, JSON no authentication (from benchmark_tests/)"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" TEST_CONTENT_TYPE="json" TEST_BENCHMARK="true" __run_v2_benchmark_tests
+
+__run_v2_benchmark_tests: __test_v2_debug__ __test_prepare __test_v2_benchmark_go_test __test_cleanup
+
+__test_v2_benchmark_go_test:
+	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) $(TAGS) -parallel $(TESTV2PARALLEL) ./tests/benchmark_tests $(ADD_TIMESTAMP)) && echo "success!" \
+	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
+
 ## Lint
 
 .PHONY: tools
