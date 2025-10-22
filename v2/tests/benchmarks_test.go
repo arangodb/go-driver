@@ -1,10 +1,29 @@
-package benchmarktests
+// DISCLAIMER
+//
+// # Copyright 2024 ArangoDB GmbH, Cologne, Germany
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Copyright holder is ArangoDB GmbH, Cologne, Germany
+package tests
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -16,19 +35,68 @@ import (
 )
 
 func createClient(b *testing.B) arangodb.Client {
+	// Read endpoint from environment variable
+	endpointsEnv := os.Getenv("TEST_ENDPOINTS")
+	b.Logf("endpointsEnv: %s", endpointsEnv)
+	if endpointsEnv == "" {
+		endpointsEnv = "http://localhost:7001"
+	}
+	endpoints := strings.Split(endpointsEnv, ",")
+
+	// Determine if using TLS based on endpoint protocol
+	useTLS := strings.HasPrefix(endpoints[0], "https://")
+
 	// Create an HTTP connection to the database
 	endpoint, err := connection.NewMaglevHashEndpoints(
-		[]string{"https://localhost:7001"},
+		endpoints,
 		connection.RequestDBNameValueExtractor,
 	)
-
-	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
-
-	// Add authentication
-	auth := connection.NewBasicAuth("root", "")
-	err = conn.SetAuthentication(auth)
 	if err != nil {
-		log.Fatalf("Failed to set authentication: %v", err)
+		log.Fatalf("Failed to create endpoints: %v", err)
+	}
+
+	// Use HTTP/2 for all connections
+	// For plain HTTP, pass true to enable HTTP/2 cleartext (h2c)
+	// For HTTPS, pass false to use standard TLS
+	var conn connection.Connection
+	if useTLS {
+		// HTTPS: Use standard HTTP/2 with TLS
+		conn = connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, false))
+	} else {
+		// HTTP: Enable HTTP/2 cleartext (h2c) by passing true
+		// This sets up the DialTLSContext to handle plain HTTP with HTTP/2
+		conn = connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
+	}
+
+	// Add authentication if required
+	// Format: basic:username:password or jwt:username:password
+	authEnv := os.Getenv("TEST_AUTHENTICATION")
+	if authEnv != "" {
+		parts := strings.SplitN(authEnv, ":", 3)
+		if len(parts) < 3 {
+			log.Fatalf("Invalid TEST_AUTHENTICATION format. Expected 'type:username:password', got: %s", authEnv)
+		}
+		authType := parts[0]
+		username := parts[1]
+		password := parts[2]
+
+		var auth connection.Authentication
+		switch authType {
+		case "basic":
+			auth = connection.NewBasicAuth(username, password)
+		case "jwt":
+			// JWT authentication requires a Wrapper approach, not direct Authentication
+			// For now, log a warning and treat as basic auth
+			log.Printf("Warning: JWT authentication not fully implemented in benchmarks. Using basic auth instead.")
+			auth = connection.NewBasicAuth(username, password)
+		default:
+			log.Fatalf("Unsupported authentication type: %s. Supported types: basic, jwt", authType)
+		}
+
+		err = conn.SetAuthentication(auth)
+		if err != nil {
+			log.Fatalf("Failed to set authentication: %v", err)
+		}
 	}
 
 	// Create a client
@@ -38,14 +106,36 @@ func createClient(b *testing.B) arangodb.Client {
 }
 
 func ensureDatabase(b *testing.B, client arangodb.Client, name string, opts *arangodb.CreateDatabaseOptions) arangodb.Database {
-	db, err := client.CreateDatabase(context.TODO(), name, opts)
+	ctx := context.TODO()
+
+	// Try to get existing database first
+	db, err := client.GetDatabase(ctx, name, nil)
+	if err == nil {
+		b.Logf("Using existing database: %s", name)
+		return db
+	}
+
+	// Database doesn't exist, create it
+	db, err = client.CreateDatabase(ctx, name, opts)
 	require.NoError(b, err)
+	b.Logf("Created new database: %s", name)
 	return db
 }
 
 func ensureCollection(b *testing.B, db arangodb.Database, name string, opts *arangodb.CreateCollectionPropertiesV2) arangodb.Collection {
-	col, err := db.CreateCollectionV2(context.TODO(), name, opts)
+	ctx := context.TODO()
+
+	// Try to get existing collection first
+	col, err := db.GetCollection(ctx, name, nil)
+	if err == nil {
+		b.Logf("Using existing collection: %s", name)
+		return col
+	}
+
+	// Collection doesn't exist, create it
+	col, err = db.CreateCollectionV2(ctx, name, opts)
 	require.NoError(b, err)
+	b.Logf("Created new collection: %s", name)
 	return col
 }
 
@@ -59,11 +149,11 @@ var (
 func setup(b *testing.B) (arangodb.Database, arangodb.Collection) {
 	once.Do(func() {
 		globalClient = createClient(b)
-		globalDB = ensureDatabase(b, globalClient, "bench_db", nil)
+		globalDB = ensureDatabase(b, globalClient, "bench_db_v2", nil)
 		colProps := &arangodb.CreateCollectionPropertiesV2{
 			WaitForSync: utils.NewType(false),
 		}
-		globalCol = ensureCollection(b, globalDB, "bench_col", colProps)
+		globalCol = ensureCollection(b, globalDB, "bench_col_v2", colProps)
 	})
 	return globalDB, globalCol
 }
@@ -111,6 +201,10 @@ func bulkInsert(b *testing.B, docSize int) {
 			}
 		}
 	})
+}
+
+func BenchmarkV2BulkInsert100KDocs(b *testing.B) {
+	bulkInsert(b, 100000)
 }
 
 func bulkRead(b *testing.B, docSize int) {
@@ -170,19 +264,10 @@ func bulkRead(b *testing.B, docSize int) {
 			}
 		}
 	})
+}
 
-	// -----------------------------------------
-	// Sub-benchmark 2: Read one document at a time
-	// -----------------------------------------
-	b.Run("ReadSingleDoc", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			key := fmt.Sprintf("doc_%d", i%docSize)
-			var doc TestDoc
-			_, err := col.ReadDocument(ctx, key, &doc)
-			require.NoError(b, err)
-		}
-	})
+func BenchmarkV2BulkRead100KDocs(b *testing.B) {
+	bulkRead(b, 100000)
 }
 
 func bulkUpdate(b *testing.B, docSize int) {
@@ -238,28 +323,10 @@ func bulkUpdate(b *testing.B, docSize int) {
 			require.NoError(b, err)
 		}
 	})
+}
 
-	// -----------------------------------------
-	// Sub-benchmark 2: Update one document at a time
-	// -----------------------------------------
-	b.Run("UpdateSingleDoc", func(b *testing.B) {
-		b.ResetTimer()
-
-		for i := 0; i < b.N; i++ {
-			key := fmt.Sprintf("doc_%d", i%docSize)
-			var doc TestDoc
-			// Read existing document
-			_, err := col.ReadDocument(ctx, key, &doc)
-			require.NoError(b, err)
-
-			// Update the document
-			doc.Name = fmt.Sprintf("updated_%d", i)
-			doc.Value += 1
-
-			_, err = col.UpdateDocument(ctx, key, doc)
-			require.NoError(b, err)
-		}
-	})
+func BenchmarkV2bulkUpdate100KDocs(b *testing.B) {
+	bulkUpdate(b, 100000)
 }
 
 // bulkDelete benchmarks document deletion performance
@@ -314,56 +381,6 @@ func bulkDelete(b *testing.B, docSize int) {
 			require.NoError(b, err)
 		}
 	})
-
-	// -----------------------------------------
-	// Sub-benchmark 2: Delete one document at a time
-	// -----------------------------------------
-	b.Run("DeleteSingleDoc", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			key := fmt.Sprintf("doc_%d", i%docSize)
-			doc := TestDoc{
-				Key:   key,
-				Name:  fmt.Sprintf("doc_%d", i),
-				Value: i,
-			}
-
-			// Create before delete for consistent test
-			_, err := col.CreateDocument(ctx, doc)
-			require.NoError(b, err)
-
-			_, err = col.DeleteDocumentWithOptions(ctx, key, deleteOpts)
-			require.NoError(b, err)
-		}
-	})
-}
-
-func BenchmarkV2BulkInsert10KDocs(b *testing.B) {
-	bulkInsert(b, 10000)
-}
-
-func BenchmarkV2BulkInsert100KDocs(b *testing.B) {
-	bulkInsert(b, 100000)
-}
-
-func BenchmarkV2BulkRead10KDocs(b *testing.B) {
-	bulkRead(b, 10000)
-}
-
-func BenchmarkV2BulkRead100KDocs(b *testing.B) {
-	bulkRead(b, 100000)
-}
-
-func BenchmarkV2bulkUpdate10KDocs(b *testing.B) {
-	bulkUpdate(b, 10000)
-}
-
-func BenchmarkV2bulkUpdate100KDocs(b *testing.B) {
-	bulkUpdate(b, 100000)
-}
-
-func BenchmarkV2BulkDelete10KDocs(b *testing.B) {
-	bulkDelete(b, 10000)
 }
 
 func BenchmarkV2BulkDelete100KDocs(b *testing.B) {

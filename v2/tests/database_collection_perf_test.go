@@ -137,20 +137,20 @@ func bBatchInsert(b *testing.B, db arangodb.Database, threads int) {
 	})
 }
 
-func Benchmark_Insert(b *testing.B) {
-	WrapB(b, func(b *testing.B, client arangodb.Client) {
-		WithDatabase(b, client, nil, func(db arangodb.Database) {
-			bInsert(b, db, 1)
-			bInsert(b, db, 4)
-		})
-	})
-}
+// func Benchmark_Insert(b *testing.B) {
+// 	WrapB(b, func(b *testing.B, client arangodb.Client) {
+// 		WithDatabase(b, client, nil, func(db arangodb.Database) {
+// 			bInsert(b, db, 1)
+// 			bInsert(b, db, 4)
+// 		})
+// 	})
+// }
 
-func Benchmark_BatchInsert(b *testing.B) {
-	WrapB(b, func(b *testing.B, client arangodb.Client) {
-		WithDatabase(b, client, nil, func(db arangodb.Database) {
-			bBatchInsert(b, db, 1)
-			bBatchInsert(b, db, 4)
-		})
-	})
-}
+// func Benchmark_BatchInsert(b *testing.B) {
+// 	WrapB(b, func(b *testing.B, client arangodb.Client) {
+// 		WithDatabase(b, client, nil, func(db arangodb.Database) {
+// 			bBatchInsert(b, db, 1)
+// 			bBatchInsert(b, db, 4)
+// 		})
+// 	})
+// }
