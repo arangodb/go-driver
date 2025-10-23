@@ -25,7 +25,12 @@ V2 driver shows significant performance improvements over V1, with 16-44% faster
 For detailed benchmark results, analysis, and instructions on running benchmarks,
 see [BENCHMARKS.md](./BENCHMARKS.md).
 
-### Quick Start
+### go-driver v2 vs v1 Summary
+
+- **Protocol**: v2 switches from HTTP/1.1 to HTTP/2, enabling multiplexing, header compression, and binary framing for higher efficiency.
+- **Performance**: v2 shows major gains in write-heavy workloads; reads improve less since they’re I/O-bound and limited by network latency.
+- **Memory**: v2 uses 89–94% less memory and cuts allocations by 13–99%, greatly reducing GC overhead.
+- **Overall**: v2 is faster, more memory-efficient, and better suited for high-throughput, long-running applications.
 
 **V2 HTTP/2 Advantages:**
 - **Multiplexing**: Multiple requests over single connection
