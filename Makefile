@@ -19,9 +19,6 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
 
-ifndef TESTOPTIONS
-	TESTOPTIONS := 
-endif
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
 endif
@@ -114,7 +111,7 @@ endif
 endif
 
 ifeq ("$(TEST_BENCHMARK)", "true")
-	TAGS := -bench=. -run=notests -cpu=1,2,4
+	TAGS := -bench=. -benchmem -run=notests -cpu=1,2,4
 	TESTS := $(REPOPATH)/test
 ifndef TESTOPTIONS
 	TESTOPTIONS := $(TAGS)

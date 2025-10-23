@@ -17,3 +17,44 @@ future version.
 The v1 driver is deprecated and will not receive any new features.
 Please use v2 instead, which uses a new way of handling requests and responses
 that is more efficient and easier to use.
+
+## Benchmarks
+
+V2 driver shows significant performance improvements over V1, with 16-44% faster execution times and 89-94% less memory usage across all operations. 
+
+For detailed benchmark results, analysis, and instructions on running benchmarks,
+see [BENCHMARKS.md](./BENCHMARKS.md).
+
+### Quick Start
+
+**V2 HTTP/2 Advantages:**
+- **Multiplexing**: Multiple requests over single connection
+- **Header compression**: Reduced overhead per request
+- **Binary protocol**: More efficient than text-based HTTP/1.1
+- **Better resource management**: Drastically fewer allocations
+
+**Why Read operations show less improvement:**
+- Read operations are I/O bound more than CPU/memory bound
+- Network latency dominates over protocol overhead
+- HTTP/2 benefits are more pronounced in write-heavy operations
+
+**Memory Efficiency:**
+- V2 shows dramatic memory improvements across all operations (89-94% reduction)
+- Allocation counts reduced by 13-99%, reducing GC pressure
+- Better for high-throughput, long-running applications
+
+### Running Benchmarks
+
+Quick start to run V2 benchmarks:
+
+```bash
+# For local testing
+export TESTOPTIONS="-bench=. -benchmem -run=^$"
+make run-benchmarks-v2-cluster-json-no-auth
+
+# For remote testing with authentication
+export TEST_ENDPOINTS_OVERRIDE="https://your-arango-host:8529"
+export TEST_AUTHENTICATION="basic:root:your_password"
+export TESTOPTIONS="-bench=. -benchmem -run=^$"
+make run-benchmarks-v2-remote-with-auth
+```

@@ -198,8 +198,8 @@ BenchmarkV2BulkInsert100KDocs/Insert-4    1    7359918443 ns/op    16914840 B/op
 ### Example Output
 
 ```
-BenchmarkV2BulkInsert100KDocs/Insert-4              1         4322425027  ns/op        16868600  B/op        201 allocs/op
-BenchmarkV2BulkRead100KDocs/ReadAllDocsOnce-4       1         21376798806 ns/op        129860728 B/op    b1914146 allocs/op
+BenchmarkV2BulkInsert100KDocs/Insert-4              1         4322425027 ns/op         16868600 B/op         201 allocs/op
+BenchmarkV2BulkRead100KDocs/ReadAllDocsOnce-4       1        21376798806 ns/op        129860728 B/op     1914146 allocs/op
 ```
 ---
 
