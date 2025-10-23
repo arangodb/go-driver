@@ -27,37 +27,7 @@ see [BENCHMARKS.md](./BENCHMARKS.md).
 
 ### go-driver v2 vs v1 Summary
 
-- **Protocol**: v2 switches from HTTP/1.1 to HTTP/2, enabling multiplexing, header compression, and binary framing for higher efficiency.
-- **Performance**: v2 shows major gains in write-heavy workloads; reads improve less since they’re I/O-bound and limited by network latency.
+- **Protocol**: v2 supports both HTTP/1.1 and HTTP/2, with HTTP/2 providing multiplexing, header compression, and binary framing for higher efficiency.
+- **Performance**: v2 shows major gains in write-heavy workloads; reads improve less since they're I/O-bound and limited by network latency.
 - **Memory**: v2 uses 89–94% less memory and cuts allocations by 13–99%, greatly reducing GC overhead.
 - **Overall**: v2 is faster, more memory-efficient, and better suited for high-throughput, long-running applications.
-
-**V2 HTTP/2 Advantages:**
-- **Multiplexing**: Multiple requests over single connection
-- **Header compression**: Reduced overhead per request
-- **Binary protocol**: More efficient than text-based HTTP/1.1
-- **Better resource management**: Drastically fewer allocations
-
-**Why Read operations show less improvement:**
-- Read operations are I/O bound more than CPU/memory bound
-- Network latency dominates over protocol overhead
-- HTTP/2 benefits are more pronounced in write-heavy operations
-
-**Memory Efficiency:**
-- V2 shows dramatic memory improvements across all operations (89-94% reduction)
-
-### Running Benchmarks
-
-Quick start to run V2 benchmarks:
-
-```bash
-# For local testing
-export TESTOPTIONS="-bench=. -benchmem -run=^$"
-make run-benchmarks-v2-cluster-json-no-auth
-
-# For remote testing with authentication
-export TEST_ENDPOINTS_OVERRIDE="https://your-arango-host:8529"
-export TEST_AUTHENTICATION="basic:root:your_password"
-export TESTOPTIONS="-bench=. -benchmem -run=^$"
-make run-benchmarks-v2-remote-with-auth
-```
