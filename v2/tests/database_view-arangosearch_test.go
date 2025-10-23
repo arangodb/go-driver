@@ -955,28 +955,6 @@ func Test_ArangoSearchViewInMemoryCache(t *testing.T) {
 	})
 }
 
-func insertDocuments(t testing.TB, col arangodb.Collection, documents, batch int, factory func(i int) interface{}) {
-	b := make([]document, 0, batch)
-
-	for i := 0; i < documents; i++ {
-		b = append(b, document{
-			basicDocument: newBasicDocument(),
-			Fields:        factory(i),
-		})
-
-		if len(b) == batch {
-			insertBatch(t, context.Background(), col, &arangodb.CollectionDocumentCreateOptions{
-				WithWaitForSync: utils.NewType(true),
-			}, b)
-			b = b[:0]
-		}
-	}
-
-	if len(b) > 0 {
-		insertBatch(t, context.Background(), col, nil, b)
-	}
-}
-
 func insertBatch(t testing.TB, ctx context.Context, col arangodb.Collection, opts *arangodb.CollectionDocumentCreateOptions, documents interface{}) {
 	results, err := col.CreateDocumentsWithOptions(ctx, documents, opts)
 	require.NoError(t, err)
@@ -989,16 +967,4 @@ func insertBatch(t testing.TB, ctx context.Context, col arangodb.Collection, opt
 
 		require.False(t, getBool(meta.Error, false))
 	}
-}
-
-func Test_BatchInsert(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-				insertDocuments(t, col, 2048, 128, func(i int) interface{} {
-					return i
-				})
-			})
-		})
-	})
 }

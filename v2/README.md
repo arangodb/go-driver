@@ -40,8 +40,6 @@ see [BENCHMARKS.md](./BENCHMARKS.md).
 
 **Memory Efficiency:**
 - V2 shows dramatic memory improvements across all operations (89-94% reduction)
-- Allocation counts reduced by 13-99%, reducing GC pressure
-- Better for high-throughput, long-running applications
 
 ### Running Benchmarks
 
