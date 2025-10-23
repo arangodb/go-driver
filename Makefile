@@ -519,7 +519,7 @@ run-benchmarks-cluster-json-no-auth:
 
 run-benchmarks-remote-with-auth:
 	@echo "V1 Benchmarks: Remote server with authentication"
-	@echo "Usage: TEST_ENDPOINTS_OVERRIDE=https://host:port TEST_AUTHENTICATION=basic:user:pass make run-benchmarks-v1-remote-with-auth"
+	@echo "Usage: TEST_ENDPOINTS_OVERRIDE=https://host:port TEST_AUTHENTICATION=basic:user:pass make run-benchmarks-remote-with-auth"
 ifndef TEST_AUTHENTICATION
 	@echo "ERROR: TEST_AUTHENTICATION is not set. Please export it first."
 	@echo "Example: export TEST_AUTHENTICATION='basic:root:password'"
