@@ -115,13 +115,27 @@ type collectionDocumentDeleteResponseReader struct {
 	array   *connection.Array
 	options *CollectionDocumentDeleteOptions
 	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
-	// Cache for len() method
+	// Cache for len() method - allows Read() to work after Len() is called
 	cachedResults []CollectionDocumentDeleteResponse
 	cachedErrors  []error
 	cached        bool
+	readIndex     int // Track position in cache for Read() after Len()
 }
 
 func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (CollectionDocumentDeleteResponse, error) {
+	// If Len() was called, serve from cache
+	// Note: When serving from cache, the 'i' parameter is not populated with document data
+	if c.cached {
+		if c.readIndex >= len(c.cachedResults) {
+			return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
+		}
+		result := c.cachedResults[c.readIndex]
+		err := c.cachedErrors[c.readIndex]
+		c.readIndex++
+		return result, err
+	}
+
+	// Normal streaming read
 	if !c.array.More() {
 		return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
 	}
@@ -172,12 +186,15 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 	return meta, nil
 }
 
-// Len returns the number of items in the response
+// Len returns the number of items in the response.
+// After calling Len(), you can still use Read() to iterate through items.
+// Note: When Read() serves from cache, the document data parameter is not populated.
 func (c *collectionDocumentDeleteResponseReader) Len() int {
 	if !c.cached {
 		var dummySlice []interface{}
 		c.cachedResults, c.cachedErrors = c.ReadAll(&dummySlice)
 		c.cached = true
+		c.readIndex = 0 // Reset read position to allow Read() after Len()
 	}
 	return len(c.cachedResults)
 }

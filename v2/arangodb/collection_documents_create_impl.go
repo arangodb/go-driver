@@ -150,13 +150,26 @@ type collectionDocumentCreateResponseReader struct {
 	}
 	shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]
 
-	// Cache for len() method
+	// Cache for len() method - allows Read() to work after Len() is called
 	cachedResults []CollectionDocumentCreateResponse
 	cachedErrors  []error
 	cached        bool
+	readIndex     int // Track position in cache for Read() after Len()
 }
 
 func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreateResponse, error) {
+	// If Len() was called, serve from cache
+	if c.cached {
+		if c.readIndex >= len(c.cachedResults) {
+			return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
+		}
+		result := c.cachedResults[c.readIndex]
+		err := c.cachedErrors[c.readIndex]
+		c.readIndex++
+		return result, err
+	}
+
+	// Normal streaming read
 	if !c.array.More() {
 		return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
 	}
@@ -191,11 +204,13 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 	return meta, nil
 }
 
-// Len returns the number of items in the response
+// Len returns the number of items in the response.
+// After calling Len(), you can still use Read() to iterate through items.
 func (c *collectionDocumentCreateResponseReader) Len() int {
 	if !c.cached {
 		c.cachedResults, c.cachedErrors = c.ReadAll()
 		c.cached = true
+		c.readIndex = 0 // Reset read position to allow Read() after Len()
 	}
 	return len(c.cachedResults)
 }
