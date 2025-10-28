@@ -8,6 +8,7 @@
 - Add missing endpoints from security to v2
 - Add missing endpoints from authentication to v2
 - Add missing endpoints from general-request-handling to v2
+- Add benchmark tests for v1 and v2 to compare performance
 
 ## [2.1.5](https://github.com/arangodb/go-driver/tree/v2.1.5) (2025-08-31)
 - Add tasks endpoints to v2
