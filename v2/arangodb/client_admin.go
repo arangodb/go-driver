@@ -613,5 +613,5 @@ type JWTSecret struct {
 
 type DeploymentIdResponse struct {
 	// Id represents the unique deployment identifier
-	Id string `json:"id"`
+	Id *string `json:"id"`
 }
