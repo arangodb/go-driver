@@ -24,6 +24,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -177,12 +178,18 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 	var meta CollectionDocumentCreateResponse
 
 	if c.options != nil {
-		meta.Old = c.options.OldObject
-		meta.New = c.options.NewObject
+		if c.options.OldObject != nil {
+			meta.Old = reflect.New(reflect.TypeOf(c.options.OldObject).Elem()).Interface()
+		}
+		if c.options.NewObject != nil {
+			meta.New = reflect.New(reflect.TypeOf(c.options.NewObject).Elem()).Interface()
+		}
 	}
 
 	c.response.DocumentMeta = &meta.DocumentMeta
 	c.response.ResponseStruct = &meta.ResponseStruct
+	c.response.Old = newUnmarshalInto(meta.Old)
+	c.response.New = newUnmarshalInto(meta.New)
 
 	if err := c.array.Unmarshal(&c.response); err != nil {
 		if err == io.EOF {
@@ -190,12 +197,6 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 		}
 		return CollectionDocumentCreateResponse{}, err
 	}
-
-	// Update meta with the unmarshaled data
-	meta.DocumentMeta = *c.response.DocumentMeta
-	meta.ResponseStruct = *c.response.ResponseStruct
-	meta.Old = c.response.Old
-	meta.New = c.response.New
 
 	if meta.Error != nil && *meta.Error {
 		return meta, meta.AsArangoError()

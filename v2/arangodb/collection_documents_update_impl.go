@@ -177,19 +177,18 @@ func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdat
 	var meta CollectionDocumentUpdateResponse
 
 	if c.options != nil {
-		// Create new instances for each document to avoid reusing the same pointers
 		if c.options.OldObject != nil {
-			oldObjectType := reflect.TypeOf(c.options.OldObject).Elem()
-			meta.Old = reflect.New(oldObjectType).Interface()
+			meta.Old = reflect.New(reflect.TypeOf(c.options.OldObject).Elem()).Interface()
 		}
 		if c.options.NewObject != nil {
-			newObjectType := reflect.TypeOf(c.options.NewObject).Elem()
-			meta.New = reflect.New(newObjectType).Interface()
+			meta.New = reflect.New(reflect.TypeOf(c.options.NewObject).Elem()).Interface()
 		}
 	}
 
 	c.response.DocumentMetaWithOldRev = &meta.DocumentMetaWithOldRev
 	c.response.ResponseStruct = &meta.ResponseStruct
+	c.response.Old = newUnmarshalInto(meta.Old)
+	c.response.New = newUnmarshalInto(meta.New)
 
 	if err := c.array.Unmarshal(&c.response); err != nil {
 		if err == io.EOF {
@@ -197,12 +196,6 @@ func (c *collectionDocumentUpdateResponseReader) Read() (CollectionDocumentUpdat
 		}
 		return CollectionDocumentUpdateResponse{}, err
 	}
-
-	// Update meta with the unmarshaled data
-	meta.DocumentMetaWithOldRev = *c.response.DocumentMetaWithOldRev
-	meta.ResponseStruct = *c.response.ResponseStruct
-	meta.Old = c.response.Old
-	meta.New = c.response.New
 
 	if meta.Error != nil && *meta.Error {
 		return meta, meta.AsArangoError()
