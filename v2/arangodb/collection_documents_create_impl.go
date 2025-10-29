@@ -130,6 +130,14 @@ func newCollectionDocumentCreateResponseReader(array *connection.Array, options 
 	c := &collectionDocumentCreateResponseReader{array: array, options: options}
 
 	if c.options != nil {
+		// Cache reflection types once during initialization for performance
+		if c.options.OldObject != nil {
+			c.oldType = reflect.TypeOf(c.options.OldObject).Elem()
+		}
+		if c.options.NewObject != nil {
+			c.newType = reflect.TypeOf(c.options.NewObject).Elem()
+		}
+
 		c.response.Old = newUnmarshalInto(c.options.OldObject)
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
@@ -156,6 +164,10 @@ type collectionDocumentCreateResponseReader struct {
 	cachedErrors  []error
 	cached        bool
 	readIndex     int // Track position in cache for Read() after Len()
+
+	// Performance: Cache reflection types to avoid repeated lookups
+	oldType reflect.Type
+	newType reflect.Type
 }
 
 func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreateResponse, error) {
@@ -177,13 +189,13 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 
 	var meta CollectionDocumentCreateResponse
 
-	if c.options != nil {
-		if c.options.OldObject != nil {
-			meta.Old = reflect.New(reflect.TypeOf(c.options.OldObject).Elem()).Interface()
-		}
-		if c.options.NewObject != nil {
-			meta.New = reflect.New(reflect.TypeOf(c.options.NewObject).Elem()).Interface()
-		}
+	// Create new instances for each document to avoid pointer reuse
+	// Use cached types for performance
+	if c.oldType != nil {
+		meta.Old = reflect.New(c.oldType).Interface()
+	}
+	if c.newType != nil {
+		meta.New = reflect.New(c.newType).Interface()
 	}
 
 	c.response.DocumentMeta = &meta.DocumentMeta
@@ -200,6 +212,20 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 
 	if meta.Error != nil && *meta.Error {
 		return meta, meta.AsArangoError()
+	}
+
+	// Copy data from the new instances back to the original option objects for backward compatibility
+	if c.options != nil {
+		if c.options.OldObject != nil && meta.Old != nil {
+			oldValue := reflect.ValueOf(meta.Old).Elem()
+			originalValue := reflect.ValueOf(c.options.OldObject).Elem()
+			originalValue.Set(oldValue)
+		}
+		if c.options.NewObject != nil && meta.New != nil {
+			newValue := reflect.ValueOf(meta.New).Elem()
+			originalValue := reflect.ValueOf(c.options.NewObject).Elem()
+			originalValue.Set(newValue)
+		}
 	}
 
 	return meta, nil
