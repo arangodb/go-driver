@@ -601,10 +601,10 @@ func Test_GetDeploymentId(t *testing.T) {
 
 				resp, err := client.GetDeploymentId(ctx)
 				require.NoError(t, err)
-				require.NotEmpty(t, resp.Id)
+				require.NotNil(t, resp.Id)
 
 				// Verify ID format (assuming it's UUID-like)
-				require.Regexp(t, `^[a-zA-Z0-9\-]+$`, resp.Id, "Deployment ID should be alphanumeric with hyphens")
+				require.Regexp(t, `^[a-zA-Z0-9\-]+$`, *resp.Id, "Deployment ID should be alphanumeric with hyphens")
 			})
 		})
 
@@ -612,14 +612,14 @@ func Test_GetDeploymentId(t *testing.T) {
 			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 				resp1, err := client.GetDeploymentId(ctx)
 				require.NoError(t, err)
-				require.NotEmpty(t, resp1.Id)
+				require.NotNil(t, resp1.Id)
 
 				resp2, err := client.GetDeploymentId(ctx)
 				require.NoError(t, err)
-				require.NotEmpty(t, resp2.Id)
+				require.NotNil(t, resp2.Id)
 
 				// IDs should be consistent across calls
-				require.Equal(t, resp1.Id, resp2.Id, "Deployment ID should be consistent across calls")
+				require.Equal(t, *resp1.Id, *resp2.Id, "Deployment ID should be consistent across calls")
 			})
 		})
 	})
