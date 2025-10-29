@@ -610,6 +610,9 @@ func Test_GetDeploymentId(t *testing.T) {
 
 		t.Run("Multiple calls consistency", func(t *testing.T) {
 			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+				version := skipBelowVersion(client, ctx, "3.12.6", t)
+				t.Logf("Current Version %s", version.Version)
+
 				resp1, err := client.GetDeploymentId(ctx)
 				require.NoError(t, err)
 				require.NotNil(t, resp1.Id)
