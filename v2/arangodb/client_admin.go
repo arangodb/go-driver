@@ -93,6 +93,9 @@ type ClientAdmin interface {
 	// ReloadJWTSecrets forces the server to reload the JWT secrets from disk.
 	// Requires a superuser JWT for authorization.
 	ReloadJWTSecrets(ctx context.Context) (JWTSecretsResult, error)
+
+	// GetDeploymentId retrieves the unique deployment ID for the ArangoDB deployment.
+	GetDeploymentId(ctx context.Context) (DeploymentIdResponse, error)
 }
 
 type ClientAdminLog interface {
@@ -606,4 +609,9 @@ type JWTSecretsResult struct {
 // JWTSecret represents a single JWT secret's SHA-256 hash
 type JWTSecret struct {
 	SHA256 *string `json:"sha256,omitempty"` // SHA-256 hash of the JWT secret
+}
+
+type DeploymentIdResponse struct {
+	// Id represents the unique deployment identifier
+	Id string `json:"id"`
 }

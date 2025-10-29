@@ -490,3 +490,25 @@ func (c *clientAdmin) ReloadJWTSecrets(ctx context.Context) (JWTSecretsResult, e
 		return JWTSecretsResult{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// GetDeploymentId retrieves the unique deployment ID for the ArangoDB deployment.
+func (c *clientAdmin) GetDeploymentId(ctx context.Context) (DeploymentIdResponse, error) {
+	url := connection.NewUrl("_admin", "deployment", "id")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		DeploymentIdResponse  `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return DeploymentIdResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.DeploymentIdResponse, nil
+	default:
+		return DeploymentIdResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
