@@ -43,6 +43,81 @@ type DatabaseQuery interface {
 
 	// ExplainQuery explains an AQL query and return information about it.
 	ExplainQuery(ctx context.Context, query string, bindVars map[string]interface{}, opts *ExplainQueryOptions) (ExplainQueryResult, error)
+
+	// GetQueryProperties returns the properties of the query system.
+	GetQueryProperties(ctx context.Context) (QueryProperties, error)
+
+	// UpdateQueryProperties updates the properties of the query system.
+	// The properties are updated with the provided options.
+	// The updated properties are returned.
+	UpdateQueryProperties(ctx context.Context, options QueryProperties) (QueryProperties, error)
+
+	// ListOfRunningAQLQueries returns a list of currently running AQL queries.
+	// If the all parameter is set to true, it returns all queries, otherwise only the queries that are currently running.
+	// The result is a list of RunningAQLQuery objects.
+	ListOfRunningAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error)
+
+	// ListOfSlowAQLQueries returns a list of slow AQL queries.
+	// If the all parameter is set to true, it returns all slow queries, otherwise only the queries that are currently running.
+	// The result is a list of RunningAQLQuery objects.
+	// Slow queries are defined as queries that have been running longer than the configured slow query threshold.
+	// The slow query threshold can be configured in the query properties.
+	// The result is a list of RunningAQLQuery objects.
+	ListOfSlowAQLQueries(ctx context.Context, all *bool) ([]RunningAQLQuery, error)
+
+	// ClearSlowAQLQueries clears the list of slow AQL queries.
+	// If the all parameter is set to true, it clears all slow queries, otherwise only
+	// the queries that are currently running.
+	ClearSlowAQLQueries(ctx context.Context, all *bool) error
+
+	// KillAQLQuery kills a running AQL query.
+	// The queryId is the unique identifier of the query
+	KillAQLQuery(ctx context.Context, queryId string, all *bool) error
+
+	// GetAllOptimizerRules returns all optimizer rules available in the database.
+	// The result is a list of OptimizerRule objects.
+	GetAllOptimizerRules(ctx context.Context) ([]OptimizerRules, error)
+
+	// GetQueryPlanCache returns a list of cached query plans.
+	// The result is a list of QueryPlanCacheRespObject objects.
+	GetQueryPlanCache(ctx context.Context) ([]QueryPlanCacheRespObject, error)
+
+	// ClearQueryPlanCache clears the query plan cache.
+	ClearQueryPlanCache(ctx context.Context) error
+
+	// GetQueryEntriesCache returns a list of cached query entries.
+	// The result is a list of QueryCacheEntriesRespObject objects.
+	GetQueryEntriesCache(ctx context.Context) ([]QueryCacheEntriesRespObject, error)
+
+	// ClearQueryCache clears the query cache.
+	// This will remove all cached query entries.
+	ClearQueryCache(ctx context.Context) error
+
+	// GetQueryCacheProperties returns the properties of the query cache.
+	// The result is a QueryCacheProperties object.
+	GetQueryCacheProperties(ctx context.Context) (QueryCacheProperties, error)
+
+	// SetQueryCacheProperties sets the properties of the query cache.
+	// The properties are updated with the provided options.
+	SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error)
+
+	// CreateUserDefinedFunction creates a user-defined function in the database.
+	// The function is created with the provided options.
+	// The function is created in the system collection `_aqlfunctions`.
+	// The function is created with the provided code and name.
+	// If the function already exists, it will be updated with the new code.
+	CreateUserDefinedFunction(ctx context.Context, options UserDefinedFunctionObject) (bool, error)
+
+	// DeleteUserDefinedFunction removes a user-defined AQL function from the current database.
+	// If group is true, all functions with the given name as a namespace prefix will be deleted.
+	// If group is false, only the function with the fully qualified name will be removed.
+	// It returns the number of functions deleted.
+	DeleteUserDefinedFunction(ctx context.Context, name *string, group *bool) (*int, error)
+
+	// GetUserDefinedFunctions retrieves all user-defined AQL functions registered in the current database.
+	// It returns a list of UserDefinedFunctionObject, each containing the function's name, code, and isDeterministic.
+	// The returned list may be empty array if no user-defined functions are registered.
+	GetUserDefinedFunctions(ctx context.Context) ([]UserDefinedFunctionObject, error)
 }
 
 type QuerySubOptions struct {
@@ -329,4 +404,130 @@ type ExplainQueryResult struct {
 	// Cacheable states whether the query results can be cached on the server if the query result cache were used.
 	// This attribute is not present when allPlans is set to true.
 	Cacheable *bool `json:"cacheable,omitempty"`
+}
+
+type QueryProperties struct {
+	Enabled              *bool    `json:"enabled"`
+	TrackSlowQueries     *bool    `json:"trackSlowQueries"`
+	TrackBindVars        *bool    `json:"trackBindVars"`
+	MaxSlowQueries       *int     `json:"maxSlowQueries"`
+	SlowQueryThreshold   *float64 `json:"slowQueryThreshold"`
+	MaxQueryStringLength *int     `json:"maxQueryStringLength"`
+}
+
+type RunningAQLQuery struct {
+	// The unique identifier of the query.
+	Id *string `json:"id,omitempty"`
+	// The database in which the query is running.
+	Database *string `json:"database,omitempty"`
+	// The user who executed the query.
+	// This is the user who executed the query, not the user who is currently running the
+	User *string `json:"user,omitempty"`
+	// The query string.
+	// This is the AQL query string that was executed.
+	Query *string `json:"query,omitempty"`
+	// The bind variables used in the query.
+	BindVars *map[string]interface{} `json:"bindVars,omitempty"`
+	// The time when the query started executing.
+	// This is the time when the query started executing on the server.
+	Started *string `json:"started,omitempty"`
+	// The time when the query was last updated.
+	// This is the time when the query was last updated on the server.
+	RunTime *float64 `json:"runTime,omitempty"`
+	// The PeakMemoryUsage is the peak memory usage of the query in bytes.
+	PeakMemoryUsage *uint64 `json:"peakMemoryUsage,omitempty"`
+	// The State of the query.
+	// This is the current state of the query, e.g. "running", "finished", "executing", etc.
+	State *string `json:"state,omitempty"`
+	// The stream option indicates whether the query is executed in streaming mode.
+	Stream *bool `json:"stream,omitempty"`
+}
+
+type Flags struct {
+	// CanBeDisabled indicates whether the query can be disabled.
+	CanBeDisabled *bool `json:"canBeDisabled,omitempty"`
+	// CanBeExecuted indicates whether the query can be executed.
+	CanCreateAdditionalPlans *bool `json:"canCreateAdditionalPlans,omitempty"`
+	//ClusterOnly indicates whether the query is only available in a cluster environment.
+	ClusterOnly *bool `json:"clusterOnly,omitempty"`
+	// DisabledByDefault indicates whether the query is disabled by default.
+	// This means that the query is not executed unless explicitly enabled.
+	DisabledByDefault *bool `json:"disabledByDefault,omitempty"`
+	// EnterpriseOnly indicates whether the query is only available in the Enterprise Edition.
+	EnterpriseOnly *bool `json:"enterpriseOnly,omitempty"`
+	// Hidden indicates whether the query is hidden from the user.
+	Hidden *bool `json:"hidden,omitempty"`
+}
+
+type OptimizerRules struct {
+	// Name of the optimizer rule.
+	Name  string `json:"name,omitempty"`
+	Flags `json:"flags,omitempty"`
+}
+
+type CacheRespObject struct {
+	// BindVars are the bind variables used in the query.
+	BindVars map[string]interface{} `json:"bindVars,omitempty"`
+	// DataSources is a list of data sources used in the query.
+	DataSources *[]string `json:"dataSources,omitempty"`
+	// Hash is the plan cache key.
+	Hash *string `json:"hash,omitempty"`
+	// Hits is the number of times the cached plan has been utilized so far.
+	Hits *uint32 `json:"hits,omitempty"`
+	// Query is the AQL query string.
+	Query *string `json:"query,omitempty"`
+}
+
+type QueryPlanCacheRespObject struct {
+	CacheRespObject `json:",inline"`
+	// QueryHash is the hash of the AQL query string.
+	QueryHash *uint32 `json:"queryHash,omitempty"`
+	// FullCount indicates whether the query result contains the full count of documents.
+	FullCount *bool `json:"fullCount,omitempty"`
+	// Created is the time when the query plan has been added to the cache.
+	Created *string `json:"created,omitempty"`
+	// MemoryUsage is the memory usage of the cached plan in bytes.
+	// This is the amount of memory used by the cached plan on the server.
+	MemoryUsage *uint64 `json:"memoryUsage,omitempty"`
+}
+
+type QueryCacheEntriesRespObject struct {
+	CacheRespObject `json:",inline"`
+	// Result is the number of documents in the query result.
+	Results *uint32 `json:"results,omitempty"`
+	// RunTime is the time it took to execute the query in seconds.
+	RunTime string `json:"runTime,omitempty"`
+	// Size is the size of the query result in bytes.
+	Size *uint64 `json:"size,omitempty"`
+	// Started is the time when the query has been started.
+	// Date and time at which the query result has been added to the cache.
+	Started *string `json:"started,omitempty"`
+}
+
+type QueryCacheProperties struct {
+	// IncludeSystem indicates whether the query cache includes system collections.
+	IncludeSystem *bool `json:"includeSystem,omitempty"`
+	// MaxEntrySize is the maximum size of a single query cache entry in bytes.
+	MaxEntrySize *uint64 `json:"maxEntrySize,omitempty"`
+	// MaxResults is the maximum number of results that can be stored in the query cache.
+	MaxResults *uint16 `json:"maxResults,omitempty"`
+	// MaxResultsSize is the maximum size of the query cache in bytes.
+	MaxResultsSize *uint64 `json:"maxResultsSize,omitempty"`
+	// Mode is the query cache mode.
+	// The mode can be one of the following values:
+	// "on" - the query cache is enabled and will be used for all queries.
+	// "off" - the query cache is disabled and will not be used for any queries.
+	// "demand" - the query cache is enabled, but will only be used for queries that explicitly request it.
+	Mode *string `json:"mode,omitempty"`
+}
+
+type UserDefinedFunctionObject struct {
+	// Code is the JavaScript function body as a string.
+	Code *string `json:"code"`
+
+	// Name is the fully qualified name of the user-defined function, including namespace.
+	Name *string `json:"name"`
+
+	// IsDeterministic indicates whether the function always produces the same output for identical input.
+	IsDeterministic *bool `json:"isDeterministic"`
 }

@@ -24,7 +24,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -107,4 +109,20 @@ func CreateDocuments(ctx context.Context, col Collection, docCount int, generato
 
 	_, err := col.CreateDocuments(ctx, docs)
 	return err
+}
+
+type ClientError struct {
+	Code    int
+	Message string
+}
+
+func (e *ClientError) Error() string {
+	return e.Message
+}
+
+func RequiredFieldError(field string) error {
+	return &ClientError{
+		Code:    http.StatusBadRequest,
+		Message: fmt.Sprintf("%s field must be set", field),
+	}
 }

@@ -145,3 +145,130 @@ func changeLogLevel(l string) string {
 
 	return "INFO"
 }
+
+func Test_Logs(t *testing.T) {
+	// This test cannot run subtests parallel, because it changes admin settings.
+	wrapOpts := WrapOptions{
+		Parallel: utils.NewType(false),
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.8.0", t)
+
+			logsResp, err := client.Logs(ctx, &arangodb.AdminLogEntriesOptions{
+				Start:  0,
+				Offset: 0,
+				Upto:   "3",
+				Sort:   "asc",
+			})
+			require.NoError(t, err)
+			require.NotNil(t, logsResp)
+
+			_, err = client.Logs(ctx, &arangodb.AdminLogEntriesOptions{
+				Start:  0,
+				Offset: 0,
+				Upto:   "3",
+				Sort:   "asc",
+				Level:  utils.NewType("DEBUG"),
+			})
+			require.Error(t, err)
+		})
+	}, wrapOpts)
+}
+
+func Test_DeleteLogLevels(t *testing.T) {
+	// This test cannot run subtests parallel, because it changes admin settings.
+	wrapOpts := WrapOptions{
+		Parallel: utils.NewType(false),
+	}
+
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.12.1", t)
+			// Role check
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole: %s", serverRole)
+
+			var serverId *string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				serverID, err := client.ServerID(ctx)
+				require.NoError(t, err)
+				serverId = &serverID
+			}
+
+			logsResp, err := client.DeleteLogLevels(ctx, serverId)
+			require.NoError(t, err)
+			require.NotNil(t, logsResp)
+		})
+	}, wrapOpts)
+}
+
+func Test_StructuredLogSettings(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.12.0", t)
+
+			opts := arangodb.LogSettingsOptions{
+				Database: utils.NewType(true),
+			}
+			modifiedResp, err := client.UpdateStructuredLogSettings(ctx, &opts)
+			require.NoError(t, err)
+			require.NotEmpty(t, modifiedResp)
+			require.NotNil(t, modifiedResp.Database)
+			require.Equal(t, *modifiedResp.Database, *opts.Database)
+
+			getResp, err := client.GetStructuredLogSettings(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, getResp)
+			require.NotNil(t, getResp.Database)
+			require.Equal(t, *getResp.Database, *opts.Database)
+		})
+	})
+}
+
+func Test_GetRecentAPICalls(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipBelowVersion(client, ctx, "3.12.5-2", t)
+
+			resp, err := client.Version(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, resp)
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			require.NotEmpty(t, db)
+
+			recentApisResp, err := client.GetRecentAPICalls(ctx, db.Name())
+			require.NoError(t, err)
+			require.NotEmpty(t, recentApisResp)
+		})
+	})
+}
+
+func Test_GetMetrics(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+
+			db, err := client.GetDatabase(ctx, "_system", nil)
+			require.NoError(t, err)
+			require.NotEmpty(t, db)
+			// Role check
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole: %s", serverRole)
+
+			var serverId *string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				serverID, err := client.ServerID(ctx)
+				require.NoError(t, err)
+				serverId = &serverID
+			}
+
+			metricsResp, err := client.GetMetrics(ctx, db.Name(), serverId)
+			require.NoError(t, err)
+			require.NotEmpty(t, metricsResp)
+		})
+	})
+}

@@ -48,6 +48,53 @@ type ClientAdminCluster interface {
 	// This function is suitable for servers of type coordinator or dbServer.
 	// The use of `ClientServerAdmin.Shutdown` is highly recommended above this function.
 	RemoveServer(ctx context.Context, serverID ServerID) error
+
+	// ClusterStatistics retrieves statistical information from a specific DBServer
+	// in an ArangoDB cluster. The statistics include system, client, HTTP, and server
+	// metrics such as CPU usage, memory, connections, requests, and transaction details.
+	ClusterStatistics(ctx context.Context, dbServer string) (ClusterStatisticsResponse, error)
+
+	// ClusterEndpoints returns the endpoints of a cluster.
+	ClusterEndpoints(ctx context.Context) (ClusterEndpointsResponse, error)
+
+	// GetDBServerMaintenance retrieves the maintenance status of a given DB-Server.
+	// It checks whether the specified DB-Server is in maintenance mode and,
+	// if so, until what date and time (in ISO 8601 format) the maintenance will last.
+	GetDBServerMaintenance(ctx context.Context, dbServer string) (ClusterMaintenanceResponse, error)
+
+	// SetDBServerMaintenance sets the maintenance mode for a specific DB-Server.
+	// This endpoint affects only the given DB-Server. When in maintenance mode,
+	// the server is excluded from supervision actions such as shard distribution
+	// or failover. This is typically used during planned restarts or upgrades.
+	SetDBServerMaintenance(ctx context.Context, dbServer string, opts *ClusterMaintenanceOpts) error
+
+	// SetClusterMaintenance sets the cluster-wide supervision maintenance mode.
+	// This endpoint affects the supervision (Agency) component of the cluster.
+	// While enabled, automatic failovers, shard movements, and repair jobs
+	// are suspended. The mode can be:
+	//
+	//   - "on":   Enable maintenance mode for the default 60 minutes.
+	//   - "off":  Disable maintenance mode immediately.
+	//   - "<number>":  Enable maintenance mode for <number> seconds.
+	//
+	// Be aware that no automatic failovers of any kind will take place while
+	// the maintenance mode is enabled. The supervision will reactivate itself
+	// automatically after the duration expires.
+	SetClusterMaintenance(ctx context.Context, mode *string) error
+
+	// GetClusterRebalance retrieves the current cluster imbalance status.
+	// It computes the imbalance across leaders and shards, and includes the number of
+	// ongoing and pending move shard operations.
+	GetClusterRebalance(ctx context.Context) (RebalanceResponse, error)
+
+	// ComputeClusterRebalance computes a set of move shard operations to improve cluster balance.
+	ComputeClusterRebalance(ctx context.Context, opts *RebalanceRequestBody) (RebalancePlan, error)
+
+	// ExecuteClusterRebalance executes a set of shard move operations on the cluster.
+	ExecuteClusterRebalance(ctx context.Context, opts *ExecuteRebalanceRequestBody) error
+
+	// ComputeAndExecuteClusterRebalance computes moves internally then executes them.
+	ComputeAndExecuteClusterRebalance(ctx context.Context, opts *RebalanceRequestBody) (RebalancePlan, error)
 }
 
 type NumberOfServersResponse struct {
@@ -125,4 +172,270 @@ func (i DatabaseInventory) ViewByName(name string) (InventoryView, bool) {
 		}
 	}
 	return InventoryView{}, false
+}
+
+// ClusterStatisticsResponse contains statistical data about the server as a whole.
+type ClusterStatisticsResponse struct {
+	Time       *float64     `json:"time,omitempty"`
+	Enabled    *bool        `json:"enabled,omitempty"`
+	System     *SystemStats `json:"system,omitempty"`
+	Client     *ClientStats `json:"client,omitempty"`
+	ClientUser *ClientStats `json:"clientUser,omitempty"`
+	HTTP       *HTTPStats   `json:"http,omitempty"`
+	Server     *ServerStats `json:"server,omitempty"`
+}
+
+// SystemStats contains statistical data about the system, this is part of
+type SystemStats struct {
+	MinorPageFaults     *int64   `json:"minorPageFaults,omitempty"`
+	MajorPageFaults     *int64   `json:"majorPageFaults,omitempty"`
+	UserTime            *float32 `json:"userTime,omitempty"`
+	SystemTime          *float32 `json:"systemTime,omitempty"`
+	NumberOfThreads     *int     `json:"numberOfThreads,omitempty"`
+	ResidentSize        *int64   `json:"residentSize,omitempty"`
+	ResidentSizePercent *float64 `json:"residentSizePercent,omitempty"`
+	VirtualSize         *int64   `json:"virtualSize,omitempty"`
+}
+
+type ClientStats struct {
+	HttpConnections *int       `json:"httpConnections,omitempty"`
+	ConnectionTime  *TimeStats `json:"connectionTime,omitempty"`
+	TotalTime       *TimeStats `json:"totalTime,omitempty"`
+	RequestTime     *TimeStats `json:"requestTime,omitempty"`
+	QueueTime       *TimeStats `json:"queueTime,omitempty"`
+	IoTime          *TimeStats `json:"ioTime,omitempty"`
+	BytesSent       *TimeStats `json:"bytesSent,omitempty"`
+	BytesReceived   *TimeStats `json:"bytesReceived,omitempty"`
+}
+
+// TimeStats is used for various time-related statistics.
+type TimeStats struct {
+	Sum    *float64 `json:"sum,omitempty"`
+	Count  *int     `json:"count,omitempty"`
+	Counts []int    `json:"counts"`
+}
+
+// HTTPStats contains statistics about the HTTP traffic.
+type HTTPStats struct {
+	RequestsTotal     *int `json:"requestsTotal,omitempty"`
+	RequestsSuperuser *int `json:"requestsSuperuser,omitempty"`
+	RequestsUser      *int `json:"requestsUser,omitempty"`
+	RequestsAsync     *int `json:"requestsAsync,omitempty"`
+	RequestsGet       *int `json:"requestsGet,omitempty"`
+	RequestsHead      *int `json:"requestsHead,omitempty"`
+	RequestsPost      *int `json:"requestsPost,omitempty"`
+	RequestsPut       *int `json:"requestsPut,omitempty"`
+	RequestsPatch     *int `json:"requestsPatch,omitempty"`
+	RequestsDelete    *int `json:"requestsDelete,omitempty"`
+	RequestsOptions   *int `json:"requestsOptions,omitempty"`
+	RequestsOther     *int `json:"requestsOther,omitempty"`
+}
+
+// ServerStats contains statistics about the server.
+type ServerStats struct {
+	Uptime         *float64          `json:"uptime,omitempty"`
+	PhysicalMemory *int64            `json:"physicalMemory,omitempty"`
+	Transactions   *TransactionStats `json:"transactions,omitempty"`
+	V8Context      *V8ContextStats   `json:"v8Context,omitempty"`
+	Threads        *ThreadStats      `json:"threads,omitempty"`
+}
+
+// TransactionStats contains statistics about transactions.
+type TransactionStats struct {
+	Started             *int `json:"started,omitempty"`
+	Aborted             *int `json:"aborted,omitempty"`
+	Committed           *int `json:"committed,omitempty"`
+	IntermediateCommits *int `json:"intermediateCommits,omitempty"`
+	ReadOnly            *int `json:"readOnly,omitempty"`
+	DirtyReadOnly       *int `json:"dirtyReadOnly,omitempty"`
+}
+
+// V8ContextStats contains statistics about V8 contexts.
+type V8ContextStats struct {
+	Available *int          `json:"available,omitempty"`
+	Busy      *int          `json:"busy,omitempty"`
+	Dirty     *int          `json:"dirty,omitempty"`
+	Free      *int          `json:"free,omitempty"`
+	Max       *int          `json:"max,omitempty"`
+	Min       *int          `json:"min,omitempty"`
+	Memory    []MemoryStats `json:"memory"`
+}
+
+// MemoryStats contains statistics about memory usage.
+type MemoryStats struct {
+	ContextId    *int     `json:"contextId,omitempty"`
+	TMax         *float64 `json:"tMax,omitempty"`
+	CountOfTimes *int     `json:"countOfTimes,omitempty"`
+	HeapMax      *int64   `json:"heapMax,omitempty"`
+	HeapMin      *int64   `json:"heapMin,omitempty"`
+	Invocations  *int     `json:"invocations,omitempty"`
+}
+
+// ThreadStats contains statistics about threads.
+type ThreadStats struct {
+	SchedulerThreads *int `json:"scheduler-threads,omitempty"`
+	Blocked          *int `json:"blocked,omitempty"`
+	Queued           *int `json:"queued,omitempty"`
+	InProgress       *int `json:"in-progress,omitempty"`
+	DirectExec       *int `json:"direct-exec,omitempty"`
+}
+
+// It contains a list of cluster endpoints that a client can use
+// to connect to the ArangoDB cluster.
+type ClusterEndpointsResponse struct {
+	// Endpoints is the list of cluster endpoints (usually coordinators)
+	// that the client can use to connect to the cluster.
+	Endpoints []ClusterEndpoint `json:"endpoints,omitempty"`
+}
+
+// ClusterEndpoint represents a single cluster endpoint.
+// Each endpoint provides a URL to connect to a coordinator.
+type ClusterEndpoint struct {
+	// Endpoint is the connection string (protocol + host + port)
+	// of a coordinator in the cluster, e.g. "tcp://127.0.0.1:8529".
+	Endpoint *string `json:"endpoint,omitempty"`
+}
+
+// ClusterMaintenanceResponse represents the maintenance status of a DB-Server.
+type ClusterMaintenanceResponse struct {
+	// The mode of the DB-Server. The value is "maintenance".
+	Mode *string `json:"mode,omitempty"`
+
+	// Until what date and time the maintenance mode currently lasts,
+	// in the ISO 8601 date/time format.
+	Until *string `json:"until,omitempty"`
+}
+
+// ClusterMaintenanceOpts represents the options for setting maintenance mode
+// on a DB-Server in an ArangoDB cluster.
+type ClusterMaintenanceOpts struct {
+	// Mode specifies the maintenance mode to apply to the DB-Server.
+	// Possible values:
+	//   - "maintenance": enable maintenance mode
+	//   - "normal": disable maintenance mode
+	// This field is required.
+	Mode *string `json:"mode"`
+
+	// Timeout specifies how long the maintenance mode should last, in seconds.
+	// This field is optional; if nil, the server will use the default timeout (usually 3600 seconds).
+	Timeout *int `json:"timeout"`
+}
+
+// It contains leader statistics, shard statistics, and the count of ongoing/pending move shard operations.
+type RebalanceResponse struct {
+	// Statistics related to leader distribution
+	Leader *LeaderStats `json:"leader,omitempty"`
+	// Statistics related to shard distribution (JSON key is "shards", not "shard")
+	Shards *ShardStats `json:"shards,omitempty"`
+	// Number of ongoing move shard operations
+	PendingMoveShards *int64 `json:"pendingMoveShards,omitempty"`
+	// Number of pending (scheduled) move shard operations
+	TodoMoveShards *int64 `json:"todoMoveShards,omitempty"`
+}
+
+// LeaderStats holds information about leader balancing across DB-Servers.
+type LeaderStats struct {
+	// Actual leader weight used per server
+	WeightUsed []int `json:"weightUsed,omitempty"`
+	// Target leader weight per server
+	TargetWeight []float64 `json:"targetWeight,omitempty"`
+	// Number of leader shards per server
+	NumberShards []int `json:"numberShards,omitempty"`
+	// Number of duplicated leaders per server
+	LeaderDupl []int `json:"leaderDupl,omitempty"`
+	// Total leader weight
+	TotalWeight *int `json:"totalWeight,omitempty"`
+	// Computed imbalance percentage
+	Imbalance *float64 `json:"imbalance,omitempty"`
+	// Total number of leader shards
+	TotalShards *int64 `json:"totalShards,omitempty"`
+}
+
+// ShardStats holds information about shard balancing across DB-Servers.
+type ShardStats struct {
+	// Actual size used per server
+	SizeUsed []int64 `json:"sizeUsed,omitempty"`
+	// Target size per server
+	TargetSize []float64 `json:"targetSize,omitempty"`
+	// Number of shards per server
+	NumberShards []int `json:"numberShards,omitempty"`
+	// Total size used across servers
+	TotalUsed *int64 `json:"totalUsed,omitempty"`
+	// Total number of shards
+	TotalShards *int64 `json:"totalShards,omitempty"`
+	// Number of shards belonging to system collections
+	TotalShardsFromSystemCollections *int64 `json:"totalShardsFromSystemCollections,omitempty"`
+	// Computed imbalance factor for shards
+	Imbalance *float64 `json:"imbalance,omitempty"`
+}
+
+// RebalanceRequestBody provides a default configuration for rebalancing requests.
+// RebalanceRequestBody provides the options for computing a rebalance plan.
+// It corresponds to the request body for POST /_admin/cluster/rebalance.
+type RebalanceRequestBody struct {
+	// DatabasesExcluded is a list of database names to exclude from analysis.
+	DatabasesExcluded []string `json:"databasesExcluded,omitempty"`
+	// ExcludeSystemCollections indicates whether to exclude system collections.
+	ExcludeSystemCollections *bool `json:"excludeSystemCollections,omitempty"`
+	// LeaderChanges indicates whether leader changes are allowed.
+	LeaderChanges *bool `json:"leaderChanges,omitempty"`
+	// MaximumNumberOfMoves is the maximum number of shard move operations to generate.
+	MaximumNumberOfMoves *int `json:"maximumNumberOfMoves,omitempty"`
+	// MoveFollowers indicates whether follower shard moves are allowed.
+	MoveFollowers *bool `json:"moveFollowers,omitempty"`
+	// MoveLeaders indicates whether leader shard moves are allowed.
+	MoveLeaders *bool `json:"moveLeaders,omitempty"`
+	// PiFactor is the weighting factor used in imbalance computation.
+	PiFactor *int `json:"piFactor,omitempty"`
+	// Version must be set to 1.
+	Version *int `json:"version"`
+}
+
+// RebalancePlan contains the imbalance statistics before
+// and after rebalancing, along with the list of suggested move operations.
+type RebalancePlan struct {
+	// ImbalanceBefore shows the imbalance metrics before applying the plan.
+	ImbalanceBefore *ImbalanceStats `json:"imbalanceBefore,omitempty"`
+	// ImbalanceAfter shows the imbalance metrics after applying the plan.
+	ImbalanceAfter *ImbalanceStats `json:"imbalanceAfter,omitempty"`
+	// Moves contains the list of suggested shard move operations.
+	Moves []MoveOperation `json:"moves"`
+}
+
+// ImbalanceStats holds leader and shard distribution statistics
+// used to measure cluster imbalance.
+type ImbalanceStats struct {
+	// Leader contains statistics related to leader distribution.
+	Leader *LeaderStats `json:"leader,omitempty"`
+	// Shards contains statistics related to shard distribution.
+	Shards *ShardStats `json:"shards,omitempty"`
+}
+
+// MoveOperation describes a suggested shard move as part of the rebalance plan.
+type MoveOperation struct {
+	// Collection is the collection identifier for the shard.
+	Collection *string `json:"collection,omitempty"`
+	// From is the source server ID.
+	From *string `json:"from,omitempty"`
+	// IsLeader indicates if the move involves a leader shard.
+	IsLeader *bool `json:"isLeader,omitempty"`
+	// Shard is the shard identifier being moved.
+	Shard *string `json:"shard,omitempty"`
+	// To is the destination server ID.
+	To *string `json:"to,omitempty"`
+
+	// Database is the database name containing the collection.
+	Database *string `json:"database,omitempty"`
+}
+
+// It contains the set of shard move operations to perform and the version of the rebalance plan.
+type ExecuteRebalanceRequestBody struct {
+	// Moves is a list of shard move operations that should be executed.
+	// Each move specifies which shard to move, from which server to which server,
+	// whether it is a leader shard, the collection, and the database.
+	Moves []MoveOperation `json:"moves"`
+
+	// Version specifies the version of the rebalance plan that this request applies to.
+	// This should match the version returned by ComputeClusterRebalance.
+	Version *int `json:"version,omitempty"`
 }

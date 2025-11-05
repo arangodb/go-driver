@@ -73,10 +73,9 @@ type CollectionExtendedInfo struct {
 		// If set to false, then the key generator is solely responsible for generating keys and supplying own key values in
 		// the _key attribute of documents is considered an error.
 		AllowUserKeys bool `json:"allowUserKeys,omitempty"`
+		// The initial value for the key generator. This is only used for autoincrement key generators.
+		LastValue *uint64 `json:"lastValue,omitempty"`
 	} `json:"keyOptions,omitempty"`
-
-	// Deprecated: use 'WriteConcern' instead.
-	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
 
 	// NumberOfShards is the number of shards of the collection.
 	// Only available in cluster setup.
@@ -125,33 +124,8 @@ type CollectionExtendedInfo struct {
 type CollectionProperties struct {
 	CollectionExtendedInfo
 
-	// The number of buckets into which indexes using a hash table are split. The default is 16 and this number has to be a power
-	// of 2 and less than or equal to 1024. For very large collections one should increase this to avoid long pauses when the hash
-	// table has to be initially built or resized, since buckets are resized individually and can be initially built in parallel.
-	// For example, 64 might be a sensible value for a collection with 100 000 000 documents.
-	// Currently, only the edge index respects this value, but other index types might follow in future ArangoDB versions.
-	// Changes are applied when the collection is loaded the next time.
-	//
-	// Deprecated: since 3.7 version. It is related only to MMFiles.
-	IndexBuckets int `json:"indexBuckets,omitempty"`
-
-	// DoCompact specifies whether or not the collection will be compacted.
-	//
-	// Deprecated: since 3.7 version. It is related only to MMFiles.
-	DoCompact bool `json:"doCompact,omitempty"`
-
 	// JournalSize is the maximal size setting for journals / datafiles in bytes.
 	JournalSize int64 `json:"journalSize,omitempty"`
-
-	// If true then the collection data is kept in-memory only and not made persistent.
-	// Unloading the collection will cause the collection data to be discarded. Stopping or re-starting the server will also
-	// cause full loss of data in the collection. Setting this option will make the resulting collection be slightly faster
-	// than regular collections because ArangoDB does not enforce any synchronization to disk and does not calculate any
-	// CRC checksums for datafiles (as there are no datafiles). This option should therefore be used for cache-type collections only,
-	// and not for data that cannot be re-created otherwise. (The default is false)
-	//
-	// Deprecated: since 3.7 version. It is related only to MMFiles.
-	IsVolatile bool `json:"isVolatile,omitempty"`
 
 	// SmartJoinAttribute
 	// See documentation for SmartJoins.
@@ -177,6 +151,9 @@ type CollectionProperties struct {
 
 	// Schema for collection validation
 	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
+
+	// The collection revision id as a string.
+	Revision string `json:"revision,omitempty"`
 }
 
 // IsSatellite returns true if the collection is a SatelliteCollection
@@ -184,37 +161,7 @@ func (p *CollectionProperties) IsSatellite() bool {
 	return p.ReplicationFactor == ReplicationFactorSatellite
 }
 
-// Deprecated: use 'SetCollectionPropertiesOptionsV2' instead
-//
 // SetCollectionPropertiesOptions contains data for Collection.SetProperties.
-type SetCollectionPropertiesOptions struct {
-	// If true then creating or changing a document will wait until the data has been synchronized to disk.
-	WaitForSync *bool `json:"waitForSync,omitempty"`
-
-	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MB). Note that when changing the journalSize value, it will only have an effect for additional journals or datafiles that are created. Already existing journals or datafiles will not be affected.
-	JournalSize int64 `json:"journalSize,omitempty"`
-
-	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
-	// Only available in cluster setup.
-	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
-
-	// Deprecated: use 'WriteConcern' instead
-	MinReplicationFactor int `json:"minReplicationFactor,omitempty"`
-
-	// WriteConcern contains how many copies must be available before a collection can be written.
-	// Available from 3.6 arangod version.
-	WriteConcern int `json:"writeConcern,omitempty"`
-
-	// CacheEnabled set cacheEnabled option in collection properties
-	CacheEnabled *bool `json:"cacheEnabled,omitempty"`
-
-	// Schema for collection validation
-	Schema *CollectionSchemaOptions `json:"schema,omitempty"`
-
-	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
-	ComputedValues []ComputedValue `json:"computedValues,omitempty"`
-}
-
 type SetCollectionPropertiesOptionsV2 struct {
 	// If true then creating or changing a document will wait until the data has been synchronized to disk.
 	WaitForSync *bool `json:"waitForSync,omitempty"`
@@ -225,9 +172,6 @@ type SetCollectionPropertiesOptionsV2 struct {
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
 	// Only available in cluster setup.
 	ReplicationFactor *ReplicationFactor `json:"replicationFactor,omitempty"`
-
-	// Deprecated: use 'WriteConcern' instead
-	MinReplicationFactor *int `json:"minReplicationFactor,omitempty"`
 
 	// WriteConcern contains how many copies must be available before a collection can be written.
 	// Available from 3.6 arangod version.
@@ -383,6 +327,13 @@ type CollectionStatistics struct {
 			// The memory used for storing the revisions of this collection in the storage engine (in bytes). This figure does not include the document data but only mappings from document revision ids to storage engine datafile positions.
 			Size int64 `json:"size,omitempty"`
 		} `json:"revisions"`
+
+		DocumentsSize int64 `json:"documentsSize,omitempty"`
+
+		// RocksDB cache statistics
+		CacheInUse *bool  `json:"cacheInUse,omitempty"`
+		CacheSize  *int64 `json:"cacheSize,omitempty"`
+		CacheUsage *int64 `json:"cacheUsage,omitempty"`
 	} `json:"figures"`
 }
 
@@ -430,4 +381,26 @@ func (r *ReplicationFactor) UnmarshalJSON(d []byte) error {
 		Value: string(d),
 		Type:  reflect.TypeOf(r).Elem(),
 	}
+}
+
+type CollectionFigures struct {
+	CollectionProperties
+	CollectionStatistics
+}
+
+// CollectionChecksum contains information about a collection checksum response
+type CollectionChecksum struct {
+	CollectionInfo
+	// The collection revision id as a string.
+	Revision string `json:"revision,omitempty"`
+}
+
+type ResponsibleShardRequest struct {
+	// Fill with shard key fields expected
+	Key string `json:"_key,omitempty"`
+	// other shard key fields as required
+}
+
+type RenameCollectionRequest struct {
+	Name string `json:"name"`
 }

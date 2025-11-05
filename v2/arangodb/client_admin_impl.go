@@ -23,6 +23,8 @@ package arangodb
 import (
 	"context"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -171,4 +173,320 @@ func (c *clientAdmin) CheckAvailability(ctx context.Context, serverEndpoint stri
 
 	_, err = c.client.Connection().Do(ctx, req, nil, http.StatusOK)
 	return errors.WithStack(err)
+}
+
+// GetSystemTime returns the current system time as a Unix timestamp with microsecond precision
+func (c *clientAdmin) GetSystemTime(ctx context.Context, dbName string) (float64, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "time")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Time                  float64 `json:"time,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return 0, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Time, nil
+	default:
+		return 0, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetServerStatus returns status information about the server
+func (c *clientAdmin) GetServerStatus(ctx context.Context, dbName string) (ServerStatusResponse, error) {
+	var endPoint string
+	if dbName == "" {
+		endPoint = connection.NewUrl("_admin", "status")
+	} else {
+		endPoint = connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "status")
+	}
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ServerStatusResponse  `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, endPoint, &response)
+	if err != nil {
+		return ServerStatusResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.ServerStatusResponse, nil
+	default:
+		return ServerStatusResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetDeploymentSupportInfo retrieves deployment information for support purposes.
+func (c *clientAdmin) GetDeploymentSupportInfo(ctx context.Context) (SupportInfoResponse, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "support-info")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		SupportInfoResponse   `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return SupportInfoResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.SupportInfoResponse, nil
+	default:
+		return SupportInfoResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetStartupConfiguration returns the effective configuration of the queried arangod instance.
+func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]interface{}, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "options")
+
+	var response map[string]interface{}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// GetStartupConfigurationDescription fetches the available startup configuration
+// options of the queried arangod instance.
+func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (map[string]interface{}, error) {
+	url := connection.NewUrl("_db", "_system", "_admin", "options-description")
+
+	var response map[string]interface{}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// ReloadRoutingTable reloads the routing information from the _routing system collection.
+func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) error {
+	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "routing", "reload")
+
+	resp, err := connection.CallPost(ctx, c.client.connection, urlEndpoint, nil, nil)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK, http.StatusNoContent:
+		return nil
+	default:
+		return (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
+	}
+}
+
+// ExecuteAdminScript executes JavaScript code on the server.
+// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
+func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "execute")
+
+	req, err := c.client.Connection().NewRequest("POST", url)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if script == nil {
+		return nil, RequiredFieldError("script")
+	}
+	if err := req.SetBody(*script); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	var response interface{}
+	resp, err := c.client.Connection().Do(ctx, req, &response)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
+// by compacting the entire database system data.
+// The endpoint requires superuser access.
+func (c *clientAdmin) CompactDatabases(ctx context.Context, opts *CompactOpts) (map[string]interface{}, error) {
+	url := connection.NewUrl("_admin", "compact")
+
+	var modifyRequest []connection.RequestModifier
+
+	// Always add both parameters with appropriate defaults
+	changeLevel := false
+	compactBottomMost := false
+
+	if opts != nil {
+		if opts.ChangeLevel != nil {
+			changeLevel = *opts.ChangeLevel
+		}
+		if opts.CompactBottomMostLevel != nil {
+			compactBottomMost = *opts.CompactBottomMostLevel
+		}
+	}
+
+	modifyRequest = append(modifyRequest,
+		connection.WithQuery("changeLevel", strconv.FormatBool(changeLevel)),
+		connection.WithQuery("compactBottomMostLevel", strconv.FormatBool(compactBottomMost)))
+
+	var response map[string]interface{}
+	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, nil, modifyRequest...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// GetTLSData returns information about the server's TLS configuration.
+// This call requires authentication.
+func (c *clientAdmin) GetTLSData(ctx context.Context, dbName string) (TLSDataResponse, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "tls")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                TLSDataResponse `json:"result,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return TLSDataResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// ReloadTLSData triggers a reload of all TLS data (server key, client-auth CA)
+// and returns the updated TLS configuration summary.
+// Requires superuser rights.
+func (c *clientAdmin) ReloadTLSData(ctx context.Context) (TLSDataResponse, error) {
+	url := connection.NewUrl("_admin", "server", "tls")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                TLSDataResponse `json:"result,omitempty"`
+	}
+
+	// POST request, no body required
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return TLSDataResponse{}, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	// Requires superuser rights, otherwise returns 403 Forbidden
+	default:
+		return TLSDataResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// RotateEncryptionAtRestKey reloads the user-supplied encryption key from
+// the --rocksdb.encryption-keyfolder and re-encrypts the internal encryption key.
+// Requires superuser rights and is not available on Coordinators.
+func (c *clientAdmin) RotateEncryptionAtRestKey(ctx context.Context) ([]EncryptionKey, error) {
+	url := connection.NewUrl("_admin", "server", "encryption")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Result                []EncryptionKey `json:"result,omitempty"`
+	}
+
+	// POST request, no body required
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// GetJWTSecrets retrieves information about the currently loaded JWT secrets
+// for a given database.
+// Requires a superuser JWT for authorization.
+func (c *clientAdmin) GetJWTSecrets(ctx context.Context, dbName string) (JWTSecretsResult, error) {
+	// Build the URL for the JWT secrets endpoint, safely escaping the database name
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "server", "jwt")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"` // Common fields: error, code, etc.
+		Result                JWTSecretsResult `json:"result"` // Contains active and passive JWT secrets
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return JWTSecretsResult{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return JWTSecretsResult{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+// ReloadJWTSecrets forces the server to reload the JWT secrets from disk.
+// Requires a superuser JWT for authorization.
+func (c *clientAdmin) ReloadJWTSecrets(ctx context.Context) (JWTSecretsResult, error) {
+	// Build the URL for the JWT secrets endpoint, safely escaping the database name
+	url := connection.NewUrl("_admin", "server", "jwt")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"` // Common fields: error, code, etc.
+		Result                JWTSecretsResult `json:"result"` // Contains active and passive JWT secrets
+	}
+
+	resp, err := connection.CallPost(ctx, c.client.connection, url, &response, nil)
+	if err != nil {
+		return JWTSecretsResult{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Result, nil
+	default:
+		return JWTSecretsResult{}, response.AsArangoErrorWithCode(code)
+	}
 }

@@ -954,3 +954,17 @@ func Test_ArangoSearchViewInMemoryCache(t *testing.T) {
 		})
 	})
 }
+
+func insertBatch(t testing.TB, ctx context.Context, col arangodb.Collection, opts *arangodb.CollectionDocumentCreateOptions, documents interface{}) {
+	results, err := col.CreateDocumentsWithOptions(ctx, documents, opts)
+	require.NoError(t, err)
+	for {
+		meta, err := results.Read()
+		if shared.IsNoMoreDocuments(err) {
+			break
+		}
+		require.NoError(t, err)
+
+		require.False(t, getBool(meta.Error, false))
+	}
+}

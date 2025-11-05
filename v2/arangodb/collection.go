@@ -45,16 +45,42 @@ type Collection interface {
 	// Properties fetches extended information about the collection.
 	Properties(ctx context.Context) (CollectionProperties, error)
 
-	// Deprecated: use 'SetPropertiesV2' instead
-	//
-	// SetProperties allows modifying collection parameters
-	SetProperties(ctx context.Context, options SetCollectionPropertiesOptions) error
-
 	// SetProperties allows modifying collection parameters
 	SetPropertiesV2(ctx context.Context, options SetCollectionPropertiesOptionsV2) error
 
 	// Count fetches the number of document in the collection.
 	Count(ctx context.Context) (int64, error)
+
+	// Statistics returns the number of documents and additional statistical information about the collection.
+	Statistics(ctx context.Context, details bool) (CollectionFigures, error)
+
+	// Revision fetches the revision ID of the collection.
+	// The revision ID is a server-generated string that clients can use to check whether data
+	// in a collection has changed since the last revision check.
+	Revision(ctx context.Context) (CollectionProperties, error)
+
+	// Checksum returns a checksum for the specified collection
+	// withRevisions - Whether to include document revision ids in the checksum calculation.
+	// withData - Whether to include document body data in the checksum calculation.
+	Checksum(ctx context.Context, withRevisions *bool, withData *bool) (CollectionChecksum, error)
+
+	// ResponsibleShard returns the shard responsible for the given options.
+	ResponsibleShard(ctx context.Context, options map[string]interface{}) (string, error)
+
+	// LoadIndexesIntoMemory loads all indexes of the collection into memory.
+	LoadIndexesIntoMemory(ctx context.Context) (bool, error)
+
+	// Renaming collections is not supported in cluster deployments.
+	// Renaming collections is only supported in single server deployments.
+	Rename(ctx context.Context, req RenameCollectionRequest) (CollectionInfo, error)
+
+	// RecalculateCount recalculates the count of documents in the collection.
+	RecalculateCount(ctx context.Context) (bool, *int64, error)
+
+	//Compacts the data of a collection in order to reclaim disk space.
+	// This operation is only supported in single server deployments.
+	// In cluster deployments, the compaction is done automatically by the server.
+	Compact(ctx context.Context) (CollectionInfo, error)
 
 	CollectionDocuments
 	CollectionIndexes

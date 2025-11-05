@@ -306,6 +306,7 @@ func abortTransaction(t testing.TB, transaction arangodb.Transaction) {
 	})
 }
 
+
 //func databaseReplication2Required(t *testing.T, c arangodb.Client, ctx context.Context) {
 //	skipBelowVersion(c, context.Background(), "3.12.0", t)
 //	requireClusterMode(t)
@@ -328,3 +329,18 @@ func abortTransaction(t testing.TB, transaction arangodb.Transaction) {
 //	// Some other error that has not been expected.
 //	require.NoError(t, err)
 //}
+
+func Test_DatabaseKeyGenerators(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			t.Run("KeyGenerators", func(t *testing.T) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+					info, err := db.KeyGenerators(ctx)
+					require.NoError(t, err)
+					require.Greater(t, len(info.KeyGenerators), 0, "KeyGenerators should contain at least one item")
+					require.NotEmpty(t, info.KeyGenerators[0], "First key generator should not be empty")
+				})
+			})
+		})
+	})
+}

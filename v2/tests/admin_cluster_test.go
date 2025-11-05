@@ -22,6 +22,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -362,5 +363,291 @@ func Test_ClusterResignLeadership(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
+	})
+}
+
+func Test_ClusterStatistics(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			requireClusterMode(t)
+			skipBelowVersion(client, ctx, "3.7", t)
+			// Detect DB-Server ID
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			var dbServerId string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				clusterHealth, err := client.Health(ctx)
+				require.NoError(t, err)
+
+				// Pick first DBServer ID
+				for id, db := range clusterHealth.Health {
+					if db.Role == arangodb.ServerRoleDBServer {
+						dbServerId = string(id)
+						break
+					}
+				}
+				require.NotEmpty(t, dbServerId, "No DB-Server found in cluster health response")
+			} else {
+				t.Skip("ClusterStatistics test requires coordinator access to get DB-Server IDs")
+			}
+			statistics, err := client.ClusterStatistics(ctx, dbServerId)
+			require.NoError(t, err)
+			require.NotNil(t, statistics)
+		})
+	})
+}
+
+func Test_ClusterEndpoints(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			requireClusterMode(t)
+			endpoints, err := client.ClusterEndpoints(ctx)
+			require.NoError(t, err)
+			require.NotNil(t, endpoints)
+		})
+	})
+}
+
+// waitForDBServerClusterMaintenance polls cluster maintenance state until it matches expected
+func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Client, expectedMode *string, dbServerId string,
+	timeout time.Duration) error {
+
+	start := time.Now()
+	var modeStr string
+	if expectedMode == nil {
+		modeStr = "<nil>"
+	} else {
+		modeStr = *expectedMode
+	}
+
+	for {
+		info, err := client.GetDBServerMaintenance(ctx, dbServerId)
+		if err != nil {
+			return err
+		}
+
+		if (info.Mode == nil && expectedMode == nil) ||
+			(info.Mode != nil && expectedMode != nil && *info.Mode == *expectedMode) {
+			return nil
+		}
+
+		if time.Since(start) > timeout {
+			return fmt.Errorf("timeout waiting for maintenance mode %s", modeStr)
+		}
+		time.Sleep(200 * time.Millisecond) // short sleep between retries
+	}
+}
+
+func Test_DBServerMaintenance(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			requireClusterMode(t)
+			skipBelowVersion(client, ctx, "3.10", t)
+
+			// Detect DB-Server ID
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			var dbServerId string
+			if serverRole == arangodb.ServerRoleCoordinator {
+				clusterHealth, err := client.Health(ctx)
+				require.NoError(t, err)
+
+				// Pick first DBServer ID
+				for id, db := range clusterHealth.Health {
+					if db.Role == arangodb.ServerRoleDBServer {
+						dbServerId = string(id)
+						break
+					}
+				}
+				require.NotEmpty(t, dbServerId, "No DB-Server found in cluster health response")
+
+				// Enable cluster maintenance
+				err = client.SetClusterMaintenance(ctx, utils.NewType("on"))
+				require.NoError(t, err, "failed to enable cluster maintenance")
+
+				// Disable cluster maintenance
+				err = client.SetClusterMaintenance(ctx, utils.NewType("off"))
+				require.NoError(t, err, "failed to disable cluster maintenance")
+			} else {
+				t.Skip("DBServerMaintenance test requires coordinator access to get DB-Server IDs")
+			}
+
+			t.Logf("=============Before DBserver Cluster Maintenance ===================")
+			err = waitForDBServerClusterMaintenance(ctx, client, nil, dbServerId, 10*time.Second)
+			require.NoError(t, err, "maintenance mode not disabled in time")
+			// Enable the maintenance mode of a DB-Server
+			// Update DBServer Maintenance
+			err = client.SetDBServerMaintenance(ctx, dbServerId, &arangodb.ClusterMaintenanceOpts{
+				Mode:    utils.NewType("maintenance"),
+				Timeout: utils.NewType(30),
+			})
+			require.NoError(t, err)
+
+			t.Logf("=============After DBserver Cluster Maintenance ===================")
+			err = waitForDBServerClusterMaintenance(ctx, client, utils.NewType("maintenance"), dbServerId, 10*time.Second)
+			require.NoError(t, err, "maintenance mode not enabled in time")
+			// Disable the maintenance mode of a DB-Server
+			err = client.SetDBServerMaintenance(ctx, dbServerId, &arangodb.ClusterMaintenanceOpts{
+				Mode: utils.NewType("normal"),
+			})
+			require.NoError(t, err)
+
+			err = waitForDBServerClusterMaintenance(ctx, client, nil, dbServerId, 10*time.Second)
+			require.NoError(t, err, "maintenance mode not disabled in time")
+		})
+	})
+}
+
+func Test_GetClusterRebalance(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			skipBelowVersion(client, ctx, "3.10", t)
+			// Ensure the test only runs in cluster mode
+			requireClusterMode(t)
+
+			// Call the API
+			rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
+			require.NoError(t, err)
+			require.NotNil(t, rebalanceShardInfo)
+
+			// Validate leader stats
+			require.NotNil(t, rebalanceShardInfo.Leader)
+			// Validate shard stats
+			require.NotNil(t, rebalanceShardInfo.Shards)
+
+			// Validate pending and todo move shard counts
+			require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
+			require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
+		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
+	})
+}
+
+func Test_ComputeClusterRebalance(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			skipBelowVersion(client, ctx, "3.10", t)
+			// Ensure the test only runs in cluster mode
+			requireClusterMode(t)
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				rf := arangodb.ReplicationFactor(2)
+
+				coll, err := db.CreateCollectionV2(ctx, "rebalance_test_coll_1", &arangodb.CreateCollectionPropertiesV2{
+					NumberOfShards:    utils.NewType(12), // big number
+					ReplicationFactor: &rf,               // ensures leaders + followers
+				})
+				require.NoError(t, err)
+				require.NotNil(t, coll)
+
+				// Call the API
+				requestBody := &arangodb.RebalanceRequestBody{
+					Version:              utils.NewType(1),
+					MaximumNumberOfMoves: utils.NewType(10),
+				}
+				rebalanceShardResp, err := client.ComputeClusterRebalance(ctx, requestBody)
+				require.NoError(t, err)
+				require.NotNil(t, rebalanceShardResp)
+
+				require.NotNil(t, rebalanceShardResp.ImbalanceBefore)
+				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Leader)
+				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Shards)
+
+				require.NotNil(t, rebalanceShardResp.ImbalanceAfter)
+				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Leader)
+				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Shards)
+
+				require.NotNil(t, rebalanceShardResp.Moves)
+
+				if len(rebalanceShardResp.Moves) > 0 {
+					err := client.ExecuteClusterRebalance(ctx, &arangodb.ExecuteRebalanceRequestBody{
+						Moves:   rebalanceShardResp.Moves,
+						Version: utils.NewType(1),
+					})
+					require.NoError(t, err)
+				}
+
+				// Call the GetClusterRebalance API to validate it works after ComputeClusterRebalance
+				rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, rebalanceShardInfo)
+
+				// Validate leader stats
+				require.NotNil(t, rebalanceShardInfo.Leader)
+				// Validate shard stats
+				require.NotNil(t, rebalanceShardInfo.Shards)
+
+				// Validate pending and todo move shard counts
+				require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
+				require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
+				require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
+				require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
+			})
+		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
+	})
+}
+
+func Test_ComputeAndExecuteClusterRebalance(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			skipBelowVersion(client, ctx, "3.10", t)
+			// Ensure the test only runs in cluster mode
+			requireClusterMode(t)
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				rf := arangodb.ReplicationFactor(2)
+
+				coll, err := db.CreateCollectionV2(ctx, "rebalance_test_coll_2", &arangodb.CreateCollectionPropertiesV2{
+					NumberOfShards:    utils.NewType(12), // big number
+					ReplicationFactor: &rf,               // ensures leaders + followers
+				})
+				require.NoError(t, err)
+				require.NotNil(t, coll)
+
+				// Call the API
+				requestBody := &arangodb.RebalanceRequestBody{
+					Version:              utils.NewType(1),
+					MaximumNumberOfMoves: utils.NewType(10),
+				}
+				rebalanceShardResp, err := client.ComputeAndExecuteClusterRebalance(ctx, requestBody)
+				require.NoError(t, err)
+				require.NotNil(t, rebalanceShardResp)
+
+				require.NotNil(t, rebalanceShardResp.ImbalanceBefore)
+				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Leader)
+				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Shards)
+
+				require.NotNil(t, rebalanceShardResp.ImbalanceAfter)
+				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Leader)
+				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Shards)
+
+				require.NotNil(t, rebalanceShardResp.Moves)
+
+				// Call the GetClusterRebalance API to validate it works after ComputeClusterRebalance
+				rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, rebalanceShardInfo)
+
+				// Validate leader stats
+				require.NotNil(t, rebalanceShardInfo.Leader)
+				// Validate shard stats
+				require.NotNil(t, rebalanceShardInfo.Shards)
+
+				// Validate pending and todo move shard counts
+				require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
+				require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
+				require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
+				require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
+			})
+		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
