@@ -30,8 +30,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/utils"
-        "github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 // Test_ExplainQuery tries to explain several AQL queries.
@@ -487,11 +487,11 @@ func Test_KillAQLQuery(t *testing.T) {
 
 			// Use a streaming query that processes results slowly
 			bindVars := map[string]interface{}{
-				bvString : 10000000,
+				bvString: 10000000,
 			}
 
 			cursor, err := db.Query(ctx, `
-	FOR i IN 1..@` + bvString + `
+	FOR i IN 1..@`+bvString+`
 		LET computation = (
 			FOR x IN 1..100
 				RETURN x * i

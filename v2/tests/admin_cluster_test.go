@@ -444,7 +444,7 @@ func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Clie
 
 func Test_DBServerMaintenance(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, defaultTestTimeout * 3, func(ctx context.Context, tb testing.TB) {
+		withContextT(t, defaultTestTimeout*3, func(ctx context.Context, tb testing.TB) {
 			requireClusterMode(t)
 			skipBelowVersion(client, ctx, "3.10", t)
 

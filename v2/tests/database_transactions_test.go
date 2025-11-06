@@ -22,7 +22,7 @@ package tests
 
 import (
 	"context"
-//	"strings"
+	//"strings"
 	"testing"
 	"time"
 
@@ -305,7 +305,6 @@ func abortTransaction(t testing.TB, transaction arangodb.Transaction) {
 		require.NoError(t, transaction.Abort(ctx, nil))
 	})
 }
-
 
 //func databaseReplication2Required(t *testing.T, c arangodb.Client, ctx context.Context) {
 //	skipBelowVersion(c, context.Background(), "3.12.0", t)
