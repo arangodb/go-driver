@@ -160,7 +160,7 @@ func TestAsyncJobCancel(t *testing.T) {
 	aqlQuery := "FOR i IN 1..10 FOR j IN 1..10 LET x = sleep(1.0) FILTER i == 5 && j == 5 RETURN 42"
 	_, err := db.Query(ctxAsync, aqlQuery, nil)
 	require.Error(t, err)
-	require.ErrorIs(t, async.ErrorAsyncJobInProgress{}, err)
+	require.IsType(t, async.ErrorAsyncJobInProgress{}, err)
 
 	id, isAsyncId := async.IsAsyncJobInProgress(err)
 	require.True(t, isAsyncId)
