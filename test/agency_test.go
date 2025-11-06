@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ package test
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
+	"errors"
 	"net/http"
 	"os"
 	"reflect"
@@ -109,7 +109,7 @@ func getHttpAuthAgencyConnection(ctx context.Context, t testEnv, c driver.Client
 				return nil, err
 			}
 		} else {
-			return nil, fmt.Errorf("auth is required in agency")
+			return nil, errors.New("auth is required in agency")
 		}
 	}
 

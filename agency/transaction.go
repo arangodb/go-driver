@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 package agency
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/arangodb/go-driver"
 )
@@ -43,7 +43,7 @@ type Transaction struct {
 // The argument 'clientID' should be used to mark that transaction sender uniquely.
 func NewTransaction(clientID string, options TransactionOptions) Transaction {
 	if clientID == "" {
-		clientID = fmt.Sprintf("go-driver/%s", driver.DriverVersion())
+		clientID = "go-driver/" + driver.DriverVersion()
 	}
 
 	return Transaction{
@@ -60,7 +60,7 @@ func (k *Transaction) AddConditionByFullKey(fullKey string, condition KeyConditi
 
 	if _, ok := k.conditions[fullKey]; ok {
 		// For the time being one key can have only one condition. It is a limitation in agency
-		return driver.WithStack(fmt.Errorf("too many conditions"))
+		return driver.WithStack(errors.New("too many conditions"))
 	}
 
 	k.conditions[fullKey] = condition

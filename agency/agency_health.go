@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package agency
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -134,7 +133,7 @@ func AreAgentsHealthy(ctx context.Context, clients []driver.Connection) error {
 			// Compare leader endpoint with previous
 			prev := statuses[i-1].LeaderEndpoint
 			if !IsSameEndpoint(prev, status.LeaderEndpoint) {
-				return driver.WithStack(fmt.Errorf("Not all agents report the same leader endpoint"))
+				return driver.WithStack(errors.New("Not all agents report the same leader endpoint"))
 			}
 		}
 	}

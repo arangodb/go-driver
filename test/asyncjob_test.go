@@ -90,7 +90,7 @@ func TestAsyncJobListDone(t *testing.T) {
 
 		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
-		require.Len(t, jobs, 0)
+		require.Empty(t, jobs)
 	})
 }
 
@@ -124,7 +124,7 @@ func TestAsyncJobListPending(t *testing.T) {
 
 		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
-		require.Len(t, jobs, 0)
+		require.Empty(t, jobs)
 
 		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestAsyncJobListPending(t *testing.T) {
 
 		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
-		require.Len(t, jobs, 0)
+		require.Empty(t, jobs)
 	})
 }
 
@@ -160,7 +160,7 @@ func TestAsyncJobCancel(t *testing.T) {
 	aqlQuery := "FOR i IN 1..10 FOR j IN 1..10 LET x = sleep(1.0) FILTER i == 5 && j == 5 RETURN 42"
 	_, err := db.Query(ctxAsync, aqlQuery, nil)
 	require.Error(t, err)
-	require.IsType(t, async.ErrorAsyncJobInProgress{}, err)
+	require.ErrorIs(t, async.ErrorAsyncJobInProgress{}, err)
 
 	id, isAsyncId := async.IsAsyncJobInProgress(err)
 	require.True(t, isAsyncId)

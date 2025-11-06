@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ func main() {
 	checkCleanRepo()
 
 	version := bumpVersionInFile(releaseType)
-	tagName := fmt.Sprintf("v%s", version)
+	tagName := "v" + version
 
 	// create Tag
 	gitTag(tagName)
@@ -141,7 +141,7 @@ func bumpVersion(version *semver.Version, action string, isPreRelease bool) {
 
 	currVersionIsPreRelease := strings.HasPrefix(string(version.PreRelease), preReleasePrefix)
 	if isPreRelease {
-		firstPreRelease := semver.PreRelease(fmt.Sprintf("%s1", preReleasePrefix))
+		firstPreRelease := semver.PreRelease(preReleasePrefix + "1")
 		switch action {
 		case "patch":
 			if currVersionIsPreRelease {

@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,5 +57,5 @@ func TestNewClient(t *testing.T) {
 
 	// SynchronizeEndpointsInterval feature has a bug where new go-routine would be created per each call to NewClient
 	// This feature should not be used. The test is present here only to document this behaviour.
-	require.Equal(t, after-before, iterations)
+	require.Equal(t, iterations, after-before)
 }

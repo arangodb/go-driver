@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -279,8 +279,8 @@ func TestUpdateEdgesKeepNullTrue(t *testing.T) {
 	for i, meta := range metas {
 		var readDoc map[string]interface{}
 		var rawResponse []byte
-		ctx = driver.WithRawResponse(ctx, &rawResponse)
-		if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+		ctxLocal := driver.WithRawResponse(ctx, &rawResponse)
+		if _, err := ec.ReadDocument(ctxLocal, meta.Key, &readDoc); err != nil {
 			t.Fatalf("Failed to read document %d '%s': %s", i, meta.Key, describe(err))
 		}
 		// We parse to this type of map, since unmarshalling nil values to a map of type map[string]interface{}

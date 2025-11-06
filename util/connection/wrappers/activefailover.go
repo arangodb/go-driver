@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2020 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ package wrappers
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/arangodb/go-driver"
@@ -80,7 +80,7 @@ func (af *activeFailoverWrapper) Do(ctx context.Context, req driver.Request) (dr
 
 		select {
 		case <-timeoutT.C:
-			return nil, fmt.Errorf("activeFailoverWrapper function time out (waiting for the Leader)")
+			return nil, errors.New("activeFailoverWrapper function time out (waiting for the Leader)")
 		case <-intervalT.C:
 			continue
 		}

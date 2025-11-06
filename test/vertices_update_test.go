@@ -245,8 +245,8 @@ func TestUpdateVerticesKeepNullTrue(t *testing.T) {
 	for i, meta := range metas {
 		var readDoc map[string]interface{}
 		var rawResponse []byte
-		ctx = driver.WithRawResponse(ctx, &rawResponse)
-		if _, err := ec.ReadDocument(ctx, meta.Key, &readDoc); err != nil {
+		ctxInner := driver.WithRawResponse(ctx, &rawResponse)
+		if _, err := ec.ReadDocument(ctxInner, meta.Key, &readDoc); err != nil {
 			t.Fatalf("Failed to read document %d '%s': %s", i, meta.Key, describe(err))
 		}
 		// We parse to this type of map, since unmarshalling nil values to a map of type map[string]interface{}
