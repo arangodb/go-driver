@@ -31,6 +31,7 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/utils"
+        "github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 // Test_ExplainQuery tries to explain several AQL queries.
@@ -326,7 +327,7 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 			FOR x IN 1..100
 				RETURN x * i
 		)
-		RETURN {i: i, sum: SUM(computation)}
+		RETURN {i: i, sum: SUM(computation), sleep: SLEEP(1)}
 `, &arangodb.QueryOptions{
 					BindVars: bindVars,
 				})
@@ -485,16 +486,16 @@ func Test_KillAQLQuery(t *testing.T) {
 
 			// Use a streaming query that processes results slowly
 			bindVars := map[string]interface{}{
-				"max": 10000000,
+				"maxKill": 10000000,
 			}
 
 			cursor, err := db.Query(ctx, `
-	FOR i IN 1..@max
+	FOR i IN 1..@maxKill
 		LET computation = (
 			FOR x IN 1..100
 				RETURN x * i
 		)
-		RETURN {i: i, sum: SUM(computation)}
+		RETURN {i: i, sum: SUM(computation), j: SLEEP(2)}
 `, &arangodb.QueryOptions{
 				BindVars: bindVars,
 			})
@@ -552,12 +553,20 @@ func Test_KillAQLQuery(t *testing.T) {
 				// Log query details
 				for i, query := range queries {
 					bindVarsJSON, _ := utils.ToJSONString(*query.BindVars)
-					t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
-						i, *query.Id, *query.State, bindVarsJSON)
-					// Kill the query
-					err := db.KillAQLQuery(ctx, *query.Id, utils.NewType(false))
-					require.NoError(t, err, "Failed to kill query %s", *query.Id)
-					t.Logf("Killed query %s", *query.Id)
+					if strings.Contains(bindVarsJSON, "maxKill") {
+						t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
+							i, *query.Id, *query.State, bindVarsJSON)
+						// Kill the query
+						err := db.KillAQLQuery(ctx, *query.Id, utils.NewType(false))
+						if ok, arangoErr := shared.IsArangoError(err); ok {
+							if arangoErr.ErrorNum == shared.ErrQueryNotFound {
+								t.Logf("query gone %s", *query.Id)
+								continue
+							}
+						}
+						require.NoError(t, err, "Failed to kill query %s", *query.Id)
+						t.Logf("Killed query %s", *query.Id)
+					}
 				}
 				break
 			}
