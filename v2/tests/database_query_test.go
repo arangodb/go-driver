@@ -506,6 +506,7 @@ func Test_KillAQLQuery(t *testing.T) {
 				}
 				return
 			}
+			t.Logf("Query launched: %v", cursor)
 
 			// Process results slowly to keep query active longer
 			if cursor != nil {
@@ -548,7 +549,6 @@ func Test_KillAQLQuery(t *testing.T) {
 			t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
 
 			if len(queries) > 0 {
-				foundRunningQuery = true
 				t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
 				// Log query details
 				for i, query := range queries {
@@ -565,10 +565,14 @@ func Test_KillAQLQuery(t *testing.T) {
 							}
 						}
 						require.NoError(t, err, "Failed to kill query %s", *query.Id)
+						foundRunningQuery = true
 						t.Logf("Killed query %s", *query.Id)
+						break
+					} else {
+						t.Logf("Query skipped %d: ID=%s, State=%s, BindVars=%s",
+							i, *query.Id, *query.State, bindVarsJSON)
 					}
 				}
-				break
 			}
 
 			time.Sleep(300 * time.Millisecond)
