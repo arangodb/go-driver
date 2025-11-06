@@ -56,8 +56,8 @@ func TestCreateUser(t *testing.T) {
 		// Some strange names
 		"ewout/foo": nil,
 		"admin@api": nil,
-		"測試用例":      nil,
-		"測試用例@foo":  nil,
+		"測試用例":      nil, //nolint:gosmopolitan // intentional CJK test input
+		"測試用例@foo":  nil, //nolint:gosmopolitan // intentional CJK test input
 		"_":         nil,
 		//" ":         nil, // No longer valid in 3.2
 		"/": nil,

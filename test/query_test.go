@@ -207,18 +207,18 @@ func TestValidateQueryOptionShardIds(t *testing.T) {
 		defer clean(t)
 		col := ensureCollection(ctx, db, "c", nil, t)
 
-		t.Run(fmt.Sprintf("Real shards"), func(t *testing.T) {
+		t.Run("Real shards", func(t *testing.T) {
 			shards, err := col.Shards(ctx, true)
 			for sk := range shards.Shards {
-				ctx = driver.WithQueryShardIds(nil, []string{string(sk)})
-				_, err = db.Query(ctx, "FOR doc in c RETURN doc", map[string]interface{}{})
+				ctxInner := driver.WithQueryShardIds(nil, []string{string(sk)})
+				_, err = db.Query(ctxInner, "FOR doc in c RETURN doc", map[string]interface{}{})
 				require.NoError(t, err)
 			}
 		})
 
-		t.Run(fmt.Sprintf("Fake shards"), func(t *testing.T) {
-			ctx = driver.WithQueryShardIds(nil, []string{"s1"})
-			_, err = db.Query(ctx, "FOR doc in c RETURN doc", map[string]interface{}{})
+		t.Run("Fake shards", func(t *testing.T) {
+			ctxInner := driver.WithQueryShardIds(nil, []string{"s1"})
+			_, err = db.Query(ctxInner, "FOR doc in c RETURN doc", map[string]interface{}{})
 			require.NotNil(t, err)
 		})
 	}
@@ -413,7 +413,7 @@ func TestOptimizerRulesForQueries(t *testing.T) {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
-	t.Run(fmt.Sprintf("Fake shards"), func(t *testing.T) {
+	t.Run("Fake shards", func(t *testing.T) {
 		rules, err := db.OptimizerRulesForQueries(ctx)
 		require.Nil(t, err)
 		require.Greater(t, len(rules), 0)

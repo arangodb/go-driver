@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -173,7 +173,7 @@ func TestEnsureGeoIndexLegacyPolygons(t *testing.T) {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
-	col := ensureCollection(ctx, db, fmt.Sprintf("persistent_index_options_test_"), nil, t)
+	col := ensureCollection(ctx, db, "persistent_index_options_test_", nil, t)
 
 	options := &driver.EnsureGeoIndexOptions{
 		LegacyPolygons: true,
@@ -346,7 +346,7 @@ func TestEnsurePersistentIndexOptions(t *testing.T) {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
-	col := ensureCollection(ctx, db, fmt.Sprintf("persistent_index_options_test_"), nil, t)
+	col := ensureCollection(ctx, db, "persistent_index_options_test_", nil, t)
 
 	options := &driver.EnsurePersistentIndexOptions{
 		StoredValues: []string{"extra1", "extra2"},
@@ -525,7 +525,7 @@ func TestEnsureZKDIndex(t *testing.T) {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
-	col := ensureCollection(ctx, db, fmt.Sprintf("zkd_index_test"), nil, t)
+	col := ensureCollection(ctx, db, "zkd_index_test", nil, t)
 
 	f1 := "field-zkd-index_1"
 	f2 := "field-zkd-index_2"
@@ -555,7 +555,7 @@ func TestEnsureZKDIndexWithOptions(t *testing.T) {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
-	col := ensureCollection(ctx, db, fmt.Sprintf("zkd_index_opt_test"), nil, t)
+	col := ensureCollection(ctx, db, "zkd_index_opt_test", nil, t)
 
 	f1 := "field-zkd-index1-opt"
 	f2 := "field-zkd-index2-opt"
@@ -590,7 +590,7 @@ func TestEnsureInvertedIndex(t *testing.T) {
 			t.Logf("Failed to drop database %s: %s ...", db.Name(), err)
 		}
 	}()
-	col := ensureCollection(ctx, db, fmt.Sprintf("inverted_index_opt_test"), nil, t)
+	col := ensureCollection(ctx, db, "inverted_index_opt_test", nil, t)
 
 	type testCase struct {
 		IsEE       bool

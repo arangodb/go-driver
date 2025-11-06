@@ -90,7 +90,7 @@ func TestAsyncJobListDone(t *testing.T) {
 
 		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
-		require.Len(t, jobs, 0)
+		require.Empty(t, jobs)
 	})
 }
 
@@ -124,7 +124,7 @@ func TestAsyncJobListPending(t *testing.T) {
 
 		jobs, err := c.AsyncJob().List(ctx, driver.JobPending, nil)
 		require.NoError(t, err)
-		require.Len(t, jobs, 0)
+		require.Empty(t, jobs)
 
 		jobs, err = c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
@@ -138,7 +138,7 @@ func TestAsyncJobListPending(t *testing.T) {
 
 		jobs, err := c.AsyncJob().List(ctx, driver.JobDone, nil)
 		require.NoError(t, err)
-		require.Len(t, jobs, 0)
+		require.Empty(t, jobs)
 	})
 }
 

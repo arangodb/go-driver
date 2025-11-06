@@ -4,7 +4,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.23.12
+GOVERSION ?= 1.24.9
 GOTOOLCHAIN ?= auto
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
@@ -559,9 +559,9 @@ endif
 .PHONY: tools
 tools: __dir_setup
 	@echo ">> Fetching golangci-lint linter"
-	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.1
 	@echo ">> Fetching goimports"
-	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.32.0
+	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.38.0
 	@echo ">> Fetching license check"
 	@GOBIN=$(TMPDIR)/bin go install github.com/google/addlicense@v1.0.0
 	@echo ">> Fetching govulncheck"
@@ -591,6 +591,7 @@ fmt-verify: license-verify
 
 .PHONY: linter
 linter: fmt-verify
+	@echo ">> Running linter"
 	@$(TMPDIR)/bin/golangci-lint run ./...
 
 .PHONY: vulncheck
