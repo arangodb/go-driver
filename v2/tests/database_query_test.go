@@ -1284,7 +1284,7 @@ func Test_UserDefinedFunctions(t *testing.T) {
 		require.NoError(t, err)
 
 		// Define UDF details
-		namespace := "myfunctions::temperature"
+		namespace := "myfunctions::temperature::" + StringWithCharset(16, charset)
 		functionName := namespace + "::celsiustofahrenheit"
 		code := "function (celsius) { return celsius * 9 / 5 + 32; }"
 
