@@ -1,14 +1,15 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- Add missing endpoints from replication to v2
-- Add missing endpoints from monitoring to v2
-- Add missing endpoints from administration to v2
-- Add missing endpoints from cluster to v2
-- Add missing endpoints from security to v2
-- Add missing endpoints from authentication to v2
-- Add missing endpoints from general-request-handling to v2
+- Add missing endpoints from replication
+- Add missing endpoints from monitoring
+- Add missing endpoints from administration
+- Add missing endpoints from cluster
+- Add missing endpoints from security
+- Add missing endpoints from authentication
+- Add missing endpoints from general-request-handling
 - Add benchmark tests for v1 and v2 to compare performance
+- Switch to Go 1.24.9
 
 ## [2.1.5](https://github.com/arangodb/go-driver/tree/v2.1.5) (2025-08-31)
 - Add tasks endpoints to v2
