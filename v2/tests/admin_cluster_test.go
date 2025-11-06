@@ -501,6 +501,8 @@ func Test_DBServerMaintenance(t *testing.T) {
 			err = waitForDBServerClusterMaintenance(ctx, client, nil, dbServerId, 10*time.Second)
 			require.NoError(t, err, "maintenance mode not disabled in time")
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

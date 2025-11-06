@@ -458,6 +458,7 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 
 func Test_KillAQLQuery(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		bvString := "maxKill" + StringWithCharset(16, charset)
 		ctx := context.Background()
 		// Get the database
 		db, err := client.GetDatabase(ctx, "_system", nil)
@@ -486,11 +487,11 @@ func Test_KillAQLQuery(t *testing.T) {
 
 			// Use a streaming query that processes results slowly
 			bindVars := map[string]interface{}{
-				"maxKill": 10000000,
+				bvString : 10000000,
 			}
 
 			cursor, err := db.Query(ctx, `
-	FOR i IN 1..@maxKill
+	FOR i IN 1..@` + bvString + `
 		LET computation = (
 			FOR x IN 1..100
 				RETURN x * i
@@ -553,7 +554,7 @@ func Test_KillAQLQuery(t *testing.T) {
 				// Log query details
 				for i, query := range queries {
 					bindVarsJSON, _ := utils.ToJSONString(*query.BindVars)
-					if strings.Contains(bindVarsJSON, "maxKill") {
+					if strings.Contains(bindVarsJSON, bvString) {
 						t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
 							i, *query.Id, *query.State, bindVarsJSON)
 						// Kill the query
