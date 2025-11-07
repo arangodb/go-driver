@@ -22,7 +22,7 @@ package tests
 
 import (
 	"context"
-	//"strings"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,27 +33,28 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
-//func Test_DatabaseCreateReplicationV2(t *testing.T) {
-//	Wrap(t, func(t *testing.T, client arangodb.Client) {
-//		databaseReplication2Required(t, client, context.Background())
-//
-//		opts := arangodb.CreateDatabaseOptions{
-//			Users: nil,
-//			Options: arangodb.CreateDatabaseDefaultOptions{
-//				ReplicationVersion: arangodb.DatabaseReplicationVersionTwo,
-//			},
-//		}
-//		WithDatabase(t, client, &opts, func(db arangodb.Database) {
-//			t.Run("Transaction", func(t *testing.T) {
-//				withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-//					info, err := db.Info(ctx)
-//					require.NoErrorf(t, err, "failed to get database info")
-//					require.Equal(t, arangodb.DatabaseReplicationVersionTwo, info.ReplicationVersion)
-//				})
-//			})
-//		})
-//	})
-//}
+func Test_DatabaseCreateReplicationV2(t *testing.T) {
+	t.Skip("currently disabled")
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		databaseReplication2Required(t, client, context.Background())
+
+		opts := arangodb.CreateDatabaseOptions{
+			Users: nil,
+			Options: arangodb.CreateDatabaseDefaultOptions{
+				ReplicationVersion: arangodb.DatabaseReplicationVersionTwo,
+			},
+		}
+		WithDatabase(t, client, &opts, func(db arangodb.Database) {
+			t.Run("Transaction", func(t *testing.T) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+					info, err := db.Info(ctx)
+					require.NoErrorf(t, err, "failed to get database info")
+					require.Equal(t, arangodb.DatabaseReplicationVersionTwo, info.ReplicationVersion)
+				})
+			})
+		})
+	})
+}
 
 func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -306,28 +307,29 @@ func abortTransaction(t testing.TB, transaction arangodb.Transaction) {
 	})
 }
 
-//func databaseReplication2Required(t *testing.T, c arangodb.Client, ctx context.Context) {
-//	skipBelowVersion(c, context.Background(), "3.12.0", t)
-//	requireClusterMode(t)
-//
-//	dbName := "replication2" + GenerateUUID("test-db")
-//	opts := arangodb.CreateDatabaseOptions{Options: arangodb.CreateDatabaseDefaultOptions{
-//		ReplicationVersion: arangodb.DatabaseReplicationVersionTwo,
-//	}}
-//
-//	db, err := c.CreateDatabase(ctx, dbName, &opts)
-//	if err == nil {
-//		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
-//		return
-//	}
-//
-//	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
-//		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
-//	}
-//
-//	// Some other error that has not been expected.
-//	require.NoError(t, err)
-//}
+func databaseReplication2Required(t *testing.T, c arangodb.Client, ctx context.Context) {
+	t.Skip("currently disabled")
+	skipBelowVersion(c, context.Background(), "3.12.0", t)
+	requireClusterMode(t)
+
+	dbName := "replication2" + GenerateUUID("test-db")
+	opts := arangodb.CreateDatabaseOptions{Options: arangodb.CreateDatabaseDefaultOptions{
+		ReplicationVersion: arangodb.DatabaseReplicationVersionTwo,
+	}}
+
+	db, err := c.CreateDatabase(ctx, dbName, &opts)
+	if err == nil {
+		require.NoErrorf(t, db.Remove(ctx), "failed to remove testing replication2 database")
+		return
+	}
+
+	if strings.Contains(err.Error(), "Replication version 2 is disabled in this binary") {
+		t.Skipf("ArangoDB is not launched with the option --database.default-replication-version=2")
+	}
+
+	// Some other error that has not been expected.
+	require.NoError(t, err)
+}
 
 func Test_DatabaseKeyGenerators(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
