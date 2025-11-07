@@ -961,7 +961,7 @@ func TestArangoSearchPrimarySort(t *testing.T) {
 				}},
 			}
 
-			name := fmt.Sprintf("%s-view", testCase.Name)
+			name := testCase.Name + "-view"
 
 			if _, err := db.CreateArangoSearchView(ctx, name, opts); err != nil {
 

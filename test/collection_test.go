@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -235,7 +235,7 @@ func TestCollection_ComputedValues(t *testing.T) {
 		require.Equal(t, computedValue.Expression, prop.ComputedValues[0].Expression)
 
 		// Create a document
-		doc := UserDoc{Name: fmt.Sprintf("Jakub")}
+		doc := UserDoc{Name: "Jakub"}
 		meta, err := col.CreateDocument(nil, doc)
 		if err != nil {
 			t.Fatalf("Failed to create document: %s", describe(err))

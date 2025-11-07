@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -160,7 +161,7 @@ func (r retryFunc) Retry(interval, timeout time.Duration) error {
 
 		select {
 		case <-timeoutT.C:
-			return fmt.Errorf("function timeouted")
+			return errors.New("function timeouted")
 		case <-intervalT.C:
 			continue
 		}

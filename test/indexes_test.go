@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2017-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2017-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package test
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -489,7 +489,7 @@ func TestNamedIndexes(t *testing.T) {
 	col := ensureCollection(nil, db, "named_index_test_col", nil, t)
 
 	for _, testCase := range namedIndexTestCases {
-		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
+		t.Run("TestNamedIndexes"+testCase.Name, func(t *testing.T) {
 			if testCase.MinVersion != nil {
 				skipBelowVersion(c, *testCase.MinVersion, t)
 			}
@@ -558,7 +558,7 @@ func TestNamedIndexesClusterInventory(t *testing.T) {
 	}
 
 	for _, testCase := range namedIndexTestCases {
-		t.Run(fmt.Sprintf("TestNamedIndexes%s", testCase.Name), func(t *testing.T) {
+		t.Run("TestNamedIndexes"+testCase.Name, func(t *testing.T) {
 			if testCase.MinVersion != nil {
 				skipBelowVersion(c, *testCase.MinVersion, t)
 			}
@@ -677,7 +677,7 @@ func TestPersistentIndexCreation(t *testing.T) {
 
 	for i := 0; i < 16; i++ {
 		_, err := coll.CreateDocument(context.Background(), map[string]interface{}{
-			"MyIndex": fmt.Sprintf("%d", i),
+			"MyIndex": strconv.Itoa(i),
 			"Index":   i,
 		})
 		require.NoError(t, err)

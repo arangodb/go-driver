@@ -22,6 +22,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -37,19 +38,19 @@ func ExtractValue(input io.Reader) error {
 
 	configuration, ok := data["configuration"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("key 'configuration' not found or not an object")
+		return errors.New("key 'configuration' not found or not an object")
 	}
 	pool, ok := configuration["pool"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("key 'pool' not found or not an array")
+		return errors.New("key 'pool' not found or not an array")
 	}
 
 	leaderId, ok := data["leaderId"].(string)
 	if !ok {
-		return fmt.Errorf("key 'leaderId' not found or not a str")
+		return errors.New("key 'leaderId' not found or not a str")
 	}
 	if leaderId == "" {
-		return fmt.Errorf("key 'leaderId' not set")
+		return errors.New("key 'leaderId' not set")
 	}
 
 	endpoint, ok := pool[leaderId].(string)

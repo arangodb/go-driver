@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2018 ArangoDB GmbH, Cologne, Germany
+// Copyright 2018-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@
 //
 // Copyright holder is ArangoDB GmbH, Cologne, Germany
 //
-// Author Ewout Prangsma
-//
 
 package agency
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -69,7 +68,7 @@ func (c *agencyConnection) NewRequest(method, path string) (driver.Request, erro
 	defer c.mutex.RUnlock()
 
 	if len(c.connections) == 0 {
-		return nil, driver.WithStack(fmt.Errorf("no connections"))
+		return nil, driver.WithStack(errors.New("no connections"))
 	}
 	r, err := c.connections[0].NewRequest(method, path)
 	if err != nil {
@@ -132,7 +131,7 @@ func (c *agencyConnection) doOnce(ctx context.Context, req driver.Request) (driv
 	c.mutex.RUnlock()
 
 	if len(c.connections) == 0 {
-		return nil, true, driver.WithStack(fmt.Errorf("no connections"))
+		return nil, true, driver.WithStack(errors.New("no connections"))
 	}
 
 	parallelRequests := true
@@ -208,7 +207,7 @@ func (c *agencyConnection) doOnce(ctx context.Context, req driver.Request) (driv
 
 func isSuccess(resp driver.Response) error {
 	if resp == nil {
-		return driver.WithStack(fmt.Errorf("Response is nil"))
+		return driver.WithStack(errors.New("Response is nil"))
 	}
 	statusCode := resp.StatusCode()
 	if statusCode >= 200 && statusCode < 300 {
@@ -235,7 +234,7 @@ func (c *agencyConnection) Unmarshal(data driver.RawObject, result interface{}) 
 	defer c.mutex.RUnlock()
 
 	if len(c.connections) == 0 {
-		return driver.WithStack(fmt.Errorf("no connections"))
+		return driver.WithStack(errors.New("no connections"))
 	}
 	if err := c.connections[0].Unmarshal(data, result); err != nil {
 		return driver.WithStack(err)

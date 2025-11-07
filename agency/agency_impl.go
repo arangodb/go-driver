@@ -23,6 +23,7 @@ package agency
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -155,7 +156,7 @@ func (c *agency) WriteKey(ctx context.Context, key []string, value interface{}, 
 	case 1:
 		cond = condition[0]
 	default:
-		return driver.WithStack(fmt.Errorf("too many conditions"))
+		return driver.WithStack(errors.New("too many conditions"))
 	}
 
 	transaction := NewTransaction("", TransactionOptions{})
@@ -296,7 +297,7 @@ func (c *agency) RemoveKey(ctx context.Context, key []string, condition ...Write
 	case 1:
 		cond = condition[0]
 	default:
-		return driver.WithStack(fmt.Errorf("too many conditions"))
+		return driver.WithStack(errors.New("too many conditions"))
 	}
 
 	transaction := NewTransaction("", TransactionOptions{})
