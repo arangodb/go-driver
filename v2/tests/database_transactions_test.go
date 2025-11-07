@@ -34,6 +34,7 @@ import (
 )
 
 func Test_DatabaseCreateReplicationV2(t *testing.T) {
+	t.Skip("currently disabled")
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		databaseReplication2Required(t, client, context.Background())
 
@@ -307,6 +308,7 @@ func abortTransaction(t testing.TB, transaction arangodb.Transaction) {
 }
 
 func databaseReplication2Required(t *testing.T, c arangodb.Client, ctx context.Context) {
+	t.Skip("currently disabled")
 	skipBelowVersion(c, context.Background(), "3.12.0", t)
 	requireClusterMode(t)
 

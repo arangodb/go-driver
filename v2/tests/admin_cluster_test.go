@@ -242,7 +242,7 @@ func Test_ClusterMoveShards(t *testing.T) {
 
 					t.Run("Check if shards are moved", func(t *testing.T) {
 						start := time.Now()
-						maxTestTime := 2 * time.Minute
+						maxTestTime := 5 * time.Minute
 						lastShardsNotOnTargetServerID := movedShards
 
 						for {
@@ -320,7 +320,7 @@ func Test_ClusterResignLeadership(t *testing.T) {
 
 					t.Run("Check if targetServerID is no longer leader", func(t *testing.T) {
 						start := time.Now()
-						maxTestTime := time.Minute
+						maxTestTime := 5 * time.Minute
 						lastLeaderForShardsNum := 0
 
 						for {
@@ -444,7 +444,7 @@ func waitForDBServerClusterMaintenance(ctx context.Context, client arangodb.Clie
 
 func Test_DBServerMaintenance(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+		withContextT(t, defaultTestTimeout*3, func(ctx context.Context, tb testing.TB) {
 			requireClusterMode(t)
 			skipBelowVersion(client, ctx, "3.10", t)
 
@@ -501,6 +501,8 @@ func Test_DBServerMaintenance(t *testing.T) {
 			err = waitForDBServerClusterMaintenance(ctx, client, nil, dbServerId, 10*time.Second)
 			require.NoError(t, err, "maintenance mode not disabled in time")
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

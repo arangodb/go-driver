@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/utils"
 )
 
@@ -326,7 +327,7 @@ func Test_ListOfRunningAQLQueries(t *testing.T) {
 			FOR x IN 1..100
 				RETURN x * i
 		)
-		RETURN {i: i, sum: SUM(computation)}
+		RETURN {i: i, sum: SUM(computation), sleep: SLEEP(1)}
 `, &arangodb.QueryOptions{
 					BindVars: bindVars,
 				})
@@ -457,6 +458,7 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 
 func Test_KillAQLQuery(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		bvString := "maxKill" + StringWithCharset(16, charset)
 		ctx := context.Background()
 		// Get the database
 		db, err := client.GetDatabase(ctx, "_system", nil)
@@ -485,16 +487,16 @@ func Test_KillAQLQuery(t *testing.T) {
 
 			// Use a streaming query that processes results slowly
 			bindVars := map[string]interface{}{
-				"max": 10000000,
+				bvString: 10000000,
 			}
 
 			cursor, err := db.Query(ctx, `
-	FOR i IN 1..@max
+	FOR i IN 1..@`+bvString+`
 		LET computation = (
 			FOR x IN 1..100
 				RETURN x * i
 		)
-		RETURN {i: i, sum: SUM(computation)}
+		RETURN {i: i, sum: SUM(computation), j: SLEEP(2)}
 `, &arangodb.QueryOptions{
 				BindVars: bindVars,
 			})
@@ -505,6 +507,7 @@ func Test_KillAQLQuery(t *testing.T) {
 				}
 				return
 			}
+			t.Logf("Query launched: %v", cursor)
 
 			// Process results slowly to keep query active longer
 			if cursor != nil {
@@ -547,19 +550,30 @@ func Test_KillAQLQuery(t *testing.T) {
 			t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
 
 			if len(queries) > 0 {
-				foundRunningQuery = true
 				t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
 				// Log query details
 				for i, query := range queries {
 					bindVarsJSON, _ := utils.ToJSONString(*query.BindVars)
-					t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
-						i, *query.Id, *query.State, bindVarsJSON)
-					// Kill the query
-					err := db.KillAQLQuery(ctx, *query.Id, utils.NewType(false))
-					require.NoError(t, err, "Failed to kill query %s", *query.Id)
-					t.Logf("Killed query %s", *query.Id)
+					if strings.Contains(bindVarsJSON, bvString) {
+						t.Logf("Query %d: ID=%s, State=%s, BindVars=%s",
+							i, *query.Id, *query.State, bindVarsJSON)
+						// Kill the query
+						err := db.KillAQLQuery(ctx, *query.Id, utils.NewType(false))
+						if ok, arangoErr := shared.IsArangoError(err); ok {
+							if arangoErr.ErrorNum == shared.ErrQueryNotFound {
+								t.Logf("query gone %s", *query.Id)
+								continue
+							}
+						}
+						require.NoError(t, err, "Failed to kill query %s", *query.Id)
+						foundRunningQuery = true
+						t.Logf("Killed query %s", *query.Id)
+						break
+					} else {
+						t.Logf("Query skipped %d: ID=%s, State=%s, BindVars=%s",
+							i, *query.Id, *query.State, bindVarsJSON)
+					}
 				}
-				break
 			}
 
 			time.Sleep(300 * time.Millisecond)
@@ -1271,7 +1285,7 @@ func Test_UserDefinedFunctions(t *testing.T) {
 		require.NoError(t, err)
 
 		// Define UDF details
-		namespace := "myfunctions::temperature"
+		namespace := "myfunctions::temperature::" + StringWithCharset(16, charset)
 		functionName := namespace + "::celsiustofahrenheit"
 		code := "function (celsius) { return celsius * 9 / 5 + 32; }"
 

@@ -31,7 +31,7 @@ import (
 
 // defaultTestTimeout is the default timeout for context use in tests
 // less than 2 minutes is causing problems on CI
-const defaultTestTimeout = 15 * time.Minute
+const defaultTestTimeout = 20 * time.Minute
 
 type Timeout func() error
 

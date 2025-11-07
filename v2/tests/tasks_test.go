@@ -24,10 +24,27 @@ import (
 	"context"
 	"testing"
 
+	"math/rand"
+	"time"
+
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/utils"
 	"github.com/stretchr/testify/require"
 )
+
+const charset = "abcdefghijklmnopqrstuvwxyz" +
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+var seededRand *rand.Rand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+func StringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
 
 type TaskParams struct {
 	Foo string `json:"foo"`
@@ -138,7 +155,7 @@ func Test_TaskCreationWithId(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			dbName := "_system"
-			taskID := "test-task-id"
+			taskID := "test-task-id" + StringWithCharset(16, charset)
 			options := &arangodb.TaskOptions{
 				ID:      &taskID, // Optional if CreateTaskWithID sets it, but safe to keep
 				Name:    utils.NewType("TestTaskWithID"),
