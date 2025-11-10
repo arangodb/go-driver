@@ -590,3 +590,40 @@ func Test_HandleAdminVersion(t *testing.T) {
 		})
 	})
 }
+
+// Test_GetDeploymentId verifies that the deployment ID can be retrieved successfully.
+func Test_GetDeploymentId(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		t.Run("Success case", func(t *testing.T) {
+			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+				version := skipBelowVersion(client, ctx, "3.12.6", t)
+				t.Logf("Current Version %s", version.Version)
+
+				resp, err := client.GetDeploymentId(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, resp.Id)
+
+				// Verify ID format (assuming it's UUID-like)
+				require.Regexp(t, `^[a-zA-Z0-9\-]+$`, *resp.Id, "Deployment ID should be alphanumeric with hyphens")
+			})
+		})
+
+		t.Run("Multiple calls consistency", func(t *testing.T) {
+			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+				version := skipBelowVersion(client, ctx, "3.12.6", t)
+				t.Logf("Current Version %s", version.Version)
+
+				resp1, err := client.GetDeploymentId(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, resp1.Id)
+
+				resp2, err := client.GetDeploymentId(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, resp2.Id)
+
+				// IDs should be consistent across calls
+				require.Equal(t, *resp1.Id, *resp2.Id, "Deployment ID should be consistent across calls")
+			})
+		})
+	})
+}
