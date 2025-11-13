@@ -88,7 +88,7 @@ func Test_AccessTokens(t *testing.T) {
 				if len(tokens.Tokens) > 0 {
 					found := false
 					for _, token := range tokens.Tokens {
-						if token.Id != nil && tokenResp.Id != nil && *token.Id == *tokenResp.Id {
+						if token.Id != nil && tokenResp != nil && tokenResp.Id != nil && *token.Id == *tokenResp.Id {
 							require.Equal(t, tokenResp.Id, token.Id)
 							require.Equal(t, tokenResp.Name, token.Name)
 							require.Equal(t, tokenResp.Fingerprint, token.Fingerprint)
