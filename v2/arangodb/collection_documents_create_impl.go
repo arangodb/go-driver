@@ -24,6 +24,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -129,10 +130,19 @@ func newCollectionDocumentCreateResponseReader(array *connection.Array, options 
 	c := &collectionDocumentCreateResponseReader{array: array, options: options}
 
 	if c.options != nil {
+		// Cache reflection types once during initialization for performance
+		if c.options.OldObject != nil {
+			c.oldType = reflect.TypeOf(c.options.OldObject).Elem()
+		}
+		if c.options.NewObject != nil {
+			c.newType = reflect.TypeOf(c.options.NewObject).Elem()
+		}
+
 		c.response.Old = newUnmarshalInto(c.options.OldObject)
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
 
+	c.ReadAllReader = shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]{Reader: c}
 	return c
 }
 
@@ -147,22 +157,51 @@ type collectionDocumentCreateResponseReader struct {
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}
+	shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]
+
+	// Cache for len() method - allows Read() to work after Len() is called
+	cachedResults []CollectionDocumentCreateResponse
+	cachedErrors  []error
+	cached        bool
+	readIndex     int // Track position in cache for Read() after Len()
+
+	// Performance: Cache reflection types to avoid repeated lookups
+	oldType reflect.Type
+	newType reflect.Type
 }
 
 func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreateResponse, error) {
+	// If Len() was called, serve from cache
+	if c.cached {
+		if c.readIndex >= len(c.cachedResults) {
+			return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
+		}
+		result := c.cachedResults[c.readIndex]
+		err := c.cachedErrors[c.readIndex]
+		c.readIndex++
+		return result, err
+	}
+
+	// Normal streaming read
 	if !c.array.More() {
 		return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
 	}
 
 	var meta CollectionDocumentCreateResponse
 
-	if c.options != nil {
-		meta.Old = c.options.OldObject
-		meta.New = c.options.NewObject
+	// Create new instances for each document to avoid pointer reuse
+	// Use cached types for performance
+	if c.oldType != nil {
+		meta.Old = reflect.New(c.oldType).Interface()
+	}
+	if c.newType != nil {
+		meta.New = reflect.New(c.newType).Interface()
 	}
 
 	c.response.DocumentMeta = &meta.DocumentMeta
 	c.response.ResponseStruct = &meta.ResponseStruct
+	c.response.Old = newUnmarshalInto(meta.Old)
+	c.response.New = newUnmarshalInto(meta.New)
 
 	if err := c.array.Unmarshal(&c.response); err != nil {
 		if err == io.EOF {
@@ -175,5 +214,30 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 		return meta, meta.AsArangoError()
 	}
 
+	// Copy data from the new instances back to the original option objects for backward compatibility
+	if c.options != nil {
+		if c.options.OldObject != nil && meta.Old != nil {
+			oldValue := reflect.ValueOf(meta.Old).Elem()
+			originalValue := reflect.ValueOf(c.options.OldObject).Elem()
+			originalValue.Set(oldValue)
+		}
+		if c.options.NewObject != nil && meta.New != nil {
+			newValue := reflect.ValueOf(meta.New).Elem()
+			originalValue := reflect.ValueOf(c.options.NewObject).Elem()
+			originalValue.Set(newValue)
+		}
+	}
+
 	return meta, nil
+}
+
+// Len returns the number of items in the response.
+// After calling Len(), you can still use Read() to iterate through items.
+func (c *collectionDocumentCreateResponseReader) Len() int {
+	if !c.cached {
+		c.cachedResults, c.cachedErrors = c.ReadAll()
+		c.cached = true
+		c.readIndex = 0 // Reset read position to allow Read() after Len()
+	}
+	return len(c.cachedResults)
 }

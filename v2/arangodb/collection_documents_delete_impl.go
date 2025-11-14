@@ -24,6 +24,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -42,6 +43,7 @@ var _ CollectionDocumentDelete = &collectionDocumentDelete{}
 
 type collectionDocumentDelete struct {
 	collection *collection
+	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
 }
 
 func (c collectionDocumentDelete) DeleteDocument(ctx context.Context, key string) (CollectionDocumentDeleteResponse, error) {
@@ -103,6 +105,7 @@ func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context
 func newCollectionDocumentDeleteResponseReader(array *connection.Array, options *CollectionDocumentDeleteOptions) *collectionDocumentDeleteResponseReader {
 	c := &collectionDocumentDeleteResponseReader{array: array, options: options}
 
+	c.ReadAllIntoReader = shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]{Reader: c}
 	return c
 }
 
@@ -111,9 +114,28 @@ var _ CollectionDocumentDeleteResponseReader = &collectionDocumentDeleteResponse
 type collectionDocumentDeleteResponseReader struct {
 	array   *connection.Array
 	options *CollectionDocumentDeleteOptions
+	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
+	// Cache for len() method - allows Read() to work after Len() is called
+	cachedResults []CollectionDocumentDeleteResponse
+	cachedErrors  []error
+	cached        bool
+	readIndex     int // Track position in cache for Read() after Len()
 }
 
 func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (CollectionDocumentDeleteResponse, error) {
+	// If Len() was called, serve from cache
+	// Note: When serving from cache, the 'i' parameter is not populated with document data
+	if c.cached {
+		if c.readIndex >= len(c.cachedResults) {
+			return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
+		}
+		result := c.cachedResults[c.readIndex]
+		err := c.cachedErrors[c.readIndex]
+		c.readIndex++
+		return result, err
+	}
+
+	// Normal streaming read
 	if !c.array.More() {
 		return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
 	}
@@ -146,11 +168,33 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 	}
 
 	if c.options != nil && c.options.OldObject != nil {
-		meta.Old = c.options.OldObject
+		// Create a new instance for each document to avoid reusing the same pointer
+		oldObjectType := reflect.TypeOf(c.options.OldObject).Elem()
+		meta.Old = reflect.New(oldObjectType).Interface()
+
+		// Extract old data into the new instance
 		if err := response.Object.Object.Extract("old").Inject(meta.Old); err != nil {
 			return CollectionDocumentDeleteResponse{}, err
 		}
+
+		// Copy data from the new instance to the original OldObject for backward compatibility
+		oldValue := reflect.ValueOf(meta.Old).Elem()
+		originalValue := reflect.ValueOf(c.options.OldObject).Elem()
+		originalValue.Set(oldValue)
 	}
 
 	return meta, nil
+}
+
+// Len returns the number of items in the response.
+// After calling Len(), you can still use Read() to iterate through items.
+// Note: When Read() serves from cache, the document data parameter is not populated.
+func (c *collectionDocumentDeleteResponseReader) Len() int {
+	if !c.cached {
+		var dummySlice []interface{}
+		c.cachedResults, c.cachedErrors = c.ReadAll(&dummySlice)
+		c.cached = true
+		c.readIndex = 0 // Reset read position to allow Read() after Len()
+	}
+	return len(c.cachedResults)
 }
