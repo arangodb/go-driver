@@ -219,65 +219,65 @@ func Test_GetStartupConfiguration(t *testing.T) {
 
 func Test_ReloadRoutingTable(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			db, err := client.GetDatabase(ctx, "_system", nil)
-			require.NoError(t, err)
-			err = client.ReloadRoutingTable(ctx, db.Name())
-			require.NoError(t, err)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+				err := client.ReloadRoutingTable(ctx, db.Name())
+				require.NoError(t, err)
+			})
 		})
 	})
 }
 
 func Test_ExecuteAdminScript(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		ctx := context.Background()
-		db, err := client.GetDatabase(ctx, "_system", nil)
-		require.NoError(t, err)
-
-		tests := []struct {
-			name   string
-			script string
-		}{
-			{
-				name:   "ReturnObject",
-				script: "return {hello: 'world'};",
-			},
-			{
-				name: "ReturnNumber",
-				script: `
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				tests := []struct {
+					name   string
+					script string
+				}{
+					{
+						name:   "ReturnObject",
+						script: "return {hello: 'world'};",
+					},
+					{
+						name: "ReturnNumber",
+						script: `
                     var sum = 0;
                     for (var i = 1; i <= 5; i++) {
                         sum += i;
                     }
                     return sum;
                 `,
-			},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				result, err := client.ExecuteAdminScript(ctx, db.Name(), &tt.script)
-				var arangoErr shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("arangoErr code:%d\n", arangoErr.Code)
-					if arangoErr.Code == http.StatusNotFound {
-						t.Skip("javascript.allow-admin-execute is disabled")
-					}
+					},
 				}
-				require.NoError(t, err)
 
-				switch v := result.(type) {
-				case map[string]interface{}:
-					t.Logf("Got object result: %+v", v)
-					require.Contains(t, v, "hello")
-				case float64:
-					t.Logf("Got number result: %v", v)
-					require.Equal(t, float64(15), v)
-				default:
-					t.Fatalf("Unexpected result type: %T, value: %+v", v, v)
+				for _, tt := range tests {
+					t.Run(tt.name, func(t *testing.T) {
+						result, err := client.ExecuteAdminScript(ctx, db.Name(), &tt.script)
+						var arangoErr shared.ArangoError
+						if errors.As(err, &arangoErr) {
+							t.Logf("arangoErr code:%d\n", arangoErr.Code)
+							if arangoErr.Code == http.StatusNotFound {
+								t.Skip("javascript.allow-admin-execute is disabled")
+							}
+						}
+						require.NoError(t, err)
+
+						switch v := result.(type) {
+						case map[string]interface{}:
+							t.Logf("Got object result: %+v", v)
+							require.Contains(t, v, "hello")
+						case float64:
+							t.Logf("Got number result: %v", v)
+							require.Equal(t, float64(15), v)
+						default:
+							t.Fatalf("Unexpected result type: %T, value: %+v", v, v)
+						}
+					})
 				}
 			})
-		}
+		})
 	})
 }
 
@@ -326,34 +326,33 @@ func Test_CompactDatabases(t *testing.T) {
 // Test_GetTLSData checks that TLS configuration data is available and valid, skipping if not configured.
 func Test_GetTLSData(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			db, err := client.GetDatabase(ctx, "_system", nil)
-			require.NoError(t, err)
-
-			// Get TLS data using the client (which embeds ClientAdmin)
-			tlsResp, err := client.GetTLSData(ctx, db.Name())
-			if err != nil {
-				var arangoErr shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("GetTLSData failed with ArangoDB error code: %d", arangoErr.Code)
-					switch arangoErr.Code {
-					case 403:
-						t.Skip("Skipping TLS get test - authentication/permission denied (HTTP 403)")
-					default:
-						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				// Get TLS data using the client (which embeds ClientAdmin)
+				tlsResp, err := client.GetTLSData(ctx, db.Name())
+				if err != nil {
+					var arangoErr shared.ArangoError
+					if errors.As(err, &arangoErr) {
+						t.Logf("GetTLSData failed with ArangoDB error code: %d", arangoErr.Code)
+						switch arangoErr.Code {
+						case 403:
+							t.Skip("Skipping TLS get test - authentication/permission denied (HTTP 403)")
+						default:
+							t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+						}
+						return
 					}
-					return
+					// Skip for any other error (TLS not configured, network issues, etc.)
+					t.Logf("GetTLSData failed: %v", err)
+					t.Skip("Skipping TLS get test - likely TLS not configured or other server issue")
 				}
-				// Skip for any other error (TLS not configured, network issues, etc.)
-				t.Logf("GetTLSData failed: %v", err)
-				t.Skip("Skipping TLS get test - likely TLS not configured or other server issue")
-			}
 
-			// Success! Validate response structure
-			t.Logf("TLS data retrieved successfully")
+				// Success! Validate response structure
+				t.Logf("TLS data retrieved successfully")
 
-			// Validate TLS response data
-			validateTLSResponse(t, tlsResp, "Retrieved")
+				// Validate TLS response data
+				validateTLSResponse(t, tlsResp, "Retrieved")
+			})
 		})
 	})
 }
@@ -484,19 +483,18 @@ func Test_RotateEncryptionAtRestKey(t *testing.T) {
 // Test_GetJWTSecrets validates retrieval and structure of JWT secrets, skipping if not accessible.
 func Test_GetJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			db, err := client.GetDatabase(ctx, "_system", nil)
-			require.NoError(t, err)
-
-			resp, err := client.GetJWTSecrets(ctx, db.Name())
-			if err != nil {
-				if handleJWTSecretsError(t, err, "GetJWTSecrets", []int{http.StatusForbidden}) {
-					return
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				resp, err := client.GetJWTSecrets(ctx, db.Name())
+				if err != nil {
+					if handleJWTSecretsError(t, err, "GetJWTSecrets", []int{http.StatusForbidden}) {
+						return
+					}
+					require.NoError(t, err)
 				}
-				require.NoError(t, err)
-			}
 
-			validateJWTSecretsResponse(t, resp, "Retrieved")
+				validateJWTSecretsResponse(t, resp, "Retrieved")
+			})
 		})
 	})
 }

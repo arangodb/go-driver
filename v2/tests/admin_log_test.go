@@ -230,45 +230,42 @@ func Test_StructuredLogSettings(t *testing.T) {
 
 func Test_GetRecentAPICalls(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-			skipBelowVersion(client, ctx, "3.12.5-2", t)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				skipBelowVersion(client, ctx, "3.12.5-2", t)
 
-			resp, err := client.Version(ctx)
-			require.NoError(t, err)
-			require.NotEmpty(t, resp)
-			db, err := client.GetDatabase(ctx, "_system", nil)
-			require.NoError(t, err)
-			require.NotEmpty(t, db)
+				resp, err := client.Version(ctx)
+				require.NoError(t, err)
+				require.NotEmpty(t, resp)
 
-			recentApisResp, err := client.GetRecentAPICalls(ctx, db.Name())
-			require.NoError(t, err)
-			require.NotEmpty(t, recentApisResp)
+				recentApisResp, err := client.GetRecentAPICalls(ctx, db.Name())
+				require.NoError(t, err)
+				require.NotEmpty(t, recentApisResp)
+			})
 		})
 	})
 }
 
 func Test_GetMetrics(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-
-			db, err := client.GetDatabase(ctx, "_system", nil)
-			require.NoError(t, err)
-			require.NotEmpty(t, db)
-			// Role check
-			serverRole, err := client.ServerRole(ctx)
-			require.NoError(t, err)
-			t.Logf("ServerRole: %s", serverRole)
-
-			var serverId *string
-			if serverRole == arangodb.ServerRoleCoordinator {
-				serverID, err := client.ServerID(ctx)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				// Role check
+				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
-				serverId = &serverID
-			}
+				t.Logf("ServerRole: %s", serverRole)
 
-			metricsResp, err := client.GetMetrics(ctx, db.Name(), serverId)
-			require.NoError(t, err)
-			require.NotEmpty(t, metricsResp)
+				var serverId *string
+				if serverRole == arangodb.ServerRoleCoordinator {
+					serverID, err := client.ServerID(ctx)
+					require.NoError(t, err)
+					serverId = &serverID
+				}
+
+				metricsResp, err := client.GetMetrics(ctx, db.Name(), serverId)
+				require.NoError(t, err)
+				require.NotEmpty(t, metricsResp)
+			})
 		})
 	})
 }
