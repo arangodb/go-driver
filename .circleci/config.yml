@@ -1,14 +1,23 @@
 version: 2.1
+
 orbs:
   slack: circleci/slack@4.1
+
 executors:
   golang-executor:
     docker:
       - image: gcr.io/gcr-for-testing/golang:1.24.9
-  machine-executor:
+
+  linux-machine-executor:
     machine:
       image: ubuntu-2204:current
       docker_layer_caching: true
+
+  arm-machine-executor:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: arm.medium
+
 aliases:
   - &notify_slack_on_fail
     slack/notify:
@@ -42,44 +51,15 @@ jobs:
       - run: make linter
 
   run-unit-tests:
-    executor: machine-executor
+    executor: linux-machine-executor
     steps:
       - checkout
       - run: make run-unit-tests
     environment:
       GOIMAGE: << pipeline.parameters.goImage >>
 
-  run-integration-tests:
-    executor: machine-executor
-    parameters:
-      test-to-run:
-        type: string
-        default: "run-tests-single"
-      enable-extra-db-features:
-        type: boolean
-        default: false
-    steps:
-      - checkout
-      - run:
-          name: make << parameters.test-to-run >>
-          command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping..."
-              exit 0
-            fi
-            make << parameters.test-to-run >>
-    environment:
-      TEST_RESOURCES: "${HOME}/resources/"
-      ARANGODB: << pipeline.parameters.arangodbImage >>
-      GOIMAGE: << pipeline.parameters.goImage >>
-      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
-      STARTER: << pipeline.parameters.starterImage >>
-      ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
-      TEST_DISALLOW_UNKNOWN_FIELDS: false
-      VERBOSE: 1
-
   download-demo-data:
-    executor: machine-executor
+    executor: linux-machine-executor
     steps:
       - run: mkdir -p $HOME/resources
       - run:
@@ -90,8 +70,56 @@ jobs:
               exit 0
             fi
             if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+                "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
+
+  # ----------------------------------------
+  # UNIFIED INTEGRATION TEST JOB
+  # ----------------------------------------
+  run-integration-tests:
+    parameters:
+      platform:
+        type: string
+        enum: ["linux", "arm"]
+      test-to-run:
+        type: string
+      enable-extra-db-features:
+        type: boolean
+        default: false
+
+    executor: <<# if platform == "arm" >> arm-machine-executor << else >> linux-machine-executor <</ if >>
+
+    environment:
+      TEST_RESOURCES: "${HOME}/resources/"
+      ARANGODB: << pipeline.parameters.arangodbImage >>
+      GOIMAGE: << pipeline.parameters.goImage >>
+      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
+      STARTER: << pipeline.parameters.starterImage >>
+      ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
+      TEST_DISALLOW_UNKNOWN_FIELDS: false
+      VERBOSE: 1
+      <<# if platform == "arm" >>
+      DOCKER_PLATFORM: --platform linux/arm64
+      DOCKER_BUILD_PLATFORM: --platform linux/arm64
+      <</ if >>
+
+    steps:
+      - checkout
+      - run:
+          name: Download itzpapalotl demo foxx service
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping demo data download..."
+            else
+              if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
+                curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+                  "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+              fi
+            fi
+      - run:
+          name: Run integration tests
+          command: make << parameters.test-to-run >>
 
   vulncheck:
     executor: golang-executor
@@ -117,32 +145,71 @@ workflows:
           requires:
             - run-unit-tests
 
+      # ========================
+      # V1 Tests (LINUX ONLY)
+      # ========================
       - run-integration-tests:
           name: Test V1 cluster
           requires:
             - download-demo-data
+          platform: linux
           test-to-run: run-tests-cluster
-      - run-integration-tests:
-          name: Test V2 cluster
-          requires:
-            - download-demo-data
-          test-to-run: run-v2-tests-cluster
-      - run-integration-tests:
-          name: Test V2 cluster - DB extra features (compression)
-          requires:
-            - download-demo-data
-          test-to-run: run-v2-tests-cluster
-          enable-extra-db-features: true
 
       - run-integration-tests:
           name: Test V1 single
           requires:
             - download-demo-data
+          platform: linux
           test-to-run: run-tests-single
+
+      # ========================
+      # V2 Tests (LINUX)
+      # ========================
+      - run-integration-tests:
+          name: Test V2 cluster
+          requires:
+            - download-demo-data
+          platform: linux
+          test-to-run: run-v2-tests-cluster
+
+      - run-integration-tests:
+          name: Test V2 cluster - DB extra features (compression)
+          requires:
+            - download-demo-data
+          platform: linux
+          test-to-run: run-v2-tests-cluster
+          enable-extra-db-features: true
+
       - run-integration-tests:
           name: Test V2 single
           requires:
             - download-demo-data
+          platform: linux
+          test-to-run: run-v2-tests-single
+
+      # ========================
+      # V2 Tests (ARM ONLY)
+      # ========================
+      - run-integration-tests:
+          name: Test V2 cluster (ARM)
+          requires:
+            - download-demo-data
+          platform: arm
+          test-to-run: run-v2-tests-cluster
+
+      - run-integration-tests:
+          name: Test V2 cluster - DB extra features (compression) (ARM)
+          requires:
+            - download-demo-data
+          platform: arm
+          test-to-run: run-v2-tests-cluster
+          enable-extra-db-features: true
+
+      - run-integration-tests:
+          name: Test V2 single (ARM)
+          requires:
+            - download-demo-data
+          platform: arm
           test-to-run: run-v2-tests-single
 
   # Weekly vulnerability check
