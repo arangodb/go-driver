@@ -99,13 +99,16 @@ jobs:
       ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
       TEST_DISALLOW_UNKNOWN_FIELDS: false
       VERBOSE: 1
-      <<# if platform == "arm" >>
-      DOCKER_PLATFORM: --platform linux/arm64
-      DOCKER_BUILD_PLATFORM: --platform linux/arm64
-      <</ if >>
 
     steps:
       - checkout
+      - run:
+          name: Set platform-specific environment variables
+          command: |
+            <<# if platform == "arm" >>
+            echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+            echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+            <</ if >>
       - run:
           name: Download itzpapalotl demo foxx service
           command: |
