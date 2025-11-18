@@ -129,7 +129,7 @@ jobs:
       PLATFORM: << parameters.platform >>
 
     steps:
-      <<: *integration_test_steps
+      << *integration_test_steps
 
   # ----------------------------------------
   # ARM INTEGRATION TEST JOB
