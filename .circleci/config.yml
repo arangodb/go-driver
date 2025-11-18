@@ -49,6 +49,22 @@ parameters:
     type: string
     default: "arangodb/arangodb-starter:latest"
 
+commands:
+  run-test-if-pr:
+    description: "Run a test command only if this is a pull request"
+    parameters:
+      test-command:
+        type: string
+    steps:
+      - run:
+          name: Run integration tests
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping..."
+              exit 0
+            fi
+            << parameters.test-command >>
+
 jobs:
 
   check-code:
@@ -78,6 +94,8 @@ jobs:
           command: |
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
               echo "This is not a pull request. Skipping..."
+              # Create empty file so persist_to_workspace doesn't fail
+              touch $HOME/resources/itzpapalotl-v1.2.0.zip
               exit 0
             fi
             if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
@@ -111,9 +129,8 @@ jobs:
       - run:
           name: Ensure resources directory exists
           command: mkdir -p $HOME/resources
-      - run:
-          name: Run integration tests
-          command: make << parameters.test-to-run >>
+      - run-test-if-pr:
+          test-command: make << parameters.test-to-run >>
     environment:
       <<: *integration_test_env
 
@@ -143,9 +160,8 @@ jobs:
           command: |
             echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
             echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
-      - run:
-          name: Run integration tests
-          command: make << parameters.test-to-run >>
+      - run-test-if-pr:
+          test-command: make << parameters.test-to-run >>
     environment:
       <<: *integration_test_env
 
