@@ -24,6 +24,40 @@ aliases:
       channel: 'C056RL4BXG9' #status-go channel
       event: fail
       template: basic_fail_1
+  
+  - &integration_test_steps
+    - checkout
+    - run:
+        name: Set platform-specific environment variables
+        command: |
+          if [ "$PLATFORM" == "arm" ]; then
+            echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+            echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+          fi
+    - run:
+        name: Download itzpapalotl demo foxx service
+        command: |
+          if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            echo "This is not a pull request. Skipping demo data download..."
+          else
+            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
+              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+                "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+            fi
+          fi
+    - run:
+        name: Run integration tests
+        command: make << parameters.test-to-run >>
+  
+  - &integration_test_environment
+    TEST_RESOURCES: "${HOME}/resources/"
+    ARANGODB: << pipeline.parameters.arangodbImage >>
+    GOIMAGE: << pipeline.parameters.goImage >>
+    ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
+    STARTER: << pipeline.parameters.starterImage >>
+    ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
+    TEST_DISALLOW_UNKNOWN_FIELDS: false
+    VERBOSE: 1
 
 parameters:
   goImage:
@@ -88,41 +122,34 @@ jobs:
         type: boolean
         default: false
 
-    executor: <<# if platform == "arm" >> arm-machine-executor << else >> linux-machine-executor <</ if >>
+    executor: linux-machine-executor
 
     environment:
-      TEST_RESOURCES: "${HOME}/resources/"
-      ARANGODB: << pipeline.parameters.arangodbImage >>
-      GOIMAGE: << pipeline.parameters.goImage >>
-      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
-      STARTER: << pipeline.parameters.starterImage >>
-      ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
-      TEST_DISALLOW_UNKNOWN_FIELDS: false
-      VERBOSE: 1
+      << *integration_test_environment
+      PLATFORM: << parameters.platform >>
 
     steps:
-      - checkout
-      - run:
-          name: Set platform-specific environment variables
-          command: |
-            <<# if platform == "arm" >>
-            echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
-            echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
-            <</ if >>
-      - run:
-          name: Download itzpapalotl demo foxx service
-          command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping demo data download..."
-            else
-              if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-                curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
-                  "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
-              fi
-            fi
-      - run:
-          name: Run integration tests
-          command: make << parameters.test-to-run >>
+      << *integration_test_steps
+
+  # ----------------------------------------
+  # ARM INTEGRATION TEST JOB
+  # ----------------------------------------
+  run-integration-tests-arm:
+    parameters:
+      test-to-run:
+        type: string
+      enable-extra-db-features:
+        type: boolean
+        default: false
+
+    executor: arm-machine-executor
+
+    environment:
+      << *integration_test_environment
+      PLATFORM: arm
+
+    steps:
+      << *integration_test_steps
 
   vulncheck:
     executor: golang-executor
@@ -193,26 +220,23 @@ workflows:
       # ========================
       # V2 Tests (ARM ONLY)
       # ========================
-      - run-integration-tests:
+      - run-integration-tests-arm:
           name: Test V2 cluster (ARM)
           requires:
             - download-demo-data
-          platform: arm
           test-to-run: run-v2-tests-cluster
 
-      - run-integration-tests:
+      - run-integration-tests-arm:
           name: Test V2 cluster - DB extra features (compression) (ARM)
           requires:
             - download-demo-data
-          platform: arm
           test-to-run: run-v2-tests-cluster
           enable-extra-db-features: true
 
-      - run-integration-tests:
+      - run-integration-tests-arm:
           name: Test V2 single (ARM)
           requires:
             - download-demo-data
-          platform: arm
           test-to-run: run-v2-tests-single
 
   # Weekly vulnerability check
