@@ -125,11 +125,11 @@ jobs:
     executor: linux-machine-executor
 
     environment:
-      << *integration_test_environment
+      <<: *integration_test_environment
       PLATFORM: << parameters.platform >>
 
     steps:
-      << *integration_test_steps
+      <<: *integration_test_steps
 
   # ----------------------------------------
   # ARM INTEGRATION TEST JOB
@@ -145,7 +145,7 @@ jobs:
     executor: arm-machine-executor
 
     environment:
-      << *integration_test_environment
+      <<: *integration_test_environment
       PLATFORM: arm
 
     steps:
