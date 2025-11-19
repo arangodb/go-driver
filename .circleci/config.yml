@@ -21,6 +21,19 @@ aliases:
       channel: 'C056RL4BXG9' #status-go channel
       event: fail
       template: basic_fail_1
+  
+  # Common environment variables for integration tests (shared between Linux and ARM)
+  # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
+  # where to find resources on the host machine so it can mount them into Docker containers
+  - &integration_test_env
+    TEST_RESOURCES: "${HOME}/resources/"
+    ARANGODB: << pipeline.parameters.arangodbImage >>
+    GOIMAGE: << pipeline.parameters.goImage >>
+    ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
+    STARTER: << pipeline.parameters.starterImage >>
+    ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
+    TEST_DISALLOW_UNKNOWN_FIELDS: false
+    VERBOSE: 1
 
 parameters:
   goImage:
@@ -56,20 +69,26 @@ jobs:
       GOIMAGE: << pipeline.parameters.goImage >>
 
   download-demo-data:
-    executor: linux-machine-executor
-    steps:
-      - run: mkdir -p $HOME/resources
-      - run:
-          name: Download itzpapalotl demo foxx service
-          command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping demo data download..."
-            else
+      executor: linux-machine-executor
+      steps:
+        - checkout
+        - run: mkdir -p $HOME/resources
+        - run:
+            name: Download itzpapalotl demo foxx service
+            command: |
+              if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+                echo "This is not a pull request. Skipping..."
+                exit 0
+              fi
               if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
                 curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
                   "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
               fi
-            fi
+        - persist_to_workspace:
+            root: $HOME/resources
+            paths:
+              - itzpapalotl-v1.2.0.zip
+
 
   # ----------------------------------------
   # UNIFIED INTEGRATION TEST JOB (LINUX)
@@ -84,6 +103,11 @@ jobs:
         default: false
     steps:
       - checkout
+      # Attach workspace to download demo data from download-demo-data job
+      # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
+      # to mount this directory into Docker containers
+      - attach_workspace:
+          at: $HOME/resources
       - run:
           name: Ensure resources directory exists
           command: mkdir -p $HOME/resources
@@ -91,14 +115,7 @@ jobs:
           name: Run integration tests
           command: make << parameters.test-to-run >>
     environment:
-      TEST_RESOURCES: "${HOME}/resources/"
-      ARANGODB: << pipeline.parameters.arangodbImage >>
-      GOIMAGE: << pipeline.parameters.goImage >>
-      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
-      STARTER: << pipeline.parameters.starterImage >>
-      ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
-      TEST_DISALLOW_UNKNOWN_FIELDS: false
-      VERBOSE: 1
+      <<: *integration_test_env
 
   # ----------------------------------------
   # ARM INTEGRATION TEST JOB
@@ -113,6 +130,11 @@ jobs:
         default: false
     steps:
       - checkout
+      # Attach workspace to download demo data from download-demo-data job
+      # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
+      # to mount this directory into Docker containers
+      - attach_workspace:
+          at: $HOME/resources
       - run:
           name: Ensure resources directory exists
           command: mkdir -p $HOME/resources
@@ -125,14 +147,7 @@ jobs:
           name: Run integration tests
           command: make << parameters.test-to-run >>
     environment:
-      TEST_RESOURCES: "${HOME}/resources/"
-      ARANGODB: << pipeline.parameters.arangodbImage >>
-      GOIMAGE: << pipeline.parameters.goImage >>
-      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
-      STARTER: << pipeline.parameters.starterImage >>
-      ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
-      TEST_DISALLOW_UNKNOWN_FIELDS: false
-      VERBOSE: 1
+      <<: *integration_test_env
 
   vulncheck:
     executor: golang-executor
