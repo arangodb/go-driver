@@ -22,7 +22,7 @@ aliases:
       event: fail
       template: basic_fail_1
   
-  # Common environment variables for integration tests (shared between Linux and ARM)
+  # Common environment variables for integration tests (shared between x86 and ARM)
   # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
   # where to find resources on the host machine so it can mount them into Docker containers
   - &integration_test_env
@@ -69,29 +69,29 @@ jobs:
       GOIMAGE: << pipeline.parameters.goImage >>
 
   download-demo-data:
-      executor: x86-machine-executor
-      steps:
-        - checkout
-        - run: mkdir -p $HOME/resources
-        - run:
-            name: Download itzpapalotl demo foxx service
-            command: |
-              if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-                echo "This is not a pull request. Skipping..."
-                exit 0
-              fi
-              if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-                curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
-                  "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
-              fi
-        - persist_to_workspace:
-            root: /home/circleci/resources
-            paths:
-              - itzpapalotl-v1.2.0.zip
+    executor: x86-machine-executor
+    steps:
+      - checkout
+      - run: mkdir -p $HOME/resources
+      - run:
+          name: Download itzpapalotl demo foxx service
+          command: |
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping..."
+              exit 0
+            fi
+            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
+              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+                "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+            fi
+      - persist_to_workspace:
+          root: /home/circleci/resources
+          paths:
+            - itzpapalotl-v1.2.0.zip
 
 
   # ----------------------------------------
-  # UNIFIED INTEGRATION TEST JOB (LINUX)
+  # UNIFIED INTEGRATION TEST JOB X86
   # ----------------------------------------
   run-integration-tests:
     executor: x86-machine-executor
@@ -174,7 +174,7 @@ workflows:
             - run-unit-tests
 
       # ========================
-      # V1 Tests (LINUX ONLY)
+      # V1 Tests x86
       # ========================
       - run-integration-tests:
           name: Test V1 cluster
@@ -189,7 +189,7 @@ workflows:
           test-to-run: run-tests-single
 
       # ========================
-      # V2 Tests (LINUX)
+      # V2 Tests x86
       # ========================
       - run-integration-tests:
           name: Test V2 cluster
@@ -211,7 +211,7 @@ workflows:
           test-to-run: run-v2-tests-single
 
       # ========================
-      # V2 Tests (ARM ONLY)
+      # V2 Tests ARM
       # ========================
       - run-integration-tests-arm:
           name: Test V2 cluster (ARM)
