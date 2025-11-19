@@ -26,7 +26,7 @@ aliases:
   # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
   # where to find resources on the host machine so it can mount them into Docker containers
   - &integration_test_env
-    TEST_RESOURCES: "${HOME}/resources/"
+    TEST_RESOURCES: "/home/circleci/resources/"
     ARANGODB: << pipeline.parameters.arangodbImage >>
     GOIMAGE: << pipeline.parameters.goImage >>
     ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
@@ -85,7 +85,7 @@ jobs:
                   "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
               fi
         - persist_to_workspace:
-            root: $HOME/resources
+            root: /home/circleci/resources
             paths:
               - itzpapalotl-v1.2.0.zip
 
@@ -107,7 +107,7 @@ jobs:
       # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
       # to mount this directory into Docker containers
       - attach_workspace:
-          at: $HOME/resources
+          at: /home/circleci/resources
       - run:
           name: Ensure resources directory exists
           command: mkdir -p $HOME/resources
@@ -134,7 +134,7 @@ jobs:
       # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
       # to mount this directory into Docker containers
       - attach_workspace:
-          at: $HOME/resources
+          at: /home/circleci/resources
       - run:
           name: Ensure resources directory exists
           command: mkdir -p $HOME/resources
