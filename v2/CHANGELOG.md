@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Add endpoint to fetch deployment id
+- Add ARM Support for V2 testcases 
 
 ## [2.1.6](https://github.com/arangodb/go-driver/tree/v2.1.6) (2025-11-06)
 - Add missing endpoints from replication
