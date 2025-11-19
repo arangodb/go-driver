@@ -85,7 +85,6 @@ jobs:
       GOIMAGE: << pipeline.parameters.goImage >>
 
   download-demo-data:
-<<<<<<< HEAD
     executor: x86-machine-executor
     steps:
       - checkout
@@ -107,27 +106,6 @@ jobs:
           root: /home/circleci/resources
           paths:
             - itzpapalotl-v1.2.0.zip
-=======
-      executor: linux-machine-executor
-      steps:
-        - checkout
-        - run: mkdir -p $HOME/resources
-        - run:
-            name: Download itzpapalotl demo foxx service
-            command: |
-              if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-                echo "This is not a pull request. Skipping..."
-                exit 0
-              fi
-              if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-                curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
-                  "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
-              fi
-        - persist_to_workspace:
-            root: $HOME/resources
-            paths:
-              - itzpapalotl-v1.2.0.zip
->>>>>>> 0b9174b (modified config file to reuse environment variables)
 
 
   # ----------------------------------------
@@ -147,11 +125,7 @@ jobs:
       # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
       # to mount this directory into Docker containers
       - attach_workspace:
-<<<<<<< HEAD
           at: /home/circleci/resources
-=======
-          at: $HOME/resources
->>>>>>> 0b9174b (modified config file to reuse environment variables)
       - run:
           name: Ensure resources directory exists
           command: mkdir -p $HOME/resources
@@ -177,11 +151,7 @@ jobs:
       # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
       # to mount this directory into Docker containers
       - attach_workspace:
-<<<<<<< HEAD
           at: /home/circleci/resources
-=======
-          at: $HOME/resources
->>>>>>> 0b9174b (modified config file to reuse environment variables)
       - run:
           name: Ensure resources directory exists
           command: mkdir -p $HOME/resources
