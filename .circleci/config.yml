@@ -1,8 +1,6 @@
 version: 2.1
-
 orbs:
   slack: circleci/slack@4.1
-
 executors:
   golang-executor:
     docker:
@@ -17,7 +15,6 @@ executors:
     machine:
       image: ubuntu-2204:current
     resource_class: arm.medium
-
 aliases:
   - &notify_slack_on_fail
     slack/notify:
@@ -66,30 +63,33 @@ jobs:
           name: Download itzpapalotl demo foxx service
           command: |
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping..."
-              exit 0
-            fi
-            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
-                "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+              echo "This is not a pull request. Skipping demo data download..."
+            else
+              if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
+                curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+                  "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+              fi
             fi
 
   # ----------------------------------------
-  # UNIFIED INTEGRATION TEST JOB
+  # UNIFIED INTEGRATION TEST JOB (LINUX)
   # ----------------------------------------
   run-integration-tests:
+    executor: linux-machine-executor
     parameters:
-      platform:
-        type: string
-        enum: ["linux", "arm"]
       test-to-run:
         type: string
       enable-extra-db-features:
         type: boolean
         default: false
-
-    executor: linux-machine-executor
-
+    steps:
+      - checkout
+      - run:
+          name: Ensure resources directory exists
+          command: mkdir -p $HOME/resources
+      - run:
+          name: Run integration tests
+          command: make << parameters.test-to-run >>
     environment:
       TEST_RESOURCES: "${HOME}/resources/"
       ARANGODB: << pipeline.parameters.arangodbImage >>
@@ -99,45 +99,31 @@ jobs:
       ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
       TEST_DISALLOW_UNKNOWN_FIELDS: false
       VERBOSE: 1
-      PLATFORM: << parameters.platform >>
-
-    steps:
-      - checkout
-      - run:
-          name: Set platform-specific environment variables
-          command: |
-            if [ "$PLATFORM" == "arm" ]; then
-              echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
-              echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
-            fi
-      - run:
-          name: Download itzpapalotl demo foxx service
-          command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping demo data download..."
-            else
-              if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-                curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
-                  "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
-              fi
-            fi
-      - run:
-          name: Run integration tests
-          command: make << parameters.test-to-run >>
 
   # ----------------------------------------
   # ARM INTEGRATION TEST JOB
   # ----------------------------------------
   run-integration-tests-arm:
+    executor: arm-machine-executor
     parameters:
       test-to-run:
         type: string
       enable-extra-db-features:
         type: boolean
         default: false
-
-    executor: arm-machine-executor
-
+    steps:
+      - checkout
+      - run:
+          name: Ensure resources directory exists
+          command: mkdir -p $HOME/resources
+      - run:
+          name: Set platform-specific environment variables
+          command: |
+            echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+            echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+      - run:
+          name: Run integration tests
+          command: make << parameters.test-to-run >>
     environment:
       TEST_RESOURCES: "${HOME}/resources/"
       ARANGODB: << pipeline.parameters.arangodbImage >>
@@ -147,31 +133,6 @@ jobs:
       ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
       TEST_DISALLOW_UNKNOWN_FIELDS: false
       VERBOSE: 1
-      PLATFORM: arm
-
-    steps:
-      - checkout
-      - run:
-          name: Set platform-specific environment variables
-          command: |
-            if [ "$PLATFORM" == "arm" ]; then
-              echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
-              echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
-            fi
-      - run:
-          name: Download itzpapalotl demo foxx service
-          command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping demo data download..."
-            else
-              if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-                curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
-                  "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
-              fi
-            fi
-      - run:
-          name: Run integration tests
-          command: make << parameters.test-to-run >>
 
   vulncheck:
     executor: golang-executor
@@ -204,14 +165,12 @@ workflows:
           name: Test V1 cluster
           requires:
             - download-demo-data
-          platform: linux
           test-to-run: run-tests-cluster
 
       - run-integration-tests:
           name: Test V1 single
           requires:
             - download-demo-data
-          platform: linux
           test-to-run: run-tests-single
 
       # ========================
@@ -221,14 +180,12 @@ workflows:
           name: Test V2 cluster
           requires:
             - download-demo-data
-          platform: linux
           test-to-run: run-v2-tests-cluster
 
       - run-integration-tests:
           name: Test V2 cluster - DB extra features (compression)
           requires:
             - download-demo-data
-          platform: linux
           test-to-run: run-v2-tests-cluster
           enable-extra-db-features: true
 
@@ -236,7 +193,6 @@ workflows:
           name: Test V2 single
           requires:
             - download-demo-data
-          platform: linux
           test-to-run: run-v2-tests-single
 
       # ========================
