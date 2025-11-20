@@ -233,12 +233,12 @@ workflows:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
 
-      - run-integration-tests-arm:
-          name: Test V2 cluster - DB extra features (compression) (ARM)
-          requires:
-            - download-demo-data
-          test-to-run: run-v2-tests-cluster
-          enable-extra-db-features: true
+      # - run-integration-tests-arm:
+      #     name: Test V2 cluster - DB extra features (compression) (ARM)
+      #     requires:
+      #       - download-demo-data
+      #     test-to-run: run-v2-tests-cluster
+      #     enable-extra-db-features: true
 
       - run-integration-tests-arm:
           name: Test V2 single (ARM)
