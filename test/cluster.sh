@@ -52,7 +52,11 @@ if [ "$CMD" == "start" ]; then
     if [ -n "$ENABLE_DATABASE_EXTRA_FEATURES" ]; then
         STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true --args.all.http.compress-response-threshold=1 --args.all.http.handle-content-encoding-for-unauthenticated-requests=true"
     fi
-    if [[ "$OSTYPE" == "darwin"* ]]; then
+    # Use DOCKER_PLATFORM if set (e.g., from CircleCI for ARM), otherwise use macOS default
+    if [ -n "$DOCKER_PLATFORM" ]; then
+        DOCKERPLATFORMARG="$DOCKER_PLATFORM"
+        DOCKERARGS="$DOCKERARGS $DOCKERPLATFORMARG"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
         DOCKERPLATFORMARG="--platform linux/x86_64"
         DOCKERARGS="$DOCKERARGS $DOCKERPLATFORMARG"
     fi
@@ -76,7 +80,11 @@ if [ "$CMD" == "start" ]; then
     set -x
     
     # pull latest version of ArangoDB image
-    docker pull ${ARANGODB}
+    if [ -n "$DOCKER_PLATFORM" ]; then
+        docker pull ${DOCKER_PLATFORM} ${ARANGODB}
+    else
+        docker pull ${ARANGODB}
+    fi
 
     # Start starters 
     # arangodb/arangodb-starter 0.7.0 or higher is needed.

@@ -5,16 +5,35 @@ executors:
   golang-executor:
     docker:
       - image: gcr.io/gcr-for-testing/golang:1.24.9
-  machine-executor:
+
+  x86-machine-executor:
     machine:
       image: ubuntu-2204:current
       docker_layer_caching: true
+
+  arm-machine-executor:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: arm.medium
 aliases:
   - &notify_slack_on_fail
     slack/notify:
       channel: 'C056RL4BXG9' #status-go channel
       event: fail
       template: basic_fail_1
+  
+  # Common environment variables for integration tests (shared between x86 and ARM)
+  # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
+  # where to find resources on the host machine so it can mount them into Docker containers
+  - &integration_test_env
+    TEST_RESOURCES: "/home/circleci/resources/"
+    ARANGODB: << pipeline.parameters.arangodbImage >>
+    GOIMAGE: << pipeline.parameters.goImage >>
+    ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
+    STARTER: << pipeline.parameters.starterImage >>
+    ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
+    TEST_DISALLOW_UNKNOWN_FIELDS: false
+    VERBOSE: 1
 
 parameters:
   goImage:
@@ -42,45 +61,17 @@ jobs:
       - run: make linter
 
   run-unit-tests:
-    executor: machine-executor
+    executor: x86-machine-executor
     steps:
       - checkout
       - run: make run-unit-tests
     environment:
       GOIMAGE: << pipeline.parameters.goImage >>
 
-  run-integration-tests:
-    executor: machine-executor
-    parameters:
-      test-to-run:
-        type: string
-        default: "run-tests-single"
-      enable-extra-db-features:
-        type: boolean
-        default: false
+  download-demo-data:
+    executor: x86-machine-executor
     steps:
       - checkout
-      - run:
-          name: make << parameters.test-to-run >>
-          command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping..."
-              exit 0
-            fi
-            make << parameters.test-to-run >>
-    environment:
-      TEST_RESOURCES: "${HOME}/resources/"
-      ARANGODB: << pipeline.parameters.arangodbImage >>
-      GOIMAGE: << pipeline.parameters.goImage >>
-      ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
-      STARTER: << pipeline.parameters.starterImage >>
-      ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
-      TEST_DISALLOW_UNKNOWN_FIELDS: false
-      VERBOSE: 1
-
-  download-demo-data:
-    executor: machine-executor
-    steps:
       - run: mkdir -p $HOME/resources
       - run:
           name: Download itzpapalotl demo foxx service
@@ -90,8 +81,73 @@ jobs:
               exit 0
             fi
             if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
+              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+                "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
+      - persist_to_workspace:
+          root: /home/circleci/resources
+          paths:
+            - itzpapalotl-v1.2.0.zip
+
+
+  # ----------------------------------------
+  # UNIFIED INTEGRATION TEST JOB X86
+  # ----------------------------------------
+  run-integration-tests:
+    executor: x86-machine-executor
+    parameters:
+      test-to-run:
+        type: string
+      enable-extra-db-features:
+        type: boolean
+        default: false
+    steps:
+      - checkout
+      # Attach workspace to download demo data from download-demo-data job
+      # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
+      # to mount this directory into Docker containers
+      - attach_workspace:
+          at: /home/circleci/resources
+      - run:
+          name: Ensure resources directory exists
+          command: mkdir -p $HOME/resources
+      - run:
+          name: Run integration tests
+          command: make << parameters.test-to-run >>
+    environment:
+      <<: *integration_test_env
+
+  # ----------------------------------------
+  # ARM INTEGRATION TEST JOB
+  # ----------------------------------------
+  run-integration-tests-arm:
+    executor: arm-machine-executor
+    parameters:
+      test-to-run:
+        type: string
+      enable-extra-db-features:
+        type: boolean
+        default: false
+    steps:
+      - checkout
+      # Attach workspace to download demo data from download-demo-data job
+      # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
+      # to mount this directory into Docker containers
+      - attach_workspace:
+          at: /home/circleci/resources
+      - run:
+          name: Ensure resources directory exists
+          command: mkdir -p $HOME/resources
+      - run:
+          name: Set platform-specific environment variables
+          command: |
+            echo 'export DOCKER_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+            echo 'export DOCKER_BUILD_PLATFORM="--platform linux/arm64"' >> $BASH_ENV
+      - run:
+          name: Run integration tests
+          command: make << parameters.test-to-run >>
+    environment:
+      <<: *integration_test_env
 
   vulncheck:
     executor: golang-executor
@@ -117,16 +173,30 @@ workflows:
           requires:
             - run-unit-tests
 
+      # ========================
+      # V1 Tests x86
+      # ========================
       - run-integration-tests:
           name: Test V1 cluster
           requires:
             - download-demo-data
           test-to-run: run-tests-cluster
+
+      - run-integration-tests:
+          name: Test V1 single
+          requires:
+            - download-demo-data
+          test-to-run: run-tests-single
+
+      # ========================
+      # V2 Tests x86
+      # ========================
       - run-integration-tests:
           name: Test V2 cluster
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
+
       - run-integration-tests:
           name: Test V2 cluster - DB extra features (compression)
           requires:
@@ -135,12 +205,29 @@ workflows:
           enable-extra-db-features: true
 
       - run-integration-tests:
-          name: Test V1 single
+          name: Test V2 single
           requires:
             - download-demo-data
-          test-to-run: run-tests-single
-      - run-integration-tests:
-          name: Test V2 single
+          test-to-run: run-v2-tests-single
+
+      # ========================
+      # V2 Tests ARM
+      # ========================
+      - run-integration-tests-arm:
+          name: Test V2 cluster (ARM)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster
+
+      - run-integration-tests-arm:
+          name: Test V2 cluster - DB extra features (compression) (ARM)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster
+          enable-extra-db-features: true
+
+      - run-integration-tests-arm:
+          name: Test V2 single (ARM)
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single

@@ -12,6 +12,9 @@ ALPINE_IMAGE ?= alpine:3.21
 TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run
+DOCKER_PLATFORM ?=
+DOCKER_BUILD_PLATFORM ?= $(DOCKER_PLATFORM)
+DOCKER_CMD:=docker run $(DOCKER_PLATFORM)
 
 GOBUILDTAGS:=$(TAGS)
 GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
@@ -463,11 +466,13 @@ __test_v2_go_test:
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
 	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
+	@docker build $(DOCKER_BUILD_PLATFORM) -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
 endif
 
 __test_v2_debug__:
 ifeq ("$(DEBUG)", "true")
 	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
+	@docker build $(DOCKER_BUILD_PLATFORM) -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
 endif
 
 __dir_setup:
