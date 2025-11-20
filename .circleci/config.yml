@@ -93,9 +93,7 @@ jobs:
           name: Download itzpapalotl demo foxx service
           command: |
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping..."
-              # Create empty file so persist_to_workspace doesn't fail
-              touch $HOME/resources/itzpapalotl-v1.2.0.zip
+              echo "This is not a pull request. Skipping download..."
               exit 0
             fi
             if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
@@ -103,9 +101,9 @@ jobs:
                 "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
       - persist_to_workspace:
-          root: /home/circleci/resources
+          root: /home/circleci
           paths:
-            - itzpapalotl-v1.2.0.zip
+            - resources
 
 
   # ----------------------------------------
