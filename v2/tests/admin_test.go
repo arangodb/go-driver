@@ -164,17 +164,11 @@ func Test_GetStartupConfiguration(t *testing.T) {
 
 			resp, err := client.GetStartupConfiguration(ctx)
 			if err != nil {
-				switch e := err.(type) {
-				case *shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration API not enabled on this server")
-					}
-				case shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration API not enabled on this server")
-					}
+				if HandleSuperuserError(t, err, SuperuserTestOptions{
+					OperationName:     "GetStartupConfiguration",
+					CustomSkipMessage: "startup configuration API not enabled on this server or superuser rights required",
+				}) {
+					return
 				}
 				require.NoError(t, err)
 			}
@@ -182,17 +176,11 @@ func Test_GetStartupConfiguration(t *testing.T) {
 
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
 			if err != nil {
-				switch e := err.(type) {
-				case *shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration description API not enabled on this server")
-					}
-				case shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration description API not enabled on this server")
-					}
+				if HandleSuperuserError(t, err, SuperuserTestOptions{
+					OperationName:     "GetStartupConfigurationDescription",
+					CustomSkipMessage: "startup configuration description API not enabled on this server or superuser rights required",
+				}) {
+					return
 				}
 				require.NoError(t, err)
 			}
@@ -294,12 +282,11 @@ func Test_CompactDatabases(t *testing.T) {
 			checkCompact := func(opts *arangodb.CompactOpts) {
 				resp, err := client.CompactDatabases(ctx, opts)
 				if err != nil {
-					var arangoErr shared.ArangoError
-					if errors.As(err, &arangoErr) {
-						t.Logf("arangoErr code:%d, message:%s", arangoErr.Code, arangoErr.ErrorMessage)
-						if arangoErr.Code == 403 || arangoErr.Code == 500 {
-							t.Skip("The endpoint requires superuser access")
-						}
+					if HandleSuperuserError(t, err, SuperuserTestOptions{
+						OperationName:     "CompactDatabases",
+						CustomSkipMessage: "Skipping Compact Databases test - superuser rights required",
+					}) {
+						return
 					}
 					require.NoError(t, err)
 				}
@@ -336,22 +323,7 @@ func Test_GetTLSData(t *testing.T) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 				// Get TLS data using the client (which embeds ClientAdmin)
 				tlsResp, err := client.GetTLSData(ctx, db.Name())
-				if err != nil {
-					var arangoErr shared.ArangoError
-					if errors.As(err, &arangoErr) {
-						t.Logf("GetTLSData failed with ArangoDB error code: %d", arangoErr.Code)
-						switch arangoErr.Code {
-						case 403:
-							t.Skip("Skipping TLS get test - authentication/permission denied (HTTP 403)")
-						default:
-							t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-						}
-						return
-					}
-					// Skip for any other error (TLS not configured, network issues, etc.)
-					t.Logf("GetTLSData failed: %v", err)
-					t.Skip("Skipping TLS get test - likely TLS not configured or other server issue")
-				}
+				require.NoError(t, err)
 
 				// Success! Validate response structure
 				t.Logf("TLS data retrieved successfully")
@@ -414,15 +386,10 @@ func Test_ReloadTLSData(t *testing.T) {
 			// Reload TLS data - requires superuser rights
 			tlsResp, err := client.ReloadTLSData(ctx)
 			if err != nil {
-				var arangoErr shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("ReloadTLSData failed with ArangoDB error code: %d", arangoErr.Code)
-					switch arangoErr.Code {
-					case 403:
-						t.Skip("Skipping TLS reload test - superuser rights required (HTTP 403)")
-					default:
-						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-					}
+				if HandleSuperuserError(t, err, SuperuserTestOptions{
+					OperationName:     "ReloadTLSData",
+					CustomSkipMessage: "Skipping TLS reload test - superuser rights required",
+				}) {
 					return
 				}
 				// Skip for any other error (TLS not configured, network issues, etc.)
@@ -448,22 +415,14 @@ func Test_RotateEncryptionAtRestKey(t *testing.T) {
 			// Attempt to rotate encryption at rest key - requires superuser rights
 			resp, err := client.RotateEncryptionAtRestKey(ctx)
 			if err != nil {
-				var arangoErr shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("RotateEncryptionAtRestKey failed with ArangoDB error code: %d", arangoErr.Code)
-					switch arangoErr.Code {
-					case 403:
-						t.Skip("Skipping RotateEncryptionAtRestKey test - superuser rights required (HTTP 403)")
-					case 404:
-						t.Skip("Skipping RotateEncryptionAtRestKey test - encryption key rotation disabled (HTTP 404)")
-					default:
-						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-						t.FailNow()
-					}
-				} else {
-					t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: %v", err)
+				if HandleSuperuserError(t, err, SuperuserTestOptions{
+					OperationName:     "RotateEncryptionAtRestKey",
+					SkipOnNotFound:    true, // Skip on "Not Found" (encryption disabled)
+					CustomSkipMessage: "Skipping Rotate Encryption At Rest Key test - superuser rights required",
+				}) {
+					return
 				}
-				return
+				require.NoError(t, err)
 			}
 
 			// Convert response to JSON for logging
@@ -522,29 +481,30 @@ func Test_ReloadJWTSecrets(t *testing.T) {
 	})
 }
 
-// handleJWTSecretsError handles common JWT secrets API errors and returns true if the test should skip
+// handleJWTSecretsError handles common JWT secrets API errors and returns true if the test should skip.
+// This function provides JWT-specific error handling with custom skip messages for common error codes.
 func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes []int) bool {
+	if err == nil {
+		return false
+	}
+
+	// Handle superuser errors and additional skip codes using the helper
+	// Note: HandleSuperuserError already checks for ArangoError internally
+	if HandleSuperuserError(t, err, SuperuserTestOptions{
+		OperationName:       operation,
+		AdditionalSkipCodes: skipCodes,
+	}) {
+		return true
+	}
+
+	// If error wasn't handled by HandleSuperuserError, check if it's an ArangoError
+	// and log it for debugging purposes
 	var arangoErr shared.ArangoError
 	if errors.As(err, &arangoErr) {
-		t.Logf("%s failed with ArangoDB error code: %d", operation, arangoErr.Code)
-
-		for _, code := range skipCodes {
-			switch code {
-			case http.StatusForbidden:
-				if arangoErr.Code == http.StatusForbidden {
-					t.Skip("The endpoint requires superuser access or JWT feature is disabled")
-					return true
-				}
-			case http.StatusBadRequest:
-				if arangoErr.Code == http.StatusBadRequest {
-					t.Skip("JWT reload not available: no secret file or folder configured")
-					return true
-				}
-			}
-		}
-
 		t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
 	}
+
+	// Error not handled, caller should handle it
 	return false
 }
 
