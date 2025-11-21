@@ -282,6 +282,12 @@ func Test_ExecuteAdminScript(t *testing.T) {
 }
 
 func Test_CompactDatabases(t *testing.T) {
+	// This test can not run sub-tests parallelly, because it performs admin operations
+	// that may conflict with other tests and server role checks can be inconsistent in parallel execution.
+	wrapOpts := WrapOptions{
+		Parallel: utils.NewType(false),
+	}
+
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
 
@@ -290,7 +296,7 @@ func Test_CompactDatabases(t *testing.T) {
 				if err != nil {
 					var arangoErr shared.ArangoError
 					if errors.As(err, &arangoErr) {
-						t.Logf("arangoErr code:%d", arangoErr.Code)
+						t.Logf("arangoErr code:%d, message:%s", arangoErr.Code, arangoErr.ErrorMessage)
 						if arangoErr.Code == 403 || arangoErr.Code == 500 {
 							t.Skip("The endpoint requires superuser access")
 						}
@@ -320,7 +326,7 @@ func Test_CompactDatabases(t *testing.T) {
 
 			checkCompact(nil)
 		})
-	})
+	}, wrapOpts)
 }
 
 // Test_GetTLSData checks that TLS configuration data is available and valid, skipping if not configured.
