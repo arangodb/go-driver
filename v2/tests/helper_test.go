@@ -106,9 +106,9 @@ func WithCollectionV2(t testing.TB, db arangodb.Database, props *arangodb.Create
 
 				// Check if it's a retryable error (service unavailable, timeout, conflict, etc.)
 				if ok, arangoErr := shared.IsArangoError(createErr); ok {
-					// Retry on service unavailable (503), timeout (408), or conflict (409) errors
+					// Retry on service unavailable (503), timeout (408) errors
 					// These are common in cluster mode under load
-					if arangoErr.Code == 503 || arangoErr.Code == 408 || arangoErr.Code == 409 {
+					if arangoErr.Code == 503 || arangoErr.Code == 408 {
 						return nil // Retry
 					}
 					// Also retry on internal server errors (500) which can occur during cluster coordination

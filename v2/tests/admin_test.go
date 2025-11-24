@@ -97,40 +97,44 @@ func Test_Version(t *testing.T) {
 
 func Test_GetSystemTime(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			db, err := client.GetDatabase(context.Background(), "_system", nil)
-			require.NoError(t, err)
-			require.NotEmpty(t, db)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+				db, err := client.GetDatabase(context.Background(), db.Name(), nil)
+				require.NoError(t, err)
+				require.NotEmpty(t, db)
 
-			time, err := client.GetSystemTime(context.Background(), db.Name())
-			require.NoError(t, err)
-			require.NotEmpty(t, time)
-			t.Logf("Current time in Unix timestamp with microsecond precision is:%f", time)
+				time, err := client.GetSystemTime(context.Background(), db.Name())
+				require.NoError(t, err)
+				require.NotEmpty(t, time)
+				t.Logf("Current time in Unix timestamp with microsecond precision is:%f", time)
+			})
 		})
 	})
 }
 
 func Test_GetServerStatus(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
-			t.Run("WithoutDBName", func(t *testing.T) {
-				resp, err := client.GetServerStatus(context.Background(), "")
-				require.NoError(t, err)
-				require.NotEmpty(t, resp)
-			})
-			t.Run("WithDBName", func(t *testing.T) {
-				db, err := client.GetDatabase(context.Background(), "_system", nil)
-				require.NoError(t, err)
-				require.NotEmpty(t, db)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
+				t.Run("WithoutDBName", func(t *testing.T) {
+					resp, err := client.GetServerStatus(context.Background(), "")
+					require.NoError(t, err)
+					require.NotEmpty(t, resp)
+				})
+				t.Run("WithDBName", func(t *testing.T) {
+					db, err := client.GetDatabase(context.Background(), db.Name(), nil)
+					require.NoError(t, err)
+					require.NotEmpty(t, db)
 
-				resp, err := client.GetServerStatus(context.Background(), db.Name())
-				require.NoError(t, err)
-				require.NotEmpty(t, resp)
-			})
-			t.Run("InvalidDBName", func(t *testing.T) {
-				_, err := client.GetServerStatus(context.Background(), "invalid/db/name")
-				t.Logf("error :%v\n", err)
-				require.Error(t, err)
+					resp, err := client.GetServerStatus(context.Background(), db.Name())
+					require.NoError(t, err)
+					require.NotEmpty(t, resp)
+				})
+				t.Run("InvalidDBName", func(t *testing.T) {
+					_, err := client.GetServerStatus(context.Background(), "invalid/db/name")
+					t.Logf("error :%v\n", err)
+					require.Error(t, err)
+				})
 			})
 		})
 	})
