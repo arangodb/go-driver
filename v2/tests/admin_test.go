@@ -190,8 +190,14 @@ func Test_GetStartupConfiguration(t *testing.T) {
 						continue
 					}
 					// After retries, if still 500, skip (feature not available/enabled or server issue)
-					t.Skipf("GetStartupConfiguration returned HTTP 500 after retries (ErrorNum: %d, Message: %s) - feature may not be available or server not ready",
-						arangoErr.ErrorNum, arangoErr.ErrorMessage)
+					if arangoErr.ErrorNum == 0 && arangoErr.ErrorMessage == "" {
+						// ErrorNum 0 with empty message means ArangoDB returned 500 without error details
+						// This typically indicates server not ready, endpoint not initialized, or internal error
+						t.Skipf("GetStartupConfiguration returned HTTP 500 without error details (empty response body) - server may not be ready or endpoint not available")
+					} else {
+						t.Skipf("GetStartupConfiguration returned HTTP 500 after retries (ErrorNum: %d, Message: %s) - feature may not be available or server not ready",
+							arangoErr.ErrorNum, arangoErr.ErrorMessage)
+					}
 					return
 				}
 				// For non-500 errors, break and handle below
@@ -229,8 +235,14 @@ func Test_GetStartupConfiguration(t *testing.T) {
 						continue
 					}
 					// After retries, if still 500, skip (feature not available/enabled or server issue)
-					t.Skipf("GetStartupConfigurationDescription returned HTTP 500 after retries (ErrorNum: %d, Message: %s) - feature may not be available or server not ready",
-						arangoErr.ErrorNum, arangoErr.ErrorMessage)
+					if arangoErr.ErrorNum == 0 && arangoErr.ErrorMessage == "" {
+						// ErrorNum 0 with empty message means ArangoDB returned 500 without error details
+						// This typically indicates server not ready, endpoint not initialized, or internal error
+						t.Skipf("GetStartupConfigurationDescription returned HTTP 500 without error details (empty response body) - server may not be ready or endpoint not available")
+					} else {
+						t.Skipf("GetStartupConfigurationDescription returned HTTP 500 after retries (ErrorNum: %d, Message: %s) - feature may not be available or server not ready",
+							arangoErr.ErrorNum, arangoErr.ErrorMessage)
+					}
 					return
 				}
 				// For non-500 errors, break and handle below
