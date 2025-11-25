@@ -165,6 +165,10 @@ func Test_GetDeploymentSupportInfo(t *testing.T) {
 func Test_GetStartupConfiguration(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			// Small delay to ensure admin endpoints are ready after server startup
+			// This helps avoid race conditions, especially in cluster mode
+			time.Sleep(100 * time.Millisecond)
+
 			// Retry on 500 errors - admin endpoints may not be ready immediately, especially in parallel execution
 			var resp map[string]interface{}
 			var err error
