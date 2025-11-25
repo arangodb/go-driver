@@ -176,14 +176,18 @@ func Test_GetStartupConfiguration(t *testing.T) {
 
 				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) && arangoErr.Code == 500 {
+					// Log full error details to understand why 500 is being returned
+					t.Logf("GetStartupConfiguration returned HTTP 500 - Code: %d, ErrorNum: %d, Message: %s",
+						arangoErr.Code, arangoErr.ErrorNum, arangoErr.ErrorMessage)
 					// Server not ready yet, retry after a short delay
 					if attempt < 4 {
-						t.Logf("GetStartupConfiguration returned 500 (server not ready), retrying in 500ms... attempt %d/5", attempt+1)
+						t.Logf("Retrying in 500ms... attempt %d/5", attempt+1)
 						time.Sleep(500 * time.Millisecond)
 						continue
 					}
-					// After retries, if still 500, skip (feature not available/enabled)
-					t.Skip("GetStartupConfiguration returned HTTP 500 after retries - feature may not be available or enabled on this server")
+					// After retries, if still 500, skip (feature not available/enabled or server issue)
+					t.Skipf("GetStartupConfiguration returned HTTP 500 after retries (ErrorNum: %d, Message: %s) - feature may not be available or server not ready",
+						arangoErr.ErrorNum, arangoErr.ErrorMessage)
 					return
 				}
 				// For non-500 errors, break and handle below
@@ -211,14 +215,18 @@ func Test_GetStartupConfiguration(t *testing.T) {
 
 				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) && arangoErr.Code == 500 {
+					// Log full error details to understand why 500 is being returned
+					t.Logf("GetStartupConfigurationDescription returned HTTP 500 - Code: %d, ErrorNum: %d, Message: %s",
+						arangoErr.Code, arangoErr.ErrorNum, arangoErr.ErrorMessage)
 					// Server not ready yet, retry after a short delay
 					if attempt < 4 {
-						t.Logf("GetStartupConfigurationDescription returned 500 (server not ready), retrying in 500ms... attempt %d/5", attempt+1)
+						t.Logf("Retrying in 500ms... attempt %d/5", attempt+1)
 						time.Sleep(500 * time.Millisecond)
 						continue
 					}
-					// After retries, if still 500, skip (feature not available/enabled)
-					t.Skip("GetStartupConfigurationDescription returned HTTP 500 after retries - feature may not be available or enabled on this server")
+					// After retries, if still 500, skip (feature not available/enabled or server issue)
+					t.Skipf("GetStartupConfigurationDescription returned HTTP 500 after retries (ErrorNum: %d, Message: %s) - feature may not be available or server not ready",
+						arangoErr.ErrorNum, arangoErr.ErrorMessage)
 					return
 				}
 				// For non-500 errors, break and handle below
