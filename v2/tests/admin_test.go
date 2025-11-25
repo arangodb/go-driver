@@ -165,8 +165,31 @@ func Test_GetDeploymentSupportInfo(t *testing.T) {
 func Test_GetStartupConfiguration(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			// Retry on 500 errors - admin endpoints may not be ready immediately, especially in parallel execution
+			var resp map[string]interface{}
+			var err error
+			for attempt := 0; attempt < 5; attempt++ {
+				resp, err = client.GetStartupConfiguration(ctx)
+				if err == nil {
+					break
+				}
 
-			resp, err := client.GetStartupConfiguration(ctx)
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) && arangoErr.Code == 500 {
+					// Server not ready yet, retry after a short delay
+					if attempt < 4 {
+						t.Logf("GetStartupConfiguration returned 500 (server not ready), retrying in 500ms... attempt %d/5", attempt+1)
+						time.Sleep(500 * time.Millisecond)
+						continue
+					}
+					// After retries, if still 500, skip (feature not available/enabled)
+					t.Skip("GetStartupConfiguration returned HTTP 500 after retries - feature may not be available or enabled on this server")
+					return
+				}
+				// For non-500 errors, break and handle below
+				break
+			}
+
 			if err != nil {
 				if HandleSuperuserError(t, err, SuperuserTestOptions{
 					OperationName:     "GetStartupConfiguration",
@@ -178,7 +201,30 @@ func Test_GetStartupConfiguration(t *testing.T) {
 			}
 			require.NotEmpty(t, resp)
 
-			configDesc, err := client.GetStartupConfigurationDescription(ctx)
+			// Retry on 500 errors for description endpoint as well
+			var configDesc map[string]interface{}
+			for attempt := 0; attempt < 5; attempt++ {
+				configDesc, err = client.GetStartupConfigurationDescription(ctx)
+				if err == nil {
+					break
+				}
+
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) && arangoErr.Code == 500 {
+					// Server not ready yet, retry after a short delay
+					if attempt < 4 {
+						t.Logf("GetStartupConfigurationDescription returned 500 (server not ready), retrying in 500ms... attempt %d/5", attempt+1)
+						time.Sleep(500 * time.Millisecond)
+						continue
+					}
+					// After retries, if still 500, skip (feature not available/enabled)
+					t.Skip("GetStartupConfigurationDescription returned HTTP 500 after retries - feature may not be available or enabled on this server")
+					return
+				}
+				// For non-500 errors, break and handle below
+				break
+			}
+
 			if err != nil {
 				if HandleSuperuserError(t, err, SuperuserTestOptions{
 					OperationName:     "GetStartupConfigurationDescription",
@@ -206,6 +252,8 @@ func Test_GetStartupConfiguration(t *testing.T) {
 				require.True(t, hasDesc, "expected option %s to have a description", key)
 			}
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

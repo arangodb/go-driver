@@ -107,12 +107,9 @@ func WithCollectionV2(t testing.TB, db arangodb.Database, props *arangodb.Create
 				// Check if it's a retryable error (service unavailable, timeout, conflict, etc.)
 				if ok, arangoErr := shared.IsArangoError(createErr); ok {
 					// Retry on service unavailable (503), timeout (408) errors
+					// Also retry on internal server errors (500)
 					// These are common in cluster mode under load
-					if arangoErr.Code == 503 || arangoErr.Code == 408 {
-						return nil // Retry
-					}
-					// Also retry on internal server errors (500) which can occur during cluster coordination
-					if arangoErr.Code == 500 {
+					if arangoErr.Code == 503 || arangoErr.Code == 408 || arangoErr.Code == 500 {
 						return nil // Retry
 					}
 				}
@@ -248,7 +245,6 @@ type SuperuserTestOptions struct {
 //
 // Common error codes handled:
 //   - 403 (Forbidden): Superuser access required
-//   - 500 (Internal Server Error): Can indicate superuser requirement in some contexts
 //   - 404 (Not Found): Feature not available (if SkipOnNotFound is true)
 func HandleSuperuserError(t testing.TB, err error, opts SuperuserTestOptions) bool {
 	if err == nil {
@@ -268,8 +264,8 @@ func HandleSuperuserError(t testing.TB, err error, opts SuperuserTestOptions) bo
 
 	t.Logf("%s failed with ArangoDB error code: %d, message: %s", operationName, arangoErr.Code, arangoErr.ErrorMessage)
 
-	// Check for superuser access errors (403 Forbidden, 500 Internal Server Error)
-	if arangoErr.Code == 403 || arangoErr.Code == 500 {
+	// Check for superuser access errors (403 Forbidden)
+	if arangoErr.Code == 403 {
 		skipMsg := opts.CustomSkipMessage
 		if skipMsg == "" {
 			skipMsg = fmt.Sprintf("The endpoint requires superuser access (HTTP %d)", arangoErr.Code)
