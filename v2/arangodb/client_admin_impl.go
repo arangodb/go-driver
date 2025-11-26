@@ -261,6 +261,31 @@ func (c *clientAdmin) GetStartupConfiguration(ctx context.Context) (map[string]i
 	case http.StatusOK:
 		return response, nil
 	default:
+		// Try to extract error details from the response map
+		// ArangoDB error responses include: error, code, errorNum, errorMessage
+		if errorVal, hasError := response["error"]; hasError {
+			if errorBool, ok := errorVal.(bool); ok && errorBool {
+				// This is an error response, extract error details
+				errorStruct := shared.ResponseStruct{}
+				if codeVal, ok := response["code"].(float64); ok {
+					codeInt := int(codeVal)
+					errorStruct.Code = &codeInt
+				}
+				if errorNumVal, ok := response["errorNum"].(float64); ok {
+					errorNumInt := int(errorNumVal)
+					errorStruct.ErrorNum = &errorNumInt
+				}
+				if errorMsgVal, ok := response["errorMessage"].(string); ok {
+					errorStruct.ErrorMessage = &errorMsgVal
+				}
+				if errorStruct.Code != nil || errorStruct.ErrorNum != nil || errorStruct.ErrorMessage != nil {
+					errorBool := true
+					errorStruct.Error = &errorBool
+					return nil, errorStruct.AsArangoError()
+				}
+			}
+		}
+		// Fallback to code-only error if we couldn't parse error details
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }
@@ -281,6 +306,31 @@ func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (m
 	case http.StatusOK:
 		return response, nil
 	default:
+		// Try to extract error details from the response map
+		// ArangoDB error responses include: error, code, errorNum, errorMessage
+		if errorVal, hasError := response["error"]; hasError {
+			if errorBool, ok := errorVal.(bool); ok && errorBool {
+				// This is an error response, extract error details
+				errorStruct := shared.ResponseStruct{}
+				if codeVal, ok := response["code"].(float64); ok {
+					codeInt := int(codeVal)
+					errorStruct.Code = &codeInt
+				}
+				if errorNumVal, ok := response["errorNum"].(float64); ok {
+					errorNumInt := int(errorNumVal)
+					errorStruct.ErrorNum = &errorNumInt
+				}
+				if errorMsgVal, ok := response["errorMessage"].(string); ok {
+					errorStruct.ErrorMessage = &errorMsgVal
+				}
+				if errorStruct.Code != nil || errorStruct.ErrorNum != nil || errorStruct.ErrorMessage != nil {
+					errorBool := true
+					errorStruct.Error = &errorBool
+					return nil, errorStruct.AsArangoError()
+				}
+			}
+		}
+		// Fallback to code-only error if we couldn't parse error details
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
 	}
 }

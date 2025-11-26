@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -65,7 +66,8 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-				timeoutCtx, _ := context.WithTimeout(ctx, time.Minute*2)
+				timeoutCtx, cancel := context.WithTimeout(ctx, time.Minute*2)
+				defer cancel()
 				err := db.Remove(timeoutCtx)
 				if err != nil {
 					t.Logf("Removing DB %s failed, time: %s with %s", db.Name(), time.Now(), err)
@@ -83,8 +85,51 @@ func WithCollectionV2(t testing.TB, db arangodb.Database, props *arangodb.Create
 	t.Logf("Creating COL %s, time: %s", name, time.Now())
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-		col, err := db.CreateCollectionV2(ctx, name, props)
-		require.NoError(t, err, fmt.Sprintf("Failed to create COL %s", name))
+		// In cluster mode, collection creation may need retries due to resource contention
+		// when running tests in parallel (TESTV2PARALLEL > 1)
+		var col arangodb.Collection
+		var err error
+
+		if getTestMode() == string(testModeCluster) {
+			// Use retry logic for cluster mode to handle resource contention
+			// when running tests in parallel (TESTV2PARALLEL > 1)
+			// Collection creation can fail temporarily due to cluster coordination delays
+			retryInterval := 250 * time.Millisecond
+			retryTimeout := 30 * time.Second
+
+			err = NewTimeout(func() error {
+				var createErr error
+				col, createErr = db.CreateCollectionV2(ctx, name, props)
+				if createErr == nil {
+					return Interrupt{}
+				}
+
+				// Check if it's a retryable error (service unavailable, timeout, conflict, etc.)
+				if ok, arangoErr := shared.IsArangoError(createErr); ok {
+					// Retry on service unavailable (503), timeout (408) errors
+					// Also retry on internal server errors (500)
+					// These are common in cluster mode under load
+					if arangoErr.Code == 503 || arangoErr.Code == 408 || arangoErr.Code == 500 {
+						return nil // Retry
+					}
+				}
+
+				// For other errors (like duplicate name), return them immediately
+				return createErr
+			}).Timeout(retryTimeout, retryInterval)
+
+			if err != nil {
+				// If timeout occurred, try one more time to get the actual error for better diagnostics
+				if col == nil {
+					col, err = db.CreateCollectionV2(ctx, name, props)
+				}
+			}
+		} else {
+			// Single server mode - direct creation (no retry needed)
+			col, err = db.CreateCollectionV2(ctx, name, props)
+		}
+
+		require.NoError(t, err, fmt.Sprintf("Failed to create COL %s after retries", name))
 
 		NewTimeout(func() error {
 			_, err := db.GetCollection(ctx, name, nil)
@@ -171,4 +216,10 @@ func getBool(b *bool, d bool) bool {
 
 func newVersion(val string) *arangodb.Version {
 	return utils.NewType(arangodb.Version(val))
+}
+
+// isNoAuth returns true if TEST_AUTH="none"
+// Tests that require superuser rights should only run in no-auth mode
+func isNoAuth() bool {
+	return os.Getenv("TEST_AUTH") == "none"
 }

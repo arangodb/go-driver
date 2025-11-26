@@ -418,16 +418,47 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 				_, err = db.UpdateQueryProperties(ctx, options)
 				require.NoError(t, err)
 
-				t.Run("Test that queries are not empty", func(t *testing.T) {
+				// Clear any existing slow queries to ensure we start fresh
+				// This is important because MaxSlowQueries is set to 1
+				_ = db.ClearSlowAQLQueries(ctx, utils.NewType(true))
 
-					_, err := db.Query(ctx, "FOR i IN 1..1000000 COLLECT WITH COUNT INTO length RETURN length", nil)
+				t.Run("Test that queries are not empty", func(t *testing.T) {
+					// Use a query that will definitely be slow by using SLEEP and computation
+					// This ensures the query takes longer than the threshold (0.0001 seconds)
+					// The original COUNT query was too fast, especially with HTTP2 optimizations
+					slowQuery := `
+						FOR i IN 1..1000
+							LET computation = (
+								FOR x IN 1..100
+									RETURN x * i
+							)
+							LET result = SUM(computation)
+							RETURN {i: i, sum: result, sleep: SLEEP(0.01)}
+					`
+
+					// Run the query and wait for it to complete
+					cursor, err := db.Query(ctx, slowQuery, nil)
 					require.NoError(t, err)
 
-					// Wait for query to start and be registered
-					time.Sleep(2 * time.Second)
+					// Process all results to ensure query completes
+					if cursor != nil {
+						for cursor.HasMore() {
+							var result interface{}
+							_, err := cursor.ReadDocument(ctx, &result)
+							if err != nil {
+								break
+							}
+						}
+						cursor.Close()
+					}
 
-					// Check for running queries multiple times
-					var foundRunningQuery bool
+					// Wait for query to complete and be registered as slow
+					// Slow queries are registered after completion, so we need to wait
+					// HTTP2 may execute queries faster, so we need sufficient wait time
+					time.Sleep(1 * time.Second)
+
+					// Check for slow queries multiple times
+					var foundSlowQuery bool
 					for attempt := 0; attempt < 15; attempt++ {
 						queries, err := db.ListOfSlowAQLQueries(ctx, utils.NewType(false))
 						require.NoError(t, err)
@@ -435,8 +466,8 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 						t.Logf("Attempt %d: Found %d queries", attempt+1, len(queries))
 
 						if len(queries) > 0 {
-							foundRunningQuery = true
-							t.Logf("SUCCESS: Found %d running queries on attempt %d\n", len(queries), attempt+1)
+							foundSlowQuery = true
+							t.Logf("SUCCESS: Found %d slow queries on attempt %d\n", len(queries), attempt+1)
 							// Log query details
 							for i, query := range queries {
 								t.Logf("Query %d: ID=%s, State=%s", i, *query.Id, *query.State)
@@ -447,8 +478,8 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 						time.Sleep(300 * time.Millisecond)
 					}
 
-					// Assert we found running queries
-					require.True(t, foundRunningQuery, "Should have found at least one running query")
+					// Assert we found slow queries
+					require.True(t, foundSlowQuery, "Should have found at least one slow query")
 				})
 			})
 		})
