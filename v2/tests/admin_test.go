@@ -408,6 +408,13 @@ func Test_RotateEncryptionAtRestKey(t *testing.T) {
 			if !isNoAuth() {
 				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 			}
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
+
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skip("Skipping: not allowed on Coordinators")
+			}
 			// Attempt to rotate encryption at rest key - requires superuser rights
 			// Note: This feature requires encryption at rest to be enabled on the server
 			resp, err := client.RotateEncryptionAtRestKey(ctx)
