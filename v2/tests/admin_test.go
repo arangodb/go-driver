@@ -170,26 +170,11 @@ func Test_GetStartupConfiguration(t *testing.T) {
 				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 			}
 			resp, err := client.GetStartupConfiguration(ctx)
-			// if err != nil {
-			// 	switch e := err.(type) {
-			// 	case *shared.ArangoError:
-			// 		t.Logf("arangoErr code:%d", e.Code)
-			// 		if e.Code == 403 || e.Code == 500 {
-			// 			t.Skip("startup configuration API not enabled on this server")
-			// 		}
-			// 	case shared.ArangoError:
-			// 		t.Logf("arangoErr code:%d", e.Code)
-			// 		if e.Code == 403 || e.Code == 500 {
-			// 			t.Skip("startup configuration API not enabled on this server")
-			// 		}
-			// 	}
-			// 	require.NoError(t, err)
-			// }
 			require.NoError(t, err)
 			require.NotEmpty(t, resp)
 
-			// GetStartupConfigurationDescription is optional - it may fail with UTF-8 encoding errors
-			// in ArangoDB 3.12.6-1 (server-side bug). We test it if available, but don't fail the
+			// GetStartupConfigurationDescription is optional - it may fail with UTF-8 encoding errors.
+			// We test it if available, but don't fail the
 			// entire test if it's unavailable due to this known issue.
 			configDesc, err := client.GetStartupConfigurationDescription(ctx)
 			if err != nil {
@@ -200,13 +185,8 @@ func Test_GetStartupConfiguration(t *testing.T) {
 						t.Logf("GetStartupConfigurationDescription unavailable due to UTF-8 encoding issue (ErrorNum: %d) - known server-side bug. Skipping description validation.", arangoErr.ErrorNum)
 						return // Test passes - main GetStartupConfiguration endpoint works
 					}
-					// For other errors, log but don't fail - description endpoint is optional
-					t.Logf("GetStartupConfigurationDescription failed with ArangoDB error code: %d, ErrorNum: %d, Message: %s - skipping description validation", arangoErr.Code, arangoErr.ErrorNum, arangoErr.ErrorMessage)
-					return
 				}
-				// For non-ArangoDB errors, log but don't fail
-				t.Logf("GetStartupConfigurationDescription failed: %v - skipping description validation", err)
-				return
+				require.NoError(t, err, "GetStartupConfigurationDescription failed")
 			}
 
 			// If we successfully got the description, validate it
@@ -308,16 +288,6 @@ func Test_CompactDatabases(t *testing.T) {
 			}
 			checkCompact := func(opts *arangodb.CompactOpts) {
 				resp, err := client.CompactDatabases(ctx, opts)
-				// if err != nil {
-				// 	var arangoErr shared.ArangoError
-				// 	if errors.As(err, &arangoErr) {
-				// 		t.Logf("arangoErr code:%d", arangoErr.Code)
-				// 		if arangoErr.Code == 403 || arangoErr.Code == 500 {
-				// 			t.Skip("The endpoint requires superuser access")
-				// 		}
-				// 	}
-				// 	require.NoError(t, err)
-				// }
 				require.NoError(t, err)
 				require.Empty(t, resp)
 			}
@@ -450,12 +420,6 @@ func Test_RotateEncryptionAtRestKey(t *testing.T) {
 						t.Skipf("Skipping RotateEncryptionAtRestKey test - encryption at rest is disabled (Code: %d, Message: %s)", arangoErr.Code, arangoErr.ErrorMessage)
 						return
 					}
-					// For other errors (e.g., 403 Forbidden), log and skip
-					if arangoErr.Code == http.StatusForbidden {
-						t.Skipf("Skipping RotateEncryptionAtRestKey test - superuser rights required (HTTP 403)")
-						return
-					}
-					// Unexpected error - fail the test
 					t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: Code: %d, ErrorNum: %d, Message: %s", arangoErr.Code, arangoErr.ErrorNum, arangoErr.ErrorMessage)
 				}
 				// Non-ArangoDB error
@@ -490,12 +454,6 @@ func Test_GetJWTSecrets(t *testing.T) {
 					t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 				}
 				resp, err := client.GetJWTSecrets(ctx, db.Name())
-				// if err != nil {
-				// 	if handleJWTSecretsError(t, err, "GetJWTSecrets", []int{http.StatusForbidden}) {
-				// 		return
-				// 	}
-				// 	require.NoError(t, err)
-				// }
 				require.NoError(t, err)
 				validateJWTSecretsResponse(t, resp, "Retrieved")
 			})
