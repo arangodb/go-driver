@@ -439,26 +439,28 @@ func Test_RotateEncryptionAtRestKey(t *testing.T) {
 				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 			}
 			// Attempt to rotate encryption at rest key - requires superuser rights
+			// Note: This feature requires encryption at rest to be enabled on the server
 			resp, err := client.RotateEncryptionAtRestKey(ctx)
-			// if err != nil {
-			// 	var arangoErr shared.ArangoError
-			// 	if errors.As(err, &arangoErr) {
-			// 		t.Logf("RotateEncryptionAtRestKey failed with ArangoDB error code: %d", arangoErr.Code)
-			// 		switch arangoErr.Code {
-			// 		case 403:
-			// 			t.Skip("Skipping RotateEncryptionAtRestKey test - superuser rights required (HTTP 403)")
-			// 		case 404:
-			// 			t.Skip("Skipping RotateEncryptionAtRestKey test - encryption key rotation disabled (HTTP 404)")
-			// 		default:
-			// 			t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-			// 			t.FailNow()
-			// 		}
-			// 	} else {
-			// 		t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: %v", err)
-			// 	}
-			// 	return
-			// }
-			require.NoError(t, err)
+			if err != nil {
+				var arangoErr shared.ArangoError
+				if errors.As(err, &arangoErr) {
+					// Check if encryption is disabled
+					if strings.Contains(arangoErr.ErrorMessage, "encryption is disabled") ||
+						arangoErr.Code == http.StatusNotFound || arangoErr.Code == http.StatusNotImplemented {
+						t.Skipf("Skipping RotateEncryptionAtRestKey test - encryption at rest is disabled (Code: %d, Message: %s)", arangoErr.Code, arangoErr.ErrorMessage)
+						return
+					}
+					// For other errors (e.g., 403 Forbidden), log and skip
+					if arangoErr.Code == http.StatusForbidden {
+						t.Skipf("Skipping RotateEncryptionAtRestKey test - superuser rights required (HTTP 403)")
+						return
+					}
+					// Unexpected error - fail the test
+					t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: Code: %d, ErrorNum: %d, Message: %s", arangoErr.Code, arangoErr.ErrorNum, arangoErr.ErrorMessage)
+				}
+				// Non-ArangoDB error
+				t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: %v", err)
+			}
 			// Convert response to JSON for logging
 			encryptionRespJson, err := utils.ToJSONString(resp)
 			require.NoError(t, err)
@@ -505,16 +507,13 @@ func Test_GetJWTSecrets(t *testing.T) {
 func Test_ReloadJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			if !isNoAuth() {
-				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
-			}
 			resp, err := client.ReloadJWTSecrets(ctx)
-			// if err != nil {
-			// 	if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest}) {
-			// 		return
-			// 	}
-			// 	require.NoError(t, err)
-			// }
+			if err != nil {
+				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest}) {
+					return
+				}
+				require.NoError(t, err)
+			}
 			require.NoError(t, err)
 			validateJWTSecretsResponse(t, resp, "Reloaded")
 		})
@@ -522,30 +521,30 @@ func Test_ReloadJWTSecrets(t *testing.T) {
 }
 
 // handleJWTSecretsError handles common JWT secrets API errors and returns true if the test should skip
-// func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes []int) bool {
-// 	var arangoErr shared.ArangoError
-// 	if errors.As(err, &arangoErr) {
-// 		t.Logf("%s failed with ArangoDB error code: %d", operation, arangoErr.Code)
+func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes []int) bool {
+	var arangoErr shared.ArangoError
+	if errors.As(err, &arangoErr) {
+		t.Logf("%s failed with ArangoDB error code: %d", operation, arangoErr.Code)
 
-// 		for _, code := range skipCodes {
-// 			switch code {
-// 			case http.StatusForbidden:
-// 				if arangoErr.Code == http.StatusForbidden {
-// 					t.Skip("The endpoint requires superuser access or JWT feature is disabled")
-// 					return true
-// 				}
-// 			case http.StatusBadRequest:
-// 				if arangoErr.Code == http.StatusBadRequest {
-// 					t.Skip("JWT reload not available: no secret file or folder configured")
-// 					return true
-// 				}
-// 			}
-// 		}
+		for _, code := range skipCodes {
+			switch code {
+			case http.StatusForbidden:
+				if arangoErr.Code == http.StatusForbidden {
+					t.Skip("The endpoint requires superuser access or JWT feature is disabled")
+					return true
+				}
+			case http.StatusBadRequest:
+				if arangoErr.Code == http.StatusBadRequest {
+					t.Skip("JWT reload not available: no secret file or folder configured")
+					return true
+				}
+			}
+		}
 
-// 		t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-// 	}
-// 	return false
-// }
+		t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
+	}
+	return false
+}
 
 // validateJWTSecretsResponse validates the structure and content of JWT secrets response
 func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, operation string) {
