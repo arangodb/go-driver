@@ -22,8 +22,8 @@ package tests
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -246,52 +246,58 @@ type SuperuserTestOptions struct {
 // Common error codes handled:
 //   - 403 (Forbidden): Superuser access required
 //   - 404 (Not Found): Feature not available (if SkipOnNotFound is true)
-func HandleSuperuserError(t testing.TB, err error, opts SuperuserTestOptions) bool {
-	if err == nil {
-		return false
-	}
+// func HandleSuperuserError(t testing.TB, err error, opts SuperuserTestOptions) bool {
+// 	if err == nil {
+// 		return false
+// 	}
 
-	var arangoErr shared.ArangoError
-	if !errors.As(err, &arangoErr) {
-		// Not an ArangoError, let caller handle it
-		return false
-	}
+// 	var arangoErr shared.ArangoError
+// 	if !errors.As(err, &arangoErr) {
+// 		// Not an ArangoError, let caller handle it
+// 		return false
+// 	}
 
-	operationName := opts.OperationName
-	if operationName == "" {
-		operationName = "operation"
-	}
+// 	operationName := opts.OperationName
+// 	if operationName == "" {
+// 		operationName = "operation"
+// 	}
 
-	t.Logf("%s failed with ArangoDB error code: %d, message: %s", operationName, arangoErr.Code, arangoErr.ErrorMessage)
+// 	t.Logf("%s failed with ArangoDB error code: %d, message: %s", operationName, arangoErr.Code, arangoErr.ErrorMessage)
 
-	// Check for superuser access errors (403 Forbidden)
-	if arangoErr.Code == 403 {
-		skipMsg := opts.CustomSkipMessage
-		if skipMsg == "" {
-			skipMsg = fmt.Sprintf("The endpoint requires superuser access (HTTP %d)", arangoErr.Code)
-		}
-		t.Skip(skipMsg)
-		return true
-	}
+// 	// Check for superuser access errors (403 Forbidden)
+// 	if arangoErr.Code == 403 {
+// 		skipMsg := opts.CustomSkipMessage
+// 		if skipMsg == "" {
+// 			skipMsg = fmt.Sprintf("The endpoint requires superuser access (HTTP %d)", arangoErr.Code)
+// 		}
+// 		t.Skip(skipMsg)
+// 		return true
+// 	}
 
-	// Check for "Not Found" errors (404)
-	if opts.SkipOnNotFound && arangoErr.Code == 404 {
-		t.Skip("The endpoint is not available (HTTP 404) - feature may not be enabled or configured")
-		return true
-	}
+// 	// Check for "Not Found" errors (404)
+// 	if opts.SkipOnNotFound && arangoErr.Code == 404 {
+// 		t.Skip("The endpoint is not available (HTTP 404) - feature may not be enabled or configured")
+// 		return true
+// 	}
 
-	// Check additional skip codes (skip 404 and 501 if they weren't already handled above)
-	for _, code := range opts.AdditionalSkipCodes {
-		if arangoErr.Code == code {
-			// Skip if already handled by SkipOnNotFound
-			if code == 404 && opts.SkipOnNotFound {
-				continue
-			}
-			t.Skipf("The endpoint returned HTTP %d - feature may not be available", code)
-			return true
-		}
-	}
+// 	// Check additional skip codes (skip 404 and 501 if they weren't already handled above)
+// 	for _, code := range opts.AdditionalSkipCodes {
+// 		if arangoErr.Code == code {
+// 			// Skip if already handled by SkipOnNotFound
+// 			if code == 404 && opts.SkipOnNotFound {
+// 				continue
+// 			}
+// 			t.Skipf("The endpoint returned HTTP %d - feature may not be available", code)
+// 			return true
+// 		}
+// 	}
 
-	// Error not handled by this helper, let caller handle it
-	return false
+// 	// Error not handled by this helper, let caller handle it
+// 	return false
+// }
+
+// isNoAuth returns true if TEST_AUTH="none"
+// Tests that require superuser rights should only run in no-auth mode
+func isNoAuth() bool {
+	return os.Getenv("TEST_AUTH") == "none"
 }
