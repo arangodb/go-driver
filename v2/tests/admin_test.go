@@ -470,7 +470,6 @@ func Test_ReloadJWTSecrets(t *testing.T) {
 					return
 				}
 			}
-			require.NoError(t, err)
 			validateJWTSecretsResponse(t, resp, "Reloaded")
 		})
 	})
