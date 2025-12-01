@@ -309,7 +309,7 @@ func Test_CompactDatabases(t *testing.T) {
 	})
 }
 
-// Test_GetTLSData checks that TLS configuration data is available and valid, skipping if not configured.
+// Test_GetTLSData checks that TLS configuration data is available and valid.
 func Test_GetTLSData(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
