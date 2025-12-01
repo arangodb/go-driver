@@ -177,8 +177,7 @@ func Test_GetStartupConfiguration(t *testing.T) {
 
 			// GetStartupConfigurationDescription is optional - it may fail with UTF-8 encoding errors. We test it if available, but don't fail the entire test if it's unavailable due to this known issue.
 			t.Run("GetStartupConfigurationDescription", func(t *testing.T) {
-				skipBelowVersion(client, ctx, "4.0.0", tb)
-				t.Skip("Skipping: GetStartupConfigurationDescription is known to have UTF-8 encoding issues and its intermittent availability makes this test unreliable.")
+				skipBelowVersion(client, ctx, "4.0.0", t)
 				configDesc, err := client.GetStartupConfigurationDescription(ctx)
 				// If we successfully got the description, validate it
 				require.NoError(t, err, "GetStartupConfigurationDescription failed")
