@@ -36,6 +36,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, tb)
 				if os.Getenv("TEST_CONNECTION") == "vst" {
 					skipBelowVersion(client, ctx, "3.6", t)
 				}
@@ -298,6 +299,7 @@ func Test_ListInstalledFoxxServices(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, tb)
 				services, err := client.ListInstalledFoxxServices(ctx, db.Name(), nil)
 				require.NoError(t, err)
 				require.NotEmpty(t, services)
@@ -325,6 +327,7 @@ func Test_GetInstalledFoxxService(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, tb)
 				mount := "/_api/foxx"
 				serviceDetails, err := client.GetInstalledFoxxService(ctx, db.Name(), &mount)
 				require.NoError(t, err)
