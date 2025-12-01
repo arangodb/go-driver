@@ -33,7 +33,9 @@ import (
 
 func TestDatabaseTransaction(t *testing.T) {
 	c := createClient(t, nil)
-	skipBelowVersion(c, "3.2", t)
+	// for disabling v8 tests
+	skipBelowVersion(c, "4.0", t)
+
 	db := ensureDatabase(nil, c, "transaction_test", nil, t)
 	defer func() {
 		err := db.Remove(nil)
