@@ -91,46 +91,51 @@ func Test_Version(t *testing.T) {
 			require.NotEmpty(t, v.Server)
 			require.NotEmpty(t, v.License)
 			require.NotZero(t, len(v.Details))
+			t.Logf("Version is %s", v.Version)
 		})
 	})
 }
 
 func Test_GetSystemTime(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-			db, err := client.GetDatabase(context.Background(), "_system", nil)
-			require.NoError(t, err)
-			require.NotEmpty(t, db)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+				db, err := client.GetDatabase(context.Background(), db.Name(), nil)
+				require.NoError(t, err)
+				require.NotEmpty(t, db)
 
-			time, err := client.GetSystemTime(context.Background(), db.Name())
-			require.NoError(t, err)
-			require.NotEmpty(t, time)
-			t.Logf("Current time in Unix timestamp with microsecond precision is:%f", time)
+				time, err := client.GetSystemTime(context.Background(), db.Name())
+				require.NoError(t, err)
+				require.NotEmpty(t, time)
+				t.Logf("Current time in Unix timestamp with microsecond precision is:%f", time)
+			})
 		})
 	})
 }
 
 func Test_GetServerStatus(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
-			t.Run("WithoutDBName", func(t *testing.T) {
-				resp, err := client.GetServerStatus(context.Background(), "")
-				require.NoError(t, err)
-				require.NotEmpty(t, resp)
-			})
-			t.Run("WithDBName", func(t *testing.T) {
-				db, err := client.GetDatabase(context.Background(), "_system", nil)
-				require.NoError(t, err)
-				require.NotEmpty(t, db)
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
+				t.Run("WithoutDBName", func(t *testing.T) {
+					resp, err := client.GetServerStatus(context.Background(), "")
+					require.NoError(t, err)
+					require.NotEmpty(t, resp)
+				})
+				t.Run("WithDBName", func(t *testing.T) {
+					db, err := client.GetDatabase(context.Background(), db.Name(), nil)
+					require.NoError(t, err)
+					require.NotEmpty(t, db)
 
-				resp, err := client.GetServerStatus(context.Background(), db.Name())
-				require.NoError(t, err)
-				require.NotEmpty(t, resp)
-			})
-			t.Run("InvalidDBName", func(t *testing.T) {
-				_, err := client.GetServerStatus(context.Background(), "invalid/db/name")
-				t.Logf("error :%v\n", err)
-				require.Error(t, err)
+					resp, err := client.GetServerStatus(context.Background(), db.Name())
+					require.NoError(t, err)
+					require.NotEmpty(t, resp)
+				})
+				t.Run("InvalidDBName", func(t *testing.T) {
+					_, err := client.GetServerStatus(context.Background(), "invalid/db/name")
+					t.Logf("error :%v\n", err)
+					require.Error(t, err)
+				})
 			})
 		})
 	})
@@ -160,60 +165,44 @@ func Test_GetDeploymentSupportInfo(t *testing.T) {
 
 func Test_GetStartupConfiguration(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-
-			resp, err := client.GetStartupConfiguration(ctx)
-			if err != nil {
-				switch e := err.(type) {
-				case *shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration API not enabled on this server")
-					}
-				case shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration API not enabled on this server")
-					}
-				}
+		withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
+			if !isNoAuth() {
+				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
+			}
+			t.Run("GetStartupConfiguration", func(t *testing.T) {
+				resp, err := client.GetStartupConfiguration(ctx)
 				require.NoError(t, err)
-			}
-			require.NotEmpty(t, resp)
+				require.NotEmpty(t, resp)
+			})
 
-			configDesc, err := client.GetStartupConfigurationDescription(ctx)
-			if err != nil {
-				switch e := err.(type) {
-				case *shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration description API not enabled on this server")
-					}
-				case shared.ArangoError:
-					t.Logf("arangoErr code:%d", e.Code)
-					if e.Code == 403 || e.Code == 500 {
-						t.Skip("startup configuration description API not enabled on this server")
-					}
+			// GetStartupConfigurationDescription is optional - it may fail with UTF-8 encoding errors. We test it if available, but don't fail the entire test if it's unavailable due to this known issue.
+			// Tracking ticket: BTS-1943
+			t.Run("GetStartupConfigurationDescription", func(t *testing.T) {
+				skipBelowVersion(client, ctx, "4.0.0", t)
+				configDesc, err := client.GetStartupConfigurationDescription(ctx)
+				// If we successfully got the description, validate it
+				require.NoError(t, err, "GetStartupConfigurationDescription failed")
+				require.NotEmpty(t, configDesc)
+
+				// Assert that certain well-known options exist
+				_, hasEndpoint := configDesc["server.endpoint"]
+				require.True(t, hasEndpoint, "expected server.endpoint option to be present")
+
+				_, hasAuth := configDesc["server.authentication"]
+				require.True(t, hasAuth, "expected server.authentication option to be present")
+
+				// Optionally assert that each entry has a description
+				for key, value := range configDesc {
+					option, ok := value.(map[string]interface{})
+					require.True(t, ok, "expected value for %s to be a map", key)
+
+					_, hasDesc := option["description"]
+					require.True(t, hasDesc, "expected option %s to have a description", key)
 				}
-				require.NoError(t, err)
-			}
-			require.NotEmpty(t, configDesc)
-
-			// Assert that certain well-known options exist
-			_, hasEndpoint := configDesc["server.endpoint"]
-			require.True(t, hasEndpoint, "expected server.endpoint option to be present")
-
-			_, hasAuth := configDesc["server.authentication"]
-			require.True(t, hasAuth, "expected server.authentication option to be present")
-
-			// Optionally assert that each entry has a description
-			for key, value := range configDesc {
-				option, ok := value.(map[string]interface{})
-				require.True(t, ok, "expected value for %s to be a map", key)
-
-				_, hasDesc := option["description"]
-				require.True(t, hasDesc, "expected option %s to have a description", key)
-			}
+			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -282,21 +271,17 @@ func Test_ExecuteAdminScript(t *testing.T) {
 }
 
 func Test_CompactDatabases(t *testing.T) {
+	// This test can not run sub-tests parallelly, because it performs admin operations
+	// that may conflict with other tests and server role checks can be inconsistent in parallel execution.
+
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
-
+			if !isNoAuth() {
+				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
+			}
 			checkCompact := func(opts *arangodb.CompactOpts) {
 				resp, err := client.CompactDatabases(ctx, opts)
-				if err != nil {
-					var arangoErr shared.ArangoError
-					if errors.As(err, &arangoErr) {
-						t.Logf("arangoErr code:%d", arangoErr.Code)
-						if arangoErr.Code == 403 || arangoErr.Code == 500 {
-							t.Skip("The endpoint requires superuser access")
-						}
-					}
-					require.NoError(t, err)
-				}
+				require.NoError(t, err)
 				require.Empty(t, resp)
 			}
 
@@ -320,32 +305,19 @@ func Test_CompactDatabases(t *testing.T) {
 
 			checkCompact(nil)
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
-// Test_GetTLSData checks that TLS configuration data is available and valid, skipping if not configured.
+// Test_GetTLSData checks that TLS configuration data is available and valid.
 func Test_GetTLSData(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 				// Get TLS data using the client (which embeds ClientAdmin)
 				tlsResp, err := client.GetTLSData(ctx, db.Name())
-				if err != nil {
-					var arangoErr shared.ArangoError
-					if errors.As(err, &arangoErr) {
-						t.Logf("GetTLSData failed with ArangoDB error code: %d", arangoErr.Code)
-						switch arangoErr.Code {
-						case 403:
-							t.Skip("Skipping TLS get test - authentication/permission denied (HTTP 403)")
-						default:
-							t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-						}
-						return
-					}
-					// Skip for any other error (TLS not configured, network issues, etc.)
-					t.Logf("GetTLSData failed: %v", err)
-					t.Skip("Skipping TLS get test - likely TLS not configured or other server issue")
-				}
+				require.NoError(t, err)
 
 				// Success! Validate response structure
 				t.Logf("TLS data retrieved successfully")
@@ -405,24 +377,12 @@ func validateTLSResponse(t testing.TB, tlsResp arangodb.TLSDataResponse, operati
 func Test_ReloadTLSData(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			if !isNoAuth() {
+				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
+			}
 			// Reload TLS data - requires superuser rights
 			tlsResp, err := client.ReloadTLSData(ctx)
-			if err != nil {
-				var arangoErr shared.ArangoError
-				if errors.As(err, &arangoErr) {
-					t.Logf("ReloadTLSData failed with ArangoDB error code: %d", arangoErr.Code)
-					switch arangoErr.Code {
-					case 403:
-						t.Skip("Skipping TLS reload test - superuser rights required (HTTP 403)")
-					default:
-						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-					}
-					return
-				}
-				// Skip for any other error (TLS not configured, network issues, etc.)
-				t.Logf("ReloadTLSData failed: %v", err)
-				t.Skip("Skipping TLS reload test - likely TLS not configured or other server issue")
-			}
+			require.NoError(t, err)
 
 			// Success! Validate response structure
 			t.Logf("TLS data reloaded successfully")
@@ -438,28 +398,33 @@ func Test_ReloadTLSData(t *testing.T) {
 func Test_RotateEncryptionAtRestKey(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			if !isNoAuth() {
+				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
+			}
+			serverRole, err := client.ServerRole(ctx)
+			require.NoError(t, err)
+			t.Logf("ServerRole is %s\n", serverRole)
 
+			if serverRole == arangodb.ServerRoleCoordinator {
+				t.Skip("Skipping: not allowed on Coordinators")
+			}
 			// Attempt to rotate encryption at rest key - requires superuser rights
+			// Note: This feature requires encryption at rest to be enabled on the server
 			resp, err := client.RotateEncryptionAtRestKey(ctx)
 			if err != nil {
 				var arangoErr shared.ArangoError
 				if errors.As(err, &arangoErr) {
-					t.Logf("RotateEncryptionAtRestKey failed with ArangoDB error code: %d", arangoErr.Code)
-					switch arangoErr.Code {
-					case 403:
-						t.Skip("Skipping RotateEncryptionAtRestKey test - superuser rights required (HTTP 403)")
-					case 404:
-						t.Skip("Skipping RotateEncryptionAtRestKey test - encryption key rotation disabled (HTTP 404)")
-					default:
-						t.Logf("Unexpected ArangoDB error code: %d, message: %s", arangoErr.Code, arangoErr.ErrorMessage)
-						t.FailNow()
+					// Check if encryption is disabled
+					if strings.Contains(arangoErr.ErrorMessage, "encryption is disabled") ||
+						arangoErr.Code == http.StatusNotFound || arangoErr.Code == http.StatusNotImplemented {
+						t.Skipf("Skipping RotateEncryptionAtRestKey test - encryption at rest is disabled (Code: %d, Message: %s)", arangoErr.Code, arangoErr.ErrorMessage)
+						return
 					}
-				} else {
-					t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: %v", err)
+					t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: Code: %d, ErrorNum: %d, Message: %s", arangoErr.Code, arangoErr.ErrorNum, arangoErr.ErrorMessage)
 				}
-				return
+				// Non-ArangoDB error
+				t.Fatalf("RotateEncryptionAtRestKey failed with unexpected error: %v", err)
 			}
-
 			// Convert response to JSON for logging
 			encryptionRespJson, err := utils.ToJSONString(resp)
 			require.NoError(t, err)
@@ -485,14 +450,11 @@ func Test_GetJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
-				resp, err := client.GetJWTSecrets(ctx, db.Name())
-				if err != nil {
-					if handleJWTSecretsError(t, err, "GetJWTSecrets", []int{http.StatusForbidden}) {
-						return
-					}
-					require.NoError(t, err)
+				if !isNoAuth() {
+					t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 				}
-
+				resp, err := client.GetJWTSecrets(ctx, db.Name())
+				require.NoError(t, err)
 				validateJWTSecretsResponse(t, resp, "Retrieved")
 			})
 		})
@@ -510,7 +472,6 @@ func Test_ReloadJWTSecrets(t *testing.T) {
 				}
 				require.NoError(t, err)
 			}
-
 			validateJWTSecretsResponse(t, resp, "Reloaded")
 		})
 	})
