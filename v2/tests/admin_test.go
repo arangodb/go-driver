@@ -176,6 +176,7 @@ func Test_GetStartupConfiguration(t *testing.T) {
 			})
 
 			// GetStartupConfigurationDescription is optional - it may fail with UTF-8 encoding errors. We test it if available, but don't fail the entire test if it's unavailable due to this known issue.
+			// Tracking ticket: BTS-1943
 			t.Run("GetStartupConfigurationDescription", func(t *testing.T) {
 				skipBelowVersion(client, ctx, "4.0.0", t)
 				configDesc, err := client.GetStartupConfigurationDescription(ctx)
