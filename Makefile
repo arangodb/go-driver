@@ -21,6 +21,8 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
+# ARANGODB ?= public.ecr.aws/b0b8h2r4/enterprise-preview:2025-12-01-devel-d759089-amd64
+# STARTER ?= arangodb/arangodb-starter:local-test 
 
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v

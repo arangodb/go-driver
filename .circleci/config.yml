@@ -41,7 +41,7 @@ parameters:
     default: "gcr.io/gcr-for-testing/golang:1.24.9"
   arangodbImage:
     type: string
-    default: "public.ecr.aws/b0b8h2r4/enterprise-preview:2025-12-01-devel-d759089-amd64"
+    default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest"
   alpineImage:
     type: string
     default: "gcr.io/gcr-for-testing/alpine:3.21"

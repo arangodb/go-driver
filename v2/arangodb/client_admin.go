@@ -60,7 +60,8 @@ type ClientAdmin interface {
 	// options of the queried arangod instance.
 	GetStartupConfigurationDescription(ctx context.Context) (map[string]interface{}, error)
 
-	// ReloadRoutingTable reloads the routing information from the _routing system collection.
+	// ReloadRoutingTable reloads the routing information from the _routing system
+	// collection, causing Foxx services to rebuild their routing table.
 	ReloadRoutingTable(ctx context.Context, dbName string) error
 
 	// ExecuteAdminScript executes JavaScript code on the server.
