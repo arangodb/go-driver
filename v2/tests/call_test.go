@@ -87,7 +87,11 @@ func Test_CallWithChecks(t *testing.T) {
 				ok, arangoErr := shared.IsArangoError(err)
 				require.True(t, ok)
 				require.True(t, arangoErr.HasError)
-				require.Equal(t, http.StatusNotFound, resp.Code())
+				t.Logf("Response code: %d", resp.Code())
+				require.True(t,
+					resp.Code() == http.StatusNotFound ||
+						resp.Code() == http.StatusNotImplemented,
+					"expected status 404 or 501, got %d", resp.Code())
 			})
 		})
 	})

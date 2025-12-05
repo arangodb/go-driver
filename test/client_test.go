@@ -670,3 +670,17 @@ func checkDBAccess(ctx context.Context, conn driver.Connection, dbName, username
 
 	return nil
 }
+
+// skipAboveVersion skips the test if the current server version is greater than
+// the given version.
+func skipAboveVersion(c driver.Client, version driver.Version, t testEnv) driver.VersionInfo {
+	x, err := c.Version(nil)
+	if err != nil {
+		t.Fatalf("Failed to get version info: %s", describe(err))
+	}
+	t.Logf("version info %s, version received %s", x.Version, version)
+	if x.Version.CompareTo(version) > 0 {
+		t.Skipf("Skipping above version '%s', got version '%s'", version, x.Version)
+	}
+	return x
+}

@@ -1302,6 +1302,7 @@ func Test_UserDefinedFunctions(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, tb)
 				// Define UDF details
 				namespace := "myfunctions::temperature::" + StringWithCharset(16, charset)
 				functionName := namespace + "::celsiustofahrenheit"

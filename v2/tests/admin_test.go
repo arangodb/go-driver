@@ -143,7 +143,7 @@ func Test_GetServerStatus(t *testing.T) {
 
 func Test_GetDeploymentSupportInfo(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 
 			serverRole, err := client.ServerRole(ctx)
 			require.NoError(t, err)
@@ -209,7 +209,8 @@ func Test_GetStartupConfiguration(t *testing.T) {
 func Test_ReloadRoutingTable(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				requireV8Enabled(client, ctx, t)
 				err := client.ReloadRoutingTable(ctx, db.Name())
 				require.NoError(t, err)
 			})
@@ -221,6 +222,7 @@ func Test_ExecuteAdminScript(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, t)
 				tests := []struct {
 					name   string
 					script string
@@ -275,7 +277,7 @@ func Test_CompactDatabases(t *testing.T) {
 	// that may conflict with other tests and server role checks can be inconsistent in parallel execution.
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 			if !isNoAuth() {
 				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 			}
@@ -376,7 +378,7 @@ func validateTLSResponse(t testing.TB, tlsResp arangodb.TLSDataResponse, operati
 // Test_ReloadTLSData tests TLS certificate reload functionality, skipping if superuser rights unavailable.
 func Test_ReloadTLSData(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 			if !isNoAuth() {
 				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 			}
@@ -397,7 +399,7 @@ func Test_ReloadTLSData(t *testing.T) {
 // The test is skipped if superuser rights are missing or the feature is disabled/not configured.
 func Test_RotateEncryptionAtRestKey(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 			if !isNoAuth() {
 				t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 			}
@@ -464,7 +466,7 @@ func Test_GetJWTSecrets(t *testing.T) {
 // Test_ReloadJWTSecrets validates JWT secrets reload functionality, skipping if not available.
 func Test_ReloadJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 			resp, err := client.ReloadJWTSecrets(ctx)
 			if err != nil {
 				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest}) {
@@ -528,7 +530,7 @@ func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, op
 }
 func Test_HandleAdminVersion(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		withContextT(t, time.Minute, func(ctx context.Context, tb testing.TB) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			t.Run("With Options", func(t *testing.T) {
 				resp, err := client.HandleAdminVersion(context.Background(), &arangodb.GetVersionOptions{
 					Details: utils.NewType(true),
@@ -554,7 +556,7 @@ func Test_HandleAdminVersion(t *testing.T) {
 func Test_GetDeploymentId(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		t.Run("Success case", func(t *testing.T) {
-			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 				version := skipBelowVersion(client, ctx, "3.12.6", t)
 				t.Logf("Current Version %s", version.Version)
 
@@ -568,7 +570,7 @@ func Test_GetDeploymentId(t *testing.T) {
 		})
 
 		t.Run("Multiple calls consistency", func(t *testing.T) {
-			withContextT(t, time.Minute, func(ctx context.Context, t testing.TB) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 				version := skipBelowVersion(client, ctx, "3.12.6", t)
 				t.Logf("Current Version %s", version.Version)
 
