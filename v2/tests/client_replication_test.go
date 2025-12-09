@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,37 @@ import (
 	"github.com/arangodb/go-driver/v2/utils"
 	"github.com/stretchr/testify/require"
 )
+
+// getApplierEndpoint returns the endpoint from TEST_ENDPOINTS environment variable
+// converted to the format expected by applier options (tcp:// or ssl://).
+// If TEST_ENDPOINTS is not set, it defaults to tcp://127.0.0.1:8529.
+func getApplierEndpoint(t testing.TB) string {
+	eps := getEndpointsFromEnv(t)
+	// getEndpointsFromEnv will have already failed if TEST_ENDPOINTS is not set,
+	// so we can safely use the first endpoint
+
+	// Get the first endpoint and convert from http/https to tcp/ssl format
+	endpoint := eps[0]
+	endpoint = strings.ReplaceAll(endpoint, "http://", "tcp://")
+	endpoint = strings.ReplaceAll(endpoint, "https://", "ssl://")
+
+	return endpoint
+}
+
+// getSyncEndpoint returns the endpoint from TEST_ENDPOINTS environment variable
+// converted to the format expected by ReplicationSyncOptions (http+tcp:// or https+ssl://).
+// If TEST_ENDPOINTS is not set, it defaults to http+tcp://127.0.0.1:8529.
+func getSyncEndpoint(t testing.TB) string {
+	eps := getEndpointsFromEnv(t)
+	// getEndpointsFromEnv will have already failed if TEST_ENDPOINTS is not set,
+	// so we can safely use the first endpoint
+
+	// Get the first endpoint and convert from http/https to http+tcp/https+ssl format
+	endpoint := eps[0]
+	endpoint = strings.ReplaceAll(endpoint, "http://", "http+tcp://")
+	endpoint = strings.ReplaceAll(endpoint, "https://", "https+ssl://")
+	return endpoint
+}
 
 func Test_CreateNewBatch(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -233,7 +265,7 @@ func Test_UpdateApplierConfig(t *testing.T) {
 					_, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.ApplierOptions{
 						ChunkSize: utils.NewType(1234),
 						AutoStart: utils.NewType(true),
-						Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+						Endpoint:  utils.NewType(getApplierEndpoint(t)),
 						Database:  utils.NewType(db.Name()),
 						Username:  utils.NewType("root"),
 					})
@@ -243,7 +275,7 @@ func Test_UpdateApplierConfig(t *testing.T) {
 					resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(false), arangodb.ApplierOptions{
 						ChunkSize: utils.NewType(2596),
 						AutoStart: utils.NewType(false),
-						Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+						Endpoint:  utils.NewType(getApplierEndpoint(t)),
 						Database:  utils.NewType(db.Name()),
 					})
 					require.NoError(t, err)
@@ -274,7 +306,7 @@ func Test_ApplierStart(t *testing.T) {
 					resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(false), arangodb.ApplierOptions{
 						ChunkSize: utils.NewType(2596),
 						AutoStart: utils.NewType(false),
-						Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+						Endpoint:  utils.NewType(getApplierEndpoint(t)),
 						Database:  utils.NewType(db.Name()),
 					})
 					require.NoError(t, err)
@@ -324,7 +356,7 @@ func Test_ApplierStart(t *testing.T) {
 					resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
 						ChunkSize: utils.NewType(2596),
 						AutoStart: utils.NewType(false),
-						Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+						Endpoint:  utils.NewType(getApplierEndpoint(t)),
 						Database:  utils.NewType(db.Name()),
 					})
 					require.NoError(t, err)
@@ -404,7 +436,7 @@ func Test_MakeFollower(t *testing.T) {
 				t.Run("Make Follower", func(t *testing.T) {
 					resp, err := client.MakeFollower(ctx, db.Name(), arangodb.ApplierOptions{
 						ChunkSize: utils.NewType(1234),
-						Endpoint:  utils.NewType("tcp://127.0.0.1:8529"),
+						Endpoint:  utils.NewType(getApplierEndpoint(t)),
 						Database:  utils.NewType(db.Name()),
 						Username:  utils.NewType("root"),
 					})
@@ -448,7 +480,7 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 					t.Logf("Starting fromTick: %d\n", fromTick)
 					t.Run("Update applier config with out query params", func(t *testing.T) {
 						resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
-							Endpoint: utils.NewType("tcp://127.0.0.1:8529"),
+							Endpoint: utils.NewType(getApplierEndpoint(t)),
 							Database: utils.NewType(db.Name()),
 							Verbose:  utils.NewType(true),
 						})
@@ -675,7 +707,7 @@ func Test_StartReplicationSync(t *testing.T) {
 				}
 
 				opts := arangodb.ReplicationSyncOptions{
-					Endpoint: "http+tcp://127.0.0.1:8529",
+					Endpoint: getSyncEndpoint(t),
 					Username: "root",
 				}
 
