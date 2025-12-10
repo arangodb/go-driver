@@ -36,7 +36,7 @@ import (
 
 // getApplierEndpoint returns the endpoint from TEST_ENDPOINTS environment variable
 // converted to the format expected by applier options (tcp:// or ssl://).
-// If TEST_ENDPOINTS is not set, it defaults to tcp://127.0.0.1:8529.
+// TEST_ENDPOINTS must be set; if it is not, the test will fail.
 func getApplierEndpoint(t testing.TB) string {
 	eps := getEndpointsFromEnv(t)
 	// getEndpointsFromEnv will have already failed if TEST_ENDPOINTS is not set,
@@ -44,15 +44,18 @@ func getApplierEndpoint(t testing.TB) string {
 
 	// Get the first endpoint and convert from http/https to tcp/ssl format
 	endpoint := eps[0]
-	endpoint = strings.ReplaceAll(endpoint, "http://", "tcp://")
-	endpoint = strings.ReplaceAll(endpoint, "https://", "ssl://")
+	if strings.HasPrefix(endpoint, "https://") {
+		endpoint = strings.Replace(endpoint, "https://", "ssl://", 1)
+	} else if strings.HasPrefix(endpoint, "http://") {
+		endpoint = strings.Replace(endpoint, "http://", "tcp://", 1)
+	}
 
 	return endpoint
 }
 
 // getSyncEndpoint returns the endpoint from TEST_ENDPOINTS environment variable
 // converted to the format expected by ReplicationSyncOptions (http+tcp:// or https+ssl://).
-// If TEST_ENDPOINTS is not set, it defaults to http+tcp://127.0.0.1:8529.
+// TEST_ENDPOINTS must be set; if it is not, the test will fail.
 func getSyncEndpoint(t testing.TB) string {
 	eps := getEndpointsFromEnv(t)
 	// getEndpointsFromEnv will have already failed if TEST_ENDPOINTS is not set,
