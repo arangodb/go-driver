@@ -60,8 +60,11 @@ func getSyncEndpoint(t testing.TB) string {
 
 	// Get the first endpoint and convert from http/https to http+tcp/https+ssl format
 	endpoint := eps[0]
-	endpoint = strings.ReplaceAll(endpoint, "http://", "http+tcp://")
-	endpoint = strings.ReplaceAll(endpoint, "https://", "https+ssl://")
+	if strings.HasPrefix(endpoint, "https://") {
+		endpoint = strings.Replace(endpoint, "https://", "https+ssl://", 1)
+	} else if strings.HasPrefix(endpoint, "http://") {
+		endpoint = strings.Replace(endpoint, "http://", "http+tcp://", 1)
+	}
 	return endpoint
 }
 
