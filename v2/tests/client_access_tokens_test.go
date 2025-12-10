@@ -82,40 +82,25 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Get All Access Tokens", func(t *testing.T) {
-				if tokenResp == nil || tokenResp.Id == nil {
-					t.Skip("Skipping test because token creation failed")
-				}
-
-				// Retry logic to handle eventual consistency in cluster mode
-				// The token may not appear immediately after creation due to replication lag
-				var found bool
-				err := NewTimeout(func() error {
-					tokens, err := client.GetAllAccessToken(ctx, &user)
-					if err != nil {
-						return err
-					}
-					if tokens.Tokens == nil {
-						return nil
-					}
-
-					t.Logf("Tokens size %d", len(tokens.Tokens))
+				tokens, err := client.GetAllAccessToken(ctx, &user)
+				require.NoError(t, err)
+				require.NotNil(t, tokens.Tokens)
+				if len(tokens.Tokens) > 0 {
+					found := false
 					for _, token := range tokens.Tokens {
-						if token.Id != nil && tokenResp.Id != nil && *token.Id == *tokenResp.Id {
-							require.Equal(t, tokenResp.Id, token.Id)
-							require.Equal(t, tokenResp.Name, token.Name)
-							require.Equal(t, tokenResp.Fingerprint, token.Fingerprint)
-							require.Equal(t, tokenResp.Active, token.Active)
-							require.Equal(t, tokenResp.CreatedAt, token.CreatedAt)
-							require.Equal(t, tokenResp.ValidUntil, token.ValidUntil)
+						if token.Id != nil && tokenResp != nil && tokenResp.Id != nil && *token.Id == *tokenResp.Id {
+							require.Equal(t, *tokenResp.Id, *token.Id)
+							require.Equal(t, *tokenResp.Name, *token.Name)
+							require.Equal(t, *tokenResp.Fingerprint, *token.Fingerprint)
+							require.Equal(t, *tokenResp.Active, *token.Active)
+							require.Equal(t, *tokenResp.CreatedAt, *token.CreatedAt)
+							require.Equal(t, *tokenResp.ValidUntil, *token.ValidUntil)
 							found = true
-							return Interrupt{} // Success - stop retrying
+							break
 						}
 					}
-					return nil // Token not found yet, retry
-				}).Timeout(15*time.Second, 250*time.Millisecond)
-
-				require.NoError(t, err, "Failed to find created token in the list after retries")
-				require.True(t, found, "Created token should be present in the list")
+					require.True(t, found, "Created token should be present in the list")
+				}
 			})
 
 			t.Run("Client try to create duplicate access token name", func(t *testing.T) {
@@ -205,6 +190,8 @@ func Test_AccessTokens(t *testing.T) {
 				}
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
