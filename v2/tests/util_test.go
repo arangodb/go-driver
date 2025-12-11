@@ -146,12 +146,12 @@ func requireV8Enabled(c arangodb.Client, ctx context.Context, t testing.TB) {
 	versionInfo, err := c.VersionWithOptions(ctx, &arangodb.GetVersionOptions{
 		Details: utils.NewType(true),
 	})
-
 	if err != nil {
 		t.Fatalf("Failed to get version info with details: %s", err)
 	}
 
 	// Check if v8-version exists in Details and if it's "none"
+	// Only access versionInfo.Details after confirming there's no error
 	if versionInfo.Details != nil {
 		if v8Version, ok := versionInfo.Details["v8-version"]; ok {
 			if v8VersionStr, ok := v8Version.(string); ok && v8VersionStr == "none" {

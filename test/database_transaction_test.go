@@ -33,9 +33,10 @@ import (
 
 func TestDatabaseTransaction(t *testing.T) {
 	c := createClient(t, nil)
+	// Ensure minimum version 3.2 for JavaScript transaction support
 	skipBelowVersion(c, "3.2", t)
-	// for disabling v8 tests
-	skipAboveVersion(c, "3.12.6-1", t)
+	// Skip versions above 4.0 where V8 may be disabled (V8 is required for JS transactions)
+	skipAboveVersion(c, "4.0", t)
 	db := ensureDatabase(nil, c, "transaction_test", nil, t)
 	defer func() {
 		err := db.Remove(nil)
