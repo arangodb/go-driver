@@ -89,12 +89,12 @@ func Test_AccessTokens(t *testing.T) {
 					found := false
 					for _, token := range tokens.Tokens {
 						if token.Id != nil && tokenResp != nil && tokenResp.Id != nil && *token.Id == *tokenResp.Id {
-							require.Equal(t, tokenResp.Id, token.Id)
-							require.Equal(t, tokenResp.Name, token.Name)
-							require.Equal(t, tokenResp.Fingerprint, token.Fingerprint)
-							require.Equal(t, tokenResp.Active, token.Active)
-							require.Equal(t, tokenResp.CreatedAt, token.CreatedAt)
-							require.Equal(t, tokenResp.ValidUntil, token.ValidUntil)
+							require.Equal(t, *tokenResp.Id, *token.Id)
+							require.Equal(t, *tokenResp.Name, *token.Name)
+							require.Equal(t, *tokenResp.Fingerprint, *token.Fingerprint)
+							require.Equal(t, *tokenResp.Active, *token.Active)
+							require.Equal(t, *tokenResp.CreatedAt, *token.CreatedAt)
+							require.Equal(t, *tokenResp.ValidUntil, *token.ValidUntil)
 							found = true
 							break
 						}
@@ -190,6 +190,8 @@ func Test_AccessTokens(t *testing.T) {
 				}
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
