@@ -15,7 +15,7 @@ executors:
   arm-machine-executor:
     machine:
       image: ubuntu-2204:current
-    resource_class: arm.large
+    resource_class: arm.medium
 aliases:
   - &notify_slack_on_fail
     slack/notify:
