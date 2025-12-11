@@ -102,7 +102,7 @@ func TestAsyncJobListPending(t *testing.T) {
 	skipResilientSingle(t)
 
 	// for disabling v8 tests
-	skipAboveVersion(c, "4.0", t)
+	skipIfVersionGTE(c, "4.0", t)
 
 	db := ensureDatabase(ctx, c, databaseName("db", "async"), nil, t)
 	defer func() {
@@ -258,7 +258,7 @@ func TestAsyncJobDelete(t *testing.T) {
 
 	t.Run("delete pending job", func(t *testing.T) {
 		// for disabling v8 tests
-		skipAboveVersion(c, "4.0", t)
+		skipIfVersionGTE(c, "4.0", t)
 
 		idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
 		require.NotEmpty(t, idTransaction)
@@ -282,7 +282,7 @@ func TestAsyncJobDelete(t *testing.T) {
 
 	t.Run("delete expired jobs", func(t *testing.T) {
 		// for disabling v8 tests
-		skipAboveVersion(c, "4.0", t)
+		skipIfVersionGTE(c, "4.0", t)
 
 		idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
 		require.NotEmpty(t, idTransaction)
