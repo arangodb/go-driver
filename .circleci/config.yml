@@ -10,11 +10,12 @@ executors:
     machine:
       image: ubuntu-2204:current
       docker_layer_caching: true
+    resource_class: large
 
   arm-machine-executor:
     machine:
       image: ubuntu-2204:current
-    resource_class: arm.medium
+    resource_class: arm.large
 aliases:
   - &notify_slack_on_fail
     slack/notify:
