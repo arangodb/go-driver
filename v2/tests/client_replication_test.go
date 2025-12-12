@@ -410,6 +410,8 @@ func Test_ApplierStart(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

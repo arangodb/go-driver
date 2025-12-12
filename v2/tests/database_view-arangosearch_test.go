@@ -574,6 +574,8 @@ func Test_UseArangoSearchViewWithNested(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

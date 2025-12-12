@@ -34,7 +34,7 @@ func Test_DatabaseTransactionsJS(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-
+				requireV8Enabled(client, context.Background(), t)
 				t.Run("Transaction ReturnValue", func(t *testing.T) {
 					withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
 						txJSOptions := arangodb.TransactionJSOptions{

@@ -55,6 +55,7 @@ func Test_CreateNewTask(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, tb)
 				testCases := map[string]*arangodb.TaskOptions{
 					"taskWithParams": {
 						Name:    utils.NewType("taskWithParams"),
@@ -128,6 +129,7 @@ func Test_ValidationsForCreateNewTask(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, tb)
 				testCases := map[string]*arangodb.TaskOptions{
 					"taskWithoutCommand": {
 						Name:   utils.NewType("taskWithoutCommand"),
@@ -160,6 +162,7 @@ func Test_TaskCreationWithId(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				requireV8Enabled(client, ctx, tb)
 				taskID := "test-task-id" + StringWithCharset(16, charset)
 				options := &arangodb.TaskOptions{
 					ID:      &taskID, // Optional if CreateTaskWithID sets it, but safe to keep

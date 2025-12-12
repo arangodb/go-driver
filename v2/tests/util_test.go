@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func getTestMode() string {
@@ -135,4 +136,28 @@ func skipVersionNotInRange(c arangodb.Client, ctx context.Context, minVersion, m
 		t.Skipf("Skipping above version '%s', got version '%s'", maxVersion, x.Version)
 	}
 	return x
+}
+
+// requireV8Enabled skips the test if V8 is disabled in the ArangoDB server.
+// V8 is required for features like tasks, UDFs, Foxx, JS transactions, and simple queries.
+// This function checks the v8-version field in the version details.
+// If v8-version is "none", V8 is disabled and the test will be skipped.
+func requireV8Enabled(c arangodb.Client, ctx context.Context, t testing.TB) {
+	versionInfo, err := c.VersionWithOptions(ctx, &arangodb.GetVersionOptions{
+		Details: utils.NewType(true),
+	})
+	if err != nil {
+		t.Fatalf("Failed to get version info with details: %s", err)
+	}
+
+	// Check if v8-version exists in Details and if it's "none"
+	// Only access versionInfo.Details after confirming there's no error
+	if versionInfo.Details != nil {
+		if v8Version, ok := versionInfo.Details["v8-version"]; ok {
+			if v8VersionStr, ok := v8Version.(string); ok && v8VersionStr == "none" {
+				t.Skip("Skipping test: V8 is disabled in this ArangoDB server (v8-version: none). " +
+					"This test requires V8 enabled.")
+			}
+		}
+	}
 }

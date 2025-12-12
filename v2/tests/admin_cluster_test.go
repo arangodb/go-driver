@@ -369,9 +369,10 @@ func Test_ClusterResignLeadership(t *testing.T) {
 }
 
 func Test_ClusterStatistics(t *testing.T) {
+	requireClusterMode(t)
+
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-			requireClusterMode(t)
 			skipBelowVersion(client, ctx, "3.7", t)
 			// Detect DB-Server ID
 			serverRole, err := client.ServerRole(ctx)

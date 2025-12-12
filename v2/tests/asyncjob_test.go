@@ -111,6 +111,8 @@ func TestAsyncJobListPending(t *testing.T) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
 
+					requireV8Enabled(client, ctx, t)
+
 					ctxAsync := connection.WithAsync(context.Background())
 
 					idTransaction := runLongRequest(t, ctxAsync, db, 2, col.Name())
@@ -254,6 +256,7 @@ func TestAsyncJobDelete(t *testing.T) {
 					})
 
 					t.Run("delete pending job", func(t *testing.T) {
+						requireV8Enabled(client, ctx, t)
 						idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
 						require.NotEmpty(t, idTransaction)
 
@@ -275,6 +278,7 @@ func TestAsyncJobDelete(t *testing.T) {
 					})
 
 					t.Run("delete expired jobs", func(t *testing.T) {
+						requireV8Enabled(client, ctx, t)
 						idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
 						require.NotEmpty(t, idTransaction)
 
