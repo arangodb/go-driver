@@ -371,6 +371,8 @@ func Test_NamedIndexes(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+					clientVersion, _ := client.Version(ctx)
+					t.Logf("Arangodb Version: %s", clientVersion.Version)
 
 					var namedIndexTestCases = []struct {
 						Name           string
@@ -441,6 +443,10 @@ func Test_NamedIndexes(t *testing.T) {
 										},
 									},
 								})
+								if clientVersion.Version.CompareTo("3.12.7") >= 0 {
+									require.Equal(t, 0.4, *idx.InvertedIndex.ConsolidationPolicy.MaxSkewThreshold)
+									require.Equal(t, 0.5, *idx.InvertedIndex.ConsolidationPolicy.MinDeletionRatio)
+								}
 								return idx, err
 							},
 						},
