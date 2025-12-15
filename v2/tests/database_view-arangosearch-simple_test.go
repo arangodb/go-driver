@@ -54,6 +54,7 @@ func Test_ArangoSearchSimple(t *testing.T) {
 						require.Equal(t, 0.4, *prop.ConsolidationPolicy.MaxSkewThreshold)
 						require.Equal(t, 0.5, *prop.ConsolidationPolicy.MinDeletionRatio)
 					}
+					require.Equal(t, prop.Type, arangodb.ViewTypeArangoSearch)
 					require.Equal(t, prop.Name, viewName)
 					require.Equal(t, int64(1), *prop.CleanupIntervalStep)
 					require.Equal(t, int64(500), *prop.CommitInterval)
