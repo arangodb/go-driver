@@ -36,6 +36,9 @@ type ClientServerInfo interface {
 	// ServerID Gets the ID of this server in the cluster.
 	// An error is returned when calling this to a server that is not part of a cluster.
 	ServerID(ctx context.Context) (string, error)
+
+	// VersionWithOptions returns version information from the connected database server.
+	VersionWithOptions(ctx context.Context, details bool) (VersionInfo, error)
 }
 
 // ServerRole is the role of an arangod server

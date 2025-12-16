@@ -292,6 +292,24 @@ func Test_UpdateApplierConfig(t *testing.T) {
 	})
 }
 
+func logApplierState(t *testing.T, prefix string, state arangodb.ApplierState) {
+	if state.Running == nil ||
+		state.Phase == nil ||
+		state.Progress == nil ||
+		state.Progress.Message == nil ||
+		state.Progress.FailedConnects == nil {
+		return
+	}
+
+	t.Logf("%s:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
+		prefix,
+		*state.Running,
+		*state.Phase,
+		*state.Progress.Message,
+		*state.Progress.FailedConnects,
+	)
+}
+
 func Test_ApplierStart(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
@@ -323,40 +341,21 @@ func Test_ApplierStart(t *testing.T) {
 					resp, err := client.ApplierStart(ctx, db.Name(), utils.NewType(false), utils.NewType(batch.ID))
 					require.NoError(t, err)
 					require.NotNil(t, resp)
-					// Log useful debug info
-					t.Logf("Applier start:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
-						*resp.State.Running,
-						*resp.State.Phase,
-						*resp.State.Progress.Message,
-						*resp.State.Progress.FailedConnects,
-					)
+
+					logApplierState(t, "Applier state", resp.State)
 				})
 				t.Run("Applier_State_with_query_params", func(t *testing.T) {
-					ctx := context.Background()
-
-					state, err := client.GetApplierState(ctx, db.Name(), utils.NewType(false))
+					resp, err := client.GetApplierState(ctx, db.Name(), utils.NewType(false))
 					require.NoError(t, err, "failed to get applier state")
-					require.NotNil(t, state.State)
 
-					// Log useful debug info
-					t.Logf("Applier state:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
-						*state.State.Running,
-						*state.State.Phase,
-						*state.State.Progress.Message,
-						*state.State.Progress.FailedConnects,
-					)
+					logApplierState(t, "Applier state", resp.State)
 				})
 				t.Run("Applier Stop with query params", func(t *testing.T) {
 					resp, err := client.ApplierStop(ctx, db.Name(), utils.NewType(false))
 					require.NoError(t, err)
 					require.NotNil(t, resp)
-					// Log useful debug info
-					t.Logf("Applier stop:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
-						*resp.State.Running,
-						*resp.State.Phase,
-						*resp.State.Progress.Message,
-						*resp.State.Progress.FailedConnects,
-					)
+
+					logApplierState(t, "Applier state", resp.State)
 				})
 				t.Run("Update applier config with out query params", func(t *testing.T) {
 					resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
@@ -373,43 +372,26 @@ func Test_ApplierStart(t *testing.T) {
 					resp, err := client.ApplierStart(ctx, db.Name(), nil, nil)
 					require.NoError(t, err)
 					require.NotNil(t, resp)
-					// Log useful debug info
-					t.Logf("Applier start:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
-						*resp.State.Running,
-						*resp.State.Phase,
-						*resp.State.Progress.Message,
-						*resp.State.Progress.FailedConnects,
-					)
+
+					logApplierState(t, "Applier state", resp.State)
 				})
 				t.Run("Applier State with out query params", func(t *testing.T) {
-					ctx := context.Background()
-
-					state, err := client.GetApplierState(ctx, db.Name(), nil)
+					resp, err := client.GetApplierState(ctx, db.Name(), nil)
 					require.NoError(t, err, "failed to get applier state")
-					require.NotNil(t, state.State)
 
-					// Log useful debug info
-					t.Logf("Applier state:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
-						*state.State.Running,
-						*state.State.Phase,
-						*state.State.Progress.Message,
-						*state.State.Progress.FailedConnects,
-					)
+					logApplierState(t, "Applier state", resp.State)
 				})
 				t.Run("Applier Stop with out query params", func(t *testing.T) {
 					resp, err := client.ApplierStop(ctx, db.Name(), nil)
 					require.NoError(t, err)
 					require.NotNil(t, resp)
-					// Log useful debug info
-					t.Logf("Applier stop:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
-						*resp.State.Running,
-						*resp.State.Phase,
-						*resp.State.Progress.Message,
-						*resp.State.Progress.FailedConnects,
-					)
+
+					logApplierState(t, "Applier state", resp.State)
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

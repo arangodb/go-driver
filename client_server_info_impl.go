@@ -157,3 +157,31 @@ func (c *client) echo(ctx context.Context) error {
 	}
 	return nil
 }
+
+func (c *client) VersionWithOptions(ctx context.Context, details bool) (VersionInfo, error) {
+	path := "_api/version"
+	if details {
+		path = "_api/version?details=true"
+	}
+
+	req, err := c.conn.NewRequest("GET", path)
+	if err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+
+	applyContextSettings(ctx, req)
+
+	resp, err := c.conn.Do(ctx, req)
+	if err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+	if err := resp.CheckStatus(200); err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+
+	var data VersionInfo
+	if err := resp.ParseBody("", &data); err != nil {
+		return VersionInfo{}, WithStack(err)
+	}
+	return data, nil
+}
