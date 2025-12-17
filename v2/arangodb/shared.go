@@ -133,22 +133,22 @@ type ConsolidationPolicyBytesAccum struct {
 // ConsolidationPolicyTier contains fields used for ConsolidationPolicyTypeTier
 type ConsolidationPolicyTier struct {
 	// MinScore Filter out consolidation candidates with a score less than this. Default: 0
-	// This option is only available up to v3.12.6
+	// Deprecated: Only available up to v3.12.6.
 	MinScore *int64 `json:"minScore,omitempty"`
 
-	// SegmentsMin The minimum number of segments that are evaluated as candidates for consolidation. Default: 1
-	// This option is only available up to v3.12.6
+	// Deprecated: Only available up to v3.12.6.
+	// Deprecated since v3.12.7. Use segment byte size skew–based consolidation.
 	SegmentsMin *int64 `json:"segmentsMin,omitempty"`
 
 	// SegmentsMax The maximum number of segments that are evaluated as candidates for consolidation. Default: 10
-	// This option is only available up to v3.12.6
+	// Deprecated: Only available up to v3.12.6.
 	SegmentsMax *int64 `json:"segmentsMax,omitempty"`
 
 	// SegmentsBytesMax  The maximum allowed size of all consolidated segments in bytes. Default: 5368709120
 	SegmentsBytesMax *int64 `json:"segmentsBytesMax,omitempty"`
 
 	// SegmentsBytesFloor Defines the value (in bytes) to treat all smaller segments as equal for consolidation selection. Default: 2097152
-	// This option is only available up to v3.12.6
+	// Deprecated: Only available up to v3.12.6.
 	SegmentsBytesFloor *int64 `json:"segmentsBytesFloor,omitempty"`
 
 	// MaxSkewThreshold defines the maximum allowed size skew between segment files
