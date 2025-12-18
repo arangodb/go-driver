@@ -149,19 +149,33 @@ type ArangoSearchConsolidationPolicyBytesAccum struct {
 
 // ArangoSearchConsolidationPolicyTier contains fields used for ArangoSearchConsolidationPolicyTypeTier
 type ArangoSearchConsolidationPolicyTier struct {
+	// Deprecated: Only available up to v3.12.6.
 	MinScore *int64 `json:"minScore,omitempty"`
 
-	// MinSegments specifies the minimum number of segments that will be evaluated as candidates for consolidation.
+	// Deprecated: Only available up to v3.12.6.
+	// Deprecated since v3.12.7. Use segment byte size skew–based consolidation.
 	MinSegments *int64 `json:"segmentsMin,omitempty"`
 
 	// MaxSegments specifies the maximum number of segments that will be evaluated as candidates for consolidation.
+	// Deprecated: Only available up to v3.12.6.
 	MaxSegments *int64 `json:"segmentsMax,omitempty"`
 
 	// SegmentsBytesMax specifies the maxinum allowed size of all consolidated segments in bytes.
 	SegmentsBytesMax *int64 `json:"segmentsBytesMax,omitempty"`
 
 	// SegmentsBytesFloor defines the value (in bytes) to treat all smaller segments as equal for consolidation selection.
+	// Deprecated: Only available up to v3.12.6.
 	SegmentsBytesFloor *int64 `json:"segmentsBytesFloor,omitempty"`
+
+	// MaxSkewThreshold defines the maximum allowed size skew between segment files
+	// (value between 0.0 and 1.0) before they are considered for consolidation.
+	// Default: 0.4. Available from ArangoDB v3.12.7 onward.
+	MaxSkewThreshold *float64 `json:"maxSkewThreshold,omitempty"`
+
+	// MinDeletionRatio defines the minimum ratio of deleted documents (0.0–1.0)
+	// required to trigger segment cleanup.
+	// Default: 0.5. Available from ArangoDB v3.12.7 onward.
+	MinDeletionRatio *float64 `json:"minDeletionRatio,omitempty"`
 }
 
 // ArangoSearchPrimarySortEntry describes an entry for the primarySort list

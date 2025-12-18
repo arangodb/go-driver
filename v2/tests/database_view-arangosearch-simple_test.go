@@ -42,11 +42,18 @@ func Test_ArangoSearchSimple(t *testing.T) {
 						CommitInterval:      utils.NewType[int64](500),
 					}
 
+					clientVersion, _ := client.Version(ctx)
+					t.Logf("Arangodb Version: %s", clientVersion.Version)
+
 					view, err := db.CreateArangoSearchView(ctx, viewName, opts)
 					require.NoError(t, err, "Failed to create alias view '%s'", viewName)
 
 					prop, err := view.Properties(ctx)
 					require.NoError(t, err)
+					if clientVersion.Version.CompareTo("3.12.7") >= 0 {
+						require.Equal(t, 0.4, *prop.ConsolidationPolicy.MaxSkewThreshold)
+						require.Equal(t, 0.5, *prop.ConsolidationPolicy.MinDeletionRatio)
+					}
 					require.Equal(t, prop.Type, arangodb.ViewTypeArangoSearch)
 					require.Equal(t, prop.Name, viewName)
 					require.Equal(t, int64(1), *prop.CleanupIntervalStep)
@@ -61,6 +68,10 @@ func Test_ArangoSearchSimple(t *testing.T) {
 
 						pr, err := view.Properties(ctx)
 						require.NoError(t, err)
+						if clientVersion.Version.CompareTo("3.12.7") >= 0 {
+							require.Equal(t, 0.4, *pr.ConsolidationPolicy.MaxSkewThreshold)
+							require.Equal(t, 0.5, *pr.ConsolidationPolicy.MinDeletionRatio)
+						}
 						require.Equal(t, pr.Type, arangodb.ViewTypeArangoSearch)
 						require.Equal(t, pr.Name, viewName)
 						require.Equal(t, int64(1), *pr.CleanupIntervalStep)
@@ -76,6 +87,10 @@ func Test_ArangoSearchSimple(t *testing.T) {
 
 						pr, err := view.Properties(ctx)
 						require.NoError(t, err)
+						if clientVersion.Version.CompareTo("3.12.7") >= 0 {
+							require.Equal(t, 0.4, *pr.ConsolidationPolicy.MaxSkewThreshold)
+							require.Equal(t, 0.5, *pr.ConsolidationPolicy.MinDeletionRatio)
+						}
 						require.Equal(t, pr.Type, arangodb.ViewTypeArangoSearch)
 						require.Equal(t, pr.Name, viewName)
 						require.Equal(t, int64(300), *pr.CommitInterval)
