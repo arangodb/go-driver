@@ -502,7 +502,7 @@ func Test_NamedIndexes(t *testing.T) {
 							require.Equal(t, testCase.Name, idx.Name)
 							defer func() {
 								if idx.ID != "" {
-									_ = col.DeleteIndexByID(ctx, idx.ID) // Ignore errors in tests
+									_ = col.DeleteIndexByID(ctx, idx.ID)
 								}
 							}()
 							indexes, err := col.Indexes(ctx)
@@ -546,8 +546,8 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					_, err := col.CreateDocuments(ctx, docs)
 					require.NoError(t, err, "failed to create sample documents for vector index training")
 
-					t.Run("Create Vector Index", func(t *testing.T) {
-						idx, created, err := col.EnsureVectorIndex(
+					t.Run("EnsureVectorIndex creates index and reuses it on subsequent calls", func(t *testing.T) {
+						idx1, created1, err := col.EnsureVectorIndex(
 							ctx,
 							[]string{"embedding"},
 							params,
@@ -556,34 +556,27 @@ func Test_EnsureVectorIndex(t *testing.T) {
 							},
 						)
 						require.NoError(t, err)
-						require.True(t, created, "index should be created on first call")
-						require.Equal(t, arangodb.VectorIndexType, idx.Type)
-						require.NotNil(t, idx.VectorIndex)
-						require.Equal(t, dimension, *idx.VectorIndex.Dimension)
-						require.Equal(t, metric, *idx.VectorIndex.Metric)
-					})
+						defer func() {
+							if idx1.ID != "" {
+								_ = col.DeleteIndexByID(ctx, idx1.ID)
+							}
+						}()
+						require.True(t, created1, "index should be created on first call")
+						require.Equal(t, arangodb.VectorIndexType, idx1.Type)
+						require.NotNil(t, idx1.VectorIndex)
+						require.Equal(t, dimension, *idx1.VectorIndex.Dimension)
+						require.Equal(t, metric, *idx1.VectorIndex.Metric)
 
-					t.Run("Create the same index again", func(t *testing.T) {
-						idx, created, err := col.EnsureVectorIndex(
+						idx2, created2, err := col.EnsureVectorIndex(
 							ctx,
 							[]string{"embedding"},
 							params,
 							nil,
 						)
 						require.NoError(t, err)
-						defer func() {
-							if idx.ID != "" {
-								_ = col.DeleteIndexByID(ctx, idx.ID) // Ignore errors in cleanup
-							}
-						}()
-						require.False(t, created, "index should already exist")
-						require.Equal(t, arangodb.VectorIndexType, idx.Type)
-					})
-
-					t.Run("Invalid Vector Index Params", func(t *testing.T) {
-						invalidParams := &arangodb.VectorParams{Dimension: utils.NewType(-1)}
-						_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, invalidParams, nil)
-						require.Error(t, err, "Should fail with invalid dimension")
+						require.False(t, created2, "index should already exist")
+						require.Equal(t, arangodb.VectorIndexType, idx2.Type)
+						require.Equal(t, idx1.ID, idx2.ID, "existing index should be reused")
 					})
 
 					var idx arangodb.IndexResponse
@@ -604,11 +597,11 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					}
 					defer func() {
 						if idx.ID != "" {
-							_ = col.DeleteIndexByID(ctx, idx.ID) // Ignore errors in cleanup
+							_ = col.DeleteIndexByID(ctx, idx.ID)
 						}
 					}()
 					// Run explain in a separate subtest
-					t.Run("storedValues_are_used_for_filter", func(t *testing.T) {
+					t.Run("StoredValues are used for filter", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
 
 						query := fmt.Sprintf(
@@ -642,7 +635,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.True(t, found)
 					})
 
-					t.Run("vector_index_with_storedValues_and_indexHint_is_used", func(t *testing.T) {
+					t.Run("Vector index with storedValues and indexHint is used", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
 						// indexHint and forceIndexHint for vector indexes supported by 3.12.7+
 						// Query using indexHint + forceIndexHint
@@ -682,6 +675,54 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.True(t, found, "expected EnumerateNearVectorNode in execution plan")
 					})
 
+					t.Run("Validate VectorParams input", func(t *testing.T) {
+						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+							withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+								t.Run("Nil VectorParams should error", func(t *testing.T) {
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, nil, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Missing Dimension should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Metric: utils.NewType(arangodb.VectorMetricCosine),
+										NLists: utils.NewType(1),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Invalid Dimension should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(-1),
+										Metric:    utils.NewType(arangodb.VectorMetricCosine),
+										NLists:    utils.NewType(1),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Invalid Metric should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(3),
+										Metric:    utils.NewType(arangodb.VectorMetric("invalid_metric")),
+										NLists:    utils.NewType(1), // must be <= number of documents per shard
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Missing NLists should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(3),
+										Metric:    utils.NewType(arangodb.VectorMetricCosine),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+							})
+						})
+					})
 				})
 			})
 		})

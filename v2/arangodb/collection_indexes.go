@@ -84,7 +84,7 @@ type CollectionIndexes interface {
 	// EnsureVectorIndex creates a vector index in the collection, if it does not already exist.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	// Available in ArangoDB 3.12.4 and later.
-	// VectorParams is an obligatory parameter and must contain at least Dimension,Metric and NLists fields.
+	// VectorParams is an obligatory parameter and must contain at least Dimension, Metric and NLists fields.
 	EnsureVectorIndex(ctx context.Context, fields []string, params *VectorParams, options *CreateVectorIndexOptions) (IndexResponse, bool, error)
 }
 

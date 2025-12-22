@@ -23,7 +23,6 @@ package arangodb
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -353,8 +352,8 @@ func (p *VectorParams) validate() error {
 		return errors.New("params.Metric must be one of 'cosine', 'l2', or 'innerProduct' for vector index")
 	}
 
-	if p.NLists != nil && *p.NLists <= 0 {
-		return errors.New("params.NLists must be greater than zero for vector index")
+	if p.NLists == nil || *p.NLists <= 0 {
+		return errors.New("params.NLists must be provided and greater than zero for vector index")
 	}
 
 	return nil
@@ -387,7 +386,6 @@ func (c *collectionIndexes) EnsureVectorIndex(
 	}
 
 	result := responseVectorIndex{}
-	fmt.Printf("reqData: %+v", reqData)
 	created, err := c.ensureIndex(ctx, &reqData, &result)
 	if err != nil {
 		return IndexResponse{}, false, err
