@@ -373,6 +373,31 @@ func Test_NamedIndexes(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					clientVersion, _ := client.Version(ctx)
 					t.Logf("Arangodb Version: %s", clientVersion.Version)
+					docs := []map[string]interface{}{
+						{
+							"pername":      "persistent-name",
+							"geo":          []float64{12.9716, 77.5946},
+							"createdAt":    time.Now().Unix(),
+							"mkd":          1.23,
+							"mkd-prefixed": 4.56,
+							"prefix":       "p1",
+							"vectorfield":  []float64{0.1, 0.2, 0.3},
+							"text":         "first document",
+						},
+						{
+							"pername":      "persistent-name-2",
+							"geo":          []float64{13.0827, 80.2707},
+							"createdAt":    time.Now().Unix(),
+							"mkd":          2.34,
+							"mkd-prefixed": 5.67,
+							"prefix":       "p2",
+							"vectorfield":  []float64{0.4, 0.5, 0.6},
+							"text":         "second document",
+						},
+					}
+
+					_, err := col.CreateDocuments(ctx, docs)
+					require.NoError(t, err)
 
 					var namedIndexTestCases = []struct {
 						Name           string
@@ -450,6 +475,20 @@ func Test_NamedIndexes(t *testing.T) {
 								return idx, err
 							},
 						},
+						{
+							Name:       "Vector",
+							MinVersion: "3.12.4",
+							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
+								params := &arangodb.VectorParams{
+									Dimension: utils.NewType(3),
+									Metric:    utils.NewType(arangodb.VectorMetricCosine),
+									NLists:    utils.NewType(1),
+								}
+								idx, _, err := col.EnsureVectorIndex(ctx, []string{"vectorfield"},
+									params, &arangodb.CreateVectorIndexOptions{Name: &name})
+								return idx, err
+							},
+						},
 					}
 
 					for _, testCase := range namedIndexTestCases {
@@ -459,9 +498,13 @@ func Test_NamedIndexes(t *testing.T) {
 							}
 
 							idx, err := testCase.CreateCallback(col, testCase.Name)
-							require.NoError(t, err)
+							require.NoError(t, err, "failed to create %s index", testCase.Name)
 							require.Equal(t, testCase.Name, idx.Name)
-
+							defer func() {
+								if idx.ID != "" {
+									_ = col.DeleteIndexByID(ctx, idx.ID)
+								}
+							}()
 							indexes, err := col.Indexes(ctx)
 							require.NoError(t, err)
 							require.NotNil(t, indexes)
@@ -470,6 +513,216 @@ func Test_NamedIndexes(t *testing.T) {
 							}))
 						})
 					}
+				})
+			})
+		})
+	})
+}
+
+func Test_EnsureVectorIndex(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+					skipBelowVersion(client, ctx, "3.12.4", t)
+					dimension := 3
+					metric := arangodb.VectorMetricCosine
+					nLists := 1 // or 2, but <= number of docs
+
+					params := &arangodb.VectorParams{
+						Dimension: &dimension,
+						Metric:    &metric,
+						NLists:    &nLists,
+					}
+
+					// Vector indexes require documents to be present for training
+					// Create sample documents with embeddings
+					docs := []map[string]interface{}{
+						{"embedding": []float64{0.1, 0.2, 0.3}, "text": "first document"},
+						{"embedding": []float64{0.4, 0.5, 0.6}, "text": "second document"},
+						{"embedding": []float64{0.7, 0.8, 0.9}, "text": "third document"},
+					}
+
+					_, err := col.CreateDocuments(ctx, docs)
+					require.NoError(t, err, "failed to create sample documents for vector index training")
+
+					t.Run("EnsureVectorIndex creates index and reuses it on subsequent calls", func(t *testing.T) {
+						idx1, created1, err := col.EnsureVectorIndex(
+							ctx,
+							[]string{"embedding"},
+							params,
+							&arangodb.CreateVectorIndexOptions{
+								Name: utils.NewType("my_vector_index"),
+							},
+						)
+						require.NoError(t, err)
+						defer func() {
+							if idx1.ID != "" {
+								_ = col.DeleteIndexByID(ctx, idx1.ID)
+							}
+						}()
+						require.True(t, created1, "index should be created on first call")
+						require.Equal(t, arangodb.VectorIndexType, idx1.Type)
+						require.NotNil(t, idx1.VectorIndex)
+						require.Equal(t, dimension, *idx1.VectorIndex.Dimension)
+						require.Equal(t, metric, *idx1.VectorIndex.Metric)
+
+						idx2, created2, err := col.EnsureVectorIndex(
+							ctx,
+							[]string{"embedding"},
+							params,
+							nil,
+						)
+						require.NoError(t, err)
+						require.False(t, created2, "index should already exist")
+						require.Equal(t, arangodb.VectorIndexType, idx2.Type)
+						require.Equal(t, idx1.ID, idx2.ID, "existing index should be reused")
+					})
+
+					var idx arangodb.IndexResponse
+
+					t.Run("Create Vector Index with storedValues", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.7", t)
+						options := &arangodb.CreateVectorIndexOptions{
+							StoredValues: []string{"text"},
+						}
+						var err error
+						idx, _, err = col.EnsureVectorIndex(ctx, []string{"embedding"}, params, options)
+						require.NoError(t, err)
+						require.Equal(t, arangodb.VectorIndexType, idx.Type)
+					})
+
+					if idx.ID == "" {
+						t.Skip("Index not created, skipping dependent tests")
+					}
+					defer func() {
+						if idx.ID != "" {
+							_ = col.DeleteIndexByID(ctx, idx.ID)
+						}
+					}()
+					// Run explain in a separate subtest
+					t.Run("StoredValues are used for filter", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.7", t)
+
+						query := fmt.Sprintf(
+							"FOR d IN `%s`\n"+
+								"  SORT APPROX_NEAR_COSINE(d.embedding, @vector) DESC\n"+
+								"  LIMIT 1\n"+
+								"  FILTER d.text == @text\n"+
+								"  RETURN d",
+							col.Name(),
+						)
+
+						bindVars := map[string]interface{}{
+							"text":   "first document",
+							"vector": []float64{0.1, 0.2, 0.3},
+						}
+
+						explain, err := db.ExplainQuery(ctx, query, bindVars, nil)
+						require.NoError(t, err)
+						require.Contains(t, explain.Plan.Rules, "use-vector-index")
+
+						found := false
+						for _, node := range explain.Plan.NodesRaw {
+							if t, ok := node["type"].(string); ok && t == "EnumerateNearVectorNode" {
+								found = true
+								break
+							}
+						}
+						if !found {
+							t.Logf("Execution plan: %+v", explain.Plan)
+						}
+						require.True(t, found)
+					})
+
+					t.Run("Vector index with storedValues and indexHint is used", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.7", t)
+						// indexHint and forceIndexHint for vector indexes supported by 3.12.7+
+						// Query using indexHint + forceIndexHint
+						query := `
+					FOR d IN @@col OPTIONS {
+					  indexHint: [@idxName],
+					  forceIndexHint: true
+					}
+					SORT APPROX_NEAR_COSINE(d.embedding, @vector) DESC
+					LIMIT 1
+					RETURN d
+					`
+						bindVars := map[string]interface{}{
+							"@col":    col.Name(),
+							"idxName": idx.Name,
+							"vector":  []float64{0.1, 0.2, 0.3},
+						}
+
+						// 3. Explain query
+						explain, err := db.ExplainQuery(ctx, query, bindVars, nil)
+						require.NoError(t, err)
+
+						// 4. Assert vector index is used
+						require.Contains(t, explain.Plan.Rules, "use-vector-index")
+
+						// 5. Assert EnumerateNearVectorNode exists
+						found := false
+						for _, node := range explain.Plan.NodesRaw {
+							if nodeType, ok := node["type"].(string); ok && nodeType == "EnumerateNearVectorNode" {
+								found = true
+								break
+							}
+						}
+						if !found {
+							t.Logf("Execution plan: %+v", explain.Plan)
+						}
+						require.True(t, found, "expected EnumerateNearVectorNode in execution plan")
+					})
+
+					t.Run("Validate VectorParams input", func(t *testing.T) {
+						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+							withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+								t.Run("Nil VectorParams should error", func(t *testing.T) {
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, nil, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Missing Dimension should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Metric: utils.NewType(arangodb.VectorMetricCosine),
+										NLists: utils.NewType(1),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Invalid Dimension should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(-1),
+										Metric:    utils.NewType(arangodb.VectorMetricCosine),
+										NLists:    utils.NewType(1),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Invalid Metric should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(3),
+										Metric:    utils.NewType(arangodb.VectorMetric("invalid_metric")),
+										NLists:    utils.NewType(1), // must be <= number of documents per shard
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Missing NLists should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(3),
+										Metric:    utils.NewType(arangodb.VectorMetricCosine),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+							})
+						})
+					})
 				})
 			})
 		})

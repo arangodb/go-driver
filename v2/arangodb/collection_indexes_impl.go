@@ -306,23 +306,110 @@ func (i *IndexResponse) UnmarshalJSON(data []byte) error {
 	i.Name = respSimple.Name
 	i.Type = respSimple.Type
 
-	if respSimple.Type == InvertedIndexType {
+	switch respSimple.Type {
+	case InvertedIndexType:
 		result := responseInvertedIndex{}
 		if err := json.Unmarshal(data, &result); err != nil {
 			return err
 		}
-
 		i.IndexSharedOptions = result.IndexSharedOptions
 		i.InvertedIndex = &result.InvertedIndexOptions
-	} else {
+	case VectorIndexType:
+		result := responseVectorIndex{}
+		if err := json.Unmarshal(data, &result); err != nil {
+			return err
+		}
+		i.IndexSharedOptions = result.IndexSharedOptions
+		i.VectorIndex = result.Params
+	default:
 		result := responseIndex{}
 		if err := json.Unmarshal(data, &result); err != nil {
 			return err
 		}
-
 		i.IndexSharedOptions = result.IndexSharedOptions
 		i.RegularIndex = &result.IndexOptions
 	}
+	return nil
+}
+
+func (p *VectorParams) validate() error {
+	if p == nil {
+		return errors.New("params must be provided for vector index")
+	}
+
+	if p.Dimension == nil || *p.Dimension <= 0 {
+		return errors.New("params.Dimension must be provided and greater than zero for vector index")
+	}
+
+	if p.Metric == nil {
+		return errors.New("params.Metric must be provided for vector index")
+	}
+
+	switch *p.Metric {
+	case VectorMetricCosine, VectorMetricL2, VectorMetricInnerProduct:
+		// valid
+	default:
+		return errors.New("params.Metric must be one of 'cosine', 'l2', or 'innerProduct' for vector index")
+	}
+
+	if p.NLists == nil || *p.NLists <= 0 {
+		return errors.New("params.NLists must be provided and greater than zero for vector index")
+	}
 
 	return nil
+}
+
+func (c *collectionIndexes) EnsureVectorIndex(
+	ctx context.Context,
+	fields []string,
+	params *VectorParams,
+	options *CreateVectorIndexOptions,
+) (IndexResponse, bool, error) {
+
+	if len(fields) != 1 {
+		return IndexResponse{}, false, errors.New("vector index requires exactly one field")
+	}
+	if err := params.validate(); err != nil {
+		return IndexResponse{}, false, err
+	}
+
+	reqData := struct {
+		Type   IndexType     `json:"type"`
+		Fields []string      `json:"fields"`
+		Params *VectorParams `json:"params"`
+		*CreateVectorIndexOptions
+	}{
+		Type:                     VectorIndexType,
+		Fields:                   fields,
+		Params:                   params,
+		CreateVectorIndexOptions: options,
+	}
+
+	result := responseVectorIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	if err != nil {
+		return IndexResponse{}, false, err
+	}
+
+	return newVectorIndexResponse(&result), created, nil
+}
+
+type responseVectorIndex struct {
+	Name               string    `json:"name,omitempty"`
+	Type               IndexType `json:"type"`
+	IndexSharedOptions `json:",inline"`
+	Params             *VectorParams `json:"params,omitempty"`
+}
+
+func newVectorIndexResponse(res *responseVectorIndex) IndexResponse {
+	if res == nil {
+		return IndexResponse{}
+	}
+
+	return IndexResponse{
+		Name:               res.Name,
+		Type:               res.Type,
+		IndexSharedOptions: res.IndexSharedOptions,
+		VectorIndex:        res.Params,
+	}
 }

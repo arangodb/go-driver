@@ -80,6 +80,12 @@ type CollectionIndexes interface {
 
 	// DeleteIndexByID deletes an index from the collection.
 	DeleteIndexByID(ctx context.Context, id string) error
+
+	// EnsureVectorIndex creates a vector index in the collection, if it does not already exist.
+	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
+	// Available in ArangoDB 3.12.4 and later.
+	// VectorParams is an obligatory parameter and must contain at least Dimension, Metric and NLists fields.
+	EnsureVectorIndex(ctx context.Context, fields []string, params *VectorParams, options *CreateVectorIndexOptions) (IndexResponse, bool, error)
 }
 
 // IndexType represents an index type as string
@@ -118,6 +124,9 @@ const (
 
 	// InvertedIndexType can be used to speed up a broad range of AQL queries, from simple to complex, including full-text search
 	InvertedIndexType = IndexType("inverted")
+
+	// VectorIndexType is used for efficient similarity searches on high-dimensional embeddings, enabling fast and scalable AI use cases.
+	VectorIndexType = IndexType("vector")
 )
 
 // IndexResponse is the response from the Index list method
@@ -135,6 +144,9 @@ type IndexResponse struct {
 
 	// InvertedIndex is the inverted index object. It is not empty only for InvertedIndex type.
 	InvertedIndex *InvertedIndexOptions `json:"invertedIndexes"`
+
+	// VectorIndex is the vector index params. It is not empty only for VectorIndex type.
+	VectorIndex *VectorParams `json:"params,omitempty"`
 }
 
 // IndexSharedOptions contains options that are shared between all index types
@@ -310,3 +322,45 @@ type CreateMDIPrefixedIndexOptions struct {
 	// Array expansions are not allowed.
 	PrefixFields []string `json:"prefixFields,required"`
 }
+
+type CreateVectorIndexOptions struct {
+	// Allow writes during creation.
+	InBackground *bool `json:"inBackground,omitempty"`
+	// Optional index name.
+	Name *string `json:"name,omitempty"`
+	// Number of threads to use for index creation.
+	Parallelism *int `json:"parallelism,omitempty"`
+	// Exclude docs missing the field.
+	Sparse *bool `json:"sparse,omitempty"`
+	// Introduced in v3.12.7
+	// Up to 32 additional attributes can be stored in the index.
+	StoredValues []string `json:"storedValues,omitempty"`
+}
+
+type VectorParams struct {
+	// Neighbors considered in search.
+	DefaultNProbe *int `json:"defaultNProbe,omitempty"`
+	// Vector length.
+	Dimension *int `json:"dimension,omitempty"`
+	// Faiss factory string.
+	Factory *string `json:"factory,omitempty"`
+	// Similarity measure.
+	Metric *VectorMetric `json:"metric,omitempty"`
+	// Number of centroids.
+	NLists *int `json:"nLists,omitempty"`
+	// Faiss training iterations
+	TrainingIterations *int `json:"trainingIterations,omitempty"`
+}
+
+// VectorMetric defines the type of similarity metric for vector comparison.
+type VectorMetric string
+
+const (
+	// Cosine similarity between vectors.
+	VectorMetricCosine VectorMetric = "cosine"
+	// Introduced in v3.12.6
+	// Inner product similarity.
+	VectorMetricInnerProduct VectorMetric = "innerProduct"
+	// Euclidean (L2) distance between vectors.
+	VectorMetricL2 VectorMetric = "l2"
+)
