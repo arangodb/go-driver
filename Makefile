@@ -43,6 +43,9 @@ endif
 ifndef ENABLE_VECTOR_INDEX
 	ENABLE_VECTOR_INDEX := "true"
 endif
+ifeq ($(strip $(ENABLE_VECTOR_INDEX)),)
+	ENABLE_VECTOR_INDEX := "true"
+endif
 
 TESTV2PARALLEL ?= 4
 
