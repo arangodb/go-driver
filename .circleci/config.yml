@@ -32,6 +32,7 @@ aliases:
     ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
     STARTER: << pipeline.parameters.starterImage >>
     ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
+    ENABLE_VECTOR_INDEX: "true"
     TEST_DISALLOW_UNKNOWN_FIELDS: false
     VERBOSE: 1
 
