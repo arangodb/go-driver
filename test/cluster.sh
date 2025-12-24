@@ -53,7 +53,7 @@ if [ "$CMD" == "start" ]; then
         STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true --args.all.http.compress-response-threshold=1 --args.all.http.handle-content-encoding-for-unauthenticated-requests=true"
     fi
     # Enable vector index when explicitly requested
-    if [ "$(echo "$ENABLE_VECTOR_INDEX" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+    if [ "$ENABLE_VECTOR_INDEX" == "true" ]; then
         STARTERARGS="$STARTERARGS \
             --args.all.vector-index=true \
             --args.all.experimental-vector-index=true"
