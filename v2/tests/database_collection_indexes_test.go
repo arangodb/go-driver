@@ -23,6 +23,8 @@ package tests
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -400,9 +402,10 @@ func Test_NamedIndexes(t *testing.T) {
 					require.NoError(t, err)
 
 					var namedIndexTestCases = []struct {
-						Name           string
-						CreateCallback func(col arangodb.Collection, name string) (arangodb.IndexResponse, error)
-						MinVersion     arangodb.Version
+						Name                string
+						CreateCallback      func(col arangodb.Collection, name string) (arangodb.IndexResponse, error)
+						MinVersion          arangodb.Version
+						RequiresVectorIndex bool
 					}{
 						{
 							Name: "Persistent",
@@ -476,8 +479,9 @@ func Test_NamedIndexes(t *testing.T) {
 							},
 						},
 						{
-							Name:       "Vector",
-							MinVersion: "3.12.4",
+							Name:                "Vector",
+							MinVersion:          "3.12.4",
+							RequiresVectorIndex: true,
 							CreateCallback: func(col arangodb.Collection, name string) (arangodb.IndexResponse, error) {
 								params := &arangodb.VectorParams{
 									Dimension: utils.NewType(3),
@@ -496,7 +500,9 @@ func Test_NamedIndexes(t *testing.T) {
 							if testCase.MinVersion != "" {
 								skipBelowVersion(client, ctx, testCase.MinVersion, t)
 							}
-
+							if testCase.RequiresVectorIndex {
+								skipIfVectorIndexDisabled(t)
+							}
 							idx, err := testCase.CreateCallback(col, testCase.Name)
 							require.NoError(t, err, "failed to create %s index", testCase.Name)
 							require.Equal(t, testCase.Name, idx.Name)
@@ -519,11 +525,19 @@ func Test_NamedIndexes(t *testing.T) {
 	})
 }
 
+func skipIfVectorIndexDisabled(t *testing.T) {
+	t.Logf("ENABLE_VECTOR_INDEX: %s", os.Getenv("ENABLE_VECTOR_INDEX"))
+	if v := strings.ToLower(os.Getenv("ENABLE_VECTOR_INDEX")); v == "" || v == "false" {
+		t.Skip("Vector index disabled or not enabled via ENABLE_VECTOR_INDEX")
+	}
+}
+
 func Test_EnsureVectorIndex(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+					skipIfVectorIndexDisabled(t)
 					skipBelowVersion(client, ctx, "3.12.4", t)
 					dimension := 3
 					metric := arangodb.VectorMetricCosine
