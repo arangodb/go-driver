@@ -527,8 +527,8 @@ func Test_NamedIndexes(t *testing.T) {
 
 func skipIfVectorIndexDisabled(t *testing.T) {
 	t.Logf("ENABLE_VECTOR_INDEX: %s", os.Getenv("ENABLE_VECTOR_INDEX"))
-	if v := strings.ToLower(os.Getenv("ENABLE_VECTOR_INDEX")); v == "false" {
-		t.Skip("Vector index explicitly disabled via ENABLE_VECTOR_INDEX")
+	if v := strings.ToLower(os.Getenv("ENABLE_VECTOR_INDEX")); v == "" || v == "false" {
+		t.Skip("Vector index disabled or not enabled via ENABLE_VECTOR_INDEX")
 	}
 }
 
