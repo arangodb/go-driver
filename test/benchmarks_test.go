@@ -87,7 +87,7 @@ func BenchmarkV1BulkInsert100KDocs(b *testing.B) {
 }
 
 func bulkRead(b *testing.B, docSize int) {
-	_, col := setup(b)
+	db, col := setup(b)
 
 	// -----------------------------
 	// Prepare and insert documents
@@ -110,24 +110,31 @@ func bulkRead(b *testing.B, docSize int) {
 	require.NoError(b, err)
 
 	// -----------------------------------------
-	// Sub-benchmark 1: Read entire collection using ReadDocuments
+	// Sub-benchmark 1: Read entire collection
 	// -----------------------------------------
 	b.Run("ReadAllDocsOnce", func(b *testing.B) {
-		// Prepare keys for reading
-		keys := make([]string, docSize)
-		for j := 0; j < docSize; j++ {
-			keys[j] = fmt.Sprintf("doc_%d", j)
-		}
+		query := fmt.Sprintf("FOR d IN %s RETURN d", col.Name())
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			readDocs := make([]TestDoc, docSize)
-			_, _, err := col.ReadDocuments(ctx, keys, readDocs)
+			cursor, err := db.Query(ctx, query, nil)
 			require.NoError(b, err)
 
+			count := 0
+			for {
+				var doc TestDoc
+				_, err := cursor.ReadDocument(ctx, &doc)
+				if driver.IsNoMoreDocuments(err) {
+					break
+				}
+				require.NoError(b, err)
+				count++
+			}
+			// require.Equal(b, docSize, count, "expected to read all documents")
+			_ = cursor.Close()
 			// sanity check
-			if len(readDocs) != docSize {
-				b.Fatalf("expected to read %d docs, got %d", docSize, len(readDocs))
+			if count != docSize {
+				b.Fatalf("expected to read %d docs, got %d", docSize, count)
 			}
 		}
 	})
