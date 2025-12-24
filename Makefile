@@ -41,7 +41,7 @@ ifndef VST_ENABLED
 endif
 
 ifndef ENABLE_VECTOR_INDEX
-	ENABLE_VECTOR_INDEX := false
+	ENABLE_VECTOR_INDEX := "false"
 endif
 
 TESTV2PARALLEL ?= 4
