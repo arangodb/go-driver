@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -50,6 +51,13 @@ func (c collectionDocumentCreate) CreateDocumentsWithOptions(ctx context.Context
 		return nil, errors.Errorf("Input documents should be list")
 	}
 
+	// Get document count from input (same as v1 approach)
+	documentsVal := reflect.ValueOf(documents)
+	if documentsVal.Kind() == reflect.Ptr {
+		documentsVal = documentsVal.Elem()
+	}
+	documentCount := documentsVal.Len()
+
 	url := c.collection.url("document")
 
 	req, err := c.collection.connection().NewRequest(http.MethodPost, url)
@@ -74,7 +82,7 @@ func (c collectionDocumentCreate) CreateDocumentsWithOptions(ctx context.Context
 	case http.StatusCreated:
 		fallthrough
 	case http.StatusAccepted:
-		return newCollectionDocumentCreateResponseReader(&arr, opts), nil
+		return newCollectionDocumentCreateResponseReader(&arr, opts, documentCount), nil
 	default:
 		return nil, shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}
@@ -126,18 +134,14 @@ func (c collectionDocumentCreate) CreateDocument(ctx context.Context, document i
 	return c.CreateDocumentWithOptions(ctx, document, nil)
 }
 
-func newCollectionDocumentCreateResponseReader(array *connection.Array, options *CollectionDocumentCreateOptions) *collectionDocumentCreateResponseReader {
-	c := &collectionDocumentCreateResponseReader{array: array, options: options}
+func newCollectionDocumentCreateResponseReader(array *connection.Array, options *CollectionDocumentCreateOptions, documentCount int) *collectionDocumentCreateResponseReader {
+	c := &collectionDocumentCreateResponseReader{
+		array:         array,
+		options:       options,
+		documentCount: documentCount,
+	}
 
 	if c.options != nil {
-		// Cache reflection types once during initialization for performance
-		if c.options.OldObject != nil {
-			c.oldType = reflect.TypeOf(c.options.OldObject).Elem()
-		}
-		if c.options.NewObject != nil {
-			c.newType = reflect.TypeOf(c.options.NewObject).Elem()
-		}
-
 		c.response.Old = newUnmarshalInto(c.options.OldObject)
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
@@ -149,40 +153,23 @@ func newCollectionDocumentCreateResponseReader(array *connection.Array, options 
 var _ CollectionDocumentCreateResponseReader = &collectionDocumentCreateResponseReader{}
 
 type collectionDocumentCreateResponseReader struct {
-	array    *connection.Array
-	options  *CollectionDocumentCreateOptions
-	response struct {
+	array         *connection.Array
+	options       *CollectionDocumentCreateOptions
+	documentCount int // Store input document count for Len() without caching
+	response      struct {
 		*DocumentMeta
 		*shared.ResponseStruct `json:",inline"`
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}
 	shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]
-
-	// Cache for len() method - allows Read() to work after Len() is called
-	cachedResults []CollectionDocumentCreateResponse
-	cachedErrors  []error
-	cached        bool
-	readIndex     int // Track position in cache for Read() after Len()
-
-	// Performance: Cache reflection types to avoid repeated lookups
-	oldType reflect.Type
-	newType reflect.Type
+	mu sync.Mutex
 }
 
 func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreateResponse, error) {
-	// If Len() was called, serve from cache
-	if c.cached {
-		if c.readIndex >= len(c.cachedResults) {
-			return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
-		}
-		result := c.cachedResults[c.readIndex]
-		err := c.cachedErrors[c.readIndex]
-		c.readIndex++
-		return result, err
-	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	// Normal streaming read
 	if !c.array.More() {
 		return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
 	}
@@ -190,12 +177,15 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 	var meta CollectionDocumentCreateResponse
 
 	// Create new instances for each document to avoid pointer reuse
-	// Use cached types for performance
-	if c.oldType != nil {
-		meta.Old = reflect.New(c.oldType).Interface()
-	}
-	if c.newType != nil {
-		meta.New = reflect.New(c.newType).Interface()
+	if c.options != nil {
+		if c.options.OldObject != nil {
+			oldObjectType := reflect.TypeOf(c.options.OldObject).Elem()
+			meta.Old = reflect.New(oldObjectType).Interface()
+		}
+		if c.options.NewObject != nil {
+			newObjectType := reflect.TypeOf(c.options.NewObject).Elem()
+			meta.New = reflect.New(newObjectType).Interface()
+		}
 	}
 
 	c.response.DocumentMeta = &meta.DocumentMeta
@@ -232,12 +222,8 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 }
 
 // Len returns the number of items in the response.
+// Returns the input document count immediately without reading/caching (same as v1 behavior).
 // After calling Len(), you can still use Read() to iterate through items.
 func (c *collectionDocumentCreateResponseReader) Len() int {
-	if !c.cached {
-		c.cachedResults, c.cachedErrors = c.ReadAll()
-		c.cached = true
-		c.readIndex = 0 // Reset read position to allow Read() after Len()
-	}
-	return len(c.cachedResults)
+	return c.documentCount
 }

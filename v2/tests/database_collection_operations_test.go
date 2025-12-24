@@ -247,6 +247,8 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -503,6 +505,8 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -598,6 +602,8 @@ func Test_DatabaseCollectionBulkOperations(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -628,6 +634,8 @@ func Test_DatabaseCollectionTruncate(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

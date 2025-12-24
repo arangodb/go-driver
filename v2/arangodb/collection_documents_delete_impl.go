@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -80,6 +81,13 @@ func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context
 		return nil, errors.Errorf("Input documents should be list")
 	}
 
+	// Get document count from input (same as v1 approach)
+	documentsVal := reflect.ValueOf(documents)
+	if documentsVal.Kind() == reflect.Ptr {
+		documentsVal = documentsVal.Elem()
+	}
+	documentCount := documentsVal.Len()
+
 	url := c.collection.url("document")
 
 	req, err := c.collection.connection().NewRequest(http.MethodDelete, url)
@@ -99,11 +107,15 @@ func (c collectionDocumentDelete) DeleteDocumentsWithOptions(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	return newCollectionDocumentDeleteResponseReader(&arr, opts), nil
+	return newCollectionDocumentDeleteResponseReader(&arr, opts, documentCount), nil
 }
 
-func newCollectionDocumentDeleteResponseReader(array *connection.Array, options *CollectionDocumentDeleteOptions) *collectionDocumentDeleteResponseReader {
-	c := &collectionDocumentDeleteResponseReader{array: array, options: options}
+func newCollectionDocumentDeleteResponseReader(array *connection.Array, options *CollectionDocumentDeleteOptions, documentCount int) *collectionDocumentDeleteResponseReader {
+	c := &collectionDocumentDeleteResponseReader{
+		array:         array,
+		options:       options,
+		documentCount: documentCount,
+	}
 
 	c.ReadAllIntoReader = shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]{Reader: c}
 	return c
@@ -112,30 +124,17 @@ func newCollectionDocumentDeleteResponseReader(array *connection.Array, options 
 var _ CollectionDocumentDeleteResponseReader = &collectionDocumentDeleteResponseReader{}
 
 type collectionDocumentDeleteResponseReader struct {
-	array   *connection.Array
-	options *CollectionDocumentDeleteOptions
+	array         *connection.Array
+	options       *CollectionDocumentDeleteOptions
+	documentCount int // Store input document count for Len() without caching
 	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
-	// Cache for len() method - allows Read() to work after Len() is called
-	cachedResults []CollectionDocumentDeleteResponse
-	cachedErrors  []error
-	cached        bool
-	readIndex     int // Track position in cache for Read() after Len()
+	mu sync.Mutex
 }
 
 func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (CollectionDocumentDeleteResponse, error) {
-	// If Len() was called, serve from cache
-	// Note: When serving from cache, the 'i' parameter is not populated with document data
-	if c.cached {
-		if c.readIndex >= len(c.cachedResults) {
-			return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
-		}
-		result := c.cachedResults[c.readIndex]
-		err := c.cachedErrors[c.readIndex]
-		c.readIndex++
-		return result, err
-	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	// Normal streaming read
 	if !c.array.More() {
 		return CollectionDocumentDeleteResponse{}, shared.NoMoreDocumentsError{}
 	}
@@ -168,7 +167,7 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 	}
 
 	if c.options != nil && c.options.OldObject != nil {
-		// Create a new instance for each document to avoid reusing the same pointer
+		// Create a new instance for each document to avoid pointer reuse
 		oldObjectType := reflect.TypeOf(c.options.OldObject).Elem()
 		meta.Old = reflect.New(oldObjectType).Interface()
 
@@ -187,14 +186,8 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 }
 
 // Len returns the number of items in the response.
+// Returns the input document count immediately without reading/caching (same as v1 behavior).
 // After calling Len(), you can still use Read() to iterate through items.
-// Note: When Read() serves from cache, the document data parameter is not populated.
 func (c *collectionDocumentDeleteResponseReader) Len() int {
-	if !c.cached {
-		var dummySlice []interface{}
-		c.cachedResults, c.cachedErrors = c.ReadAll(&dummySlice)
-		c.cached = true
-		c.readIndex = 0 // Reset read position to allow Read() after Len()
-	}
-	return len(c.cachedResults)
+	return c.documentCount
 }

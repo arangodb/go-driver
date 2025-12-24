@@ -158,6 +158,8 @@ func Test_DatabaseCollectionDocDeleteSimple(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -192,6 +194,8 @@ func Test_DatabaseCollectionDocDeleteIfMatch(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -287,6 +291,8 @@ func Test_DatabaseCollectionDocDeleteIgnoreRevs(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

@@ -812,6 +812,8 @@ func Test_GetQueryPlanCache(t *testing.T) {
 				}
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -944,6 +946,8 @@ func Test_ClearQueryPlanCache(t *testing.T) {
 				require.NoError(t, err)
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -1111,6 +1115,8 @@ func Test_GetQueryEntriesCache(t *testing.T) {
 				}
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -1242,6 +1248,8 @@ func Test_ClearQueryCache(t *testing.T) {
 				require.NoError(t, err)
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

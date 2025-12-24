@@ -28,6 +28,7 @@ import (
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 type DocWithCode struct {
@@ -69,10 +70,11 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						Key: "test2",
 					}
 
-					_, err := col.CreateDocuments(ctx, []any{
+					readerCreate, err := col.CreateDocuments(ctx, []any{
 						doc, doc2,
 					})
 					require.NoError(t, err)
+					require.Equal(t, 2, readerCreate.Len(), "CreateDocuments should return a reader with 2 documents")
 
 					docs, err := col.ReadDocuments(ctx, []string{
 						"test",
@@ -80,6 +82,7 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						"test2",
 					})
 					require.NoError(t, err)
+					require.Equal(t, 3, docs.Len(), "ReadDocuments should return a reader with 3 documents")
 
 					var z DocWithCode
 
@@ -126,9 +129,8 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						"test", "test2", "nonexistent",
 					})
 					require.NoError(t, err)
-
+					require.Equal(t, 3, readeRed.Len(), "ReadDocuments should return a reader with 3 documents")
 					metaRed, errs := readeRed.ReadAll(&docRedRead)
-
 					require.ElementsMatch(t, []any{doc1.Key, doc2.Key}, []any{metaRed[0].Key, metaRed[1].Key})
 					require.ElementsMatch(t, []any{nil, nil, shared.ErrArangoDocumentNotFound}, []any{errs[0], errs[1], errs[2].(shared.ArangoError).ErrorNum})
 
@@ -140,6 +142,7 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 					}, &arangodb.CollectionDocumentDeleteOptions{OldObject: &docOldObject})
 					require.NoError(t, err)
 					metaDel, errs := readerDel.ReadAll(&docDelRead)
+					require.Equal(t, 3, readerDel.Len(), "ReadAll() should return 3 results matching number of delete attempts")
 
 					require.ElementsMatch(t, []any{doc1.Key, doc2.Key, ""}, []any{metaDel[0].Key, metaDel[1].Key, metaDel[2].Key})
 					require.ElementsMatch(t, []any{nil, nil, shared.ErrArangoDocumentNotFound}, []any{errs[0], errs[1], errs[2].(shared.ArangoError).ErrorNum})
@@ -150,5 +153,8 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
+
 }
