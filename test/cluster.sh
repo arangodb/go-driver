@@ -52,8 +52,11 @@ if [ "$CMD" == "start" ]; then
     if [ -n "$ENABLE_DATABASE_EXTRA_FEATURES" ]; then
         STARTERARGS="$STARTERARGS --all.database.extended-names-databases=true --args.all.http.compress-response-threshold=1 --args.all.http.handle-content-encoding-for-unauthenticated-requests=true"
     fi
-    if [ -n "$ENABLE_VECTOR_INDEX" ]; then
-        STARTERARGS="$STARTERARGS --args.all.experimental-vector-index=true"
+    # Enable vector index when explicitly requested
+    if [ "$(echo "$ENABLE_VECTOR_INDEX" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+        STARTERARGS="$STARTERARGS \
+            --args.all.vector-index=true \
+            --args.all.experimental-vector-index=true"
     fi
     # Use DOCKER_PLATFORM if set (e.g., from CircleCI for ARM), otherwise use macOS default
     if [ -n "$DOCKER_PLATFORM" ]; then
