@@ -124,12 +124,12 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 
 					var docRedRead []DocWithCode
 
-					readeRed, err := col.ReadDocuments(ctx, []string{
+					readerRead, err := col.ReadDocuments(ctx, []string{
 						"test", "test2", "nonexistent",
 					})
 					require.NoError(t, err)
-					require.Equal(t, 3, readeRed.Len(), "ReadDocuments should return a reader with 3 documents")
-					metaRed, errs := readeRed.ReadAll(&docRedRead)
+					require.Equal(t, 3, readerRead.Len(), "ReadDocuments should return a reader with 3 documents")
+					metaRed, errs := readerRead.ReadAll(&docRedRead)
 					require.ElementsMatch(t, []any{doc1.Key, doc2.Key}, []any{metaRed[0].Key, metaRed[1].Key})
 					require.Nil(t, errs[0])
 					require.Nil(t, errs[1])
