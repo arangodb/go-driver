@@ -126,6 +126,8 @@ func Test_DatabaseCollectionDocCreateOverwrite(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -197,6 +199,8 @@ func Test_DatabaseCollectionDocCreateKeepNull(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -278,6 +282,8 @@ func Test_DatabaseCollectionDocCreateMergeObjects(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -301,6 +307,8 @@ func Test_DatabaseCollectionDocCreateSilent(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -332,6 +340,8 @@ func Test_DatabaseCollectionDocCreateWaitForSync(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -400,5 +410,7 @@ func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }

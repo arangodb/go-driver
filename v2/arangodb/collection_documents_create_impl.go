@@ -24,6 +24,8 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -49,6 +51,13 @@ func (c collectionDocumentCreate) CreateDocumentsWithOptions(ctx context.Context
 		return nil, errors.Errorf("Input documents should be list")
 	}
 
+	// Get document count from input (same as v1 approach)
+	documentsVal := reflect.ValueOf(documents)
+	if documentsVal.Kind() == reflect.Ptr {
+		documentsVal = documentsVal.Elem()
+	}
+	documentCount := documentsVal.Len()
+
 	url := c.collection.url("document")
 
 	req, err := c.collection.connection().NewRequest(http.MethodPost, url)
@@ -73,7 +82,7 @@ func (c collectionDocumentCreate) CreateDocumentsWithOptions(ctx context.Context
 	case http.StatusCreated:
 		fallthrough
 	case http.StatusAccepted:
-		return newCollectionDocumentCreateResponseReader(&arr, opts), nil
+		return newCollectionDocumentCreateResponseReader(&arr, opts, documentCount), nil
 	default:
 		return nil, shared.NewResponseStruct().AsArangoErrorWithCode(code)
 	}
@@ -125,44 +134,68 @@ func (c collectionDocumentCreate) CreateDocument(ctx context.Context, document i
 	return c.CreateDocumentWithOptions(ctx, document, nil)
 }
 
-func newCollectionDocumentCreateResponseReader(array *connection.Array, options *CollectionDocumentCreateOptions) *collectionDocumentCreateResponseReader {
-	c := &collectionDocumentCreateResponseReader{array: array, options: options}
+func newCollectionDocumentCreateResponseReader(array *connection.Array, options *CollectionDocumentCreateOptions, documentCount int) *collectionDocumentCreateResponseReader {
+	c := &collectionDocumentCreateResponseReader{
+		array:         array,
+		options:       options,
+		documentCount: documentCount,
+	}
 
 	if c.options != nil {
 		c.response.Old = newUnmarshalInto(c.options.OldObject)
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
 
+	c.ReadAllReader = shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]{Reader: c}
 	return c
 }
 
 var _ CollectionDocumentCreateResponseReader = &collectionDocumentCreateResponseReader{}
 
 type collectionDocumentCreateResponseReader struct {
-	array    *connection.Array
-	options  *CollectionDocumentCreateOptions
-	response struct {
+	array         *connection.Array
+	options       *CollectionDocumentCreateOptions
+	documentCount int // Store input document count for Len() without caching
+	response      struct {
 		*DocumentMeta
 		*shared.ResponseStruct `json:",inline"`
 		Old                    *UnmarshalInto `json:"old,omitempty"`
 		New                    *UnmarshalInto `json:"new,omitempty"`
 	}
+	shared.ReadAllReader[CollectionDocumentCreateResponse, *collectionDocumentCreateResponseReader]
+	mu sync.Mutex
 }
 
 func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreateResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if !c.array.More() {
 		return CollectionDocumentCreateResponse{}, shared.NoMoreDocumentsError{}
 	}
 
 	var meta CollectionDocumentCreateResponse
 
+	// Create new instances for each document to avoid pointer reuse
 	if c.options != nil {
-		meta.Old = c.options.OldObject
-		meta.New = c.options.NewObject
+		if c.options.OldObject != nil {
+			oldObjectType := reflect.TypeOf(c.options.OldObject)
+			if oldObjectType != nil && oldObjectType.Kind() == reflect.Ptr {
+				meta.Old = reflect.New(oldObjectType.Elem()).Interface()
+			}
+		}
+		if c.options.NewObject != nil {
+			newObjectType := reflect.TypeOf(c.options.NewObject)
+			if newObjectType != nil && newObjectType.Kind() == reflect.Ptr {
+				meta.New = reflect.New(newObjectType.Elem()).Interface()
+			}
+		}
 	}
 
 	c.response.DocumentMeta = &meta.DocumentMeta
 	c.response.ResponseStruct = &meta.ResponseStruct
+	c.response.Old = newUnmarshalInto(meta.Old)
+	c.response.New = newUnmarshalInto(meta.New)
 
 	if err := c.array.Unmarshal(&c.response); err != nil {
 		if err == io.EOF {
@@ -175,5 +208,38 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 		return meta, meta.AsArangoError()
 	}
 
+	// Copy data from the new instances back to the original option objects for backward compatibility.
+	// NOTE: The mutex protects concurrent Read() calls on this reader instance, but does not protect
+	// the options object itself. If the same options object is shared across multiple readers or
+	// accessed from other goroutines, there will be a data race. Options objects should not be
+	// shared across concurrent operations.
+	if c.options != nil {
+		if c.options.OldObject != nil && meta.Old != nil {
+			oldValue := reflect.ValueOf(meta.Old)
+			originalValue := reflect.ValueOf(c.options.OldObject)
+			if oldValue.IsValid() && oldValue.Kind() == reflect.Ptr && !oldValue.IsNil() &&
+				originalValue.IsValid() && originalValue.Kind() == reflect.Ptr && !originalValue.IsNil() {
+				originalValue.Elem().Set(oldValue.Elem())
+			}
+		}
+		if c.options.NewObject != nil && meta.New != nil {
+			newValue := reflect.ValueOf(meta.New)
+			originalValue := reflect.ValueOf(c.options.NewObject)
+			if newValue.IsValid() && newValue.Kind() == reflect.Ptr && !newValue.IsNil() &&
+				originalValue.IsValid() && originalValue.Kind() == reflect.Ptr && !originalValue.IsNil() {
+				originalValue.Elem().Set(newValue.Elem())
+			}
+		}
+	}
+
 	return meta, nil
+}
+
+// Len returns the number of items in the response.
+// Returns the input document count immediately without reading/caching (same as v1 behavior).
+// After calling Len(), you can still use Read() to iterate through items.
+func (c *collectionDocumentCreateResponseReader) Len() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.documentCount
 }

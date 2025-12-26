@@ -7,6 +7,7 @@
 - Disabled V8 related testcases in V1 and V2
 - Added new ConsolidationPolicy attributes to support updated configuration options for ArangoSearch Views properties and Inverted Indexes
 - Add Vector index feature
+- Add len() for Read methods
 
 ## [2.1.6](https://github.com/arangodb/go-driver/tree/v2.1.6) (2025-11-06)
 - Add missing endpoints from replication

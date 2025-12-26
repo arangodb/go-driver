@@ -157,6 +157,8 @@ func Test_DatabaseCollectionDocReadIgnoreRevs(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(true),
 	})
 }
 

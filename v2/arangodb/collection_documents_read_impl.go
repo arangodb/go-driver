@@ -24,6 +24,8 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"reflect"
+	"sync"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
@@ -42,6 +44,13 @@ type collectionDocumentRead struct {
 }
 
 func (c collectionDocumentRead) ReadDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentReadOptions) (CollectionDocumentReadResponseReader, error) {
+	// Get document count from input (same as v1 approach)
+	documentsVal := reflect.ValueOf(documents)
+	if documentsVal.Kind() == reflect.Ptr {
+		documentsVal = documentsVal.Elem()
+	}
+	documentCount := documentsVal.Len()
+
 	url := c.collection.url("document")
 
 	req, err := c.collection.connection().NewRequest(http.MethodPut, url)
@@ -60,10 +69,11 @@ func (c collectionDocumentRead) ReadDocumentsWithOptions(ctx context.Context, do
 	if _, err := c.collection.connection().Do(ctx, req, &arr, http.StatusOK); err != nil {
 		return nil, err
 	}
-	return newCollectionDocumentReadResponseReader(&arr, opts), nil
+	return newCollectionDocumentReadResponseReader(&arr, opts, documentCount), nil
 }
 
 func (c collectionDocumentRead) ReadDocuments(ctx context.Context, keys []string) (CollectionDocumentReadResponseReader, error) {
+	// ReadDocumentsWithOptions will calculate documentCount from keys using reflection
 	return c.ReadDocumentsWithOptions(ctx, keys, nil)
 }
 
@@ -95,20 +105,30 @@ func (c collectionDocumentRead) ReadDocumentWithOptions(ctx context.Context, key
 	}
 }
 
-func newCollectionDocumentReadResponseReader(array *connection.Array, options *CollectionDocumentReadOptions) *collectionDocumentReadResponseReader {
-	c := &collectionDocumentReadResponseReader{array: array, options: options}
-
+func newCollectionDocumentReadResponseReader(array *connection.Array, options *CollectionDocumentReadOptions, documentCount int) *collectionDocumentReadResponseReader {
+	c := &collectionDocumentReadResponseReader{
+		array:         array,
+		options:       options,
+		documentCount: documentCount,
+	}
+	c.ReadAllIntoReader = shared.ReadAllIntoReader[CollectionDocumentReadResponse, *collectionDocumentReadResponseReader]{Reader: c}
 	return c
 }
 
 var _ CollectionDocumentReadResponseReader = &collectionDocumentReadResponseReader{}
 
 type collectionDocumentReadResponseReader struct {
-	array   *connection.Array
-	options *CollectionDocumentReadOptions
+	array         *connection.Array
+	options       *CollectionDocumentReadOptions
+	documentCount int // Store input document count for Len() without caching
+	shared.ReadAllIntoReader[CollectionDocumentReadResponse, *collectionDocumentReadResponseReader]
+	mu sync.Mutex
 }
 
 func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDocumentReadResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	// Normal streaming read
 	if !c.array.More() {
 		return CollectionDocumentReadResponse{}, shared.NoMoreDocumentsError{}
 	}
@@ -141,4 +161,13 @@ func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDo
 	}
 
 	return meta, nil
+}
+
+// Len returns the number of items in the response.
+// Returns the input document count immediately without reading/caching (same as v1 behavior).
+// After calling Len(), you can still use Read() to iterate through items.
+func (c *collectionDocumentReadResponseReader) Len() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.documentCount
 }

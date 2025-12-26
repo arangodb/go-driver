@@ -73,6 +73,8 @@ func Test_DatabaseCollectionDocUpdateIfMatch(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -123,6 +125,8 @@ func Test_DatabaseCollectionDocUpdateIgnoreRevs(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -217,6 +221,8 @@ func Test_DatabaseCollectionDocUpdateKeepNull(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -294,6 +300,8 @@ func Test_DatabaseCollectionDocUpdateMergeObjects(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
