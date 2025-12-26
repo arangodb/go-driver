@@ -38,7 +38,6 @@ type DocWithCode struct {
 
 func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		// COMMENTED OUT FOR DEBUGGING ONLY
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
@@ -132,7 +131,10 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 					require.Equal(t, 3, readeRed.Len(), "ReadDocuments should return a reader with 3 documents")
 					metaRed, errs := readeRed.ReadAll(&docRedRead)
 					require.ElementsMatch(t, []any{doc1.Key, doc2.Key}, []any{metaRed[0].Key, metaRed[1].Key})
-					require.ElementsMatch(t, []any{nil, nil, shared.ErrArangoDocumentNotFound}, []any{errs[0], errs[1], errs[2].(shared.ArangoError).ErrorNum})
+					require.Nil(t, errs[0])
+					require.Nil(t, errs[1])
+					require.Error(t, errs[2])
+					require.True(t, shared.IsArangoErrorWithErrorNum(errs[2], shared.ErrArangoDocumentNotFound))
 
 					var docOldObject DocWithCode
 					var docDelRead []DocWithCode
@@ -145,7 +147,10 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 					require.Equal(t, 3, readerDel.Len(), "ReadAll() should return 3 results matching number of delete attempts")
 
 					require.ElementsMatch(t, []any{doc1.Key, doc2.Key, ""}, []any{metaDel[0].Key, metaDel[1].Key, metaDel[2].Key})
-					require.ElementsMatch(t, []any{nil, nil, shared.ErrArangoDocumentNotFound}, []any{errs[0], errs[1], errs[2].(shared.ArangoError).ErrorNum})
+					require.Nil(t, errs[0])
+					require.Nil(t, errs[1])
+					require.Error(t, errs[2])
+					require.True(t, shared.IsArangoErrorWithErrorNum(errs[2], shared.ErrArangoDocumentNotFound))
 
 					// Now this should work correctly with separate Old objects
 					require.ElementsMatch(t, []any{doc1.Code, doc2.Code}, []any{metaDel[0].Old.(*DocWithCode).Code, metaDel[1].Old.(*DocWithCode).Code})

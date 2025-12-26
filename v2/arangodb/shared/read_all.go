@@ -20,6 +20,7 @@ package shared
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -62,13 +63,21 @@ type ReadAllIntoReader[T any, R readReaderInto[T]] struct {
 }
 
 func (r ReadAllIntoReader[T, R]) ReadAll(i interface{}) ([]T, []error) {
-
 	iVal := reflect.ValueOf(i)
-	if iVal.Kind() != reflect.Ptr || iVal.Elem().Kind() != reflect.Slice {
-		panic("i must be a pointer to a slice")
+	if !iVal.IsValid() {
+		return nil, []error{errors.New("i must be a pointer to a slice, got nil")}
+	}
+	if iVal.Kind() != reflect.Ptr {
+		return nil, []error{fmt.Errorf("i must be a pointer to a slice, got %s", iVal.Kind())}
+	}
+	if iVal.IsNil() {
+		return nil, []error{errors.New("i must be a pointer to a slice, got nil pointer")}
+	}
+	eVal := iVal.Elem()
+	if eVal.Kind() != reflect.Slice {
+		return nil, []error{fmt.Errorf("i must be a pointer to a slice, got pointer to %s", eVal.Kind())}
 	}
 
-	eVal := iVal.Elem()
 	eType := eVal.Type().Elem()
 
 	var docs []T

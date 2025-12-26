@@ -179,12 +179,16 @@ func (c *collectionDocumentReplaceResponseReader) Read() (CollectionDocumentRepl
 	// Create new instances for each document to avoid pointer reuse
 	if c.options != nil {
 		if c.options.OldObject != nil {
-			oldObjectType := reflect.TypeOf(c.options.OldObject).Elem()
-			meta.Old = reflect.New(oldObjectType).Interface()
+			oldObjectType := reflect.TypeOf(c.options.OldObject)
+			if oldObjectType != nil && oldObjectType.Kind() == reflect.Ptr {
+				meta.Old = reflect.New(oldObjectType.Elem()).Interface()
+			}
 		}
 		if c.options.NewObject != nil {
-			newObjectType := reflect.TypeOf(c.options.NewObject).Elem()
-			meta.New = reflect.New(newObjectType).Interface()
+			newObjectType := reflect.TypeOf(c.options.NewObject)
+			if newObjectType != nil && newObjectType.Kind() == reflect.Ptr {
+				meta.New = reflect.New(newObjectType.Elem()).Interface()
+			}
 		}
 	}
 
@@ -204,17 +208,27 @@ func (c *collectionDocumentReplaceResponseReader) Read() (CollectionDocumentRepl
 		return meta, meta.AsArangoError()
 	}
 
-	// Copy data from the new instances back to the original option objects for backward compatibility
+	// Copy data from the new instances back to the original option objects for backward compatibility.
+	// NOTE: The mutex protects concurrent Read() calls on this reader instance, but does not protect
+	// the options object itself. If the same options object is shared across multiple readers or
+	// accessed from other goroutines, there will be a data race. Options objects should not be
+	// shared across concurrent operations.
 	if c.options != nil {
 		if c.options.OldObject != nil && meta.Old != nil {
-			oldValue := reflect.ValueOf(meta.Old).Elem()
-			originalValue := reflect.ValueOf(c.options.OldObject).Elem()
-			originalValue.Set(oldValue)
+			oldValue := reflect.ValueOf(meta.Old)
+			originalValue := reflect.ValueOf(c.options.OldObject)
+			if oldValue.IsValid() && oldValue.Kind() == reflect.Ptr && !oldValue.IsNil() &&
+				originalValue.IsValid() && originalValue.Kind() == reflect.Ptr && !originalValue.IsNil() {
+				originalValue.Elem().Set(oldValue.Elem())
+			}
 		}
 		if c.options.NewObject != nil && meta.New != nil {
-			newValue := reflect.ValueOf(meta.New).Elem()
-			originalValue := reflect.ValueOf(c.options.NewObject).Elem()
-			originalValue.Set(newValue)
+			newValue := reflect.ValueOf(meta.New)
+			originalValue := reflect.ValueOf(c.options.NewObject)
+			if newValue.IsValid() && newValue.Kind() == reflect.Ptr && !newValue.IsNil() &&
+				originalValue.IsValid() && originalValue.Kind() == reflect.Ptr && !originalValue.IsNil() {
+				originalValue.Elem().Set(newValue.Elem())
+			}
 		}
 	}
 
@@ -225,5 +239,7 @@ func (c *collectionDocumentReplaceResponseReader) Read() (CollectionDocumentRepl
 // Returns the input document count immediately without reading/caching (same as v1 behavior).
 // After calling Len(), you can still use Read() to iterate through items.
 func (c *collectionDocumentReplaceResponseReader) Len() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.documentCount
 }

@@ -44,7 +44,6 @@ var _ CollectionDocumentDelete = &collectionDocumentDelete{}
 
 type collectionDocumentDelete struct {
 	collection *collection
-	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
 }
 
 func (c collectionDocumentDelete) DeleteDocument(ctx context.Context, key string) (CollectionDocumentDeleteResponse, error) {
@@ -168,18 +167,27 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 
 	if c.options != nil && c.options.OldObject != nil {
 		// Create a new instance for each document to avoid pointer reuse
-		oldObjectType := reflect.TypeOf(c.options.OldObject).Elem()
-		meta.Old = reflect.New(oldObjectType).Interface()
+		oldObjectType := reflect.TypeOf(c.options.OldObject)
+		if oldObjectType != nil && oldObjectType.Kind() == reflect.Ptr {
+			meta.Old = reflect.New(oldObjectType.Elem()).Interface()
 
-		// Extract old data into the new instance
-		if err := response.Object.Object.Extract("old").Inject(meta.Old); err != nil {
-			return CollectionDocumentDeleteResponse{}, err
+			// Extract old data into the new instance
+			if err := response.Object.Object.Extract("old").Inject(meta.Old); err != nil {
+				return CollectionDocumentDeleteResponse{}, err
+			}
+
+			// Copy data from the new instance to the original OldObject for backward compatibility.
+			// NOTE: The mutex protects concurrent Read() calls on this reader instance, but does not protect
+			// the options object itself. If the same options object is shared across multiple readers or
+			// accessed from other goroutines, there will be a data race. Options objects should not be
+			// shared across concurrent operations.
+			oldValue := reflect.ValueOf(meta.Old)
+			originalValue := reflect.ValueOf(c.options.OldObject)
+			if oldValue.IsValid() && oldValue.Kind() == reflect.Ptr && !oldValue.IsNil() &&
+				originalValue.IsValid() && originalValue.Kind() == reflect.Ptr && !originalValue.IsNil() {
+				originalValue.Elem().Set(oldValue.Elem())
+			}
 		}
-
-		// Copy data from the new instance to the original OldObject for backward compatibility
-		oldValue := reflect.ValueOf(meta.Old).Elem()
-		originalValue := reflect.ValueOf(c.options.OldObject).Elem()
-		originalValue.Set(oldValue)
 	}
 
 	return meta, nil
@@ -189,5 +197,7 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 // Returns the input document count immediately without reading/caching (same as v1 behavior).
 // After calling Len(), you can still use Read() to iterate through items.
 func (c *collectionDocumentDeleteResponseReader) Len() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.documentCount
 }

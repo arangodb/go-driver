@@ -167,5 +167,7 @@ func (c *collectionDocumentReadResponseReader) Read(i interface{}) (CollectionDo
 // Returns the input document count immediately without reading/caching (same as v1 behavior).
 // After calling Len(), you can still use Read() to iterate through items.
 func (c *collectionDocumentReadResponseReader) Len() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.documentCount
 }
