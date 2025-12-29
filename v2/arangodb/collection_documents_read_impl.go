@@ -27,8 +27,11 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func newCollectionDocumentRead(collection *collection) *collectionDocumentRead {
@@ -44,6 +47,10 @@ type collectionDocumentRead struct {
 }
 
 func (c collectionDocumentRead) ReadDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentReadOptions) (CollectionDocumentReadResponseReader, error) {
+	if !utils.IsListPtr(documents) && !utils.IsList(documents) {
+		return nil, errors.Errorf("Input documents should be list")
+	}
+
 	// Get document count from input (same as v1 approach)
 	documentsVal := reflect.ValueOf(documents)
 	if documentsVal.Kind() == reflect.Ptr {

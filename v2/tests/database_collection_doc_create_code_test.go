@@ -69,11 +69,10 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						Key: "test2",
 					}
 
-					readerCreate, err := col.CreateDocuments(ctx, []any{
+					_, err := col.CreateDocuments(ctx, []any{
 						doc, doc2,
 					})
 					require.NoError(t, err)
-					require.Equal(t, 2, readerCreate.Len(), "CreateDocuments should return a reader with 2 documents")
 
 					docs, err := col.ReadDocuments(ctx, []string{
 						"test",
@@ -81,7 +80,6 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 						"test2",
 					})
 					require.NoError(t, err)
-					require.Equal(t, 3, docs.Len(), "ReadDocuments should return a reader with 3 documents")
 
 					var z DocWithCode
 

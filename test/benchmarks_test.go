@@ -122,12 +122,18 @@ func bulkRead(b *testing.B, docSize int) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			readDocs := make([]TestDoc, docSize)
-			_, _, err := col.ReadDocuments(ctx, keys, readDocs)
+			metas, errs, err := col.ReadDocuments(ctx, keys, readDocs)
 			require.NoError(b, err)
 
-			// sanity check
-			if len(readDocs) != docSize {
-				b.Fatalf("expected to read %d docs, got %d", docSize, len(readDocs))
+			// sanity check: verify that we got metadata for all documents
+			if len(metas) != docSize {
+				b.Fatalf("expected to read %d docs, got %d", docSize, len(metas))
+			}
+			// Also verify no errors occurred
+			for j, err := range errs {
+				if err != nil {
+					b.Fatalf("error reading document at index %d: %v", j, err)
+				}
 			}
 		}
 	})
