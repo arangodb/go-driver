@@ -142,6 +142,12 @@ func newCollectionDocumentCreateResponseReader(array *connection.Array, options 
 	}
 
 	if c.options != nil {
+		if c.options.OldObject != nil {
+			c.oldObjectType = reflect.TypeOf(c.options.OldObject)
+		}
+		if c.options.NewObject != nil {
+			c.newObjectType = reflect.TypeOf(c.options.NewObject)
+		}
 		c.response.Old = newUnmarshalInto(c.options.OldObject)
 		c.response.New = newUnmarshalInto(c.options.NewObject)
 	}
@@ -155,7 +161,9 @@ var _ CollectionDocumentCreateResponseReader = &collectionDocumentCreateResponse
 type collectionDocumentCreateResponseReader struct {
 	array         *connection.Array
 	options       *CollectionDocumentCreateOptions
-	documentCount int // Store input document count for Len() without caching
+	documentCount int          // Store input document count for Len() without caching
+	oldObjectType reflect.Type // Cached type for OldObject to avoid repeated reflection
+	newObjectType reflect.Type // Cached type for NewObject to avoid repeated reflection
 	response      struct {
 		*DocumentMeta
 		*shared.ResponseStruct `json:",inline"`
@@ -178,17 +186,11 @@ func (c *collectionDocumentCreateResponseReader) Read() (CollectionDocumentCreat
 
 	// Create new instances for each document to avoid pointer reuse
 	if c.options != nil {
-		if c.options.OldObject != nil {
-			oldObjectType := reflect.TypeOf(c.options.OldObject)
-			if oldObjectType != nil && oldObjectType.Kind() == reflect.Ptr {
-				meta.Old = reflect.New(oldObjectType.Elem()).Interface()
-			}
+		if c.options.OldObject != nil && c.oldObjectType != nil && c.oldObjectType.Kind() == reflect.Ptr {
+			meta.Old = reflect.New(c.oldObjectType.Elem()).Interface()
 		}
-		if c.options.NewObject != nil {
-			newObjectType := reflect.TypeOf(c.options.NewObject)
-			if newObjectType != nil && newObjectType.Kind() == reflect.Ptr {
-				meta.New = reflect.New(newObjectType.Elem()).Interface()
-			}
+		if c.options.NewObject != nil && c.newObjectType != nil && c.newObjectType.Kind() == reflect.Ptr {
+			meta.New = reflect.New(c.newObjectType.Elem()).Interface()
 		}
 	}
 

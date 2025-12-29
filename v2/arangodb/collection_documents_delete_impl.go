@@ -116,6 +116,10 @@ func newCollectionDocumentDeleteResponseReader(array *connection.Array, options 
 		documentCount: documentCount,
 	}
 
+	if options != nil && options.OldObject != nil {
+		c.oldObjectType = reflect.TypeOf(options.OldObject)
+	}
+
 	c.ReadAllIntoReader = shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]{Reader: c}
 	return c
 }
@@ -125,7 +129,8 @@ var _ CollectionDocumentDeleteResponseReader = &collectionDocumentDeleteResponse
 type collectionDocumentDeleteResponseReader struct {
 	array         *connection.Array
 	options       *CollectionDocumentDeleteOptions
-	documentCount int // Store input document count for Len() without caching
+	documentCount int          // Store input document count for Len() without caching
+	oldObjectType reflect.Type // Cached type for OldObject to avoid repeated reflection
 	shared.ReadAllIntoReader[CollectionDocumentDeleteResponse, *collectionDocumentDeleteResponseReader]
 	mu sync.Mutex
 }
@@ -165,11 +170,10 @@ func (c *collectionDocumentDeleteResponseReader) Read(i interface{}) (Collection
 		return CollectionDocumentDeleteResponse{}, err
 	}
 
-	if c.options != nil && c.options.OldObject != nil {
+	if c.options != nil && c.options.OldObject != nil && c.oldObjectType != nil {
 		// Create a new instance for each document to avoid pointer reuse
-		oldObjectType := reflect.TypeOf(c.options.OldObject)
-		if oldObjectType != nil && oldObjectType.Kind() == reflect.Ptr {
-			meta.Old = reflect.New(oldObjectType.Elem()).Interface()
+		if c.oldObjectType.Kind() == reflect.Ptr {
+			meta.Old = reflect.New(c.oldObjectType.Elem()).Interface()
 
 			// Extract old data into the new instance
 			if err := response.Object.Object.Extract("old").Inject(meta.Old); err != nil {

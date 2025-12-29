@@ -1,6 +1,6 @@
 // DISCLAIMER
 //
-// # Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ type ReadAllIntoReader[T any, R readReaderInto[T]] struct {
 	Reader R
 }
 
-func (r ReadAllIntoReader[T, R]) ReadAll(i interface{}) ([]T, []error) {
+func (r *ReadAllIntoReader[T, R]) ReadAll(i interface{}) ([]T, []error) {
 	iVal := reflect.ValueOf(i)
 	if !iVal.IsValid() {
 		return nil, []error{errors.New("i must be a pointer to a slice, got nil")}
@@ -90,15 +90,9 @@ func (r ReadAllIntoReader[T, R]) ReadAll(i interface{}) ([]T, []error) {
 			break
 		}
 
-		iDocVal := reflect.ValueOf(doc)
-		if iDocVal.Kind() == reflect.Ptr {
-			iDocVal = iDocVal.Elem()
-		}
-		docCopy := reflect.New(iDocVal.Type()).Elem()
-		docCopy.Set(iDocVal)
-
+		// Directly append the doc (metadata)
 		errs = append(errs, e)
-		docs = append(docs, docCopy.Interface().(T))
+		docs = append(docs, doc)
 		eVal = reflect.Append(eVal, res.Elem())
 	}
 	iVal.Elem().Set(eVal)
