@@ -498,11 +498,30 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 						var oldDoc document
 						var newDoc document
 
-						_, err = col.ReplaceDocumentsWithOptions(ctx, replaceDocs, &arangodb.CollectionDocumentReplaceOptions{
+						reader, err := col.ReplaceDocumentsWithOptions(ctx, replaceDocs, &arangodb.CollectionDocumentReplaceOptions{
 							OldObject: &oldDoc,
 							NewObject: &newDoc,
 						})
 						require.NoError(t, err)
+
+						var count int
+						for {
+							meta, err := reader.Read()
+							if shared.IsNoMoreDocuments(err) {
+								break
+							}
+							require.NoError(t, err)
+
+							require.NotNil(t, meta.Old)
+							require.NotNil(t, meta.New)
+
+							// Ensure Old and New are different instances
+							require.NotSame(t, meta.Old, meta.New)
+
+							count++
+						}
+
+						require.Equal(t, reader.Len(), count)
 					})
 				})
 			})
