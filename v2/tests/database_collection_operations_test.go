@@ -496,7 +496,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 							originalDocs[i] = replaceDocs[i]
 						}
 
-						// Now replace them (modify the documents)
+						// Modify documents for replacement
 						for i := 0; i < 5; i++ {
 							replaceDocs[i].Fields = GenerateUUID("replaced-test")
 						}
@@ -504,6 +504,7 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 						var oldDoc document
 						var newDoc document
 
+						// Replace documents with options providing OldObject and NewObject
 						reader, err := col.ReplaceDocumentsWithOptions(ctx, replaceDocs, &arangodb.CollectionDocumentReplaceOptions{
 							OldObject: &oldDoc,
 							NewObject: &newDoc,
@@ -513,6 +514,8 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 						od := originalDocs
 						rd := replaceDocs
 
+						// Verify OldObject/NewObject are correctly populated, isolated per document,
+						// and match expected values.
 						var count int
 						for {
 							meta, err := reader.Read()
