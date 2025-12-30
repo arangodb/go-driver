@@ -65,6 +65,8 @@ type CollectionDocumentDeleteResponse struct {
 type CollectionDocumentDeleteResponseReader interface {
 	shared.ReadAllIntoReadable[CollectionDocumentDeleteResponse]
 	Read(i interface{}) (CollectionDocumentDeleteResponse, error)
+	// Len returns the total number of documents in the input (not the remaining documents to read).
+	// It can be called at any time without affecting iteration.
 	Len() int
 }
 
