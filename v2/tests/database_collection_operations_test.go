@@ -490,7 +490,13 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 						_, err := col.CreateDocuments(ctx, replaceDocs)
 						require.NoError(t, err)
 
-						// Now replace them
+						// Keep a copy of the original documents (with keys and revs) before modifying
+						originalDocs := make([]document, 5)
+						for i := 0; i < 5; i++ {
+							originalDocs[i] = replaceDocs[i]
+						}
+
+						// Now replace them (modify the documents)
 						for i := 0; i < 5; i++ {
 							replaceDocs[i].Fields = GenerateUUID("replaced-test")
 						}
@@ -503,6 +509,9 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 							NewObject: &newDoc,
 						})
 						require.NoError(t, err)
+
+						od := originalDocs
+						rd := replaceDocs
 
 						var count int
 						for {
@@ -518,9 +527,28 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 							// Ensure Old and New are different instances
 							require.NotSame(t, meta.Old, meta.New)
 
+							require.True(t, len(od) > 0)
+
+							// Validate keys match
+							require.Equal(t, od[0].Key, meta.Key)
+							require.Equal(t, rd[0].Key, meta.Key)
+
+							// Validate OldObject and NewObject content match expected values
+							require.Equal(t, od[0], oldDoc)
+							require.Equal(t, rd[0], newDoc)
+
+							if len(od) == 1 {
+								od = nil
+								rd = nil
+							} else {
+								od = od[1:]
+								rd = rd[1:]
+							}
+
 							count++
 						}
 
+						require.Len(t, od, 0)
 						require.Equal(t, reader.Len(), count)
 					})
 				})
