@@ -60,6 +60,8 @@ type CollectionDocumentRead interface {
 type CollectionDocumentReadResponseReader interface {
 	Read(i interface{}) (CollectionDocumentReadResponse, error)
 	shared.ReadAllIntoReadable[CollectionDocumentReadResponse]
+	// Len returns the total number of documents in the input (not the remaining documents to read).
+	// It can be called at any time and does not affect iteration.
 	Len() int
 }
 
