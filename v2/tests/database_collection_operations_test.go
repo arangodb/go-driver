@@ -271,6 +271,8 @@ func Test_DatabaseCollectionOperations(t *testing.T) {
 						_, err := col.CreateDocuments(ctx, docs)
 						require.NoError(t, err)
 
+						// ReadDocuments can fail independently of iteration; ensure errors are surfaced
+						// immediately rather than during Read().
 						r, err := col.ReadDocuments(ctx, docsIds)
 						require.NoError(t, err)
 

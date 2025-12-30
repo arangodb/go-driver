@@ -151,15 +151,24 @@ func Test_DatabaseCollectionDocCreateCode(t *testing.T) {
 					require.True(t, shared.IsArangoErrorWithErrorNum(errs[2], shared.ErrArangoDocumentNotFound))
 
 					// Now this should work correctly with separate Old objects
-					require.ElementsMatch(t, []any{doc1.Code, doc2.Code}, []any{metaDel[0].Old.(*DocWithCode).Code, metaDel[1].Old.(*DocWithCode).Code})
-
+					require.ElementsMatch(t,
+						[]any{doc1.Code, doc2.Code},
+						[]any{
+							metaDel[0].Old.(*DocWithCode).Code,
+							metaDel[1].Old.(*DocWithCode).Code,
+						})
+					// Ensure Old objects are distinct instances (no pointer reuse)
+					require.NotSame(
+						t,
+						metaDel[0].Old,
+						metaDel[1].Old,
+					)
 				})
 			})
 		})
 	}, WrapOptions{
 		Parallel: utils.NewType(false),
 	})
-
 }
 
 func Test_DatabaseCollectionDocReaderLen(t *testing.T) {

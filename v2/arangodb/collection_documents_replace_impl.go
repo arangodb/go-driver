@@ -211,10 +211,10 @@ func (c *collectionDocumentReplaceResponseReader) Read() (CollectionDocumentRepl
 	}
 
 	// Copy data from the new instances back to the original option objects for backward compatibility.
-	// NOTE: The mutex protects concurrent Read() calls on this reader instance, but does not protect
-	// the options object itself. If the same options object is shared across multiple readers or
-	// accessed from other goroutines, there will be a data race. Options objects should not be
-	// shared across concurrent operations.
+	// NOTE: The mutex protects both the reader's internal state AND writes to c.options.OldObject/NewObject.
+	// Multiple goroutines calling Read() on the same reader will serialize through the mutex, preventing races.
+	// However, if callers access c.options.OldObject/NewObject from other goroutines (outside of Read()),
+	// they must provide their own synchronization as those accesses are not protected by this reader's mutex.
 	if c.options != nil {
 		if c.options.OldObject != nil && meta.Old != nil {
 			oldValue := reflect.ValueOf(meta.Old)

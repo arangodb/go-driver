@@ -24,19 +24,45 @@ import (
 	"reflect"
 )
 
+// readReader represents a reader that can read a single document at a time.
+//
+// Implementations should return NoMoreDocumentsError when no more documents
+// are available. Any other error is considered non-terminal and may be
+// returned together with a document.
 type readReader[T any] interface {
 	Read() (T, error)
 }
 
+// ReadAllReadable represents a reader that can read all remaining documents
+// in a single call.
+//
+// Implementations should continue reading until NoMoreDocumentsError is
+// encountered and return all read documents along with any non-terminal errors.
 type ReadAllReadable[T any] interface {
 	ReadAll() ([]T, []error)
 }
 
+// ReadAllReader wraps a readReader and provides a helper to read all documents
+// until NoMoreDocumentsError is returned.
+//
+// It repeatedly calls Read on the underlying Reader, collecting all returned
+// documents and errors. Reading stops when NoMoreDocumentsError is encountered.
+//
+// ReadAllReader is not safe for concurrent use unless the underlying Reader
+// implementation explicitly supports concurrent access.
 type ReadAllReader[T any, R readReader[T]] struct {
 	Reader R
 }
 
-func (r ReadAllReader[T, R]) ReadAll() ([]T, []error) {
+// ReadAll reads all remaining documents from the underlying Reader.
+//
+// It continues calling Read until NoMoreDocumentsError is returned.
+// All documents read before termination are returned along with any
+// non-terminal errors encountered during reading.
+//
+// If Read returns both a document and an error, both values are included
+// in the returned slices.
+func (r *ReadAllReader[T, R]) ReadAll() ([]T, []error) {
 	var docs []T
 	var errs []error
 	for {
@@ -50,18 +76,47 @@ func (r ReadAllReader[T, R]) ReadAll() ([]T, []error) {
 	return docs, errs
 }
 
+// readReaderInto represents a reader that reads a single document into a
+// user-provided destination object.
+//
+// The provided value must be a pointer to a compatible type expected by
+// the reader implementation.
 type readReaderInto[T any] interface {
 	Read(i interface{}) (T, error)
 }
 
+// ReadAllIntoReadable represents a reader that can read all remaining documents
+// into a user-provided destination object.
+//
+// Implementations should read until NoMoreDocumentsError is encountered and
+// return all read documents along with any non-terminal errors.
 type ReadAllIntoReadable[T any] interface {
 	ReadAll(i interface{}) ([]T, []error)
 }
 
+// ReadAllIntoReader wraps a readReaderInto and provides bulk reading support
+// into a caller-provided slice.
+//
+// This type is intended for use cases where documents must be decoded or
+// unmarshaled into existing objects for backward compatibility or custom
+// processing.
+//
+// ReadAllIntoReader is not safe for concurrent use unless the underlying
+// Reader and the destination object are safe for concurrent access.
 type ReadAllIntoReader[T any, R readReaderInto[T]] struct {
 	Reader R
 }
 
+// ReadAll reads all remaining documents into the provided slice pointer.
+//
+// The parameter i must be a non-nil pointer to a slice. Each document is
+// read into a newly allocated element of the slice's element type, which
+// is then appended to the slice.
+//
+// Reading stops when NoMoreDocumentsError is encountered. All successfully
+// read documents (metadata) and any non-terminal errors are returned.
+//
+// If i is not a pointer to a slice, ReadAll returns an error.
 func (r *ReadAllIntoReader[T, R]) ReadAll(i interface{}) ([]T, []error) {
 	iVal := reflect.ValueOf(i)
 	if !iVal.IsValid() {
@@ -90,7 +145,6 @@ func (r *ReadAllIntoReader[T, R]) ReadAll(i interface{}) ([]T, []error) {
 			break
 		}
 
-		// Directly append the doc (metadata)
 		errs = append(errs, e)
 		docs = append(docs, doc)
 		eVal = reflect.Append(eVal, res.Elem())
