@@ -41,9 +41,9 @@ func sampleSmartGraph() *arangodb.GraphDefinition {
 }
 
 func sampleGraphWithEdges(db arangodb.Database) *arangodb.GraphDefinition {
-	edge := db.Name() + "_edge"
-	to := db.Name() + "_to-coll"
-	from := db.Name() + "_from-coll"
+	edge := GenerateUUID(db.Name() + "edge")
+	to := GenerateUUID(db.Name() + "to-coll")
+	from := GenerateUUID(db.Name() + "from-coll")
 
 	g := sampleSmartGraph()
 	g.Name = db.Name() + "_graph"
@@ -54,7 +54,7 @@ func sampleGraphWithEdges(db arangodb.Database) *arangodb.GraphDefinition {
 			From:       []string{from},
 		},
 	}
-	g.OrphanCollections = []string{"orphan1", "orphan2"}
+	g.OrphanCollections = []string{GenerateUUID(db.Name() + "orphan1"), GenerateUUID(db.Name() + "orphan2")}
 
 	return g
 }

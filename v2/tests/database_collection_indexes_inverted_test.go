@@ -165,17 +165,17 @@ func Test_EnsureInvertedIndex(t *testing.T) {
 							require.True(t, created)
 
 							requireIdxEquality := func(invertedIdx arangodb.IndexResponse) {
-								require.Equal(t, arangodb.InvertedIndexType, idx.Type)
-								require.Equal(t, tc.Options.Name, idx.Name)
-								require.Equal(t, tc.Options.PrimarySort, idx.InvertedIndex.PrimarySort)
-								require.Equal(t, tc.Options.Fields, idx.InvertedIndex.Fields)
-								require.Equal(t, tc.Options.TrackListPositions, idx.InvertedIndex.TrackListPositions)
+								require.Equal(t, arangodb.InvertedIndexType, invertedIdx.Type)
+								require.Equal(t, tc.Options.Name, invertedIdx.Name)
+								require.Equal(t, tc.Options.PrimarySort, invertedIdx.InvertedIndex.PrimarySort)
+								require.Equal(t, tc.Options.Fields, invertedIdx.InvertedIndex.Fields)
+								require.Equal(t, tc.Options.TrackListPositions, invertedIdx.InvertedIndex.TrackListPositions)
 
 								t.Run("optimizeTopK", func(t *testing.T) {
 									skipBelowVersion(client, ctx, "3.12.0", t)
 									// OptimizeTopK can be nil or []string{} depends on the version, so it better to check length.
-									if len(tc.Options.OptimizeTopK) > 0 || len(idx.InvertedIndex.OptimizeTopK) > 0 {
-										require.Equal(t, tc.Options.OptimizeTopK, idx.InvertedIndex.OptimizeTopK)
+									if len(tc.Options.OptimizeTopK) > 0 || len(invertedIdx.InvertedIndex.OptimizeTopK) > 0 {
+										require.Equal(t, tc.Options.OptimizeTopK, invertedIdx.InvertedIndex.OptimizeTopK)
 									}
 								})
 							}

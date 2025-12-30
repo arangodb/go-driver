@@ -67,7 +67,7 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 						},
 					}
 
-					colName := "test_vertex_collection_add_many"
+					colName := GenerateUUID("test_vertex_collection_add_many")
 					createResp, err := graph.CreateVertexCollection(ctx, colName, nil)
 					require.NoError(t, err)
 					require.Contains(t, createResp.GraphDefinition.OrphanCollections, colName)
@@ -78,7 +78,7 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 					_, err = col.CreateDocuments(ctx, docs)
 					require.NoError(t, err)
 
-					QUERY := fmt.Sprintf("FOR x IN %v FILTER DISTANCE(0, 0, x.latitude, x.longitude) <= 1120000 RETURN x", colName)
+					QUERY := fmt.Sprintf("FOR x IN `%s` FILTER DISTANCE(0, 0, x.latitude, x.longitude) <= 1120000 RETURN x", colName)
 					cursor, err := db.Query(ctx, QUERY, nil)
 					require.NoError(t, err)
 
@@ -124,7 +124,7 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 							Value: "Value4",
 						},
 					}
-					vColName := "test_vertex_collection_add_many"
+					vColName := GenerateUUID("test_vertex_collection_add_many")
 					createVertResp, err := graph.CreateVertexCollection(ctx, vColName, nil)
 					require.NoError(t, err)
 					vCol := createVertResp.VertexCollection
@@ -169,7 +169,7 @@ func Test_AddBulkVerticesToCollection(t *testing.T) {
 						},
 					}
 
-					eColName := "test_edge_collection_add_many"
+					eColName := GenerateUUID("test_edge_collection_add_many")
 					createEdgeResp, err := graph.CreateEdgeDefinition(ctx, eColName, []string{vColName}, []string{vColName}, nil)
 					require.NoError(t, err)
 					require.NotContains(t, createEdgeResp.GraphDefinition.OrphanCollections, vColName)
@@ -254,7 +254,7 @@ func Test_GraphCollectionsAsCollection(t *testing.T) {
 						Lon:   0,
 					}
 
-					colName := "test_vertex_collection_add_many"
+					colName := GenerateUUID("test_vertex_collection_add_many")
 					createResp, err := graph.CreateVertexCollection(ctx, colName, nil)
 					require.NoError(t, err)
 					require.Contains(t, createResp.GraphDefinition.OrphanCollections, colName)
@@ -268,7 +268,7 @@ func Test_GraphCollectionsAsCollection(t *testing.T) {
 					require.NoError(t, err)
 
 					check := func(exp []string) {
-						QUERY := fmt.Sprintf("FOR x IN %v FILTER DISTANCE(0, 0, x.latitude, x.longitude) <= 1120000 RETURN x", colName)
+						QUERY := fmt.Sprintf("FOR x IN `%s` FILTER DISTANCE(0, 0, x.latitude, x.longitude) <= 1120000 RETURN x", colName)
 						cursor, err := db.Query(ctx, QUERY, nil)
 						require.NoError(t, err)
 

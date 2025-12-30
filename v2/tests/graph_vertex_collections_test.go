@@ -42,7 +42,7 @@ func Test_GraphVertexCollections(t *testing.T) {
 					require.NoError(t, err)
 					require.Len(t, cols, 0)
 
-					colName := "test_vertex_collection"
+					colName := GenerateUUID("test_vertex_collection")
 
 					createResp, err := graph.CreateVertexCollection(ctx, colName, nil)
 					require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestCreateSatelliteVertexCollection(t *testing.T) {
 					require.NoError(t, err)
 					require.Len(t, cols, 0)
 
-					colName := "test_vertex_-sat-collection"
+					colName := GenerateUUID("test_vertex_-sat-collection")
 					opts := arangodb.CreateVertexCollectionOptions{
 						Satellites: []string{colName},
 					}

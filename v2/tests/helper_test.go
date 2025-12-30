@@ -144,6 +144,27 @@ func WithCollectionV2(t testing.TB, db arangodb.Database, props *arangodb.Create
 			return err
 		}).TimeoutT(t, 15*time.Second, 125*time.Millisecond)
 
+		defer func() {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+				if col == nil {
+					t.Log("Skipping collection removal: collection is nil")
+					return
+				}
+
+				timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+				defer cancel()
+
+				if err := col.Remove(timeoutCtx); err != nil {
+					t.Logf(
+						"Removing Collection %s failed, time: %s, err: %v",
+						col.Name(),
+						time.Now(),
+						err,
+					)
+				}
+			})
+		}()
+
 		f(col)
 	})
 }
@@ -172,6 +193,26 @@ func WithGraph(t *testing.T, db arangodb.Database, graphDef *arangodb.GraphDefin
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		g, err := db.CreateGraph(ctx, name, graphDef, opts)
 		require.NoError(t, err, fmt.Sprintf("Failed to create Graph %s", name))
+
+		defer func() {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+				timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+				defer cancel()
+
+				// Remove graph with all collections to ensure proper cleanup
+				removeOpts := &arangodb.RemoveGraphOptions{
+					DropCollections: true,
+				}
+				if err := g.Remove(timeoutCtx, removeOpts); err != nil {
+					t.Logf(
+						"Removing Graph %s failed, time: %s, err: %v",
+						g.Name(),
+						time.Now(),
+						err,
+					)
+				}
+			})
+		}()
 
 		f(g)
 	})

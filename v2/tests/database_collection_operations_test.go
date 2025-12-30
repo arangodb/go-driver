@@ -194,58 +194,66 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-				t.Run("Cursor - optimizer rules", func(t *testing.T) {
+			// WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+			t.Run("Cursor - optimizer rules", func(t *testing.T) {
 
-					ctx, c := context.WithTimeout(context.Background(), 1*time.Minute)
-					defer c()
+				ctx, c := context.WithTimeout(context.Background(), 1*time.Minute)
+				defer c()
 
-					col, err := db.CreateCollectionWithOptionsV2(ctx, "test", nil, &arangodb.CreateCollectionOptions{
-						EnforceReplicationFactor: utils.NewType(false),
-					})
-					require.NoError(t, err)
-
-					fieldName := "value"
-					_, _, err = col.EnsurePersistentIndex(ctx, []string{fieldName}, &arangodb.CreatePersistentIndexOptions{
-						Name: "index",
-					})
-					require.NoErrorf(t, err, "failed to index for collection \"%s\"", col.Name())
-
-					type testDoc struct {
-						Value int `json:"value"` // variable fieldName
-					}
-					err = arangodb.CreateDocuments(ctx, col, 100, func(index int) any {
-						return testDoc{Value: index}
-					})
-					require.NoErrorf(t, err, "failed to create exemplary documents")
-
-					query := fmt.Sprintf("FOR i IN %s FILTER i.%s > 97 SORT i.%s RETURN i.%s", col.Name(), fieldName,
-						fieldName, fieldName)
-					for testName, test := range tests {
-						t.Run(testName, func(t *testing.T) {
-							opts := &arangodb.QueryOptions{
-								Options: arangodb.QuerySubOptions{
-									Profile: 2,
-									Optimizer: arangodb.QuerySubOptionsOptimizer{
-										Rules: test.OptimizerRules,
-									},
-								},
-							}
-							q, err := db.Query(ctx, query, opts)
-							require.NoError(t, err)
-
-							plan := q.Plan()
-							for _, rule := range test.ExpectedRules {
-								require.Contains(t, plan.Rules, rule)
-							}
-
-							for _, rule := range test.NotExpectedRules {
-								require.NotContains(t, plan.Rules, rule)
-							}
-						})
-					}
+				colName := GenerateUUID("test-COL")
+				col, err := db.CreateCollectionWithOptionsV2(ctx, colName, nil, &arangodb.CreateCollectionOptions{
+					EnforceReplicationFactor: utils.NewType(false),
 				})
+				require.NoError(t, err)
+
+				defer func() {
+					err := col.Remove(ctx)
+					if err != nil {
+						t.Logf("Removing Collection %s failed, time: %s, err: %v", col.Name(), time.Now(), err)
+					}
+				}()
+
+				fieldName := "value"
+				_, _, err = col.EnsurePersistentIndex(ctx, []string{fieldName}, &arangodb.CreatePersistentIndexOptions{
+					Name: "index",
+				})
+				require.NoErrorf(t, err, "failed to index for collection \"%s\"", col.Name())
+
+				type testDoc struct {
+					Value int `json:"value"` // variable fieldName
+				}
+				err = arangodb.CreateDocuments(ctx, col, 100, func(index int) any {
+					return testDoc{Value: index}
+				})
+				require.NoErrorf(t, err, "failed to create exemplary documents")
+
+				query := fmt.Sprintf("FOR i IN `%s` FILTER i.%s > 97 SORT i.%s RETURN i.%s", col.Name(), fieldName,
+					fieldName, fieldName)
+				for testName, test := range tests {
+					t.Run(testName, func(t *testing.T) {
+						opts := &arangodb.QueryOptions{
+							Options: arangodb.QuerySubOptions{
+								Profile: 2,
+								Optimizer: arangodb.QuerySubOptionsOptimizer{
+									Rules: test.OptimizerRules,
+								},
+							},
+						}
+						q, err := db.Query(ctx, query, opts)
+						require.NoError(t, err)
+
+						plan := q.Plan()
+						for _, rule := range test.ExpectedRules {
+							require.Contains(t, plan.Rules, rule)
+						}
+
+						for _, rule := range test.NotExpectedRules {
+							require.NotContains(t, plan.Rules, rule)
+						}
+					})
+				}
 			})
+			// })
 		})
 	}, WrapOptions{
 		Parallel: utils.NewType(false),
@@ -870,16 +878,29 @@ func Test_CollectionLoadIndexesIntoMemory(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			graph := sampleGraphWithEdges(db)
 
-			//Create the graph in the database
-			createdGraph, err := db.CreateGraph(context.Background(), graph.Name, graph, nil)
-			require.NoError(t, err)
-			require.NotNil(t, createdGraph)
-
-			// Now access the edge collection from the created graph
-			col, err := db.GetCollection(context.Background(), graph.EdgeDefinitions[0].Collection, nil)
-			require.NoError(t, err)
-
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				//Create the graph in the database
+				createdGraph, err := db.CreateGraph(ctx, graph.Name, graph, nil)
+				require.NoError(t, err)
+				require.NotNil(t, createdGraph)
+
+				defer func() {
+					timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+					defer cancel()
+
+					// Remove graph with all collections to ensure proper cleanup
+					removeOpts := &arangodb.RemoveGraphOptions{
+						DropCollections: true,
+					}
+					if err := createdGraph.Remove(timeoutCtx, removeOpts); err != nil {
+						t.Logf("Removing Graph %s failed, time: %s, err: %v", createdGraph.Name(), time.Now(), err)
+					}
+				}()
+
+				// Now access the edge collection from the created graph
+				col, err := db.GetCollection(ctx, graph.EdgeDefinitions[0].Collection, nil)
+				require.NoError(t, err)
+
 				// Load indexes into memory
 				loaded, err := col.LoadIndexesIntoMemory(ctx)
 				require.NoError(t, err)
@@ -900,7 +921,7 @@ func Test_CollectionRename(t *testing.T) {
 
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
 				WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-					newName := "test-renamed-collection"
+					newName := GenerateUUID("test-COL")
 					info, err := col.Rename(ctx, arangodb.RenameCollectionRequest{
 						Name: newName,
 					})

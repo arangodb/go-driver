@@ -38,9 +38,9 @@ func Test_EdgeSimple(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					edgeColName := "citiesPerState"
-					toColName := "states"
-					fromColName := "cities"
+					edgeColName := GenerateUUID("citiesPerState")
+					toColName := GenerateUUID("states")
+					fromColName := GenerateUUID("cities")
 
 					toVertex := ensureVertex(t, ctx, graph, toColName, Place{Name: "Texas"})
 					fromVertex := ensureVertex(t, ctx, graph, fromColName, Place{Name: "Houston"})
@@ -148,9 +148,9 @@ func Test_EdgeExtended(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					edgeColName := "citiesPerState"
-					toColName := "states"
-					fromColName := "cities"
+					edgeColName := GenerateUUID("citiesPerState")
+					toColName := GenerateUUID("states")
+					fromColName := GenerateUUID("cities")
 
 					toVertex := ensureVertex(t, ctx, graph, toColName, Place{Name: "Texas"})
 					fromVertex := ensureVertex(t, ctx, graph, fromColName, Place{Name: "Houston"})

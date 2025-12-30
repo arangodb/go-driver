@@ -42,10 +42,10 @@ func Test_GraphEdgeDefinitions(t *testing.T) {
 					require.NoError(t, err)
 					require.Len(t, cols, 0)
 
-					colName := "test_edge_collection"
-					colTo := "test_vertex_collection_to"
-					colFrom := "test_vertex_collection_from"
-					colToNew := "test_vertex_collection_to_new"
+					colName := GenerateUUID("test_edge_collection")
+					colTo := GenerateUUID("test_vertex_collection_to")
+					colFrom := GenerateUUID("test_vertex_collection_from")
+					colToNew := GenerateUUID("test_vertex_collection_to_new")
 
 					createResp, err := graph.CreateEdgeDefinition(ctx, colName, []string{colFrom}, []string{colTo}, nil)
 					require.NoError(t, err)
@@ -156,9 +156,9 @@ func TestGraphEdgeDefinitionsWithSatellites(t *testing.T) {
 			WithGraph(t, db, sampleSmartGraph(), nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 
-					colName := "create_sat_edge_collection"
-					colFromName := "sat_edge_collectionFrom"
-					colToName := "sat_edge_collectionTo"
+					colName := GenerateUUID("create_sat_edge_collection")
+					colFromName := GenerateUUID("sat_edge_collectionFrom")
+					colToName := GenerateUUID("sat_edge_collectionTo")
 
 					opts := arangodb.CreateEdgeDefinitionOptions{
 						Satellites: []string{colFromName},
@@ -182,7 +182,7 @@ func TestGraphEdgeDefinitionsWithSatellites(t *testing.T) {
 					require.True(t, propFrom.IsSatellite())
 
 					t.Run("Replace Satellite", func(t *testing.T) {
-						newColName := "new_sat_edge_collection_new"
+						newColName := GenerateUUID("new_sat_edge_collection_new")
 						opts := arangodb.ReplaceEdgeOptions{
 							Satellites: []string{newColName},
 						}
