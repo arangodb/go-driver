@@ -71,7 +71,11 @@ type CollectionDocumentCreate interface {
 }
 
 type CollectionDocumentCreateResponseReader interface {
+	shared.ReadAllReadable[CollectionDocumentCreateResponse]
 	Read() (CollectionDocumentCreateResponse, error)
+	// Len returns the total number of documents in the input (not the remaining
+	// documents to read), and it can be called at any time without affecting iteration.
+	Len() int
 }
 
 type CollectionDocumentCreateResponse struct {

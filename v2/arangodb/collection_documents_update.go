@@ -62,7 +62,12 @@ type CollectionDocumentUpdate interface {
 }
 
 type CollectionDocumentUpdateResponseReader interface {
+	shared.ReadAllReadable[CollectionDocumentUpdateResponse]
 	Read() (CollectionDocumentUpdateResponse, error)
+	// Len returns the total number of documents in the input, not the number of
+	// documents remaining to be read, and can be called at any time without
+	// affecting iteration.
+	Len() int
 }
 
 type CollectionDocumentUpdateResponse struct {

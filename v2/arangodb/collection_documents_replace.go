@@ -61,7 +61,11 @@ type CollectionDocumentReplace interface {
 }
 
 type CollectionDocumentReplaceResponseReader interface {
+	shared.ReadAllReadable[CollectionDocumentReplaceResponse]
 	Read() (CollectionDocumentReplaceResponse, error)
+	// Len returns the total number of documents in the input, not the number of documents remaining to read.
+	// It can be called at any time and does not affect iteration over the results.
+	Len() int
 }
 
 type CollectionDocumentReplaceResponse struct {
