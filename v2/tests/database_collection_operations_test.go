@@ -194,7 +194,6 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			// WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 			t.Run("Cursor - optimizer rules", func(t *testing.T) {
 
 				ctx, c := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -253,7 +252,6 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 					})
 				}
 			})
-			// })
 		})
 	}, WrapOptions{
 		Parallel: utils.NewType(false),
