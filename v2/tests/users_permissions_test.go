@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/arangodb/go-driver/v2/utils"
 
@@ -66,7 +67,10 @@ func Test_UserPermission(t *testing.T) {
 					WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 						userCustom, err := client.CreateUser(ctx, "custom"+GenerateUUID("user-db"), nil)
 						defer func() {
-							err := client.RemoveUser(ctx, userCustom.Name())
+							cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+							defer cancel()
+
+							err := client.RemoveUser(cleanupCtx, userCustom.Name())
 							if err != nil {
 								t.Logf("Failed to delete user %s: %s ...", userCustom.Name(), err)
 							}

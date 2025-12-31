@@ -66,9 +66,9 @@ func WithDatabase(t testing.TB, client arangodb.Client, opts *arangodb.CreateDat
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-				timeoutCtx, cancel := context.WithTimeout(ctx, time.Minute*2)
+				cleanupCtx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 				defer cancel()
-				err := db.Remove(timeoutCtx)
+				err := db.Remove(cleanupCtx)
 				if err != nil {
 					t.Logf("Removing DB %s failed, time: %s with %s", db.Name(), time.Now(), err)
 				}
@@ -151,10 +151,10 @@ func WithCollectionV2(t testing.TB, db arangodb.Database, props *arangodb.Create
 					return
 				}
 
-				timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+				cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 				defer cancel()
 
-				if err := col.Remove(timeoutCtx); err != nil {
+				if err := col.Remove(cleanupCtx); err != nil {
 					t.Logf(
 						"Removing Collection %s failed, time: %s, err: %v",
 						col.Name(),
@@ -196,14 +196,14 @@ func WithGraph(t *testing.T, db arangodb.Database, graphDef *arangodb.GraphDefin
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
-				timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+				cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 				defer cancel()
 
 				// Remove graph with all collections to ensure proper cleanup
 				removeOpts := &arangodb.RemoveGraphOptions{
 					DropCollections: true,
 				}
-				if err := g.Remove(timeoutCtx, removeOpts); err != nil {
+				if err := g.Remove(cleanupCtx, removeOpts); err != nil {
 					t.Logf(
 						"Removing Graph %s failed, time: %s, err: %v",
 						g.Name(),

@@ -23,6 +23,7 @@ package tests
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/arangodb/go-driver/v2/utils"
 
@@ -49,7 +50,10 @@ func Test_Users(t *testing.T) {
 			})
 
 			defer func() {
-				err := client.RemoveUser(ctx, user1Name)
+				cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+
+				err := client.RemoveUser(cleanupCtx, user1Name)
 				if err != nil {
 					t.Logf("Failed to delete user %s: %s ...", user1Name, err)
 				}
@@ -68,7 +72,10 @@ func Test_Users(t *testing.T) {
 			})
 
 			defer func() {
-				err := client.RemoveUser(ctx, user2Name)
+				cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+
+				err := client.RemoveUser(cleanupCtx, user2Name)
 				if err != nil {
 					t.Logf("Failed to delete user %s: %s ...", user2Name, err)
 				}

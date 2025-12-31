@@ -206,7 +206,10 @@ func Test_WithQueryOptimizerRules(t *testing.T) {
 				require.NoError(t, err)
 
 				defer func() {
-					err := col.Remove(ctx)
+					cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+					defer cancel()
+
+					err := col.Remove(cleanupCtx)
 					if err != nil {
 						t.Logf("Removing Collection %s failed, time: %s, err: %v", col.Name(), time.Now(), err)
 					}
@@ -883,7 +886,7 @@ func Test_CollectionLoadIndexesIntoMemory(t *testing.T) {
 				require.NotNil(t, createdGraph)
 
 				defer func() {
-					timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+					timeoutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 					defer cancel()
 
 					// Remove graph with all collections to ensure proper cleanup
