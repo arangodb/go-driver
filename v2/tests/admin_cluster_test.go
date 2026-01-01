@@ -89,11 +89,11 @@ func Test_ClusterDatabaseInventory(t *testing.T) {
 				require.NotNil(t, inv, "DatabaseInventory did not return a inventory")
 				require.Greater(t, len(inv.Collections), 0, "DatabaseInventory did not return any collections")
 
-				for _, col := range inv.Collections {
-					require.Greater(t, len(col.Parameters.Shards), 0,
-						"Expected 1 or more shards in collection %s, got 0", col.Parameters.Name)
+				for _, invCol := range inv.Collections {
+					require.Greater(t, len(invCol.Parameters.Shards), 0,
+						"Expected 1 or more shards in collection %s, got 0", invCol.Parameters.Name)
 
-					for shardID, dbServers := range col.Parameters.Shards {
+					for shardID, dbServers := range invCol.Parameters.Shards {
 						for _, serverID := range dbServers {
 							require.Contains(t, health.Health, serverID,
 								"Unexpected dbServer ID for shard '%s': %s", shardID, serverID)
@@ -539,59 +539,49 @@ func Test_ComputeClusterRebalance(t *testing.T) {
 			skipBelowVersion(client, ctx, "3.10", t)
 			// Ensure the test only runs in cluster mode
 			requireClusterMode(t)
-			WithDatabase(t, client, nil, func(db arangodb.Database) {
-				rf := arangodb.ReplicationFactor(2)
 
-				coll, err := db.CreateCollectionV2(ctx, "rebalance_test_coll_1", &arangodb.CreateCollectionPropertiesV2{
-					NumberOfShards:    utils.NewType(12), // big number
-					ReplicationFactor: &rf,               // ensures leaders + followers
+			// Call the API
+			requestBody := &arangodb.RebalanceRequestBody{
+				Version:              utils.NewType(1),
+				MaximumNumberOfMoves: utils.NewType(10),
+			}
+			rebalanceShardResp, err := client.ComputeClusterRebalance(ctx, requestBody)
+			require.NoError(t, err)
+			require.NotNil(t, rebalanceShardResp)
+
+			require.NotNil(t, rebalanceShardResp.ImbalanceBefore)
+			require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Leader)
+			require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Shards)
+
+			require.NotNil(t, rebalanceShardResp.ImbalanceAfter)
+			require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Leader)
+			require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Shards)
+
+			require.NotNil(t, rebalanceShardResp.Moves)
+
+			if len(rebalanceShardResp.Moves) > 0 {
+				err := client.ExecuteClusterRebalance(ctx, &arangodb.ExecuteRebalanceRequestBody{
+					Moves:   rebalanceShardResp.Moves,
+					Version: utils.NewType(1),
 				})
 				require.NoError(t, err)
-				require.NotNil(t, coll)
+			}
 
-				// Call the API
-				requestBody := &arangodb.RebalanceRequestBody{
-					Version:              utils.NewType(1),
-					MaximumNumberOfMoves: utils.NewType(10),
-				}
-				rebalanceShardResp, err := client.ComputeClusterRebalance(ctx, requestBody)
-				require.NoError(t, err)
-				require.NotNil(t, rebalanceShardResp)
+			// Call the GetClusterRebalance API to validate it works after ComputeClusterRebalance
+			rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
+			require.NoError(t, err)
+			require.NotNil(t, rebalanceShardInfo)
 
-				require.NotNil(t, rebalanceShardResp.ImbalanceBefore)
-				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Leader)
-				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Shards)
+			// Validate leader stats
+			require.NotNil(t, rebalanceShardInfo.Leader)
+			// Validate shard stats
+			require.NotNil(t, rebalanceShardInfo.Shards)
 
-				require.NotNil(t, rebalanceShardResp.ImbalanceAfter)
-				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Leader)
-				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Shards)
-
-				require.NotNil(t, rebalanceShardResp.Moves)
-
-				if len(rebalanceShardResp.Moves) > 0 {
-					err := client.ExecuteClusterRebalance(ctx, &arangodb.ExecuteRebalanceRequestBody{
-						Moves:   rebalanceShardResp.Moves,
-						Version: utils.NewType(1),
-					})
-					require.NoError(t, err)
-				}
-
-				// Call the GetClusterRebalance API to validate it works after ComputeClusterRebalance
-				rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
-				require.NoError(t, err)
-				require.NotNil(t, rebalanceShardInfo)
-
-				// Validate leader stats
-				require.NotNil(t, rebalanceShardInfo.Leader)
-				// Validate shard stats
-				require.NotNil(t, rebalanceShardInfo.Shards)
-
-				// Validate pending and todo move shard counts
-				require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
-				require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
-				require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
-				require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
-			})
+			// Validate pending and todo move shard counts
+			require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
+			require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
+			require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
+			require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
 		})
 	}, WrapOptions{
 		Parallel: utils.NewType(false),
@@ -604,51 +594,41 @@ func Test_ComputeAndExecuteClusterRebalance(t *testing.T) {
 			skipBelowVersion(client, ctx, "3.10", t)
 			// Ensure the test only runs in cluster mode
 			requireClusterMode(t)
-			WithDatabase(t, client, nil, func(db arangodb.Database) {
-				rf := arangodb.ReplicationFactor(2)
 
-				coll, err := db.CreateCollectionV2(ctx, "rebalance_test_coll_2", &arangodb.CreateCollectionPropertiesV2{
-					NumberOfShards:    utils.NewType(12), // big number
-					ReplicationFactor: &rf,               // ensures leaders + followers
-				})
-				require.NoError(t, err)
-				require.NotNil(t, coll)
+			// Call the API
+			requestBody := &arangodb.RebalanceRequestBody{
+				Version:              utils.NewType(1),
+				MaximumNumberOfMoves: utils.NewType(10),
+			}
+			rebalanceShardResp, err := client.ComputeAndExecuteClusterRebalance(ctx, requestBody)
+			require.NoError(t, err)
+			require.NotNil(t, rebalanceShardResp)
 
-				// Call the API
-				requestBody := &arangodb.RebalanceRequestBody{
-					Version:              utils.NewType(1),
-					MaximumNumberOfMoves: utils.NewType(10),
-				}
-				rebalanceShardResp, err := client.ComputeAndExecuteClusterRebalance(ctx, requestBody)
-				require.NoError(t, err)
-				require.NotNil(t, rebalanceShardResp)
+			require.NotNil(t, rebalanceShardResp.ImbalanceBefore)
+			require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Leader)
+			require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Shards)
 
-				require.NotNil(t, rebalanceShardResp.ImbalanceBefore)
-				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Leader)
-				require.NotNil(t, rebalanceShardResp.ImbalanceBefore.Shards)
+			require.NotNil(t, rebalanceShardResp.ImbalanceAfter)
+			require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Leader)
+			require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Shards)
 
-				require.NotNil(t, rebalanceShardResp.ImbalanceAfter)
-				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Leader)
-				require.NotNil(t, rebalanceShardResp.ImbalanceAfter.Shards)
+			require.NotNil(t, rebalanceShardResp.Moves)
 
-				require.NotNil(t, rebalanceShardResp.Moves)
+			// Call the GetClusterRebalance API to validate it works after ComputeClusterRebalance
+			rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
+			require.NoError(t, err)
+			require.NotNil(t, rebalanceShardInfo)
 
-				// Call the GetClusterRebalance API to validate it works after ComputeClusterRebalance
-				rebalanceShardInfo, err := client.GetClusterRebalance(ctx)
-				require.NoError(t, err)
-				require.NotNil(t, rebalanceShardInfo)
+			// Validate leader stats
+			require.NotNil(t, rebalanceShardInfo.Leader)
+			// Validate shard stats
+			require.NotNil(t, rebalanceShardInfo.Shards)
 
-				// Validate leader stats
-				require.NotNil(t, rebalanceShardInfo.Leader)
-				// Validate shard stats
-				require.NotNil(t, rebalanceShardInfo.Shards)
-
-				// Validate pending and todo move shard counts
-				require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
-				require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
-				require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
-				require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
-			})
+			// Validate pending and todo move shard counts
+			require.NotNil(t, rebalanceShardInfo.PendingMoveShards)
+			require.NotNil(t, rebalanceShardInfo.TodoMoveShards)
+			require.GreaterOrEqual(t, *rebalanceShardInfo.PendingMoveShards, int64(0))
+			require.GreaterOrEqual(t, *rebalanceShardInfo.TodoMoveShards, int64(0))
 		})
 	}, WrapOptions{
 		Parallel: utils.NewType(false),

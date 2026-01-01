@@ -134,12 +134,12 @@ func Test_GraphCreation(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					skipNoEnterprise(client, ctx, t)
 
-					colHybrid := db.Name() + "_create_hybrid_edge_col"
-					colSat := db.Name() + "_sat_edge_col"
-					colNonSat := db.Name() + "_non_sat_edge_col"
+					colHybrid := GenerateUUID(db.Name() + "create_hybrid_edge_col")
+					colSat := GenerateUUID(db.Name() + "sat_edge_col")
+					colNonSat := GenerateUUID(db.Name() + "non_sat_edge_col")
 
 					gDef := &arangodb.GraphDefinition{
-						OrphanCollections: []string{"orphan1", "orphan2"},
+						OrphanCollections: []string{GenerateUUID(db.Name() + "orphan1"), GenerateUUID(db.Name() + "orphan2")},
 						EdgeDefinitions: []arangodb.EdgeDefinition{
 							{
 								Collection: colHybrid,
@@ -239,7 +239,7 @@ func Test_GraphRemoval(t *testing.T) {
 
 			t.Run("Deleting graph should not remove the collection", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					orphanColName := "col-not-remove"
+					orphanColName := GenerateUUID("col-not-remove")
 
 					gDef := sampleSmartGraph()
 					gDef.OrphanCollections = []string{orphanColName}
@@ -258,7 +258,7 @@ func Test_GraphRemoval(t *testing.T) {
 
 			t.Run("Deleting graph should remove the collection", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					orphanColName := "col-remove"
+					orphanColName := GenerateUUID("col-remove")
 
 					gDef := sampleSmartGraph()
 					gDef.OrphanCollections = []string{orphanColName}

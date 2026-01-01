@@ -38,7 +38,7 @@ func Test_VerticesSimple(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					colName := "test_vertices_simple_collection"
+					colName := GenerateUUID("test_vertices_simple_collection")
 					colVertex, err := graph.CreateVertexCollection(ctx, colName, nil)
 					require.NoError(t, err)
 
@@ -112,7 +112,7 @@ func Test_VerticesExtended(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					colName := "test_vertices_extended_collection"
+					colName := GenerateUUID("test_vertices_extended_collection")
 					colVertex, colErr := graph.CreateVertexCollection(ctx, colName, nil)
 					require.NoError(t, colErr)
 
@@ -227,7 +227,7 @@ func Test_VerticesUpdate(t *testing.T) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithGraph(t, db, nil, nil, func(graph arangodb.Graph) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-					colName := "test_vertices_update_collection"
+					colName := GenerateUUID("test_vertices_update_collection")
 					colVertex, colErr := graph.CreateVertexCollection(ctx, colName, nil)
 					require.NoError(t, colErr)
 
