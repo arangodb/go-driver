@@ -111,11 +111,10 @@ func TestAsyncJobListPending(t *testing.T) {
 					skipBelowVersion(client, ctx, "3.11.1", t)
 					skipResilientSingleMode(t)
 
-					requireV8Enabled(client, ctx, t)
-
 					ctxAsync := connection.WithAsync(context.Background())
 
-					idTransaction := runLongRequest(t, ctxAsync, db, 2, col.Name())
+					// Use AQL-based long request instead of JS transaction to support V8-disabled environments
+					idTransaction, aqlQuery := runLongRequestAQL(t, ctxAsync, db, 2, col.Name())
 					require.NotEmpty(t, idTransaction)
 
 					t.Run("AsyncJobs List Pending jobs", func(t *testing.T) {
@@ -138,9 +137,24 @@ func TestAsyncJobListPending(t *testing.T) {
 					})
 
 					t.Run("read async result", func(t *testing.T) {
-						idTransaction := runLongRequest(t, connection.WithAsyncID(ctx, idTransaction), db, 2, col.Name())
-						require.Empty(t, idTransaction)
+						// Read the async result using the job ID with the same query
+						// When using WithAsyncID, we need to use the same query that was originally submitted
+						cursor, err := db.Query(connection.WithAsyncID(ctx, idTransaction), aqlQuery, nil)
+						require.NoError(t, err)
+						require.NotNil(t, cursor)
 
+						// Consume the cursor to complete the async job
+						// This is required for the job to be removed from the "done" list
+						for cursor.HasMore() {
+							var doc map[string]interface{}
+							_, err := cursor.ReadDocument(ctx, &doc)
+							if err != nil {
+								break
+							}
+						}
+						cursor.Close()
+
+						// After consuming the result, the job should be removed from the done list
 						jobs, err := client.AsyncJobList(ctx, arangodb.JobDone, nil)
 						require.NoError(t, err)
 						require.Len(t, jobs, 0)
@@ -256,8 +270,8 @@ func TestAsyncJobDelete(t *testing.T) {
 					})
 
 					t.Run("delete pending job", func(t *testing.T) {
-						requireV8Enabled(client, ctx, t)
-						idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
+						// Use AQL-based long request instead of JS transaction to support V8-disabled environments
+						idTransaction, _ := runLongRequestAQL(t, ctxAsync, db, 10, col.Name())
 						require.NotEmpty(t, idTransaction)
 
 						jobs, err := client.AsyncJobList(ctx, arangodb.JobPending, nil)
@@ -278,8 +292,8 @@ func TestAsyncJobDelete(t *testing.T) {
 					})
 
 					t.Run("delete expired jobs", func(t *testing.T) {
-						requireV8Enabled(client, ctx, t)
-						idTransaction := runLongRequest(t, ctxAsync, db, 10, col.Name())
+						// Use AQL-based long request instead of JS transaction to support V8-disabled environments
+						idTransaction, _ := runLongRequestAQL(t, ctxAsync, db, 10, col.Name())
 						require.NotEmpty(t, idTransaction)
 
 						jobs, err := client.AsyncJobList(ctx, arangodb.JobPending, nil)
@@ -306,20 +320,24 @@ func TestAsyncJobDelete(t *testing.T) {
 	}, asyncTestOpt)
 }
 
-func runLongRequest(t *testing.T, ctx context.Context, db arangodb.Database, lenOfTimeInSec int, colName string) string {
-	txOpt := arangodb.TransactionJSOptions{
-		Action: fmt.Sprintf("function () {require('internal').sleep(%d);}", lenOfTimeInSec),
-		Collections: arangodb.TransactionCollections{
-			Read: []string{colName},
-		},
-	}
+// runLongRequestAQL creates a long-running async request using AQL query (does not require V8)
+// Returns the async job ID and the query string used
+// colName is included for consistency with runLongRequest, even though AQL doesn't require upfront collection declaration
+func runLongRequestAQL(t *testing.T, ctx context.Context, db arangodb.Database, lenOfTimeInSec int, colName string) (string, string) {
+	// Create a long-running AQL query using nested loops with SLEEP
+	// Pattern: FOR i IN 1..N FOR j IN 1..M SLEEP(0.1) FILTER i==N && j==M
+	// Processes N*M iterations before returning, keeping the query pending
+	// Collection name is wrapped in backticks to handle special characters and referenced in return value
+	innerIterations := 5
+	outerIterations := lenOfTimeInSec * 2 // For lenOfTimeInSec=2: 4*5=20 iterations ≈ 2 seconds
+	aqlQuery := fmt.Sprintf("FOR i IN 1..%d FOR j IN 1..%d LET x = SLEEP(0.1) FILTER i == %d && j == %d RETURN {i: i, col: '%s'}",
+		outerIterations, innerIterations, outerIterations, innerIterations, colName)
 
-	_, err := db.TransactionJS(ctx, txOpt)
+	_, err := db.Query(ctx, aqlQuery, nil)
 	if err != nil {
 		idTransaction, isAsyncId := connection.IsAsyncJobInProgress(err)
 		require.True(t, isAsyncId)
-
-		return idTransaction
+		return idTransaction, aqlQuery
 	}
-	return ""
+	return "", aqlQuery
 }
