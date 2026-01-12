@@ -148,9 +148,7 @@ func TestAsyncJobListPending(t *testing.T) {
 						for cursor.HasMore() {
 							var doc map[string]interface{}
 							_, err := cursor.ReadDocument(ctx, &doc)
-							if err != nil {
-								break
-							}
+							require.NoError(t, err)
 						}
 						cursor.Close()
 
