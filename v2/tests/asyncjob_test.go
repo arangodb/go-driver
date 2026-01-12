@@ -318,14 +318,17 @@ func TestAsyncJobDelete(t *testing.T) {
 	}, asyncTestOpt)
 }
 
-// runLongRequestAQL creates a long-running async request using AQL query (does not require V8)
-// Returns the async job ID and the query string used
-// colName is included for consistency with runLongRequest, even though AQL doesn't require upfront collection declaration
+// runLongRequestAQL creates a long-running async request using AQL query (does not require V8).
+// Returns the async job ID and the query string used.
+//
+// colName is included for consistency with runLongRequest() signature, but serves no functional purpose
+// in the AQL query. It's only included as metadata in the return value. The query uses range loops
+// and doesn't require collection access, so colName could be removed if not needed for consistency.
 func runLongRequestAQL(t *testing.T, ctx context.Context, db arangodb.Database, lenOfTimeInSec int, colName string) (string, string) {
 	// Create a long-running AQL query using nested loops with SLEEP
 	// Pattern: FOR i IN 1..N FOR j IN 1..M SLEEP(0.1) FILTER i==N && j==M
 	// Processes N*M iterations before returning, keeping the query pending
-	// Collection name is included as a string field in the return value for reference
+	// Note: colName is only included as metadata in return value, not used functionally in query logic
 	innerIterations := 5
 	outerIterations := lenOfTimeInSec * 2 // For lenOfTimeInSec=2: outerIterations=4, total iterations=4*5=20 ≈ 2 seconds
 	aqlQuery := fmt.Sprintf("FOR i IN 1..%d FOR j IN 1..%d LET x = SLEEP(0.1) FILTER i == %d && j == %d RETURN {i: i, col: '%s'}",
