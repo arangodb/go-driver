@@ -327,7 +327,7 @@ func runLongRequestAQL(t *testing.T, ctx context.Context, db arangodb.Database, 
 	// Processes N*M iterations before returning, keeping the query pending
 	// Collection name is included as a string field in the return value for reference
 	innerIterations := 5
-	outerIterations := lenOfTimeInSec * 2 // For lenOfTimeInSec=2: 4*5=20 iterations ≈ 2 seconds
+	outerIterations := lenOfTimeInSec * 2 // For lenOfTimeInSec=2: outerIterations=4, total iterations=4*5=20 ≈ 2 seconds
 	aqlQuery := fmt.Sprintf("FOR i IN 1..%d FOR j IN 1..%d LET x = SLEEP(0.1) FILTER i == %d && j == %d RETURN {i: i, col: '%s'}",
 		outerIterations, innerIterations, outerIterations, innerIterations, colName)
 
