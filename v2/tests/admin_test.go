@@ -597,6 +597,8 @@ func Test_Shutdown_Hard(t *testing.T) {
 				require.NoError(t, err)
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 
@@ -642,5 +644,7 @@ func Test_Shutdown_Graceful(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
