@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -590,6 +591,11 @@ func Test_GetDeploymentId(t *testing.T) {
 }
 
 func Test_Shutdown_Hard(t *testing.T) {
+	enabled := os.Getenv("TEST_ENABLE_SHUTDOWN")
+
+	if enabled != "on" && enabled != "1" {
+		t.Skipf("TEST_ENABLE_SHUTDOWN is not set")
+	}
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			WithDatabase(t, client, nil, func(db arangodb.Database) {
@@ -603,6 +609,11 @@ func Test_Shutdown_Hard(t *testing.T) {
 }
 
 func Test_Shutdown_Graceful(t *testing.T) {
+	enabled := os.Getenv("TEST_ENABLE_SHUTDOWN")
+
+	if enabled != "on" && enabled != "1" {
+		t.Skipf("TEST_ENABLE_SHUTDOWN is not set")
+	}
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 			t.Run("Graceful Shutdown", func(t *testing.T) {
