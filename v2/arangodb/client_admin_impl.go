@@ -562,3 +562,63 @@ func (c *clientAdmin) GetDeploymentId(ctx context.Context) (DeploymentIdResponse
 		return DeploymentIdResponse{}, response.AsArangoErrorWithCode(code)
 	}
 }
+
+// Shutdown initiates a shutdown sequence on a coordinator or single server.
+func (c *clientAdmin) Shutdown(ctx context.Context, dbName string, graceful *bool) error {
+	// Prepare request modifiers (query parameters, headers, etc.)
+	opts := []connection.RequestModifier{}
+
+	// Add optional graceful shutdown flag (?soft=true|false)
+	if graceful != nil {
+		opts = append(opts,
+			connection.WithQuery("soft", strconv.FormatBool(*graceful)),
+		)
+	}
+
+	// Build request URL:
+	url := connection.NewUrl(
+		"_db",
+		url.PathEscape(dbName),
+		"_admin",
+		"shutdown",
+	)
+
+	// Execute DELETE request
+	resp, err := connection.CallDelete(ctx, c.client.connection, url, nil, opts...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	// Handle response status codes
+	switch resp.Code() {
+	case http.StatusOK, http.StatusNoContent:
+		// Shutdown request accepted successfully
+		return nil
+	default:
+		// Convert error response into ArangoDB-specific error
+		return shared.NewResponseStruct().AsArangoErrorWithCode(resp.Code())
+	}
+}
+
+// ShutdownInfo returns information about the progress of a soft shutdown
+// of a Coordinator.
+func (c *clientAdmin) ShutdownInfo(ctx context.Context, dbName string) (ShutdownInfo, error) {
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "shutdown")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		ShutdownInfo          `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
+	if err != nil {
+		return ShutdownInfo{}, errors.WithStack(err)
+	}
+
+	switch resp.Code() {
+	case http.StatusOK:
+		return response.ShutdownInfo, nil
+	default:
+		return ShutdownInfo{}, response.ResponseStruct.AsArangoErrorWithCode(resp.Code())
+	}
+}

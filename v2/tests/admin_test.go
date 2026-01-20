@@ -588,3 +588,59 @@ func Test_GetDeploymentId(t *testing.T) {
 		})
 	})
 }
+
+func Test_Shutdown_Hard(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				err := client.Shutdown(ctx, db.Name(), nil)
+				require.NoError(t, err)
+			})
+		})
+	})
+}
+
+func Test_Shutdown_Graceful(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			t.Run("Graceful Shutdown", func(t *testing.T) {
+				if getTestMode() != string(testModeCluster) {
+					t.Skip("ShutdownInfo API is only supported on cluster mode")
+				}
+
+				WithDatabase(t, client, nil, func(db arangodb.Database) {
+					graceful := true
+					err := client.Shutdown(ctx, db.Name(), &graceful)
+					require.NoError(t, err)
+
+					for {
+						info, err := client.ShutdownInfo(ctx, db.Name())
+						require.NoError(t, err)
+						t.Logf("Shutdown info: %+v", info)
+
+						counts := []*int{
+							info.AQLCursors,
+							info.Transactions,
+							info.PendingJobs,
+							info.DoneJobs,
+							info.LowPrioOngoingRequests,
+							info.LowPrioQueuedRequests,
+						}
+
+						for _, c := range counts {
+							require.NotNil(t, c)
+							require.GreaterOrEqual(t, *c, 0)
+						}
+
+						if info.AllClear != nil && *info.AllClear {
+							break
+						}
+
+						time.Sleep(500 * time.Millisecond)
+					}
+
+				})
+			})
+		})
+	})
+}
