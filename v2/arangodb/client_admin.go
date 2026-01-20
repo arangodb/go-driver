@@ -104,7 +104,7 @@ type ClientAdmin interface {
 	//   - The database name itself is not important as long as the authenticated
 	//     user has read access to the database and admin access to `_system`.
 	//   - When `graceful` is true, a soft (graceful) shutdown is triggered.
-	//     In this case, ShutdownInfoV2 can be used to track shutdown progress.
+	//     In this case, ShutdownInfo can be used to track shutdown progress.
 	// Available since:
 	// ArangoDB v3.7.12, v3.8.1, v3.9.0
 	Shutdown(ctx context.Context, dbName string, graceful *bool) error
