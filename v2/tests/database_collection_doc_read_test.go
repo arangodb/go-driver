@@ -177,6 +177,8 @@ func Test_DatabaseCollectionDocReadAllowDirtyReads(t *testing.T) {
 
 						tr, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)
 						require.NoError(t, err)
+						t.Logf("[%s] BEGIN transaction ID=%s", getTestName(t), tr.ID())
+						defer abortTransaction(t, tr)
 
 						metaRead, err := col.ReadDocumentWithOptions(ctx, meta.Key, &DocWithRev{}, &arangodb.CollectionDocumentReadOptions{
 							TransactionID: string(tr.ID()),
