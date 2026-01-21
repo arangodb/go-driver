@@ -9,6 +9,7 @@
 - Add Vector index feature
 - Add Len() method to response readers for bulk CRUD operations; add ReadAll() helpers; improve thread-safety with mutexes; fix OldObject/NewObject pointer reuse in readers
 - Add shutdown endpoints to v2
+- Switch to Go 1.24.11
 
 ## [2.1.6](https://github.com/arangodb/go-driver/tree/v2.1.6) (2025-11-06)
 - Add missing endpoints from replication
