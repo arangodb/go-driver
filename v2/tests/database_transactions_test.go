@@ -78,6 +78,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 							WaitForSync: true,
 						}, nil, nil, func(ctx context.Context, transaction arangodb.Transaction) error {
 							tid = transaction.ID()
+							t.Logf("[%s] BEGIN transaction ID=%s (WithTransaction)", getTestName(t), tid)
 
 							// Get collection in transaction
 							tCol, err := transaction.GetCollection(ctx, col.Name(), nil)
@@ -94,6 +95,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 							// Do commit
 							return nil
 						}))
+						t.Logf("[%s] COMMIT transaction ID=%s (WithTransaction completed)", getTestName(t), tid)
 
 						DocumentExists(t, col, d)
 
@@ -121,6 +123,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 							WaitForSync: true,
 						}, nil, nil, func(ctx context.Context, transaction arangodb.Transaction) error {
 							tid = transaction.ID()
+							t.Logf("[%s] BEGIN transaction ID=%s (WithTransaction)", getTestName(t), tid)
 
 							// Get collection in transaction
 							tCol, err := transaction.GetCollection(ctx, col.Name(), nil)
@@ -138,6 +141,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 							// Do abort
 							return errors.Errorf("CustomAbortError")
 						}), "CustomAbortError")
+						t.Logf("[%s] ABORT transaction ID=%s (WithTransaction completed with error)", getTestName(t), tid)
 
 						DocumentNotExists(t, col, d)
 
@@ -167,6 +171,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 								WaitForSync: true,
 							}, nil, nil, func(ctx context.Context, transaction arangodb.Transaction) error {
 								tid = transaction.ID()
+								t.Logf("[%s] BEGIN transaction ID=%s (WithTransaction)", getTestName(t), tid)
 
 								// Get collection in transaction
 								tCol, err := transaction.GetCollection(ctx, col.Name(), nil)
@@ -185,6 +190,7 @@ func Test_DatabaseTransactions_DataIsolation(t *testing.T) {
 								panic("CustomPanicError")
 							}))
 						}, "CustomPanicError")
+						t.Logf("[%s] ABORT transaction ID=%s (WithTransaction completed with panic)", getTestName(t), tid)
 
 						DocumentNotExists(t, col, d)
 
@@ -217,6 +223,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 						LockTimeoutDuration: 5 * time.Second,
 					})
 					require.NoError(t, err)
+					t.Logf("[%s] BEGIN transaction ID=%s", getTestName(t), t1.ID())
 					defer abortTransaction(t, t1)
 
 					col1, err := t1.GetCollection(ctx, col.Name(), nil)
@@ -226,6 +233,7 @@ func Test_DatabaseTransactions_DocumentLock(t *testing.T) {
 						LockTimeoutDuration: 1 * time.Second,
 					})
 					require.NoError(t, err)
+					t.Logf("[%s] BEGIN transaction ID=%s", getTestName(t), t2.ID())
 					defer abortTransaction(t, t2)
 
 					col2, err := t2.GetCollection(ctx, col.Name(), nil)
@@ -252,12 +260,15 @@ func Test_DatabaseTransactions_List(t *testing.T) {
 				t.Run("List all transactions", func(t *testing.T) {
 					t1, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)
 					require.NoError(t, err)
+					t.Logf("[%s] BEGIN transaction ID=%s", getTestName(t), t1.ID())
 					defer abortTransaction(t, t1)
 					t2, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)
 					require.NoError(t, err)
+					t.Logf("[%s] BEGIN transaction ID=%s", getTestName(t), t2.ID())
 					defer abortTransaction(t, t2)
 					t3, err := db.BeginTransaction(ctx, arangodb.TransactionCollections{}, nil)
 					require.NoError(t, err)
+					t.Logf("[%s] BEGIN transaction ID=%s", getTestName(t), t3.ID())
 					defer abortTransaction(t, t3)
 
 					transactions, err := db.ListTransactions(ctx)
@@ -303,8 +314,22 @@ func ensureTransactionStatus(t testing.TB, db arangodb.Database, tid arangodb.Tr
 
 func abortTransaction(t testing.TB, transaction arangodb.Transaction) {
 	withContextT(t, 10*time.Second, func(ctx context.Context, t testing.TB) {
-		require.NoError(t, transaction.Abort(ctx, nil))
+		testName := getTestName(t)
+		t.Logf("[%s] ABORT transaction ID=%s", testName, transaction.ID())
+		err := transaction.Abort(ctx, nil)
+		if err != nil {
+			t.Logf("[%s] ABORT failed transaction ID=%s: %v", testName, transaction.ID(), err)
+		}
+		require.NoError(t, err)
 	})
+}
+
+// getTestName extracts the test name from testing.TB
+func getTestName(tb testing.TB) string {
+	if t, ok := tb.(*testing.T); ok {
+		return t.Name()
+	}
+	return "unknown"
 }
 
 func databaseReplication2Required(t *testing.T, c arangodb.Client, ctx context.Context) {
