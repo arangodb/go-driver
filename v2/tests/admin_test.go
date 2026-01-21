@@ -590,6 +590,12 @@ func Test_GetDeploymentId(t *testing.T) {
 	})
 }
 
+// Test_Shutdown_Hard performs a *hard shutdown* of the database server.
+// WARNING: This test is destructive and will stop the running ArangoDB instance.
+// To prevent accidental execution in CI/CD and local test runs, it is
+// disabled by default and only runs when TEST_ENABLE_SHUTDOWN is explicitly set.
+// This matches the behavior of the V1 driver tests.
+// The test is also marked as non-parallel to avoid disrupting other tests.
 func Test_Shutdown_Hard(t *testing.T) {
 	enabled := os.Getenv("TEST_ENABLE_SHUTDOWN")
 
@@ -608,6 +614,14 @@ func Test_Shutdown_Hard(t *testing.T) {
 	})
 }
 
+// Test_Shutdown_Graceful performs a *graceful shutdown* of the database server
+// and continuously polls ShutdownInfo until all pending operations are cleared.
+// WARNING: This test is destructive and affects the running ArangoDB instance.
+// To avoid accidental execution in CI/CD or local test runs, it is disabled by
+// default and only runs when TEST_ENABLE_SHUTDOWN is explicitly set.
+// This test is supported only in cluster mode and is marked as non-parallel
+// to prevent interference with other tests.
+// This behavior is consistent with the V1 driver test suite.
 func Test_Shutdown_Graceful(t *testing.T) {
 	enabled := os.Getenv("TEST_ENABLE_SHUTDOWN")
 
