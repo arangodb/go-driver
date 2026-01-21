@@ -97,6 +97,28 @@ type ClientAdmin interface {
 
 	// GetDeploymentId retrieves the unique deployment ID for the ArangoDB deployment.
 	GetDeploymentId(ctx context.Context) (DeploymentIdResponse, error)
+
+	// Shutdown initiates a shutdown sequence on a coordinator or single server.
+	// Behavior:
+	//   - Requires administrative privileges.
+	//   - The database name itself is not important as long as the authenticated
+	//     user has read access to the database and admin access to `_system`.
+	//   - When `graceful` is true, a soft (graceful) shutdown is triggered.
+	//     In this case, ShutdownInfo can be used to track shutdown progress.
+	// Available since:
+	// ArangoDB v3.7.12, v3.8.1, v3.9.0
+	Shutdown(ctx context.Context, dbName string, graceful *bool) error
+
+	// ShutdownInfo returns information about the progress of a soft shutdown
+	// of a Coordinator.
+	// The response reports the number of ongoing operations (transactions,
+	// cursors, async jobs, low priority requests, etc.). Once all values
+	// reach zero, the allClear flag is set and the Coordinator shuts down
+	// automatically.
+	// This API is only available on Coordinators.
+	// Available since:
+	// ArangoDB v3.7.12, v3.8.1, v3.9.0
+	ShutdownInfo(ctx context.Context, dbName string) (ShutdownInfo, error)
 }
 
 type ClientAdminLog interface {
@@ -615,4 +637,24 @@ type JWTSecret struct {
 type DeploymentIdResponse struct {
 	// Id represents the unique deployment identifier
 	Id *string `json:"id"`
+}
+
+// ShutdownInfo stores information about shutdown of the coordinator.
+type ShutdownInfo struct {
+	// AQLCursors stores a number of AQL cursors that are still active.
+	AQLCursors *int `json:"AQLcursors"`
+	// Transactions stores a number of ongoing transactions.
+	Transactions *int `json:"transactions"`
+	// PendingJobs stores a number of ongoing asynchronous requests.
+	PendingJobs *int `json:"pendingJobs"`
+	// DoneJobs stores a number of finished asynchronous requests, whose result has not yet been collected.
+	DoneJobs *int `json:"doneJobs"`
+	// LowPrioOngoingRequests stores a number of ongoing low priority requests.
+	LowPrioOngoingRequests *int `json:"lowPrioOngoingRequests"`
+	// LowPrioQueuedRequests stores a number of queued low priority requests.
+	LowPrioQueuedRequests *int `json:"lowPrioQueuedRequests"`
+	// AllClear is set if all operations are closed.
+	AllClear *bool `json:"allClear"`
+	// SoftShutdownOngoing describes whether a soft shutdown of the Coordinator is in progress.
+	SoftShutdownOngoing *bool `json:"softShutdownOngoing"`
 }

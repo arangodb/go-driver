@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -586,5 +587,89 @@ func Test_GetDeploymentId(t *testing.T) {
 				require.Equal(t, *resp1.Id, *resp2.Id, "Deployment ID should be consistent across calls")
 			})
 		})
+	})
+}
+
+// Test_Shutdown_Hard performs a *hard shutdown* of the database server.
+// WARNING: This test is destructive and will stop the running ArangoDB instance.
+// To prevent accidental execution in CI/CD and local test runs, it is
+// disabled by default and only runs when TEST_ENABLE_SHUTDOWN is explicitly set.
+// This matches the behavior of the V1 driver tests.
+// The test is also marked as non-parallel to avoid disrupting other tests.
+func Test_Shutdown_Hard(t *testing.T) {
+	enabled := os.Getenv("TEST_ENABLE_SHUTDOWN")
+
+	if enabled != "on" && enabled != "1" {
+		t.Skipf("TEST_ENABLE_SHUTDOWN is not set")
+	}
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			WithDatabase(t, client, nil, func(db arangodb.Database) {
+				err := client.Shutdown(ctx, db.Name(), nil)
+				require.NoError(t, err)
+			})
+		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
+	})
+}
+
+// Test_Shutdown_Graceful performs a *graceful shutdown* of the database server
+// and continuously polls ShutdownInfo until all pending operations are cleared.
+// WARNING: This test is destructive and affects the running ArangoDB instance.
+// To avoid accidental execution in CI/CD or local test runs, it is disabled by
+// default and only runs when TEST_ENABLE_SHUTDOWN is explicitly set.
+// This test is supported only in cluster mode and is marked as non-parallel
+// to prevent interference with other tests.
+// This behavior is consistent with the V1 driver test suite.
+func Test_Shutdown_Graceful(t *testing.T) {
+	enabled := os.Getenv("TEST_ENABLE_SHUTDOWN")
+
+	if enabled != "on" && enabled != "1" {
+		t.Skipf("TEST_ENABLE_SHUTDOWN is not set")
+	}
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			t.Run("Graceful Shutdown", func(t *testing.T) {
+				if getTestMode() != string(testModeCluster) {
+					t.Skip("ShutdownInfo API is only supported on cluster mode")
+				}
+
+				WithDatabase(t, client, nil, func(db arangodb.Database) {
+					graceful := true
+					err := client.Shutdown(ctx, db.Name(), &graceful)
+					require.NoError(t, err)
+
+					for {
+						info, err := client.ShutdownInfo(ctx, db.Name())
+						require.NoError(t, err)
+						t.Logf("Shutdown info: %+v", info)
+
+						counts := []*int{
+							info.AQLCursors,
+							info.Transactions,
+							info.PendingJobs,
+							info.DoneJobs,
+							info.LowPrioOngoingRequests,
+							info.LowPrioQueuedRequests,
+						}
+
+						for _, c := range counts {
+							require.NotNil(t, c)
+							require.GreaterOrEqual(t, *c, 0)
+						}
+
+						if info.AllClear != nil && *info.AllClear {
+							break
+						}
+
+						time.Sleep(500 * time.Millisecond)
+					}
+
+				})
+			})
+		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
