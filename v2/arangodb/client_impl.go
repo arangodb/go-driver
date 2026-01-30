@@ -42,6 +42,7 @@ func newClient(connection connection.Connection) *client {
 	c.clientTask = newClientTask(c)
 	c.clientReplication = newClientReplication(c)
 	c.clientAccessTokens = newClientAccessTokens(c)
+	c.clientAgency = newClientAgency(c)
 
 	c.Requests = NewRequests(connection)
 
@@ -62,6 +63,7 @@ type client struct {
 	*clientTask
 	*clientReplication
 	*clientAccessTokens
+	*clientAgency
 
 	Requests
 }

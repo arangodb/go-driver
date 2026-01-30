@@ -39,4 +39,5 @@ type Client interface {
 	ClientTasks
 	ClientReplication
 	ClientAccessTokens
+	ClientAgency
 }
