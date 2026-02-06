@@ -4,11 +4,11 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.24.11
+GOVERSION ?= 1.24.13
 GOTOOLCHAIN ?= auto
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
-ALPINE_IMAGE ?= alpine:3.21
+ALPINE_IMAGE ?= alpine:3.23
 TMPDIR := ${SCRIPTDIR}/.tmp
 
 DOCKER_CMD:=docker run
