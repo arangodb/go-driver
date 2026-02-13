@@ -4,7 +4,7 @@ orbs:
 executors:
   golang-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.24.11
+      - image: gcr.io/gcr-for-testing/golang:1.24.13
 
   x86-machine-executor:
     machine:
@@ -39,13 +39,13 @@ aliases:
 parameters:
   goImage:
     type: string
-    default: "gcr.io/gcr-for-testing/golang:1.24.11"
+    default: "gcr.io/gcr-for-testing/golang:1.24.13"
   arangodbImage:
     type: string
     default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest"
   alpineImage:
     type: string
-    default: "gcr.io/gcr-for-testing/alpine:3.21"
+    default: "gcr.io/gcr-for-testing/alpine:3.23"
   starterImage:
     type: string
     default: "arangodb/arangodb-starter:latest"
