@@ -159,18 +159,19 @@ func Test_Users(t *testing.T) {
 
 func Test_UserCreation(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		uuid := GenerateUUID("user-creation")
 
 		testCases := map[string]*arangodb.UserOptions{
-			"jan1":      nil,
-			"george":    {Password: "foo", Active: utils.NewType(false)},
-			"candy":     {Password: "ARANGODB_DEFAULT_ROOT_PASSWORD", Active: utils.NewType(true)},
-			"joe":       {Extra: map[string]interface{}{"key": "value", "x": 5}},
-			"admin@api": nil,
-			"測試用例":      nil,
-			"測試用例@foo":  nil,
-			"_":         nil,
-			"/":         nil,
-			"jakub/foo": nil,
+			"jan1-" + uuid:      nil,
+			"george-" + uuid:    {Password: "foo", Active: utils.NewType(false)},
+			"candy-" + uuid:     {Password: "ARANGODB_DEFAULT_ROOT_PASSWORD", Active: utils.NewType(true)},
+			"joe-" + uuid:       {Extra: map[string]interface{}{"key": "value", "x": 5}},
+			"admin@api-" + uuid: nil,
+			"測試用例-" + uuid:      nil,
+			"測試用例@foo-" + uuid:  nil,
+			"_-" + uuid:         nil,
+			"/-" + uuid:         nil,
+			"jakub/foo-" + uuid: nil,
 		}
 
 		for name, options := range testCases {
@@ -199,7 +200,5 @@ func Test_UserCreation(t *testing.T) {
 				require.NoError(t, client.RemoveUser(ctx, name))
 			})
 		}
-	}, WrapOptions{
-		Parallel: utils.NewType(false),
 	})
 }

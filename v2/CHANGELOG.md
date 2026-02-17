@@ -11,6 +11,7 @@
 - Add shutdown endpoints to v2
 - Switch to Go 1.24.11
 - Switched to Go 1.24.13 to fix a security vulnerability
+- Modified Test_UserCreation test case to use parallel execution and replaced hardcoded usernames with dynamically generated values.
 
 ## [2.1.6](https://github.com/arangodb/go-driver/tree/v2.1.6) (2025-11-06)
 - Add missing endpoints from replication
