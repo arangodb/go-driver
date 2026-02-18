@@ -31,6 +31,10 @@ type HttpConfiguration struct {
 	ArangoDBConfig ArangoDBConfiguration
 
 	Transport http.RoundTripper
+
+	// DontFollowRedirect; if set, redirect will not be followed, response from the initial request will be returned without an error
+	// DontFollowRedirect takes precendance over FailOnRedirect.
+	DontFollowRedirect bool
 }
 
 func (h HttpConfiguration) getTransport() http.RoundTripper {
@@ -53,6 +57,12 @@ func (h HttpConfiguration) GetContentType() string {
 
 func NewHttpConnection(config HttpConfiguration) Connection {
 	c := newHttpConnection(config.getTransport(), config.ContentType, config.Endpoint, config.ArangoDBConfig)
+
+	if config.DontFollowRedirect {
+		c.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // Do not wrap, standard library will not understand
+		}
+	}
 
 	if a := config.Authentication; a != nil {
 		c.authentication = a
