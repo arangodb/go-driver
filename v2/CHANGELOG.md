@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Add `DontFollowRedirect` fields to HTTP connection configuration
 
 ## [2.2.0](https://github.com/arangodb/go-driver/tree/v2.2.0) (2026-02-17)
 - Add endpoint to fetch deployment id

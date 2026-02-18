@@ -29,6 +29,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_NewHttpConnection_RedirectConfiguration(t *testing.T) {
+	eps := NewRoundRobinEndpoints([]string{"https://a:8529"})
+
+	t.Run("default redirect behavior", func(t *testing.T) {
+		conn := NewHttpConnection(HttpConfiguration{Endpoint: eps})
+		hc, ok := conn.(*httpConnection)
+		require.True(t, ok)
+		require.Nil(t, hc.client.CheckRedirect)
+	})
+
+	t.Run("dont follow redirect", func(t *testing.T) {
+		conn := NewHttpConnection(HttpConfiguration{
+			Endpoint:           eps,
+			DontFollowRedirect: true,
+		})
+		hc, ok := conn.(*httpConnection)
+		require.True(t, ok)
+		require.NotNil(t, hc.client.CheckRedirect)
+
+		err := hc.client.CheckRedirect(&http.Request{}, nil)
+		require.ErrorIs(t, err, http.ErrUseLastResponse)
+	})
+}
+
 func Test_httpConnection_Decoder(t *testing.T) {
 	tests := map[string]struct {
 		contentType string
