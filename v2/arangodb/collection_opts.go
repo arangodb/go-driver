@@ -104,6 +104,10 @@ type CollectionExtendedInfo struct {
 	WriteConcern int `json:"writeConcern,omitempty"`
 
 	// Available from 3.9 ArangoD version.
+	// Internal validator type. Purposefully undocumented in the 4.0 API (internal).
+	// See collections API "Purposefully undocumented" list; not part of the public create-collection request.
+	//
+	// Deprecated: internal option and not part of the 4.0 public create-collection request.
 	InternalValidatorType int `json:"internalValidatorType,omitempty"`
 
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
@@ -192,6 +196,8 @@ type SetCollectionPropertiesOptionsV2 struct {
 	WaitForSync *bool `json:"waitForSync,omitempty"`
 
 	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MB). Note that when changing the journalSize value, it will only have an effect for additional journals or datafiles that are created. Already existing journals or datafiles will not be affected.
+	//
+	// Deprecated: related to legacy MMFiles settings and not part of the 4.0 public create-collection request.
 	JournalSize *int64 `json:"journalSize,omitempty"`
 
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.

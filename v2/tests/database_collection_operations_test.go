@@ -113,10 +113,10 @@ func Test_CollectionSetProperties(t *testing.T) {
 	createOpts := arangodb.CreateCollectionPropertiesV2{
 		WaitForSync:       utils.NewType(false),
 		ReplicationFactor: utils.NewType(arangodb.ReplicationFactor(2)),
-		JournalSize:       utils.NewType(int64(1048576 * 2)),
 		NumberOfShards:    utils.NewType(2),
 		CacheEnabled:      utils.NewType(false),
 	}
+	// Note: JournalSize is deprecated (legacy MMFiles / not in 4.0 create-collection API) and is not set here.
 
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
@@ -146,7 +146,7 @@ func Test_CollectionSetProperties(t *testing.T) {
 				props, err = col.Properties(ctx)
 				require.NoError(t, err)
 				require.Equal(t, *newProps.WaitForSync, props.WaitForSync)
-				require.Equal(t, int64(0), props.JournalSize) // Default JournalSize is 0
+				// JournalSize is deprecated; not asserted to avoid depending on deprecated response field (4.0).
 				require.Equal(t, *newProps.CacheEnabled, props.CacheEnabled)
 
 				t.Run("rf-check-after", func(t *testing.T) {

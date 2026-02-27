@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/arangodb/go-driver/v2/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -187,9 +186,11 @@ func Test_CollectionComputedValues(t *testing.T) {
 
 						require.Len(t, prop.ComputedValues, 1)
 
+						waitForSync := true
+
 						err = col.SetPropertiesV2(ctx,
 							arangodb.SetCollectionPropertiesOptionsV2{
-								JournalSize: utils.NewType(int64(512)),
+								WaitForSync: &waitForSync,
 							},
 						)
 						require.NoError(t, err)
