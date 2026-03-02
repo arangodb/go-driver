@@ -31,6 +31,7 @@ type CreateCollectionPropertiesV2 struct {
 	// This field is used for internal purposes only. DO NOT USE.
 	DistributeShardsLike *string `json:"distributeShardsLike,omitempty"`
 	// DoCompact checks if the collection will be compacted (default is true)
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	DoCompact *bool `json:"doCompact,omitempty"`
 	// The number of buckets into which indexes using a hash table are split. The default is 16 and this number has to be a power
 	// of 2 and less than or equal to 1024. For very large collections one should increase this to avoid long pauses when the hash
@@ -38,8 +39,14 @@ type CreateCollectionPropertiesV2 struct {
 	// For example, 64 might be a sensible value for a collection with 100 000 000 documents.
 	// Currently, only the edge index respects this value, but other index types might follow in future ArangoDB versions.
 	// Changes are applied when the collection is loaded the next time.
+	//
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IndexBuckets *int `json:"indexBuckets,omitempty"`
 	// Available from 3.9 ArangoD version.
+	// Internal validator type. Purposefully undocumented in the 4.0 API (internal).
+	// See collections API "Purposefully undocumented" list; not part of the public create-collection request.
+	//
+	// Deprecated: internal option and not part of the 4.0 public create-collection request.
 	InternalValidatorType *int `json:"internalValidatorType,omitempty"`
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
 	IsDisjoint *bool `json:"isDisjoint,omitempty"`
@@ -56,8 +63,12 @@ type CreateCollectionPropertiesV2 struct {
 	// than regular collections because ArangoDB does not enforce any synchronization to disk and does not calculate any
 	// CRC checksums for datafiles (as there are no datafiles). This option should therefore be used for cache-type collections only,
 	// and not for data that cannot be re-created otherwise. (The default is false)
+	//
+	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IsVolatile *bool `json:"isVolatile,omitempty"`
 	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MiB). (The default is a configuration parameter)
+	//
+	// Deprecated: related to legacy MMFiles settings and not part of the 4.0 public create-collection request.
 	JournalSize *int64 `json:"journalSize,omitempty"`
 	// Specifies how keys in the collection are created.
 	KeyOptions *CollectionKeyOptions `json:"keyOptions,omitempty"`
