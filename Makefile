@@ -4,7 +4,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.24.13
+GOVERSION ?= 1.25.8
 GOTOOLCHAIN ?= auto
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
@@ -576,7 +576,7 @@ tools: __dir_setup
 	@echo ">> Fetching license check"
 	@GOBIN=$(TMPDIR)/bin go install github.com/google/addlicense@v1.0.0
 	@echo ">> Fetching govulncheck"
-	@GOBIN=$(TMPDIR)/bin go install golang.org/x/vuln/cmd/govulncheck@v1.1.3
+	@GOBIN=$(TMPDIR)/bin go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
 	@echo ">> Fetching github-release"
 	@GOBIN=$(TMPDIR)/bin go install github.com/github-release/github-release@v0.10.0
 

@@ -3,6 +3,7 @@
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Add `DontFollowRedirect` fields to HTTP connection configuration
 - Deprecate legacy collection option fields: IsVolatile, DoCompact, IndexBuckets, JournalSize, and InternalValidatorType (intentionally undocumented in the 4.0 API)
+- Switched to Go 1.25.8 to fix a security vulnerability
 
 ## [2.2.0](https://github.com/arangodb/go-driver/tree/v2.2.0) (2026-02-17)
 - Add endpoint to fetch deployment id
