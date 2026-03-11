@@ -1,8 +1,8 @@
 module github.com/arangodb/go-driver/v2
 
-go 1.24.0
+go 1.25
 
-toolchain go1.24.13
+toolchain go1.25.8
 
 require (
 	github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e
