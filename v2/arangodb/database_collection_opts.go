@@ -43,15 +43,11 @@ type CreateCollectionPropertiesV2 struct {
 	// Deprecated: since 3.7 version. It is related only to MMFiles.
 	IndexBuckets *int `json:"indexBuckets,omitempty"`
 	// Available from 3.9 ArangoD version.
-	// Internal validator type. Purposefully undocumented in the 4.0 API (internal).
-	// See collections API "Purposefully undocumented" list; not part of the public create-collection request.
-	//
-	// Deprecated: internal option and not part of the 4.0 public create-collection request.
 	InternalValidatorType *int `json:"internalValidatorType,omitempty"`
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
 	IsDisjoint *bool `json:"isDisjoint,omitempty"`
 	// Set to create a smart edge or vertex collection.
-	// This requires ArangoDB Enterprise Edition.
+	// Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	IsSmart *bool `json:"isSmart,omitempty"`
 	// If true, create a system collection. In this case collection-name should start with an underscore.
 	// End users should normally create non-system collections only. API implementors may be required to create system
@@ -94,13 +90,13 @@ type CreateCollectionPropertiesV2 struct {
 	ShardKeys *[]string `json:"shardKeys,omitempty"`
 	// This field must be set to the attribute that will be used for sharding or SmartGraphs.
 	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
-	// This requires ArangoDB Enterprise Edition.
+	// Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	SmartGraphAttribute *string `json:"smartGraphAttribute,omitempty"`
 	// SmartJoinAttribute
 	// In the specific case that the two collections have the same number of shards, the data of the two collections can
 	// be co-located on the same server for the same shard key values. In this case the extra hop via the coordinator will not be necessary.
 	// See documentation for SmartJoins.
-	// This requires ArangoDB Enterprise Edition.
+	// Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	SmartJoinAttribute *string `json:"smartJoinAttribute,omitempty"`
 	// Available from 3.7 ArangoDB version
 	SyncByRevision *bool `json:"syncByRevision,omitempty"`
@@ -160,7 +156,7 @@ type CollectionKeyOptions struct {
 	// If set to false, then the key generator will solely be responsible for generating keys and supplying own
 	// key values in the _key attribute of documents is considered an error.
 	AllowUserKeysPtr *bool `json:"allowUserKeys,omitempty"`
-	// Specifies the type of the key generator. The currently available generators are traditional and autoincrement.
+	// Specifies the type of the key generator. The currently available generators are traditional, autoincrement, uuid, and padded.
 	Type KeyGeneratorType `json:"type,omitempty"`
 	// increment value for autoincrement key generator. Not used for other key generator types.
 	Increment int `json:"increment,omitempty"`
@@ -174,6 +170,8 @@ type KeyGeneratorType string
 const (
 	KeyGeneratorTraditional   = KeyGeneratorType("traditional")
 	KeyGeneratorAutoIncrement = KeyGeneratorType("autoincrement")
+	KeyGeneratorPadded        = KeyGeneratorType("padded")
+	KeyGeneratorUUID          = KeyGeneratorType("uuid")
 )
 
 // ShardingStrategy describes the sharding strategy of a collection

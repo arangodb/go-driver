@@ -125,6 +125,9 @@ const (
 	// InvertedIndexType can be used to speed up a broad range of AQL queries, from simple to complex, including full-text search
 	InvertedIndexType = IndexType("inverted")
 
+	// Deprecated: Fulltext index type will be removed in ArangoDB v4.0. Use InvertedIndexType for full-text search. Kept for backward compatibility when reading index lists from older servers.
+	FulltextIndexType = IndexType("fulltext")
+
 	// VectorIndexType is used for efficient similarity searches on high-dimensional embeddings, enabling fast and scalable AI use cases.
 	VectorIndexType = IndexType("vector")
 )
@@ -159,8 +162,10 @@ type IndexSharedOptions struct {
 	// Any attributes in from storedValues are not checked for their uniqueness.
 	Unique *bool `json:"unique,omitempty"`
 
-	// Sparse You can control the sparsity for persistent indexes.
-	// The inverted, fulltext, and geo index types are sparse by definition.
+	// Sparse controls whether the index excludes documents with the indexed attribute missing or null.
+	// Used by persistent indexes. Inverted and geo index types are sparse by definition.
+	// Fulltext indexes (deprecated, removed in v4.0) also used this option.
+	// Vector indexes use CreateVectorIndexOptions.Sparse when creating.
 	Sparse *bool `json:"sparse,omitempty"`
 
 	// IsNewlyCreated returns if this index was newly created or pre-existing.
@@ -178,6 +183,7 @@ type IndexOptions struct {
 	// SelectivityEstimate determines the selectivity estimate value of the index - PersistentIndex only
 	SelectivityEstimate float64 `json:"selectivityEstimate,omitempty"`
 
+	// Deprecated: MinLength is only relevant for fulltext indexes, which are planned to be removed in ArangoDB v4.0.
 	// MinLength returns min length for this index if set.
 	MinLength *int `json:"minLength,omitempty"`
 
@@ -214,8 +220,8 @@ type CreatePersistentIndexOptions struct {
 	// There must be no overlap of attribute paths between `fields` and `storedValues`. The maximum number of values is 32.
 	StoredValues []string `json:"storedValues,omitempty"`
 
-	// Sparse You can control the sparsity for persistent indexes.
-	// The inverted, fulltext, and geo index types are sparse by definition.
+	// Sparse controls whether the index excludes documents with the indexed attribute missing or null.
+	// Used by persistent indexes. (Vector indexes have their own Sparse in CreateVectorIndexOptions.)
 	Sparse *bool `json:"sparse,omitempty"`
 
 	// Unique is supported by persistent indexes. By default, all user-defined indexes are non-unique.

@@ -92,7 +92,7 @@ type ArangoSearchViewProperties struct {
 	Links ArangoSearchLinks `json:"links,omitempty"`
 
 	// OptimizeTopK is an array of strings defining optimized sort expressions.
-	// Introduced in v3.11.0, Enterprise Edition only.
+	// Introduced in v3.11.0; Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	OptimizeTopK []string `json:"optimizeTopK,omitempty"`
 
 	// PrimarySort describes how individual fields are sorted
@@ -104,11 +104,11 @@ type ArangoSearchViewProperties struct {
 
 	// PrimarySortCache If you enable this option, then the primary sort columns are always cached in memory.
 	// Can't be changed after creating View.
-	// Introduced in v3.9.5, Enterprise Edition only
+	// Introduced in v3.9.5; Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	PrimarySortCache *bool `json:"primarySortCache,omitempty"`
 
 	// PrimaryKeyCache If you enable this option, then the primary key columns are always cached in memory.
-	// Introduced in v3.9.6, Enterprise Edition only
+	// Introduced in v3.9.6; Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	// Can't be changed after creating View.
 	PrimaryKeyCache *bool `json:"primaryKeyCache,omitempty"`
 
@@ -230,12 +230,12 @@ type ArangoSearchElementProperties struct {
 	// It does not get persisted as it is not a View property, but only a one-off option
 	InBackground *bool `json:"inBackground,omitempty"`
 
-	// Nested contains the properties for nested fields (sub-objects) of the element
-	// Enterprise Edition only
+	// Nested contains the properties for nested fields (sub-objects) of the element.
+	// Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	Nested ArangoSearchFields `json:"nested,omitempty"`
 
 	// Cache If you enable this option, then field normalization values are always cached in memory.
-	// Introduced in v3.9.5, Enterprise Edition only
+	// Introduced in v3.9.5; Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	Cache *bool `json:"cache,omitempty"`
 }
 

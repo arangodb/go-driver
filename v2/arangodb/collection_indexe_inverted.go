@@ -101,7 +101,7 @@ type InvertedIndexOptions struct {
 	WriteBufferSizeMax *int64 `json:"writebufferSizeMax,omitempty"`
 
 	// OptimizeTopK is an array of strings defining optimized sort expressions.
-	// Introduced in v3.11.0, Enterprise Edition only.
+	// Introduced in v3.11.0; Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	OptimizeTopK []string `json:"optimizeTopK,omitempty"`
 
 	// InBackground You can set this option to true to create the index in the background,
@@ -146,7 +146,7 @@ type InvertedIndexField struct {
 	// Nested Index the specified sub-objects that are stored in an array.
 	// Other than with the fields property, the values get indexed in a way that lets you query for co-occurring values.
 	// For example, you can search the sub-objects and all the conditions need to be met by a single sub-object instead of across all of them.
-	// Enterprise-only feature
+	// Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	Nested []InvertedIndexNestedField `json:"nested,omitempty"`
 }
 
@@ -175,6 +175,6 @@ type InvertedIndexNestedField struct {
 	// Nested - Index the specified sub-objects that are stored in an array.
 	// Other than with the fields property, the values get indexed in a way that lets you query for co-occurring values.
 	// For example, you can search the sub-objects and all the conditions need to be met by a single sub-object instead of across all of them.
-	// Enterprise-only feature
+	// Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	Nested []InvertedIndexNestedField `json:"nested,omitempty"`
 }

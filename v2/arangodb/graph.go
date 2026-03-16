@@ -27,19 +27,19 @@ type Graph interface {
 	// Name returns the name of the graph.
 	Name() string
 
-	// IsSmart Whether the graph is a SmartGraph (Enterprise Edition only).
+	// IsSmart Whether the graph is a SmartGraph (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	IsSmart() bool
 
-	// IsSatellite Flag if the graph is a SatelliteGraph (Enterprise Edition only) or not.
+	// IsSatellite Flag if the graph is a SatelliteGraph (Enterprise Edition; from v3.12.5 onward also in Community Edition) or not.
 	IsSatellite() bool
 
-	// IsDisjoint Whether the graph is a Disjoint SmartGraph (Enterprise Edition only).
+	// IsDisjoint Whether the graph is a Disjoint SmartGraph (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	IsDisjoint() bool
 
 	// EdgeDefinitions returns the edge definitions of the graph.
 	EdgeDefinitions() []EdgeDefinition
 
-	// SmartGraphAttribute of the sharding attribute in the SmartGraph case (Enterprise Edition only).
+	// SmartGraphAttribute of the sharding attribute in the SmartGraph case (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	SmartGraphAttribute() string
 
 	// NumberOfShards Number of shards created for every new collection in the graph.
@@ -50,7 +50,7 @@ type Graph interface {
 	OrphanCollections() []string
 
 	// ReplicationFactor The replication factor used for every new collection in the graph.
-	// For SatelliteGraphs, it is the string "satellite" (Enterprise Edition only).
+	// For SatelliteGraphs, it is the string "satellite" (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	ReplicationFactor() int
 
 	// WriteConcern The default write concern for new collections in the graph. It determines how many copies of each shard
@@ -78,13 +78,13 @@ type RemoveGraphOptions struct {
 type GraphDefinition struct {
 	Name string `json:"name"`
 
-	// IsSmart Whether the graph is a SmartGraph (Enterprise Edition only).
+	// IsSmart Whether the graph is a SmartGraph (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	IsSmart bool `json:"isSmart"`
 
-	// IsSatellite Flag if the graph is a SatelliteGraph (Enterprise Edition only) or not.
+	// IsSatellite Flag if the graph is a SatelliteGraph (Enterprise Edition; from v3.12.5 onward also in Community Edition) or not.
 	IsSatellite bool `json:"isSatellite"`
 
-	// IsDisjoint Whether the graph is a Disjoint SmartGraph (Enterprise Edition only).
+	// IsDisjoint Whether the graph is a Disjoint SmartGraph (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	IsDisjoint bool `json:"isDisjoint,omitempty"`
 
 	// EdgeDefinitions An array of definitions for the relations of the graph
@@ -106,10 +106,10 @@ type GraphDefinition struct {
 	WriteConcern *int `json:"writeConcern,omitempty"`
 
 	// ReplicationFactor The replication factor used for every new collection in the graph.
-	// For SatelliteGraphs, it is the string "satellite" (Enterprise Edition only).
+	// For SatelliteGraphs, it is the string "satellite" (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	ReplicationFactor graphReplicationFactor `json:"replicationFactor,omitempty"`
 
-	// SmartGraphAttribute of the sharding attribute in the SmartGraph case (Enterprise Edition only).
+	// SmartGraphAttribute of the sharding attribute in the SmartGraph case (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
 }
 

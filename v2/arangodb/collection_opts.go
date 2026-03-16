@@ -42,10 +42,12 @@ type CollectionInfo struct {
 	// The name of the collection.
 	Name string `json:"name,omitempty"`
 
-	// The status of the collection
+	// The status of the collection.
+	// Deprecated: collection status is a legacy server concept; server API remains backward-compatible. Only values 3 (loaded) and 5 (deleted) are still in use. Status and statusString may be removed in v4.0.
 	Status CollectionStatus `json:"status,omitempty"`
 
 	// StatusString represents status as a string.
+	// Deprecated: collection status is a legacy server concept; server API remains backward-compatible. Only values 3 (loaded) and 5 (deleted) are still in use. Status and statusString may be removed in v4.0.
 	StatusString string `json:"statusString,omitempty"`
 
 	// The type of the collection
@@ -66,7 +68,7 @@ type CollectionExtendedInfo struct {
 	CacheEnabled bool `json:"cacheEnabled,omitempty"`
 
 	KeyOptions struct {
-		// Type specifies the type of the key generator. The currently available generators are traditional and autoincrement.
+		// Type specifies the type of the key generator. The currently available generators are traditional, autoincrement, uuid, and padded.
 		Type KeyGeneratorType `json:"type,omitempty"`
 
 		// AllowUserKeys; if set to true, then it is allowed to supply own key values in the _key attribute of a document.
@@ -104,10 +106,6 @@ type CollectionExtendedInfo struct {
 	WriteConcern int `json:"writeConcern,omitempty"`
 
 	// Available from 3.9 ArangoD version.
-	// Internal validator type. Purposefully undocumented in the 4.0 API (internal).
-	// See collections API "Purposefully undocumented" list; not part of the public create-collection request.
-	//
-	// Deprecated: internal option and not part of the 4.0 public create-collection request.
 	InternalValidatorType int `json:"internalValidatorType,omitempty"`
 
 	// IsDisjoint set isDisjoint flag for Graph. Required ArangoDB 3.7+
@@ -117,7 +115,7 @@ type CollectionExtendedInfo struct {
 	IsSmartChild bool `json:"isSmartChild,omitempty"`
 
 	// Set to create a smart edge or vertex collection.
-	// This requires ArangoDB Enterprise Edition.
+	// Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	IsSmart bool `json:"isSmart,omitempty"`
 
 	// ComputedValues let configure collections to generate document attributes when documents are created or modified, using an AQL expression
@@ -158,12 +156,12 @@ type CollectionProperties struct {
 
 	// SmartJoinAttribute
 	// See documentation for SmartJoins.
-	// This requires ArangoDB Enterprise Edition.
+	// Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	SmartJoinAttribute string `json:"smartJoinAttribute,omitempty"`
 
 	// This field must be set to the attribute that will be used for sharding or SmartGraphs.
 	// All vertices are required to have this attribute set. Edges derive the attribute from their connected vertices.
-	// This requires ArangoDB Enterprise Edition.
+	// Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	SmartGraphAttribute string `json:"smartGraphAttribute,omitempty"`
 
 	// This attribute specifies that the sharding of a collection follows that of another
@@ -197,7 +195,7 @@ type SetCollectionPropertiesOptionsV2 struct {
 
 	// The maximal size of a journal or datafile in bytes. The value must be at least 1048576 (1 MB). Note that when changing the journalSize value, it will only have an effect for additional journals or datafiles that are created. Already existing journals or datafiles will not be affected.
 	//
-	// Deprecated: related to legacy MMFiles settings and not part of the 4.0 public create-collection request.
+	// Deprecated: no longer existent since v3.7 (MMFiles removed). Related to legacy MMFiles settings; not part of the 4.0 public create-collection request.
 	JournalSize *int64 `json:"journalSize,omitempty"`
 
 	// ReplicationFactor contains how many copies of each shard are kept on different DBServers.
@@ -251,16 +249,22 @@ const (
 	ComputeOnReplace ComputeOn = "replace"
 )
 
-// CollectionStatus indicates the status of a collection.
+// CollectionStatus indicates the legacy status of a collection.
+//
+// Deprecated: the concept of collection statuses no longer exists on the server; the API is backward-compatible. Only values 3 (CollectionStatusLoaded) and 5 (CollectionStatusDeleted) are still in use. Status/statusString collection properties may be removed in v4.0.
 type CollectionStatus int
 
 const (
-	CollectionStatusNewBorn   = CollectionStatus(1)
-	CollectionStatusUnloaded  = CollectionStatus(2)
-	CollectionStatusLoaded    = CollectionStatus(3)
+	// Deprecated: no longer in active use by the server.
+	CollectionStatusNewBorn = CollectionStatus(1)
+	// Deprecated: no longer in active use by the server.
+	CollectionStatusUnloaded = CollectionStatus(2)
+	CollectionStatusLoaded   = CollectionStatus(3)
+	// Deprecated: no longer in active use by the server.
 	CollectionStatusUnloading = CollectionStatus(4)
 	CollectionStatusDeleted   = CollectionStatus(5)
-	CollectionStatusLoading   = CollectionStatus(6)
+	// Deprecated: no longer in active use by the server.
+	CollectionStatusLoading = CollectionStatus(6)
 )
 
 // CollectionStatistics contains the number of documents and additional statistical information about a collection.

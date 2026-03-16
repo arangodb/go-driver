@@ -47,7 +47,9 @@ type DatabaseSharding string
 
 const (
 	DatabaseShardingSingle DatabaseSharding = "single"
-	DatabaseShardingNone   DatabaseSharding = ""
+	// DatabaseShardingFlexible requests independently sharded collections by default.
+	DatabaseShardingFlexible DatabaseSharding = "flexible"
+	DatabaseShardingNone     DatabaseSharding = ""
 )
 
 // CreateDatabaseOptions contains options that customize the creating of a database.
@@ -83,7 +85,10 @@ type CreateDatabaseDefaultOptions struct {
 	ReplicationFactor ReplicationFactor `json:"replicationFactor,omitempty"`
 	// Default write concern for collections in database
 	WriteConcern int `json:"writeConcern,omitempty"`
-	// Default sharding for collections in database
+	// Default sharding for collections in database.
+	//
+	// Note: server responses may still report this value as empty string,
+	// including when DatabaseShardingFlexible was requested.
 	Sharding DatabaseSharding `json:"sharding,omitempty"`
 	// Replication version to use for this database
 	// Available since ArangoDB version 3.11

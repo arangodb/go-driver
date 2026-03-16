@@ -2,8 +2,40 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Add `DontFollowRedirect` fields to HTTP connection configuration
-- Deprecate legacy collection option fields: IsVolatile, DoCompact, IndexBuckets, JournalSize, and InternalValidatorType (intentionally undocumented in the 4.0 API)
-- Switched to Go 1.25.8 to fix a security vulnerability
+- QueryProperties: Added slowStreamingQueryThreshold field
+- RunningAQLQuery: Added exitCode (slow queries), modificationQuery, and warnings
+- QuerySubOptions/ExplainQueryOptions: Added usePlanCache, failOnWarning, fullCount, maxNodesPerCallstack, maxWarningCount, profile, and other missing options
+- CollectionDocumentImportOptions: Added overwriteCollectionPrefix, ignoreMissing, details fields
+- KeyGeneratorType: Added support for 'uuid' and 'padded'
+- License: Added diskUsage and upgrading fields for Community Edition dataset limits
+- DatabaseSharding: Added support for "flexible" value
+- ServerHealth: Added LastAckedTime, Timestamp, SyncTime for Coordinators/DB-Servers
+
+### Deprecations and Removals (v2.x, in preparation for ArangoDB v4.0)
+- CollectionStatus and collection status/statusString: Only values 3 (deleted) and 5 (loaded) are in use; other status values and status/statusString properties deprecated (may be removed in v4.0)
+- minReplicationFactor: Deprecated, use writeConcern instead
+- QueryOverwrite (AQL queries): Deprecated, will be removed in v4.0
+- CollectionDocumentCreateOptions.Overwrite: Deprecated, will be removed in v4.0
+- KeyGeneratorType: Deprecated types not in docs
+- EngineType: 'mmfiles' is deprecated/removed
+- Consolidation policy 'bytes_accum': deprecated for inverted indexes (per devel inverted index API docs); not deprecated for ArangoSearch views
+- CacheRespObject: Reviewed for missing fields per API docs
+- Foxx, User-defined AQL functions (UDFs), JavaScript Transactions, Foxx Queues, /_api/tasks, Task/- - - TaskOptions: Deprecated, will be removed in v4.0. Deprecation comments added on: ClientFoxx, ClientFoxxService, Manifest; CreateUserDefinedFunction, DeleteUserDefinedFunction, GetUserDefinedFunctions, UserDefinedFunctionObject; TransactionJS, TransactionJSOptions; ClientTasks, Task, TaskOptions; ExecuteAdminScript; ServerStatusResponse.FoxxApi, CoordinatorInfo.Foxxmaster/IsFoxxmaster; replication ApplierConfig.IncludeFoxxQueues
+- CollectionDocumentImportOptions: Deprecated/removed legacy fields as per API docs
+- CreateGraphOptions: Only 'satellites' is valid; others moved to GraphDefinition
+- Fulltext index type: Deprecated, will be removed in v4.0. minLength option is only used for fulltext indexes. FulltextIndexType constant added (deprecated); MinLength and fulltext-related comments in collection_indexes.go and client_admin_cluster.go
+- DatabaseSharding: Both "" and "flexible" supported for creation; server response checked
+- EdgeDetails: $label clarified as user-defined
+- ExplainQueryOptions: Deprecated/removed legacy options, added missing ones
+- KeyOpts.LastValue: Used internally only
+- LicenseStatus: 'expired' not used; added diskUsage, upgrading if missing
+- Enterprise Edition features: Now available in Community Edition (v3.12.5+); docs/comments updated.  Comments updated across graph (SmartGraph, Satellite, IsSmart, IsDisjoint, Satellites), query options (AllowDirtyReads, SatelliteSyncWait, SkipInaccessibleCollections, EnterpriseOnly), collection opts (IsSmart, SmartJoinAttribute, SmartGraphAttribute), ArangoSearch/views (OptimizeTopK, PrimarySortCache, PrimaryKeyCache, Nested, Cache), inverted index (OptimizeTopK, Nested), backup (Force), and shared (PrimarySort Cache)
+- ServerStatusResponse: 'mode' deprecated, use 'operationMode'
+- ServerHealth: LastHeartbeatAcked, LastHeartbeatSent, LastHeartbeatStatus deprecated (not returned by current server, older format)
+- ServerInformation: 'writeOpsEnabled' is deprecated
+- ServerRole: SingleActive and SinglePassive deprecated (Active Failover removed in v3.12.0)
+- SetCollectionPropertiesOptionsV2: 'journalSize' is deprecated (no longer existent since v3.7; MMFiles removed)
+- Collection option fields: IsVolatile, DoCompact, IndexBuckets, JournalSize are deprecated
 
 ## [2.2.0](https://github.com/arangodb/go-driver/tree/v2.2.0) (2026-02-17)
 - Add endpoint to fetch deployment id

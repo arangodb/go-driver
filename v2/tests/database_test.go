@@ -22,12 +22,14 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
 func TestGetDatabase(t *testing.T) {
@@ -83,6 +85,71 @@ func TestDatabaseNameUnicode(t *testing.T) {
 			db, err := c.GetDatabase(ctx, normalized, nil)
 			require.NoError(t, err)
 			require.NoErrorf(t, db.Remove(ctx), "failed to remove testing database")
+		})
+	})
+}
+
+func TestDatabaseSharding_Defaults(t *testing.T) {
+	requireClusterMode(t)
+
+	Wrap(t, func(t *testing.T, c arangodb.Client) {
+		withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+			skipNoEnterprise(c, ctx, t)
+
+			type scenario struct {
+				name     string
+				sharding arangodb.DatabaseSharding
+				allowed  []arangodb.DatabaseSharding
+			}
+
+			scenarios := []scenario{
+				{
+					name:     "none",
+					sharding: arangodb.DatabaseShardingNone,
+					allowed:  []arangodb.DatabaseSharding{arangodb.DatabaseShardingNone},
+				},
+				{
+					name:     "single",
+					sharding: arangodb.DatabaseShardingSingle,
+					allowed:  []arangodb.DatabaseSharding{arangodb.DatabaseShardingNone, arangodb.DatabaseShardingSingle},
+				},
+				{
+					name:     "flexible",
+					sharding: arangodb.DatabaseShardingFlexible,
+					allowed:  []arangodb.DatabaseSharding{arangodb.DatabaseShardingNone, arangodb.DatabaseShardingFlexible},
+				},
+			}
+
+			for _, sc := range scenarios {
+				t.Run(sc.name, func(t *testing.T) {
+					dbName := GenerateUUID(fmt.Sprintf("test-db-sharding-%s", sc.name))
+					opts := &arangodb.CreateDatabaseOptions{
+						Options: arangodb.CreateDatabaseDefaultOptions{
+							Sharding: sc.sharding,
+						},
+					}
+
+					db, err := c.CreateDatabase(ctx, dbName, opts)
+					if sc.name == "flexible" && err != nil {
+						if ok, arangoErr := shared.IsArangoError(err); ok {
+							t.Skipf("sharding=flexible not supported by this server/version: code=%d errorNum=%d message=%s", arangoErr.Code, arangoErr.ErrorNum, arangoErr.ErrorMessage)
+						}
+					}
+					require.NoError(t, err)
+
+					t.Cleanup(func() {
+						err := db.Remove(ctx)
+						if err != nil {
+							t.Logf("failed to remove db %s: %v", db.Name(), err)
+						}
+					})
+
+					info, err := db.Info(ctx)
+					require.NoError(t, err)
+					t.Logf("database sharding raw value: %q", info.Sharding)
+					require.Containsf(t, sc.allowed, info.Sharding, "server returned unexpected sharding value for input %q", sc.sharding)
+				})
+			}
 		})
 	})
 }

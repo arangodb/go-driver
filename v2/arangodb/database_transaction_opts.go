@@ -126,6 +126,7 @@ type TransactionStatusRecord struct {
 	Status TransactionStatus
 }
 
+// Deprecated: JavaScript transactions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
 // TransactionJSOptions contains options that customize the JavaScript transaction
 type TransactionJSOptions struct {
 	// The actual transaction operations to be executed, in the form of stringified JavaScript code

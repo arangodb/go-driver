@@ -75,7 +75,7 @@ type BackupCreateOptions struct {
 	// given timeout, a possibly inconsistent backup is taken.
 	AllowInconsistent *bool `json:"allowInconsistent,omitempty"`
 
-	// (Enterprise Edition cluster only.) If set to `true` and no global transaction lock can be acquired within the
+	// (Cluster only; Enterprise Edition; from v3.12.5 onward also in Community Edition.) If set to `true` and no global transaction lock can be acquired within the
 	// given timeout, all running transactions are forcefully aborted to ensure that a consistent backup can be created.
 	Force *bool `json:"force,omitempty"`
 }

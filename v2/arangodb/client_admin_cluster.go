@@ -128,19 +128,20 @@ type InventoryCollectionParameters struct {
 }
 
 type InventoryIndex struct {
-	ID              string   `json:"id,omitempty"`
-	Type            string   `json:"type,omitempty"`
-	Fields          []string `json:"fields,omitempty"`
-	Unique          bool     `json:"unique"`
-	Sparse          bool     `json:"sparse"`
-	Deduplicate     bool     `json:"deduplicate"`
-	MinLength       int      `json:"minLength,omitempty"`
-	GeoJSON         bool     `json:"geoJson,omitempty"`
-	Name            string   `json:"name,omitempty"`
-	ExpireAfter     int      `json:"expireAfter,omitempty"`
-	Estimates       bool     `json:"estimates,omitempty"`
-	FieldValueTypes string   `json:"fieldValueTypes,omitempty"`
-	CacheEnabled    *bool    `json:"cacheEnabled,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	Type        string   `json:"type,omitempty"`
+	Fields      []string `json:"fields,omitempty"`
+	Unique      bool     `json:"unique"`
+	Sparse      bool     `json:"sparse"`
+	Deduplicate bool     `json:"deduplicate"`
+	// Deprecated: MinLength is only relevant for fulltext indexes, which are planned to be removed in ArangoDB v4.0.
+	MinLength       int    `json:"minLength,omitempty"`
+	GeoJSON         bool   `json:"geoJson,omitempty"`
+	Name            string `json:"name,omitempty"`
+	ExpireAfter     int    `json:"expireAfter,omitempty"`
+	Estimates       bool   `json:"estimates,omitempty"`
+	FieldValueTypes string `json:"fieldValueTypes,omitempty"`
+	CacheEnabled    *bool  `json:"cacheEnabled,omitempty"`
 }
 
 type InventoryView struct {

@@ -37,9 +37,11 @@ type ServerRole string
 const (
 	// ServerRoleSingle indicates that the server is a single-server instance
 	ServerRoleSingle ServerRole = "Single"
-	// ServerRoleSingleActive indicates that the server is a the leader of a single-server resilient pair
+	// Deprecated: Active Failover deployment mode was removed in ArangoDB v3.12.0.
+	// ServerRoleSingleActive indicates the leader of a single-server resilient pair on older versions.
 	ServerRoleSingleActive ServerRole = "SingleActive"
-	// ServerRoleSinglePassive indicates that the server is a a follower of a single-server resilient pair
+	// Deprecated: Active Failover deployment mode was removed in ArangoDB v3.12.0.
+	// ServerRoleSinglePassive indicates the follower of a single-server resilient pair on older versions.
 	ServerRoleSinglePassive ServerRole = "SinglePassive"
 	// ServerRoleDBServer indicates that the server is a dbserver within a cluster
 	ServerRoleDBServer ServerRole = "DBServer"
@@ -56,7 +58,7 @@ func ConvertServerRole(arangoDBRole string) ServerRole {
 	switch arangoDBRole {
 	case "SINGLE":
 		return ServerRoleSingle
-	case "PRIMARY":
+	case "PRIMARY", "DBSERVER":
 		return ServerRoleDBServer
 	case "COORDINATOR":
 		return ServerRoleCoordinator
@@ -136,7 +138,7 @@ func (c clientServerInfo) ServerRole(ctx context.Context) (ServerRole, error) {
 		return role, nil
 	}
 
-	// Active fail-over mode.
+	// Legacy active fail-over compatibility path for older servers.
 	if err := c.echo(ctx); err != nil {
 		if shared.IsNoLeader(err) {
 			return ServerRoleSinglePassive, nil

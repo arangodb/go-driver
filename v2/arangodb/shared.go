@@ -36,12 +36,13 @@ const (
 	QuerySilent            = "silent"
 	QueryRefillIndexCaches = "refillIndexCaches"
 	QueryMergeObjects      = "mergeObjects"
-	QueryOverwrite         = "overwrite"
-	QueryOverwriteMode     = "overwriteMode"
-	QueryVersionAttribute  = "versionAttribute"
-	QueryIsRestore         = "isRestore"
-	QueryCollection        = "collection"
-	QueryType              = "type"
+	// QueryOverwrite is the HTTP query parameter for overwrite behavior (document creation and AQL queries). Deprecated: will be removed in v4.0; use QueryOverwriteMode (overwriteMode) instead.
+	QueryOverwrite        = "overwrite"
+	QueryOverwriteMode    = "overwriteMode"
+	QueryVersionAttribute = "versionAttribute"
+	QueryIsRestore        = "isRestore"
+	QueryCollection       = "collection"
+	QueryType             = "type"
 )
 
 // PrimarySortCompression Defines how to compress the primary sort data (introduced in v3.7.1)
@@ -97,7 +98,7 @@ type StoredValue struct {
 	Compression PrimarySortCompression `json:"compression,omitempty"`
 
 	// Cache attribute allows you to always cache stored values in memory
-	// Introduced in v3.9.5, Enterprise Edition only
+	// Introduced in v3.9.5; Enterprise Edition; from v3.12.5 onward also in Community Edition.
 	Cache *bool `json:"cache,omitempty"`
 }
 
@@ -111,6 +112,7 @@ const (
 	// ConsolidationPolicyTypeBytesAccum consolidate if and only if ({threshold} range [0.0, 1.0])
 	// {threshold} > (segment_bytes + sum_of_merge_candidate_segment_bytes) / all_segment_bytes,
 	// i.e. the sum of all candidate segment's byte size is less than the total segment byte size multiplied by the {threshold}.
+	// Deprecated: bytes_accum consolidation policy is deprecated; prefer tier policy.
 	ConsolidationPolicyTypeBytesAccum ConsolidationPolicyType = "bytes_accum"
 )
 

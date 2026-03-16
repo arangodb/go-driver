@@ -26,11 +26,13 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
+// Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
 type ClientFoxx interface {
 	ClientFoxxService
 	//ClientFoxxDependencies
 }
 
+// Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
 type ClientFoxxService interface {
 	// InstallFoxxService installs a new service at a given mount path.
 	InstallFoxxService(ctx context.Context, dbName string, zipFile string, options *FoxxDeploymentOptions) error
@@ -215,6 +217,7 @@ type Engines struct {
 	Arangodb *string `json:"arangodb,omitempty"`
 }
 
+// Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
 // Manifest represents the normalized manifest.json of the Foxx service.
 type Manifest struct {
 	// Schema is the JSON schema URL for the manifest structure.

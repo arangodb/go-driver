@@ -40,7 +40,10 @@ type DatabaseInfo struct {
 	// Default write concern for collections in database
 	WriteConcern int `json:"writeConcern,omitempty"`
 
-	// Default sharding for collections in database
+	// Default sharding for collections in database.
+	//
+	// Note: server responses may report this as empty string even if the
+	// database was created with sharding set to flexible.
 	Sharding DatabaseSharding `json:"sharding,omitempty"`
 
 	// Replication version used for this database
@@ -51,6 +54,7 @@ type DatabaseInfo struct {
 type EngineType string
 
 const (
+	// Deprecated: MMFiles engine was removed in ArangoDB 3.7. Kept only for backward compatibility with old server responses.
 	EngineTypeMMFiles = EngineType("mmfiles")
 	EngineTypeRocksDB = EngineType("rocksdb")
 )
