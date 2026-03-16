@@ -86,14 +86,14 @@ type ServerHealth struct {
 	// LastAckedTime is the last heartbeat acknowledged by supervision.
 	// Coordinators and DB-Servers report an ISO 8601 timestamp string.
 	// Agents report elapsed seconds since last ack as a number.
-	LastAckedTime interface{} `json:"LastAckedTime,omitempty"`
-	Role          ServerRole  `json:"Role"`
-	ShortName     string      `json:"ShortName"`
-	Status        ServerStatus `json:"Status"`
-	CanBeDeleted  bool        `json:"CanBeDeleted"`
-	HostID        string      `json:"Host,omitempty"`
-	Version       Version     `json:"Version,omitempty"`
-	Engine        EngineType  `json:"Engine,omitempty"`
+	LastAckedTime interface{}      `json:"LastAckedTime,omitempty"`
+	Role          ServerRole       `json:"Role"`
+	ShortName     string           `json:"ShortName"`
+	Status        ServerStatus     `json:"Status"`
+	CanBeDeleted  bool             `json:"CanBeDeleted"`
+	HostID        string           `json:"Host,omitempty"`
+	Version       Version          `json:"Version,omitempty"`
+	Engine        EngineType       `json:"Engine,omitempty"`
 	SyncStatus    ServerSyncStatus `json:"SyncStatus,omitempty"`
 	// SyncTime is the last sync time reported by Coordinators and DB-Servers.
 	SyncTime time.Time `json:"SyncTime,omitempty"`
