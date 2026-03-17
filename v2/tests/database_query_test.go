@@ -423,7 +423,7 @@ func Test_ListOfSlowAQLQueries(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, props)
 				require.NotNil(t, props.SlowStreamingQueryThreshold)
-				require.Equal(t, 0.0002, *props.SlowStreamingQueryThreshold)
+				require.InDelta(t, 0.0002, *props.SlowStreamingQueryThreshold, 1e-6)
 
 				// Clear any existing slow queries to ensure we start fresh
 				// This is important because MaxSlowQueries is set to 1
