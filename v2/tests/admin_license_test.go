@@ -57,10 +57,11 @@ func Test_License(t *testing.T) {
 				assert.NotNil(t, license.DiskUsage.BytesUsed, "diskUsage.bytesUsed should be present")
 				assert.Equalf(t, arangodb.LicenseStatus(""), license.Status, "license status should be empty when diskUsage is returned")
 				assert.Empty(t, license.License, "license string should be empty when diskUsage is returned")
-			} else {
-				// Legacy Community response shape for versions < 3.12.5
+			} else if version.Version.CompareTo("3.12.5") < 0 {
+				// Legacy Community response shape for versions < 3.12.5 (server may return "license": "none" or empty)
 				assert.Equalf(t, arangodb.LicenseStatus(""), license.Status, "license status should be empty for legacy Community")
-				assert.Empty(t, license.License, "license string should be empty for legacy Community")
+				assert.True(t, license.License == "" || license.License == "none",
+					"license string should be empty or 'none' for legacy Community, got %q", license.License)
 				assert.Equal(t, 0, license.Version, "license version should be 0 for legacy Community")
 				assert.Nil(t, license.DiskUsage, "diskUsage should not be present for legacy Community")
 			}
