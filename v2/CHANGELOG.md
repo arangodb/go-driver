@@ -12,7 +12,7 @@
 - ServerHealth: Added LastAckedTime, Timestamp, SyncTime for Coordinators/DB-Servers
 
 ### Deprecations and Removals (v2.x, in preparation for ArangoDB v4.0)
-- CollectionStatus and collection status/statusString: Only values 3 (deleted) and 5 (loaded) are in use; other status values and status/statusString properties deprecated (may be removed in v4.0)
+- CollectionStatus and collection status/statusString: Only values 3 (loaded) and 5 (deleted) are in use; other status values and status/statusString properties deprecated (may be removed in v4.0)
 - minReplicationFactor: Deprecated, use writeConcern instead
 - QueryOverwrite (AQL queries): Deprecated, will be removed in v4.0
 - CollectionDocumentCreateOptions.Overwrite: Deprecated, will be removed in v4.0
