@@ -137,6 +137,13 @@ func (d *databaseGraph) Graphs(ctx context.Context) (GraphsResponseReader, error
 	}
 }
 
+// createGraphOptions is the HTTP request body for POST _api/gharial.
+// Per https://docs.arango.ai/arangodb/3.12/develop/http-api/graphs/named-graphs/#create-a-graph the API accepts:
+// - Top-level: name, edgeDefinitions, isSmart, orphanCollections (and optionally isDisjoint).
+// - options object: numberOfShards, replicationFactor, satellites, smartGraphAttribute, writeConcern (and optionally isDisjoint).
+// The driver sends: top-level name, edgeDefinitions, isSmart, orphanCollections; and all other
+// attributes (isDisjoint, smartGraphAttribute, numberOfShards, replicationFactor, writeConcern, satellites
+// from GraphDefinition and CreateGraphOptions) in the options object. The server honors both forms.
 type createGraphOptions struct {
 	Name              string                        `json:"name"`
 	EdgeDefinitions   []EdgeDefinition              `json:"edgeDefinitions,omitempty"`
@@ -145,6 +152,7 @@ type createGraphOptions struct {
 	Options           *createGraphAdditionalOptions `json:"options,omitempty"`
 }
 
+// createGraphAdditionalOptions is the "options" object in the create-graph body (see link above).
 type createGraphAdditionalOptions struct {
 	IsDisjoint          bool                   `json:"isDisjoint,omitempty"`
 	SmartGraphAttribute string                 `json:"smartGraphAttribute,omitempty"`

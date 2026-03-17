@@ -58,6 +58,12 @@ func TestConvertServerRole(t *testing.T) {
 			},
 			want: ServerRoleDBServer,
 		},
+		"dbserver-alias": {
+			args: args{
+				arangoDBRole: "DBSERVER",
+			},
+			want: ServerRoleDBServer,
+		},
 		"undefined": {
 			args: args{
 				arangoDBRole: "invalid",

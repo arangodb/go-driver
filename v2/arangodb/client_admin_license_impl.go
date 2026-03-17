@@ -40,18 +40,30 @@ type LicenseFeatures struct {
 type LicenseStatus string
 
 const (
-	// LicenseStatusGood - The license is valid for more than 2 weeks.
+	// LicenseStatusGood - The license is valid for more than 1 week.
 	LicenseStatusGood LicenseStatus = "good"
 
-	// LicenseStatusExpired - The license has expired. In this situation, no new Enterprise Edition features can be utilized.
+	// LicenseStatusExpired - Not returned by current server versions; kept for backward compatibility.
+	// With managed/activation licenses the server transitions good → read-only without "expired".
 	LicenseStatusExpired LicenseStatus = "expired"
 
-	// LicenseStatusExpiring - The license is valid for less than 2 weeks.
+	// LicenseStatusExpiring - The license is close to expiry (less than 1 week).
 	LicenseStatusExpiring LicenseStatus = "expiring"
 
-	// LicenseStatusReadOnly - The license is expired over 2 weeks. The instance is now restricted to read-only mode.
+	// LicenseStatusReadOnly - The license has expired; the instance is restricted to read-only mode.
 	LicenseStatusReadOnly LicenseStatus = "read-only"
 )
+
+// LicenseDiskUsage describes Community Edition dataset limit usage details.
+// Present only when no Enterprise Edition license is applied.
+type LicenseDiskUsage struct {
+	BytesLimit           *uint64 `json:"bytesLimit,omitempty"`
+	BytesUsed            *uint64 `json:"bytesUsed,omitempty"`
+	LimitReached         *bool   `json:"limitReached,omitempty"`
+	SecondsUntilReadOnly *int    `json:"secondsUntilReadOnly,omitempty"`
+	SecondsUntilShutDown *int    `json:"secondsUntilShutDown,omitempty"`
+	Status               *string `json:"status,omitempty"`
+}
 
 // License describes license information.
 type License struct {
@@ -69,6 +81,14 @@ type License struct {
 
 	// Hash The hash value of the license.
 	Hash string `json:"hash,omitempty"`
+
+	// DiskUsage provides dataset usage/limit information in Community Edition.
+	// It is typically absent when an Enterprise Edition license is applied.
+	DiskUsage *LicenseDiskUsage `json:"diskUsage,omitempty"`
+
+	// Upgrading indicates that a license update is currently being propagated.
+	// This field is optional and may be omitted by the server.
+	Upgrading *bool `json:"upgrading,omitempty"`
 }
 
 func (c *clientAdmin) GetLicense(ctx context.Context) (License, error) {

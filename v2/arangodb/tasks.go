@@ -22,6 +22,7 @@ import (
 	"context"
 )
 
+// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are planned to be removed in ArangoDB v4.0.
 // ClientTasks defines the interface for managing tasks in ArangoDB.
 type ClientTasks interface {
 	// Task retrieves an existing task by its ID.
@@ -41,6 +42,7 @@ type ClientTasks interface {
 	RemoveTask(ctx context.Context, databaseName string, id string) error
 }
 
+// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are planned to be removed in ArangoDB v4.0.
 // TaskOptions contains options for creating a new task.
 type TaskOptions struct {
 	// ID is an optional identifier for the task.
@@ -62,6 +64,7 @@ type TaskOptions struct {
 	Offset *float64 `json:"offset,omitempty"`
 }
 
+// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are planned to be removed in ArangoDB v4.0.
 // Task provides access to a single task on the server.
 type Task interface {
 	// ID returns the ID of the task.

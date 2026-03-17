@@ -60,7 +60,7 @@ type GraphEdgesDefinition interface {
 
 type CreateEdgeDefinitionOptions struct {
 	// An array of collection names that is used to create SatelliteCollections for a (Disjoint) SmartGraph
-	// using SatelliteCollections (Enterprise Edition only).
+	// using SatelliteCollections (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	// Each array element must be a string and a valid collection name. The collection type cannot be modified later.
 	Satellites []string `json:"satellites,omitempty"`
 }
@@ -76,7 +76,7 @@ type CreateEdgeDefinitionResponse struct {
 
 type ReplaceEdgeOptions struct {
 	// An array of collection names that is used to create SatelliteCollections for a (Disjoint) SmartGraph
-	// using SatelliteCollections (Enterprise Edition only).
+	// using SatelliteCollections (Enterprise Edition; from v3.12.5 onward also in Community Edition).
 	// Each array element must be a string and a valid collection name. The collection type cannot be modified later.
 	Satellites []string `json:"satellites,omitempty"`
 

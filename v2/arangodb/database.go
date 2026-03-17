@@ -35,6 +35,7 @@ type Database interface {
 	// If the database does not exist, a NotFoundError is returned.
 	Remove(ctx context.Context) error
 
+	// Deprecated: JavaScript transactions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
 	// TransactionJS performs a javascript transaction. The result of the transaction function is returned.
 	TransactionJS(ctx context.Context, options TransactionJSOptions) (interface{}, error)
 

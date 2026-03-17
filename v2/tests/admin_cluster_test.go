@@ -285,6 +285,9 @@ func Test_ClusterMoveShards(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		// Sequential: MoveShard mutates cluster state; parallel runs would interfere and can take 5+ min.
+		Parallel: utils.NewType(false),
 	})
 }
 

@@ -351,12 +351,14 @@ func Test_GetArangoSearchViews(t *testing.T) {
 					skipBelowVersion(client, ctx, "3.4", t)
 					// Get views before adding some
 					before := readAllViewsT(ctx, t, db)
-					// Create views
+					t.Logf("GetArangoSearchViews: found %d views before creating", len(before))
+					// Create views (can be slow in cluster; log progress to avoid CI no-output timeout)
 					names := make([]string, 5)
 					for i := 0; i < len(names); i++ {
 						names[i] = fmt.Sprintf("test_get_views_%d", i)
 						_, err := db.CreateArangoSearchView(ctx, names[i], nil)
 						require.NoError(t, err, "Failed to create view '%s'", names[i])
+						t.Logf("GetArangoSearchViews: created view %d/5 %s", i+1, names[i])
 					}
 					// Get views
 					after := readAllViewsT(ctx, t, db)

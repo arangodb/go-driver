@@ -66,6 +66,7 @@ type ClientAdmin interface {
 
 	// ExecuteAdminScript executes JavaScript code on the server.
 	// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
+	// Deprecated: Server-side JavaScript is planned to be removed in ArangoDB v4.0.
 	ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error)
 
 	// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
@@ -363,11 +364,13 @@ type ServerStatusResponse struct {
 	Pid *int `json:"pid,omitempty"`
 	// License type (e.g., "community" or "enterprise")
 	License *string `json:"license,omitempty"`
-	// Mode in which the server is running
+	// Deprecated: Mode is deprecated in the server status response.
+	// Use OperationMode instead.
 	Mode *string `json:"mode,omitempty"`
-	// Operational mode (e.g., "server", "coordinator")
+	// Operational mode (e.g., "server", "coordinator").
+	// Supersedes the deprecated Mode field.
 	OperationMode *string `json:"operationMode,omitempty"`
-	// Whether the Foxx API is enabled
+	// Whether the Foxx API is enabled. Deprecated: Foxx is planned to be removed in ArangoDB v4.0.
 	FoxxApi *bool `json:"foxxApi,omitempty"`
 	// Host of the server
 	Host *string `json:"host,omitempty"`
@@ -390,7 +393,8 @@ type ServerInformation struct {
 	Maintenance *bool `json:"maintenance,omitempty"`
 	// Role of the server (e.g., "SINGLE", "COORDINATOR")
 	Role *string `json:"role,omitempty"`
-	// Whether write operations are enabled
+	// Deprecated: whether write operations are enabled.
+	// Use ReadOnly instead.
 	WriteOpsEnabled *bool `json:"writeOpsEnabled,omitempty"`
 	// Whether the server is in read-only mode
 	ReadOnly *bool `json:"readOnly,omitempty"`
@@ -419,9 +423,9 @@ type ServerProgress struct {
 
 // CoordinatorInfo provides information specific to the coordinator role (cluster only).
 type CoordinatorInfo struct {
-	// ID of the Foxxmaster coordinator
+	// ID of the Foxxmaster coordinator. Deprecated: Foxx is planned to be removed in ArangoDB v4.0.
 	Foxxmaster *string `json:"foxxmaster,omitempty"`
-	// Whether this server is the Foxxmaster
+	// Whether this server is the Foxxmaster. Deprecated: Foxx is planned to be removed in ArangoDB v4.0.
 	IsFoxxmaster *bool `json:"isFoxxmaster,omitempty"`
 }
 

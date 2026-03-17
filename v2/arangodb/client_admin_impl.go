@@ -72,19 +72,34 @@ type ClusterHealth struct {
 }
 
 // ServerHealth contains health information of a single server in a cluster.
+// Coordinators and DB-Servers: LastAckedTime, Timestamp, and SyncTime are reported.
+// LastHeartbeatAcked, LastHeartbeatSent, LastHeartbeatStatus are from an older format
+// and are not returned by the current server; kept for backward compatibility (see arangod/Agency/Supervision.cpp).
 type ServerHealth struct {
-	Endpoint            string           `json:"Endpoint"`
-	LastHeartbeatAcked  time.Time        `json:"LastHeartbeatAcked"`
-	LastHeartbeatSent   time.Time        `json:"LastHeartbeatSent"`
-	LastHeartbeatStatus string           `json:"LastHeartbeatStatus"`
-	Role                ServerRole       `json:"Role"`
-	ShortName           string           `json:"ShortName"`
-	Status              ServerStatus     `json:"Status"`
-	CanBeDeleted        bool             `json:"CanBeDeleted"`
-	HostID              string           `json:"Host,omitempty"`
-	Version             Version          `json:"Version,omitempty"`
-	Engine              EngineType       `json:"Engine,omitempty"`
-	SyncStatus          ServerSyncStatus `json:"SyncStatus,omitempty"`
+	Endpoint string `json:"Endpoint"`
+	// Deprecated: not returned by current server; older health format. Kept for backward compatibility.
+	LastHeartbeatAcked time.Time `json:"LastHeartbeatAcked"`
+	// Deprecated: not returned by current server; older health format. Kept for backward compatibility.
+	LastHeartbeatSent time.Time `json:"LastHeartbeatSent"`
+	// Deprecated: not returned by current server; older health format. Kept for backward compatibility.
+	LastHeartbeatStatus string `json:"LastHeartbeatStatus"`
+	// LastAckedTime is the last heartbeat acknowledged by supervision.
+	// Coordinators and DB-Servers report an ISO 8601 timestamp string.
+	// Agents report elapsed seconds since last ack as a number.
+	LastAckedTime interface{}      `json:"LastAckedTime,omitempty"`
+	Role          ServerRole       `json:"Role"`
+	ShortName     string           `json:"ShortName"`
+	Status        ServerStatus     `json:"Status"`
+	CanBeDeleted  bool             `json:"CanBeDeleted"`
+	HostID        string           `json:"Host,omitempty"`
+	Version       Version          `json:"Version,omitempty"`
+	Engine        EngineType       `json:"Engine,omitempty"`
+	SyncStatus    ServerSyncStatus `json:"SyncStatus,omitempty"`
+	// SyncTime is the last sync time reported by Coordinators and DB-Servers.
+	SyncTime time.Time `json:"SyncTime,omitempty"`
+	// Timestamp is the last persisted status-change timestamp (Coordinators/DB-Servers).
+	// Prefer LastAckedTime for health monitoring.
+	Timestamp time.Time `json:"Timestamp,omitempty"`
 
 	// Only for Coordinators
 	AdvertisedEndpoint *string `json:"AdvertisedEndpoint,omitempty"`
@@ -354,6 +369,7 @@ func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) err
 
 // ExecuteAdminScript executes JavaScript code on the server.
 // Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
+// Deprecated: Server-side JavaScript is planned to be removed in ArangoDB v4.0.
 func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error) {
 	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "execute")
 

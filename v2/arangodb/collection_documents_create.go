@@ -118,9 +118,10 @@ type CollectionDocumentCreateOptions struct {
 	// the new document is not rejected with unique constraint violation error but replaces the old document.
 	// Note that operations with overwrite parameter require a _key attribute in the request payload,
 	// therefore they can only be performed on collections sharded by _key.
+	// Deprecated: use OverwriteMode instead. Will be removed in v4.0.
 	Overwrite *bool
 
-	// This option supersedes `overwrite` option.
+	// OverwriteMode supersedes the deprecated Overwrite option.
 	OverwriteMode *CollectionDocumentCreateOverwriteMode
 
 	// If set to true, an empty object is returned as response if the document operation succeeds.
@@ -182,12 +183,10 @@ func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) er
 		r.AddQuery(QueryWaitForSync, boolToString(*c.WithWaitForSync))
 	}
 
-	if c.Overwrite != nil {
-		r.AddQuery(QueryOverwrite, boolToString(*c.Overwrite))
-	}
-
 	if c.OverwriteMode != nil {
 		r.AddQuery(QueryOverwriteMode, c.OverwriteMode.String())
+	} else if c.Overwrite != nil {
+		r.AddQuery(QueryOverwrite, boolToString(*c.Overwrite))
 	}
 
 	if c.Silent != nil {

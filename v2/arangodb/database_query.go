@@ -101,6 +101,7 @@ type DatabaseQuery interface {
 	// The properties are updated with the provided options.
 	SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error)
 
+	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
 	// CreateUserDefinedFunction creates a user-defined function in the database.
 	// The function is created with the provided options.
 	// The function is created in the system collection `_aqlfunctions`.
@@ -108,12 +109,14 @@ type DatabaseQuery interface {
 	// If the function already exists, it will be updated with the new code.
 	CreateUserDefinedFunction(ctx context.Context, options UserDefinedFunctionObject) (bool, error)
 
+	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
 	// DeleteUserDefinedFunction removes a user-defined AQL function from the current database.
 	// If group is true, all functions with the given name as a namespace prefix will be deleted.
 	// If group is false, only the function with the fully qualified name will be removed.
 	// It returns the number of functions deleted.
 	DeleteUserDefinedFunction(ctx context.Context, name *string, group *bool) (*int, error)
 
+	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
 	// GetUserDefinedFunctions retrieves all user-defined AQL functions registered in the current database.
 	// It returns a list of UserDefinedFunctionObject, each containing the function's name, code, and isDeterministic.
 	// The returned list may be empty array if no user-defined functions are registered.
@@ -127,7 +130,7 @@ type QuerySubOptions struct {
 	// documents because changes have not yet been replicated to the follower, as well as changes to documents before
 	// they are officially committed on the leader.
 	//
-	//This feature is only available in the Enterprise Edition.
+	// AllowDirtyReads: Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	AllowDirtyReads bool `json:"allowDirtyReads,omitempty"`
 
 	// AllowRetry If set to `true`, ArangoDB will store cursor results in such a way
@@ -205,8 +208,13 @@ type QuerySubOptions struct {
 	// Additionally, the query plan is returned in the extra.plan sub-attribute.
 	Profile uint `json:"profile,omitempty"`
 
-	// This Enterprise Edition parameter allows to configure how long a DBServer will have time to bring the SatelliteCollections
+	// UsePlanCache controls whether execution plans are stored in and retrieved from the AQL query plan cache.
+	// Introduced in ArangoDB v3.12.4.
+	UsePlanCache bool `json:"usePlanCache,omitempty"`
+
+	// SatelliteSyncWait allows to configure how long a DBServer will have time to bring the SatelliteCollections
 	// involved in the query into sync. The default value is 60.0 (seconds). When the max time has been reached the query will be stopped.
+	// Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	SatelliteSyncWait float64 `json:"satelliteSyncWait,omitempty"`
 
 	// Let AQL queries (especially graph traversals) treat collection to which a user has no access rights for as if
@@ -215,7 +223,7 @@ type QuerySubOptions struct {
 	// execute AQL queries on that graph. You can naturally limit the accessible results by changing the access rights
 	// of users on collections.
 	//
-	// This feature is only available in the Enterprise Edition.
+	// SkipInaccessibleCollections: Enterprise Edition; from v3.12.5 onward also available in Community Edition.
 	SkipInaccessibleCollections *bool `json:"skipInaccessibleCollections,omitempty"`
 
 	// This option allows queries to store intermediate and final results temporarily on disk if the amount of memory
@@ -248,7 +256,8 @@ type QuerySubOptions struct {
 
 	/* Not officially documented options, please use them with care. */
 
-	// [unofficial] Limits the maximum number of plans that are created by the AQL query optimizer.
+	// [unofficial] Legacy alias for maxNumberOfPlans kept for compatibility with older examples/docs.
+	// Prefer MaxNumberOfPlans.
 	MaxPlans int `json:"maxPlans,omitempty"`
 
 	// [unofficial] ShardId query option
@@ -341,9 +350,28 @@ type ExplainQueryOptions struct {
 	// The default is false, meaning only the optimal plan will be returned.
 	AllPlans bool `json:"allPlans,omitempty"`
 
+	// When set to true, the explain request will fail on warnings instead of returning them.
+	FailOnWarning *bool `json:"failOnWarning,omitempty"`
+
+	// If set to true and the query contains a LIMIT clause, the response can include fullCount information.
+	FullCount bool `json:"fullCount,omitempty"`
+
 	// An optional maximum number of plans that the optimizer is allowed to generate.
 	// Setting this attribute to a low value allows to put a cap on the amount of work the optimizer does.
 	MaxNumberOfPlans *int `json:"maxNumberOfPlans,omitempty"`
+
+	// Threshold for stack splitting to avoid deep call stacks during planning.
+	MaxNodesPerCallstack *int `json:"maxNodesPerCallstack,omitempty"`
+
+	// Limits the maximum number of warnings returned by the explain operation.
+	MaxWarningCount *int `json:"maxWarningCount,omitempty"`
+
+	// If set to 1 or 2, returns additional profiling-related information in the explain response.
+	Profile uint `json:"profile,omitempty"`
+
+	// Controls whether execution plans are stored in and retrieved from the AQL query plan cache.
+	// Introduced in ArangoDB v3.12.4.
+	UsePlanCache bool `json:"usePlanCache,omitempty"`
 
 	// Options related to the query optimizer.
 	Optimizer ExplainQueryOptimizerOptions `json:"optimizer,omitempty"`
@@ -407,14 +435,17 @@ type ExplainQueryResult struct {
 }
 
 type QueryProperties struct {
-	Enabled              *bool    `json:"enabled"`
-	TrackSlowQueries     *bool    `json:"trackSlowQueries"`
-	TrackBindVars        *bool    `json:"trackBindVars"`
-	MaxSlowQueries       *int     `json:"maxSlowQueries"`
-	SlowQueryThreshold   *float64 `json:"slowQueryThreshold"`
-	MaxQueryStringLength *int     `json:"maxQueryStringLength"`
+	Enabled                     *bool    `json:"enabled"`
+	TrackSlowQueries            *bool    `json:"trackSlowQueries"`
+	TrackBindVars               *bool    `json:"trackBindVars"`
+	MaxSlowQueries              *int     `json:"maxSlowQueries"`
+	SlowQueryThreshold          *float64 `json:"slowQueryThreshold"`
+	SlowStreamingQueryThreshold *float64 `json:"slowStreamingQueryThreshold"`
+	MaxQueryStringLength        *int     `json:"maxQueryStringLength"`
 }
 
+// RunningAQLQuery describes a single entry in the list of running AQL queries or the list of slow AQL queries.
+// Slow queries include an additional attribute ExitCode (error code / errorNum).
 type RunningAQLQuery struct {
 	// The unique identifier of the query.
 	Id *string `json:"id,omitempty"`
@@ -441,6 +472,12 @@ type RunningAQLQuery struct {
 	State *string `json:"state,omitempty"`
 	// The stream option indicates whether the query is executed in streaming mode.
 	Stream *bool `json:"stream,omitempty"`
+	// Indicates whether the query modifies data.
+	ModificationQuery *bool `json:"modificationQuery,omitempty"`
+	// The number of query warnings that occurred.
+	Warnings *int `json:"warnings,omitempty"`
+	// ExitCode is the error code (errorNum) for slow queries; 0 on success. Present when listing slow queries.
+	ExitCode *int `json:"exitCode,omitempty"`
 }
 
 type Flags struct {
@@ -453,7 +490,7 @@ type Flags struct {
 	// DisabledByDefault indicates whether the query is disabled by default.
 	// This means that the query is not executed unless explicitly enabled.
 	DisabledByDefault *bool `json:"disabledByDefault,omitempty"`
-	// EnterpriseOnly indicates whether the query is only available in the Enterprise Edition.
+	// EnterpriseOnly indicates whether the query was historically Enterprise-only (from v3.12.5 onward also in Community Edition).
 	EnterpriseOnly *bool `json:"enterpriseOnly,omitempty"`
 	// Hidden indicates whether the query is hidden from the user.
 	Hidden *bool `json:"hidden,omitempty"`
@@ -465,6 +502,8 @@ type OptimizerRules struct {
 	Flags `json:"flags,omitempty"`
 }
 
+// CacheRespObject holds fields common to plan cache and query cache entries.
+// Used inline by QueryPlanCacheRespObject and QueryCacheEntriesRespObject.
 type CacheRespObject struct {
 	// BindVars are the bind variables used in the query.
 	BindVars map[string]interface{} `json:"bindVars,omitempty"`
@@ -478,10 +517,11 @@ type CacheRespObject struct {
 	Query *string `json:"query,omitempty"`
 }
 
+// QueryPlanCacheRespObject represents one entry from GET _api/query-plan-cache.
 type QueryPlanCacheRespObject struct {
 	CacheRespObject `json:",inline"`
 	// QueryHash is the hash of the AQL query string.
-	QueryHash *uint32 `json:"queryHash,omitempty"`
+	QueryHash *uint64 `json:"queryHash,omitempty"`
 	// FullCount indicates whether the query result contains the full count of documents.
 	FullCount *bool `json:"fullCount,omitempty"`
 	// Created is the time when the query plan has been added to the cache.
@@ -521,6 +561,7 @@ type QueryCacheProperties struct {
 	Mode *string `json:"mode,omitempty"`
 }
 
+// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
 type UserDefinedFunctionObject struct {
 	// Code is the JavaScript function body as a string.
 	Code *string `json:"code"`

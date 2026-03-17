@@ -35,6 +35,8 @@ const (
 type EdgeDirection string
 
 const (
+	// EdgeDirectionAny selects edges in any direction (inbound and outbound).
+	EdgeDirectionAny EdgeDirection = "any"
 	// EdgeDirectionIn selects inbound edges
 	EdgeDirectionIn EdgeDirection = "in"
 	// EdgeDirectionOut selects outbound edges
@@ -62,7 +64,8 @@ type DatabaseGraph interface {
 }
 
 type GetEdgesOptions struct {
-	// The direction of the edges. Allowed values are "in" and "out". If not set, edges in both directions are returned.
+	// The direction of the edges. Allowed values are "in", "out", and "any".
+	// If not set, edges in both directions are returned (equivalent to "any").
 	Direction EdgeDirection `json:"direction,omitempty"`
 
 	// Set this to true to allow the Coordinator to ask any shard replica for the data, not only the shard leader.
@@ -72,8 +75,10 @@ type GetEdgesOptions struct {
 
 type EdgeDetails struct {
 	DocumentMeta
-	From  string `json:"_from"`
-	To    string `json:"_to"`
+	From string `json:"_from"`
+	To   string `json:"_to"`
+	// Label is the edge definition name (e.g. edge collection name in the graph).
+	// It is not a system attribute; the server uses the "$label" key in responses for this value.
 	Label string `json:"$label"`
 }
 
@@ -84,7 +89,7 @@ type GetGraphOptions struct {
 
 type CreateGraphOptions struct {
 	// Satellites An array of collection names that is used to create SatelliteCollections for a (Disjoint) SmartGraph
-	// using SatelliteCollections (Enterprise Edition only). Each array element must be a string and a valid
+	// using SatelliteCollections (Enterprise Edition; from v3.12.5 onward also in Community Edition). Each array element must be a string and a valid
 	// collection name. The collection type cannot be modified later.
 	Satellites []string `json:"satellites,omitempty"`
 }

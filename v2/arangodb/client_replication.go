@@ -160,6 +160,7 @@ type ParametersInventoryResponse struct {
 	// KeyOptions defines the key generation options for the collection.
 	KeyOptions *KeyOpts `json:"keyOptions,omitempty"`
 	// MinReplicationFactor defines the minimum replication factor for the collection.
+	// Deprecated: use WriteConcern instead. This is a legacy alias kept for compatibility.
 	MinReplicationFactor *int `json:"minReplicationFactor,omitempty"`
 	// NumberOfShards defines the number of shards for the collection.
 	NumberOfShards *int `json:"numberOfShards,omitempty"`
@@ -191,6 +192,25 @@ type ParametersInventoryResponse struct {
 	WriteConcern *int `json:"writeConcern,omitempty"`
 }
 
+// UnmarshalJSON normalizes legacy inventory responses by mapping
+// minReplicationFactor to WriteConcern when WriteConcern is not present.
+func (p *ParametersInventoryResponse) UnmarshalJSON(data []byte) error {
+	type parametersInventoryResponseAlias ParametersInventoryResponse
+
+	var alias parametersInventoryResponseAlias
+	if err := json.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+
+	*p = ParametersInventoryResponse(alias)
+
+	if p.WriteConcern == nil && p.MinReplicationFactor != nil {
+		p.WriteConcern = p.MinReplicationFactor
+	}
+
+	return nil
+}
+
 // IndexesInventoryResponse represents metadata for an index in the collection.
 type IndexesInventoryResponse struct {
 	// Reusable basic properties like ID and Name
@@ -217,7 +237,8 @@ type KeyOpts struct {
 	AllowUserKeys *bool `json:"allowUserKeys,omitempty"`
 	// Key type (autoincrement, traditional, etc.)
 	Type *string `json:"type,omitempty"`
-	// Last value for autoincrement keys
+	// Internal offset for autoincrement/padded key generators.
+	// This is read-only server metadata used for dump/restore workflows.
 	LastValue *int `json:"lastValue,omitempty"`
 }
 
@@ -372,7 +393,7 @@ type ApplierConfigResponse struct {
 	SkipCreateDrop *bool `json:"skipCreateDrop,omitempty"`
 	// Max packet size (bytes)
 	MaxPacketSize *int64 `json:"maxPacketSize,omitempty"`
-	// Whether to include Foxx queues
+	// Whether to include Foxx queues. Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
 	IncludeFoxxQueues *bool `json:"includeFoxxQueues,omitempty"`
 	// Whether incremental sync is used
 	Incremental *bool `json:"incremental,omitempty"`

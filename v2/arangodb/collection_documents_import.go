@@ -27,10 +27,13 @@ import (
 )
 
 const (
-	QueryFromPrefix  = "fromPrefix"
-	QueryToPrefix    = "toPrefix"
-	QueryComplete    = "complete"
-	QueryOnDuplicate = "onDuplicate"
+	QueryFromPrefix                = "fromPrefix"
+	QueryToPrefix                  = "toPrefix"
+	QueryComplete                  = "complete"
+	QueryOnDuplicate               = "onDuplicate"
+	QueryIgnoreMissing             = "ignoreMissing"
+	QueryOverwriteCollectionPrefix = "overwriteCollectionPrefix"
+	QueryDetails                   = "details"
 )
 
 // CollectionDocumentDelete removes document(s) with given key(s) from the collection
@@ -61,12 +64,17 @@ type CollectionDocumentImportRequest struct {
 
 // ImportDocumentOptions holds optional options that control the import document process.
 type CollectionDocumentImportOptions struct {
+	// IgnoreMissing controls whether rows with missing values are imported when using tabular import format.
+	// Missing values are omitted and excess values are ignored.
+	IgnoreMissing *bool `json:"ignoreMissing,omitempty"`
 	// FromPrefix is an optional prefix for the values in _from attributes. If specified, the value is automatically
 	// prepended to each _from input value. This allows specifying just the keys for _from.
 	FromPrefix *string `json:"fromPrefix,omitempty"`
 	// ToPrefix is an optional prefix for the values in _to attributes. If specified, the value is automatically
 	// prepended to each _to input value. This allows specifying just the keys for _to.
 	ToPrefix *string `json:"toPrefix,omitempty"`
+	// OverwriteCollectionPrefix forces `fromPrefix` and `toPrefix` to be applied even if values already contain a collection prefix.
+	OverwriteCollectionPrefix *bool `json:"overwriteCollectionPrefix,omitempty"`
 	// Overwrite is a flag that if set, then all data in the collection will be removed prior to the import.
 	// Note that any existing index definitions will be preseved.
 	Overwrite *bool `json:"overwrite,omitempty"`
@@ -80,8 +88,10 @@ type CollectionDocumentImportOptions struct {
 	// Complete is a flag that if set, will make the whole import fail if any error occurs.
 	// Otherwise the import will continue even if some documents cannot be imported.
 	Complete *bool `json:"complete,omitempty"`
+	// Details includes per-document error details in the import response for failed documents.
+	Details *bool `json:"details,omitempty"`
 
-	// Wait until the deletion operation has been synced to disk.
+	// Wait until the import operation has been synced to disk.
 	WithWaitForSync *bool
 }
 
@@ -147,7 +157,7 @@ type CollectionDocumentImportStatistics struct {
 	Ignored int64 `json:"ignored,omitempty"`
 	// if query parameter details is set to true, the result will contain a details attribute which is an array
 	// with more detailed information about which documents could not be inserted.
-	Details []string
+	Details []string `json:"details,omitempty"`
 }
 
 func (c *CollectionDocumentImportOptions) modifyRequest(r connection.Request) error {
@@ -159,8 +169,16 @@ func (c *CollectionDocumentImportOptions) modifyRequest(r connection.Request) er
 		r.AddQuery(QueryFromPrefix, *c.FromPrefix)
 	}
 
+	if c.IgnoreMissing != nil {
+		r.AddQuery(QueryIgnoreMissing, boolToString(*c.IgnoreMissing))
+	}
+
 	if c.ToPrefix != nil {
 		r.AddQuery(QueryToPrefix, *c.ToPrefix)
+	}
+
+	if c.OverwriteCollectionPrefix != nil {
+		r.AddQuery(QueryOverwriteCollectionPrefix, boolToString(*c.OverwriteCollectionPrefix))
 	}
 
 	if c.Overwrite != nil {
@@ -173,6 +191,10 @@ func (c *CollectionDocumentImportOptions) modifyRequest(r connection.Request) er
 
 	if c.Complete != nil {
 		r.AddQuery(QueryComplete, boolToString(*c.Complete))
+	}
+
+	if c.Details != nil {
+		r.AddQuery(QueryDetails, boolToString(*c.Details))
 	}
 
 	if c.WithWaitForSync != nil {
