@@ -20,7 +20,7 @@
 - EngineType: 'mmfiles' is deprecated/removed
 - Consolidation policy 'bytes_accum': deprecated for inverted indexes (per devel inverted index API docs); not deprecated for ArangoSearch views
 - CacheRespObject: Reviewed for missing fields per API docs
-- Foxx, User-defined AQL functions (UDFs), JavaScript Transactions, Foxx Queues, /_api/tasks, Task/- - - TaskOptions: Deprecated, will be removed in v4.0. Deprecation comments added on: ClientFoxx, ClientFoxxService, Manifest; CreateUserDefinedFunction, DeleteUserDefinedFunction, GetUserDefinedFunctions, UserDefinedFunctionObject; TransactionJS, TransactionJSOptions; ClientTasks, Task, TaskOptions; ExecuteAdminScript; ServerStatusResponse.FoxxApi, CoordinatorInfo.Foxxmaster/IsFoxxmaster; replication ApplierConfig.IncludeFoxxQueues
+- Foxx, User-defined AQL functions (UDFs), JavaScript Transactions, Foxx Queues, /_api/tasks, Task/TaskOptions: Deprecated, will be removed in v4.0. Deprecation comments added on: ClientFoxx, ClientFoxxService, Manifest; CreateUserDefinedFunction, DeleteUserDefinedFunction, GetUserDefinedFunctions, UserDefinedFunctionObject; TransactionJS, TransactionJSOptions; ClientTasks, Task, TaskOptions; ExecuteAdminScript; ServerStatusResponse.FoxxApi, CoordinatorInfo.Foxxmaster/IsFoxxmaster; replication ApplierConfig.IncludeFoxxQueues
 - CollectionDocumentImportOptions: Deprecated/removed legacy fields as per API docs
 - CreateGraphOptions: Only 'satellites' is valid; others moved to GraphDefinition
 - Fulltext index type: Deprecated, will be removed in v4.0. minLength option is only used for fulltext indexes. FulltextIndexType constant added (deprecated); MinLength and fulltext-related comments in collection_indexes.go and client_admin_cluster.go
