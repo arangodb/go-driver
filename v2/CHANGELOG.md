@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Add `DontFollowRedirect` fields to HTTP connection configuration
+- Switched to Go 1.25.8 to fix a security vulnerability
 - QueryProperties: Added slowStreamingQueryThreshold field
 - RunningAQLQuery: Added exitCode (slow queries), modificationQuery, and warnings
 - QuerySubOptions/ExplainQueryOptions: Added usePlanCache, failOnWarning, fullCount, maxNodesPerCallstack, maxWarningCount, profile, and other missing options
