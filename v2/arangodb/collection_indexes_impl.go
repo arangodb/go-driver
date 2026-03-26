@@ -321,6 +321,8 @@ func (i *IndexResponse) UnmarshalJSON(data []byte) error {
 		}
 		i.IndexSharedOptions = result.IndexSharedOptions
 		i.VectorIndex = result.Params
+		i.TrainingState = result.TrainingState
+		i.VectorErrorMessage = result.ErrorMessage
 	default:
 		result := responseIndex{}
 		if err := json.Unmarshal(data, &result); err != nil {
@@ -373,16 +375,33 @@ func (c *collectionIndexes) EnsureVectorIndex(
 		return IndexResponse{}, false, err
 	}
 
+	type createVectorIndexRequestOptions struct {
+		Name         *string  `json:"name,omitempty"`
+		Parallelism  *int     `json:"parallelism,omitempty"`
+		Sparse       *bool    `json:"sparse,omitempty"`
+		StoredValues []string `json:"storedValues,omitempty"`
+	}
+
+	var reqOptions *createVectorIndexRequestOptions
+	if options != nil {
+		reqOptions = &createVectorIndexRequestOptions{
+			Name:         options.Name,
+			Parallelism:  options.Parallelism,
+			Sparse:       options.Sparse,
+			StoredValues: options.StoredValues,
+		}
+	}
+
 	reqData := struct {
 		Type   IndexType     `json:"type"`
 		Fields []string      `json:"fields"`
 		Params *VectorParams `json:"params"`
-		*CreateVectorIndexOptions
+		*createVectorIndexRequestOptions
 	}{
-		Type:                     VectorIndexType,
-		Fields:                   fields,
-		Params:                   params,
-		CreateVectorIndexOptions: options,
+		Type:                            VectorIndexType,
+		Fields:                          fields,
+		Params:                          params,
+		createVectorIndexRequestOptions: reqOptions,
 	}
 
 	result := responseVectorIndex{}
@@ -398,7 +417,9 @@ type responseVectorIndex struct {
 	Name               string    `json:"name,omitempty"`
 	Type               IndexType `json:"type"`
 	IndexSharedOptions `json:",inline"`
-	Params             *VectorParams `json:"params,omitempty"`
+	Params             *VectorParams             `json:"params,omitempty"`
+	TrainingState      *VectorIndexTrainingState `json:"trainingState,omitempty"`
+	ErrorMessage       *string                   `json:"errorMessage,omitempty"`
 }
 
 func newVectorIndexResponse(res *responseVectorIndex) IndexResponse {
@@ -411,5 +432,7 @@ func newVectorIndexResponse(res *responseVectorIndex) IndexResponse {
 		Type:               res.Type,
 		IndexSharedOptions: res.IndexSharedOptions,
 		VectorIndex:        res.Params,
+		TrainingState:      res.TrainingState,
+		VectorErrorMessage: res.ErrorMessage,
 	}
 }

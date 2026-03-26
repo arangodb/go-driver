@@ -150,6 +150,14 @@ type IndexResponse struct {
 
 	// VectorIndex is the vector index params. It is not empty only for VectorIndex type.
 	VectorIndex *VectorParams `json:"params,omitempty"`
+
+	// TrainingState is the vector index training state (e.g. unusable, training, ingesting, ready).
+	// Available in ArangoDB 3.12.9 and later.
+	TrainingState *VectorIndexTrainingState `json:"trainingState,omitempty"`
+
+	// VectorErrorMessage is present for unusable vector indexes.
+	// It is populated for vector indexes from the index object's `errorMessage`.
+	VectorErrorMessage *string `json:"-"`
 }
 
 // IndexSharedOptions contains options that are shared between all index types
@@ -330,7 +338,8 @@ type CreateMDIPrefixedIndexOptions struct {
 }
 
 type CreateVectorIndexOptions struct {
-	// Allow writes during creation.
+	// Deprecated in ArangoDB 3.12.9+.
+	// Vector index creation always runs in background and this field is ignored.
 	InBackground *bool `json:"inBackground,omitempty"`
 	// Optional index name.
 	Name *string `json:"name,omitempty"`
@@ -342,6 +351,15 @@ type CreateVectorIndexOptions struct {
 	// Up to 32 additional attributes can be stored in the index.
 	StoredValues []string `json:"storedValues,omitempty"`
 }
+
+type VectorIndexTrainingState string
+
+const (
+	VectorIndexTrainingStateUnusable  VectorIndexTrainingState = "unusable"
+	VectorIndexTrainingStateTraining  VectorIndexTrainingState = "training"
+	VectorIndexTrainingStateIngesting VectorIndexTrainingState = "ingesting"
+	VectorIndexTrainingStateReady     VectorIndexTrainingState = "ready"
+)
 
 type VectorParams struct {
 	// Neighbors considered in search.
