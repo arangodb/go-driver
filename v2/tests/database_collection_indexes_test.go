@@ -42,6 +42,9 @@ func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, index
 	deadline := time.Now().Add(timeout)
 	var lastState *arangodb.VectorIndexTrainingState
 	var lastErrMsg *string
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+
 	for time.Now().Before(deadline) {
 		indexes, err := col.Indexes(ctx)
 		if err != nil {
@@ -56,7 +59,20 @@ func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, index
 				}
 			}
 		}
-		time.Sleep(200 * time.Millisecond)
+
+		select {
+		case <-ctx.Done():
+			lastStateText := "<nil>"
+			if lastState != nil {
+				lastStateText = string(*lastState)
+			}
+			lastErrText := "<nil>"
+			if lastErrMsg != nil {
+				lastErrText = *lastErrMsg
+			}
+			return fmt.Errorf("context canceled while waiting for vector index %q to become ready (last trainingState=%s, last errorMessage=%s): %w", indexID, lastStateText, lastErrText, ctx.Err())
+		case <-ticker.C:
+		}
 	}
 	lastStateText := "<nil>"
 	if lastState != nil {
