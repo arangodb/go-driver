@@ -338,8 +338,7 @@ type CreateMDIPrefixedIndexOptions struct {
 }
 
 type CreateVectorIndexOptions struct {
-	// Deprecated in ArangoDB 3.12.9+.
-	// Vector index creation always runs in background and this field is ignored.
+	// Deprecated: vector index creation always runs in background in ArangoDB 3.12.9+ and this field is ignored.
 	InBackground *bool `json:"inBackground,omitempty"`
 	// Optional index name.
 	Name *string `json:"name,omitempty"`
