@@ -157,7 +157,7 @@ type IndexResponse struct {
 
 	// VectorErrorMessage is present for unusable vector indexes.
 	// It is populated for vector indexes from the index object's `errorMessage`.
-	VectorErrorMessage *string `json:"-"`
+	VectorErrorMessage *string `json:"errorMessage,omitempty"`
 }
 
 // IndexSharedOptions contains options that are shared between all index types
