@@ -375,6 +375,7 @@ func (c *collectionIndexes) EnsureVectorIndex(
 		return IndexResponse{}, false, err
 	}
 
+	// Request body only includes fields below; InBackground is never sent (see CreateVectorIndexOptions.InBackground).
 	type createVectorIndexRequestOptions struct {
 		Name         *string  `json:"name,omitempty"`
 		Parallelism  *int     `json:"parallelism,omitempty"`
