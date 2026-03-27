@@ -85,6 +85,7 @@ type CollectionIndexes interface {
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	// Available in ArangoDB 3.12.4 and later.
 	// VectorParams is an obligatory parameter and must contain at least Dimension, Metric and NLists fields.
+	// CreateVectorIndexOptions.InBackground is never included in the HTTP request; see CreateVectorIndexOptions.InBackground.
 	EnsureVectorIndex(ctx context.Context, fields []string, params *VectorParams, options *CreateVectorIndexOptions) (IndexResponse, bool, error)
 }
 
@@ -150,6 +151,14 @@ type IndexResponse struct {
 
 	// VectorIndex is the vector index params. It is not empty only for VectorIndex type.
 	VectorIndex *VectorParams `json:"params,omitempty"`
+
+	// TrainingState is the vector index training state (e.g. unusable, training, ingesting, ready).
+	// Available in ArangoDB 3.12.9 and later.
+	TrainingState *VectorIndexTrainingState `json:"trainingState,omitempty"`
+
+	// VectorErrorMessage is present for unusable vector indexes.
+	// It is populated for vector indexes from the index object's `errorMessage`.
+	VectorErrorMessage *string `json:"errorMessage,omitempty"`
 }
 
 // IndexSharedOptions contains options that are shared between all index types
@@ -330,7 +339,8 @@ type CreateMDIPrefixedIndexOptions struct {
 }
 
 type CreateVectorIndexOptions struct {
-	// Allow writes during creation.
+	// Deprecated: EnsureVectorIndex never sends this field to the server, so it has no effect for any ArangoDB version.
+	// Servers from 3.12.9 onward create vector indexes in the background regardless.
 	InBackground *bool `json:"inBackground,omitempty"`
 	// Optional index name.
 	Name *string `json:"name,omitempty"`
@@ -342,6 +352,15 @@ type CreateVectorIndexOptions struct {
 	// Up to 32 additional attributes can be stored in the index.
 	StoredValues []string `json:"storedValues,omitempty"`
 }
+
+type VectorIndexTrainingState string
+
+const (
+	VectorIndexTrainingStateUnusable  VectorIndexTrainingState = "unusable"
+	VectorIndexTrainingStateTraining  VectorIndexTrainingState = "training"
+	VectorIndexTrainingStateIngesting VectorIndexTrainingState = "ingesting"
+	VectorIndexTrainingStateReady     VectorIndexTrainingState = "ready"
+)
 
 type VectorParams struct {
 	// Neighbors considered in search.

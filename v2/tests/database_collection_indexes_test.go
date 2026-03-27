@@ -38,6 +38,53 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
+func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, indexID string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastState *arangodb.VectorIndexTrainingState
+	var lastErrMsg *string
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+
+	for time.Now().Before(deadline) {
+		indexes, err := col.Indexes(ctx)
+		if err != nil {
+			return err
+		}
+		for _, idx := range indexes {
+			if idx.ID == indexID && idx.Type == arangodb.VectorIndexType {
+				lastState = idx.TrainingState
+				lastErrMsg = idx.VectorErrorMessage
+				if idx.TrainingState != nil && *idx.TrainingState == arangodb.VectorIndexTrainingStateReady {
+					return nil
+				}
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			lastStateText := "<nil>"
+			if lastState != nil {
+				lastStateText = string(*lastState)
+			}
+			lastErrText := "<nil>"
+			if lastErrMsg != nil {
+				lastErrText = *lastErrMsg
+			}
+			return fmt.Errorf("context canceled while waiting for vector index %q to become ready (last trainingState=%s, last errorMessage=%s): %w", indexID, lastStateText, lastErrText, ctx.Err())
+		case <-ticker.C:
+		}
+	}
+	lastStateText := "<nil>"
+	if lastState != nil {
+		lastStateText = string(*lastState)
+	}
+	lastErrText := "<nil>"
+	if lastErrMsg != nil {
+		lastErrText = *lastErrMsg
+	}
+	return fmt.Errorf("vector index %q did not become ready within %s (last trainingState=%s, last errorMessage=%s)", indexID, timeout, lastStateText, lastErrText)
+}
+
 func Test_DefaultIndexes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
@@ -538,7 +585,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 					skipIfVectorIndexDisabled(t)
-					skipBelowVersion(client, ctx, "3.12.4", t)
+					versionInfo := skipBelowVersion(client, ctx, "3.12.4", t)
 					dimension := 3
 					metric := arangodb.VectorMetricCosine
 					nLists := 1 // or 2, but <= number of docs
@@ -555,6 +602,16 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						{"embedding": []float64{0.1, 0.2, 0.3}, "text": "first document"},
 						{"embedding": []float64{0.4, 0.5, 0.6}, "text": "second document"},
 						{"embedding": []float64{0.7, 0.8, 0.9}, "text": "third document"},
+					}
+					if versionInfo.Version.CompareTo("3.12.9") >= 0 {
+						// For 3.12.9+, background auto-training requires a minimum corpus size.
+						for i := 0; i < 1100; i++ {
+							base := float64((i % 100) + 1)
+							docs = append(docs, map[string]interface{}{
+								"embedding": []float64{base, base + 0.1, base + 0.2},
+								"text":      fmt.Sprintf("bulk-doc-%d", i),
+							})
+						}
 					}
 
 					_, err := col.CreateDocuments(ctx, docs)
@@ -606,6 +663,94 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.Equal(t, arangodb.VectorIndexType, idx.Type)
 					})
 
+					t.Run("Vector index reports trainingState in 3.12.9+", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.9", t)
+						idxState, _, err := col.EnsureVectorIndex(
+							ctx,
+							[]string{"embedding"},
+							params,
+							&arangodb.CreateVectorIndexOptions{
+								Name: utils.NewType("vector_training_state_idx"),
+							},
+						)
+						require.NoError(t, err)
+						require.Equal(t, arangodb.VectorIndexType, idxState.Type)
+						// In nightly builds, EnsureVectorIndex response may omit trainingState.
+						if idxState.TrainingState != nil {
+							switch *idxState.TrainingState {
+							case arangodb.VectorIndexTrainingStateUnusable,
+								arangodb.VectorIndexTrainingStateTraining,
+								arangodb.VectorIndexTrainingStateIngesting,
+								arangodb.VectorIndexTrainingStateReady:
+								// valid state
+							default:
+								t.Fatalf("unexpected vector trainingState: %s", *idxState.TrainingState)
+							}
+
+							if *idxState.TrainingState == arangodb.VectorIndexTrainingStateUnusable {
+								require.NotNil(t, idxState.VectorErrorMessage, "errorMessage should be present when trainingState is unusable")
+							}
+						}
+					})
+
+					t.Run("Vector index trainingState is present in index list on 3.12.9+", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.9", t)
+						indexes, err := col.Indexes(ctx)
+						require.NoError(t, err)
+
+						var vectorIdx *arangodb.IndexResponse
+						for i := range indexes {
+							if indexes[i].Type == arangodb.VectorIndexType {
+								vectorIdx = &indexes[i]
+								break
+							}
+						}
+						require.NotNil(t, vectorIdx, "expected at least one vector index in collection")
+						require.NotNil(t, vectorIdx.TrainingState, "trainingState should be present for vector indexes in list response")
+					})
+
+					t.Run("Vector index reports errorMessage when unusable in 3.12.9+", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.9", t)
+						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+							// Create a sparse vector index with insufficient training corpus.
+							// This should keep the index unusable and expose an errorMessage.
+							sparseParams := &arangodb.VectorParams{
+								Dimension: utils.NewType(3),
+								Metric:    utils.NewType(arangodb.VectorMetricCosine),
+								NLists:    utils.NewType(32),
+							}
+							_, err := col.CreateDocument(ctx, map[string]interface{}{"text": "no embedding"})
+							require.NoError(t, err)
+
+							idxUnusable, _, err := col.EnsureVectorIndex(
+								ctx,
+								[]string{"embedding"},
+								sparseParams,
+								&arangodb.CreateVectorIndexOptions{
+									Name:   utils.NewType("vector_unusable_idx"),
+									Sparse: utils.NewType(true),
+								},
+							)
+							require.NoError(t, err)
+
+							indexes, err := col.Indexes(ctx)
+							require.NoError(t, err)
+
+							var found *arangodb.IndexResponse
+							for i := range indexes {
+								if indexes[i].ID == idxUnusable.ID {
+									found = &indexes[i]
+									break
+								}
+							}
+							require.NotNil(t, found, "expected created vector index to be present in list response")
+							require.NotNil(t, found.TrainingState, "expected trainingState in list response for vector index")
+							require.Equal(t, arangodb.VectorIndexTrainingStateUnusable, *found.TrainingState)
+							require.NotNil(t, found.VectorErrorMessage, "expected errorMessage when vector index is unusable")
+							require.NotEmpty(t, strings.TrimSpace(*found.VectorErrorMessage))
+						})
+					})
+
 					if idx.ID == "" {
 						t.Skip("Index not created, skipping dependent tests")
 					}
@@ -617,6 +762,9 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					// Run explain in a separate subtest
 					t.Run("StoredValues are used for filter", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
+						if versionInfo.Version.CompareTo("3.12.9") >= 0 {
+							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second))
+						}
 
 						query := fmt.Sprintf(
 							"FOR d IN `%s`\n"+
@@ -651,6 +799,9 @@ func Test_EnsureVectorIndex(t *testing.T) {
 
 					t.Run("Vector index with storedValues and indexHint is used", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
+						if versionInfo.Version.CompareTo("3.12.9") >= 0 {
+							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second))
+						}
 						// indexHint and forceIndexHint for vector indexes supported by 3.12.7+
 						// Query using indexHint + forceIndexHint
 						query := `
