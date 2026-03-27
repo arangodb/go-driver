@@ -109,6 +109,10 @@ func IsAsyncJobInProgress(err error) (string, bool) {
 	return "", false
 }
 
+func NewErrorAsyncJobInProgress(jobID string) error {
+	return ErrorAsyncJobInProgress{jobID: jobID}
+}
+
 type ErrorAsyncJobInProgress struct {
 	jobID string
 }
