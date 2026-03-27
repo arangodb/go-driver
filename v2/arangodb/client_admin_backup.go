@@ -48,6 +48,9 @@ type ClientAdminBackup interface {
 }
 
 type TransferMonitor interface {
+	// GetID returns the Transfer ID
+	GetID() string
+
 	// Progress returns the progress of the transfer (upload/download)
 	Progress(ctx context.Context) (BackupTransferProgressResponse, error)
 

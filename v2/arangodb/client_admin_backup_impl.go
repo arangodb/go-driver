@@ -217,6 +217,10 @@ type uploadMonitor struct {
 	jobId  string
 }
 
+func (u uploadMonitor) GetID() string {
+	return u.jobId
+}
+
 func newUploadMonitor(c *client, jobId string) (uploadMonitor, error) {
 	if jobId == "" {
 		return uploadMonitor{}, errors.New("jobId must not be empty")
@@ -286,6 +290,10 @@ func (u uploadMonitor) Abort(ctx context.Context) error {
 type downloadMonitor struct {
 	client *client
 	jobId  string
+}
+
+func (d downloadMonitor) GetID() string {
+	return d.jobId
 }
 
 func newDownloadMonitor(c *client, jobId string) (downloadMonitor, error) {
