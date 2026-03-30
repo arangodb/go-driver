@@ -31,6 +31,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -203,11 +204,14 @@ func (j *httpConnection) Do(ctx context.Context, request Request, output interfa
 		}
 	}
 
-	if output != nil {
-		// The output should be stored in the output variable.
-		if err = j.Decoder(resp.Content()).Decode(body, output); err != nil {
-			if err != io.EOF {
-				return resp, errors.WithStack(err)
+	// Skip decoder in case of onvalid headers
+	if slices.Contains([]int{http.StatusNoContent}, resp.Code()) {
+		if output != nil {
+			// The output should be stored in the output variable.
+			if err = j.Decoder(resp.Content()).Decode(body, output); err != nil {
+				if err != io.EOF {
+					return resp, errors.WithStack(err)
+				}
 			}
 		}
 	}
