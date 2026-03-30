@@ -714,7 +714,6 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						// Disabled: Nightly go_driver_0 often fails with ~300s server error
 						// "timed out waiting for vector index to become ready"; standalone arangod --vector-index true
 						// returns 201 with trainingState unusable and errorMessage as expected.
-						// After Core DB confirms expected behavior / fix, add a tracking Jira and remove this Skip.
 						t.Skip("disabled for now: vector index unusable/errorMessage assertion; re-enable when server behavior in ArangoDB Nightly (go_driver_0) matches standalone")
 
 						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
