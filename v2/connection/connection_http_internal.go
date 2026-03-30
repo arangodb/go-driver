@@ -205,7 +205,7 @@ func (j *httpConnection) Do(ctx context.Context, request Request, output interfa
 	}
 
 	// Skip decoder in case of onvalid headers
-	if slices.Contains([]int{http.StatusNoContent}, resp.Code()) {
+	if !slices.Contains([]int{http.StatusNoContent}, resp.Code()) {
 		if output != nil {
 			// The output should be stored in the output variable.
 			if err = j.Decoder(resp.Content()).Decode(body, output); err != nil {
