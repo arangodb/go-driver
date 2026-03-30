@@ -12,7 +12,7 @@
 - DatabaseSharding: Added support for "flexible" value
 - ServerHealth: Added LastAckedTime, Timestamp, SyncTime for Coordinators/DB-Servers
 - Vector index: Added 3.12.9+ trainingState/errorMessage response support and stopped sending deprecated inBackground in EnsureVectorIndex requests
-- Tests: Removed `Test_EnsureVectorIndex` subtest "Vector index reports errorMessage when unusable in 3.12.9+" that asserted sparse vector index creation with insufficient training data returns 201 with `trainingState` unusable and `errorMessage`. ArangoDB Nightly `go_driver_0` often fails with ~300s server error `timed out waiting for vector index to become ready` while standalone `arangod --vector-index true` behaves as expected; see comment in `v2/tests/database_collection_indexes_test.go` to restore the subtest when server behavior in Nightly CI matches standalone.
+- Tests: Disabled (`t.Skip`) the `Test_EnsureVectorIndex` subtest "Vector index reports errorMessage when unusable in 3.12.9+" that asserts sparse vector index creation with insufficient training data returns 201 with `trainingState` unusable and `errorMessage`. ArangoDB Nightly `go_driver_0` often fails with ~300s server error `timed out waiting for vector index to become ready` while standalone `arangod --vector-index true` behaves as expected; remove the `t.Skip` in `v2/tests/database_collection_indexes_test.go` once server behavior in Nightly CI matches standalone (coordinate with Core DB if needed).
 
 ### Deprecations and Removals (v2.x, in preparation for ArangoDB v4.0)
 - CollectionStatus and collection status/statusString: Only values 3 (loaded) and 5 (deleted) are in use; other status values and status/statusString properties deprecated (may be removed in v4.0)

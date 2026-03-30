@@ -709,12 +709,53 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.NotNil(t, vectorIdx.TrainingState, "trainingState should be present for vector indexes in list response")
 					})
 
-					// Removed: subtest "Vector index reports errorMessage when unusable in 3.12.9+"
-					// (sparse index + insufficient training data; expect POST /_api/index to return 201 with
-					// trainingState unusable and errorMessage). ArangoDB Nightly go_test.js / go_driver_0 often
-					// fails this with ~300s server error "timed out waiting for vector index to become ready",
-					// while standalone arangod --vector-index true returns 201 immediately as expected.
-					// Re-introduce this subtest once server behavior in ArangoDB Nightly (go_driver_0) matches standalone for that scenario.
+					t.Run("Vector index reports errorMessage when unusable in 3.12.9+", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.9", t)
+						// Disabled: Nightly go_driver_0 often fails with ~300s server error
+						// "timed out waiting for vector index to become ready"; standalone arangod --vector-index true
+						// returns 201 with trainingState unusable and errorMessage as expected.
+						// After Core DB confirms expected behavior / fix, add a tracking Jira and remove this Skip.
+						t.Skip("disabled for now: vector index unusable/errorMessage assertion; re-enable when server behavior in ArangoDB Nightly (go_driver_0) matches standalone")
+
+						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+							// Create a sparse vector index with insufficient training corpus.
+							// This should keep the index unusable and expose an errorMessage.
+							sparseParams := &arangodb.VectorParams{
+								Dimension: utils.NewType(3),
+								Metric:    utils.NewType(arangodb.VectorMetricCosine),
+								NLists:    utils.NewType(32),
+							}
+							_, err := col.CreateDocument(ctx, map[string]interface{}{"text": "no embedding"})
+							require.NoError(t, err)
+
+							idxUnusable, _, err := col.EnsureVectorIndex(
+								ctx,
+								[]string{"embedding"},
+								sparseParams,
+								&arangodb.CreateVectorIndexOptions{
+									Name:   utils.NewType("vector_unusable_idx"),
+									Sparse: utils.NewType(true),
+								},
+							)
+							require.NoError(t, err)
+
+							indexes, err := col.Indexes(ctx)
+							require.NoError(t, err)
+
+							var found *arangodb.IndexResponse
+							for i := range indexes {
+								if indexes[i].ID == idxUnusable.ID {
+									found = &indexes[i]
+									break
+								}
+							}
+							require.NotNil(t, found, "expected created vector index to be present in list response")
+							require.NotNil(t, found.TrainingState, "expected trainingState in list response for vector index")
+							require.Equal(t, arangodb.VectorIndexTrainingStateUnusable, *found.TrainingState)
+							require.NotNil(t, found.VectorErrorMessage, "expected errorMessage when vector index is unusable")
+							require.NotEmpty(t, strings.TrimSpace(*found.VectorErrorMessage))
+						})
+					})
 
 					if idx.ID == "" {
 						t.Skip("Index not created, skipping dependent tests")
