@@ -11,7 +11,7 @@
 - License: Added diskUsage and upgrading fields for Community Edition dataset limits
 - DatabaseSharding: Added support for "flexible" value
 - ServerHealth: Added LastAckedTime, Timestamp, SyncTime for Coordinators/DB-Servers
-- Vector index: Added 3.12.9+ trainingState/errorMessage response support
+- Vector index: Added 3.12.9+ trainingState/errorMessage response support; EnsureVectorIndex now forwards the `inBackground` option when set
 ### Deprecations and Removals (v2.x, in preparation for ArangoDB v4.0)
 - CollectionStatus and collection status/statusString: Only values 3 (loaded) and 5 (deleted) are in use; other status values and status/statusString properties deprecated (may be removed in v4.0)
 - minReplicationFactor: Deprecated, use writeConcern instead
