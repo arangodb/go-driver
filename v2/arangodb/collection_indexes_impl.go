@@ -375,34 +375,16 @@ func (c *collectionIndexes) EnsureVectorIndex(
 		return IndexResponse{}, false, err
 	}
 
-	// Request body only includes fields below; InBackground is never sent (see CreateVectorIndexOptions.InBackground).
-	type createVectorIndexRequestOptions struct {
-		Name         *string  `json:"name,omitempty"`
-		Parallelism  *int     `json:"parallelism,omitempty"`
-		Sparse       *bool    `json:"sparse,omitempty"`
-		StoredValues []string `json:"storedValues,omitempty"`
-	}
-
-	var reqOptions *createVectorIndexRequestOptions
-	if options != nil {
-		reqOptions = &createVectorIndexRequestOptions{
-			Name:         options.Name,
-			Parallelism:  options.Parallelism,
-			Sparse:       options.Sparse,
-			StoredValues: options.StoredValues,
-		}
-	}
-
 	reqData := struct {
 		Type   IndexType     `json:"type"`
 		Fields []string      `json:"fields"`
 		Params *VectorParams `json:"params"`
-		*createVectorIndexRequestOptions
+		*CreateVectorIndexOptions
 	}{
-		Type:                            VectorIndexType,
-		Fields:                          fields,
-		Params:                          params,
-		createVectorIndexRequestOptions: reqOptions,
+		Type:                     VectorIndexType,
+		Fields:                   fields,
+		Params:                   params,
+		CreateVectorIndexOptions: options,
 	}
 
 	result := responseVectorIndex{}

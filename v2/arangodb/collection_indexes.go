@@ -85,7 +85,7 @@ type CollectionIndexes interface {
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	// Available in ArangoDB 3.12.4 and later.
 	// VectorParams is an obligatory parameter and must contain at least Dimension, Metric and NLists fields.
-	// CreateVectorIndexOptions.InBackground is never included in the HTTP request; see CreateVectorIndexOptions.InBackground.
+	// CreateVectorIndexOptions.InBackground is sent when set; see CreateVectorIndexOptions.InBackground.
 	EnsureVectorIndex(ctx context.Context, fields []string, params *VectorParams, options *CreateVectorIndexOptions) (IndexResponse, bool, error)
 }
 
@@ -339,8 +339,10 @@ type CreateMDIPrefixedIndexOptions struct {
 }
 
 type CreateVectorIndexOptions struct {
-	// Deprecated: EnsureVectorIndex never sends this field to the server, so it has no effect for any ArangoDB version.
-	// Servers from 3.12.9 onward create vector indexes in the background regardless.
+	// InBackground, when true, is sent to the server: index building is deferred until enough data is available,
+	// avoiding an immediate error on empty or nearly empty collections. When false or unset, synchronous creation
+	// may return an error while still creating an index in unusable state if training data is insufficient.
+	// Alternatively, insert embeddings first then create the index without relying on inBackground.
 	InBackground *bool `json:"inBackground,omitempty"`
 	// Optional index name.
 	Name *string `json:"name,omitempty"`
