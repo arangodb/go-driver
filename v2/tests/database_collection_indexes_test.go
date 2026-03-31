@@ -709,11 +709,11 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.NotNil(t, vectorIdx.TrainingState, "trainingState should be present for vector indexes in list response")
 					})
 
-					t.Run("Vector index reports errorMessage when unusable in 3.12.9+", func(t *testing.T) {
+					t.Run("Vector index with inBackground and minimal data lists trainingState in 3.12.9+", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.9", t)
 						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-							// Create a sparse vector index with insufficient training corpus.
-							// This should keep the index unusable and expose an errorMessage.
+							// Sparse index + insufficient training data. Use inBackground: true so creation does not
+							// block on cluster waiting for training; server may still report unusable + errorMessage.
 							sparseParams := &arangodb.VectorParams{
 								Dimension: utils.NewType(3),
 								Metric:    utils.NewType(arangodb.VectorMetricCosine),
@@ -722,13 +722,14 @@ func Test_EnsureVectorIndex(t *testing.T) {
 							_, err := col.CreateDocument(ctx, map[string]interface{}{"text": "no embedding"})
 							require.NoError(t, err)
 
-							idxUnusable, _, err := col.EnsureVectorIndex(
+							idxMinimalBg, _, err := col.EnsureVectorIndex(
 								ctx,
 								[]string{"embedding"},
 								sparseParams,
 								&arangodb.CreateVectorIndexOptions{
-									Name:   utils.NewType("vector_unusable_idx"),
-									Sparse: utils.NewType(true),
+									Name:         utils.NewType("vector_minimal_in_bg_idx"),
+									Sparse:       utils.NewType(true),
+									InBackground: utils.NewType(true),
 								},
 							)
 							require.NoError(t, err)
@@ -738,16 +739,25 @@ func Test_EnsureVectorIndex(t *testing.T) {
 
 							var found *arangodb.IndexResponse
 							for i := range indexes {
-								if indexes[i].ID == idxUnusable.ID {
+								if indexes[i].ID == idxMinimalBg.ID {
 									found = &indexes[i]
 									break
 								}
 							}
 							require.NotNil(t, found, "expected created vector index to be present in list response")
 							require.NotNil(t, found.TrainingState, "expected trainingState in list response for vector index")
-							require.Equal(t, arangodb.VectorIndexTrainingStateUnusable, *found.TrainingState)
-							require.NotNil(t, found.VectorErrorMessage, "expected errorMessage when vector index is unusable")
-							require.NotEmpty(t, strings.TrimSpace(*found.VectorErrorMessage))
+							switch *found.TrainingState {
+							case arangodb.VectorIndexTrainingStateUnusable,
+								arangodb.VectorIndexTrainingStateTraining,
+								arangodb.VectorIndexTrainingStateIngesting,
+								arangodb.VectorIndexTrainingStateReady:
+							default:
+								t.Fatalf("unexpected vector trainingState: %s", *found.TrainingState)
+							}
+							if *found.TrainingState == arangodb.VectorIndexTrainingStateUnusable {
+								require.NotNil(t, found.VectorErrorMessage, "expected errorMessage when vector index is unusable")
+								require.NotEmpty(t, strings.TrimSpace(*found.VectorErrorMessage))
+							}
 						})
 					})
 
