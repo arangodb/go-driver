@@ -722,7 +722,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 							_, err := col.CreateDocument(ctx, map[string]interface{}{"text": "no embedding"})
 							require.NoError(t, err)
 
-							idx, _, err := col.EnsureVectorIndex(
+							idxMinimalBg, _, err := col.EnsureVectorIndex(
 								ctx,
 								[]string{"embedding"},
 								sparseParams,
@@ -739,7 +739,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 
 							var found *arangodb.IndexResponse
 							for i := range indexes {
-								if indexes[i].ID == idx.ID {
+								if indexes[i].ID == idxMinimalBg.ID {
 									found = &indexes[i]
 									break
 								}
