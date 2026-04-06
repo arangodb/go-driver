@@ -67,10 +67,38 @@ func (v Version) SubInt() (int, bool) {
 	return result, err == nil
 }
 
+// patchLevelForCompare returns the numeric patch level used in CompareTo.
+// Pre-release style subs like "10-nightly.xxx" yield 10; purely textual subs
+// like "3a" do not (so lexicographic comparison is preserved).
+func patchLevelForCompare(sub string) (n int, ok bool) {
+	if sub == "" {
+		return 0, false
+	}
+	if n, err := strconv.Atoi(sub); err == nil {
+		return n, true
+	}
+	i := 0
+	for i < len(sub) && sub[i] >= '0' && sub[i] <= '9' {
+		i++
+	}
+	if i == 0 || i >= len(sub) {
+		return 0, false
+	}
+	if sub[i] != '-' && sub[i] != '.' {
+		return 0, false
+	}
+	n, err := strconv.Atoi(sub[:i])
+	if err != nil {
+		return 0, false
+	}
+	return n, true
+}
+
 // CompareTo returns an integer comparing two versions.
 // The result will be 0 if v==other, -1 if v < other, and +1 if v > other.
-// If major & minor parts are equal and sub part is not a number,
-// the sub part will be compared using lexicographical string comparison.
+// If major & minor parts are equal, patch levels are compared numerically when
+// both subs parse as integers or as a numeric prefix before '-' or '.' (e.g. "10-nightly.x").
+// Otherwise the sub parts are compared lexicographically.
 func (v Version) CompareTo(other Version) int {
 	a := v.Major()
 	b := other.Major()
@@ -90,18 +118,16 @@ func (v Version) CompareTo(other Version) int {
 		return 1
 	}
 
-	a, aIsInt := v.SubInt()
-	b, bIsInt := other.SubInt()
-
-	if !aIsInt || !bIsInt {
-		// Do a string comparison
+	a, aOK := patchLevelForCompare(v.Sub())
+	b, bOK := patchLevelForCompare(other.Sub())
+	if aOK && bOK {
+		if a < b {
+			return -1
+		}
+		if a > b {
+			return 1
+		}
 		return strings.Compare(v.Sub(), other.Sub())
 	}
-	if a < b {
-		return -1
-	}
-	if a > b {
-		return 1
-	}
-	return 0
+	return strings.Compare(v.Sub(), other.Sub())
 }

@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Fix `Version.CompareTo` for pre-release patch suffixes (e.g. `-nightly`) by comparing the numeric patch instead of the full sub-version string
 - Add `DontFollowRedirect` fields to HTTP connection configuration
 - Switched to Go 1.25.8 to fix a security vulnerability
 - QueryProperties: Added slowStreamingQueryThreshold field
