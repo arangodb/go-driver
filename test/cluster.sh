@@ -58,6 +58,9 @@ if [ "$CMD" == "start" ]; then
             --args.all.vector-index=true \
             --args.all.experimental-vector-index=true"
     fi
+    # 3.12.9+ hides startup options from require("internal").options() unless allowlisted.
+    # Match ArangoDB's own test instances so integration tests can assert option shapes.
+    STARTERARGS="$STARTERARGS --args.all.javascript.startup-options-allowlist=.*"
     # Use DOCKER_PLATFORM if set (e.g., from CircleCI for ARM), otherwise use macOS default
     if [ -n "$DOCKER_PLATFORM" ]; then
         DOCKERPLATFORMARG="$DOCKER_PLATFORM"
