@@ -68,7 +68,7 @@ func (v Version) SubInt() (int, bool) {
 }
 
 // patchLevelForCompare returns the numeric patch level used in CompareTo.
-// Pre-release style subs like "10-nightly.xxx" yield 10; purely textual subs
+// Pre-release style subs like "10-nightly.xxx" yield 10; mixed alphanumeric subs
 // like "3a" do not (so lexicographic comparison is preserved).
 func patchLevelForCompare(sub string) (n int, ok bool) {
 	if sub == "" {
