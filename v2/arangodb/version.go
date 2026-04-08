@@ -119,8 +119,10 @@ func (v Version) CompareTo(other Version) int {
 		return 1
 	}
 
-	a, aOK := patchLevelForCompare(v.Sub())
-	b, bOK := patchLevelForCompare(other.Sub())
+	vSub := v.Sub()
+	otherSub := other.Sub()
+	a, aOK := patchLevelForCompare(vSub)
+	b, bOK := patchLevelForCompare(otherSub)
 	if aOK && bOK {
 		if a < b {
 			return -1
@@ -130,12 +132,12 @@ func (v Version) CompareTo(other Version) int {
 		}
 		// Same numeric patch: pure integers (e.g. "01" vs "1") compare equal like SubInt;
 		// pre-release subs still tie-break lexicographically.
-		_, errA := strconv.Atoi(v.Sub())
-		_, errB := strconv.Atoi(other.Sub())
+		_, errA := strconv.Atoi(vSub)
+		_, errB := strconv.Atoi(otherSub)
 		if errA == nil && errB == nil {
 			return 0
 		}
-		return strings.Compare(v.Sub(), other.Sub())
+		return strings.Compare(vSub, otherSub)
 	}
-	return strings.Compare(v.Sub(), other.Sub())
+	return strings.Compare(vSub, otherSub)
 }
