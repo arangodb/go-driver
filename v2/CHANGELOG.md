@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Tests: `test/cluster.sh` passes `javascript.startup-options-allowlist=.*` for ArangoDB 3.12.9+ `require("internal").options()` in JS transactions
+- Fix `Version.CompareTo` for pre-release patch suffixes (e.g. `-nightly`) by comparing the numeric patch instead of the full sub-version string
 - Add `DontFollowRedirect` fields to HTTP connection configuration
 - Switched to Go 1.25.8 to fix a security vulnerability
 - QueryProperties: Added slowStreamingQueryThreshold field
