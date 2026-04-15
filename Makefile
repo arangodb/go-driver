@@ -4,7 +4,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.25.8
+GOVERSION ?= 1.25.9
 GOTOOLCHAIN ?= auto
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
@@ -87,7 +87,8 @@ TEST_NET := --net=host
 
 # By default we run tests against single endpoint to avoid problems with data propagation in Cluster mode
 # e.g. when we create a document in one endpoint, it may not be visible in another endpoint for a while
-TEST_ENDPOINTS := http://localhost:7001
+# Use 127.0.0.1 (not localhost): many systems resolve localhost to IPv6 [::1] first while arangod listens on IPv4 only.
+TEST_ENDPOINTS := http://127.0.0.1:7001
 
 TESTS := $(REPOPATH)/test
 ifeq ("$(TEST_AUTH)", "rootpw")
@@ -107,7 +108,7 @@ ifeq ("$(TEST_AUTH)", "jwtsuper")
 endif
 ifeq ("$(TEST_SSL)", "auto")
 	CLUSTERENV := SSL=auto $(CLUSTERENV)
-	TEST_ENDPOINTS = https://localhost:7001
+	TEST_ENDPOINTS = https://127.0.0.1:7001
 endif
 
 ifeq ("$(TEST_CONNECTION)", "vst")
@@ -576,7 +577,7 @@ tools: __dir_setup
 	@echo ">> Fetching license check"
 	@GOBIN=$(TMPDIR)/bin go install github.com/google/addlicense@v1.0.0
 	@echo ">> Fetching govulncheck"
-	@GOBIN=$(TMPDIR)/bin go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+	@GOBIN=$(TMPDIR)/bin go install golang.org/x/vuln/cmd/govulncheck@v1.2.0
 	@echo ">> Fetching github-release"
 	@GOBIN=$(TMPDIR)/bin go install github.com/github-release/github-release@v0.10.0
 
