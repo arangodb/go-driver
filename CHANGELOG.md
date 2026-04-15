@@ -4,6 +4,7 @@
 - Switch to Go 1.24.11
 - Switched to Go 1.24.13 to fix a security vulnerability
 - Switched to Go 1.25.8 to fix a security vulnerability
+- Switch to Go 1.25.9 to fix security issues in the standard library (GO-2026-4870, GO-2026-4946, GO-2026-4947)
 
 ## [1.6.9](https://github.com/arangodb/go-driver/tree/v1.6.9) (2025-11-06)
 - Switch to Go 1.24.9

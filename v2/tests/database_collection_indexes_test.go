@@ -901,5 +901,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 				})
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }

@@ -14,6 +14,7 @@
 - DatabaseSharding: Added support for "flexible" value
 - ServerHealth: Added LastAckedTime, Timestamp, SyncTime for Coordinators/DB-Servers
 - Vector index: Added 3.12.9+ trainingState/errorMessage response support; EnsureVectorIndex now forwards the `inBackground` option when set
+- Switch to Go 1.25.9 to fix security issues in the standard library (GO-2026-4870, GO-2026-4946, GO-2026-4947)
 ### Deprecations and Removals (v2.x, in preparation for ArangoDB v4.0)
 - CollectionStatus and collection status/statusString: Only values 3 (loaded) and 5 (deleted) are in use; other status values and status/statusString properties deprecated (may be removed in v4.0)
 - minReplicationFactor: Deprecated, use writeConcern instead
@@ -39,6 +40,7 @@
 - ServerRole: SingleActive and SinglePassive deprecated (Active Failover removed in v3.12.0)
 - SetCollectionPropertiesOptionsV2: 'journalSize' is deprecated (no longer existent since v3.7; MMFiles removed)
 - Collection option fields: IsVolatile, DoCompact, IndexBuckets, JournalSize are deprecated
+
 
 ## [2.2.0](https://github.com/arangodb/go-driver/tree/v2.2.0) (2026-02-17)
 - Add endpoint to fetch deployment id
