@@ -53,7 +53,9 @@ type ClientAdminCluster interface {
 	// in an ArangoDB cluster. The statistics include system, client, HTTP, and server
 	// metrics such as CPU usage, memory, connections, requests, and transaction details.
 	//
-	// Deprecated: ArangoDB 4.0 removes the Statistics REST API, including GET /_admin/cluster/statistics
+	// Deprecated: ArangoDB 4.0 removes the Statistics REST API, including GET /_admin/cluster/statistics.
+	// Use ClientAdmin.GetMetrics (GET /_admin/metrics, Prometheus text) instead; pass a non-nil serverId
+	// to scope metrics to a DB-Server where supported.
 	ClusterStatistics(ctx context.Context, dbServer string) (ClusterStatisticsResponse, error)
 
 	// ClusterEndpoints returns the endpoints of a cluster.

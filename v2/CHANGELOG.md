@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Tests: `Test_EnsureVectorIndex` skips `trainingState` / `errorMessage` assertions on ArangoDB 4.0 branch CI (`skipFromVersion(4.0)`) until 4.0/devel REST parity; `waitForVectorIndexReady` no-ops the list poll on 4.0+ for the same reason
+- Tests: `Test_ClusterStatistics` skips on ArangoDB 4+ using `Version.Major() >= 4`
 - Tests/benchmarks: Use `overwriteMode=replace` instead of deprecated `overwrite` query param on document create (required for ArangoDB 4.0+; see `CollectionDocumentCreateOptions`)
 - HandleAdminVersion: Deprecated; use `Version` / `VersionWithOptions`. Implementation uses `GET /_api/version` (legacy `GET /_admin/version` removed in ArangoDB 4.0)
 - Tests: `test/cluster.sh` passes `javascript.startup-options-allowlist=.*` for ArangoDB 3.12.9+ `require("internal").options()` in JS transactions

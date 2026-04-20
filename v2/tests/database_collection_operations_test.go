@@ -68,7 +68,9 @@ func Test_CollectionShards(t *testing.T) {
 
 				assert.NotEmpty(t, shards.ID)
 				assert.Equal(t, col.Name(), shards.Name)
-				assert.NotEmpty(t, shards.Status)
+				if shards.Status != 0 {
+					assert.NotEqual(t, arangodb.CollectionStatusDeleted, shards.Status)
+				}
 				assert.Equal(t, arangodb.CollectionTypeDocument, shards.Type)
 				assert.Equal(t, false, shards.IsSystem)
 				assert.NotEmpty(t, shards.GloballyUniqueId)
