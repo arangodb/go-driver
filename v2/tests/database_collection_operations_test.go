@@ -703,7 +703,11 @@ func Test_DatabaseCollectionTruncate(t *testing.T) {
 func assertCollectionFigures(t *testing.T, col arangodb.Collection, stats arangodb.CollectionFigures) {
 	assert.NotEmpty(t, stats.ID)
 	assert.Equal(t, col.Name(), stats.Name)
-	assert.NotEmpty(t, stats.Status)
+	// ArangoDB 4.0 may omit status/statusString from GET .../figures (see CollectionInfo godoc).
+	// testify.NotEmpty treats numeric zero as empty, so we must not require Status on 4.0+.
+	if stats.Status != 0 {
+		assert.NotEqual(t, arangodb.CollectionStatusDeleted, stats.Status)
+	}
 	assert.Equal(t, arangodb.CollectionTypeDocument, stats.Type)
 	assert.Equal(t, false, stats.IsSystem)
 	assert.NotEmpty(t, stats.GloballyUniqueId)
@@ -805,7 +809,9 @@ func Test_CollectionChecksum(t *testing.T) {
 					require.NotEmpty(t, stats.Revision)
 					require.NotEmpty(t, stats.CollectionInfo.ID)
 					require.Equal(t, col.Name(), stats.CollectionInfo.Name)
-					require.NotEmpty(t, stats.CollectionInfo.Status)
+					if stats.CollectionInfo.Status != 0 {
+						require.NotEqual(t, arangodb.CollectionStatusDeleted, stats.CollectionInfo.Status)
+					}
 					require.Equal(t, arangodb.CollectionTypeDocument, stats.CollectionInfo.Type)
 					require.NotEmpty(t, stats.CollectionInfo.GloballyUniqueId)
 					t.Run("Checksum with withRevisions=false and withData=true", func(t *testing.T) {

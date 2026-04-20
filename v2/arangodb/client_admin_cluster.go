@@ -52,6 +52,8 @@ type ClientAdminCluster interface {
 	// ClusterStatistics retrieves statistical information from a specific DBServer
 	// in an ArangoDB cluster. The statistics include system, client, HTTP, and server
 	// metrics such as CPU usage, memory, connections, requests, and transaction details.
+	//
+	// Deprecated: ArangoDB 4.0 removes the Statistics REST API, including GET /_admin/cluster/statistics
 	ClusterStatistics(ctx context.Context, dbServer string) (ClusterStatisticsResponse, error)
 
 	// ClusterEndpoints returns the endpoints of a cluster.

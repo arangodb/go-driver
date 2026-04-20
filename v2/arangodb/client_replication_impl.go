@@ -327,6 +327,10 @@ func (c *clientReplication) LoggerState(ctx context.Context, dbName string, DBse
 	}
 }
 
+// LoggerFirstTick implements ClientReplication.LoggerFirstTick.
+//
+// Deprecated: See [ClientReplication.LoggerFirstTick]. On ArangoDB 4.0+ use HTTP
+// GET /_db/{database}/_api/wal/tail for WAL tailing instead of this replication sub-path.
 func (c *clientReplication) LoggerFirstTick(ctx context.Context, dbName string) (LoggerFirstTickResponse, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -356,6 +360,10 @@ func (c *clientReplication) LoggerFirstTick(ctx context.Context, dbName string) 
 	}
 }
 
+// LoggerTickRange implements ClientReplication.LoggerTickRange.
+//
+// Deprecated: See [ClientReplication.LoggerTickRange]. On ArangoDB 4.0+ use HTTP
+// GET /_db/{database}/_api/wal/tail for WAL tailing instead of this replication sub-path.
 func (c *clientReplication) LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)

@@ -112,11 +112,13 @@ func Test_DatabaseCollectionDocCreateOverwrite(t *testing.T) {
 						require.Equal(t, oldDoc.Name, doc.Name)
 						require.Equal(t, newDoc.Name, docOverwrite.Name)
 
+						// ArangoDB 4.0+ rejects query param `overwrite`; use `overwriteMode=replace` (same semantics as overwrite=true). See CollectionDocumentCreateOptions.
 						t.Run("replace doc should be allowed (simple approach)", func(t *testing.T) {
+							ow := arangodb.CollectionDocumentCreateOverwriteModeReplace
 							metaReplacedSimple, err := col.CreateDocumentWithOptions(ctx, docOverwrite, &arangodb.CollectionDocumentCreateOptions{
-								OldObject: &oldDoc,
-								NewObject: &newDoc,
-								Overwrite: utils.NewType(true),
+								OldObject:     &oldDoc,
+								NewObject:     &newDoc,
+								OverwriteMode: ow.New(),
 							})
 							require.NoError(t, err)
 							require.NotEqual(t, metaReplacedSimple.Rev, metaReplaced.Rev)
@@ -370,10 +372,11 @@ func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
 							Key:  meta.Key,
 						}
 
+						ow := arangodb.CollectionDocumentCreateOverwriteModeReplace
 						metaDoc, err := col.CreateDocumentWithOptions(ctx, docReplaced, &arangodb.CollectionDocumentCreateOptions{
 							NewObject:        &newDoc,
 							OldObject:        &oldDoc,
-							Overwrite:        utils.NewType(true),
+							OverwriteMode:    ow.New(),
 							VersionAttribute: "age",
 						})
 						require.NoError(t, err)
@@ -394,10 +397,11 @@ func Test_DatabaseCollectionDocCreateReplaceWithVersionAttribute(t *testing.T) {
 							Key:  meta.Key,
 						}
 
+						ow := arangodb.CollectionDocumentCreateOverwriteModeReplace
 						metaDoc, err := col.CreateDocumentWithOptions(ctx, docReplaced, &arangodb.CollectionDocumentCreateOptions{
 							NewObject:        &newDoc,
 							OldObject:        &oldDoc,
-							Overwrite:        utils.NewType(true),
+							OverwriteMode:    ow.New(),
 							VersionAttribute: "age",
 						})
 						require.NoError(t, err)

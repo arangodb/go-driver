@@ -532,6 +532,7 @@ func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, op
 func Test_HandleAdminVersion(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			skipFromVersion(client, ctx, "4.0", tb)
 			t.Run("With Options", func(t *testing.T) {
 				resp, err := client.HandleAdminVersion(context.Background(), &arangodb.GetVersionOptions{
 					Details: utils.NewType(true),

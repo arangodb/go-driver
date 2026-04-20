@@ -40,9 +40,22 @@ type ClientReplication interface {
 	Dump(ctx context.Context, dbName string, params ReplicationDumpParams) ([]byte, error)
 	// LoggerState retrieves the state of the replication logger.
 	LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error)
-	// LoggerFirstTick retrieves the first tick of the replication logger.
+	// LoggerFirstTick calls GET /_api/replication/logger-first-tick for the first tick of the replication logger.
+	//
+	// Deprecated: Do not use on ArangoDB 4.0 or newer. That release removes
+	// GET /_api/replication/logger-first-tick.
+	// For incremental write-ahead log updates, the 4.0 HTTP API documents
+	// GET /_db/{database-name}/_api/wal/tail instead.
+	// On older versions this method still works.
 	LoggerFirstTick(ctx context.Context, dbName string) (LoggerFirstTickResponse, error)
-	// LoggerTickRange retrieves the currently available ranges of tick values for all currently available WAL logfiles.
+	// LoggerTickRange calls GET /_api/replication/logger-tick-ranges for tick ranges in WAL logfiles.
+	// On older servers the response may be a JSON array or a standard envelope whose "result" is that array.
+	//
+	// Deprecated: Do not use on ArangoDB 4.0 or newer. That release removes
+	// GET /_api/replication/logger-tick-ranges.
+	// For incremental WAL tailing, the 4.0 HTTP API documents
+	// GET /_db/{database-name}/_api/wal/tail instead.
+	// On older versions this method still works.
 	LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error)
 	// GetApplierConfig retrieves the configuration of the replication applier.
 	GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error)
