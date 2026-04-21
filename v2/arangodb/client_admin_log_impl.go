@@ -280,7 +280,7 @@ func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (Api
 
 // GetMetrics returns the instance's current metrics in Prometheus format
 func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
-	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics", "v2")
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics")
 
 	var mods []connection.RequestModifier
 	if serverId != nil {

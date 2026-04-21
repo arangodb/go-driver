@@ -38,7 +38,13 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 )
 
-func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, indexID string, timeout time.Duration) error {
+// waitForVectorIndexReady polls GET .../index until the vector index reports trainingState=ready in the list response.
+// On ArangoDB 4.0 branch builds (until devel is merged into 4.0), REST often omits trainingState; polling cannot succeed.
+func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, indexID string, timeout time.Duration, serverVersion arangodb.VersionInfo) error {
+	if serverVersion.Version.CompareTo("4.0") >= 0 {
+		return nil
+	}
+
 	deadline := time.Now().Add(timeout)
 	var lastState *arangodb.VectorIndexTrainingState
 	var lastErrMsg *string
@@ -663,8 +669,10 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.Equal(t, arangodb.VectorIndexType, idx.Type)
 					})
 
+					// trainingState / errorMessage in create response: skip on 4.0 branch until REST matches devel (see arangodb#22526).
 					t.Run("Vector index reports trainingState in 3.12.9+", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.9", t)
+						skipFromVersion(client, ctx, "4.0", t)
 						idxState, _, err := col.EnsureVectorIndex(
 							ctx,
 							[]string{"embedding"},
@@ -675,18 +683,15 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						)
 						require.NoError(t, err)
 						require.Equal(t, arangodb.VectorIndexType, idxState.Type)
-						// In nightly builds, EnsureVectorIndex response may omit trainingState.
 						if idxState.TrainingState != nil {
 							switch *idxState.TrainingState {
 							case arangodb.VectorIndexTrainingStateUnusable,
 								arangodb.VectorIndexTrainingStateTraining,
 								arangodb.VectorIndexTrainingStateIngesting,
 								arangodb.VectorIndexTrainingStateReady:
-								// valid state
 							default:
 								t.Fatalf("unexpected vector trainingState: %s", *idxState.TrainingState)
 							}
-
 							if *idxState.TrainingState == arangodb.VectorIndexTrainingStateUnusable {
 								require.NotNil(t, idxState.VectorErrorMessage, "errorMessage should be present when trainingState is unusable")
 							}
@@ -695,9 +700,9 @@ func Test_EnsureVectorIndex(t *testing.T) {
 
 					t.Run("Vector index trainingState is present in index list on 3.12.9+", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.9", t)
+						skipFromVersion(client, ctx, "4.0", t)
 						indexes, err := col.Indexes(ctx)
 						require.NoError(t, err)
-
 						var vectorIdx *arangodb.IndexResponse
 						for i := range indexes {
 							if indexes[i].Type == arangodb.VectorIndexType {
@@ -711,6 +716,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 
 					t.Run("Vector index with inBackground and minimal data lists trainingState in 3.12.9+", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.9", t)
+						skipFromVersion(client, ctx, "4.0", t)
 						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 							// Sparse index + insufficient training data. Use inBackground: true so creation does not
 							// block on cluster waiting for training; server may still report unusable + errorMessage.
@@ -773,7 +779,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					t.Run("StoredValues are used for filter", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
 						if versionInfo.Version.CompareTo("3.12.9") >= 0 {
-							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second))
+							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second, versionInfo))
 						}
 
 						query := fmt.Sprintf(
@@ -810,7 +816,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					t.Run("Vector index with storedValues and indexHint is used", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
 						if versionInfo.Version.CompareTo("3.12.9") >= 0 {
-							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second))
+							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second, versionInfo))
 						}
 						// indexHint and forceIndexHint for vector indexes supported by 3.12.7+
 						// Query using indexHint + forceIndexHint

@@ -181,8 +181,9 @@ func bulkInsert(b *testing.B, docSize int) {
 	ctx := context.TODO()
 	err := col.Truncate(ctx)
 	require.NoError(b, err, "failed to truncate collection before insert")
+	ow := arangodb.CollectionDocumentCreateOverwriteModeReplace
 	opts := &arangodb.CollectionDocumentCreateOptions{
-		Overwrite:       utils.NewType(true),
+		OverwriteMode:   ow.New(),
 		WithWaitForSync: utils.NewType(false),
 		Silent:          utils.NewType(true),
 	}
@@ -227,9 +228,10 @@ func bulkRead(b *testing.B, docSize int) {
 	err := col.Truncate(ctx)
 	require.NoError(b, err, "failed to truncate collection before insert")
 
+	ow := arangodb.CollectionDocumentCreateOverwriteModeReplace
 	opts := &arangodb.CollectionDocumentCreateOptions{
-		Overwrite: utils.NewType(true),
-		Silent:    utils.NewType(true),
+		OverwriteMode: ow.New(),
+		Silent:        utils.NewType(true),
 	}
 
 	// Insert all docs once before benchmarking
@@ -292,9 +294,10 @@ func bulkUpdate(b *testing.B, docSize int) {
 	err := col.Truncate(ctx)
 	require.NoError(b, err, "failed to truncate collection before insert")
 
+	ow := arangodb.CollectionDocumentCreateOverwriteModeReplace
 	opts := &arangodb.CollectionDocumentCreateOptions{
-		Overwrite: utils.NewType(true),
-		Silent:    utils.NewType(true),
+		OverwriteMode: ow.New(),
+		Silent:        utils.NewType(true),
 	}
 
 	// Insert all docs once before benchmarking
@@ -352,9 +355,10 @@ func bulkDelete(b *testing.B, docSize int) {
 	err := col.Truncate(ctx)
 	require.NoError(b, err, "failed to truncate collection before insert")
 
+	ow := arangodb.CollectionDocumentCreateOverwriteModeReplace
 	createOpts := &arangodb.CollectionDocumentCreateOptions{
-		Overwrite: utils.NewType(true),
-		Silent:    utils.NewType(true),
+		OverwriteMode: ow.New(),
+		Silent:        utils.NewType(true),
 	}
 
 	deleteOpts := &arangodb.CollectionDocumentDeleteOptions{

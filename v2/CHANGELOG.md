@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- ArangoDB 4.0 compatibility — deprecations (ClusterStatistics, HandleAdminVersion, LoggerFirstTick, LoggerTickRange)
 - Tests: `test/cluster.sh` passes `javascript.startup-options-allowlist=.*` for ArangoDB 3.12.9+ `require("internal").options()` in JS transactions
 - Fix `Version.CompareTo` for pre-release patch suffixes (e.g. `-nightly`) by comparing the numeric patch instead of the full sub-version string
 - Add `DontFollowRedirect` fields to HTTP connection configuration

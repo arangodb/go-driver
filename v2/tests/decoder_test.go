@@ -36,7 +36,7 @@ func Test_DecoderBytes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		var output []byte
 
-		url := connection.NewUrl("_admin", "metrics", "v2")
+		url := connection.NewUrl("_admin", "metrics")
 		_, err := connection.CallGet(context.Background(), client.Connection(), url, &output)
 
 		require.NoError(t, err)
