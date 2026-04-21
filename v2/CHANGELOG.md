@@ -1,10 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- Tests: `Test_EnsureVectorIndex` skips `trainingState` / `errorMessage` assertions on ArangoDB 4.0 branch CI (`skipFromVersion(4.0)`) until 4.0/devel REST parity; `waitForVectorIndexReady` no-ops the list poll on 4.0+ for the same reason
-- Tests: `Test_ClusterStatistics` skips on ArangoDB 4+ using `Version.Major() >= 4`
-- Tests/benchmarks: Use `overwriteMode=replace` instead of deprecated `overwrite` query param on document create (required for ArangoDB 4.0+; see `CollectionDocumentCreateOptions`)
-- HandleAdminVersion: Deprecated; use `Version` / `VersionWithOptions`. Implementation uses `GET /_api/version` (legacy `GET /_admin/version` removed in ArangoDB 4.0)
+- DE-1152: ArangoDB 4.0 compatibility — deprecations (ClusterStatistics, HandleAdminVersion, LoggerFirstTick, LoggerTickRange)
 - Tests: `test/cluster.sh` passes `javascript.startup-options-allowlist=.*` for ArangoDB 3.12.9+ `require("internal").options()` in JS transactions
 - Fix `Version.CompareTo` for pre-release patch suffixes (e.g. `-nightly`) by comparing the numeric patch instead of the full sub-version string
 - Add `DontFollowRedirect` fields to HTTP connection configuration
@@ -19,8 +16,6 @@
 - ServerHealth: Added LastAckedTime, Timestamp, SyncTime for Coordinators/DB-Servers
 - Vector index: Added 3.12.9+ trainingState/errorMessage response support; EnsureVectorIndex now forwards the `inBackground` option when set
 - Switch to Go 1.25.9 to fix security issues in the standard library (GO-2026-4870, GO-2026-4946, GO-2026-4947)
-- LoggerTickRange: Decode both a top-level JSON array (legacy) and the standard `{ "result": [...] }` envelope when the server returns 200; ArangoDB 4.0+ rejects this replication command (HTTP 400)
-- GetMetrics and v1 Metrics/MetricsForSingleServer: HTTP path updated from `/_admin/metrics/v2` to `/_admin/metrics` (ArangoDB 4.0 removes the v2 endpoint; same Prometheus output since v3.10.0)
 ### Deprecations and Removals (v2.x, in preparation for ArangoDB v4.0)
 - CollectionStatus and collection status/statusString: Only values 3 (loaded) and 5 (deleted) are in use; other status values and status/statusString properties deprecated (may be removed in v4.0)
 - minReplicationFactor: Deprecated, use writeConcern instead
@@ -46,10 +41,6 @@
 - ServerRole: SingleActive and SinglePassive deprecated (Active Failover removed in v3.12.0)
 - SetCollectionPropertiesOptionsV2: 'journalSize' is deprecated (no longer existent since v3.7; MMFiles removed)
 - Collection option fields: IsVolatile, DoCompact, IndexBuckets, JournalSize are deprecated
-- ClusterStatistics (`GET /_admin/cluster/statistics`): Deprecated for ArangoDB v4.0; Statistics REST APIs are removed in favor of `GET /_admin/metrics`. Use GetMetrics instead
-- ClientServerInfo.HandleAdminVersion: Deprecated; use Version or VersionWithOptions
-- ClientReplication.LoggerFirstTick: Deprecated for ArangoDB 4.0+ (replication `logger-first-tick` command removed / rejected by the server)
-- ClientReplication.LoggerTickRange: Deprecated for ArangoDB 4.0+ (replication `logger-tick-ranges` returns HTTP 400)
 
 
 ## [2.2.0](https://github.com/arangodb/go-driver/tree/v2.2.0) (2026-02-17)
