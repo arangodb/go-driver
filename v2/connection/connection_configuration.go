@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2024-2026 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -47,11 +49,39 @@ func DefaultHTTP2ConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool
 		WithHTT2PEndpoint(endpoint),
 	}
 	if insecureSkipVerify {
-		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, WithHTTP2InsecureSkipVerify))
+		if isPlainHTTPEndpoint(endpoint) {
+			// h2c: HTTP/2 cleartext over plain TCP
+			mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, withHTTP2Cleartext))
+		} else {
+			// HTTPS: TLS with certificate verification skipped (e.g. self-signed certs)
+			mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, WithHTTP2InsecureSkipVerify))
+		}
 	} else {
 		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings))
 	}
 	return New[Http2Configuration](mods...)
+}
+
+// isPlainHTTPEndpoint reports whether the first URL in the endpoint uses a cleartext scheme.
+func isPlainHTTPEndpoint(e Endpoint) bool {
+	list := e.List()
+	if len(list) == 0 {
+		return false
+	}
+	u, err := url.Parse(list[0])
+	if err != nil {
+		return false
+	}
+	s := strings.ToLower(u.Scheme)
+	return s == "http" || s == "tcp"
+}
+
+// withHTTP2Cleartext configures h2c (HTTP/2 cleartext) transport for plain-HTTP endpoints.
+func withHTTP2Cleartext(in *http2.Transport) {
+	in.AllowHTTP = true
+	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+		return (&net.Dialer{Timeout: 30 * time.Second}).DialContext(ctx, network, addr)
+	}
 }
 
 type Mod[T any] func(in *T)
@@ -102,17 +132,19 @@ func WithHTTP2InsecureSkipVerify(in *http2.Transport) {
 		in.TLSClientConfig = &tls.Config{}
 	}
 	in.TLSClientConfig.InsecureSkipVerify = true
-	in.AllowHTTP = true
 
 	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-		dialer := &tls.Dialer{
-			NetDialer: &net.Dialer{Timeout: 30 * time.Second},
-			Config: &tls.Config{
-				InsecureSkipVerify: true,
-				NextProtos:         []string{"h2"},
-			},
+		if cfg == nil {
+			// h2c: plain TCP connection (cfg is nil for cleartext endpoints)
+			return (&net.Dialer{Timeout: 30 * time.Second}).DialContext(ctx, network, addr)
 		}
-		return dialer.DialContext(ctx, network, addr)
+		// HTTPS: perform TLS handshake without certificate verification
+		tlsCfg := cfg.Clone()
+		tlsCfg.InsecureSkipVerify = true
+		return (&tls.Dialer{
+			NetDialer: &net.Dialer{Timeout: 30 * time.Second},
+			Config:    tlsCfg,
+		}).DialContext(ctx, network, addr)
 	}
 }
 
