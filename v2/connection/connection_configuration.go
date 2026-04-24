@@ -132,6 +132,8 @@ func WithHTTPInsecureSkipVerify(in *http.Transport) {
 	in.TLSClientConfig.InsecureSkipVerify = true
 }
 
+// WithHTTP2InsecureSkipVerify configures TLS certificate verification to be skipped for HTTPS
+// endpoints (e.g. self-signed certificates). For cleartext endpoints use withHTTP2Cleartext.
 func WithHTTP2InsecureSkipVerify(in *http2.Transport) {
 	if in.TLSClientConfig == nil {
 		in.TLSClientConfig = &tls.Config{}
@@ -139,11 +141,6 @@ func WithHTTP2InsecureSkipVerify(in *http2.Transport) {
 	in.TLSClientConfig.InsecureSkipVerify = true
 
 	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-		if cfg == nil {
-			// h2c: plain TCP connection (cfg is nil for cleartext endpoints)
-			return (&net.Dialer{Timeout: 30 * time.Second}).DialContext(ctx, network, addr)
-		}
-		// HTTPS: perform TLS handshake without certificate verification
 		tlsCfg := cfg.Clone()
 		tlsCfg.InsecureSkipVerify = true
 		return (&tls.Dialer{
