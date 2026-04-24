@@ -48,32 +48,37 @@ func DefaultHTTP2ConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool
 	mods := []Mod[Http2Configuration]{
 		WithHTT2PEndpoint(endpoint),
 	}
-	if insecureSkipVerify {
-		if isPlainHTTPEndpoint(endpoint) {
-			// h2c: HTTP/2 cleartext over plain TCP
-			mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, withHTTP2Cleartext))
-		} else {
-			// HTTPS: TLS with certificate verification skipped (e.g. self-signed certs)
-			mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, WithHTTP2InsecureSkipVerify))
-		}
+	if isPlainHTTPEndpoint(endpoint) {
+		// h2c: cleartext HTTP/2 for http:// or tcp:// endpoints, regardless of insecureSkipVerify
+		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, withHTTP2Cleartext))
+	} else if insecureSkipVerify {
+		// HTTPS: TLS with certificate verification skipped (e.g. self-signed certs)
+		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, WithHTTP2InsecureSkipVerify))
 	} else {
+		// HTTPS: standard TLS
 		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings))
 	}
 	return New[Http2Configuration](mods...)
 }
 
-// isPlainHTTPEndpoint reports whether the first URL in the endpoint uses a cleartext scheme.
+// isPlainHTTPEndpoint reports whether ALL URLs in the endpoint list use a cleartext scheme.
+// Returns false for mixed-scheme lists so that TLS is used as the safe default.
 func isPlainHTTPEndpoint(e Endpoint) bool {
 	list := e.List()
 	if len(list) == 0 {
 		return false
 	}
-	u, err := url.Parse(list[0])
-	if err != nil {
-		return false
+	for _, addr := range list {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return false
+		}
+		s := strings.ToLower(u.Scheme)
+		if s != "http" && s != "tcp" {
+			return false
+		}
 	}
-	s := strings.ToLower(u.Scheme)
-	return s == "http" || s == "tcp"
+	return true
 }
 
 // withHTTP2Cleartext configures h2c (HTTP/2 cleartext) transport for plain-HTTP endpoints.
