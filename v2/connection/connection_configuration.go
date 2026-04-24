@@ -25,8 +25,6 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -48,9 +46,9 @@ func DefaultHTTP2ConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool
 	mods := []Mod[Http2Configuration]{
 		WithHTT2PEndpoint(endpoint),
 	}
-	if isPlainHTTPEndpoint(endpoint) {
+	if IsCleartextEndpoint(endpoint) {
 		// h2c: cleartext HTTP/2 for http:// or tcp:// endpoints, regardless of insecureSkipVerify
-		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, withHTTP2Cleartext))
+		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, WithHTTP2Cleartext))
 	} else if insecureSkipVerify {
 		// HTTPS: TLS with certificate verification skipped (e.g. self-signed certs)
 		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, WithHTTP2InsecureSkipVerify))
@@ -61,28 +59,9 @@ func DefaultHTTP2ConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool
 	return New[Http2Configuration](mods...)
 }
 
-// isPlainHTTPEndpoint reports whether ALL URLs in the endpoint list use a cleartext scheme.
-// Returns false for mixed-scheme lists so that TLS is used as the safe default.
-func isPlainHTTPEndpoint(e Endpoint) bool {
-	list := e.List()
-	if len(list) == 0 {
-		return false
-	}
-	for _, addr := range list {
-		u, err := url.Parse(addr)
-		if err != nil {
-			return false
-		}
-		s := strings.ToLower(u.Scheme)
-		if s != "http" && s != "tcp" {
-			return false
-		}
-	}
-	return true
-}
-
-// withHTTP2Cleartext configures h2c (HTTP/2 cleartext) transport for plain-HTTP endpoints.
-func withHTTP2Cleartext(in *http2.Transport) {
+// WithHTTP2Cleartext configures h2c (HTTP/2 cleartext) transport for plain-HTTP endpoints.
+// Use this modifier when connecting to http:// or tcp:// ArangoDB endpoints.
+func WithHTTP2Cleartext(in *http2.Transport) {
 	in.AllowHTTP = true
 	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
 		return (&net.Dialer{Timeout: 30 * time.Second}).DialContext(ctx, network, addr)
@@ -133,7 +112,7 @@ func WithHTTPInsecureSkipVerify(in *http.Transport) {
 }
 
 // WithHTTP2InsecureSkipVerify configures TLS certificate verification to be skipped for HTTPS
-// endpoints (e.g. self-signed certificates). For cleartext endpoints use withHTTP2Cleartext.
+// endpoints (e.g. self-signed certificates). For cleartext endpoints use WithHTTP2Cleartext.
 func WithHTTP2InsecureSkipVerify(in *http2.Transport) {
 	if in.TLSClientConfig == nil {
 		in.TLSClientConfig = &tls.Config{}

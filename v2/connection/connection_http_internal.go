@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2026 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,26 +46,38 @@ const (
 	ContentType = "content-type"
 )
 
-func NewHTTP2DialForEndpoint(e Endpoint) func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-	if len(e.List()) == 0 {
-		return nil
+// isCleartextScheme reports whether the scheme indicates a plain-TCP (non-TLS) connection.
+func isCleartextScheme(scheme string) bool {
+	s := strings.ToLower(scheme)
+	return s == "http" || s == "tcp"
+}
+
+// IsCleartextEndpoint reports whether ALL URLs in e use a cleartext scheme.
+// Returns false for mixed-scheme lists so callers can treat TLS as the safe default.
+func IsCleartextEndpoint(e Endpoint) bool {
+	list := e.List()
+	if len(list) == 0 {
+		return false
 	}
-
-	endpoint := e.List()[0]
-
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		// Fallback to default dial
-		return nil
-	}
-
-	if strings.ToLower(u.Scheme) == "http" || strings.ToLower(u.Scheme) == "tcp" {
-		return func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-			return net.Dial(network, addr)
+	for _, addr := range list {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return false
+		}
+		if !isCleartextScheme(u.Scheme) {
+			return false
 		}
 	}
+	return true
+}
 
-	return nil
+func NewHTTP2DialForEndpoint(e Endpoint) func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+	if !IsCleartextEndpoint(e) {
+		return nil
+	}
+	return func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+		return net.Dial(network, addr)
+	}
 }
 
 func newHttpConnection(t http.RoundTripper, contentType string, endpoint Endpoint, config ArangoDBConfiguration) *httpConnection {
