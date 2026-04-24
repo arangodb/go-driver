@@ -105,8 +105,14 @@ func WithHTTP2InsecureSkipVerify(in *http2.Transport) {
 	in.AllowHTTP = true
 
 	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-		// Use net.Dial for plain TCP connection (h2c)
-		return net.DialTimeout(network, addr, 30*time.Second)
+		dialer := &tls.Dialer{
+			NetDialer: &net.Dialer{Timeout: 30 * time.Second},
+			Config: &tls.Config{
+				InsecureSkipVerify: true,
+				NextProtos:         []string{"h2"},
+			},
+		}
+		return dialer.DialContext(ctx, network, addr)
 	}
 }
 

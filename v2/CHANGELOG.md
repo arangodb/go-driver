@@ -41,6 +41,7 @@
 - ServerRole: SingleActive and SinglePassive deprecated (Active Failover removed in v3.12.0)
 - SetCollectionPropertiesOptionsV2: 'journalSize' is deprecated (no longer existent since v3.7; MMFiles removed)
 - Collection option fields: IsVolatile, DoCompact, IndexBuckets, JournalSize are deprecated
+- Implement TLS dialing with InsecureSkipVerify for h2 support
 
 
 ## [2.2.0](https://github.com/arangodb/go-driver/tree/v2.2.0) (2026-02-17)
