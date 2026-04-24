@@ -33,6 +33,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -76,7 +77,7 @@ func NewHTTP2DialForEndpoint(e Endpoint) func(ctx context.Context, network, addr
 		return nil
 	}
 	return func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-		return net.Dial(network, addr)
+		return (&net.Dialer{Timeout: 30 * time.Second}).DialContext(ctx, network, addr)
 	}
 }
 

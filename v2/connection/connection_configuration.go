@@ -120,7 +120,15 @@ func WithHTTP2InsecureSkipVerify(in *http2.Transport) {
 	in.TLSClientConfig.InsecureSkipVerify = true
 
 	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-		tlsCfg := cfg.Clone()
+		if cfg == nil {
+			cfg = in.TLSClientConfig
+		}
+		var tlsCfg *tls.Config
+		if cfg != nil {
+			tlsCfg = cfg.Clone()
+		} else {
+			tlsCfg = &tls.Config{}
+		}
 		tlsCfg.InsecureSkipVerify = true
 		return (&tls.Dialer{
 			NetDialer: &net.Dialer{Timeout: 30 * time.Second},
