@@ -92,12 +92,37 @@ func Test_DefaultHTTP2ConfigurationWrapper_TransportSelection(t *testing.T) {
 		assert.True(t, cfg.Transport.TLSClientConfig.InsecureSkipVerify)
 	})
 
-	t.Run("mixed-scheme endpoint falls back to TLS", func(t *testing.T) {
+	t.Run("mixed-scheme endpoint panics", func(t *testing.T) {
 		ep := NewRoundRobinEndpoints([]string{"http://a:8529", "https://b:8529"})
-		cfg := DefaultHTTP2ConfigurationWrapper(ep, false)
-
-		require.NotNil(t, cfg.Transport)
-		assert.False(t, cfg.Transport.AllowHTTP, "mixed-scheme should not enable h2c")
-		assert.Nil(t, cfg.Transport.DialTLSContext, "mixed-scheme should use default TLS dialing")
+		assert.Panics(t, func() {
+			DefaultHTTP2ConfigurationWrapper(ep, false)
+		})
 	})
+}
+
+func Test_ValidateEndpointSchemes(t *testing.T) {
+	tests := map[string]struct {
+		urls    []string
+		wantErr bool
+	}{
+		"all http":              {[]string{"http://a:8529", "http://b:8529"}, false},
+		"all https":             {[]string{"https://a:8529", "https://b:8529"}, false},
+		"empty list":            {[]string{}, false},
+		"single http":           {[]string{"http://a:8529"}, false},
+		"single https":          {[]string{"https://a:8529"}, false},
+		"mixed http and https":  {[]string{"http://a:8529", "https://b:8529"}, true},
+		"mixed https then http": {[]string{"https://a:8529", "http://b:8529"}, true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			ep := NewRoundRobinEndpoints(tc.urls)
+			err := ValidateEndpointSchemes(ep)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

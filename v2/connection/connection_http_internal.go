@@ -26,6 +26,7 @@ import (
 	"compress/zlib"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -55,7 +56,8 @@ func isCleartextScheme(scheme string) bool {
 }
 
 // IsCleartextEndpoint reports whether ALL URLs in e use the http:// scheme.
-// Returns false for mixed-scheme lists so callers can treat TLS as the safe default.
+// Mixed-scheme endpoint lists (some http://, some https://) are not supported;
+// use ValidateEndpointSchemes to detect this condition before constructing a connection.
 // Endpoints using ArangoDB-native schemes (e.g. tcp://) must be normalized with
 // FixupEndpointURLScheme before being passed here.
 func IsCleartextEndpoint(e Endpoint) bool {
@@ -73,6 +75,33 @@ func IsCleartextEndpoint(e Endpoint) bool {
 		}
 	}
 	return true
+}
+
+// ValidateEndpointSchemes returns an error if the endpoint list contains a mix of
+// cleartext (http://) and TLS (https://) URLs. Mixed-scheme endpoints are not supported
+// because a single HTTP/2 transport cannot be configured for both simultaneously.
+func ValidateEndpointSchemes(e Endpoint) error {
+	list := e.List()
+	if len(list) == 0 {
+		return nil
+	}
+	var hasCleartext, hasTLS bool
+	for _, addr := range list {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return fmt.Errorf("invalid endpoint URL %q: %w", addr, err)
+		}
+		if isCleartextScheme(u.Scheme) {
+			hasCleartext = true
+		} else {
+			hasTLS = true
+		}
+		if hasCleartext && hasTLS {
+			return fmt.Errorf("mixed http:// and https:// endpoints are not supported; " +
+				"normalize ArangoDB-native schemes with FixupEndpointURLScheme before constructing endpoints")
+		}
+	}
+	return nil
 }
 
 func NewHTTP2DialForEndpoint(e Endpoint) func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {

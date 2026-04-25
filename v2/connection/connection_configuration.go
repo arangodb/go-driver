@@ -43,6 +43,9 @@ func DefaultHTTPConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool)
 }
 
 func DefaultHTTP2ConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool) Http2Configuration {
+	if err := ValidateEndpointSchemes(endpoint); err != nil {
+		panic("connection: invalid endpoint configuration: " + err.Error())
+	}
 	mods := []Mod[Http2Configuration]{
 		WithHTT2PEndpoint(endpoint),
 	}
