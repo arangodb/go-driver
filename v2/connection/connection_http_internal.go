@@ -77,9 +77,15 @@ func IsCleartextEndpoint(e Endpoint) bool {
 	return true
 }
 
-// ValidateEndpointSchemes returns an error if the endpoint list contains a mix of
-// cleartext (http://) and TLS (https://) URLs. Mixed-scheme endpoints are not supported
-// because a single HTTP/2 transport cannot be configured for both simultaneously.
+// isTLSScheme reports whether scheme indicates a TLS connection.
+func isTLSScheme(scheme string) bool {
+	return strings.ToLower(scheme) == "https"
+}
+
+// ValidateEndpointSchemes returns an error if any URL in the endpoint list uses an
+// unsupported scheme or if the list mixes http:// and https:// URLs. Only "http" and
+// "https" are accepted; ArangoDB-native schemes (tcp://, ssl://) must be normalized
+// with FixupEndpointURLScheme before endpoints are constructed.
 func ValidateEndpointSchemes(e Endpoint) error {
 	list := e.List()
 	if len(list) == 0 {
@@ -91,14 +97,22 @@ func ValidateEndpointSchemes(e Endpoint) error {
 		if err != nil {
 			return fmt.Errorf("invalid endpoint URL %q: %w", addr, err)
 		}
-		if isCleartextScheme(u.Scheme) {
+		switch {
+		case isCleartextScheme(u.Scheme):
 			hasCleartext = true
-		} else {
+		case isTLSScheme(u.Scheme):
 			hasTLS = true
+		default:
+			hint := ""
+			s := strings.ToLower(u.Scheme)
+			if s == "tcp" || s == "ssl" {
+				hint = "; use FixupEndpointURLScheme to normalize ArangoDB-native schemes"
+			}
+			return fmt.Errorf("unsupported endpoint scheme %q in %q%s", u.Scheme, addr, hint)
 		}
 		if hasCleartext && hasTLS {
 			return fmt.Errorf("mixed http:// and https:// endpoints are not supported; " +
-				"normalize ArangoDB-native schemes with FixupEndpointURLScheme before constructing endpoints")
+				"all endpoints in the list must use the same scheme")
 		}
 	}
 	return nil

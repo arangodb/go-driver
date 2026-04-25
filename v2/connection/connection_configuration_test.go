@@ -112,6 +112,10 @@ func Test_ValidateEndpointSchemes(t *testing.T) {
 		"single https":          {[]string{"https://a:8529"}, false},
 		"mixed http and https":  {[]string{"http://a:8529", "https://b:8529"}, true},
 		"mixed https then http": {[]string{"https://a:8529", "http://b:8529"}, true},
+		"tcp (unnormalized)":    {[]string{"tcp://a:8529"}, true},
+		"ssl (unnormalized)":    {[]string{"ssl://a:8529"}, true},
+		"unknown scheme":        {[]string{"ftp://a:8529"}, true},
+		"typo in scheme":        {[]string{"htps://a:8529"}, true},
 	}
 
 	for name, tc := range tests {
