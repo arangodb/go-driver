@@ -32,13 +32,13 @@ func Test_IsCleartextEndpoint(t *testing.T) {
 		urls []string
 		want bool
 	}{
-		"all http":             {[]string{"http://a:8529", "http://b:8529"}, true},
-		"all tcp":              {[]string{"tcp://a:8529"}, true},
-		"all https":            {[]string{"https://a:8529", "https://b:8529"}, false},
-		"mixed http and https": {[]string{"http://a:8529", "https://b:8529"}, false},
-		"empty list":           {[]string{}, false},
-		"single https":         {[]string{"https://a:8529"}, false},
-		"single http":          {[]string{"http://a:8529"}, true},
+		"all http":                 {[]string{"http://a:8529", "http://b:8529"}, true},
+		"all tcp (not normalized)": {[]string{"tcp://a:8529"}, false}, // must be normalized via FixupEndpointURLScheme first
+		"all https":                {[]string{"https://a:8529", "https://b:8529"}, false},
+		"mixed http and https":     {[]string{"http://a:8529", "https://b:8529"}, false},
+		"empty list":               {[]string{}, false},
+		"single https":             {[]string{"https://a:8529"}, false},
+		"single http":              {[]string{"http://a:8529"}, true},
 	}
 
 	for name, tc := range tests {

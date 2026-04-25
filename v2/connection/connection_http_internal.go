@@ -47,14 +47,17 @@ const (
 	ContentType = "content-type"
 )
 
-// isCleartextScheme reports whether the scheme indicates a plain-TCP (non-TLS) connection.
+// isCleartextScheme reports whether scheme indicates a plain-HTTP (non-TLS) connection.
+// Only "http" is accepted; ArangoDB's "tcp" scheme must be normalized to "http" via
+// FixupEndpointURLScheme before endpoints are constructed.
 func isCleartextScheme(scheme string) bool {
-	s := strings.ToLower(scheme)
-	return s == "http" || s == "tcp"
+	return strings.ToLower(scheme) == "http"
 }
 
-// IsCleartextEndpoint reports whether ALL URLs in e use a cleartext scheme.
+// IsCleartextEndpoint reports whether ALL URLs in e use the http:// scheme.
 // Returns false for mixed-scheme lists so callers can treat TLS as the safe default.
+// Endpoints using ArangoDB-native schemes (e.g. tcp://) must be normalized with
+// FixupEndpointURLScheme before being passed here.
 func IsCleartextEndpoint(e Endpoint) bool {
 	list := e.List()
 	if len(list) == 0 {

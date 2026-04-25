@@ -47,7 +47,7 @@ func DefaultHTTP2ConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool
 		WithHTT2PEndpoint(endpoint),
 	}
 	if IsCleartextEndpoint(endpoint) {
-		// h2c: cleartext HTTP/2 for http:// or tcp:// endpoints, regardless of insecureSkipVerify
+		// h2c: cleartext HTTP/2 for http:// endpoints, regardless of insecureSkipVerify
 		mods = append(mods, WithHTTP2Transport(DefaultHTTP2TransportSettings, WithHTTP2Cleartext))
 	} else if insecureSkipVerify {
 		// HTTPS: TLS with certificate verification skipped (e.g. self-signed certs)
@@ -60,7 +60,8 @@ func DefaultHTTP2ConfigurationWrapper(endpoint Endpoint, insecureSkipVerify bool
 }
 
 // WithHTTP2Cleartext configures h2c (HTTP/2 cleartext) transport for plain-HTTP endpoints.
-// Use this modifier when connecting to http:// or tcp:// ArangoDB endpoints.
+// Use this modifier when connecting to http:// endpoints. ArangoDB-native tcp:// endpoints
+// must be normalized with FixupEndpointURLScheme before use.
 func WithHTTP2Cleartext(in *http2.Transport) {
 	in.AllowHTTP = true
 	in.DialTLSContext = func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
