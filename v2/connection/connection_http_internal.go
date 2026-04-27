@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2026 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"compress/zlib"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -33,6 +34,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -46,26 +48,83 @@ const (
 	ContentType = "content-type"
 )
 
-func NewHTTP2DialForEndpoint(e Endpoint) func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-	if len(e.List()) == 0 {
-		return nil
+// isCleartextScheme reports whether scheme indicates a plain-HTTP (non-TLS) connection.
+// Only "http" is accepted; ArangoDB's "tcp" scheme must be normalized to "http" via
+// FixupEndpointURLScheme before endpoints are constructed.
+func isCleartextScheme(scheme string) bool {
+	return strings.ToLower(scheme) == "http"
+}
+
+// IsCleartextEndpoint reports whether ALL URLs in e use the http:// scheme.
+// Mixed-scheme endpoint lists (some http://, some https://) are not supported;
+// use ValidateEndpointSchemes to detect this condition before constructing a connection.
+// Endpoints using ArangoDB-native schemes (e.g. tcp://) must be normalized with
+// FixupEndpointURLScheme before being passed here.
+func IsCleartextEndpoint(e Endpoint) bool {
+	list := e.List()
+	if len(list) == 0 {
+		return false
 	}
-
-	endpoint := e.List()[0]
-
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		// Fallback to default dial
-		return nil
-	}
-
-	if strings.ToLower(u.Scheme) == "http" || strings.ToLower(u.Scheme) == "tcp" {
-		return func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
-			return net.Dial(network, addr)
+	for _, addr := range list {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return false
+		}
+		if !isCleartextScheme(u.Scheme) {
+			return false
 		}
 	}
+	return true
+}
 
+// isTLSScheme reports whether scheme indicates a TLS connection.
+func isTLSScheme(scheme string) bool {
+	return strings.ToLower(scheme) == "https"
+}
+
+// ValidateEndpointSchemes returns an error if any URL in the endpoint list uses an
+// unsupported scheme or if the list mixes http:// and https:// URLs. Only "http" and
+// "https" are accepted; ArangoDB-native schemes (tcp://, ssl://) must be normalized
+// with FixupEndpointURLScheme before endpoints are constructed.
+func ValidateEndpointSchemes(e Endpoint) error {
+	list := e.List()
+	if len(list) == 0 {
+		return nil
+	}
+	var hasCleartext, hasTLS bool
+	for _, addr := range list {
+		u, err := url.Parse(addr)
+		if err != nil {
+			return fmt.Errorf("invalid endpoint URL %q: %w", addr, err)
+		}
+		switch {
+		case isCleartextScheme(u.Scheme):
+			hasCleartext = true
+		case isTLSScheme(u.Scheme):
+			hasTLS = true
+		default:
+			hint := ""
+			s := strings.ToLower(u.Scheme)
+			if s == "tcp" || s == "ssl" {
+				hint = "; use FixupEndpointURLScheme to normalize ArangoDB-native schemes"
+			}
+			return fmt.Errorf("unsupported endpoint scheme %q in %q%s", u.Scheme, addr, hint)
+		}
+		if hasCleartext && hasTLS {
+			return fmt.Errorf("mixed http:// and https:// endpoints are not supported; " +
+				"all endpoints in the list must use the same scheme")
+		}
+	}
 	return nil
+}
+
+func NewHTTP2DialForEndpoint(e Endpoint) func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+	if !IsCleartextEndpoint(e) {
+		return nil
+	}
+	return func(ctx context.Context, network, addr string, cfg *tls.Config) (net.Conn, error) {
+		return (&net.Dialer{Timeout: 30 * time.Second}).DialContext(ctx, network, addr)
+	}
 }
 
 func newHttpConnection(t http.RoundTripper, contentType string, endpoint Endpoint, config ArangoDBConfiguration) *httpConnection {
