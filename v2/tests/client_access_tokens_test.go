@@ -38,7 +38,8 @@ import (
 func Test_AccessTokens(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-
+			// Access-token routes (POST/GET/DELETE /_api/token/{user}) were added in ArangoDB 3.12.5; see "API changes in 3.12" in the release notes.
+			skipBelowVersion(client, ctx, "3.12.5", t)
 			var tokenResp *arangodb.CreateAccessTokenResponse
 			expiresAt := time.Now().Add(5 * time.Minute).Unix()
 			user := "root"

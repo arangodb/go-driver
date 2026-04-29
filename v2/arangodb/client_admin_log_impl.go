@@ -278,9 +278,10 @@ func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (Api
 	}
 }
 
-// GetMetrics returns the instance's current metrics in Prometheus format
+// GetMetrics returns the instance's current metrics in Prometheus format using GET .../_admin/metrics/v2.
+// That path keeps compatibility with typical ArangoDB 3.x deployments; ArangoDB 4.0 documents GET .../_admin/metrics without the v2 suffix.
 func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
-	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics")
+	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics", "v2")
 
 	var mods []connection.RequestModifier
 	if serverId != nil {

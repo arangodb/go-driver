@@ -453,11 +453,17 @@ func Test_GetJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				skipNoEnterprise(client, ctx, t)
 				if !isNoAuth() {
 					t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 				}
 				resp, err := client.GetJWTSecrets(ctx, db.Name())
-				require.NoError(t, err)
+				if err != nil {
+					if handleJWTSecretsError(t, err, "GetJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest, http.StatusNotFound}) {
+						return
+					}
+					require.NoError(t, err)
+				}
 				validateJWTSecretsResponse(t, resp, "Retrieved")
 			})
 		})
@@ -468,9 +474,10 @@ func Test_GetJWTSecrets(t *testing.T) {
 func Test_ReloadJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipNoEnterprise(client, ctx, t)
 			resp, err := client.ReloadJWTSecrets(ctx)
 			if err != nil {
-				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest}) {
+				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest, http.StatusNotFound}) {
 					return
 				}
 				require.NoError(t, err)
@@ -496,6 +503,11 @@ func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes 
 			case http.StatusBadRequest:
 				if arangoErr.Code == http.StatusBadRequest {
 					t.Skip("JWT reload not available: no secret file or folder configured")
+					return true
+				}
+			case http.StatusNotFound:
+				if arangoErr.Code == http.StatusNotFound {
+					t.Skip("JWT secrets admin API not available (Community Edition or route not registered)")
 					return true
 				}
 			}
@@ -532,6 +544,7 @@ func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, op
 func Test_HandleAdminVersion(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			skipFromVersion(client, ctx, "4.0", t)
 			t.Run("With Options", func(t *testing.T) {
 				resp, err := client.HandleAdminVersion(context.Background(), &arangodb.GetVersionOptions{
 					Details: utils.NewType(true),

@@ -41,10 +41,11 @@ type ClientServerInfo interface {
 	// An error is returned when calling this to a server that is not part of a cluster.
 	ServerID(ctx context.Context) (string, error)
 
-	// HandleAdminVersion retrieves the ArangoDB server version information (GET /_api/version).
+	// HandleAdminVersion retrieves the ArangoDB server version information (GET /_admin/version).
 	//
-	// Deprecated: Use Version or VersionWithOptions instead. HandleAdminVersion only exists for
-	// backward compatibility with code that used the old name; behavior matches VersionWithOptions.
+	// Deprecated: Use Version or VersionWithOptions instead. HandleAdminVersion exists only for
+	// backward compatibility with code that used the old name. On ArangoDB 3.x the decoded
+	// VersionInfo matches VersionWithOptions for the same GetVersionOptions.
 	// The legacy HTTP route GET /_admin/version is removed in ArangoDB 4.0.
 	HandleAdminVersion(ctx context.Context, opts *GetVersionOptions) (VersionInfo, error)
 }
