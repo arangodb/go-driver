@@ -144,8 +144,17 @@ type ClientAdminLog interface {
 	// GetRecentAPICalls gets a list of the most recent requests with a timestamp and the endpoint
 	GetRecentAPICalls(ctx context.Context, dbName string) (ApiCallsResponse, error)
 
-	// GetMetrics returns the instance's current metrics in Prometheus format
+	// GetMetrics returns Prometheus-format metrics from GET .../_admin/metrics/v2.
+	//
+	// Deprecated: This uses the Metrics API v2 path. ArangoDB 4.0 removes /_admin/metrics/v2;
+	// the metric names and attributes also differ from GET .../_admin/metrics (see Metrics).
+	// Use Metrics for ArangoDB 4.0 and later.
 	GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error)
+
+	// Metrics returns Prometheus-format metrics from GET .../_admin/metrics (without the v2 suffix).
+	// The response schema differs from deprecated GetMetrics (…/metrics/v2); see release notes.
+	// Intended for ArangoDB 4.0+ where the v2 metrics endpoint is removed.
+	Metrics(ctx context.Context, dbName string, serverId *string) ([]byte, error)
 }
 
 type ClientAdminLicense interface {

@@ -1,7 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
-- ArangoDB 4.0 compatibility — deprecations (ClusterStatistics, HandleAdminVersion, LoggerFirstTick, LoggerTickRange)
+- Metrics API: added `Metrics` (`GET /_admin/metrics`) for 4.0+ and deprecated `GetMetrics` (`GET /_admin/metrics/v2`).
+- ArangoDB 4.0 deprecations: documented additional deprecations on master, including replication `LoggerFirstTick`/`LoggerTickRange` and `ClusterStatistics`, so users can discover all v4.0-related deprecations.
 - Tests: `test/cluster.sh` passes `javascript.startup-options-allowlist=.*` for ArangoDB 3.12.9+ `require("internal").options()` in JS transactions
 - Fix `Version.CompareTo` for pre-release patch suffixes (e.g. `-nightly`) by comparing the numeric patch instead of the full sub-version string
 - Add `DontFollowRedirect` fields to HTTP connection configuration

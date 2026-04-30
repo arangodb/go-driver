@@ -1,7 +1,7 @@
 //
 // DISCLAIMER
 //
-// Copyright 2023 ArangoDB GmbH, Cologne, Germany
+// Copyright 2023-2026 ArangoDB GmbH, Cologne, Germany
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,19 +28,36 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/arangodb/go-driver/v2/connection"
 )
 
-// Test_DecoderBytes gets plain text response from the server
+// Test_DecoderBytes gets plain text response from the server (Prometheus metrics via Client APIs).
 func Test_DecoderBytes(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		var output []byte
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				vi, err := client.Version(ctx)
+				require.NoError(t, err)
 
-		url := connection.NewUrl("_admin", "metrics")
-		_, err := connection.CallGet(context.Background(), client.Connection(), url, &output)
+				serverRole, err := client.ServerRole(ctx)
+				require.NoError(t, err)
+				var serverId *string
+				if serverRole == arangodb.ServerRoleCoordinator {
+					sid, err := client.ServerID(ctx)
+					require.NoError(t, err)
+					serverId = &sid
+				}
 
-		require.NoError(t, err)
-		require.NotNil(t, output)
-		assert.Contains(t, string(output), "arangodb_connection_pool")
+				var output []byte
+				if vi.Version.Major() >= 4 {
+					output, err = client.Metrics(ctx, db.Name(), serverId)
+				} else {
+					output, err = client.GetMetrics(ctx, db.Name(), serverId)
+				}
+				require.NoError(t, err)
+				require.NotNil(t, output)
+				// Metric names differ between …/metrics/v2 (3.x) and …/metrics (4.0+); both should expose ArangoDB Prometheus metrics.
+				assert.Contains(t, string(output), "arangodb_")
+			})
+		})
 	})
 }

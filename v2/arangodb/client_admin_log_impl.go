@@ -278,9 +278,10 @@ func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (Api
 	}
 }
 
-// GetMetrics returns the instance's current metrics in Prometheus format
+// GetMetrics implements ClientAdminLog.GetMetrics (deprecated path …/metrics/v2).
+// Implementation is intentionally separate from Metrics so a future go-driver major (e.g. v3 module) can drop GetMetrics without touching Metrics.
 func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
-	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics")
+	urlStr := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics", "v2")
 
 	var mods []connection.RequestModifier
 	if serverId != nil {
@@ -288,7 +289,30 @@ func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *s
 	}
 	var output []byte
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &output, mods...)
+	resp, err := connection.CallGet(ctx, c.client.connection, urlStr, &output, mods...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return output, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// Metrics returns metrics in Prometheus format.
+func (c *clientAdmin) Metrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
+	urlStr := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics")
+
+	var mods []connection.RequestModifier
+	if serverId != nil {
+		mods = append(mods, connection.WithQuery("serverId", *serverId))
+	}
+	var output []byte
+
+	resp, err := connection.CallGet(ctx, c.client.connection, urlStr, &output, mods...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

@@ -213,5 +213,28 @@ func (o *GetVersionOptions) modifyRequest(r connection.Request) error {
 //
 // Deprecated: use Version or VersionWithOptions instead.
 func (c clientServerInfo) HandleAdminVersion(ctx context.Context, opts *GetVersionOptions) (VersionInfo, error) {
-	return c.VersionWithOptions(ctx, opts)
+	url := connection.NewUrl("_admin", "version")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		VersionInfo
+	}
+
+	// Always provide a non-nil modifier
+	modifier := func(r connection.Request) error { return nil }
+	if opts != nil {
+		modifier = opts.modifyRequest
+	}
+
+	resp, err := connection.CallGet(ctx, c.client.connection, url, &response, modifier)
+	if err != nil {
+		return VersionInfo{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.VersionInfo, nil
+	default:
+		return VersionInfo{}, response.AsArangoErrorWithCode(code)
+	}
 }

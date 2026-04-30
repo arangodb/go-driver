@@ -453,6 +453,7 @@ func Test_GetJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				skipNoEnterprise(client, ctx, t)
 				if !isNoAuth() {
 					t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 				}
@@ -468,6 +469,7 @@ func Test_GetJWTSecrets(t *testing.T) {
 func Test_ReloadJWTSecrets(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+			skipNoEnterprise(client, ctx, t)
 			resp, err := client.ReloadJWTSecrets(ctx)
 			if err != nil {
 				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest}) {
@@ -532,6 +534,7 @@ func validateJWTSecretsResponse(t testing.TB, resp arangodb.JWTSecretsResult, op
 func Test_HandleAdminVersion(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+			skipFromVersion(client, ctx, "4.0", t)
 			t.Run("With Options", func(t *testing.T) {
 				resp, err := client.HandleAdminVersion(context.Background(), &arangodb.GetVersionOptions{
 					Details: utils.NewType(true),
