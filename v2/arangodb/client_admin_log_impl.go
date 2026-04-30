@@ -279,7 +279,7 @@ func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (Api
 }
 
 // GetMetrics implements ClientAdminLog.GetMetrics (deprecated path …/metrics/v2).
-// Implementation is intentionally separate from Metrics so v3 can remove GetMetrics without touching Metrics.
+// Implementation is intentionally separate from Metrics so a future go-driver major (e.g. v3 module) can drop GetMetrics without touching Metrics.
 func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
 	urlStr := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics", "v2")
 
@@ -303,7 +303,7 @@ func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *s
 }
 
 // Metrics implements ClientAdminLog.Metrics (GET …/_admin/metrics, no v2 segment).
-// Not shared with GetMetrics; v3 keeps only this endpoint as the single metrics API.
+// Not shared with GetMetrics; a future go-driver major is expected to expose only this metrics API.
 func (c *clientAdmin) Metrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
 	urlStr := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics")
 
