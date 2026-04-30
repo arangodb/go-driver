@@ -458,12 +458,7 @@ func Test_GetJWTSecrets(t *testing.T) {
 					t.Skip("Skipping: superuser tests run only in no-auth mode (TEST_AUTH=none)")
 				}
 				resp, err := client.GetJWTSecrets(ctx, db.Name())
-				if err != nil {
-					if handleJWTSecretsError(t, err, "GetJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest, http.StatusNotFound}) {
-						return
-					}
-					require.NoError(t, err)
-				}
+				require.NoError(t, err)
 				validateJWTSecretsResponse(t, resp, "Retrieved")
 			})
 		})
@@ -477,7 +472,7 @@ func Test_ReloadJWTSecrets(t *testing.T) {
 			skipNoEnterprise(client, ctx, t)
 			resp, err := client.ReloadJWTSecrets(ctx)
 			if err != nil {
-				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest, http.StatusNotFound}) {
+				if handleJWTSecretsError(t, err, "ReloadJWTSecrets", []int{http.StatusForbidden, http.StatusBadRequest}) {
 					return
 				}
 				require.NoError(t, err)
@@ -503,11 +498,6 @@ func handleJWTSecretsError(t testing.TB, err error, operation string, skipCodes 
 			case http.StatusBadRequest:
 				if arangoErr.Code == http.StatusBadRequest {
 					t.Skip("JWT reload not available: no secret file or folder configured")
-					return true
-				}
-			case http.StatusNotFound:
-				if arangoErr.Code == http.StatusNotFound {
-					t.Skip("JWT secrets admin API not available (Community Edition or route not registered)")
 					return true
 				}
 			}
