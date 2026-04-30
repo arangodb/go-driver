@@ -568,8 +568,8 @@ endif
 
 ## Lint
 
-# Pin toolchain for tool installs so transitive deps (e.g. kevinburke/rest via github-release)
-# always resolve with Go >= 1.24; avoids "running go 1.22.x" when env GOTOOLCHAIN differs per invocation.
+# Pin tool installs to go$(GOVERSION) so transitive deps (e.g. kevinburke/rest via github-release)
+# resolve consistently with the configured toolchain, even when env GOTOOLCHAIN differs per invocation.
 TOOLS_GO := GOTOOLCHAIN=go$(GOVERSION) GOBIN=$(TMPDIR)/bin
 
 .PHONY: tools
