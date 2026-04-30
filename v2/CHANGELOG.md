@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [2.3.0](https://github.com/arangodb/go-driver/tree/v2.3.0) (2026-04-30)
 - Metrics API: added `Metrics` (`GET /_admin/metrics`) for 4.0+ and deprecated `GetMetrics` (`GET /_admin/metrics/v2`).
 - ArangoDB 4.0 deprecations: documented additional deprecations on master, including replication `LoggerFirstTick`/`LoggerTickRange` and `ClusterStatistics`, so users can discover all v4.0-related deprecations.
 - Tests: `test/cluster.sh` passes `javascript.startup-options-allowlist=.*` for ArangoDB 3.12.9+ `require("internal").options()` in JS transactions
