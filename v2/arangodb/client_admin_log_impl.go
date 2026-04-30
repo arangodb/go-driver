@@ -302,8 +302,7 @@ func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *s
 	}
 }
 
-// Metrics implements ClientAdminLog.Metrics (GET …/_admin/metrics, no v2 segment).
-// Not shared with GetMetrics; a future go-driver major is expected to expose only this metrics API.
+// Metrics returns metrics in Prometheus format.
 func (c *clientAdmin) Metrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
 	urlStr := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics")
 
