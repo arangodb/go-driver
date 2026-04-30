@@ -250,6 +250,8 @@ func Test_GetMetrics(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				// GET …/_admin/metrics/v2 is removed in ArangoDB 4.0 (use Metrics for plain /_admin/metrics).
+				skipFromVersion(client, ctx, "4.0", t)
 				// Role check
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
@@ -263,6 +265,30 @@ func Test_GetMetrics(t *testing.T) {
 				}
 
 				metricsResp, err := client.GetMetrics(ctx, db.Name(), serverId)
+				require.NoError(t, err)
+				require.NotEmpty(t, metricsResp)
+			})
+		})
+	})
+}
+
+func Test_Metrics(t *testing.T) {
+	Wrap(t, func(t *testing.T, client arangodb.Client) {
+		WithDatabase(t, client, nil, func(db arangodb.Database) {
+			withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+				skipBelowVersion(client, ctx, "4.0", t)
+				serverRole, err := client.ServerRole(ctx)
+				require.NoError(t, err)
+				t.Logf("ServerRole: %s", serverRole)
+
+				var serverId *string
+				if serverRole == arangodb.ServerRoleCoordinator {
+					serverID, err := client.ServerID(ctx)
+					require.NoError(t, err)
+					serverId = &serverID
+				}
+
+				metricsResp, err := client.Metrics(ctx, db.Name(), serverId)
 				require.NoError(t, err)
 				require.NotEmpty(t, metricsResp)
 			})

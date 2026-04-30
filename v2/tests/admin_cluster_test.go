@@ -380,7 +380,7 @@ func Test_ClusterStatistics(t *testing.T) {
 			// ArangoDB 4.0 removes GET /_admin/cluster/statistics.
 			// Use Major() so 4.0.x / 4.0.0-devel always skip (CompareTo("4.0") can miss some version strings).
 			if vi.Version.Major() >= 4 {
-				t.Skip("ArangoDB 4.0+ removes ClusterStatistics / GET /_admin/cluster/statistics; use GetMetrics instead")
+				t.Skip("ArangoDB 4.0+ removes ClusterStatistics / GET /_admin/cluster/statistics; use Metrics (GET /_admin/metrics) on 4.0+ or deprecated GetMetrics (…/metrics/v2) on 3.x")
 			}
 			// Detect DB-Server ID
 			serverRole, err := client.ServerRole(ctx)

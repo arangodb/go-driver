@@ -278,10 +278,10 @@ func (c *clientAdmin) GetRecentAPICalls(ctx context.Context, dbName string) (Api
 	}
 }
 
-// GetMetrics returns the instance's current metrics in Prometheus format using GET .../_admin/metrics/v2.
-// That path keeps compatibility with typical ArangoDB 3.x deployments; ArangoDB 4.0 documents GET .../_admin/metrics without the v2 suffix.
+// GetMetrics implements ClientAdminLog.GetMetrics (deprecated path …/metrics/v2).
+// Implementation is intentionally separate from Metrics so v3 can remove GetMetrics without touching Metrics.
 func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
-	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics", "v2")
+	urlStr := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics", "v2")
 
 	var mods []connection.RequestModifier
 	if serverId != nil {
@@ -289,7 +289,31 @@ func (c *clientAdmin) GetMetrics(ctx context.Context, dbName string, serverId *s
 	}
 	var output []byte
 
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &output, mods...)
+	resp, err := connection.CallGet(ctx, c.client.connection, urlStr, &output, mods...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return output, nil
+	default:
+		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(code)
+	}
+}
+
+// Metrics implements ClientAdminLog.Metrics (GET …/_admin/metrics, no v2 segment).
+// Not shared with GetMetrics; v3 keeps only this endpoint as the single metrics API.
+func (c *clientAdmin) Metrics(ctx context.Context, dbName string, serverId *string) ([]byte, error) {
+	urlStr := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "metrics")
+
+	var mods []connection.RequestModifier
+	if serverId != nil {
+		mods = append(mods, connection.WithQuery("serverId", *serverId))
+	}
+	var output []byte
+
+	resp, err := connection.CallGet(ctx, c.client.connection, urlStr, &output, mods...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
