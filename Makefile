@@ -568,18 +568,22 @@ endif
 
 ## Lint
 
+# Pin tool installs to go$(GOVERSION) so transitive deps (e.g. kevinburke/rest via github-release)
+# resolve consistently with the configured toolchain, even when env GOTOOLCHAIN differs per invocation.
+TOOLS_GO := GOTOOLCHAIN=go$(GOVERSION) GOBIN=$(TMPDIR)/bin
+
 .PHONY: tools
 tools: __dir_setup
 	@echo ">> Fetching golangci-lint linter"
-	@GOBIN=$(TMPDIR)/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.1
+	@$(TOOLS_GO) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.1
 	@echo ">> Fetching goimports"
-	@GOBIN=$(TMPDIR)/bin go install golang.org/x/tools/cmd/goimports@v0.38.0
+	@$(TOOLS_GO) go install golang.org/x/tools/cmd/goimports@v0.38.0
 	@echo ">> Fetching license check"
-	@GOBIN=$(TMPDIR)/bin go install github.com/google/addlicense@v1.0.0
+	@$(TOOLS_GO) go install github.com/google/addlicense@v1.0.0
 	@echo ">> Fetching govulncheck"
-	@GOBIN=$(TMPDIR)/bin go install golang.org/x/vuln/cmd/govulncheck@v1.2.0
+	@$(TOOLS_GO) go install golang.org/x/vuln/cmd/govulncheck@v1.2.0
 	@echo ">> Fetching github-release"
-	@GOBIN=$(TMPDIR)/bin go install github.com/github-release/github-release@v0.10.0
+	@$(TOOLS_GO) go install github.com/github-release/github-release@v0.10.0
 
 .PHONY: license
 license:
