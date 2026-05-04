@@ -37,7 +37,7 @@ DEBUG=true TESTOPTIONS="-test.run TestResponseHeader -test.v" make run-tests-sin
 4. Make sure you have admin access to `go-driver` repository.
 5. Run `make release-patch|minor|major` to create a release, or `make prerelease-patch|minor|major` for a preview release.
    - To release v2 version, use `make release-v2-patch|minor|major` or `make prerelease-v2-patch|minor|major`
-6.  Go To GitHub and fill the description with the content of CHANGELOG.md
+6. Go To GitHub and fill the description with the content of CHANGELOG.md
 
 ## Release from CircleCI
 
