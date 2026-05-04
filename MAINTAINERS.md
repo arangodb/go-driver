@@ -29,9 +29,16 @@ DEBUG=true TESTOPTIONS="-test.run TestResponseHeader -test.v" make run-tests-sin
 # Release Instructions
 
 1. Update CHANGELOG.md
+
+## Local release
+
 2. Make sure that GitHub access token exist in `~/.arangodb/github-token` and has read/write access for this repo.
 3. Make sure you have the `~/go-driver/.tmp/bin/github-release` file. If not run `make tools`.
 4. Make sure you have admin access to `go-driver` repository.
-5. Run `make release-patch|minor|major` to create a release.
-   - To release v2 version, use `make release-v2-patch|minor|major`.
-6. Go To GitHub and fill the description with the content of CHANGELOG.md
+5. Run `make release-patch|minor|major` to create a release, or `make prerelease-patch|minor|major` for a preview release.
+   - To release v2 version, use `make release-v2-patch|minor|major` or `make prerelease-v2-patch|minor|major`
+6.  Go To GitHub and fill the description with the content of CHANGELOG.md
+
+## Release from CircleCI
+
+On branch **master** for **arangodb/go-driver**, trigger a pipeline with pipeline parameter **`publish`** set to the exact Make target (for example `release-v2-patch` or `prerelease-minor`). The **`publish-release`** workflow is defined in [.circleci/config.yml](.circleci/config.yml). Attach organization contexts **`github-release`** (set **`GITHUB_TOKEN`** or **`RELEASER_GITHUB_TOKEN`**) and **`slack`**. Step 6 above still applies: the published release has no automated description yet, so edit it on GitHub

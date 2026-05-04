@@ -679,3 +679,22 @@ release-v2-minor:
 
 release-v2-major:
 	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
+
+# Preview releases (same as arangodb-helper/arangodb: prerelease-patch, etc.).
+prerelease-patch:
+	go run $(RELEASE) -type=patch -github-release=$(GH_RELEASE) -prerelease
+
+prerelease-minor:
+	go run $(RELEASE) -type=minor -github-release=$(GH_RELEASE) -prerelease
+
+prerelease-major:
+	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -prerelease
+
+prerelease-v2-patch:
+	go run $(RELEASE) -type=patch -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION) -prerelease
+
+prerelease-v2-minor:
+	go run $(RELEASE) -type=minor -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION) -prerelease
+
+prerelease-v2-major:
+	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION) -prerelease

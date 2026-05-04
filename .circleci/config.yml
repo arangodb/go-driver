@@ -21,7 +21,9 @@ aliases:
       channel: 'C056RL4BXG9' #status-go channel
       event: fail
       template: basic_fail_1
-  
+  # Make targets allowed for pipeline parameter publish (keep in sync with Makefile release / prerelease targets).
+  - &publish_release_target_regex '^release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major$'
+
   # Common environment variables for integration tests (shared between x86 and ARM)
   # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
   # where to find resources on the host machine so it can mount them into Docker containers
@@ -49,6 +51,11 @@ parameters:
   starterImage:
     type: string
     default: "arangodb/arangodb-starter:latest"
+  # Empty by default. Set via "Trigger Pipeline" / API to a release Make target (see publish-release workflow).
+  # Same pattern as arangodb-helper/arangodb: e.g. release-v2-patch, prerelease-v2-minor.
+  publish:
+    type: string
+    default: ""
 
 commands:
   run-test-if-pr:
@@ -174,11 +181,69 @@ jobs:
       - run: make vulncheck
       - *notify_slack_on_fail
 
+  # GitHub release (tags VERSION bump, git push, github-release draft → publish).
+  # Requires CircleCI context: GITHUB_TOKEN or RELEASER_GITHUB_TOKEN (repo contents write). Optional: GIT_USER_NAME, GIT_USER_EMAIL.
+  # Pipeline parameter `publish` must be the exact Make target (see publish-release workflow regex).
+  publish-github-release:
+    executor: golang-executor
+    steps:
+      - checkout
+      - run:
+          name: Verify branch and repository
+          command: |
+            set -euo pipefail
+            if [ "${CIRCLE_BRANCH:-}" != "master" ]; then
+              echo "Releases are only allowed from master (got: ${CIRCLE_BRANCH:-})"
+              exit 1
+            fi
+            if [ "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}" != "arangodb/go-driver" ]; then
+              echo "Releases are only allowed on arangodb/go-driver"
+              exit 1
+            fi
+      - run:
+          name: Configure git and remote for push
+          command: |
+            set -euo pipefail
+            if [ -n "${RELEASER_GITHUB_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
+              export GITHUB_TOKEN="${RELEASER_GITHUB_TOKEN}"
+            fi
+            if [ -z "${GITHUB_TOKEN:-}" ]; then
+              echo "GITHUB_TOKEN or RELEASER_GITHUB_TOKEN is not set. Add one via a CircleCI context (e.g. github-release)."
+              exit 1
+            fi
+            git config --global user.email "${GIT_USER_EMAIL:-circleci-go-driver@arangodb.com}"
+            git config --global user.name "${GIT_USER_NAME:-CircleCI Go Driver}"
+            git config --global safe.directory "$(pwd)"
+            git config --global push.autoSetupRemote true
+            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git"
+      - run:
+          name: Install release tooling
+          command: make tools
+      - run:
+          name: Run release (make target from pipeline parameter publish)
+          command: |
+            set -euo pipefail
+            if [ -n "${RELEASER_GITHUB_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
+              export GITHUB_TOKEN="${RELEASER_GITHUB_TOKEN}"
+            fi
+            TARGET="<< pipeline.parameters.publish >>"
+            case "$TARGET" in
+              release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major) ;;
+              *) echo "Invalid publish target: '$TARGET'"; exit 1 ;;
+            esac
+            make "$TARGET"
+      - *notify_slack_on_fail
+
 workflows:
   version: 2
 
-  # Default workflow
+  # Default workflow (skipped when publish= is set to a release Make target).
   run_tests:
+    when:
+      not:
+        matches:
+          value: << pipeline.parameters.publish >>
+          pattern: *publish_release_target_regex
     jobs:
       - check-code
       - run-unit-tests:
@@ -260,3 +325,19 @@ workflows:
           filters:
             branches:
               only: master
+
+  # Manual / API: trigger pipeline on master; set publish to a Make target (e.g. release-v2-patch, prerelease-v2-minor).
+  # Same idea as arangodb-helper/arangodb publish-release-starter workflow.
+  # Context: GITHUB_TOKEN or RELEASER_GITHUB_TOKEN (Fine-grained or classic PAT with contents:write).
+  publish-release:
+    when:
+      and:
+        - matches:
+            value: << pipeline.parameters.publish >>
+            pattern: *publish_release_target_regex
+        - equal: [ master, << pipeline.git.branch >> ]
+    jobs:
+      - publish-github-release:
+          context:
+            - github-release
+            - slack

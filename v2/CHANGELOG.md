@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- CircleCI: optional `publish-release` workflow to cut a GitHub release from CI using pipeline parameter `publish` (Make target, e.g. `release-v2-patch` or `prerelease-v2-minor`); see `.circleci/config.yml`.
 
 ## [2.3.0](https://github.com/arangodb/go-driver/tree/v2.3.0) (2026-04-30)
 - Metrics API: added `Metrics` (`GET /_admin/metrics`) for 4.0+ and deprecated `GetMetrics` (`GET /_admin/metrics/v2`).
