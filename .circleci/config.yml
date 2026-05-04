@@ -237,13 +237,15 @@ jobs:
 workflows:
   version: 2
 
-  # Default workflow (skipped when publish= is set to a release Make target).
+  # Default workflow (skipped only for release publishing on master).
   run_tests:
     when:
       not:
-        matches:
-          value: << pipeline.parameters.publish >>
-          pattern: *publish_release_target_regex
+        and:
+          - equal: [ master, << pipeline.git.branch >> ]
+          - matches:
+              value: << pipeline.parameters.publish >>
+              pattern: *publish_release_target_regex
     jobs:
       - check-code
       - run-unit-tests:
