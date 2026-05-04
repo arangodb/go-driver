@@ -22,7 +22,7 @@ aliases:
       event: fail
       template: basic_fail_1
   # Make targets allowed for pipeline parameter publish (keep in sync with Makefile release / prerelease targets).
-  - &publish_release_target_regex '^release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major$'
+  - &publish_release_target_regex '^(release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major)$'
 
   # Common environment variables for integration tests (shared between x86 and ARM)
   # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
