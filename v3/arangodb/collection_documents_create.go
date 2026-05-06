@@ -1,0 +1,231 @@
+//
+// DISCLAIMER
+//
+// Copyright 2020-2025 ArangoDB GmbH, Cologne, Germany
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
+
+package arangodb
+
+import (
+	"context"
+
+	"github.com/arangodb/go-driver/v3/arangodb/shared"
+	"github.com/arangodb/go-driver/v3/connection"
+)
+
+// CollectionDocumentCreate interface for creating documents in a collection.
+// https://docs.arangodb.com/stable/develop/http-api/documents/#create-a-document
+type CollectionDocumentCreate interface {
+
+	// CreateDocument creates a single document in the collection.
+	// The document data is loaded from the given document, the document metadata is returned.
+	// If the document data already contains a `_key` field, this will be used as key of the new document,
+	// otherwise a unique key is created.
+	// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
+	CreateDocument(ctx context.Context, document interface{}) (CollectionDocumentCreateResponse, error)
+
+	// CreateDocumentWithOptions creates a single document in the collection.
+	// The document data is loaded from the given document, the document metadata is returned.
+	// If the document data already contains a `_key` field, this will be used as key of the new document,
+	// otherwise a unique key is created.
+	// A ConflictError is returned when a `_key` field contains a duplicate key, other any other field violates an index constraint.
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
+	CreateDocumentWithOptions(ctx context.Context, document interface{}, options *CollectionDocumentCreateOptions) (CollectionDocumentCreateResponse, error)
+
+	// CreateDocuments creates multiple documents in the collection.
+	// The document data is loaded from the given documents slice, the documents metadata is returned.
+	// If a document element already contains a `_key` field, this will be used as key of the new document,
+	// otherwise a unique key is created.
+	// If a document element contains a `_key` field with a duplicate key, or any other field that violates an index constraint,
+	// then the ConflictError for a specific document will be returned only while reading from CollectionDocumentCreateResponseReader
+	// and not as the error output of this function.
+	// If the create request itself fails or one of the arguments is invalid, an error is returned.
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
+	CreateDocuments(ctx context.Context, documents interface{}) (CollectionDocumentCreateResponseReader, error)
+
+	// CreateDocumentsWithOptions creates multiple documents in the collection.
+	// The document data is loaded from the given documents slice, the documents metadata is returned.
+	// If a document element already contains a `_key` field, this will be used as key of the new document,
+	// otherwise a unique key is created.
+	// If a document element contains a `_key` field with a duplicate key, or any other field that violates an index constraint,
+	// then the ConflictError for a specific document will be returned only while reading from CollectionDocumentCreateResponseReader
+	// and not as the error output of this function.
+	// If the create request itself fails or one of the arguments is invalid, an error is returned.
+	// SmartGraphs and EnterpriseGraphs cannot use existing collections and cannot use the document interface
+	CreateDocumentsWithOptions(ctx context.Context, documents interface{}, opts *CollectionDocumentCreateOptions) (CollectionDocumentCreateResponseReader, error)
+}
+
+type CollectionDocumentCreateResponseReader interface {
+	shared.ReadAllReadable[CollectionDocumentCreateResponse]
+	Read() (CollectionDocumentCreateResponse, error)
+	// Len returns the total number of documents in the input (not the remaining
+	// documents to read), and it can be called at any time without affecting iteration.
+	Len() int
+}
+
+type CollectionDocumentCreateResponse struct {
+	DocumentMeta
+	shared.ResponseStruct `json:",inline"`
+	Old, New              interface{}
+}
+
+type CollectionDocumentCreateOverwriteMode string
+
+func (c *CollectionDocumentCreateOverwriteMode) New() *CollectionDocumentCreateOverwriteMode {
+	return c
+}
+
+func (c *CollectionDocumentCreateOverwriteMode) Get() CollectionDocumentCreateOverwriteMode {
+	if c == nil {
+		return CollectionDocumentCreateOverwriteModeConflict
+	}
+
+	return *c
+}
+
+func (c *CollectionDocumentCreateOverwriteMode) String() string {
+	return string(c.Get())
+}
+
+const (
+	CollectionDocumentCreateOverwriteModeIgnore   CollectionDocumentCreateOverwriteMode = "ignore"
+	CollectionDocumentCreateOverwriteModeReplace  CollectionDocumentCreateOverwriteMode = "replace"
+	CollectionDocumentCreateOverwriteModeUpdate   CollectionDocumentCreateOverwriteMode = "update"
+	CollectionDocumentCreateOverwriteModeConflict CollectionDocumentCreateOverwriteMode = "conflict"
+)
+
+type CollectionDocumentCreateOptions struct {
+	// Wait until document has been synced to disk.
+	WithWaitForSync *bool
+
+	// OverwriteMode controls insert vs replace/update when a document with the same _key exists.
+	// ArangoDB 4.0+ requires overwriteMode; the legacy query parameter overwrite is not supported.
+	OverwriteMode *CollectionDocumentCreateOverwriteMode
+
+	// If set to true, an empty object is returned as response if the document operation succeeds.
+	// No meta-data is returned for the created document. If the operation raises an error, an error object is returned.
+	// You can use this option to save network traffic.
+	Silent *bool
+
+	// Additionally return the complete new document
+	NewObject interface{}
+
+	// Additionally return the complete old document under the attribute.
+	// Only available when OverwriteMode is replace or update (or equivalent insert behavior).
+	OldObject interface{}
+
+	// RefillIndexCaches if set to true then refills the in-memory index caches.
+	RefillIndexCaches *bool
+
+	// If the intention is to delete existing attributes with the update-insert command, set it to false.
+	// This modifies the behavior of the patch command to remove top-level attributes and sub-attributes from
+	// the existing document that are contained in the patch document with an attribute value of null
+	// (but not attributes of objects that are nested inside of arrays).
+	// This option controls the update-insert behavior only (CollectionDocumentCreateOverwriteModeUpdate).
+	KeepNull *bool
+
+	// Controls whether objects (not arrays) are merged if present in both, the existing and the update-insert document.
+	// If set to false, the value in the patch document overwrites the existing document’s value.
+	// If set to true, objects are merged. The default is true. This option controls the update-insert behavior only.
+	// This option controls the update-insert behavior only (CollectionDocumentCreateOverwriteModeUpdate).
+	MergeObjects *bool
+
+	// By default, or if this is set to true, the _rev attributes in the given document are ignored.
+	// If this is set to false, then the _rev attribute given in the body document is taken as a precondition.
+	// The document is only removed if the current revision is the one specified.
+	// This works only with multiple documents removal method CollectionDocumentDelete.DeleteDocumentsWithOptions
+	IgnoreRevs *bool
+
+	// IsRestore is used to make insert functions use the "isRestore=<value>" setting.
+	// Note: This option is intended for internal (replication) use.
+	// It is NOT intended to be used by normal client. Use on your own risk!
+	IsRestore *bool
+
+	// Specify any top-level attribute to compare whether the version number is higher
+	// than the currently stored one when updating or replacing documents.
+	//
+	// Only applicable if `OverwriteMode` is set to `update` or `replace`.
+	VersionAttribute string
+
+	// To make this operation a part of a Stream Transaction, set this header to the transaction ID returned by the
+	// DatabaseTransaction.BeginTransaction() method.
+	TransactionID string
+}
+
+func (c *CollectionDocumentCreateOptions) modifyRequest(r connection.Request) error {
+	if c == nil {
+		return nil
+	}
+
+	if c.WithWaitForSync != nil {
+		r.AddQuery(QueryWaitForSync, boolToString(*c.WithWaitForSync))
+	}
+
+	if c.OverwriteMode != nil {
+		r.AddQuery(QueryOverwriteMode, c.OverwriteMode.String())
+	}
+
+	if c.Silent != nil {
+		r.AddQuery(QuerySilent, boolToString(*c.Silent))
+	}
+
+	if c.NewObject != nil {
+		r.AddQuery(QueryReturnNew, "true")
+	}
+
+	if c.OldObject != nil {
+		r.AddQuery(QueryReturnOld, "true")
+	}
+
+	if c.RefillIndexCaches != nil {
+		r.AddQuery(QueryRefillIndexCaches, boolToString(*c.RefillIndexCaches))
+	}
+
+	if c.KeepNull != nil {
+		r.AddQuery(QueryKeepNull, boolToString(*c.KeepNull))
+	}
+
+	if c.MergeObjects != nil {
+		r.AddQuery(QueryMergeObjects, boolToString(*c.MergeObjects))
+	}
+
+	if c.IgnoreRevs != nil {
+		r.AddQuery(QueryIgnoreRevs, boolToString(*c.IgnoreRevs))
+	}
+
+	if c.IsRestore != nil {
+		r.AddQuery(QueryIsRestore, boolToString(*c.IsRestore))
+	}
+
+	if c.VersionAttribute != "" {
+		r.AddQuery(QueryVersionAttribute, c.VersionAttribute)
+	}
+
+	if c.TransactionID != "" {
+		r.AddHeader(HeaderTransaction, c.TransactionID)
+	}
+
+	return nil
+}
+
+func boolToString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}

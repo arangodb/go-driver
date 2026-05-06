@@ -1,0 +1,421 @@
+//
+// DISCLAIMER
+//
+// Copyright 2023-2024 ArangoDB GmbH, Cologne, Germany
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Copyright holder is ArangoDB GmbH, Cologne, Germany
+//
+
+package arangodb
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/url"
+
+	"github.com/pkg/errors"
+
+	"github.com/arangodb/go-driver/v3/arangodb/shared"
+	"github.com/arangodb/go-driver/v3/connection"
+)
+
+func newCollectionIndexes(collection *collection) *collectionIndexes {
+	d := &collectionIndexes{collection: collection}
+	return d
+}
+
+var (
+	_ CollectionIndexes = &collectionIndexes{}
+)
+
+type collectionIndexes struct {
+	collection *collection
+}
+
+func (c *collectionIndexes) Index(ctx context.Context, name string) (IndexResponse, error) {
+	urlEndpoint := c.collection.url("index", url.PathEscape(name))
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		IndexResponse         `json:",inline"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.collection.connection(), urlEndpoint, &response, c.collection.withModifiers()...)
+	if err != nil {
+		return IndexResponse{}, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.IndexResponse, nil
+	default:
+		return IndexResponse{}, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *collectionIndexes) IndexExists(ctx context.Context, name string) (bool, error) {
+	urlEndpoint := c.collection.url("index", url.PathEscape(name))
+
+	resp, err := connection.CallGet(ctx, c.collection.connection(), urlEndpoint, nil, c.collection.withModifiers()...)
+	if err != nil {
+		if shared.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return true, nil
+	case http.StatusNotFound:
+		return false, nil
+	default:
+		return false, shared.NewResponseStruct().AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *collectionIndexes) Indexes(ctx context.Context) ([]IndexResponse, error) {
+	urlEndpoint := c.collection.db.url("_api", "index")
+
+	var response struct {
+		shared.ResponseStruct `json:",inline"`
+		Indexes               []IndexResponse `json:"indexes,omitempty"`
+	}
+
+	resp, err := connection.CallGet(ctx, c.collection.connection(), urlEndpoint, &response,
+		c.collection.withModifiers(connection.WithQuery("collection", c.collection.name))...)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return response.Indexes, nil
+	default:
+		return nil, response.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *collectionIndexes) EnsurePersistentIndex(ctx context.Context, fields []string, options *CreatePersistentIndexOptions) (IndexResponse, bool, error) {
+	reqData := struct {
+		Type   IndexType `json:"type"`
+		Fields []string  `json:"fields"`
+		*CreatePersistentIndexOptions
+	}{
+		Type:                         PersistentIndexType,
+		Fields:                       fields,
+		CreatePersistentIndexOptions: options,
+	}
+
+	result := responseIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
+}
+
+func (c *collectionIndexes) EnsureGeoIndex(ctx context.Context, fields []string, options *CreateGeoIndexOptions) (IndexResponse, bool, error) {
+	reqData := struct {
+		Type   IndexType `json:"type"`
+		Fields []string  `json:"fields"`
+		*CreateGeoIndexOptions
+	}{
+		Type:                  GeoIndexType,
+		Fields:                fields,
+		CreateGeoIndexOptions: options,
+	}
+
+	result := responseIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
+}
+
+func (c *collectionIndexes) EnsureTTLIndex(ctx context.Context, fields []string, expireAfter int, options *CreateTTLIndexOptions) (IndexResponse, bool, error) {
+	reqData := struct {
+		Type        IndexType `json:"type"`
+		Fields      []string  `json:"fields"`
+		ExpireAfter int       `json:"expireAfter"`
+		*CreateTTLIndexOptions
+	}{
+		Type:                  TTLIndexType,
+		Fields:                fields,
+		ExpireAfter:           expireAfter,
+		CreateTTLIndexOptions: options,
+	}
+
+	result := responseIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
+}
+
+func (c *collectionIndexes) EnsureMDIIndex(ctx context.Context, fields []string, options *CreateMDIIndexOptions) (IndexResponse, bool, error) {
+	reqData := struct {
+		Type   IndexType `json:"type"`
+		Fields []string  `json:"fields"`
+		*CreateMDIIndexOptions
+	}{
+		Type:                  MDIIndexType,
+		Fields:                fields,
+		CreateMDIIndexOptions: options,
+	}
+
+	result := responseIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
+}
+
+func (c *collectionIndexes) EnsureMDIPrefixedIndex(ctx context.Context, fields []string, options *CreateMDIPrefixedIndexOptions) (IndexResponse, bool, error) {
+	reqData := struct {
+		Type   IndexType `json:"type"`
+		Fields []string  `json:"fields"`
+		*CreateMDIPrefixedIndexOptions
+	}{
+		Type:                          MDIPrefixedIndexType,
+		Fields:                        fields,
+		CreateMDIPrefixedIndexOptions: options,
+	}
+
+	result := responseIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newIndexResponse(&result), created, err
+}
+
+func (c *collectionIndexes) EnsureInvertedIndex(ctx context.Context, options *InvertedIndexOptions) (IndexResponse, bool, error) {
+	if options == nil || options.Fields == nil || len(options.Fields) == 0 {
+		return IndexResponse{}, false, errors.New("InvertedIndexOptions with non-empty Fields are required")
+	}
+
+	reqData := struct {
+		Type IndexType `json:"type"`
+		*InvertedIndexOptions
+	}{
+		Type:                 InvertedIndexType,
+		InvertedIndexOptions: options,
+	}
+
+	result := responseInvertedIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	return newInvertedIndexResponse(&result), created, err
+}
+
+func (c *collectionIndexes) ensureIndex(ctx context.Context, reqData interface{}, result interface{}) (bool, error) {
+	urlEndpoint := c.collection.db.url("_api", "index")
+
+	var response Unmarshal[shared.ResponseStruct, UnmarshalData]
+
+	resp, err := connection.CallPost(ctx, c.collection.connection(), urlEndpoint, &response, &reqData,
+		c.collection.withModifiers(connection.WithQuery("collection", c.collection.name))...)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		if err := response.Object.Inject(result); err != nil {
+			return false, err
+		}
+		return false, nil
+	case http.StatusCreated:
+		if err := response.Object.Inject(result); err != nil {
+			return false, err
+		}
+		return true, nil
+	default:
+		return false, response.Current.AsArangoErrorWithCode(code)
+	}
+}
+
+func (c *collectionIndexes) DeleteIndex(ctx context.Context, name string) error {
+	idx, err := c.Index(ctx, name)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return c.DeleteIndexByID(ctx, idx.ID)
+}
+
+func (c *collectionIndexes) DeleteIndexByID(ctx context.Context, id string) error {
+	urlEndpoint := c.collection.db.url("_api", "index", id)
+
+	response := shared.ResponseStruct{}
+	resp, err := connection.CallDelete(ctx, c.collection.connection(), urlEndpoint, &response, c.collection.withModifiers()...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	switch code := resp.Code(); code {
+	case http.StatusOK:
+		return nil
+	default:
+		return response.AsArangoErrorWithCode(code)
+	}
+}
+
+type responseIndex struct {
+	Name               string    `json:"name,omitempty"`
+	Type               IndexType `json:"type"`
+	IndexSharedOptions `json:",inline"`
+	IndexOptions       `json:",inline"`
+}
+
+type responseInvertedIndex struct {
+	Name                 string    `json:"name,omitempty"`
+	Type                 IndexType `json:"type"`
+	IndexSharedOptions   `json:",inline"`
+	InvertedIndexOptions `json:",inline"`
+}
+
+func newIndexResponse(res *responseIndex) IndexResponse {
+	return IndexResponse{
+		Name:               res.Name,
+		Type:               res.Type,
+		IndexSharedOptions: res.IndexSharedOptions,
+		RegularIndex:       &res.IndexOptions,
+	}
+}
+
+func newInvertedIndexResponse(res *responseInvertedIndex) IndexResponse {
+	return IndexResponse{
+		Name:               res.Name,
+		Type:               res.Type,
+		IndexSharedOptions: res.IndexSharedOptions,
+		InvertedIndex:      &res.InvertedIndexOptions,
+	}
+}
+
+func (i *IndexResponse) UnmarshalJSON(data []byte) error {
+	var respSimple struct {
+		Type IndexType `json:"type"`
+		Name string    `json:"name"`
+	}
+	if err := json.Unmarshal(data, &respSimple); err != nil {
+		return err
+	}
+
+	i.Name = respSimple.Name
+	i.Type = respSimple.Type
+
+	switch respSimple.Type {
+	case InvertedIndexType:
+		result := responseInvertedIndex{}
+		if err := json.Unmarshal(data, &result); err != nil {
+			return err
+		}
+		i.IndexSharedOptions = result.IndexSharedOptions
+		i.InvertedIndex = &result.InvertedIndexOptions
+	case VectorIndexType:
+		result := responseVectorIndex{}
+		if err := json.Unmarshal(data, &result); err != nil {
+			return err
+		}
+		i.IndexSharedOptions = result.IndexSharedOptions
+		i.VectorIndex = result.Params
+		i.TrainingState = result.TrainingState
+		i.VectorErrorMessage = result.ErrorMessage
+	default:
+		result := responseIndex{}
+		if err := json.Unmarshal(data, &result); err != nil {
+			return err
+		}
+		i.IndexSharedOptions = result.IndexSharedOptions
+		i.RegularIndex = &result.IndexOptions
+	}
+	return nil
+}
+
+func (p *VectorParams) validate() error {
+	if p == nil {
+		return errors.New("params must be provided for vector index")
+	}
+
+	if p.Dimension == nil || *p.Dimension <= 0 {
+		return errors.New("params.Dimension must be provided and greater than zero for vector index")
+	}
+
+	if p.Metric == nil {
+		return errors.New("params.Metric must be provided for vector index")
+	}
+
+	switch *p.Metric {
+	case VectorMetricCosine, VectorMetricL2, VectorMetricInnerProduct:
+		// valid
+	default:
+		return errors.New("params.Metric must be one of 'cosine', 'l2', or 'innerProduct' for vector index")
+	}
+
+	if p.NLists == nil || *p.NLists <= 0 {
+		return errors.New("params.NLists must be provided and greater than zero for vector index")
+	}
+
+	return nil
+}
+
+func (c *collectionIndexes) EnsureVectorIndex(
+	ctx context.Context,
+	fields []string,
+	params *VectorParams,
+	options *CreateVectorIndexOptions,
+) (IndexResponse, bool, error) {
+
+	if len(fields) != 1 {
+		return IndexResponse{}, false, errors.New("vector index requires exactly one field")
+	}
+	if err := params.validate(); err != nil {
+		return IndexResponse{}, false, err
+	}
+
+	reqData := struct {
+		Type   IndexType     `json:"type"`
+		Fields []string      `json:"fields"`
+		Params *VectorParams `json:"params"`
+		*CreateVectorIndexOptions
+	}{
+		Type:                     VectorIndexType,
+		Fields:                   fields,
+		Params:                   params,
+		CreateVectorIndexOptions: options,
+	}
+
+	result := responseVectorIndex{}
+	created, err := c.ensureIndex(ctx, &reqData, &result)
+	if err != nil {
+		return IndexResponse{}, false, err
+	}
+
+	return newVectorIndexResponse(&result), created, nil
+}
+
+type responseVectorIndex struct {
+	Name               string    `json:"name,omitempty"`
+	Type               IndexType `json:"type"`
+	IndexSharedOptions `json:",inline"`
+	Params             *VectorParams             `json:"params,omitempty"`
+	TrainingState      *VectorIndexTrainingState `json:"trainingState,omitempty"`
+	ErrorMessage       *string                   `json:"errorMessage,omitempty"`
+}
+
+func newVectorIndexResponse(res *responseVectorIndex) IndexResponse {
+	if res == nil {
+		return IndexResponse{}
+	}
+
+	return IndexResponse{
+		Name:               res.Name,
+		Type:               res.Type,
+		IndexSharedOptions: res.IndexSharedOptions,
+		VectorIndex:        res.Params,
+		TrainingState:      res.TrainingState,
+		VectorErrorMessage: res.ErrorMessage,
+	}
+}
