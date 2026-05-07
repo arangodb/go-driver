@@ -722,6 +722,7 @@ run-v3-tests-resilientsingle-with-auth:
 GH_RELEASE := $(TMPDIR)/bin/github-release
 RELEASE := $(SCRIPTDIR)/tools/release
 V2_VERSION := ./v2/version/VERSION
+V3_VERSION := ./v3/version/VERSION
 
 release-patch:
 	go run $(RELEASE) -type=patch -github-release=$(GH_RELEASE)
@@ -741,6 +742,15 @@ release-v2-minor:
 release-v2-major:
 	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION)
 
+release-v3-patch:
+	go run $(RELEASE) -type=patch -github-release=$(GH_RELEASE) -versionfile=$(V3_VERSION)
+
+release-v3-minor:
+	go run $(RELEASE) -type=minor -github-release=$(GH_RELEASE) -versionfile=$(V3_VERSION)
+
+release-v3-major:
+	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V3_VERSION)
+
 # Preview releases (same as arangodb-helper/arangodb: prerelease-patch, etc.).
 prerelease-patch:
 	go run $(RELEASE) -type=patch -github-release=$(GH_RELEASE) -prerelease
@@ -759,3 +769,12 @@ prerelease-v2-minor:
 
 prerelease-v2-major:
 	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V2_VERSION) -prerelease
+
+prerelease-v3-patch:
+	go run $(RELEASE) -type=patch -github-release=$(GH_RELEASE) -versionfile=$(V3_VERSION) -prerelease
+
+prerelease-v3-minor:
+	go run $(RELEASE) -type=minor -github-release=$(GH_RELEASE) -versionfile=$(V3_VERSION) -prerelease
+
+prerelease-v3-major:
+	go run $(RELEASE) -type=major -github-release=$(GH_RELEASE) -versionfile=$(V3_VERSION) -prerelease

@@ -22,14 +22,13 @@ aliases:
       event: fail
       template: basic_fail_1
   # Make targets allowed for pipeline parameter publish (keep in sync with Makefile release / prerelease targets).
-  - &publish_release_target_regex '^(release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major)$'
+  - &publish_release_target_regex '^(release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|release-v3-patch|release-v3-minor|release-v3-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major|prerelease-v3-patch|prerelease-v3-minor|prerelease-v3-major)$'
 
   # Common environment variables for integration tests (shared between x86 and ARM)
   # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
   # where to find resources on the host machine so it can mount them into Docker containers
   - &integration_test_env
     TEST_RESOURCES: "/home/circleci/resources/"
-    ARANGODB: << pipeline.parameters.arangodbImage >>
     GOIMAGE: << pipeline.parameters.goImage >>
     ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
     STARTER: << pipeline.parameters.starterImage >>
@@ -42,9 +41,12 @@ parameters:
   goImage:
     type: string
     default: "gcr.io/gcr-for-testing/golang:1.25.9"
-  arangodbImage:
+  arangodbImageV2:
     type: string
     default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest"
+  arangodbImageV3:
+    type: string
+    default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:4.0-nightly"
   alpineImage:
     type: string
     default: "gcr.io/gcr-for-testing/alpine:3.23"
@@ -122,6 +124,8 @@ jobs:
     parameters:
       test-to-run:
         type: string
+      arangodb-image:
+        type: string
       enable-extra-db-features:
         type: boolean
         default: false
@@ -139,6 +143,7 @@ jobs:
           test-command: make << parameters.test-to-run >>
     environment:
       <<: *integration_test_env
+      ARANGODB: << parameters.arangodb-image >>
 
   # ----------------------------------------
   # ARM INTEGRATION TEST JOB
@@ -147,6 +152,8 @@ jobs:
     executor: arm-machine-executor
     parameters:
       test-to-run:
+        type: string
+      arangodb-image:
         type: string
       enable-extra-db-features:
         type: boolean
@@ -170,6 +177,7 @@ jobs:
           test-command: make << parameters.test-to-run >>
     environment:
       <<: *integration_test_env
+      ARANGODB: << parameters.arangodb-image >>
 
   vulncheck:
     executor: golang-executor
@@ -263,12 +271,14 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-tests-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       - run-integration-tests:
           name: Test V1 single
           requires:
             - download-demo-data
           test-to-run: run-tests-single
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
       # V2 Tests x86
@@ -278,12 +288,14 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       - run-integration-tests:
           name: Test V2 cluster - DB extra features (compression)
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
           enable-extra-db-features: true
 
       - run-integration-tests:
@@ -291,6 +303,7 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
       # V2 Tests ARM
@@ -300,6 +313,7 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # - run-integration-tests-arm:
       #     name: Test V2 cluster - DB extra features (compression) (ARM)
@@ -313,6 +327,39 @@ workflows:
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      # ========================
+      # V3 Tests x86
+      # ========================
+      - run-integration-tests:
+          name: Test V3 cluster
+          test-to-run: run-v3-tests-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV3 >>
+
+      - run-integration-tests:
+          name: Test V3 cluster - DB extra features (compression)
+          test-to-run: run-v3-tests-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV3 >>
+          enable-extra-db-features: true
+
+      - run-integration-tests:
+          name: Test V3 single
+          test-to-run: run-v3-tests-single
+          arangodb-image: << pipeline.parameters.arangodbImageV3 >>
+
+      # ========================
+      # V3 Tests ARM
+      # ========================
+      - run-integration-tests-arm:
+          name: Test V3 cluster (ARM)
+          test-to-run: run-v3-tests-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV3 >>
+
+      - run-integration-tests-arm:
+          name: Test V3 single (ARM)
+          test-to-run: run-v3-tests-single
+          arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
   # Weekly vulnerability check
   weekly_vulncheck:
