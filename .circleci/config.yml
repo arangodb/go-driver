@@ -236,7 +236,7 @@ jobs:
             fi
             TARGET="<< pipeline.parameters.publish >>"
             case "$TARGET" in
-              release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major) ;;
+              release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|release-v3-patch|release-v3-minor|release-v3-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major|prerelease-v3-patch|prerelease-v3-minor|prerelease-v3-major) ;;
               *) echo "Invalid publish target: '$TARGET'"; exit 1 ;;
             esac
             make "$TARGET"

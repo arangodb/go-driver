@@ -53,7 +53,7 @@ func WithQuery(s, value string) RequestModifier {
 func applyArangoDBConfiguration(config ArangoDBConfiguration, ctx context.Context) RequestModifier {
 	return func(r Request) error {
 		// Set version header
-		val := fmt.Sprintf("go-driver-v2/%s", version.DriverVersion())
+		val := fmt.Sprintf("go-driver-v3/%s", version.DriverVersion())
 		if len(config.DriverFlags) > 0 {
 			val = fmt.Sprintf("%s (%s)", val, strings.Join(config.DriverFlags, ","))
 		}
