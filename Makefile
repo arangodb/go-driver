@@ -470,6 +470,17 @@ __test_v2_go_test:
 	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
+__run_v3_tests: __test_v3_debug__ __test_prepare __test_v3_go_test __test_cleanup
+
+DOCKER_CMD_V3_PARAMS=\
+	$(COMMON_DOCKER_CMD_PARAMS) \
+	-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
+	-w /usr/code/v3/
+
+__test_v3_go_test:
+	($(DOCKER_CMD) $(DOCKER_CMD_V3_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
+	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=3 . ./test/on_failure.sh)
+
 __test_debug__:
 ifeq ("$(DEBUG)", "true")
 	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./test" -t $(GOIMAGE) .
@@ -480,6 +491,12 @@ __test_v2_debug__:
 ifeq ("$(DEBUG)", "true")
 	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
 	@docker build $(DOCKER_BUILD_PLATFORM) -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v2" -t $(GOIMAGE) .
+endif
+
+__test_v3_debug__:
+ifeq ("$(DEBUG)", "true")
+	@docker build -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v3" -t $(GOIMAGE) .
+	@docker build $(DOCKER_BUILD_PLATFORM) -f Dockerfile.debug --build-arg GOVERSION=$(GOVERSION) --build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) --build-arg "TESTS_DIRECTORY=./tests" --build-arg "TESTS_ROOT_PATH=v3" -t $(GOIMAGE) .
 endif
 
 __dir_setup:
@@ -657,6 +674,50 @@ run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
 run-v2-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v2"
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v2_tests
+
+# V3
+
+v3-%:
+	@(cd "$(ROOTDIR)/v3"; make)
+
+run-v3-tests: run-v3-tests-single run-v3-tests-cluster
+ifeq ("$(AF_ENABLED)", "true")
+	make run-v3-tests-resilientsingle
+endif
+
+run-v3-tests-cluster: run-v3-tests-cluster-with-basic-auth run-v3-tests-cluster-without-ssl run-v3-tests-cluster-without-auth run-v3-tests-cluster-with-jwt-auth
+
+run-v3-tests-cluster-with-basic-auth:
+	@echo "Cluster server, with basic authentication, v3"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
+
+run-v3-tests-cluster-with-jwt-auth:
+	@echo "Cluster server, with JWT authentication, v3"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="jwt" __run_v3_tests
+
+run-v3-tests-cluster-without-auth:
+	@echo "Cluster server, without authentication, v3"
+	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="none" __run_v3_tests
+
+run-v3-tests-cluster-without-ssl:
+	@echo "Cluster server, without authentication and SSL, v3"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" __run_v3_tests
+
+run-v3-tests-single: run-v3-tests-single-without-auth run-v3-tests-single-with-auth
+
+run-v3-tests-single-without-auth:
+	@echo "Single server, without authentication, v3"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" __run_v3_tests
+
+run-v3-tests-single-with-auth:
+	@echo "Single server, with authentication, v3"
+	@${MAKE} TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
+
+run-v3-tests-resilientsingle: run-v3-tests-resilientsingle-with-auth
+
+run-v3-tests-resilientsingle-with-auth:
+	@echo "Resilient Single, with authentication, v3"
+	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v3_tests
 
 GH_RELEASE := $(TMPDIR)/bin/github-release
 RELEASE := $(SCRIPTDIR)/tools/release
