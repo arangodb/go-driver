@@ -32,7 +32,7 @@ DEBUG=true TESTOPTIONS="-test.run TestResponseHeader -test.v" make run-tests-sin
 
 ## Local release
 
-2. Make sure that GitHub access token exist in `~/.arangodb/github-token` and has read/write access for this repo.
+2. Make sure that GitHub access token exists in `~/.arangodb/github-token` and has read/write access for this repo.
 3. Make sure you have the `~/go-driver/.tmp/bin/github-release` file. If not run `make tools`.
 4. Make sure you have admin access to `go-driver` repository.
 5. Run `make release-patch|minor|major` for the **root** module, or `make prerelease-patch|minor|major` for a preview.
