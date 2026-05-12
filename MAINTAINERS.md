@@ -17,7 +17,7 @@
 
 - Edit the [.circleci/config.yml](.circleci/config.yml) file and change ALL occurrences of `gcr.io/gcr-for-testing/golang` to the appropriate version.
 - Edit the [Makefile](Makefile) and change the `GOVERSION` to the appropriate version.
-- For minor Go version updates, bump the Go version in the **root** [go.mod](go.mod) and in every **`vN/go.mod`** that exists today (`v2/`, `v3/`, …); run **`go mod tidy`** in the root and in each of those **`vN/`** module roots.
+- For minor Go version updates, bump the Go version in [go.mod](go.mod) and in each **`vN/go.mod`** in use (`v2/`, `v3/`, …); run **`go mod tidy`** in the repository root and in each **`vN/`** module root.
 
 ## Debugging with DLV
 
@@ -35,19 +35,18 @@ DEBUG=true TESTOPTIONS="-test.run TestResponseHeader -test.v" make run-tests-sin
 2. Make sure that GitHub access token exists in `~/.arangodb/github-token` and has read/write access for this repo.
 3. Make sure you have the `~/go-driver/.tmp/bin/github-release` file. If not run `make tools`.
 4. Make sure you have admin access to `go-driver` repository.
-5. Run `make release-patch|minor|major` for the **root** module, or `make prerelease-patch|minor|major` for a preview.
-   - For a published major line under **`vN/`** with **`N ≥ 2`**, use **`make release-vN-patch|minor|major`** or **`make prerelease-vN-patch|minor|major`** (each passes **`-versionfile=./vN/version/VERSION`**). When adding a new **`vN/`**, add the matching Make targets and CircleCI allowlist entries first (see below); never run the root release targets against another line’s `VERSION` file.
+5. Run **`make release-vN-patch|minor|major`** or **`make prerelease-vN-patch|minor|major`** for **`vN/`** with **`N ≥ 2`** (each uses **`-versionfile=./vN/version/VERSION`**). For a new **`vN/`**, add the Make targets and CircleCI allowlist entries first (see below).
 6. Go to GitHub and fill the description with the content of CHANGELOG.md
 
 ## Release from CircleCI
 
-On branch **master** for **arangodb/go-driver**, trigger a pipeline with pipeline parameter **`publish`** set to the exact Make target (for example **`release-v2-patch`**, **`release-v3-patch`**, or **`prerelease-minor`**). The **`publish-release`** workflow is defined in [.circleci/config.yml](.circleci/config.yml). Attach organization contexts **`github-release`** (set **`GITHUB_TOKEN`** or **`RELEASER_GITHUB_TOKEN`**) and **`slack`**. Step 6 above still applies: the published release has no automated description yet, so edit it on GitHub.
+On branch **master** for **arangodb/go-driver**, trigger a pipeline with pipeline parameter **`publish`** set to the exact Make target (for example **`release-v2-patch`**, **`release-v3-patch`**, **`prerelease-v2-minor`**, or **`prerelease-v3-major`**). The **`publish-release`** workflow is defined in [.circleci/config.yml](.circleci/config.yml). Attach organization contexts **`github-release`** (set **`GITHUB_TOKEN`** or **`RELEASER_GITHUB_TOKEN`**) and **`slack`**. Step 6 above still applies: the published release has no automated description yet, so edit it on GitHub.
 
 Only Make targets that appear in the CircleCI `publish` parameter allowlist (see `publish_release_target_regex` in [.circleci/config.yml](.circleci/config.yml)) can be used from CI. When you add `release-vN-*` / `prerelease-vN-*` for a new module, extend that regex and the `case` list in the publish job in the same file.
 
 ## New major version and new module directory (`v2/`, `v3/`, …)
 
-This repository ships multiple Go module paths (root, `v2/`, `v3/`, …). Each line has its own `vN/version/VERSION` (for **`N ≥ 2`**) and matching **`release-vN-*` / `prerelease-vN-*`** Make targets. Release behavior lives in [tools/release/release.go](tools/release/release.go). When you add another **`vN/`**, keep `VERSION`, Make targets, CircleCI allowlists, and tags consistent for that line.
+This repository ships supported Go module paths under **`v2/`**, **`v3/`**, … (`vN/` with **`N ≥ 2`**). Each line has **`vN/version/VERSION`** and matching **`release-vN-*` / `prerelease-vN-*`** Make targets. Release behavior lives in [tools/release/release.go](tools/release/release.go). When you add another **`vN/`**, keep `VERSION`, Make targets, CircleCI allowlists, and tags consistent for that line.
 
 ### First release of a new major module (`vN.0.0`)
 

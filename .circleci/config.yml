@@ -25,7 +25,7 @@ aliases:
   - &publish_release_target_regex '^(release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|release-v3-patch|release-v3-minor|release-v3-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major|prerelease-v3-patch|prerelease-v3-minor|prerelease-v3-major)$'
 
   # Common environment for integration tests (x86 and ARM). Foxx demo zip path is optional:
-  # v1/v2 jobs set needs_foxx_workspace and export TEST_RESOURCES in a run step to match attach_workspace.
+  # v1/v2 jobs set needs_foxx_workspace and export TEST_RESOURCES=/home/circleci/resources/ after attach_workspace at /home/circleci.
   - &integration_test_env_core
     GOIMAGE: << pipeline.parameters.goImage >>
     ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
@@ -137,8 +137,10 @@ jobs:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
           steps:
+            # download-demo-data persists root /home/circleci, paths: [resources] — attach at /home/circleci
+            # so the zip is at /home/circleci/resources/... (matches TEST_RESOURCES), not .../resources/resources/...
             - attach_workspace:
-                at: /home/circleci/resources
+                at: /home/circleci
             - run:
                 name: Ensure resources directory exists
                 command: mkdir -p $HOME/resources
@@ -177,8 +179,10 @@ jobs:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
           steps:
+            # download-demo-data persists root /home/circleci, paths: [resources] — attach at /home/circleci
+            # so the zip is at /home/circleci/resources/... (matches TEST_RESOURCES), not .../resources/resources/...
             - attach_workspace:
-                at: /home/circleci/resources
+                at: /home/circleci
             - run:
                 name: Ensure resources directory exists
                 command: mkdir -p $HOME/resources
