@@ -24,11 +24,9 @@ aliases:
   # Make targets allowed for pipeline parameter publish (keep in sync with Makefile release / prerelease targets).
   - &publish_release_target_regex '^(release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|release-v3-patch|release-v3-minor|release-v3-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major|prerelease-v3-patch|prerelease-v3-minor|prerelease-v3-major)$'
 
-  # Common environment variables for integration tests (shared between x86 and ARM)
-  # NOTE: TEST_RESOURCES must match the attach_workspace path below - it tells the Makefile
-  # where to find resources on the host machine so it can mount them into Docker containers
-  - &integration_test_env
-    TEST_RESOURCES: "/home/circleci/resources/"
+  # Common environment for integration tests (x86 and ARM). Foxx demo zip path is optional:
+  # v1/v2 jobs set needs_foxx_workspace and export TEST_RESOURCES in a run step to match attach_workspace.
+  - &integration_test_env_core
     GOIMAGE: << pipeline.parameters.goImage >>
     ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
     STARTER: << pipeline.parameters.starterImage >>
@@ -129,20 +127,31 @@ jobs:
       enable-extra-db-features:
         type: boolean
         default: false
+      needs_foxx_workspace:
+        type: boolean
+        default: true
+        description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
     steps:
       - checkout
-      # Attach workspace to download demo data from download-demo-data job
-      # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
-      # to mount this directory into Docker containers
-      - attach_workspace:
-          at: /home/circleci/resources
+      - when:
+          condition:
+            equal: [ true, << parameters.needs_foxx_workspace >> ]
+          steps:
+            - attach_workspace:
+                at: /home/circleci/resources
+            - run:
+                name: Ensure resources directory exists
+                command: mkdir -p $HOME/resources
       - run:
-          name: Ensure resources directory exists
-          command: mkdir -p $HOME/resources
+          name: Configure Foxx demo resources mount for Dockerized tests
+          command: |
+            if [ "<< parameters.needs_foxx_workspace >>" = "true" ]; then
+              echo 'export TEST_RESOURCES=/home/circleci/resources/' >> "$BASH_ENV"
+            fi
       - run-test-if-pr:
           test-command: make << parameters.test-to-run >>
     environment:
-      <<: *integration_test_env
+      <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
 
   # ----------------------------------------
@@ -158,16 +167,27 @@ jobs:
       enable-extra-db-features:
         type: boolean
         default: false
+      needs_foxx_workspace:
+        type: boolean
+        default: true
+        description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
     steps:
       - checkout
-      # Attach workspace to download demo data from download-demo-data job
-      # NOTE: This path must match TEST_RESOURCES env var - Makefile uses TEST_RESOURCES
-      # to mount this directory into Docker containers
-      - attach_workspace:
-          at: /home/circleci/resources
+      - when:
+          condition:
+            equal: [ true, << parameters.needs_foxx_workspace >> ]
+          steps:
+            - attach_workspace:
+                at: /home/circleci/resources
+            - run:
+                name: Ensure resources directory exists
+                command: mkdir -p $HOME/resources
       - run:
-          name: Ensure resources directory exists
-          command: mkdir -p $HOME/resources
+          name: Configure Foxx demo resources mount for Dockerized tests
+          command: |
+            if [ "<< parameters.needs_foxx_workspace >>" = "true" ]; then
+              echo 'export TEST_RESOURCES=/home/circleci/resources/' >> "$BASH_ENV"
+            fi
       - run:
           name: Set platform-specific environment variables
           command: |
@@ -176,7 +196,7 @@ jobs:
       - run-test-if-pr:
           test-command: make << parameters.test-to-run >>
     environment:
-      <<: *integration_test_env
+      <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
 
   vulncheck:
@@ -330,34 +350,49 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
-      # V3 Tests x86
+      # V3 Tests x86 (no Foxx / itzpapalotl; do not depend on download-demo-data)
       # ========================
       - run-integration-tests:
           name: Test V3 cluster
+          requires:
+            - run-unit-tests
+          needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
       - run-integration-tests:
           name: Test V3 cluster - DB extra features (compression)
+          requires:
+            - run-unit-tests
+          needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
           enable-extra-db-features: true
 
       - run-integration-tests:
           name: Test V3 single
+          requires:
+            - run-unit-tests
+          needs_foxx_workspace: false
           test-to-run: run-v3-tests-single
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
       # ========================
-      # V3 Tests ARM
+      # V3 Tests ARM (no Foxx workspace)
       # ========================
       - run-integration-tests-arm:
           name: Test V3 cluster (ARM)
+          requires:
+            - run-unit-tests
+          needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
       - run-integration-tests-arm:
           name: Test V3 single (ARM)
+          requires:
+            - run-unit-tests
+          needs_foxx_workspace: false
           test-to-run: run-v3-tests-single
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
