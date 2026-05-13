@@ -20,11 +20,15 @@
 
 package version
 
-import _ "embed"
+import (
+	_ "embed"
+	"strings"
+)
 
 //go:embed VERSION
 var versionString string
 
 func DriverVersion() string {
-	return versionString
+	// VERSION may end with a newline; HTTP headers forbid \r and \n in values.
+	return strings.TrimSpace(versionString)
 }
