@@ -39,7 +39,7 @@ parameters:
   goImage:
     type: string
     default: "gcr.io/gcr-for-testing/golang:1.25.10"
-  arangodbImage:
+  arangodbImageV2:
     type: string
     default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest"
   arangodbImageV3:
