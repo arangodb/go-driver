@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Switch to Go 1.25.10 and bump golang.org/x/net to v0.53.0 to fix security issues (GO-2026-4971, GO-2026-4918)
 - CircleCI: optional `publish-release` workflow to cut a GitHub release from CI using pipeline parameter `publish` (Make target, e.g. `release-v2-patch` or `prerelease-v2-minor`); see `.circleci/config.yml`.
 
 ## [2.3.0](https://github.com/arangodb/go-driver/tree/v2.3.0) (2026-04-30)
