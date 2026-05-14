@@ -33,6 +33,10 @@ import (
 )
 
 func Test_FoxxItzpapalotlService(t *testing.T) {
+	// Do not run HTTP/1.1 vs HTTP/2 subtests in parallel: each path installs and
+	// mutates a Foxx service with heavy zip uploads. Running both at once overloads
+	// a single-server (or coordinator) Foxx pipeline and produces flaky failures
+	// (e.g. ArangoError 10 during upgrade) that disappear when subtests run serially.
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
@@ -292,7 +296,7 @@ func Test_FoxxItzpapalotlService(t *testing.T) {
 				})
 			})
 		})
-	})
+	}, WrapOptions{Parallel: utils.NewType(false)})
 }
 
 func Test_ListInstalledFoxxServices(t *testing.T) {
