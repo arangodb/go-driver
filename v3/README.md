@@ -22,8 +22,8 @@ import "github.com/arangodb/go-driver/v3/arangodb"
 The repository currently has three major driver lines:
 
 - `v1`: deprecated; no new features, migration to newer versions is strongly recommended.
-- `v2`: deprecated for new feature development; maintenance-only for existing users.
-- `v3`: active version for ArangoDB 4.0+ and all new development.
+- `v2`: for **ArangoDB 3.x**; deprecated for new feature development; maintenance-only for existing users.
+- `v3`: active version for **ArangoDB 4.0+** and all new development.
 
 ## Migration from v2 to v3
 
@@ -33,4 +33,4 @@ replacements.
 ## Deprecation Notes
 
 - From ArangoDB 4.0 onward, the MMFiles storage format is not supported.
-- The v2 driver does not receive new features.
+- The v2 driver targets ArangoDB 3.x and does not receive new features; use v3 for 4.0+.
