@@ -94,6 +94,49 @@ commands:
             fi
             << parameters.test-command >>
 
+  install-minikube:
+    description: "Install kubectl and minikube for Kubernetes integration tests"
+    steps:
+      - run:
+          name: Install kubectl and minikube
+          command: |
+            set -euo pipefail
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping Kubernetes tool install..."
+              exit 0
+            fi
+            sudo apt-get update
+            sudo apt-get install -y conntrack socat
+
+            curl -fsSL -o kubectl "https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl"
+            sudo install kubectl /usr/local/bin/kubectl
+
+            curl -fsSL -o minikube "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
+            sudo install minikube /usr/local/bin/minikube
+
+            kubectl version --client=true
+            minikube version
+
+  start-minikube:
+    description: "Start a local Kubernetes cluster for integration tests"
+    steps:
+      - run:
+          name: Start minikube
+          command: |
+            set -euo pipefail
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping minikube startup..."
+              exit 0
+            fi
+            minikube start \
+              --driver=docker \
+              --kubernetes-version="${K8S_VERSION:-v1.34.1}" \
+              --cpus="${MINIKUBE_CPUS:-4}" \
+              --memory="${MINIKUBE_MEMORY:-8192}" \
+              --wait=all \
+              --wait-timeout=6m
+            kubectl get nodes -o wide
+
 jobs:
 
   check-code:
@@ -224,6 +267,50 @@ jobs:
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
+
+  # ----------------------------------------
+  # KUBERNETES INTEGRATION TEST JOB
+  # ----------------------------------------
+  run-k8s-integration-tests:
+    executor: x86-machine-executor
+    resource_class: large
+    parameters:
+      test-to-run:
+        type: string
+      arangodb-image:
+        type: string
+      enable-extra-db-features:
+        type: boolean
+        default: false
+      needs_foxx_workspace:
+        type: boolean
+        default: true
+        description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
+    steps:
+      - checkout
+      - when:
+          condition:
+            equal: [ true, << parameters.needs_foxx_workspace >> ]
+          steps:
+            - attach_workspace:
+                at: /home/circleci
+            - run:
+                name: Ensure resources directory exists
+                command: mkdir -p $HOME/resources
+      - run:
+          name: Configure Foxx demo resources mount for Dockerized tests
+          command: |
+            if [ "<< parameters.needs_foxx_workspace >>" = "true" ]; then
+              echo 'export TEST_RESOURCES=/home/circleci/resources/' >> "$BASH_ENV"
+            fi
+      - install-minikube
+      - start-minikube
+      - run-test-if-pr:
+          test-command: make << parameters.test-to-run >>
+    environment:
+      <<: *integration_test_env_core
+      ARANGODB: << parameters.arangodb-image >>
+      K8S_WAIT_TIMEOUT: 25m
 
   vulncheck:
     executor: golang-executor
@@ -399,6 +486,31 @@ workflows:
             - run-unit-tests
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-single
+          arangodb-image: << pipeline.parameters.arangodbImageV3 >>
+
+      # ========================
+      # Kubernetes Tests x86
+      # ========================
+      - run-k8s-integration-tests:
+          name: Test V1 cluster on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v1-tests
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-integration-tests:
+          name: Test V2 cluster on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-tests
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-integration-tests:
+          name: Test V3 cluster on Kubernetes
+          requires:
+            - run-unit-tests
+          needs_foxx_workspace: false
+          test-to-run: run-k8s-v3-tests
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
       # ========================

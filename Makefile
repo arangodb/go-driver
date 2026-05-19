@@ -21,6 +21,10 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
+K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
+K8S_V1_TEST_TARGET ?= run-tests-cluster-json-with-auth
+K8S_V2_TEST_TARGET ?= run-v2-tests-cluster-with-basic-auth
+K8S_V3_TEST_TARGET ?= run-v3-tests-cluster-with-basic-auth
 
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
@@ -130,6 +134,10 @@ ifdef TEST_ENDPOINTS_OVERRIDE
 	TEST_ENDPOINTS := $(TEST_ENDPOINTS_OVERRIDE)
 endif
 
+ifdef TEST_AUTHENTICATION_OVERRIDE
+	TEST_AUTHENTICATION := $(TEST_AUTHENTICATION_OVERRIDE)
+endif
+
 ifdef TEST_NET_OVERRIDE
 	TEST_NET := $(TEST_NET_OVERRIDE)
 endif
@@ -161,7 +169,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests vulncheck
+.PHONY: all build clean linter run-tests run-k8s-tests run-k8s-v1-tests run-k8s-v2-tests run-k8s-v3-tests vulncheck
 
 all: build
 
@@ -186,6 +194,17 @@ run-tests: run-unit-tests run-tests-single run-tests-cluster
 ifeq ("$(AF_ENABLED)", "true")
 	make run-tests-resilientsingle
 endif
+
+run-k8s-tests: run-k8s-v1-tests run-k8s-v2-tests run-k8s-v3-tests
+
+run-k8s-v1-tests:
+	@bash "$(K8S_DRIVER_TEST_RUNNER)" run $(K8S_V1_TEST_TARGET)
+
+run-k8s-v2-tests:
+	@bash "$(K8S_DRIVER_TEST_RUNNER)" run $(K8S_V2_TEST_TARGET)
+
+run-k8s-v3-tests:
+	@bash "$(K8S_DRIVER_TEST_RUNNER)" run $(K8S_V3_TEST_TARGET)
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
