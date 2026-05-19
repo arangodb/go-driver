@@ -23,6 +23,7 @@ K8S_INSTALL_OPERATOR="${K8S_INSTALL_OPERATOR:-true}"
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
 ARANGO_JWT_SECRET="${ARANGO_JWT_SECRET:-testing}"
+PORT_FORWARD_PID=""
 
 usage() {
 	cat <<EOF
@@ -78,9 +79,6 @@ apply_deployment() {
 	kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-jwt" \
 		--from-literal=token="${ARANGO_JWT_SECRET}" \
 		--dry-run=client -o yaml | kubectl apply -f -
-	kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-jwt-folder" \
-		--from-literal=token="${ARANGO_JWT_SECRET}" \
-		--dry-run=client -o yaml | kubectl apply -f -
 	if [ -n "${ARANGO_LICENSE_KEY:-}" ]; then
 		kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-license" \
 			--from-literal=token-v2="${ARANGO_LICENSE_KEY}" \
@@ -112,16 +110,47 @@ $(if [ -n "${ARANGO_LICENSE_KEY:-}" ]; then cat <<EOF_LICENSE
     secretName: ${K8S_DEPLOYMENT}-license
 EOF_LICENSE
 fi)
-$(if [ "${K8S_MODE}" = "Cluster" ]; then cat <<'EOF_CLUSTER'
+$(if [ "${K8S_MODE}" = "Cluster" ]; then cat <<EOF_CLUSTER
   agents:
     count: 1
+$(render_arangod_args "    ")
   dbservers:
     count: 3
+$(render_arangod_args "    ")
   coordinators:
     count: 1
+$(render_arangod_args "    ")
 EOF_CLUSTER
+else cat <<EOF_SINGLE
+  single:
+$(render_arangod_args "    ")
+EOF_SINGLE
 fi)
 EOF
+}
+
+render_arangod_args() {
+	local indent="$1"
+
+	cat <<EOF
+${indent}args:
+${indent}  - --javascript.startup-options-allowlist=.*
+EOF
+
+	if [ "${ENABLE_DATABASE_EXTRA_FEATURES:-}" = "true" ]; then
+		cat <<EOF
+${indent}  - --database.extended-names-databases=true
+${indent}  - --http.compress-response-threshold=1
+${indent}  - --http.handle-content-encoding-for-unauthenticated-requests=true
+EOF
+	fi
+
+	if [ "${ENABLE_VECTOR_INDEX:-}" = "true" ]; then
+		cat <<EOF
+${indent}  - --vector-index=true
+${indent}  - --experimental-vector-index=true
+EOF
+	fi
 }
 
 wait_for_deployment() {
@@ -260,13 +289,12 @@ run_tests() {
 
 	start
 
-	local port_forward_pid=""
-	trap 'if [ -n "${port_forward_pid}" ]; then kill "${port_forward_pid}" >/dev/null 2>&1 || true; fi; if [ "${K8S_KEEP_DEPLOYMENT}" != "true" ]; then cleanup; fi' EXIT
+	trap 'if [ -n "${PORT_FORWARD_PID}" ]; then kill "${PORT_FORWARD_PID}" >/dev/null 2>&1 || true; fi; if [ "${K8S_KEEP_DEPLOYMENT}" != "true" ]; then cleanup; fi' EXIT
 
 	echo "Forwarding service/${K8S_DEPLOYMENT}-ea to ${K8S_PORT_FORWARD_ADDRESS}:${K8S_LOCAL_PORT}..."
 	kubectl -n "${K8S_NAMESPACE}" port-forward --address "${K8S_PORT_FORWARD_ADDRESS}" "service/${K8S_DEPLOYMENT}-ea" "${K8S_LOCAL_PORT}:${K8S_PORT}" >/tmp/go-driver-k8s-port-forward.log 2>&1 &
-	port_forward_pid="$!"
-	wait_for_local_port_forward "${port_forward_pid}"
+	PORT_FORWARD_PID="$!"
+	wait_for_local_port_forward "${PORT_FORWARD_PID}"
 
 	echo "Running driver tests against $(test_endpoint)..."
 	(
@@ -276,7 +304,7 @@ run_tests() {
 		TEST_MODE_K8S="k8s" \
 		TEST_NOT_WAIT_UNTIL_READY="1" \
 		TEST_NET_OVERRIDE="${K8S_TEST_NET_OVERRIDE}" \
-		make "$@"
+		make TEST_AUTHENTICATION="basic:root:${ARANGO_ROOT_PASSWORD}" "$@"
 	)
 }
 
