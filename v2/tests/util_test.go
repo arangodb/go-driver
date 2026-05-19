@@ -36,6 +36,10 @@ func getTestMode() string {
 	return strings.TrimSpace(os.Getenv("TEST_MODE"))
 }
 
+func isK8S() bool {
+	return os.Getenv("TEST_MODE_K8S") == "k8s"
+}
+
 type mode string
 
 const (
