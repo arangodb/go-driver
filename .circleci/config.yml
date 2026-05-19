@@ -285,7 +285,7 @@ jobs:
       needs_foxx_workspace:
         type: boolean
         default: true
-        description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
+        description: "v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
     steps:
       - checkout
       - when:
@@ -491,13 +491,6 @@ workflows:
       # ========================
       # Kubernetes Tests x86
       # ========================
-      - run-k8s-integration-tests:
-          name: Test V1 cluster on Kubernetes
-          requires:
-            - download-demo-data
-          test-to-run: run-k8s-v1-tests
-          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
-
       - run-k8s-integration-tests:
           name: Test V2 cluster on Kubernetes
           requires:
