@@ -154,6 +154,24 @@ EOF
 	fi
 }
 
+wait_for_jwt_secret_folder() {
+	echo "Waiting for kube-arangodb to populate ${K8S_DEPLOYMENT}-jwt-folder..."
+	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
+	local jwt_data
+	while [ "${SECONDS}" -lt "${deadline}" ]; do
+		jwt_data="$(kubectl -n "${K8S_NAMESPACE}" get secret "${K8S_DEPLOYMENT}-jwt-folder" -o jsonpath='{.data}' 2>/dev/null || true)"
+		if [ -n "${jwt_data}" ] && [ "${jwt_data}" != "map[]" ]; then
+			delete_failed_pods
+			return
+		fi
+		sleep 2
+	done
+
+	echo "ERROR: ${K8S_DEPLOYMENT}-jwt-folder was not populated before timeout" >&2
+	dump_diagnostics
+	exit 1
+}
+
 wait_for_deployment() {
 	echo "Waiting for ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} to become ready..."
 	if ! kubectl -n "${K8S_NAMESPACE}" wait "arangodeployment/${K8S_DEPLOYMENT}" \
@@ -203,6 +221,17 @@ has_failed_pods() {
 	return 1
 }
 
+delete_failed_pods() {
+	local failed_pods
+	failed_pods="$(kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" --field-selector=status.phase=Failed -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
+	if [ -n "${failed_pods}" ]; then
+		echo "Deleting pods that failed before the JWT folder was populated..."
+		for pod in ${failed_pods}; do
+			kubectl -n "${K8S_NAMESPACE}" delete pod "${pod}" --ignore-not-found=true
+		done
+	fi
+}
+
 dump_diagnostics() {
 	echo "=== Kubernetes diagnostics for ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} ===" >&2
 	kubectl -n "${K8S_NAMESPACE}" get arangodeployment "${K8S_DEPLOYMENT}" -o wide || true
@@ -235,6 +264,7 @@ start() {
 	require_tool kubectl
 	install_operator
 	apply_deployment
+	wait_for_jwt_secret_folder
 	wait_for_deployment
 }
 
