@@ -19,6 +19,7 @@ K8S_WAIT_TIMEOUT="${K8S_WAIT_TIMEOUT:-15m}"
 K8S_KEEP_DEPLOYMENT="${K8S_KEEP_DEPLOYMENT:-false}"
 K8S_DELETE_NAMESPACE="${K8S_DELETE_NAMESPACE:-false}"
 K8S_INSTALL_OPERATOR="${K8S_INSTALL_OPERATOR:-true}"
+K8S_AUTHENTICATION="${K8S_AUTHENTICATION:-true}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
@@ -37,9 +38,9 @@ Environment:
   K8S_NAMESPACE          namespace for the ArangoDeployment (default: ${K8S_NAMESPACE})
   K8S_DEPLOYMENT         ArangoDeployment name (default: ${K8S_DEPLOYMENT})
   K8S_MODE               ArangoDeployment mode: Cluster, Single, ActiveFailover (default: ${K8S_MODE})
+  K8S_AUTHENTICATION     enable ArangoDB authentication in Kubernetes (default: ${K8S_AUTHENTICATION})
   ARANGODB               ArangoDB image used by kube-arangodb (default: ${ARANGODB})
   ARANGO_ROOT_PASSWORD   root password configured for driver tests (default: ${ARANGO_ROOT_PASSWORD})
-  ARANGO_JWT_SECRET      JWT secret used by ArangoDB cluster members (default: ${ARANGO_JWT_SECRET})
   ARANGO_LICENSE_KEY     optional Enterprise license key, stored in a Kubernetes secret
   K8S_LOCAL_PORT         local port used for kubectl port-forward (default: ${K8S_LOCAL_PORT})
   K8S_TEST_ENDPOINT_HOST host name used by Dockerized tests (default: ${K8S_TEST_ENDPOINT_HOST})
@@ -97,8 +98,7 @@ spec:
   environment: ${K8S_ENVIRONMENT}
   image: ${ARANGODB}
   imageDiscoveryMode: direct
-  auth:
-    jwtSecretName: ${K8S_DEPLOYMENT}-jwt
+$(render_auth_spec)
   tls:
     caSecretName: None
   externalAccess:
@@ -130,6 +130,20 @@ fi)
 EOF
 }
 
+render_auth_spec() {
+	if [ "${K8S_AUTHENTICATION}" = "true" ]; then
+		cat <<EOF
+  auth:
+    jwtSecretName: ${K8S_DEPLOYMENT}-jwt
+EOF
+	else
+		cat <<EOF
+  auth:
+    jwtSecretName: None
+EOF
+	fi
+}
+
 render_arangod_args() {
 	local indent="$1"
 
@@ -155,6 +169,11 @@ EOF
 }
 
 wait_for_jwt_secret_folder() {
+	if [ "${K8S_AUTHENTICATION}" != "true" ]; then
+		echo "Skipping JWT folder wait because Kubernetes authentication is disabled."
+		return
+	fi
+
 	echo "Waiting for kube-arangodb to populate ${K8S_DEPLOYMENT}-jwt-folder..."
 	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
 	local jwt_data
@@ -171,7 +190,6 @@ wait_for_jwt_secret_folder() {
 	dump_diagnostics
 	exit 1
 }
-
 wait_for_deployment() {
 	echo "Waiting for ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} to become ready..."
 	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
