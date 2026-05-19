@@ -22,6 +22,7 @@ K8S_INSTALL_OPERATOR="${K8S_INSTALL_OPERATOR:-true}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
+ARANGO_JWT_SECRET="${ARANGO_JWT_SECRET:-testing}"
 
 usage() {
 	cat <<EOF
@@ -38,6 +39,7 @@ Environment:
   K8S_MODE               ArangoDeployment mode: Cluster, Single, ActiveFailover (default: ${K8S_MODE})
   ARANGODB               ArangoDB image used by kube-arangodb (default: ${ARANGODB})
   ARANGO_ROOT_PASSWORD   root password configured for driver tests (default: ${ARANGO_ROOT_PASSWORD})
+  ARANGO_JWT_SECRET      JWT secret used by ArangoDB cluster members (default: ${ARANGO_JWT_SECRET})
   ARANGO_LICENSE_KEY     optional Enterprise license key, stored in a Kubernetes secret
   K8S_LOCAL_PORT         local port used for kubectl port-forward (default: ${K8S_LOCAL_PORT})
   K8S_TEST_ENDPOINT_HOST host name used by Dockerized tests (default: ${K8S_TEST_ENDPOINT_HOST})
@@ -73,6 +75,12 @@ apply_deployment() {
 		--from-literal=username=root \
 		--from-literal=password="${ARANGO_ROOT_PASSWORD}" \
 		--dry-run=client -o yaml | kubectl apply -f -
+	kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-jwt" \
+		--from-literal=token="${ARANGO_JWT_SECRET}" \
+		--dry-run=client -o yaml | kubectl apply -f -
+	kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-jwt-folder" \
+		--from-literal=token="${ARANGO_JWT_SECRET}" \
+		--dry-run=client -o yaml | kubectl apply -f -
 	if [ -n "${ARANGO_LICENSE_KEY:-}" ]; then
 		kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-license" \
 			--from-literal=token-v2="${ARANGO_LICENSE_KEY}" \
@@ -90,6 +98,8 @@ spec:
   environment: ${K8S_ENVIRONMENT}
   image: ${ARANGODB}
   imageDiscoveryMode: direct
+  auth:
+    jwtSecretName: ${K8S_DEPLOYMENT}-jwt
   tls:
     caSecretName: None
   externalAccess:
@@ -231,6 +241,8 @@ cleanup() {
 	echo "Cleaning up ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT}..."
 	kubectl -n "${K8S_NAMESPACE}" delete arangodeployment "${K8S_DEPLOYMENT}" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-root-password" --ignore-not-found=true
+	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt" --ignore-not-found=true
+	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt-folder" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-license" --ignore-not-found=true
 	if [ "${K8S_DELETE_NAMESPACE}" = "true" ] && [ "${K8S_NAMESPACE}" != "default" ]; then
 		kubectl delete namespace "${K8S_NAMESPACE}" --ignore-not-found=true
