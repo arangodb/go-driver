@@ -116,12 +116,18 @@ EOF
 
 wait_for_deployment() {
 	echo "Waiting for ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} to become ready..."
-	kubectl -n "${K8S_NAMESPACE}" wait "arangodeployment/${K8S_DEPLOYMENT}" \
+	if ! kubectl -n "${K8S_NAMESPACE}" wait "arangodeployment/${K8S_DEPLOYMENT}" \
 		--for=condition=Ready \
-		--timeout="${K8S_WAIT_TIMEOUT}"
-	kubectl -n "${K8S_NAMESPACE}" wait "service/${K8S_DEPLOYMENT}-ea" \
+		--timeout="${K8S_WAIT_TIMEOUT}"; then
+		dump_diagnostics
+		exit 1
+	fi
+	if ! kubectl -n "${K8S_NAMESPACE}" wait "service/${K8S_DEPLOYMENT}-ea" \
 		--for=jsonpath='{.spec.ports[0].port}'="${K8S_PORT}" \
-		--timeout=2m
+		--timeout=2m; then
+		dump_diagnostics
+		exit 1
+	fi
 
 	echo "Waiting for service/${K8S_DEPLOYMENT}-ea to have ready endpoints..."
 	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
@@ -134,8 +140,28 @@ wait_for_deployment() {
 	done
 
 	echo "ERROR: service/${K8S_DEPLOYMENT}-ea did not get ready endpoints before timeout" >&2
-	kubectl -n "${K8S_NAMESPACE}" get pods,svc,endpoints
+	dump_diagnostics
 	exit 1
+}
+
+dump_diagnostics() {
+	echo "=== Kubernetes diagnostics for ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} ===" >&2
+	kubectl -n "${K8S_NAMESPACE}" get arangodeployment "${K8S_DEPLOYMENT}" -o wide || true
+	kubectl -n "${K8S_NAMESPACE}" describe arangodeployment "${K8S_DEPLOYMENT}" || true
+	kubectl -n "${K8S_NAMESPACE}" get pods,svc,endpoints -l "arango_deployment=${K8S_DEPLOYMENT}" -o wide || true
+	kubectl -n "${K8S_NAMESPACE}" get events --sort-by=.lastTimestamp || true
+
+	for pod in $(kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
+		echo "=== describe pod/${pod} ===" >&2
+		kubectl -n "${K8S_NAMESPACE}" describe pod "${pod}" || true
+
+		for container in $(kubectl -n "${K8S_NAMESPACE}" get pod "${pod}" -o jsonpath='{range .status.initContainerStatuses[*]}{.name}{"\n"}{end}{range .status.containerStatuses[*]}{.name}{"\n"}{end}' 2>/dev/null); do
+			echo "=== logs pod/${pod} container/${container} ===" >&2
+			kubectl -n "${K8S_NAMESPACE}" logs "${pod}" -c "${container}" --tail=100 || true
+			echo "=== previous logs pod/${pod} container/${container} ===" >&2
+			kubectl -n "${K8S_NAMESPACE}" logs "${pod}" -c "${container}" --previous --tail=100 || true
+		done
+	done
 }
 
 duration_to_seconds() {
