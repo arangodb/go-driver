@@ -174,9 +174,23 @@ wait_for_jwt_secret_folder() {
 
 wait_for_deployment() {
 	echo "Waiting for ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} to become ready..."
-	if ! kubectl -n "${K8S_NAMESPACE}" wait "arangodeployment/${K8S_DEPLOYMENT}" \
-		--for=condition=Ready \
-		--timeout="${K8S_WAIT_TIMEOUT}"; then
+	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
+	local ready_status
+	while [ "${SECONDS}" -lt "${deadline}" ]; do
+		ready_status="$(kubectl -n "${K8S_NAMESPACE}" get arangodeployment "${K8S_DEPLOYMENT}" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)"
+		if [ "${ready_status}" = "True" ]; then
+			break
+		fi
+		kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" || true
+		if has_failed_pods; then
+			echo "ERROR: one or more ArangoDB pods failed while waiting for deployment readiness" >&2
+			dump_diagnostics
+			exit 1
+		fi
+		sleep 10
+	done
+	if [ "${ready_status}" != "True" ]; then
+		echo "ERROR: ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} did not become ready before timeout" >&2
 		dump_diagnostics
 		exit 1
 	fi
