@@ -22,7 +22,6 @@ K8S_INSTALL_OPERATOR="${K8S_INSTALL_OPERATOR:-true}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
-ARANGO_JWT_SECRET="${ARANGO_JWT_SECRET:-testing}"
 PORT_FORWARD_PID=""
 
 usage() {
@@ -76,9 +75,11 @@ apply_deployment() {
 		--from-literal=username=root \
 		--from-literal=password="${ARANGO_ROOT_PASSWORD}" \
 		--dry-run=client -o yaml | kubectl apply -f -
-	kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-jwt" \
-		--from-literal=token="${ARANGO_JWT_SECRET}" \
-		--dry-run=client -o yaml | kubectl apply -f -
+	# Let kube-arangodb generate the JWT secret. ArangoDB 4.0 needs the
+	# operator-created format; a plain token secret leaves the mounted JWT
+	# folder unusable and pods fail with "empty JWT secrets directory".
+	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt" --ignore-not-found=true
+	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt-folder" --ignore-not-found=true
 	if [ -n "${ARANGO_LICENSE_KEY:-}" ]; then
 		kubectl -n "${K8S_NAMESPACE}" create secret generic "${K8S_DEPLOYMENT}-license" \
 			--from-literal=token-v2="${ARANGO_LICENSE_KEY}" \
