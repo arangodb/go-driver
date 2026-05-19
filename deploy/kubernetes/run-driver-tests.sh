@@ -136,12 +136,31 @@ wait_for_deployment() {
 			return
 		fi
 		kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" || true
+		if has_failed_pods; then
+			echo "ERROR: one or more ArangoDB pods failed while waiting for ready endpoints" >&2
+			dump_diagnostics
+			exit 1
+		fi
 		sleep 10
 	done
 
 	echo "ERROR: service/${K8S_DEPLOYMENT}-ea did not get ready endpoints before timeout" >&2
 	dump_diagnostics
 	exit 1
+}
+
+has_failed_pods() {
+	local pod_states
+	pod_states="$(kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.phase}{" "}{range .status.initContainerStatuses[*]}{.state.waiting.reason}{","}{.state.terminated.reason}{","}{end}{range .status.containerStatuses[*]}{.state.waiting.reason}{","}{.state.terminated.reason}{","}{end}{"\n"}{end}' 2>/dev/null || true)"
+
+	case "${pod_states}" in
+		*Error*|*CrashLoopBackOff*|*ImagePullBackOff*|*ErrImagePull*|*CreateContainerConfigError*|*InvalidImageName*)
+			echo "${pod_states}" >&2
+			return 0
+			;;
+	esac
+
+	return 1
 }
 
 dump_diagnostics() {
