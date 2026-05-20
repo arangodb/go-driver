@@ -16,10 +16,13 @@ K8S_PORT_FORWARD_ADDRESS="${K8S_PORT_FORWARD_ADDRESS:-0.0.0.0}"
 K8S_TEST_ENDPOINT_HOST="${K8S_TEST_ENDPOINT_HOST:-host.docker.internal}"
 K8S_TEST_NET_OVERRIDE="${K8S_TEST_NET_OVERRIDE:---add-host=host.docker.internal:host-gateway}"
 K8S_WAIT_TIMEOUT="${K8S_WAIT_TIMEOUT:-15m}"
+K8S_STUCK_INIT_TIMEOUT="${K8S_STUCK_INIT_TIMEOUT:-5m}"
 K8S_KEEP_DEPLOYMENT="${K8S_KEEP_DEPLOYMENT:-false}"
 K8S_DELETE_NAMESPACE="${K8S_DELETE_NAMESPACE:-false}"
 K8S_INSTALL_OPERATOR="${K8S_INSTALL_OPERATOR:-true}"
 K8S_AUTHENTICATION="${K8S_AUTHENTICATION:-true}"
+K8S_TEST_AUTHENTICATION="${K8S_TEST_AUTHENTICATION:-basic}"
+K8S_TLS="${K8S_TLS:-false}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
@@ -39,11 +42,14 @@ Environment:
   K8S_DEPLOYMENT         ArangoDeployment name (default: ${K8S_DEPLOYMENT})
   K8S_MODE               ArangoDeployment mode: Cluster, Single, ActiveFailover (default: ${K8S_MODE})
   K8S_AUTHENTICATION     enable ArangoDB authentication in Kubernetes (default: ${K8S_AUTHENTICATION})
+  K8S_TEST_AUTHENTICATION driver auth mode: basic, jwt, or none (default: ${K8S_TEST_AUTHENTICATION})
+  K8S_TLS                enable TLS in the ArangoDeployment (default: ${K8S_TLS})
   ARANGODB               ArangoDB image used by kube-arangodb (default: ${ARANGODB})
   ARANGO_ROOT_PASSWORD   root password configured for driver tests (default: ${ARANGO_ROOT_PASSWORD})
   ARANGO_LICENSE_KEY     optional Enterprise license key, stored in a Kubernetes secret
   K8S_LOCAL_PORT         local port used for kubectl port-forward (default: ${K8S_LOCAL_PORT})
   K8S_TEST_ENDPOINT_HOST host name used by Dockerized tests (default: ${K8S_TEST_ENDPOINT_HOST})
+  K8S_STUCK_INIT_TIMEOUT delete pods stuck in init-lifecycle longer than this (default: ${K8S_STUCK_INIT_TIMEOUT})
   K8S_KEEP_DEPLOYMENT    keep deployment after "run" (default: ${K8S_KEEP_DEPLOYMENT})
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
 EOF
@@ -99,8 +105,7 @@ spec:
   image: ${ARANGODB}
   imageDiscoveryMode: direct
 $(render_auth_spec)
-  tls:
-    caSecretName: None
+$(render_tls_spec)
   externalAccess:
     type: ${K8S_EXTERNAL_ACCESS}
   bootstrap:
@@ -140,6 +145,20 @@ EOF
 		cat <<EOF
   auth:
     jwtSecretName: None
+EOF
+	fi
+}
+
+render_tls_spec() {
+	if [ "${K8S_TLS}" = "true" ]; then
+		cat <<EOF
+  tls:
+    caSecretName: ${K8S_DEPLOYMENT}-ca
+EOF
+	else
+		cat <<EOF
+  tls:
+    caSecretName: None
 EOF
 	fi
 }
@@ -200,6 +219,7 @@ wait_for_deployment() {
 			break
 		fi
 		kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" || true
+		delete_stuck_init_pods
 		if has_failed_pods; then
 			echo "ERROR: one or more ArangoDB pods failed while waiting for deployment readiness" >&2
 			dump_diagnostics
@@ -226,6 +246,7 @@ wait_for_deployment() {
 			return
 		fi
 		kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" || true
+		delete_stuck_init_pods
 		if has_failed_pods; then
 			echo "ERROR: one or more ArangoDB pods failed while waiting for ready endpoints" >&2
 			dump_diagnostics
@@ -262,6 +283,32 @@ delete_failed_pods() {
 			kubectl -n "${K8S_NAMESPACE}" delete pod "${pod}" --ignore-not-found=true
 		done
 	fi
+}
+
+delete_stuck_init_pods() {
+	local timeout_seconds now pod started_at started_at_seconds age
+	timeout_seconds="$(duration_to_seconds "${K8S_STUCK_INIT_TIMEOUT}")"
+	now="$(date +%s)"
+
+	while read -r pod started_at; do
+		if [ -z "${pod}" ] || [ -z "${started_at}" ]; then
+			continue
+		fi
+
+		started_at_seconds="$(date -d "${started_at}" +%s 2>/dev/null || true)"
+		if [ -z "${started_at_seconds}" ]; then
+			continue
+		fi
+
+		age=$((now - started_at_seconds))
+		if [ "${age}" -gt "${timeout_seconds}" ]; then
+			echo "Deleting pod/${pod} because init-lifecycle has been running for ${age}s."
+			kubectl -n "${K8S_NAMESPACE}" delete pod "${pod}" --ignore-not-found=true
+		fi
+	done < <(kubectl -n "${K8S_NAMESPACE}" get pods \
+		-l "arango_deployment=${K8S_DEPLOYMENT}" \
+		--field-selector=status.phase=Pending \
+		-o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.initContainerStatuses[?(@.name=="init-lifecycle")].state.running.startedAt}{"\n"}{end}' 2>/dev/null || true)
 }
 
 dump_diagnostics() {
@@ -301,11 +348,42 @@ start() {
 }
 
 endpoint() {
-	echo "http://127.0.0.1:${K8S_LOCAL_PORT}"
+	echo "$(endpoint_scheme)://127.0.0.1:${K8S_LOCAL_PORT}"
 }
 
 test_endpoint() {
-	echo "http://${K8S_TEST_ENDPOINT_HOST}:${K8S_LOCAL_PORT}"
+	echo "$(endpoint_scheme)://${K8S_TEST_ENDPOINT_HOST}:${K8S_LOCAL_PORT}"
+}
+
+endpoint_scheme() {
+	if [ "${K8S_TLS}" = "true" ]; then
+		echo "https"
+	else
+		echo "http"
+	fi
+}
+
+test_authentication() {
+	if [ "${K8S_AUTHENTICATION}" != "true" ]; then
+		echo ""
+		return
+	fi
+
+	case "${K8S_TEST_AUTHENTICATION}" in
+		basic)
+			echo "basic:root:${ARANGO_ROOT_PASSWORD}"
+			;;
+		jwt)
+			echo "jwt:root:${ARANGO_ROOT_PASSWORD}"
+			;;
+		none)
+			echo ""
+			;;
+		*)
+			echo "ERROR: unsupported K8S_TEST_AUTHENTICATION '${K8S_TEST_AUTHENTICATION}'" >&2
+			exit 1
+			;;
+	esac
 }
 
 wait_for_local_port_forward() {
@@ -335,6 +413,7 @@ cleanup() {
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-root-password" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt-folder" --ignore-not-found=true
+	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-ca" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-license" --ignore-not-found=true
 	if [ "${K8S_DELETE_NAMESPACE}" = "true" ] && [ "${K8S_NAMESPACE}" != "default" ]; then
 		kubectl delete namespace "${K8S_NAMESPACE}" --ignore-not-found=true
@@ -363,11 +442,11 @@ run_tests() {
 	(
 		cd "${ROOT_DIR}"
 		TEST_ENDPOINTS_OVERRIDE="$(test_endpoint)" \
-		TEST_AUTHENTICATION_OVERRIDE="basic:root:${ARANGO_ROOT_PASSWORD}" \
+		TEST_AUTHENTICATION_OVERRIDE="$(test_authentication)" \
 		TEST_MODE_K8S="k8s" \
 		TEST_NOT_WAIT_UNTIL_READY="1" \
 		TEST_NET_OVERRIDE="${K8S_TEST_NET_OVERRIDE}" \
-		make TEST_AUTHENTICATION="basic:root:${ARANGO_ROOT_PASSWORD}" "$@"
+		make TEST_AUTHENTICATION="$(test_authentication)" "$@"
 	)
 }
 
