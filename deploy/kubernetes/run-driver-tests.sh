@@ -431,7 +431,7 @@ run_tests() {
 
 	start
 
-	trap 'if [ -n "${PORT_FORWARD_PID}" ]; then kill "${PORT_FORWARD_PID}" >/dev/null 2>&1 || true; fi; if [ "${K8S_KEEP_DEPLOYMENT}" != "true" ]; then cleanup; fi' EXIT
+	trap cleanup_after_run EXIT
 
 	echo "Forwarding service/${K8S_DEPLOYMENT}-ea to ${K8S_PORT_FORWARD_ADDRESS}:${K8S_LOCAL_PORT}..."
 	kubectl -n "${K8S_NAMESPACE}" port-forward --address "${K8S_PORT_FORWARD_ADDRESS}" "service/${K8S_DEPLOYMENT}-ea" "${K8S_LOCAL_PORT}:${K8S_PORT}" >/tmp/go-driver-k8s-port-forward.log 2>&1 &
@@ -448,6 +448,15 @@ run_tests() {
 		TEST_NET_OVERRIDE="${K8S_TEST_NET_OVERRIDE}" \
 		make TEST_AUTHENTICATION="$(test_authentication)" "$@"
 	)
+}
+cleanup_after_run() {
+	if [ -n "${PORT_FORWARD_PID}" ]; then
+		kill "${PORT_FORWARD_PID}" >/dev/null 2>&1 || true
+	fi
+
+	if [ "${K8S_KEEP_DEPLOYMENT}" != "true" ]; then
+		cleanup
+	fi
 }
 
 case "${1:-}" in
