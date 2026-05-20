@@ -22,8 +22,6 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
 K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
-K8S_V2_TEST_TARGET ?= run-v2-tests-cluster-with-basic-auth
-K8S_V3_TEST_TARGET ?= run-v3-tests-cluster-with-basic-auth
 
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
@@ -168,7 +166,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests run-k8s-tests run-k8s-v2-tests run-k8s-v3-tests vulncheck
+.PHONY: all build clean linter run-tests run-k8s-v2-tests vulncheck
 
 all: build
 
@@ -194,13 +192,15 @@ ifeq ("$(AF_ENABLED)", "true")
 	make run-tests-resilientsingle
 endif
 
-run-k8s-tests: run-k8s-v2-tests run-k8s-v3-tests
+run-k8s-v2-tests: run-k8s-v2-cluster-basic-auth run-k8s-v2-cluster-tls-basic-auth
 
-run-k8s-v2-tests:
-	@bash "$(K8S_DRIVER_TEST_RUNNER)" run $(K8S_V2_TEST_TARGET)
+run-k8s-v2-cluster-basic-auth:
+	@echo "Kubernetes cluster, with basic authentication, v2"
+	@K8S_TEST_AUTHENTICATION=basic K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
 
-run-k8s-v3-tests:
-	@bash "$(K8S_DRIVER_TEST_RUNNER)" run $(K8S_V3_TEST_TARGET)
+run-k8s-v2-cluster-tls-basic-auth:
+	@echo "Kubernetes cluster, with TLS and basic authentication, v2"
+	@K8S_TEST_AUTHENTICATION=basic K8S_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests

@@ -286,10 +286,14 @@ jobs:
         type: boolean
         default: true
         description: "v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
-      k8s-authentication:
+      k8s-test-authentication:
+        type: string
+        default: "basic"
+        description: "Driver auth mode used by the Kubernetes runner: basic, jwt, or none."
+      k8s-tls:
         type: boolean
-        default: true
-        description: "Enable ArangoDB auth in kube-arangodb deployments."
+        default: false
+        description: "Enable TLS in the Kubernetes ArangoDeployment."
     steps:
       - checkout
       - when:
@@ -314,7 +318,8 @@ jobs:
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
-      K8S_AUTHENTICATION: "<< parameters.k8s-authentication >>"
+      K8S_TEST_AUTHENTICATION: << parameters.k8s-test-authentication >>
+      K8S_TLS: "<< parameters.k8s-tls >>"
       K8S_WAIT_TIMEOUT: 25m
 
   vulncheck:
@@ -497,20 +502,11 @@ workflows:
       # Kubernetes Tests x86
       # ========================
       - run-k8s-integration-tests:
-          name: Test V2 cluster on Kubernetes
+          name: Test V2 on Kubernetes
           requires:
             - download-demo-data
           test-to-run: run-k8s-v2-tests
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
-
-      - run-k8s-integration-tests:
-          name: Test V3 cluster on Kubernetes
-          requires:
-            - run-unit-tests
-          needs_foxx_workspace: false
-          test-to-run: run-k8s-v3-tests
-          arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          k8s-authentication: false
 
       # ========================
       # V3 Tests ARM (no Foxx workspace)
