@@ -183,10 +183,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 
 	NewTimeout(func() error {
 		return withContext(time.Second, func(ctx context.Context) error {
-			// In Kubernetes tests the advertised cluster endpoints are internal
-			// *.svc DNS names. The Dockerized test runner cannot resolve them, so
-			// keep using the externally reachable port-forward endpoint.
-			if getTestMode() != string(testModeSingle) && !isK8S() {
+			if getTestMode() != string(testModeSingle) {
 				cer := clusterEndpointsResponse{}
 				resp, err := client.Get(ctx, &cer, "_api", "cluster", "endpoints")
 				if err != nil {
