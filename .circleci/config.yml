@@ -137,6 +137,59 @@ commands:
               --wait-timeout=6m
             kubectl get nodes -o wide
 
+  install-kind:
+    description: "Install kubectl and kind for Kubernetes pod integration tests"
+    steps:
+      - run:
+          name: Install kubectl and kind
+          command: |
+            set -euo pipefail
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping Kubernetes tool install..."
+              exit 0
+            fi
+
+            curl -fsSL -o kubectl "https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl"
+            sudo install kubectl /usr/local/bin/kubectl
+
+            curl -fsSL -o kind "https://kind.sigs.k8s.io/dl/v0.30.0/kind-linux-amd64"
+            sudo install kind /usr/local/bin/kind
+
+            kubectl version --client=true
+            kind version
+
+  start-kind:
+    description: "Start a kind cluster with the repository mounted into the node"
+    steps:
+      - run:
+          name: Start kind
+          command: |
+            set -euo pipefail
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping kind startup..."
+              exit 0
+            fi
+
+            mkdir -p "$HOME/resources"
+            cat > /tmp/go-driver-kind.yaml \<<EOF
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+              - role: control-plane
+                extraMounts:
+                  - hostPath: ${PWD}
+                    containerPath: /workspace/go-driver
+                  - hostPath: ${HOME}/resources
+                    containerPath: /workspace/resources
+            EOF
+
+            kind create cluster \
+              --name "${KIND_CLUSTER_NAME:-go-driver-tests}" \
+              --image "kindest/node:${K8S_VERSION:-v1.34.0}" \
+              --config /tmp/go-driver-kind.yaml \
+              --wait 6m
+            kubectl get nodes -o wide
+
 jobs:
 
   check-code:
@@ -289,7 +342,7 @@ jobs:
       k8s-test-authentication:
         type: string
         default: "basic"
-        description: "Driver auth mode used by the Kubernetes runner: basic, jwt, or none."
+        description: "Driver auth mode used by the Kubernetes runner. Current K8s jobs use basic or none; jwt is supported by the runner."
       k8s-tls:
         type: boolean
         default: false
@@ -318,6 +371,56 @@ jobs:
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
+      K8S_TEST_AUTHENTICATION: << parameters.k8s-test-authentication >>
+      K8S_TLS: "<< parameters.k8s-tls >>"
+      K8S_WAIT_TIMEOUT: 25m
+
+  # ----------------------------------------
+  # KUBERNETES POD INTEGRATION TEST JOB
+  # ----------------------------------------
+  run-k8s-pod-integration-tests:
+    executor: x86-machine-executor
+    resource_class: large
+    parameters:
+      test-to-run:
+        type: string
+      arangodb-image:
+        type: string
+      enable-extra-db-features:
+        type: boolean
+        default: false
+      needs_foxx_workspace:
+        type: boolean
+        default: true
+        description: "v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
+      k8s-test-authentication:
+        type: string
+        default: "basic"
+        description: "Driver auth mode used by the Kubernetes runner. Current K8s jobs use basic or none; jwt is supported by the runner."
+      k8s-tls:
+        type: boolean
+        default: false
+        description: "Enable TLS in the Kubernetes ArangoDeployment."
+    steps:
+      - checkout
+      - when:
+          condition:
+            equal: [ true, << parameters.needs_foxx_workspace >> ]
+          steps:
+            - attach_workspace:
+                at: /home/circleci
+            - run:
+                name: Ensure resources directory exists
+                command: mkdir -p $HOME/resources
+      - install-kind
+      - start-kind
+      - run-test-if-pr:
+          test-command: make << parameters.test-to-run >>
+    environment:
+      <<: *integration_test_env_core
+      ARANGODB: << parameters.arangodb-image >>
+      K8S_TEST_RUNNER: pod
+      K8S_TEST_IMAGE: << pipeline.parameters.goImage >>
       K8S_TEST_AUTHENTICATION: << parameters.k8s-test-authentication >>
       K8S_TLS: "<< parameters.k8s-tls >>"
       K8S_WAIT_TIMEOUT: 25m
@@ -510,6 +613,20 @@ workflows:
 
       - run-k8s-integration-tests:
           name: Test V2 cluster on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-pod-integration-tests:
+          name: Test V2 single on kind pod
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-single
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-pod-integration-tests:
+          name: Test V2 cluster on kind pod
           requires:
             - download-demo-data
           test-to-run: run-k8s-v2-cluster

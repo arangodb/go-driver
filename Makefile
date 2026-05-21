@@ -166,7 +166,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests run-k8s-v2-tests vulncheck
+.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster vulncheck
 
 all: build
 
@@ -498,8 +498,13 @@ DOCKER_CMD_V2_PARAMS=\
 	-w /usr/code/v2/
 
 __test_v2_go_test:
+ifeq ("$(K8S_IN_POD)", "true")
+	(cd "$(ROOTDIR)/v2" && go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -parallel $(TESTV2PARALLEL) ./tests $(ADD_TIMESTAMP)) && echo "success!" \
+	|| exit 1
+else
 	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
+endif
 
 __run_v3_tests: __test_v3_debug__ __test_prepare __test_v3_go_test __test_cleanup
 
@@ -536,8 +541,12 @@ __dir_setup:
 
 __test_prepare: __dir_setup
 ifdef TEST_ENDPOINTS_OVERRIDE
+ifeq ("$(K8S_IN_POD)", "true")
+	@echo "Using externally supplied Kubernetes endpoint from test pod."
+else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@sleep 3
+endif
 else
 ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
@@ -549,6 +558,9 @@ endif
 endif
 
 __test_cleanup:
+ifeq ("$(K8S_IN_POD)", "true")
+	@echo "Skipping Docker cleanup inside Kubernetes test pod."
+else
 ifdef TESTCONTAINER
 	@TESTCONTAINERS=$$(docker ps -a -q --filter="name=$(TESTCONTAINER)")
 	@if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); fi
@@ -559,6 +571,7 @@ else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
 	@sleep 3
+endif
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 
