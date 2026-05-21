@@ -546,20 +546,42 @@ EOF
 }
 
 wait_for_test_job() {
-	local deadline succeeded failed
+	local deadline succeeded failed logs_pid test_pod test_pod_phase test_container_ready
 	deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
+	logs_pid=""
 
 	while [ "${SECONDS}" -lt "${deadline}" ]; do
 		succeeded="$(kubectl -n "${K8S_NAMESPACE}" get job "${K8S_TEST_JOB}" -o jsonpath='{.status.succeeded}' 2>/dev/null || true)"
 		failed="$(kubectl -n "${K8S_NAMESPACE}" get job "${K8S_TEST_JOB}" -o jsonpath='{.status.failed}' 2>/dev/null || true)"
 
+		if [ -n "${logs_pid}" ] && ! kill -0 "${logs_pid}" >/dev/null 2>&1; then
+			wait "${logs_pid}" 2>/dev/null || true
+			logs_pid=""
+		fi
+
+		if [ -z "${logs_pid}" ]; then
+			test_pod="$(kubectl -n "${K8S_NAMESPACE}" get pods -l "job-name=${K8S_TEST_JOB}" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+			if [ -n "${test_pod}" ]; then
+				test_pod_phase="$(kubectl -n "${K8S_NAMESPACE}" get pod "${test_pod}" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+				test_container_ready="$(kubectl -n "${K8S_NAMESPACE}" get pod "${test_pod}" -o jsonpath='{.status.containerStatuses[?(@.name=="driver-tests")].ready}' 2>/dev/null || true)"
+				if [ "${test_pod_phase}" = "Running" ] && [ "${test_container_ready}" = "true" ]; then
+					kubectl -n "${K8S_NAMESPACE}" logs "${test_pod}" -c driver-tests --follow &
+					logs_pid="$!"
+				fi
+			fi
+		fi
+
 		if [ "${succeeded}" = "1" ]; then
-			kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_TEST_JOB}" --all-containers=true
+			if [ -n "${logs_pid}" ]; then
+				wait "${logs_pid}" 2>/dev/null || true
+			fi
 			return
 		fi
 
 		if [ -n "${failed}" ] && [ "${failed}" != "0" ]; then
-			kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_TEST_JOB}" --all-containers=true || true
+			if [ -n "${logs_pid}" ]; then
+				wait "${logs_pid}" 2>/dev/null || true
+			fi
 			echo "ERROR: Kubernetes test job/${K8S_TEST_JOB} failed" >&2
 			dump_diagnostics
 			exit 1
@@ -569,7 +591,12 @@ wait_for_test_job() {
 		sleep 10
 	done
 
-	kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_TEST_JOB}" --all-containers=true || true
+	if [ -n "${logs_pid}" ]; then
+		kill "${logs_pid}" >/dev/null 2>&1 || true
+		wait "${logs_pid}" 2>/dev/null || true
+	else
+		kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_TEST_JOB}" --all-containers=true || true
+	fi
 	echo "ERROR: Kubernetes test job/${K8S_TEST_JOB} did not finish before timeout" >&2
 	dump_diagnostics
 	exit 1
