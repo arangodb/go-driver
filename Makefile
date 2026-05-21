@@ -192,15 +192,31 @@ ifeq ("$(AF_ENABLED)", "true")
 	make run-tests-resilientsingle
 endif
 
-run-k8s-v2-tests: run-k8s-v2-cluster-basic-auth run-k8s-v2-cluster-tls-basic-auth
+run-k8s-v2-tests: run-k8s-v2-single run-k8s-v2-cluster
+
+run-k8s-v2-single: run-k8s-v2-single-without-auth run-k8s-v2-single-basic-auth run-k8s-v2-single-tls-basic-auth
+
+run-k8s-v2-cluster: run-k8s-v2-cluster-basic-auth run-k8s-v2-cluster-tls-basic-auth
+
+run-k8s-v2-single-without-auth:
+	@echo "Kubernetes single server, without authentication, v2"
+	@K8S_MODE=Single K8S_AUTHENTICATION=false K8S_TEST_AUTHENTICATION=none K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-without-auth
+
+run-k8s-v2-single-basic-auth:
+	@echo "Kubernetes single server, with basic authentication, v2"
+	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-with-auth
+
+run-k8s-v2-single-tls-basic-auth:
+	@echo "Kubernetes single server, with TLS and basic authentication, v2"
+	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-with-auth
 
 run-k8s-v2-cluster-basic-auth:
 	@echo "Kubernetes cluster, with basic authentication, v2"
-	@K8S_TEST_AUTHENTICATION=basic K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
 
 run-k8s-v2-cluster-tls-basic-auth:
 	@echo "Kubernetes cluster, with TLS and basic authentication, v2"
-	@K8S_TEST_AUTHENTICATION=basic K8S_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
