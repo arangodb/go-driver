@@ -501,6 +501,7 @@ spec:
             - -lc
             - |
               set -euo pipefail
+              export PATH="/usr/local/go/bin:${PATH}"
               make K8S_IN_POD=true TEST_AUTHENTICATION="\${TEST_AUTHENTICATION_OVERRIDE}" ${make_args}
           env:
             - name: TEST_ENDPOINTS_OVERRIDE
@@ -514,7 +515,7 @@ spec:
             - name: TEST_RESOURCES
               value: "${K8S_TEST_RESOURCES_MOUNT_PATH}"
             - name: ENABLE_VECTOR_INDEX
-              value: "${ENABLE_VECTOR_INDEX:-false}"
+              value: "${ENABLE_VECTOR_INDEX:-true}"
             - name: ENABLE_DATABASE_EXTRA_FEATURES
               value: "${ENABLE_DATABASE_EXTRA_FEATURES:-false}"
             - name: TEST_DISALLOW_UNKNOWN_FIELDS
