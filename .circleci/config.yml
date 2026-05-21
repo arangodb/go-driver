@@ -482,10 +482,17 @@ workflows:
       # Kubernetes Tests x86
       # ========================
       - run-k8s-integration-tests:
-          name: Test V2 on Kubernetes
+          name: Test V2 single on Kubernetes
           requires:
             - download-demo-data
-          test-to-run: run-k8s-v2-tests
+          test-to-run: run-k8s-v2-single
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-integration-tests:
+          name: Test V2 cluster on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-cluster
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
