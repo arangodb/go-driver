@@ -11,17 +11,13 @@ K8S_MODE="${K8S_MODE:-Cluster}"
 K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-Development}"
 K8S_EXTERNAL_ACCESS="${K8S_EXTERNAL_ACCESS:-NodePort}"
 K8S_PORT="${K8S_PORT:-8529}"
-K8S_LOCAL_PORT="${K8S_LOCAL_PORT:-18529}"
-K8S_PORT_FORWARD_ADDRESS="${K8S_PORT_FORWARD_ADDRESS:-0.0.0.0}"
-K8S_TEST_ENDPOINT_HOST="${K8S_TEST_ENDPOINT_HOST:-host.docker.internal}"
-K8S_TEST_NET_OVERRIDE="${K8S_TEST_NET_OVERRIDE:---add-host=host.docker.internal:host-gateway}"
-K8S_TEST_RUNNER="${K8S_TEST_RUNNER:-port-forward}"
-K8S_TEST_JOB="${K8S_TEST_JOB:-${K8S_DEPLOYMENT}-driver-tests}"
-K8S_TEST_IMAGE="${K8S_TEST_IMAGE:-${GOIMAGE:-golang:1.25.10}}"
-K8S_TEST_WORKSPACE_NODE_PATH="${K8S_TEST_WORKSPACE_NODE_PATH:-/workspace/go-driver}"
-K8S_TEST_WORKSPACE_MOUNT_PATH="${K8S_TEST_WORKSPACE_MOUNT_PATH:-/usr/code}"
-K8S_TEST_RESOURCES_NODE_PATH="${K8S_TEST_RESOURCES_NODE_PATH:-/workspace/resources}"
-K8S_TEST_RESOURCES_MOUNT_PATH="${K8S_TEST_RESOURCES_MOUNT_PATH:-/tmp/resources}"
+K8S_INGRESS_NAME="${K8S_INGRESS_NAME:-${K8S_DEPLOYMENT}-ingress}"
+K8S_INGRESS_HOST="${K8S_INGRESS_HOST:-arangodb.local}"
+K8S_INGRESS_ADDRESS="${K8S_INGRESS_ADDRESS:-}"
+K8S_INGRESS_TLS="${K8S_INGRESS_TLS:-true}"
+K8S_INGRESS_TLS_SECRET="${K8S_INGRESS_TLS_SECRET:-${K8S_DEPLOYMENT}-ingress-tls}"
+K8S_INGRESS_CLASS="${K8S_INGRESS_CLASS:-nginx}"
+K8S_INGRESS_PORT="${K8S_INGRESS_PORT:-}"
 K8S_WAIT_TIMEOUT="${K8S_WAIT_TIMEOUT:-15m}"
 K8S_STUCK_INIT_TIMEOUT="${K8S_STUCK_INIT_TIMEOUT:-5m}"
 K8S_KEEP_DEPLOYMENT="${K8S_KEEP_DEPLOYMENT:-false}"
@@ -33,7 +29,6 @@ K8S_TLS="${K8S_TLS:-false}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
-PORT_FORWARD_PID=""
 
 usage() {
 	cat <<EOF
@@ -54,10 +49,8 @@ Environment:
   ARANGODB               ArangoDB image used by kube-arangodb (default: ${ARANGODB})
   ARANGO_ROOT_PASSWORD   root password configured for driver tests (default: ${ARANGO_ROOT_PASSWORD})
   ARANGO_LICENSE_KEY     optional Enterprise license key, stored in a Kubernetes secret
-  K8S_TEST_RUNNER        test execution mode: port-forward or pod (default: ${K8S_TEST_RUNNER})
-  K8S_TEST_IMAGE         image used for Kubernetes test Jobs (default: ${K8S_TEST_IMAGE})
-  K8S_LOCAL_PORT         local port used for kubectl port-forward (default: ${K8S_LOCAL_PORT})
-  K8S_TEST_ENDPOINT_HOST host name used by Dockerized tests (default: ${K8S_TEST_ENDPOINT_HOST})
+  K8S_INGRESS_HOST       host name used by ingress mode (default: ${K8S_INGRESS_HOST})
+  K8S_INGRESS_ADDRESS    ingress IP for Docker host mapping; auto-detected from minikube when empty
   K8S_STUCK_INIT_TIMEOUT delete pods stuck in init-lifecycle longer than this (default: ${K8S_STUCK_INIT_TIMEOUT})
   K8S_KEEP_DEPLOYMENT    keep deployment after "run" (default: ${K8S_KEEP_DEPLOYMENT})
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
@@ -91,9 +84,8 @@ apply_deployment() {
 		--from-literal=username=root \
 		--from-literal=password="${ARANGO_ROOT_PASSWORD}" \
 		--dry-run=client -o yaml | kubectl apply -f -
-	# Let kube-arangodb generate the JWT secret. ArangoDB 4.0 needs the
-	# operator-created format; a plain token secret leaves the mounted JWT
-	# folder unusable and pods fail with "empty JWT secrets directory".
+	# Let kube-arangodb generate fresh JWT secrets for each test deployment.
+	# This avoids stale operator-managed secrets from previous runs.
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt-folder" --ignore-not-found=true
 	if [ -n "${ARANGO_LICENSE_KEY:-}" ]; then
@@ -356,16 +348,19 @@ start() {
 	wait_for_deployment
 }
 
-endpoint() {
-	echo "$(endpoint_scheme)://127.0.0.1:${K8S_LOCAL_PORT}"
-}
+ingress_endpoint() {
+	local scheme
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		scheme="https"
+	else
+		scheme="http"
+	fi
 
-test_endpoint() {
-	echo "$(endpoint_scheme)://${K8S_TEST_ENDPOINT_HOST}:${K8S_LOCAL_PORT}"
-}
-
-in_cluster_endpoint() {
-	echo "$(endpoint_scheme)://${K8S_DEPLOYMENT}.${K8S_NAMESPACE}.svc:${K8S_PORT}"
+	if [ -n "${K8S_INGRESS_PORT}" ]; then
+		echo "${scheme}://${K8S_INGRESS_HOST}:${K8S_INGRESS_PORT}"
+	else
+		echo "${scheme}://${K8S_INGRESS_HOST}"
+	fi
 }
 
 endpoint_scheme() {
@@ -399,35 +394,106 @@ test_authentication() {
 	esac
 }
 
-wait_for_local_port_forward() {
-	echo "Waiting for local port-forward on 127.0.0.1:${K8S_LOCAL_PORT}..."
-	local deadline=$((SECONDS + 60))
-	while [ "${SECONDS}" -lt "${deadline}" ]; do
-		if ! kill -0 "$1" >/dev/null 2>&1; then
-			echo "ERROR: kubectl port-forward stopped. Logs:" >&2
-			sed 's/^/  /' /tmp/go-driver-k8s-port-forward.log >&2 || true
-			exit 1
-		fi
-		if (echo >"/dev/tcp/127.0.0.1/${K8S_LOCAL_PORT}") >/dev/null 2>&1; then
+ingress_address() {
+	if [ -n "${K8S_INGRESS_ADDRESS}" ]; then
+		echo "${K8S_INGRESS_ADDRESS}"
+		return
+	fi
+
+	if command -v minikube >/dev/null 2>&1; then
+		if minikube ip >/dev/null 2>&1; then
+			minikube ip
 			return
 		fi
-		sleep 1
-	done
+	fi
 
-	echo "ERROR: local port-forward did not become reachable. Logs:" >&2
-	sed 's/^/  /' /tmp/go-driver-k8s-port-forward.log >&2 || true
-	exit 1
+	kubectl -n "${K8S_NAMESPACE}" get ingress "${K8S_INGRESS_NAME}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true
+}
+
+ingress_annotations() {
+	cat <<EOF
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+EOF
+
+	if [ "${K8S_TLS}" = "true" ]; then
+		cat <<EOF
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+EOF
+	fi
+}
+
+ingress_tls_spec() {
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		cat <<EOF
+  tls:
+    - hosts:
+        - ${K8S_INGRESS_HOST}
+      secretName: ${K8S_INGRESS_TLS_SECRET}
+EOF
+	fi
+}
+
+create_ingress_tls_secret() {
+	if [ "${K8S_INGRESS_TLS}" != "true" ]; then
+		return
+	fi
+
+	require_tool openssl
+	local cert_dir
+	cert_dir="$(mktemp -d)"
+	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+		-keyout "${cert_dir}/tls.key" \
+		-out "${cert_dir}/tls.crt" \
+		-subj "/CN=${K8S_INGRESS_HOST}/O=${K8S_INGRESS_HOST}" >/dev/null 2>&1
+
+	kubectl -n "${K8S_NAMESPACE}" create secret tls "${K8S_INGRESS_TLS_SECRET}" \
+		--key "${cert_dir}/tls.key" \
+		--cert "${cert_dir}/tls.crt" \
+		--dry-run=client -o yaml | kubectl apply -f -
+	rm -rf "${cert_dir}"
+}
+
+setup_ingress() {
+	echo "Creating Ingress ${K8S_NAMESPACE}/${K8S_INGRESS_NAME} for ${K8S_INGRESS_HOST}..."
+	create_ingress_tls_secret
+
+	cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${K8S_INGRESS_NAME}
+  namespace: ${K8S_NAMESPACE}
+$(ingress_annotations)
+spec:
+  ingressClassName: ${K8S_INGRESS_CLASS}
+$(ingress_tls_spec)
+  rules:
+    - host: ${K8S_INGRESS_HOST}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ${K8S_DEPLOYMENT}
+                port:
+                  number: ${K8S_PORT}
+EOF
 }
 
 cleanup() {
 	require_tool kubectl
 	echo "Cleaning up ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT}..."
-	kubectl -n "${K8S_NAMESPACE}" delete job "${K8S_TEST_JOB}" --ignore-not-found=true
+	kubectl -n "${K8S_NAMESPACE}" delete ingress "${K8S_INGRESS_NAME}" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete arangodeployment "${K8S_DEPLOYMENT}" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-root-password" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-jwt-folder" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-ca" --ignore-not-found=true
+	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_INGRESS_TLS_SECRET}" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-license" --ignore-not-found=true
 	if [ "${K8S_DELETE_NAMESPACE}" = "true" ] && [ "${K8S_NAMESPACE}" != "default" ]; then
 		kubectl delete namespace "${K8S_NAMESPACE}" --ignore-not-found=true
@@ -447,166 +513,32 @@ run_tests() {
 
 	trap cleanup_after_run EXIT
 
-	if [ "${K8S_TEST_RUNNER}" = "pod" ]; then
-		run_tests_in_pod "$@"
-		return
-	fi
+	run_tests_through_ingress "$@"
+}
 
-	if [ "${K8S_TEST_RUNNER}" != "port-forward" ]; then
-		echo "ERROR: unsupported K8S_TEST_RUNNER '${K8S_TEST_RUNNER}'" >&2
+run_tests_through_ingress() {
+	local address net_override
+	setup_ingress
+	address="$(ingress_address)"
+	if [ -z "${address}" ]; then
+		echo "ERROR: unable to determine ingress address. Set K8S_INGRESS_ADDRESS explicitly." >&2
 		exit 1
 	fi
+	net_override="--net=host --add-host=${K8S_INGRESS_HOST}:${address}"
 
-	echo "Forwarding service/${K8S_DEPLOYMENT}-ea to ${K8S_PORT_FORWARD_ADDRESS}:${K8S_LOCAL_PORT}..."
-	kubectl -n "${K8S_NAMESPACE}" port-forward --address "${K8S_PORT_FORWARD_ADDRESS}" "service/${K8S_DEPLOYMENT}-ea" "${K8S_LOCAL_PORT}:${K8S_PORT}" >/tmp/go-driver-k8s-port-forward.log 2>&1 &
-	PORT_FORWARD_PID="$!"
-	wait_for_local_port_forward "${PORT_FORWARD_PID}"
-
-	echo "Running driver tests against $(test_endpoint)..."
+	echo "Running driver tests against $(ingress_endpoint) through ingress ${address}..."
 	(
 		cd "${ROOT_DIR}"
-		TEST_ENDPOINTS_OVERRIDE="$(test_endpoint)" \
+		TEST_ENDPOINTS_OVERRIDE="$(ingress_endpoint)" \
 		TEST_AUTHENTICATION_OVERRIDE="$(test_authentication)" \
 		TEST_MODE_K8S="k8s" \
 		TEST_NOT_WAIT_UNTIL_READY="1" \
-		TEST_NET_OVERRIDE="${K8S_TEST_NET_OVERRIDE}" \
+		TEST_NET_OVERRIDE="${net_override}" \
 		make TEST_AUTHENTICATION="$(test_authentication)" "$@"
 	)
 }
 
-run_tests_in_pod() {
-	local make_args="$*"
-	echo "Running driver tests in Kubernetes job/${K8S_TEST_JOB} against $(in_cluster_endpoint)..."
-
-	kubectl -n "${K8S_NAMESPACE}" delete job "${K8S_TEST_JOB}" --ignore-not-found=true
-
-	cat <<EOF | kubectl apply -f -
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: ${K8S_TEST_JOB}
-  namespace: ${K8S_NAMESPACE}
-spec:
-  backoffLimit: 0
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-        - name: driver-tests
-          image: ${K8S_TEST_IMAGE}
-          imagePullPolicy: IfNotPresent
-          workingDir: ${K8S_TEST_WORKSPACE_MOUNT_PATH}
-          command:
-            - /bin/bash
-            - -lc
-            - |
-              set -euo pipefail
-              export PATH="/usr/local/go/bin:${PATH}"
-              make K8S_IN_POD=true TEST_AUTHENTICATION="\${TEST_AUTHENTICATION_OVERRIDE}" ${make_args}
-          env:
-            - name: TEST_ENDPOINTS_OVERRIDE
-              value: "$(in_cluster_endpoint)"
-            - name: TEST_AUTHENTICATION_OVERRIDE
-              value: "$(test_authentication)"
-            - name: TEST_MODE_K8S
-              value: "k8s"
-            - name: TEST_NOT_WAIT_UNTIL_READY
-              value: "1"
-            - name: TEST_RESOURCES
-              value: "${K8S_TEST_RESOURCES_MOUNT_PATH}"
-            - name: ENABLE_VECTOR_INDEX
-              value: "${ENABLE_VECTOR_INDEX:-true}"
-            - name: ENABLE_DATABASE_EXTRA_FEATURES
-              value: "${ENABLE_DATABASE_EXTRA_FEATURES:-false}"
-            - name: TEST_DISALLOW_UNKNOWN_FIELDS
-              value: "${TEST_DISALLOW_UNKNOWN_FIELDS:-false}"
-            - name: VERBOSE
-              value: "${VERBOSE:-1}"
-            - name: GOTOOLCHAIN
-              value: "${GOTOOLCHAIN:-auto}"
-            - name: CGO_ENABLED
-              value: "${CGO_ENABLED:-0}"
-          volumeMounts:
-            - name: workspace
-              mountPath: ${K8S_TEST_WORKSPACE_MOUNT_PATH}
-            - name: test-resources
-              mountPath: ${K8S_TEST_RESOURCES_MOUNT_PATH}
-      volumes:
-        - name: workspace
-          hostPath:
-            path: ${K8S_TEST_WORKSPACE_NODE_PATH}
-            type: Directory
-        - name: test-resources
-          hostPath:
-            path: ${K8S_TEST_RESOURCES_NODE_PATH}
-            type: DirectoryOrCreate
-EOF
-
-	wait_for_test_job
-}
-
-wait_for_test_job() {
-	local deadline succeeded failed logs_pid test_pod test_pod_phase test_container_ready
-	deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
-	logs_pid=""
-
-	while [ "${SECONDS}" -lt "${deadline}" ]; do
-		succeeded="$(kubectl -n "${K8S_NAMESPACE}" get job "${K8S_TEST_JOB}" -o jsonpath='{.status.succeeded}' 2>/dev/null || true)"
-		failed="$(kubectl -n "${K8S_NAMESPACE}" get job "${K8S_TEST_JOB}" -o jsonpath='{.status.failed}' 2>/dev/null || true)"
-
-		if [ -n "${logs_pid}" ] && ! kill -0 "${logs_pid}" >/dev/null 2>&1; then
-			wait "${logs_pid}" 2>/dev/null || true
-			logs_pid=""
-		fi
-
-		if [ -z "${logs_pid}" ]; then
-			test_pod="$(kubectl -n "${K8S_NAMESPACE}" get pods -l "job-name=${K8S_TEST_JOB}" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
-			if [ -n "${test_pod}" ]; then
-				test_pod_phase="$(kubectl -n "${K8S_NAMESPACE}" get pod "${test_pod}" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
-				test_container_ready="$(kubectl -n "${K8S_NAMESPACE}" get pod "${test_pod}" -o jsonpath='{.status.containerStatuses[?(@.name=="driver-tests")].ready}' 2>/dev/null || true)"
-				if [ "${test_pod_phase}" = "Running" ] && [ "${test_container_ready}" = "true" ]; then
-					kubectl -n "${K8S_NAMESPACE}" logs "${test_pod}" -c driver-tests --follow &
-					logs_pid="$!"
-				fi
-			fi
-		fi
-
-		if [ "${succeeded}" = "1" ]; then
-			if [ -n "${logs_pid}" ]; then
-				wait "${logs_pid}" 2>/dev/null || true
-			fi
-			return
-		fi
-
-		if [ -n "${failed}" ] && [ "${failed}" != "0" ]; then
-			if [ -n "${logs_pid}" ]; then
-				wait "${logs_pid}" 2>/dev/null || true
-			fi
-			echo "ERROR: Kubernetes test job/${K8S_TEST_JOB} failed" >&2
-			dump_diagnostics
-			exit 1
-		fi
-
-		kubectl -n "${K8S_NAMESPACE}" get pods -l "job-name=${K8S_TEST_JOB}" || true
-		sleep 10
-	done
-
-	if [ -n "${logs_pid}" ]; then
-		kill "${logs_pid}" >/dev/null 2>&1 || true
-		wait "${logs_pid}" 2>/dev/null || true
-	else
-		kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_TEST_JOB}" --all-containers=true || true
-	fi
-	echo "ERROR: Kubernetes test job/${K8S_TEST_JOB} did not finish before timeout" >&2
-	dump_diagnostics
-	exit 1
-}
-
 cleanup_after_run() {
-	if [ -n "${PORT_FORWARD_PID}" ]; then
-		kill "${PORT_FORWARD_PID}" >/dev/null 2>&1 || true
-	fi
-
 	if [ "${K8S_KEEP_DEPLOYMENT}" != "true" ]; then
 		cleanup
 	fi

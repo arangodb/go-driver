@@ -200,23 +200,23 @@ run-k8s-v2-cluster: run-k8s-v2-cluster-basic-auth run-k8s-v2-cluster-tls-basic-a
 
 run-k8s-v2-single-without-auth:
 	@echo "Kubernetes single server, without authentication, v2"
-	@K8S_MODE=Single K8S_AUTHENTICATION=false K8S_TEST_AUTHENTICATION=none K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-without-auth
+	@K8S_MODE=Single K8S_AUTHENTICATION=false K8S_TEST_AUTHENTICATION=none K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-without-auth
 
 run-k8s-v2-single-basic-auth:
 	@echo "Kubernetes single server, with basic authentication, v2"
-	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-with-auth
+	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-with-auth
 
 run-k8s-v2-single-tls-basic-auth:
 	@echo "Kubernetes single server, with TLS and basic authentication, v2"
-	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-with-auth
+	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-single-with-auth
 
 run-k8s-v2-cluster-basic-auth:
 	@echo "Kubernetes cluster, with basic authentication, v2"
-	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run TESTV2PARALLEL=1 run-v2-tests-cluster-with-basic-auth
 
 run-k8s-v2-cluster-tls-basic-auth:
 	@echo "Kubernetes cluster, with TLS and basic authentication, v2"
-	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run run-v2-tests-cluster-with-basic-auth
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run TESTV2PARALLEL=1 run-v2-tests-cluster-with-basic-auth
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
@@ -498,31 +498,8 @@ DOCKER_CMD_V2_PARAMS=\
 	-w /usr/code/v2/
 
 __test_v2_go_test:
-ifeq ("$(K8S_IN_POD)", "true")
-	(cd "$(ROOTDIR)/v2" && \
-		ENABLE_VECTOR_INDEX="$(ENABLE_VECTOR_INDEX)" \
-		TEST_ENDPOINTS="$(TEST_ENDPOINTS)" \
-		TEST_NOT_WAIT_UNTIL_READY="$(TEST_NOT_WAIT_UNTIL_READY)" \
-		TEST_AUTH="$(TEST_AUTH)" \
-		TEST_AUTHENTICATION="$(TEST_AUTHENTICATION)" \
-		TEST_JWTSECRET="$(TEST_JWTSECRET)" \
-		TEST_MODE="$(TEST_MODE)" \
-		TEST_MODE_K8S="$(TEST_MODE_K8S)" \
-		TEST_BACKUP_REMOTE_REPO="$(TEST_BACKUP_REMOTE_REPO)" \
-		TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
-		TEST_DEBUG='$(TEST_DEBUG)' \
-		TEST_ENABLE_SHUTDOWN="$(TEST_ENABLE_SHUTDOWN)" \
-		ENABLE_DATABASE_EXTRA_FEATURES="$(ENABLE_DATABASE_EXTRA_FEATURES)" \
-		GODEBUG=tls13=1 \
-		CGO_ENABLED="$(CGO_ENABLED)" \
-		GOTOOLCHAIN="$(GOTOOLCHAIN)" \
-		TEST_RESOURCES="$(TEST_RESOURCES)" \
-		go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTOPTIONS) $(TESTVERBOSEOPTIONS) -parallel $(TESTV2PARALLEL) ./tests $(ADD_TIMESTAMP)) && echo "success!" \
-	|| exit 1
-else
 	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
-endif
 
 __run_v3_tests: __test_v3_debug__ __test_prepare __test_v3_go_test __test_cleanup
 
@@ -559,12 +536,8 @@ __dir_setup:
 
 __test_prepare: __dir_setup
 ifdef TEST_ENDPOINTS_OVERRIDE
-ifeq ("$(K8S_IN_POD)", "true")
-	@echo "Using externally supplied Kubernetes endpoint from test pod."
-else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@sleep 3
-endif
 else
 ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
@@ -576,9 +549,6 @@ endif
 endif
 
 __test_cleanup:
-ifeq ("$(K8S_IN_POD)", "true")
-	@echo "Skipping Docker cleanup inside Kubernetes test pod."
-else
 ifdef TESTCONTAINER
 	@TESTCONTAINERS=$$(docker ps -a -q --filter="name=$(TESTCONTAINER)")
 	@if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); fi
@@ -589,7 +559,6 @@ else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
 	@sleep 3
-endif
 
 # Benchmarks
 run-benchmarks-single-json-no-auth: 
