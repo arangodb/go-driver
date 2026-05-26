@@ -116,7 +116,7 @@ jobs:
     executor: golang-executor
     steps:
       - checkout
-      - run: mkdir -p $HOME/resources
+      - run: mkdir -p /home/circleci/resources
       - run:
           name: Download itzpapalotl demo foxx service
           command: |
@@ -124,8 +124,8 @@ jobs:
               echo "This is not a pull request. Skipping download..."
               exit 0
             fi
-            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+            if ! [ -f "/home/circleci/resources/itzpapalotl-v1.2.0.zip" ]; then
+              curl -L0 -o /home/circleci/resources/itzpapalotl-v1.2.0.zip \
                 "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
       - persist_to_workspace:
@@ -164,7 +164,7 @@ jobs:
                 at: /home/circleci
             - run:
                 name: Ensure resources directory exists
-                command: mkdir -p $HOME/resources
+                command: mkdir -p /home/circleci/resources
       - run:
           name: Configure Foxx demo resources mount for Dockerized tests
           command: |
@@ -207,7 +207,7 @@ jobs:
                 at: /home/circleci
             - run:
                 name: Ensure resources directory exists
-                command: mkdir -p $HOME/resources
+                command: mkdir -p /home/circleci/resources
       - run:
           name: Configure Foxx demo resources mount for Dockerized tests
           command: |
