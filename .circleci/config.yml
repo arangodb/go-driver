@@ -5,16 +5,17 @@ executors:
   golang-executor:
     docker:
       - image: gcr.io/gcr-for-testing/golang:1.25.10
+    resource_class: arangodb/medium-amd64
 
-  x86-machine-executor:
-    machine:
-      image: ubuntu-2204:current
-      docker_layer_caching: true
+  x86-docker-executor:
+    docker:
+      - image: gcr.io/gcr-for-testing/golang:1.25.10
+    resource_class: arangodb/medium-amd64-privileged
 
-  arm-machine-executor:
-    machine:
-      image: ubuntu-2204:current
-    resource_class: arm.medium
+  arm-docker-executor:
+    docker:
+      - image: gcr.io/gcr-for-testing/golang:1.25.10
+    resource_class: arangodb/medium-arm64-privileged
 aliases:
   - &notify_slack_on_fail
     slack/notify:
@@ -78,14 +79,12 @@ jobs:
   check-code:
     executor: golang-executor
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
       - checkout
       - run: make tools
       - run: make linter
 
   run-unit-tests:
-    executor: x86-machine-executor
+    executor: x86-docker-executor
     steps:
       - checkout
       - run: make run-unit-tests
@@ -93,7 +92,7 @@ jobs:
       GOIMAGE: << pipeline.parameters.goImage >>
 
   download-demo-data:
-    executor: x86-machine-executor
+    executor: golang-executor
     steps:
       - checkout
       - run: mkdir -p $HOME/resources
@@ -118,7 +117,7 @@ jobs:
   # UNIFIED INTEGRATION TEST JOB X86
   # ----------------------------------------
   run-integration-tests:
-    executor: x86-machine-executor
+    executor: x86-docker-executor
     parameters:
       test-to-run:
         type: string
@@ -160,7 +159,7 @@ jobs:
   # ARM INTEGRATION TEST JOB
   # ----------------------------------------
   run-integration-tests-arm:
-    executor: arm-machine-executor
+    executor: arm-docker-executor
     parameters:
       test-to-run:
         type: string
@@ -206,8 +205,6 @@ jobs:
   vulncheck:
     executor: golang-executor
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
       - checkout
       - run: make tools
       - run: make vulncheck
