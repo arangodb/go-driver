@@ -59,6 +59,20 @@ parameters:
     default: ""
 
 commands:
+  install-docker-client:
+    description: "Install Docker client in the job container"
+    steps:
+      - run:
+          name: Install Docker client
+          command: |
+            if command -v docker >/dev/null 2>&1; then
+              docker version
+              exit 0
+            fi
+            apt-get update
+            apt-get install -y docker.io
+            docker version
+
   run-test-if-pr:
     description: "Run a test command only if this is a pull request"
     parameters:
@@ -87,6 +101,7 @@ jobs:
     executor: x86-docker-executor
     steps:
       - checkout
+      - install-docker-client
       - run: make run-unit-tests
     environment:
       GOIMAGE: << pipeline.parameters.goImage >>
@@ -132,6 +147,7 @@ jobs:
         description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
     steps:
       - checkout
+      - install-docker-client
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
@@ -174,6 +190,7 @@ jobs:
         description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
     steps:
       - checkout
+      - install-docker-client
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
