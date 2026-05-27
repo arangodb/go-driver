@@ -5,16 +5,17 @@ executors:
   golang-executor:
     docker:
       - image: gcr.io/gcr-for-testing/golang:1.25.10
+    resource_class: arangodb/medium-amd64
 
-  x86-machine-executor:
-    machine:
-      image: ubuntu-2204:current
-      docker_layer_caching: true
+  x86-docker-executor:
+    docker:
+      - image: gcr.io/gcr-for-testing/golang:1.25.10
+    resource_class: arangodb/medium-amd64-privileged
 
-  arm-machine-executor:
-    machine:
-      image: ubuntu-2204:current
-    resource_class: arm.medium
+  arm-docker-executor:
+    docker:
+      - image: gcr.io/gcr-for-testing/golang:1.25.10
+    resource_class: arangodb/medium-arm64-privileged
 aliases:
   - &notify_slack_on_fail
     slack/notify:
@@ -58,6 +59,26 @@ parameters:
     default: ""
 
 commands:
+  setup-docker:
+    description: "Install Docker and start the daemon in the job container"
+    steps:
+      - run:
+          name: Set up Docker
+          command: |
+            if ! command -v docker >/dev/null 2>&1; then
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y docker.io
+            fi
+            if ! docker info >/dev/null 2>&1; then
+              dockerd >/tmp/dockerd.log 2>&1 &
+              for i in $(seq 1 30); do
+                docker info >/dev/null 2>&1 && break
+                sleep 1
+              done
+            fi
+            docker info
+
   run-test-if-pr:
     description: "Run a test command only if this is a pull request"
     parameters:
@@ -78,25 +99,24 @@ jobs:
   check-code:
     executor: golang-executor
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
       - checkout
       - run: make tools
       - run: make linter
 
   run-unit-tests:
-    executor: x86-machine-executor
+    executor: x86-docker-executor
     steps:
       - checkout
+      - setup-docker
       - run: make run-unit-tests
     environment:
       GOIMAGE: << pipeline.parameters.goImage >>
 
   download-demo-data:
-    executor: x86-machine-executor
+    executor: golang-executor
     steps:
       - checkout
-      - run: mkdir -p $HOME/resources
+      - run: mkdir -p /home/circleci/resources
       - run:
           name: Download itzpapalotl demo foxx service
           command: |
@@ -104,8 +124,8 @@ jobs:
               echo "This is not a pull request. Skipping download..."
               exit 0
             fi
-            if ! [ -f "$HOME/resources/itzpapalotl-v1.2.0.zip" ]; then
-              curl -L0 -o $HOME/resources/itzpapalotl-v1.2.0.zip \
+            if ! [ -f "/home/circleci/resources/itzpapalotl-v1.2.0.zip" ]; then
+              curl -L0 -o /home/circleci/resources/itzpapalotl-v1.2.0.zip \
                 "https://github.com/arangodb-foxx/demo-itzpapalotl/archive/v1.2.0.zip"
             fi
       - persist_to_workspace:
@@ -118,7 +138,7 @@ jobs:
   # UNIFIED INTEGRATION TEST JOB X86
   # ----------------------------------------
   run-integration-tests:
-    executor: x86-machine-executor
+    executor: x86-docker-executor
     parameters:
       test-to-run:
         type: string
@@ -133,6 +153,7 @@ jobs:
         description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
     steps:
       - checkout
+      - setup-docker
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
@@ -143,7 +164,7 @@ jobs:
                 at: /home/circleci
             - run:
                 name: Ensure resources directory exists
-                command: mkdir -p $HOME/resources
+                command: mkdir -p /home/circleci/resources
       - run:
           name: Configure Foxx demo resources mount for Dockerized tests
           command: |
@@ -160,7 +181,7 @@ jobs:
   # ARM INTEGRATION TEST JOB
   # ----------------------------------------
   run-integration-tests-arm:
-    executor: arm-machine-executor
+    executor: arm-docker-executor
     parameters:
       test-to-run:
         type: string
@@ -175,6 +196,7 @@ jobs:
         description: "v1/v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
     steps:
       - checkout
+      - setup-docker
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
@@ -185,7 +207,7 @@ jobs:
                 at: /home/circleci
             - run:
                 name: Ensure resources directory exists
-                command: mkdir -p $HOME/resources
+                command: mkdir -p /home/circleci/resources
       - run:
           name: Configure Foxx demo resources mount for Dockerized tests
           command: |
@@ -206,8 +228,6 @@ jobs:
   vulncheck:
     executor: golang-executor
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
       - checkout
       - run: make tools
       - run: make vulncheck
