@@ -62,11 +62,12 @@ type ClientAdmin interface {
 
 	// ReloadRoutingTable reloads the routing information from the _routing system
 	// collection, causing Foxx services to rebuild their routing table.
+	// Deprecated: Foxx route reloading is removed in ArangoDB v4.0.
 	ReloadRoutingTable(ctx context.Context, dbName string) error
 
 	// ExecuteAdminScript executes JavaScript code on the server.
 	// Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
-	// Deprecated: Server-side JavaScript is planned to be removed in ArangoDB v4.0.
+	// Deprecated: Server-side JavaScript is removed in ArangoDB v4.0.
 	ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error)
 
 	// CompactDatabases can be used to reclaim disk space after substantial data deletions have taken place,
@@ -379,7 +380,7 @@ type ServerStatusResponse struct {
 	// Operational mode (e.g., "server", "coordinator").
 	// Supersedes the deprecated Mode field.
 	OperationMode *string `json:"operationMode,omitempty"`
-	// Whether the Foxx API is enabled. Deprecated: Foxx is planned to be removed in ArangoDB v4.0.
+	// Whether the Foxx API is enabled. Deprecated: Foxx is removed in ArangoDB v4.0.
 	FoxxApi *bool `json:"foxxApi,omitempty"`
 	// Host of the server
 	Host *string `json:"host,omitempty"`
@@ -432,9 +433,9 @@ type ServerProgress struct {
 
 // CoordinatorInfo provides information specific to the coordinator role (cluster only).
 type CoordinatorInfo struct {
-	// ID of the Foxxmaster coordinator. Deprecated: Foxx is planned to be removed in ArangoDB v4.0.
+	// ID of the Foxxmaster coordinator. Deprecated: Foxx is removed in ArangoDB v4.0.
 	Foxxmaster *string `json:"foxxmaster,omitempty"`
-	// Whether this server is the Foxxmaster. Deprecated: Foxx is planned to be removed in ArangoDB v4.0.
+	// Whether this server is the Foxxmaster. Deprecated: Foxx is removed in ArangoDB v4.0.
 	IsFoxxmaster *bool `json:"isFoxxmaster,omitempty"`
 }
 

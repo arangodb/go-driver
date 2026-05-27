@@ -22,27 +22,32 @@ import (
 	"context"
 )
 
-// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are planned to be removed in ArangoDB v4.0.
+// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are removed in ArangoDB v4.0.
 // ClientTasks defines the interface for managing tasks in ArangoDB.
 type ClientTasks interface {
 	// Task retrieves an existing task by its ID.
 	// If no task with the given ID exists, a NotFoundError is returned.
+	// Deprecated: The `/_api/tasks` API is removed in ArangoDB v4.0.
 	Task(ctx context.Context, databaseName string, id string) (Task, error)
 
 	// Tasks returns a list of all tasks on the server.
+	// Deprecated: The `/_api/tasks` API is removed in ArangoDB v4.0.
 	Tasks(ctx context.Context, databaseName string) ([]Task, error)
 
 	// CreateTask creates a new task with the specified options.
+	// Deprecated: The `/_api/tasks` API is removed in ArangoDB v4.0.
 	CreateTask(ctx context.Context, databaseName string, options TaskOptions) (Task, error)
 
 	// If a task with the given ID already exists, a Conflict error is returned.
+	// Deprecated: The `/_api/tasks` API is removed in ArangoDB v4.0.
 	CreateTaskWithID(ctx context.Context, databaseName string, id string, options TaskOptions) (Task, error)
 
 	// RemoveTask deletes an existing task by its ID.
+	// Deprecated: The `/_api/tasks` API is removed in ArangoDB v4.0.
 	RemoveTask(ctx context.Context, databaseName string, id string) error
 }
 
-// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are planned to be removed in ArangoDB v4.0.
+// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are removed in ArangoDB v4.0.
 // TaskOptions contains options for creating a new task.
 type TaskOptions struct {
 	// ID is an optional identifier for the task.
@@ -64,7 +69,7 @@ type TaskOptions struct {
 	Offset *float64 `json:"offset,omitempty"`
 }
 
-// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are planned to be removed in ArangoDB v4.0.
+// Deprecated: Tasks rely on server-side JavaScript (`/_api/tasks`) and are removed in ArangoDB v4.0.
 // Task provides access to a single task on the server.
 type Task interface {
 	// ID returns the ID of the task.

@@ -101,7 +101,7 @@ type DatabaseQuery interface {
 	// The properties are updated with the provided options.
 	SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error)
 
-	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
+	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are removed in ArangoDB v4.0.
 	// CreateUserDefinedFunction creates a user-defined function in the database.
 	// The function is created with the provided options.
 	// The function is created in the system collection `_aqlfunctions`.
@@ -109,14 +109,14 @@ type DatabaseQuery interface {
 	// If the function already exists, it will be updated with the new code.
 	CreateUserDefinedFunction(ctx context.Context, options UserDefinedFunctionObject) (bool, error)
 
-	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
+	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are removed in ArangoDB v4.0.
 	// DeleteUserDefinedFunction removes a user-defined AQL function from the current database.
 	// If group is true, all functions with the given name as a namespace prefix will be deleted.
 	// If group is false, only the function with the fully qualified name will be removed.
 	// It returns the number of functions deleted.
 	DeleteUserDefinedFunction(ctx context.Context, name *string, group *bool) (*int, error)
 
-	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
+	// Deprecated: User-defined AQL functions rely on server-side JavaScript and are removed in ArangoDB v4.0.
 	// GetUserDefinedFunctions retrieves all user-defined AQL functions registered in the current database.
 	// It returns a list of UserDefinedFunctionObject, each containing the function's name, code, and isDeterministic.
 	// The returned list may be empty array if no user-defined functions are registered.
@@ -561,7 +561,7 @@ type QueryCacheProperties struct {
 	Mode *string `json:"mode,omitempty"`
 }
 
-// Deprecated: User-defined AQL functions rely on server-side JavaScript and are planned to be removed in ArangoDB v4.0.
+// Deprecated: User-defined AQL functions rely on server-side JavaScript and are removed in ArangoDB v4.0.
 type UserDefinedFunctionObject struct {
 	// Code is the JavaScript function body as a string.
 	Code *string `json:"code"`
