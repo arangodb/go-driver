@@ -26,21 +26,24 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
-// Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
+// Deprecated: Foxx relies on server-side JavaScript and is removed in ArangoDB v4.0.
 type ClientFoxx interface {
 	ClientFoxxService
 	//ClientFoxxDependencies
 }
 
-// Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
+// Deprecated: Foxx relies on server-side JavaScript and is removed in ArangoDB v4.0.
 type ClientFoxxService interface {
 	// InstallFoxxService installs a new service at a given mount path.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	InstallFoxxService(ctx context.Context, dbName string, zipFile string, options *FoxxDeploymentOptions) error
 	// UninstallFoxxService uninstalls service at a given mount path.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	UninstallFoxxService(ctx context.Context, dbName string, options *FoxxDeleteOptions) error
 	// ListInstalledFoxxServices retrieves the list of Foxx services installed in the specified database.
 	// If excludeSystem is true, system services (like _admin/aardvark) will be excluded from the result,
 	// returning only custom-installed Foxx services.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	ListInstalledFoxxServices(ctx context.Context, dbName string, excludeSystem *bool) ([]FoxxServiceListItem, error)
 	// GetInstalledFoxxService retrieves detailed information about a specific Foxx service
 	// installed in the specified database.
@@ -48,28 +51,34 @@ type ClientFoxxService interface {
 	// If the mount path is missing or empty, a RequiredFieldError is returned.
 	// The returned FoxxServiceObject contains the full metadata and configuration details
 	// for the specified service.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	GetInstalledFoxxService(ctx context.Context, dbName string, mount *string) (FoxxServiceObject, error)
 	// ReplaceFoxxService removes the service at the given mount path from the database and file system
 	// and installs the given new service at the same mount path.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	ReplaceFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error
 	// UpgradeFoxxService installs the given new service on top of the service currently installed
 	// at the specified mount path, retaining the existing service’s configuration and dependencies.
 	// This should be used only when upgrading to a newer or equivalent version of the same service.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	UpgradeFoxxService(ctx context.Context, dbName string, zipFile string, opts *FoxxDeploymentOptions) error
 	// GetFoxxServiceConfiguration retrieves the configuration values for the Foxx service
 	// mounted at the specified path in the given database.
 	// The mount parameter must not be nil or empty.
 	// Returns a map containing the current configuration key-value pairs.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	GetFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// UpdateFoxxServiceConfiguration updates the configuration of a specific Foxx service.
 	// If the Foxx service does not allow a particular configuration key, it will appear
 	// in the response warnings.
 	// The caller is responsible for validating allowed keys before calling this method.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	UpdateFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 	// ReplaceFoxxServiceConfiguration replaces the given Foxx service's dependencies entirely.
 	// If the Foxx service does not allow a particular configuration key, it will appear
 	// in the response warnings.
 	// The caller is responsible for validating allowed keys before calling this method.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	ReplaceFoxxServiceConfiguration(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 
 	// GetFoxxServiceDependencies retrieves the configured dependencies for a specific Foxx service.
@@ -78,41 +87,53 @@ type ClientFoxxService interface {
 	// 	* title: Human-readable title of the dependency
 	//  * mount: Current mount path of the dependency service (if set)
 	// An error if the request fails or the mount is missing.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	GetFoxxServiceDependencies(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// UpdateFoxxServiceDependencies updates the configured dependencies of a specific Foxx service.
 	// If the Foxx service does not allow a particular dependency key, it will appear
 	// in the "warnings" field of the response.
 	// The caller is responsible for ensuring that only allowed dependency keys are provided.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	UpdateFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 	// ReplaceFoxxServiceDependencies replaces the given Foxx service's dependencies entirely.
 	// If the Foxx service does not allow a particular dependency key, it will appear
 	// in the "warnings" field of the response.
 	// The caller is responsible for validating allowed keys before calling this method.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	ReplaceFoxxServiceDependencies(ctx context.Context, dbName string, mount *string, opt map[string]interface{}) (map[string]interface{}, error)
 	// GetFoxxServiceScripts retrieves the scripts associated with a specific Foxx service.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	GetFoxxServiceScripts(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// RunFoxxServiceScript executes a specific script associated with a Foxx service.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	RunFoxxServiceScript(ctx context.Context, dbName string, name string, mount *string, body map[string]interface{}) (map[string]interface{}, error)
 	// RunFoxxServiceTests executes the test suite of a specific Foxx service
 	// deployed in an ArangoDB database.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	RunFoxxServiceTests(ctx context.Context, dbName string, opt FoxxTestOptions) (map[string]interface{}, error)
 	// EnableDevelopmentMode enables the development mode for a specific Foxx service.
 	// Development mode causes the Foxx service to be reloaded from the filesystem and its setup
 	// script (if present) to be re-executed every time the service handles a request.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	EnableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// DisableDevelopmentMode disables the development mode for a specific Foxx service.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	DisableDevelopmentMode(ctx context.Context, dbName string, mount *string) (map[string]interface{}, error)
 	// GetFoxxServiceReadme retrieves the README file for a specific Foxx service.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	GetFoxxServiceReadme(ctx context.Context, dbName string, mount *string) ([]byte, error)
 	// GetFoxxServiceSwagger retrieves the Swagger specification
 	// for a specific Foxx service mounted in the given database.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	GetFoxxServiceSwagger(ctx context.Context, dbName string, mount *string) (SwaggerResponse, error)
 	// CommitFoxxService commits the local Foxx service state of the Coordinator
 	// to the database. This can resolve service conflicts between Coordinators.
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	CommitFoxxService(ctx context.Context, dbName string, replace *bool) error
 	// DownloadFoxxServiceBundle downloads a zip bundle of the Foxx service directory
 	// from the specified database and mount point.
 	// Note: The response is the raw zip data (binary).
+	// Deprecated: Foxx is removed in ArangoDB v4.0.
 	DownloadFoxxServiceBundle(ctx context.Context, dbName string, mount *string) ([]byte, error)
 }
 
@@ -217,7 +238,7 @@ type Engines struct {
 	Arangodb *string `json:"arangodb,omitempty"`
 }
 
-// Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
+// Deprecated: Foxx relies on server-side JavaScript and is removed in ArangoDB v4.0.
 // Manifest represents the normalized manifest.json of the Foxx service.
 type Manifest struct {
 	// Schema is the JSON schema URL for the manifest structure.

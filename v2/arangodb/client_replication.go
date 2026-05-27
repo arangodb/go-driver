@@ -406,7 +406,7 @@ type ApplierConfigResponse struct {
 	SkipCreateDrop *bool `json:"skipCreateDrop,omitempty"`
 	// Max packet size (bytes)
 	MaxPacketSize *int64 `json:"maxPacketSize,omitempty"`
-	// Whether to include Foxx queues. Deprecated: Foxx relies on server-side JavaScript and is planned to be removed in ArangoDB v4.0.
+	// Whether to include Foxx queues. Deprecated: Foxx relies on server-side JavaScript and is removed in ArangoDB v4.0.
 	IncludeFoxxQueues *bool `json:"includeFoxxQueues,omitempty"`
 	// Whether incremental sync is used
 	Incremental *bool `json:"incremental,omitempty"`
