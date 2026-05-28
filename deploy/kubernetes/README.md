@@ -1,8 +1,8 @@
 # Kubernetes Integration Tests
 
-This folder contains the shared runner for executing the Go driver integration tests against an ArangoDB deployment managed by [kube-arangodb](https://github.com/arangodb/kube-arangodb).
+This folder contains the shared runner for executing driver integration tests against an ArangoDB deployment managed by [kube-arangodb](https://github.com/arangodb/kube-arangodb).
 
-The runner installs the kube-arangodb operator, creates an `ArangoDeployment`, creates a TLS Ingress, and then runs the existing Dockerized Makefile test target against that external endpoint.
+The runner installs the kube-arangodb operator, creates an `ArangoDeployment`, creates a TLS Ingress, and then runs the provided test command against that external endpoint.
 
 ## Quick Start
 
@@ -56,8 +56,8 @@ make run-k8s-v2-tests
 Other drivers need to provide:
 
 - a Kubernetes cluster in the current `kubectl` context, for example minikube, kind, k3d, or a shared test cluster
-- `kubectl` and `make` on `PATH`
-- a Make target or wrapper command that can run that driver's integration tests against externally supplied endpoints
+- `kubectl` on `PATH`
+- a command that can run that driver's integration tests against externally supplied endpoints
 - support for endpoint/auth environment variables, or a thin adapter target that maps them to the driver's own test variables
 
 The runner passes these environment variables to the test command:
@@ -71,20 +71,22 @@ Example adapter target in another driver:
 
 ```make
 run-k8s-driver-tests:
-	@bash ./deploy/kubernetes/run-driver-tests.sh run run-driver-tests
+	@bash ./deploy/kubernetes/run-driver-tests.sh run \
+	  sh -c 'ENDPOINTS="$${TEST_ENDPOINTS_OVERRIDE}" AUTH="$${TEST_AUTHENTICATION_OVERRIDE}" ./scripts/run-integration-tests.sh'
+```
 
-run-driver-tests:
-	@ENDPOINTS="$(TEST_ENDPOINTS_OVERRIDE)" \
-	  AUTH="$(TEST_AUTHENTICATION_OVERRIDE)" \
-	  ./scripts/run-integration-tests.sh
+For Make-based projects, pass `make` explicitly:
+
+```bash
+bash ./deploy/kubernetes/run-driver-tests.sh run make run-v2-tests-single-with-auth
 ```
 
 ## Useful Environment
 
 - `KUBE_ARANGODB_VERSION`: kube-arangodb release to install, default `1.4.3`.
 - `K8S_NAMESPACE`: namespace for the temporary `ArangoDeployment`, default `default`. The operator is installed in `default`, so this keeps the test deployment in the namespace watched by that operator.
-- `K8S_DEPLOYMENT`: deployment name, default `go-driver-tests`.
-- `K8S_MODE`: `Cluster`, `Single`, or `ActiveFailover`, default `Cluster`.
+- `K8S_DEPLOYMENT`: deployment name, default `arangodb-driver-tests`.
+- `K8S_MODE`: `Cluster` or `Single`, default `Cluster`.
 - `K8S_AUTHENTICATION`: set to `false` to disable ArangoDB authentication in the Kubernetes deployment, default `true`.
 - `K8S_TEST_AUTHENTICATION`: driver authentication mode, `basic`, `jwt`, or `none`, default `basic`.
 - `K8S_TLS`: set to `true` to enable TLS in the `ArangoDeployment` and pass an `https://` endpoint to the tests.

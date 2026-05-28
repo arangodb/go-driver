@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 KUBE_ARANGODB_VERSION="${KUBE_ARANGODB_VERSION:-1.4.3}"
 K8S_NAMESPACE="${K8S_NAMESPACE:-default}"
-K8S_DEPLOYMENT="${K8S_DEPLOYMENT:-go-driver-tests}"
+K8S_DEPLOYMENT="${K8S_DEPLOYMENT:-arangodb-driver-tests}"
 K8S_MODE="${K8S_MODE:-Cluster}"
 K8S_ENVIRONMENT="${K8S_ENVIRONMENT:-Development}"
 K8S_EXTERNAL_ACCESS="${K8S_EXTERNAL_ACCESS:-NodePort}"
@@ -33,16 +33,17 @@ ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
 usage() {
 	cat <<EOF
 Usage:
-  $0 run <make-target> [make args...]
+  $0 run <test-command> [args...]
   $0 start
   $0 endpoint
+  $0 ingress-address
   $0 cleanup
 
 Environment:
   KUBE_ARANGODB_VERSION  kube-arangodb release to install (default: ${KUBE_ARANGODB_VERSION})
   K8S_NAMESPACE          namespace for the ArangoDeployment (default: ${K8S_NAMESPACE})
   K8S_DEPLOYMENT         ArangoDeployment name (default: ${K8S_DEPLOYMENT})
-  K8S_MODE               ArangoDeployment mode: Cluster, Single, ActiveFailover (default: ${K8S_MODE})
+  K8S_MODE               ArangoDeployment mode: Cluster or Single (default: ${K8S_MODE})
   K8S_AUTHENTICATION     enable ArangoDB authentication in Kubernetes (default: ${K8S_AUTHENTICATION})
   K8S_TEST_AUTHENTICATION driver auth mode: basic, jwt, or none (default: ${K8S_TEST_AUTHENTICATION})
   K8S_TLS                enable TLS in the ArangoDeployment (default: ${K8S_TLS})
@@ -507,26 +508,35 @@ run_tests() {
 	fi
 
 	require_tool kubectl
-	require_tool make
 
 	start
 
 	trap cleanup_after_run EXIT
 
-	run_tests_through_ingress "$@"
+	run_command_through_ingress "$@"
 }
 
-run_tests_through_ingress() {
-	local address net_override
-	setup_ingress
+get_ingress_address() {
+	local address
+	setup_ingress >&2
 	address="$(ingress_address)"
 	if [ -z "${address}" ]; then
 		echo "ERROR: unable to determine ingress address. Set K8S_INGRESS_ADDRESS explicitly." >&2
 		exit 1
 	fi
+	echo "${address}"
+}
+
+endpoint() {
+	ingress_endpoint
+}
+
+run_command_through_ingress() {
+	local address net_override
+	address="$(get_ingress_address)"
 	net_override="--net=host --add-host=${K8S_INGRESS_HOST}:${address}"
 
-	echo "Running driver tests against $(ingress_endpoint) through ingress ${address}..."
+	echo "Running test command against $(ingress_endpoint) through ingress ${address}..."
 	(
 		cd "${ROOT_DIR}"
 		TEST_ENDPOINTS_OVERRIDE="$(ingress_endpoint)" \
@@ -534,7 +544,8 @@ run_tests_through_ingress() {
 		TEST_MODE_K8S="k8s" \
 		TEST_NOT_WAIT_UNTIL_READY="1" \
 		TEST_NET_OVERRIDE="${net_override}" \
-		make TEST_AUTHENTICATION="$(test_authentication)" "$@"
+		TEST_AUTHENTICATION="$(test_authentication)" \
+		"$@"
 	)
 }
 
@@ -554,6 +565,9 @@ case "${1:-}" in
 		;;
 	endpoint)
 		endpoint
+		;;
+	ingress-address)
+		get_ingress_address
 		;;
 	cleanup|stop)
 		cleanup
