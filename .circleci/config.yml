@@ -128,6 +128,22 @@ commands:
               echo "This is not a pull request. Skipping kind startup..."
               exit 0
             fi
+            dump_kind_diagnostics() {
+              echo "=== docker info ==="
+              docker info || true
+              echo "=== docker ps -a ==="
+              docker ps -a || true
+              echo "=== kind clusters ==="
+              kind get clusters || true
+              echo "=== kind logs ==="
+              kind export logs /tmp/kind-logs --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" || true
+              if [ -d /tmp/kind-logs ]; then
+                find /tmp/kind-logs -maxdepth 3 -type f -print -exec sh -c 'echo "=== $1 ==="; tail -n 200 "$1"' sh {} \; || true
+              fi
+              echo "=== control-plane docker logs ==="
+              docker logs "${KIND_CLUSTER_NAME:-arangodb-driver-tests}-control-plane" || true
+            }
+            trap dump_kind_diagnostics ERR
             cat \<<EOF | kind create cluster --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" --config=-
             kind: Cluster
             apiVersion: kind.x-k8s.io/v1alpha4
