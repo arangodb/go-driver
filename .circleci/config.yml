@@ -94,11 +94,11 @@ commands:
             fi
             << parameters.test-command >>
 
-  install-minikube:
-    description: "Install kubectl and minikube for Kubernetes integration tests"
+  install-kubernetes-tools:
+    description: "Install kubectl and kind for Kubernetes integration tests"
     steps:
       - run:
-          name: Install kubectl and minikube
+          name: Install kubectl and kind
           command: |
             set -euo pipefail
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
@@ -111,34 +111,44 @@ commands:
             curl -fsSL -o kubectl "https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl"
             install kubectl /usr/local/bin/kubectl
 
-            curl -fsSL -o minikube "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
-            install minikube /usr/local/bin/minikube
+            curl -fsSL -o kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION:-v0.30.0}/kind-linux-amd64"
+            install kind /usr/local/bin/kind
 
             kubectl version --client=true
-            minikube version
+            kind version
 
-  start-minikube:
-    description: "Start a local Kubernetes cluster for integration tests"
+  start-kind:
+    description: "Start a local kind Kubernetes cluster for integration tests"
     steps:
       - run:
-          name: Start minikube
+          name: Start kind
           command: |
             set -euo pipefail
             if [ -z "$CIRCLE_PULL_REQUEST" ]; then
-              echo "This is not a pull request. Skipping minikube startup..."
+              echo "This is not a pull request. Skipping kind startup..."
               exit 0
             fi
-            minikube start \
-              --driver=docker \
-              --force \
-              --container-runtime=containerd \
-              --kubernetes-version="${K8S_VERSION:-v1.34.1}" \
-              --cpus="${MINIKUBE_CPUS:-4}" \
-              --memory="${MINIKUBE_MEMORY:-8192}" \
-              --wait=all \
-              --wait-timeout=6m
-            minikube addons enable ingress
-            kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=6m
+            cat <<EOF | kind create cluster --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.34.0}" --config=-
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+              - role: control-plane
+                kubeadmConfigPatches:
+                  - |
+                    kind: InitConfiguration
+                    nodeRegistration:
+                      kubeletExtraArgs:
+                        node-labels: "ingress-ready=true"
+                extraPortMappings:
+                  - containerPort: 80
+                    hostPort: 80
+                    protocol: TCP
+                  - containerPort: 443
+                    hostPort: 443
+                    protocol: TCP
+            EOF
+            kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+            kubectl -n ingress-nginx wait --for=condition=Ready pod --selector=app.kubernetes.io/component=controller --timeout=6m
             kubectl get nodes -o wide
 
 jobs:
@@ -315,8 +325,8 @@ jobs:
             if [ "<< parameters.needs_foxx_workspace >>" = "true" ]; then
               echo 'export TEST_RESOURCES=/home/circleci/resources/' >> "$BASH_ENV"
             fi
-      - install-minikube
-      - start-minikube
+      - install-kubernetes-tools
+      - start-kind
       - run-test-if-pr:
           test-command: make << parameters.test-to-run >>
     environment:
@@ -324,6 +334,7 @@ jobs:
       ARANGODB: << parameters.arangodb-image >>
       K8S_TEST_AUTHENTICATION: << parameters.k8s-test-authentication >>
       K8S_TLS: "<< parameters.k8s-tls >>"
+      K8S_INGRESS_ADDRESS: "127.0.0.1"
       K8S_WAIT_TIMEOUT: 25m
 
   vulncheck:
