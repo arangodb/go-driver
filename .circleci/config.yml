@@ -108,7 +108,7 @@ commands:
             apt-get update
             apt-get install -y conntrack socat openssl
 
-            curl -fsSL -o kubectl "https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl"
+            curl -fsSL -o kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION:-v1.31.12}/bin/linux/amd64/kubectl"
             install kubectl /usr/local/bin/kubectl
 
             curl -fsSL -o kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION:-v0.30.0}/kind-linux-amd64"
@@ -128,7 +128,7 @@ commands:
               echo "This is not a pull request. Skipping kind startup..."
               exit 0
             fi
-            cat \<<EOF | kind create cluster --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.34.0}" --config=-
+            cat \<<EOF | kind create cluster --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" --config=-
             kind: Cluster
             apiVersion: kind.x-k8s.io/v1alpha4
             nodes:
