@@ -232,7 +232,10 @@ func WaitForHealthyCluster(t *testing.T, client arangodb.Client, timeout time.Du
 					return nil
 				}
 
-				if checkAvailability {
+				// Kubernetes health responses expose internal *.svc endpoints.
+				// They are valid inside the cluster but not from the Dockerized
+				// test runner, which reaches ArangoDB through kubectl port-forward.
+				if checkAvailability && !isK8S() {
 					err = client.CheckAvailability(ctx, server.Endpoint)
 					if err != nil {
 						t.Logf("Server %s (Endpoint: %s) is not available, err: %v", id, server.Endpoint, err)
