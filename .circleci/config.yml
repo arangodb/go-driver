@@ -274,8 +274,7 @@ jobs:
   # KUBERNETES INTEGRATION TEST JOB
   # ----------------------------------------
   run-k8s-integration-tests:
-    executor: x86-machine-executor
-    resource_class: large
+    executor: x86-docker-executor
     parameters:
       test-to-run:
         type: string
@@ -298,6 +297,7 @@ jobs:
         description: "Enable TLS in the Kubernetes ArangoDeployment."
     steps:
       - checkout
+      - setup-docker
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
