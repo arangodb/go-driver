@@ -128,7 +128,7 @@ commands:
               echo "This is not a pull request. Skipping kind startup..."
               exit 0
             fi
-            cat <<EOF | kind create cluster --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.34.0}" --config=-
+            cat \<<EOF | kind create cluster --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.34.0}" --config=-
             kind: Cluster
             apiVersion: kind.x-k8s.io/v1alpha4
             nodes:
