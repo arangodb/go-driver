@@ -105,14 +105,14 @@ commands:
               echo "This is not a pull request. Skipping Kubernetes tool install..."
               exit 0
             fi
-            sudo apt-get update
-            sudo apt-get install -y conntrack socat openssl
+            apt-get update
+            apt-get install -y conntrack socat openssl
 
             curl -fsSL -o kubectl "https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl"
-            sudo install kubectl /usr/local/bin/kubectl
+            install kubectl /usr/local/bin/kubectl
 
             curl -fsSL -o minikube "https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
-            sudo install minikube /usr/local/bin/minikube
+            install minikube /usr/local/bin/minikube
 
             kubectl version --client=true
             minikube version
