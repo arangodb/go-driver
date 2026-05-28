@@ -26,7 +26,7 @@ make run-k8s-v2-tests
 
 ## CircleCI
 
-CircleCI runs the same Make targets through `run-k8s-integration-tests`. The job installs `kubectl` and `minikube`, starts a Docker-backed minikube cluster with the ingress addon, and runs tests from the existing Docker test container through the Kubernetes Ingress endpoint. It invokes one of:
+CircleCI runs the same Make targets through `run-k8s-integration-tests`. The job installs `kubectl` and `kind`, starts a Docker-backed kind cluster with ingress-nginx, and runs tests from the existing Docker test container through the Kubernetes Ingress endpoint. It invokes one of:
 
 - `make run-k8s-v2-tests`
 - `make run-k8s-v2-single`
@@ -40,7 +40,7 @@ Additional variants are available through explicit Make targets:
 - `make run-k8s-v2-cluster-basic-auth`
 - `make run-k8s-v2-cluster-tls-basic-auth`
 
-The CircleCI jobs are guarded by the existing pull-request check and skip minikube setup on non-PR pipelines.
+The CircleCI jobs are guarded by the existing pull-request check and skip kind setup on non-PR pipelines.
 
 Override the target or image:
 
@@ -91,7 +91,7 @@ bash ./deploy/kubernetes/run-driver-tests.sh run make run-v2-tests-single-with-a
 - `K8S_TEST_AUTHENTICATION`: driver authentication mode, `basic`, `jwt`, or `none`, default `basic`.
 - `K8S_TLS`: set to `true` to enable TLS in the `ArangoDeployment` and pass an `https://` endpoint to the tests.
 - `K8S_INGRESS_HOST`: host name used by ingress mode, default `arangodb.local`.
-- `K8S_INGRESS_ADDRESS`: IP address mapped into the Docker test container for `K8S_INGRESS_HOST`. When empty, the runner tries `minikube ip`.
+- `K8S_INGRESS_ADDRESS`: IP address mapped into the Docker test container for `K8S_INGRESS_HOST`. CircleCI sets this to `127.0.0.1` for the kind ingress port mapping. When empty, the runner tries `minikube ip` and then the Ingress load balancer status.
 - `K8S_INGRESS_TLS`: set to `false` to expose the Ingress over HTTP instead of HTTPS, default `true`.
 - `K8S_STUCK_INIT_TIMEOUT`: delete and let kube-arangodb recreate pods stuck in `init-lifecycle` longer than this, default `5m`.
 - `K8S_KEEP_DEPLOYMENT`: set to `true` to keep the deployment after a run.
