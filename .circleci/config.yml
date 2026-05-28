@@ -131,6 +131,7 @@ commands:
             minikube start \
               --driver=docker \
               --force \
+              --container-runtime=containerd \
               --kubernetes-version="${K8S_VERSION:-v1.34.1}" \
               --cpus="${MINIKUBE_CPUS:-4}" \
               --memory="${MINIKUBE_MEMORY:-8192}" \
