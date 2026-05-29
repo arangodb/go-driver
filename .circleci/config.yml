@@ -51,7 +51,7 @@ parameters:
     default: "gcr.io/gcr-for-testing/alpine:3.23"
   starterImage:
     type: string
-    default: "arangodb/arangodb-starter:0.20.0-preview-9"
+    default: "gcr.io/gcr-for-testing/arangodb/arangodb-starter:0.19.22"
   # Empty by default. Set via "Trigger Pipeline" / API to a release Make target (see publish-release workflow).
   # Same pattern as arangodb-helper/arangodb: e.g. release-v2-patch, prerelease-v2-minor.
   publish:
@@ -78,11 +78,6 @@ commands:
               done
             fi
             docker info
-            if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
-              echo "${DOCKERHUB_TOKEN}" | docker login --username "${DOCKERHUB_USERNAME}" --password-stdin
-            else
-              echo "DOCKERHUB_USERNAME/DOCKERHUB_TOKEN not set; Docker Hub pulls remain anonymous."
-            fi
 
   run-test-if-pr:
     description: "Run a test command only if this is a pull request"
@@ -449,8 +444,6 @@ workflows:
       # ========================
       - run-integration-tests:
           name: Test V1 cluster
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-tests-cluster
@@ -458,8 +451,6 @@ workflows:
 
       - run-integration-tests:
           name: Test V1 single
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-tests-single
@@ -470,8 +461,6 @@ workflows:
       # ========================
       - run-integration-tests:
           name: Test V2 cluster
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
@@ -479,8 +468,6 @@ workflows:
 
       - run-integration-tests:
           name: Test V2 cluster - DB extra features (compression)
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
@@ -489,8 +476,6 @@ workflows:
 
       - run-integration-tests:
           name: Test V2 single
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
@@ -501,8 +486,6 @@ workflows:
       # ========================
       - run-integration-tests-arm:
           name: Test V2 cluster (ARM)
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-cluster
@@ -517,8 +500,6 @@ workflows:
 
       - run-integration-tests-arm:
           name: Test V2 single (ARM)
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-v2-tests-single
@@ -529,8 +510,6 @@ workflows:
       # ========================
       - run-integration-tests:
           name: Test V3 cluster
-          context:
-            - docker-hub
           requires:
             - run-unit-tests
           needs_foxx_workspace: false
@@ -539,8 +518,6 @@ workflows:
 
       - run-integration-tests:
           name: Test V3 cluster - DB extra features (compression)
-          context:
-            - docker-hub
           requires:
             - run-unit-tests
           needs_foxx_workspace: false
@@ -550,8 +527,6 @@ workflows:
 
       - run-integration-tests:
           name: Test V3 single
-          context:
-            - docker-hub
           requires:
             - run-unit-tests
           needs_foxx_workspace: false
@@ -563,8 +538,6 @@ workflows:
       # ========================
       - run-k8s-integration-tests:
           name: Test V2 single on Kubernetes
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-k8s-v2-single
@@ -572,8 +545,6 @@ workflows:
 
       - run-k8s-integration-tests:
           name: Test V2 cluster on Kubernetes
-          context:
-            - docker-hub
           requires:
             - download-demo-data
           test-to-run: run-k8s-v2-cluster
@@ -584,8 +555,6 @@ workflows:
       # ========================
       - run-integration-tests-arm:
           name: Test V3 cluster (ARM)
-          context:
-            - docker-hub
           requires:
             - run-unit-tests
           needs_foxx_workspace: false
@@ -594,8 +563,6 @@ workflows:
 
       - run-integration-tests-arm:
           name: Test V3 single (ARM)
-          context:
-            - docker-hub
           requires:
             - run-unit-tests
           needs_foxx_workspace: false
