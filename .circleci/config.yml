@@ -144,7 +144,7 @@ commands:
               docker logs "${KIND_CLUSTER_NAME:-arangodb-driver-tests}-control-plane" || true
             }
             trap dump_kind_diagnostics ERR
-            cat \<<EOF | kind create cluster --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" --config=-
+            cat \<<EOF | kind create cluster --retain --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" --config=-
             kind: Cluster
             apiVersion: kind.x-k8s.io/v1alpha4
             nodes:
