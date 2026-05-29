@@ -83,7 +83,8 @@ bash ./deploy/kubernetes/run-driver-tests.sh run make run-v2-tests-single-with-a
 
 ## Useful Environment
 
-- `KUBE_ARANGODB_VERSION`: kube-arangodb release to install, default `1.4.3`.
+- `KUBE_ARANGODB_VERSION`: kube-arangodb release to install, default `1.2.43`.
+- `KUBE_ARANGODB_IMAGE`: kube-arangodb operator image, default `arangodb/kube-arangodb:${KUBE_ARANGODB_VERSION}`.
 - `K8S_NAMESPACE`: namespace for the temporary `ArangoDeployment`, default `default`. The operator is installed in `default`, so this keeps the test deployment in the namespace watched by that operator.
 - `K8S_DEPLOYMENT`: deployment name, default `arangodb-driver-tests`.
 - `K8S_MODE`: `Cluster` or `Single`, default `Cluster`.
