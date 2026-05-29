@@ -51,7 +51,7 @@ parameters:
     default: "gcr.io/gcr-for-testing/alpine:3.23"
   starterImage:
     type: string
-    default: "arangodb/arangodb-starter:latest"
+    default: "arangodb/arangodb-starter:0.19.22"
   # Empty by default. Set via "Trigger Pipeline" / API to a release Make target (see publish-release workflow).
   # Same pattern as arangodb-helper/arangodb: e.g. release-v2-patch, prerelease-v2-minor.
   publish:
@@ -147,6 +147,10 @@ commands:
             cat \<<EOF | kind create cluster --retain --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" --config=-
             kind: Cluster
             apiVersion: kind.x-k8s.io/v1alpha4
+            containerdConfigPatches:
+              - |-
+                [plugins."io.containerd.grpc.v1.cri".containerd]
+                  snapshotter = "native"
             nodes:
               - role: control-plane
                 kubeadmConfigPatches:
