@@ -65,6 +65,39 @@ require_tool() {
 	fi
 }
 
+dump_operator_diagnostics() {
+	echo "=== kube-arangodb operator diagnostics ===" >&2
+	kubectl -n default get deployment arango-deployment-operator -o wide || true
+	kubectl -n default describe deployment arango-deployment-operator || true
+	kubectl -n default get replicasets,pods -o wide || true
+	kubectl -n default get events --sort-by=.lastTimestamp | tail -n 30 || true
+
+	for pod in $(kubectl -n default get pods -o jsonpath='{range .items[?(@.metadata.labels.app=="arango-deployment-operator")]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
+		echo "=== describe pod/${pod} ===" >&2
+		kubectl -n default describe pod "${pod}" || true
+		echo "=== logs pod/${pod} ===" >&2
+		kubectl -n default logs "${pod}" --all-containers=true --tail=100 || true
+		echo "=== previous logs pod/${pod} ===" >&2
+		kubectl -n default logs "${pod}" --all-containers=true --previous --tail=100 || true
+	done
+}
+
+wait_for_operator_rollout() {
+	echo "Waiting for kube-arangodb operator deployment to become ready..."
+	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
+	while [ "${SECONDS}" -lt "${deadline}" ]; do
+		if kubectl -n default rollout status deployment/arango-deployment-operator --timeout=30s; then
+			return
+		fi
+		dump_operator_diagnostics
+		sleep 10
+	done
+
+	echo "ERROR: kube-arangodb operator did not become ready before timeout" >&2
+	dump_operator_diagnostics
+	exit 1
+}
+
 install_operator() {
 	if [ "${K8S_INSTALL_OPERATOR}" != "true" ]; then
 		return
@@ -73,7 +106,7 @@ install_operator() {
 	echo "Installing kube-arangodb ${KUBE_ARANGODB_VERSION} operator..."
 	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/arango-crd.yaml"
 	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/arango-deployment.yaml"
-	kubectl -n default rollout status deployment/arango-deployment-operator --timeout="${K8S_WAIT_TIMEOUT}"
+	wait_for_operator_rollout
 }
 
 apply_deployment() {
