@@ -52,6 +52,12 @@ parameters:
   starterImage:
     type: string
     default: "gcr.io/gcr-for-testing/arangodb/arangodb-starter:0.19.22"
+  kubeArangoDBVersion:
+    type: string
+    default: "1.2.43"
+  kubeArangoDBImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/arangodb/kube-arangodb:1.2.43"
   # Empty by default. Set via "Trigger Pipeline" / API to a release Make target (see publish-release workflow).
   # Same pattern as arangodb-helper/arangodb: e.g. release-v2-patch, prerelease-v2-minor.
   publish:
@@ -356,6 +362,8 @@ jobs:
       K8S_TLS: "<< parameters.k8s-tls >>"
       K8S_INGRESS_ADDRESS: "127.0.0.1"
       K8S_WAIT_TIMEOUT: 25m
+      KUBE_ARANGODB_VERSION: << pipeline.parameters.kubeArangoDBVersion >>
+      KUBE_ARANGODB_IMAGE: << pipeline.parameters.kubeArangoDBImage >>
 
   vulncheck:
     executor: golang-executor

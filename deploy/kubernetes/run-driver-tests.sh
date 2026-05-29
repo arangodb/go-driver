@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-KUBE_ARANGODB_VERSION="${KUBE_ARANGODB_VERSION:-1.4.3}"
+KUBE_ARANGODB_VERSION="${KUBE_ARANGODB_VERSION:-1.2.43}"
 K8S_NAMESPACE="${K8S_NAMESPACE:-default}"
 K8S_DEPLOYMENT="${K8S_DEPLOYMENT:-arangodb-driver-tests}"
 K8S_MODE="${K8S_MODE:-Cluster}"
@@ -28,6 +28,7 @@ K8S_TEST_AUTHENTICATION="${K8S_TEST_AUTHENTICATION:-basic}"
 K8S_TLS="${K8S_TLS:-false}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
+KUBE_ARANGODB_IMAGE="${KUBE_ARANGODB_IMAGE:-arangodb/kube-arangodb:${KUBE_ARANGODB_VERSION}}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
 
 usage() {
@@ -41,6 +42,7 @@ Usage:
 
 Environment:
   KUBE_ARANGODB_VERSION  kube-arangodb release to install (default: ${KUBE_ARANGODB_VERSION})
+  KUBE_ARANGODB_IMAGE    kube-arangodb operator image (default: ${KUBE_ARANGODB_IMAGE})
   K8S_NAMESPACE          namespace for the ArangoDeployment (default: ${K8S_NAMESPACE})
   K8S_DEPLOYMENT         ArangoDeployment name (default: ${K8S_DEPLOYMENT})
   K8S_MODE               ArangoDeployment mode: Cluster or Single (default: ${K8S_MODE})
@@ -72,7 +74,7 @@ dump_operator_diagnostics() {
 	kubectl -n default get replicasets,pods -o wide || true
 	kubectl -n default get events --sort-by=.lastTimestamp | tail -n 30 || true
 
-	for pod in $(kubectl -n default get pods -o jsonpath='{range .items[?(@.metadata.labels.app=="arango-deployment-operator")]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
+	for pod in $(kubectl -n default get pods -l app.kubernetes.io/name=kube-arangodb,release=deployment -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null); do
 		echo "=== describe pod/${pod} ===" >&2
 		kubectl -n default describe pod "${pod}" || true
 		echo "=== logs pod/${pod} ===" >&2
@@ -106,6 +108,7 @@ install_operator() {
 	echo "Installing kube-arangodb ${KUBE_ARANGODB_VERSION} operator..."
 	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/arango-crd.yaml"
 	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/arango-deployment.yaml"
+	kubectl -n default set image deployment/arango-deployment-operator operator="${KUBE_ARANGODB_IMAGE}"
 	wait_for_operator_rollout
 }
 
