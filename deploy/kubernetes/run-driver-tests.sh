@@ -26,6 +26,13 @@ K8S_INSTALL_OPERATOR="${K8S_INSTALL_OPERATOR:-true}"
 K8S_AUTHENTICATION="${K8S_AUTHENTICATION:-true}"
 K8S_TEST_AUTHENTICATION="${K8S_TEST_AUTHENTICATION:-basic}"
 K8S_TLS="${K8S_TLS:-false}"
+K8S_TEST_WORKDIR="${K8S_TEST_WORKDIR:-${ROOT_DIR}}"
+K8S_TEST_ENDPOINTS_ENV="${K8S_TEST_ENDPOINTS_ENV:-TEST_ENDPOINTS_OVERRIDE}"
+K8S_TEST_AUTHENTICATION_ENV="${K8S_TEST_AUTHENTICATION_ENV:-TEST_AUTHENTICATION_OVERRIDE}"
+K8S_TEST_LEGACY_AUTHENTICATION_ENV="${K8S_TEST_LEGACY_AUTHENTICATION_ENV:-TEST_AUTHENTICATION}"
+K8S_TEST_MODE_ENV="${K8S_TEST_MODE_ENV:-TEST_MODE_K8S}"
+K8S_TEST_NOT_WAIT_UNTIL_READY_ENV="${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV:-TEST_NOT_WAIT_UNTIL_READY}"
+K8S_TEST_NET_ENV="${K8S_TEST_NET_ENV:-TEST_NET_OVERRIDE}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 KUBE_ARANGODB_IMAGE="${KUBE_ARANGODB_IMAGE:-arangodb/kube-arangodb:${KUBE_ARANGODB_VERSION}}"
@@ -57,6 +64,7 @@ Environment:
   K8S_STUCK_INIT_TIMEOUT delete pods stuck in init-lifecycle longer than this (default: ${K8S_STUCK_INIT_TIMEOUT})
   K8S_KEEP_DEPLOYMENT    keep deployment after "run" (default: ${K8S_KEEP_DEPLOYMENT})
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
+  K8S_TEST_WORKDIR       working directory for the test command (default: ${K8S_TEST_WORKDIR})
 EOF
 }
 
@@ -103,6 +111,11 @@ wait_for_operator_rollout() {
 install_operator() {
 	if [ "${K8S_INSTALL_OPERATOR}" != "true" ]; then
 		return
+	fi
+	if [ "${K8S_NAMESPACE}" != "default" ]; then
+		echo "ERROR: K8S_INSTALL_OPERATOR=true installs kube-arangodb in the default namespace." >&2
+		echo "Use K8S_NAMESPACE=default, or preinstall an operator for ${K8S_NAMESPACE} and set K8S_INSTALL_OPERATOR=false." >&2
+		exit 1
 	fi
 
 	echo "Installing kube-arangodb ${KUBE_ARANGODB_VERSION} operator..."
@@ -432,12 +445,15 @@ test_authentication() {
 }
 
 ingress_address() {
+	local context
+
 	if [ -n "${K8S_INGRESS_ADDRESS}" ]; then
 		echo "${K8S_INGRESS_ADDRESS}"
 		return
 	fi
 
-	if command -v minikube >/dev/null 2>&1; then
+	context="$(kubectl config current-context 2>/dev/null || true)"
+	if command -v minikube >/dev/null 2>&1 && [ "${context}" = "minikube" ]; then
 		if minikube ip >/dev/null 2>&1; then
 			minikube ip
 			return
@@ -568,20 +584,37 @@ endpoint() {
 }
 
 run_command_through_ingress() {
-	local address net_override
+	local address auth endpoint net_override
+	local -a test_env
 	address="$(get_ingress_address)"
+	endpoint="$(ingress_endpoint)"
+	auth="$(test_authentication)"
 	net_override="--net=host --add-host=${K8S_INGRESS_HOST}:${address}"
+	test_env=()
 
-	echo "Running test command against $(ingress_endpoint) through ingress ${address}..."
+	if [ -n "${K8S_TEST_ENDPOINTS_ENV}" ]; then
+		test_env+=("${K8S_TEST_ENDPOINTS_ENV}=${endpoint}")
+	fi
+	if [ -n "${K8S_TEST_AUTHENTICATION_ENV}" ]; then
+		test_env+=("${K8S_TEST_AUTHENTICATION_ENV}=${auth}")
+	fi
+	if [ -n "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}" ]; then
+		test_env+=("${K8S_TEST_LEGACY_AUTHENTICATION_ENV}=${auth}")
+	fi
+	if [ -n "${K8S_TEST_MODE_ENV}" ]; then
+		test_env+=("${K8S_TEST_MODE_ENV}=k8s")
+	fi
+	if [ -n "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}" ]; then
+		test_env+=("${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1")
+	fi
+	if [ -n "${K8S_TEST_NET_ENV}" ]; then
+		test_env+=("${K8S_TEST_NET_ENV}=${net_override}")
+	fi
+
+	echo "Running test command against ${endpoint} through ingress ${address}..."
 	(
-		cd "${ROOT_DIR}"
-		TEST_ENDPOINTS_OVERRIDE="$(ingress_endpoint)" \
-		TEST_AUTHENTICATION_OVERRIDE="$(test_authentication)" \
-		TEST_MODE_K8S="k8s" \
-		TEST_NOT_WAIT_UNTIL_READY="1" \
-		TEST_NET_OVERRIDE="${net_override}" \
-		TEST_AUTHENTICATION="$(test_authentication)" \
-		"$@"
+		cd "${K8S_TEST_WORKDIR}"
+		env "${test_env[@]}" "$@"
 	)
 }
 
