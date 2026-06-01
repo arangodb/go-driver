@@ -150,31 +150,10 @@ commands:
               docker logs "${KIND_CLUSTER_NAME:-arangodb-driver-tests}-control-plane" || true
             }
             trap dump_kind_diagnostics ERR
-            cat \<<EOF | kind create cluster --retain --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" --image "${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" --config=-
-            kind: Cluster
-            apiVersion: kind.x-k8s.io/v1alpha4
-            containerdConfigPatches:
-              - |-
-                [plugins."io.containerd.grpc.v1.cri".containerd]
-                  snapshotter = "native"
-            nodes:
-              - role: control-plane
-                kubeadmConfigPatches:
-                  - |
-                    kind: InitConfiguration
-                    nodeRegistration:
-                      kubeletExtraArgs:
-                        node-labels: "ingress-ready=true"
-                extraPortMappings:
-                  - containerPort: 80
-                    hostPort: 80
-                    protocol: TCP
-                  - containerPort: 443
-                    hostPort: 443
-                    protocol: TCP
-            EOF
-            kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-            kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=6m
+            K8S_KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-arangodb-driver-tests}" \
+              K8S_KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" \
+              K8S_KIND_RETAIN=true \
+              bash ./deploy/kubernetes/run-driver-tests.sh setup-kind
             kubectl get nodes -o wide
 
 jobs:

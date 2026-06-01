@@ -6,11 +6,11 @@ The runner installs the kube-arangodb operator, creates an `ArangoDeployment`, c
 
 ## Quick Start
 
-Start from a machine with access to a Kubernetes cluster, for example minikube:
+Start from a machine with access to a Kubernetes cluster. For example, with kind:
 
 ```bash
-minikube start
-make run-k8s-v2-tests
+bash ./deploy/kubernetes/run-driver-tests.sh setup-kind
+K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-tests
 ```
 
 By default this runs the v2 Kubernetes single and cluster targets:
@@ -55,7 +55,7 @@ make run-k8s-v2-tests
 
 Other drivers need to provide:
 
-- a Kubernetes cluster in the current `kubectl` context, for example minikube, kind, k3d, or a shared test cluster
+- a Kubernetes cluster in the current `kubectl` context, for example kind, k3d, or a shared test cluster
 - `kubectl` on `PATH`
 - a command that can run that driver's integration tests against externally supplied endpoints
 - support for endpoint/auth environment variables, or a thin adapter target that maps them to the driver's own test variables
@@ -104,11 +104,12 @@ bash ./deploy/kubernetes/run-driver-tests.sh run make run-v2-tests-single-with-a
 - `K8S_TEST_AUTHENTICATION`: driver authentication mode, `basic`, `jwt`, or `none`, default `basic`.
 - `K8S_TLS`: set to `true` to enable TLS in the `ArangoDeployment` and pass an `https://` endpoint to the tests.
 - `K8S_INGRESS_HOST`: host name used by ingress mode, default `arangodb.local`.
-- `K8S_INGRESS_ADDRESS`: IP address mapped into the Docker test container for `K8S_INGRESS_HOST`. CircleCI sets this to `127.0.0.1` for the kind ingress port mapping. When empty, the runner tries `minikube ip` and then the Ingress load balancer status.
+- `K8S_INGRESS_ADDRESS`: IP address mapped into the Docker test container for `K8S_INGRESS_HOST`. CircleCI sets this to `127.0.0.1` for the kind ingress port mapping. When empty, the runner uses the Ingress load balancer status.
 - `K8S_INGRESS_TLS`: set to `false` to expose the Ingress over HTTP instead of HTTPS, default `true`.
 - `K8S_STUCK_INIT_TIMEOUT`: delete and let kube-arangodb recreate pods stuck in `init-lifecycle` longer than this, default `5m`.
 - `K8S_KEEP_DEPLOYMENT`: set to `true` to keep the deployment after a run.
 - `K8S_DELETE_NAMESPACE`: set to `true` to delete a non-default namespace during cleanup.
+- `K8S_DELETE_KIND_CLUSTER`: set to `true` to delete the kind cluster after a run.
 - `K8S_TEST_WORKDIR`: working directory for the test command, default repository root.
 - `ARANGO_ROOT_PASSWORD`: root password configured in Kubernetes and passed to tests, default `rootpw`.
 - `ARANGO_LICENSE_KEY`: optional Enterprise license key. When set, the runner creates the kube-arangodb license secret and references it from the `ArangoDeployment`.

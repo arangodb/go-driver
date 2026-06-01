@@ -33,6 +33,11 @@ K8S_TEST_LEGACY_AUTHENTICATION_ENV="${K8S_TEST_LEGACY_AUTHENTICATION_ENV:-TEST_A
 K8S_TEST_MODE_ENV="${K8S_TEST_MODE_ENV:-TEST_MODE_K8S}"
 K8S_TEST_NOT_WAIT_UNTIL_READY_ENV="${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV:-TEST_NOT_WAIT_UNTIL_READY}"
 K8S_TEST_NET_ENV="${K8S_TEST_NET_ENV:-TEST_NET_OVERRIDE}"
+K8S_KIND_CLUSTER_NAME="${K8S_KIND_CLUSTER_NAME:-arangodb-driver-tests}"
+K8S_KIND_NODE_IMAGE="${K8S_KIND_NODE_IMAGE:-kindest/node:v1.31.12}"
+K8S_KIND_RETAIN="${K8S_KIND_RETAIN:-false}"
+K8S_DELETE_KIND_CLUSTER="${K8S_DELETE_KIND_CLUSTER:-false}"
+K8S_INGRESS_NGINX_MANIFEST="${K8S_INGRESS_NGINX_MANIFEST:-https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 KUBE_ARANGODB_IMAGE="${KUBE_ARANGODB_IMAGE:-arangodb/kube-arangodb:${KUBE_ARANGODB_VERSION}}"
@@ -43,9 +48,11 @@ usage() {
 Usage:
   $0 run <test-command> [args...]
   $0 start
+  $0 setup-kind
   $0 endpoint
   $0 ingress-address
   $0 cleanup
+  $0 cleanup-kind
 
 Environment:
   KUBE_ARANGODB_VERSION  kube-arangodb release to install (default: ${KUBE_ARANGODB_VERSION})
@@ -60,11 +67,15 @@ Environment:
   ARANGO_ROOT_PASSWORD   root password configured for driver tests (default: ${ARANGO_ROOT_PASSWORD})
   ARANGO_LICENSE_KEY     optional Enterprise license key, stored in a Kubernetes secret
   K8S_INGRESS_HOST       host name used by ingress mode (default: ${K8S_INGRESS_HOST})
-  K8S_INGRESS_ADDRESS    ingress IP for Docker host mapping; auto-detected from minikube when empty
+  K8S_INGRESS_ADDRESS    ingress IP for Docker host mapping; uses Ingress status when empty
   K8S_STUCK_INIT_TIMEOUT delete pods stuck in init-lifecycle longer than this (default: ${K8S_STUCK_INIT_TIMEOUT})
   K8S_KEEP_DEPLOYMENT    keep deployment after "run" (default: ${K8S_KEEP_DEPLOYMENT})
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
   K8S_TEST_WORKDIR       working directory for the test command (default: ${K8S_TEST_WORKDIR})
+  K8S_KIND_CLUSTER_NAME  kind cluster name for "setup-kind" (default: ${K8S_KIND_CLUSTER_NAME})
+  K8S_KIND_NODE_IMAGE    kind node image for "setup-kind" (default: ${K8S_KIND_NODE_IMAGE})
+  K8S_KIND_RETAIN        retain kind nodes after setup failure (default: ${K8S_KIND_RETAIN})
+  K8S_DELETE_KIND_CLUSTER delete the kind cluster after "run" (default: ${K8S_DELETE_KIND_CLUSTER})
 EOF
 }
 
@@ -73,6 +84,60 @@ require_tool() {
 		echo "ERROR: required tool '$1' was not found in PATH" >&2
 		exit 1
 	fi
+}
+
+setup_kind() {
+	local clusters
+	local -a kind_args
+
+	require_tool kind
+	require_tool kubectl
+
+	kind_args=(create cluster --name "${K8S_KIND_CLUSTER_NAME}" --image "${K8S_KIND_NODE_IMAGE}")
+	if [ "${K8S_KIND_RETAIN}" = "true" ]; then
+		kind_args+=(--retain)
+	fi
+
+	clusters="$(kind get clusters 2>/dev/null || true)"
+	if [[ $'\n'"${clusters}"$'\n' == *$'\n'"${K8S_KIND_CLUSTER_NAME}"$'\n'* ]]; then
+		echo "kind cluster ${K8S_KIND_CLUSTER_NAME} already exists."
+		kubectl config use-context "kind-${K8S_KIND_CLUSTER_NAME}"
+	else
+		echo "Creating kind cluster ${K8S_KIND_CLUSTER_NAME}..."
+		cat <<EOF | kind "${kind_args[@]}" --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      snapshotter = "native"
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+EOF
+	fi
+
+	kubectl apply -f "${K8S_INGRESS_NGINX_MANIFEST}"
+	kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=6m
+	echo "kind is ready. Run tests with K8S_INGRESS_ADDRESS=127.0.0.1."
+}
+
+cleanup_kind() {
+	require_tool kind
+	echo "Deleting kind cluster ${K8S_KIND_CLUSTER_NAME}..."
+	kind delete cluster --name "${K8S_KIND_CLUSTER_NAME}"
 }
 
 dump_operator_diagnostics() {
@@ -445,19 +510,9 @@ test_authentication() {
 }
 
 ingress_address() {
-	local context
-
 	if [ -n "${K8S_INGRESS_ADDRESS}" ]; then
 		echo "${K8S_INGRESS_ADDRESS}"
 		return
-	fi
-
-	context="$(kubectl config current-context 2>/dev/null || true)"
-	if command -v minikube >/dev/null 2>&1 && [ "${context}" = "minikube" ]; then
-		if minikube ip >/dev/null 2>&1; then
-			minikube ip
-			return
-		fi
 	fi
 
 	kubectl -n "${K8S_NAMESPACE}" get ingress "${K8S_INGRESS_NAME}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true
@@ -561,9 +616,8 @@ run_tests() {
 
 	require_tool kubectl
 
-	start
-
 	trap cleanup_after_run EXIT
+	start
 
 	run_command_through_ingress "$@"
 }
@@ -622,6 +676,9 @@ cleanup_after_run() {
 	if [ "${K8S_KEEP_DEPLOYMENT}" != "true" ]; then
 		cleanup
 	fi
+	if [ "${K8S_DELETE_KIND_CLUSTER}" = "true" ]; then
+		cleanup_kind
+	fi
 }
 
 case "${1:-}" in
@@ -631,6 +688,12 @@ case "${1:-}" in
 		;;
 	start)
 		start
+		;;
+	setup-kind)
+		setup_kind
+		;;
+	cleanup-kind)
+		cleanup_kind
 		;;
 	endpoint)
 		endpoint
