@@ -586,7 +586,7 @@ $(ingress_tls_spec)
             pathType: Prefix
             backend:
               service:
-                name: ${K8S_DEPLOYMENT}
+                name: ${K8S_DEPLOYMENT}-ea
                 port:
                   number: ${K8S_PORT}
 EOF
