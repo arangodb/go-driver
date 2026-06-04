@@ -153,6 +153,7 @@ commands:
             K8S_KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-arangodb-driver-tests}" \
               K8S_KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" \
               K8S_KIND_RETAIN=true \
+              K8S_INGRESS_NGINX_VERSION="${INGRESS_NGINX_VERSION:-controller-v1.12.1}" \
               bash ./deploy/kubernetes/run-driver-tests.sh setup-kind
             kubectl get nodes -o wide
 

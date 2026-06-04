@@ -110,6 +110,7 @@ bash ./deploy/kubernetes/run-driver-tests.sh run make run-v2-tests-single-with-a
 - `K8S_KEEP_DEPLOYMENT`: set to `true` to keep the deployment after a run.
 - `K8S_DELETE_NAMESPACE`: set to `true` to delete a non-default namespace during cleanup.
 - `K8S_DELETE_KIND_CLUSTER`: set to `true` to delete the kind cluster after a run.
+- `K8S_INGRESS_NGINX_VERSION`: ingress-nginx release used by `setup-kind`, default `controller-v1.12.1`.
 - `K8S_TEST_WORKDIR`: working directory for the test command, default repository root.
 - `ARANGO_ROOT_PASSWORD`: root password configured in Kubernetes and passed to tests, default `rootpw`.
 - `ARANGO_LICENSE_KEY`: optional Enterprise license key. When set, the runner creates the kube-arangodb license secret and references it from the `ArangoDeployment`.
