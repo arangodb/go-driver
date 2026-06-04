@@ -557,7 +557,7 @@ create_ingress_tls_secret() {
 	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 		-keyout "${cert_dir}/tls.key" \
 		-out "${cert_dir}/tls.crt" \
-		-subj "/CN=${K8S_INGRESS_HOST}/O=${K8S_INGRESS_HOST}" >/dev/null 2>&1
+		-subj "/CN=${K8S_INGRESS_HOST}/O=${K8S_INGRESS_HOST}" -addext "subjectAltName=DNS:${K8S_INGRESS_HOST}" >/dev/null 2>&1
 
 	kubectl -n "${K8S_NAMESPACE}" create secret tls "${K8S_INGRESS_TLS_SECRET}" \
 		--key "${cert_dir}/tls.key" \
