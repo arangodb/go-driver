@@ -4,17 +4,17 @@ orbs:
 executors:
   golang-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.10
+      - image: gcr.io/gcr-for-testing/golang:1.25.11
     resource_class: arangodb/medium-amd64
 
   x86-docker-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.10
+      - image: gcr.io/gcr-for-testing/golang:1.25.11
     resource_class: arangodb/medium-amd64-privileged
 
   arm-docker-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.10
+      - image: gcr.io/gcr-for-testing/golang:1.25.11
     resource_class: arangodb/medium-arm64-privileged
 aliases:
   - &notify_slack_on_fail
@@ -39,7 +39,7 @@ aliases:
 parameters:
   goImage:
     type: string
-    default: "gcr.io/gcr-for-testing/golang:1.25.10"
+    default: "gcr.io/gcr-for-testing/golang:1.25.11"
   arangodbImageV2:
     type: string
     default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest"
@@ -94,7 +94,7 @@ commands:
       - run:
           name: Run integration tests
           command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping..."
               exit 0
             fi
@@ -107,7 +107,7 @@ commands:
           name: Install kubectl and kind
           command: |
             set -euo pipefail
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping Kubernetes tool install..."
               exit 0
             fi
@@ -130,7 +130,7 @@ commands:
           name: Start kind
           command: |
             set -euo pipefail
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping kind startup..."
               exit 0
             fi
@@ -183,7 +183,7 @@ jobs:
       - run:
           name: Download itzpapalotl demo foxx service
           command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping download..."
               exit 0
             fi
