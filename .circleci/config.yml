@@ -51,7 +51,7 @@ parameters:
     default: "gcr.io/gcr-for-testing/alpine:3.23"
   starterImage:
     type: string
-    default: "gcr.io/gcr-for-testing/arangodb/arangodb-starter:0.19.22"
+    default: "gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest"
   kubeArangoDBVersion:
     type: string
     default: "1.2.43"
