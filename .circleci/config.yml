@@ -94,7 +94,7 @@ commands:
       - run:
           name: Run integration tests
           command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping..."
               exit 0
             fi
@@ -107,7 +107,7 @@ commands:
           name: Install kubectl and kind
           command: |
             set -euo pipefail
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping Kubernetes tool install..."
               exit 0
             fi
@@ -130,7 +130,7 @@ commands:
           name: Start kind
           command: |
             set -euo pipefail
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping kind startup..."
               exit 0
             fi
@@ -183,7 +183,7 @@ jobs:
       - run:
           name: Download itzpapalotl demo foxx service
           command: |
-            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping download..."
               exit 0
             fi
