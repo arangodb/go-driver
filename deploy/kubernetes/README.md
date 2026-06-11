@@ -10,35 +10,14 @@ Start from a machine with access to a Kubernetes cluster. For example, with kind
 
 ```bash
 bash ./deploy/kubernetes/run-driver-tests.sh setup-kind
-K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-tests
+K8S_INGRESS_ADDRESS=127.0.0.1 bash ./deploy/kubernetes/run-driver-tests.sh run <test-command>
 ```
 
-By default this runs the v2 Kubernetes single and cluster targets:
-
-- `run-k8s-v2-single`
-- `run-k8s-v2-cluster`
-
-Run the default v2 Kubernetes test:
-
-```bash
-make run-k8s-v2-tests
-```
+Version-specific commands are documented next to the tests. For v2, see `v2/tests/k8s-tests.md`.
 
 ## CircleCI
 
-CircleCI runs the same Make targets through `run-k8s-integration-tests`. The job installs `kubectl` and `kind`, starts a Docker-backed kind cluster with ingress-nginx, and runs tests from the existing Docker test container through the Kubernetes Ingress endpoint. It invokes one of:
-
-- `make run-k8s-v2-tests`
-- `make run-k8s-v2-single`
-- `make run-k8s-v2-cluster`
-
-Additional variants are available through explicit Make targets:
-
-- `make run-k8s-v2-single-without-auth`
-- `make run-k8s-v2-single-basic-auth`
-- `make run-k8s-v2-single-tls-basic-auth`
-- `make run-k8s-v2-cluster-basic-auth`
-- `make run-k8s-v2-cluster-tls-basic-auth`
+CircleCI runs the same shared runner through `run-k8s-integration-tests`. The job installs `kubectl` and `kind`, starts a Docker-backed kind cluster with ingress-nginx, and runs tests from the existing Docker test container through the Kubernetes Ingress endpoint.
 
 The CircleCI jobs are guarded by the existing pull-request check and skip kind setup on non-PR pipelines.
 
