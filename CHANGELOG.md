@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Switch to Go 1.25.11 to fix security issues in the standard library (GO-2026-5039, GO-2026-5037)
 - Switch to Go 1.25.10 and bump golang.org/x/net to v0.53.0 to fix security issues (GO-2026-4971, GO-2026-4918)
 - Switch to Go 1.24.11
 - Switched to Go 1.24.13 to fix a security vulnerability
