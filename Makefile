@@ -21,6 +21,7 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
+K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
 
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
@@ -130,6 +131,10 @@ ifdef TEST_ENDPOINTS_OVERRIDE
 	TEST_ENDPOINTS := $(TEST_ENDPOINTS_OVERRIDE)
 endif
 
+ifdef TEST_AUTHENTICATION_OVERRIDE
+	TEST_AUTHENTICATION := $(TEST_AUTHENTICATION_OVERRIDE)
+endif
+
 ifdef TEST_NET_OVERRIDE
 	TEST_NET := $(TEST_NET_OVERRIDE)
 endif
@@ -161,7 +166,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests vulncheck
+.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster vulncheck
 
 all: build
 
@@ -186,6 +191,32 @@ run-tests: run-unit-tests run-tests-single run-tests-cluster
 ifeq ("$(AF_ENABLED)", "true")
 	make run-tests-resilientsingle
 endif
+
+run-k8s-v2-tests: run-k8s-v2-single run-k8s-v2-cluster
+
+run-k8s-v2-single: run-k8s-v2-single-without-auth run-k8s-v2-single-basic-auth run-k8s-v2-single-tls-basic-auth
+
+run-k8s-v2-cluster: run-k8s-v2-cluster-basic-auth run-k8s-v2-cluster-tls-basic-auth
+
+run-k8s-v2-single-without-auth:
+	@echo "Kubernetes single server, without authentication, v2"
+	@K8S_MODE=Single K8S_AUTHENTICATION=false K8S_TEST_AUTHENTICATION=none K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run make run-v2-tests-single-without-auth
+
+run-k8s-v2-single-basic-auth:
+	@echo "Kubernetes single server, with basic authentication, v2"
+	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run make run-v2-tests-single-with-auth
+
+run-k8s-v2-single-tls-basic-auth:
+	@echo "Kubernetes single server, with TLS and basic authentication, v2"
+	@K8S_MODE=Single K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run make run-v2-tests-single-with-auth
+
+run-k8s-v2-cluster-basic-auth:
+	@echo "Kubernetes cluster, with basic authentication, v2"
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run env TESTV2PARALLEL=1 make run-v2-tests-cluster-with-basic-auth
+
+run-k8s-v2-cluster-tls-basic-auth:
+	@echo "Kubernetes cluster, with TLS and basic authentication, v2"
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run env TESTV2PARALLEL=1 make run-v2-tests-cluster-with-basic-auth
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests

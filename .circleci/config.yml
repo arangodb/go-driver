@@ -51,7 +51,13 @@ parameters:
     default: "gcr.io/gcr-for-testing/alpine:3.23"
   starterImage:
     type: string
-    default: "arangodb/arangodb-starter:latest"
+    default: "gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest"
+  kubeArangoDBVersion:
+    type: string
+    default: "1.2.43"
+  kubeArangoDBImage:
+    type: string
+    default: "gcr.io/gcr-for-testing/arangodb/kube-arangodb:1.2.43"
   # Empty by default. Set via "Trigger Pipeline" / API to a release Make target (see publish-release workflow).
   # Same pattern as arangodb-helper/arangodb: e.g. release-v2-patch, prerelease-v2-minor.
   publish:
@@ -93,6 +99,63 @@ commands:
               exit 0
             fi
             << parameters.test-command >>
+
+  install-kubernetes-tools:
+    description: "Install kubectl and kind for Kubernetes integration tests"
+    steps:
+      - run:
+          name: Install kubectl and kind
+          command: |
+            set -euo pipefail
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping Kubernetes tool install..."
+              exit 0
+            fi
+            apt-get update
+            apt-get install -y conntrack socat openssl
+
+            curl -fsSL -o kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION:-v1.31.12}/bin/linux/amd64/kubectl"
+            install kubectl /usr/local/bin/kubectl
+
+            curl -fsSL -o kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION:-v0.30.0}/kind-linux-amd64"
+            install kind /usr/local/bin/kind
+
+            kubectl version --client=true
+            kind version
+
+  start-kind:
+    description: "Start a local kind Kubernetes cluster for integration tests"
+    steps:
+      - run:
+          name: Start kind
+          command: |
+            set -euo pipefail
+            if [ -z "$CIRCLE_PULL_REQUEST" ]; then
+              echo "This is not a pull request. Skipping kind startup..."
+              exit 0
+            fi
+            dump_kind_diagnostics() {
+              echo "=== docker info ==="
+              docker info || true
+              echo "=== docker ps -a ==="
+              docker ps -a || true
+              echo "=== kind clusters ==="
+              kind get clusters || true
+              echo "=== kind logs ==="
+              kind export logs /tmp/kind-logs --name "${KIND_CLUSTER_NAME:-arangodb-driver-tests}" || true
+              if [ -d /tmp/kind-logs ]; then
+                find /tmp/kind-logs -maxdepth 3 -type f -print -exec sh -c 'echo "=== $1 ==="; tail -n 200 "$1"' sh {} \; || true
+              fi
+              echo "=== control-plane docker logs ==="
+              docker logs "${KIND_CLUSTER_NAME:-arangodb-driver-tests}-control-plane" || true
+            }
+            trap dump_kind_diagnostics ERR
+            K8S_KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-arangodb-driver-tests}" \
+              K8S_KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-kindest/node:v1.31.12}" \
+              K8S_KIND_RETAIN=true \
+              K8S_INGRESS_NGINX_VERSION="${INGRESS_NGINX_VERSION:-controller-v1.12.1}" \
+              bash ./deploy/kubernetes/run-driver-tests.sh setup-kind
+            kubectl get nodes -o wide
 
 jobs:
 
@@ -224,6 +287,63 @@ jobs:
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
+
+  # ----------------------------------------
+  # KUBERNETES INTEGRATION TEST JOB
+  # ----------------------------------------
+  run-k8s-integration-tests:
+    executor: x86-docker-executor
+    parameters:
+      test-to-run:
+        type: string
+      arangodb-image:
+        type: string
+      enable-extra-db-features:
+        type: boolean
+        default: false
+      needs_foxx_workspace:
+        type: boolean
+        default: true
+        description: "v2 Foxx tests need itzpapalotl zip from download-demo-data workspace; v3+ does not."
+      k8s-test-authentication:
+        type: string
+        default: "basic"
+        description: "Driver auth mode used by the Kubernetes runner. Current K8s jobs use basic or none; jwt is supported by the runner."
+      k8s-tls:
+        type: boolean
+        default: false
+        description: "Enable TLS in the Kubernetes ArangoDeployment."
+    steps:
+      - checkout
+      - setup-docker
+      - when:
+          condition:
+            equal: [ true, << parameters.needs_foxx_workspace >> ]
+          steps:
+            - attach_workspace:
+                at: /home/circleci
+            - run:
+                name: Ensure resources directory exists
+                command: mkdir -p $HOME/resources
+      - run:
+          name: Configure Foxx demo resources mount for Dockerized tests
+          command: |
+            if [ "<< parameters.needs_foxx_workspace >>" = "true" ]; then
+              echo 'export TEST_RESOURCES=/home/circleci/resources/' >> "$BASH_ENV"
+            fi
+      - install-kubernetes-tools
+      - start-kind
+      - run-test-if-pr:
+          test-command: make << parameters.test-to-run >>
+    environment:
+      <<: *integration_test_env_core
+      ARANGODB: << parameters.arangodb-image >>
+      K8S_TEST_AUTHENTICATION: << parameters.k8s-test-authentication >>
+      K8S_TLS: "<< parameters.k8s-tls >>"
+      K8S_INGRESS_ADDRESS: "127.0.0.1"
+      K8S_WAIT_TIMEOUT: 25m
+      KUBE_ARANGODB_VERSION: << pipeline.parameters.kubeArangoDBVersion >>
+      KUBE_ARANGODB_IMAGE: << pipeline.parameters.kubeArangoDBImage >>
 
   vulncheck:
     executor: golang-executor
@@ -400,6 +520,23 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-single
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
+
+      # ========================
+      # Kubernetes Tests x86
+      # ========================
+      - run-k8s-integration-tests:
+          name: Test V2 single on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-single
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-integration-tests:
+          name: Test V2 cluster on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-cluster
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
       # V3 Tests ARM (no Foxx workspace)
