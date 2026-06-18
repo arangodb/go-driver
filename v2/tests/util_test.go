@@ -36,8 +36,25 @@ func getTestMode() string {
 	return strings.TrimSpace(os.Getenv("TEST_MODE"))
 }
 
+func k8sAccessMode() string {
+	return strings.TrimSpace(os.Getenv("TEST_MODE_K8S"))
+}
+
 func isK8S() bool {
-	return os.Getenv("TEST_MODE_K8S") == "k8s"
+	switch k8sAccessMode() {
+	case "k8s", "k8s-incluster":
+		return true
+	default:
+		return false
+	}
+}
+
+func isK8SIngress() bool {
+	return k8sAccessMode() == "k8s"
+}
+
+func isK8SInCluster() bool {
+	return k8sAccessMode() == "k8s-incluster"
 }
 
 type mode string

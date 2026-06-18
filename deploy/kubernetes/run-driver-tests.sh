@@ -37,8 +37,15 @@ K8S_KIND_CLUSTER_NAME="${K8S_KIND_CLUSTER_NAME:-arangodb-driver-tests}"
 K8S_KIND_NODE_IMAGE="${K8S_KIND_NODE_IMAGE:-kindest/node:v1.31.12}"
 K8S_KIND_RETAIN="${K8S_KIND_RETAIN:-false}"
 K8S_DELETE_KIND_CLUSTER="${K8S_DELETE_KIND_CLUSTER:-false}"
+K8S_COORDINATORS_COUNT="${K8S_COORDINATORS_COUNT:-1}"
 K8S_INGRESS_NGINX_VERSION="${K8S_INGRESS_NGINX_VERSION:-controller-v1.12.1}"
 K8S_INGRESS_NGINX_MANIFEST="${K8S_INGRESS_NGINX_MANIFEST:-https://raw.githubusercontent.com/kubernetes/ingress-nginx/${K8S_INGRESS_NGINX_VERSION}/deploy/static/provider/kind/deploy.yaml}"
+K8S_INCLUSTER_JOB_NAME="${K8S_INCLUSTER_JOB_NAME:-${K8S_DEPLOYMENT}-resiliency-incluster}"
+K8S_INCLUSTER_IMAGE="${K8S_INCLUSTER_IMAGE:-go-driver-resiliency-incluster:local}"
+K8S_INCLUSTER_TEST_RUN="${K8S_INCLUSTER_TEST_RUN:-TestResiliency_0_LoadBalancerCoordinatorDistributionInCluster}"
+K8S_KIND_REPO_MOUNT="${K8S_KIND_REPO_MOUNT:-/go-driver-src}"
+GOVERSION="${GOVERSION:-1.25.11}"
+GOV2IMAGE="${GOV2IMAGE:-golang:${GOVERSION}}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 KUBE_ARANGODB_IMAGE="${KUBE_ARANGODB_IMAGE:-arangodb/kube-arangodb:${KUBE_ARANGODB_VERSION}}"
@@ -48,6 +55,7 @@ usage() {
 	cat <<EOF
 Usage:
   $0 run <test-command> [args...]
+  $0 run-incluster
   $0 start
   $0 setup-kind
   $0 endpoint
@@ -61,6 +69,7 @@ Environment:
   K8S_NAMESPACE          namespace for the ArangoDeployment (default: ${K8S_NAMESPACE})
   K8S_DEPLOYMENT         ArangoDeployment name (default: ${K8S_DEPLOYMENT})
   K8S_MODE               ArangoDeployment mode: Cluster or Single (default: ${K8S_MODE})
+  K8S_COORDINATORS_COUNT number of coordinators in Cluster mode (default: ${K8S_COORDINATORS_COUNT})
   K8S_AUTHENTICATION     enable ArangoDB authentication in Kubernetes (default: ${K8S_AUTHENTICATION})
   K8S_TEST_AUTHENTICATION driver auth mode: basic, jwt, or none (default: ${K8S_TEST_AUTHENTICATION})
   K8S_TLS                enable TLS in the ArangoDeployment (default: ${K8S_TLS})
@@ -78,6 +87,8 @@ Environment:
   K8S_KIND_RETAIN        retain kind nodes after setup failure (default: ${K8S_KIND_RETAIN})
   K8S_DELETE_KIND_CLUSTER delete the kind cluster after "run" (default: ${K8S_DELETE_KIND_CLUSTER})
   K8S_INGRESS_NGINX_VERSION ingress-nginx release for "setup-kind" (default: ${K8S_INGRESS_NGINX_VERSION})
+  K8S_INCLUSTER_IMAGE    Docker image for in-cluster resiliency Job (default: ${K8S_INCLUSTER_IMAGE})
+  K8S_INCLUSTER_TEST_RUN go test -run filter for run-incluster (default: ${K8S_INCLUSTER_TEST_RUN})
 EOF
 }
 
@@ -103,6 +114,10 @@ setup_kind() {
 	clusters="$(kind get clusters 2>/dev/null || true)"
 	if [[ $'\n'"${clusters}"$'\n' == *$'\n'"${K8S_KIND_CLUSTER_NAME}"$'\n'* ]]; then
 		echo "kind cluster ${K8S_KIND_CLUSTER_NAME} already exists."
+		if ! docker exec "${K8S_KIND_CLUSTER_NAME}-control-plane" test -f "${K8S_KIND_REPO_MOUNT}/v2/go.mod" 2>/dev/null; then
+			echo "NOTE: existing kind cluster has no repo mount at ${K8S_KIND_REPO_MOUNT}."
+			echo "      Recreate the cluster for in-cluster resiliency tests: bash $0 cleanup-kind && bash $0 setup-kind"
+		fi
 		kubectl config use-context "kind-${K8S_KIND_CLUSTER_NAME}"
 	else
 		echo "Creating kind cluster ${K8S_KIND_CLUSTER_NAME}..."
@@ -128,6 +143,9 @@ nodes:
       - containerPort: 443
         hostPort: 443
         protocol: TCP
+    extraMounts:
+      - hostPath: ${ROOT_DIR}
+        containerPath: ${K8S_KIND_REPO_MOUNT}
 EOF
 	fi
 
@@ -194,6 +212,13 @@ install_operator() {
 
 apply_deployment() {
 	echo "Creating ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} (${K8S_MODE})..."
+	if [ "${K8S_MODE}" = "Cluster" ]; then
+		echo "Cluster topology: agents=1, dbservers=3, coordinators=${K8S_COORDINATORS_COUNT}"
+	fi
+	if kubectl -n "${K8S_NAMESPACE}" get arangodeployment "${K8S_DEPLOYMENT}" >/dev/null 2>&1; then
+		echo "Removing existing ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} before recreating..."
+		kubectl -n "${K8S_NAMESPACE}" delete arangodeployment "${K8S_DEPLOYMENT}" --wait=true --timeout=10m
+	fi
 	if [ "${K8S_NAMESPACE}" != "default" ]; then
 		kubectl create namespace "${K8S_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
 	fi
@@ -242,7 +267,7 @@ $(render_arangod_args "    ")
     count: 3
 $(render_arangod_args "    ")
   coordinators:
-    count: 1
+    count: ${K8S_COORDINATORS_COUNT}
 $(render_arangod_args "    ")
 EOF_CLUSTER
 else cat <<EOF_SINGLE
@@ -378,6 +403,32 @@ wait_for_deployment() {
 	exit 1
 }
 
+wait_for_coordinator_pods() {
+	if [ "${K8S_MODE}" != "Cluster" ]; then
+		return
+	fi
+
+	echo "Waiting for ${K8S_COORDINATORS_COUNT} coordinator pod(s) to be running..."
+	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
+	local running_count
+	while [ "${SECONDS}" -lt "${deadline}" ]; do
+		running_count="$(kubectl -n "${K8S_NAMESPACE}" get pods \
+			-l "arango_deployment=${K8S_DEPLOYMENT}" \
+			--field-selector=status.phase=Running \
+			-o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null | grep -c '\-crdn\-' || true)"
+		if [ "${running_count}" -ge "${K8S_COORDINATORS_COUNT}" ]; then
+			echo "Found ${running_count} running coordinator pod(s)"
+			return
+		fi
+		kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" || true
+		sleep 10
+	done
+
+	echo "ERROR: expected ${K8S_COORDINATORS_COUNT} running coordinator pods, found ${running_count}" >&2
+	dump_diagnostics
+	exit 1
+}
+
 has_failed_pods() {
 	local pod_states
 	pod_states="$(kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.phase}{" "}{range .status.initContainerStatuses[*]}{.state.waiting.reason}{","}{.state.terminated.reason}{","}{end}{range .status.containerStatuses[*]}{.state.waiting.reason}{","}{.state.terminated.reason}{","}{end}{"\n"}{end}' 2>/dev/null || true)"
@@ -463,6 +514,7 @@ start() {
 	apply_deployment
 	wait_for_jwt_secret_folder
 	wait_for_deployment
+	wait_for_coordinator_pods
 }
 
 ingress_endpoint() {
@@ -605,9 +657,24 @@ cleanup() {
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-ca" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_INGRESS_TLS_SECRET}" --ignore-not-found=true
 	kubectl -n "${K8S_NAMESPACE}" delete secret "${K8S_DEPLOYMENT}-license" --ignore-not-found=true
+	kubectl -n "${K8S_NAMESPACE}" delete job "${K8S_INCLUSTER_JOB_NAME}" --ignore-not-found=true
 	if [ "${K8S_DELETE_NAMESPACE}" = "true" ] && [ "${K8S_NAMESPACE}" != "default" ]; then
 		kubectl delete namespace "${K8S_NAMESPACE}" --ignore-not-found=true
 	fi
+}
+
+ensure_resiliency_coordinator_count() {
+	if ! printf '%s' "$*" | grep -qi resiliency; then
+		return
+	fi
+
+	if [ "${K8S_COORDINATORS_COUNT:-1}" -ge 3 ]; then
+		return
+	fi
+
+	echo "NOTE: resiliency tests need at least 3 coordinators; raising K8S_COORDINATORS_COUNT from ${K8S_COORDINATORS_COUNT:-1} to 3"
+	K8S_COORDINATORS_COUNT=3
+	export K8S_COORDINATORS_COUNT
 }
 
 run_tests() {
@@ -617,6 +684,7 @@ run_tests() {
 	fi
 
 	require_tool kubectl
+	ensure_resiliency_coordinator_count "$@"
 
 	trap cleanup_after_run EXIT
 	start
@@ -666,12 +734,221 @@ run_command_through_ingress() {
 	if [ -n "${K8S_TEST_NET_ENV}" ]; then
 		test_env+=("${K8S_TEST_NET_ENV}=${net_override}")
 	fi
+	test_env+=("K8S_NAMESPACE=${K8S_NAMESPACE}")
+	test_env+=("K8S_DEPLOYMENT=${K8S_DEPLOYMENT}")
+	test_env+=("K8S_COORDINATORS_COUNT=${K8S_COORDINATORS_COUNT}")
 
 	echo "Running test command against ${endpoint} through ingress ${address}..."
 	(
 		cd "${K8S_TEST_WORKDIR}"
 		env "${test_env[@]}" "$@"
 	)
+}
+
+incluster_service_endpoint() {
+	echo "http://${K8S_DEPLOYMENT}.${K8S_NAMESPACE}.svc.cluster.local:${K8S_PORT}"
+}
+
+ensure_coordinator_service_clientip_affinity() {
+	local svc
+	for svc in "${K8S_DEPLOYMENT}" "${K8S_DEPLOYMENT}-ea"; do
+		if ! kubectl -n "${K8S_NAMESPACE}" get svc "${svc}" >/dev/null 2>&1; then
+			continue
+		fi
+		echo "Setting sessionAffinity=ClientIP on service/${svc}..."
+		kubectl -n "${K8S_NAMESPACE}" patch svc "${svc}" --type=merge -p \
+			'{"spec":{"sessionAffinity":"ClientIP","sessionAffinityConfig":{"clientIP":{"timeoutSeconds":10800}}}}'
+	done
+}
+
+build_incluster_test_image() {
+	require_tool docker
+	echo "Building in-cluster resiliency test image ${K8S_INCLUSTER_IMAGE}..."
+	docker build \
+		--build-arg "GOVERSION=${GOVERSION}" \
+		-t "${K8S_INCLUSTER_IMAGE}" \
+		-f "${ROOT_DIR}/deploy/kubernetes/Dockerfile.resiliency-incluster" \
+		"${ROOT_DIR}"
+
+	if command -v kind >/dev/null 2>&1 && kubectl config current-context 2>/dev/null | grep -q '^kind-'; then
+		echo "Loading ${K8S_INCLUSTER_IMAGE} into kind cluster ${K8S_KIND_CLUSTER_NAME}..."
+		if ! kind load docker-image "${K8S_INCLUSTER_IMAGE}" --name "${K8S_KIND_CLUSTER_NAME}" 2>/dev/null; then
+			echo "kind load failed (common with native snapshotter); importing via containerd ctr..."
+			docker save "${K8S_INCLUSTER_IMAGE}" | docker exec -i "${K8S_KIND_CLUSTER_NAME}-control-plane" \
+				ctr --namespace=k8s.io images import -
+		fi
+	fi
+}
+
+kind_node_has_repo_mount() {
+	docker exec "${K8S_KIND_CLUSTER_NAME}-control-plane" test -f "${K8S_KIND_REPO_MOUNT}/v2/go.mod" 2>/dev/null
+}
+
+ensure_kind_repo_available() {
+	if ! command -v docker >/dev/null 2>&1; then
+		echo "ERROR: docker is required to stage sources on the kind node" >&2
+		exit 1
+	fi
+	if ! kubectl config current-context 2>/dev/null | grep -q '^kind-'; then
+		return
+	fi
+	if kind_node_has_repo_mount; then
+		return
+	fi
+
+	echo "Copying repository into kind node at ${K8S_KIND_REPO_MOUNT} for in-cluster tests..."
+	docker exec "${K8S_KIND_CLUSTER_NAME}-control-plane" mkdir -p "${K8S_KIND_REPO_MOUNT}"
+	docker cp "${ROOT_DIR}/." "${K8S_KIND_CLUSTER_NAME}-control-plane:${K8S_KIND_REPO_MOUNT}/"
+	if ! kind_node_has_repo_mount; then
+		echo "ERROR: failed to stage ${ROOT_DIR} on kind node at ${K8S_KIND_REPO_MOUNT}" >&2
+		exit 1
+	fi
+}
+
+incluster_job_image() {
+	if kubectl config current-context 2>/dev/null | grep -q '^kind-' && kind_node_has_repo_mount; then
+		echo "${GOV2IMAGE}"
+		return
+	fi
+	echo "${K8S_INCLUSTER_IMAGE}"
+}
+
+incluster_job_volumes_spec() {
+	if kubectl config current-context 2>/dev/null | grep -q '^kind-' && kind_node_has_repo_mount; then
+		cat <<EOF
+      volumes:
+        - name: repo
+          hostPath:
+            path: ${K8S_KIND_REPO_MOUNT}
+            type: Directory
+EOF
+	else
+		echo ""
+	fi
+}
+
+incluster_job_volume_mounts_spec() {
+	if kubectl config current-context 2>/dev/null | grep -q '^kind-' && kind_node_has_repo_mount; then
+		cat <<EOF
+          volumeMounts:
+            - name: repo
+              mountPath: /usr/code
+              readOnly: true
+EOF
+	else
+		echo ""
+	fi
+}
+
+incluster_job_image_pull_policy() {
+	if kubectl config current-context 2>/dev/null | grep -q '^kind-' && kind_node_has_repo_mount; then
+		echo "IfNotPresent"
+	else
+		echo "Never"
+	fi
+}
+
+use_kind_repo_mount() {
+	kubectl config current-context 2>/dev/null | grep -q '^kind-' && kind_node_has_repo_mount
+}
+
+run_incluster_resiliency_job() {
+	local endpoint auth testoptions job_image pull_policy
+	endpoint="$(incluster_service_endpoint)"
+	auth="$(test_authentication)"
+	testoptions="-run ${K8S_INCLUSTER_TEST_RUN}"
+	job_image="$(incluster_job_image)"
+	pull_policy="$(incluster_job_image_pull_policy)"
+
+	if use_kind_repo_mount; then
+		echo "Using kind repo mount at ${K8S_KIND_REPO_MOUNT} with image ${job_image}"
+	else
+		echo "Using pre-built image ${job_image}"
+		build_incluster_test_image
+	fi
+
+	echo "Running in-cluster resiliency test against ${endpoint} (TEST_MODE_K8S=k8s-incluster)..."
+
+	kubectl -n "${K8S_NAMESPACE}" delete job "${K8S_INCLUSTER_JOB_NAME}" --ignore-not-found=true --wait=true
+
+	cat <<EOF | kubectl apply -f -
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${K8S_INCLUSTER_JOB_NAME}
+  namespace: ${K8S_NAMESPACE}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+$(incluster_job_volumes_spec)
+      containers:
+        - name: resiliency-test
+          image: ${job_image}
+          imagePullPolicy: ${pull_policy}
+          workingDir: /usr/code/v2
+          command:
+            - sh
+            - -c
+            - go test -timeout 120m -tags "resiliency auth" -v -parallel 1 ./tests ${testoptions}
+$(incluster_job_volume_mounts_spec)
+          env:
+            - name: TEST_ENDPOINTS
+              value: "${endpoint}"
+            - name: TEST_AUTH
+              value: "${ARANGO_ROOT_PASSWORD}"
+            - name: TEST_AUTHENTICATION
+              value: "${auth}"
+            - name: TEST_MODE
+              value: cluster
+            - name: TEST_MODE_K8S
+              value: k8s-incluster
+            - name: TEST_ENABLE_RESILIENCY
+              value: "1"
+            - name: TEST_NOT_WAIT_UNTIL_READY
+              value: "1"
+            - name: TEST_JWTSECRET
+              value: testing
+            - name: K8S_NAMESPACE
+              value: "${K8S_NAMESPACE}"
+            - name: K8S_DEPLOYMENT
+              value: "${K8S_DEPLOYMENT}"
+            - name: K8S_COORDINATORS_COUNT
+              value: "${K8S_COORDINATORS_COUNT}"
+            - name: TESTOPTIONS
+              value: "${testoptions}"
+            - name: CGO_ENABLED
+              value: "0"
+            - name: GOTOOLCHAIN
+              value: auto
+EOF
+
+	kubectl -n "${K8S_NAMESPACE}" wait --for=condition=complete "job/${K8S_INCLUSTER_JOB_NAME}" --timeout="${K8S_WAIT_TIMEOUT}" || {
+		echo "ERROR: in-cluster resiliency job failed" >&2
+		kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_INCLUSTER_JOB_NAME}" || true
+		kubectl -n "${K8S_NAMESPACE}" describe "job/${K8S_INCLUSTER_JOB_NAME}" || true
+		exit 1
+	}
+	kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_INCLUSTER_JOB_NAME}"
+}
+
+run_incluster_tests() {
+	require_tool kubectl
+	if [ "${K8S_COORDINATORS_COUNT:-1}" -lt 3 ]; then
+		echo "NOTE: in-cluster resiliency tests need at least 3 coordinators; raising K8S_COORDINATORS_COUNT to 3"
+		K8S_COORDINATORS_COUNT=3
+		export K8S_COORDINATORS_COUNT
+	fi
+
+	trap cleanup_after_run EXIT
+	if [ "${K8S_SKIP_START:-false}" != "true" ]; then
+		start
+	fi
+	ensure_coordinator_service_clientip_affinity
+	ensure_kind_repo_available
+	run_incluster_resiliency_job
 }
 
 cleanup_after_run() {
@@ -687,6 +964,9 @@ case "${1:-}" in
 	run)
 		shift
 		run_tests "$@"
+		;;
+	run-incluster)
+		run_incluster_tests
 		;;
 	start)
 		start

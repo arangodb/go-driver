@@ -1,0 +1,19 @@
+ARG GOVERSION=1.25.11
+FROM golang:${GOVERSION}
+
+WORKDIR /usr/code
+
+COPY v2/go.mod v2/go.sum ./v2/
+RUN cd v2 && go mod download
+
+COPY v2/ ./v2/
+
+WORKDIR /usr/code/v2
+
+ENV CGO_ENABLED=0
+ENV GOTOOLCHAIN=auto
+
+# Default test filter; override via Job env TESTOPTIONS when needed.
+ENV TESTOPTIONS="-run TestResiliency_0_LoadBalancerCoordinatorDistributionInCluster"
+
+CMD ["sh", "-c", "go test -timeout 120m -tags \"resiliency auth\" -v -parallel 1 ./tests ${TESTOPTIONS}"]
