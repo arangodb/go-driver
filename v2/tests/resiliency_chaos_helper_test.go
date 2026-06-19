@@ -40,10 +40,15 @@ import (
 	"github.com/arangodb/go-driver/v2/connection"
 )
 
+// resiliencyClusterRecoveryTimeout is the default wait for WaitForClusterRecovery
+// and requireMinimumCoordinators on Kubernetes.
 const resiliencyClusterRecoveryTimeout = 3 * time.Minute
 
+// chaosBackend performs platform-specific coordinator failure injection and
+// infrastructure recovery waits. Implemented by k8sChaos (kubectl) and dockerChaos.
 type chaosBackend interface {
 	killRandomCoordinator(ctx context.Context, client arangodb.Client) (CoordinatorTarget, error)
+	killCoordinatorByServerID(ctx context.Context, client arangodb.Client, serverID string) (CoordinatorTarget, error)
 	waitForInfrastructureRecovery(timeout time.Duration)
 }
 
@@ -56,6 +61,7 @@ type ChaosController struct {
 
 // CoordinatorTarget identifies a coordinator instance targeted by chaos injection.
 type CoordinatorTarget struct {
+	ServerID     string
 	Endpoint     string
 	ResourceName string // docker container name or Kubernetes pod name
 }
@@ -75,7 +81,18 @@ func (c *ChaosController) KillRandomCoordinator(ctx context.Context, client aran
 	return c.backend.killRandomCoordinator(ctx, client)
 }
 
+// KillCoordinatorByServerID kills the coordinator with the given cluster server ID.
+func (c *ChaosController) KillCoordinatorByServerID(ctx context.Context, client arangodb.Client, serverID string) (CoordinatorTarget, error) {
+	return c.backend.killCoordinatorByServerID(ctx, client, serverID)
+}
+
 // WaitForClusterRecovery waits until the cluster is healthy again after chaos injection.
+//
+// On Kubernetes: WaitForHealthyCluster (ArangoDB health API) plus backend
+// waitForInfrastructureRecovery (kubectl pod count for k8sChaos).
+//
+// On Docker: polls client.Health() until every server is StatusGood and each
+// coordinator passes CheckAvailability.
 func (c *ChaosController) WaitForClusterRecovery(client arangodb.Client, timeout time.Duration) {
 	tt, ok := c.t.(*testing.T)
 	if !ok {
@@ -121,6 +138,25 @@ func (c *ChaosController) WaitForClusterRecovery(client arangodb.Client, timeout
 	c.t.Logf("Cluster recovery complete")
 }
 
+// endpointHost extracts the hostname from an ArangoDB server endpoint URL.
+// Used to map cluster health endpoints to coordinator pod IPs on Kubernetes.
+func endpointHost(endpoint string) (string, error) {
+	fixed := connection.FixupEndpointURLScheme(endpoint)
+	u, err := url.Parse(fixed)
+	if err != nil {
+		return "", fmt.Errorf("parse endpoint: %w", err)
+	}
+
+	host := u.Hostname()
+	if host == "" {
+		return "", fmt.Errorf("endpoint has no host: %q", endpoint)
+	}
+
+	return host, nil
+}
+
+// endpointPort extracts the TCP port from an ArangoDB server endpoint URL.
+// Used by dockerChaos to match arangodb-starter containers by published port.
 func endpointPort(endpoint string) (int, error) {
 	fixed := connection.FixupEndpointURLScheme(endpoint)
 	u, err := url.Parse(fixed)
@@ -141,6 +177,8 @@ func endpointPort(endpoint string) (int, error) {
 	return port, nil
 }
 
+// findContainerByPort returns the docker container whose name ends with "-<port>".
+// arangodb-starter names containers with the host port suffix.
 func findContainerByPort(containers []string, port int) (string, bool) {
 	suffix := fmt.Sprintf("-%d", port)
 	for _, name := range containers {
@@ -151,6 +189,7 @@ func findContainerByPort(containers []string, port int) (string, bool) {
 	return "", false
 }
 
+// requireResiliencyEnabled skips the test unless TEST_ENABLE_RESILIENCY is "on" or "1".
 func requireResiliencyEnabled(t testing.TB) {
 	enabled := os.Getenv("TEST_ENABLE_RESILIENCY")
 	if enabled != "on" && enabled != "1" {
@@ -158,6 +197,8 @@ func requireResiliencyEnabled(t testing.TB) {
 	}
 }
 
+// requireMinimumCoordinators blocks until cluster health reports at least min
+// coordinators, or fatals on timeout. Uses a longer wait on Kubernetes deployments.
 func requireMinimumCoordinators(t testing.TB, client arangodb.Client, min int) {
 	t.Helper()
 
@@ -190,6 +231,8 @@ func requireMinimumCoordinators(t testing.TB, client arangodb.Client, min int) {
 	}
 }
 
+// countHealthyCoordinators returns the number of coordinator entries in
+// client.Health(), or 0 when the health request fails.
 func countHealthyCoordinators(ctx context.Context, client arangodb.Client) int {
 	health, err := client.Health(ctx)
 	if err != nil {

@@ -33,35 +33,33 @@ import (
 
 const resiliencyLoadBalancerRequests = 3
 
-// TestResiliency_0_LoadBalancerCoordinatorDistribution checks how ingress/LB
-// routes driver HTTP traffic across coordinators.
+// TestResiliency_0_LoadBalancerCoordinatorDistribution observes how nginx ingress
+// routes out-of-cluster driver traffic across coordinators (TEST_MODE_K8S=k8s).
 //
-// Request flow (all HTTP from this test):
+// Request flow:
 //
-//	go-driver client
-//	  → https://arangodb.local  (TEST_ENDPOINTS_OVERRIDE, one ingress URL)
-//	  → nginx ingress  (may round-robin independently of downstream affinity)
-//	  → kube-arangodb external-access Service (often sessionAffinity: ClientIP)
-//	  → one coordinator pod
+//	go-driver (Docker test container)
+//	  → https://arangodb.local  (TEST_ENDPOINTS_OVERRIDE)
+//	  → nginx ingress
+//	  → coordinator pod IP(s) via Endpoints  (not via Service ClusterIP/kube-proxy)
 //	  → GET /_admin/status  (via client.GetServerStatus)
 //	  → response.serverInfo.serverId  (e.g. CRDN-ppwdeatg)
 //
-// Session affinity is NOT a guarantee of fixed routing:
-//   - ClientIP on the coordinator Service keys off the source IP seen at that
-//     Service (often the ingress pod IP, not the end-user app IP).
-//   - nginx ingress may open multiple upstream connections or balance per request.
-//   - HTTP/2 may multiplex streams; HTTP/1 fresh clients still share client IP.
-//   - Only 3 samples — you may see 1, 2, or 3 distinct serverIds.
+// Important: ClientIP sessionAffinity on the coordinator Service does NOT apply on
+// this path — nginx connects to pod IPs directly. nginx often sees a single source
+// IP (e.g. Docker/kind gateway), not the end-user app IP. For ClientIP stickiness,
+// see TestResiliency_0_LoadBalancerCoordinatorDistributionInCluster.
 //
-// Typical (not guaranteed) expectations:
-//   - HTTP/2 + one shared client: often 1 coordinator (connection-level stickiness).
-//   - HTTP/2 + new client per request: new TCP per client; compare with shared HTTP/2.
-//   - HTTP/1 + new client per request: often >1 coordinator when ingress has 2+ backends.
-//   - Any subtest can produce the opposite pattern; this test logs and observes.
+// This test logs coordinator distribution only; it does not assert stickiness.
+// nginx may balance per request, per upstream connection, or per HTTP/2 stream.
+// With 3 requests per subtest (resiliencyLoadBalancerRequests = 3) you may see 1, 2,
+// or 3 distinct serverIds. serverId tells which coordinator answered; the driver
+// endpoint URL stays the ingress address and does not prove TCP reuse by itself.
 //
-// Three requests per subtest (resiliencyLoadBalancerRequests = 3).
-// serverId tells which coordinator answered; driver endpoint URL stays the ingress
-// address on k8s and does not prove TCP connection reuse by itself.
+// Observed on kind (not guaranteed elsewhere):
+//   - Shared HTTP/2 client: may spread across coordinators (ingress LB).
+//   - Fresh HTTP/1 per request: often spreads when 2+ coordinator backends exist.
+//   - Any subtest may show the opposite; compare subtests to study connection reuse.
 func TestResiliency_0_LoadBalancerCoordinatorDistribution(t *testing.T) {
 	requireResiliencyEnabled(t)
 	requireClusterMode(t)
@@ -77,8 +75,8 @@ func TestResiliency_0_LoadBalancerCoordinatorDistribution(t *testing.T) {
 		t.Logf("Cluster has %d coordinators", expectedCoordinators)
 
 		// Subtest 1: ONE shared HTTP/2 client, THREE calls to GET /_admin/status.
-		// Goal: model a long-lived client (typical app). Often same coordinator;
-		// not required — ingress/driver may still spread across coordinators.
+		// Goal: model a long-lived client (typical app). Ingress may spread requests
+		// across coordinators even on one shared client — not required to stay on one.
 		t.Run("shared HTTP/2 connection", func(t *testing.T) {
 			ids := make([]string, 0, resiliencyLoadBalancerRequests)
 			for i := 0; i < resiliencyLoadBalancerRequests; i++ {
@@ -92,7 +90,7 @@ func TestResiliency_0_LoadBalancerCoordinatorDistribution(t *testing.T) {
 			logCoordinatorDistribution(t, "shared HTTP/2 connection", ids, unique)
 
 			if len(unique) == 1 {
-				t.Logf("All %d requests hit the same coordinator (common with connection-level LB)", len(ids))
+				t.Logf("All %d requests hit the same coordinator (valid ingress routing)", len(ids))
 			} else {
 				t.Logf("Requests spread across %d coordinators on a shared HTTP/2 connection", len(unique))
 			}
@@ -114,7 +112,7 @@ func TestResiliency_0_LoadBalancerCoordinatorDistribution(t *testing.T) {
 			logCoordinatorDistribution(t, "shared HTTP/1 connection", ids, unique)
 
 			if len(unique) == 1 {
-				t.Logf("All %d requests hit the same coordinator (common with connection-level LB)", len(ids))
+				t.Logf("All %d requests hit the same coordinator (valid ingress routing)", len(ids))
 			} else {
 				t.Logf("Requests spread across %d coordinators on a shared HTTP/1 connection", len(unique))
 			}
@@ -134,7 +132,7 @@ func TestResiliency_0_LoadBalancerCoordinatorDistribution(t *testing.T) {
 			switch len(unique) {
 			case 1:
 				t.Logf(
-					"All %d requests hit coordinator %s. This is valid and may indicate ingress stickiness or load-balancer routing decisions.",
+					"All %d requests hit coordinator %s. Valid ingress LB routing (not ClientIP; see in-cluster test).",
 					len(ids),
 					unique[0],
 				)
@@ -165,7 +163,7 @@ func TestResiliency_0_LoadBalancerCoordinatorDistribution(t *testing.T) {
 			switch len(unique) {
 			case 1:
 				t.Logf(
-					"All %d requests hit coordinator %s.",
+					"All %d requests hit coordinator %s. Valid ingress LB routing (not ClientIP; see in-cluster test).",
 					len(ids),
 					unique[0],
 				)

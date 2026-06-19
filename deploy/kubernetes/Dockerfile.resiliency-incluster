@@ -3,6 +3,13 @@ FROM golang:${GOVERSION}
 
 WORKDIR /usr/code
 
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends ca-certificates curl \
+	&& curl -fsSL "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+		-o /usr/local/bin/kubectl \
+	&& chmod +x /usr/local/bin/kubectl \
+	&& rm -rf /var/lib/apt/lists/*
+
 COPY v2/go.mod v2/go.sum ./v2/
 RUN cd v2 && go mod download
 
@@ -14,6 +21,6 @@ ENV CGO_ENABLED=0
 ENV GOTOOLCHAIN=auto
 
 # Default test filter; override via Job env TESTOPTIONS when needed.
-ENV TESTOPTIONS="-run TestResiliency_0_LoadBalancerCoordinatorDistributionInCluster"
+ENV TESTOPTIONS="-run TestResiliency_"
 
 CMD ["sh", "-c", "go test -timeout 120m -tags \"resiliency auth\" -v -parallel 1 ./tests ${TESTOPTIONS}"]

@@ -95,7 +95,26 @@ func (c *dockerChaos) killRandomCoordinator(ctx context.Context, client arangodb
 	}
 
 	target := targets[rand.Intn(len(targets))]
-	c.t.Logf("Killing coordinator container %s (endpoint %s)", target.ResourceName, target.Endpoint)
+	return c.killCoordinatorTarget(target)
+}
+
+func (c *dockerChaos) killCoordinatorByServerID(ctx context.Context, client arangodb.Client, serverID string) (CoordinatorTarget, error) {
+	targets, err := c.listCoordinators(ctx, client)
+	if err != nil {
+		return CoordinatorTarget{}, err
+	}
+
+	for _, target := range targets {
+		if target.ServerID == serverID {
+			return c.killCoordinatorTarget(target)
+		}
+	}
+
+	return CoordinatorTarget{}, fmt.Errorf("coordinator %q not found in cluster health", serverID)
+}
+
+func (c *dockerChaos) killCoordinatorTarget(target CoordinatorTarget) (CoordinatorTarget, error) {
+	c.t.Logf("Killing coordinator container %s (server %s, endpoint %s)", target.ResourceName, target.ServerID, target.Endpoint)
 
 	if err := c.client.killContainer(target.ResourceName); err != nil {
 		return CoordinatorTarget{}, err
@@ -118,7 +137,7 @@ func (c *dockerChaos) listCoordinators(ctx context.Context, client arangodb.Clie
 	}
 
 	var targets []CoordinatorTarget
-	for _, server := range health.Health {
+	for id, server := range health.Health {
 		if server.Role != arangodb.ServerRoleCoordinator {
 			continue
 		}
@@ -135,6 +154,7 @@ func (c *dockerChaos) listCoordinators(ctx context.Context, client arangodb.Clie
 		}
 
 		targets = append(targets, CoordinatorTarget{
+			ServerID:     string(id),
 			Endpoint:     connection.FixupEndpointURLScheme(server.Endpoint),
 			ResourceName: containerName,
 		})

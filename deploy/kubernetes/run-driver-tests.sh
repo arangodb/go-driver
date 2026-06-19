@@ -42,7 +42,8 @@ K8S_INGRESS_NGINX_VERSION="${K8S_INGRESS_NGINX_VERSION:-controller-v1.12.1}"
 K8S_INGRESS_NGINX_MANIFEST="${K8S_INGRESS_NGINX_MANIFEST:-https://raw.githubusercontent.com/kubernetes/ingress-nginx/${K8S_INGRESS_NGINX_VERSION}/deploy/static/provider/kind/deploy.yaml}"
 K8S_INCLUSTER_JOB_NAME="${K8S_INCLUSTER_JOB_NAME:-${K8S_DEPLOYMENT}-resiliency-incluster}"
 K8S_INCLUSTER_IMAGE="${K8S_INCLUSTER_IMAGE:-go-driver-resiliency-incluster:local}"
-K8S_INCLUSTER_TEST_RUN="${K8S_INCLUSTER_TEST_RUN:-TestResiliency_0_LoadBalancerCoordinatorDistributionInCluster}"
+K8S_INCLUSTER_TEST_RUN="${K8S_INCLUSTER_TEST_RUN:-TestResiliency_}"
+K8S_INCLUSTER_SERVICE_ACCOUNT="${K8S_INCLUSTER_SERVICE_ACCOUNT:-${K8S_DEPLOYMENT}-resiliency-incluster}"
 K8S_KIND_REPO_MOUNT="${K8S_KIND_REPO_MOUNT:-/go-driver-src}"
 GOVERSION="${GOVERSION:-1.25.11}"
 GOV2IMAGE="${GOV2IMAGE:-golang:${GOVERSION}}"
@@ -761,6 +762,44 @@ ensure_coordinator_service_clientip_affinity() {
 	done
 }
 
+ensure_incluster_rbac() {
+	echo "Ensuring in-cluster resiliency RBAC (service account ${K8S_INCLUSTER_SERVICE_ACCOUNT})..."
+	cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ${K8S_INCLUSTER_SERVICE_ACCOUNT}
+  namespace: ${K8S_NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ${K8S_INCLUSTER_SERVICE_ACCOUNT}
+  namespace: ${K8S_NAMESPACE}
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ${K8S_INCLUSTER_SERVICE_ACCOUNT}
+  namespace: ${K8S_NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ${K8S_INCLUSTER_SERVICE_ACCOUNT}
+subjects:
+  - kind: ServiceAccount
+    name: ${K8S_INCLUSTER_SERVICE_ACCOUNT}
+    namespace: ${K8S_NAMESPACE}
+EOF
+}
+
 build_incluster_test_image() {
 	require_tool docker
 	echo "Building in-cluster resiliency test image ${K8S_INCLUSTER_IMAGE}..."
@@ -882,6 +921,7 @@ spec:
   ttlSecondsAfterFinished: 600
   template:
     spec:
+      serviceAccountName: ${K8S_INCLUSTER_SERVICE_ACCOUNT}
       restartPolicy: Never
 $(incluster_job_volumes_spec)
       containers:
@@ -892,7 +932,16 @@ $(incluster_job_volumes_spec)
           command:
             - sh
             - -c
-            - go test -timeout 120m -tags "resiliency auth" -v -parallel 1 ./tests ${testoptions}
+            - |
+              if ! command -v kubectl >/dev/null 2>&1; then
+                apt-get update >/dev/null \
+                  && apt-get install -y --no-install-recommends ca-certificates curl >/dev/null \
+                  && curl -fsSL "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+                    -o /usr/local/bin/kubectl \
+                  && chmod +x /usr/local/bin/kubectl \
+                  && rm -rf /var/lib/apt/lists/*
+              fi
+              go test -timeout 120m -tags "resiliency auth" -v -parallel 1 ./tests ${testoptions}
 $(incluster_job_volume_mounts_spec)
           env:
             - name: TEST_ENDPOINTS
@@ -925,7 +974,11 @@ $(incluster_job_volume_mounts_spec)
               value: auto
 EOF
 
-	kubectl -n "${K8S_NAMESPACE}" wait --for=condition=complete "job/${K8S_INCLUSTER_JOB_NAME}" --timeout="${K8S_WAIT_TIMEOUT}" || {
+	kubectl -n "${K8S_NAMESPACE}" wait --for=condition=complete "job/${K8S_INCLUSTER_JOB_NAME}" --timeout="${K8S_WAIT_TIMEOUT}" &
+	local wait_pid=$!
+	echo "Waiting for in-cluster resiliency job (timeout ${K8S_WAIT_TIMEOUT}); streaming pod logs..."
+	kubectl -n "${K8S_NAMESPACE}" logs -f "job/${K8S_INCLUSTER_JOB_NAME}" --pod-running-timeout=10m 2>/dev/null || true
+	wait "${wait_pid}" || {
 		echo "ERROR: in-cluster resiliency job failed" >&2
 		kubectl -n "${K8S_NAMESPACE}" logs "job/${K8S_INCLUSTER_JOB_NAME}" || true
 		kubectl -n "${K8S_NAMESPACE}" describe "job/${K8S_INCLUSTER_JOB_NAME}" || true
@@ -947,6 +1000,7 @@ run_incluster_tests() {
 		start
 	fi
 	ensure_coordinator_service_clientip_affinity
+	ensure_incluster_rbac
 	ensure_kind_repo_available
 	run_incluster_resiliency_job
 }
