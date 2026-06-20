@@ -28,6 +28,38 @@ The following packages/files are removed in `v3`:
 - `TransactionJS` (`/_api/transaction`) -> removed in ArangoDB 4.0
 - `ReloadRoutingTable` (`/_admin/routing/reload`) -> removed because Action/Foxx microservice route reloading is removed in ArangoDB 4.0
 
+The following Foxx service methods are removed because Foxx is removed in ArangoDB 4.0:
+
+- `InstallFoxxService`
+- `UninstallFoxxService`
+- `ListInstalledFoxxServices`
+- `GetInstalledFoxxService`
+- `ReplaceFoxxService`
+- `UpgradeFoxxService`
+- `GetFoxxServiceConfiguration`
+- `UpdateFoxxServiceConfiguration`
+- `ReplaceFoxxServiceConfiguration`
+- `GetFoxxServiceDependencies`
+- `UpdateFoxxServiceDependencies`
+- `ReplaceFoxxServiceDependencies`
+- `GetFoxxServiceScripts`
+- `RunFoxxServiceScript`
+- `RunFoxxServiceTests`
+- `EnableDevelopmentMode`
+- `DisableDevelopmentMode`
+- `GetFoxxServiceReadme`
+- `GetFoxxServiceSwagger`
+- `CommitFoxxService`
+- `DownloadFoxxServiceBundle`
+
+The following task methods are removed because the `/_api/tasks` API is removed in ArangoDB 4.0:
+
+- `Task`
+- `Tasks`
+- `CreateTask`
+- `CreateTaskWithID`
+- `RemoveTask`
+
 ## Removed Fields and Replacements
 
 - `CollectionDocumentCreateOptions.Overwrite` -> use `OverwriteMode` (`overwriteMode`)

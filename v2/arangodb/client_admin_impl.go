@@ -351,6 +351,7 @@ func (c *clientAdmin) GetStartupConfigurationDescription(ctx context.Context) (m
 }
 
 // ReloadRoutingTable reloads the routing information from the _routing system collection.
+// Deprecated: Foxx route reloading is removed in ArangoDB v4.0.
 func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) error {
 	urlEndpoint := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "routing", "reload")
 
@@ -369,7 +370,7 @@ func (c *clientAdmin) ReloadRoutingTable(ctx context.Context, dbName string) err
 
 // ExecuteAdminScript executes JavaScript code on the server.
 // Note: Requires ArangoDB to be started with --javascript.allow-admin-execute enabled.
-// Deprecated: Server-side JavaScript is planned to be removed in ArangoDB v4.0.
+// Deprecated: Server-side JavaScript is removed in ArangoDB v4.0.
 func (c *clientAdmin) ExecuteAdminScript(ctx context.Context, dbName string, script *string) (interface{}, error) {
 	url := connection.NewUrl("_db", url.PathEscape(dbName), "_admin", "execute")
 
