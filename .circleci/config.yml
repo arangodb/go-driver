@@ -51,7 +51,7 @@ parameters:
     default: "gcr.io/gcr-for-testing/alpine:3.23"
   starterImage:
     type: string
-    default: "gcr.io/gcr-for-testing/arangodb/arangodb-starter:latest"
+    default: "arangodb/arangodb-starter:latest"
   kubeArangoDBVersion:
     type: string
     default: "1.2.43"
@@ -84,6 +84,25 @@ commands:
               done
             fi
             docker info
+
+  login-docker-hub:
+    description: >
+      Docker Hub login before pulling arangodb-starter. Uses DOCKER_HUB_USER and
+      DOCKER_HUB_PASSWORD from project or CircleCI context.
+    steps:
+      - run:
+          name: Login to Docker Hub
+          command: |
+            set -euo pipefail
+            USER="${DOCKER_HUB_USER:-}"
+            PASS="${DOCKER_HUB_PASSWORD:-}"
+            if [ -z "$USER" ] || [ -z "$PASS" ]; then
+              echo "Docker Hub credentials required."
+              echo "Set DOCKER_HUB_USER and DOCKER_HUB_PASSWORD in project or context."
+              echo "Workflow jobs must attach context: docker-hub"
+              exit 1
+            fi
+            echo "$PASS" | docker login -u "$USER" --password-stdin
 
   run-test-if-pr:
     description: "Run a test command only if this is a pull request"
@@ -217,6 +236,7 @@ jobs:
     steps:
       - checkout
       - setup-docker
+      - login-docker-hub
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
@@ -260,6 +280,7 @@ jobs:
     steps:
       - checkout
       - setup-docker
+      - login-docker-hub
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
@@ -316,6 +337,7 @@ jobs:
     steps:
       - checkout
       - setup-docker
+      - login-docker-hub
       - when:
           condition:
             equal: [ true, << parameters.needs_foxx_workspace >> ]
@@ -431,6 +453,8 @@ workflows:
       # V1 Tests x86
       # ========================
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V1 cluster
           requires:
             - download-demo-data
@@ -438,6 +462,8 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V1 single
           requires:
             - download-demo-data
@@ -448,6 +474,8 @@ workflows:
       # V2 Tests x86
       # ========================
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V2 cluster
           requires:
             - download-demo-data
@@ -455,6 +483,8 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V2 cluster - DB extra features (compression)
           requires:
             - download-demo-data
@@ -463,6 +493,8 @@ workflows:
           enable-extra-db-features: true
 
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V2 single
           requires:
             - download-demo-data
@@ -473,6 +505,8 @@ workflows:
       # V2 Tests ARM
       # ========================
       - run-integration-tests-arm:
+          context:
+            - docker-hub
           name: Test V2 cluster (ARM)
           requires:
             - download-demo-data
@@ -487,6 +521,8 @@ workflows:
       #     enable-extra-db-features: true
 
       - run-integration-tests-arm:
+          context:
+            - docker-hub
           name: Test V2 single (ARM)
           requires:
             - download-demo-data
@@ -497,6 +533,8 @@ workflows:
       # V3 Tests x86 (no Foxx / itzpapalotl; do not depend on download-demo-data)
       # ========================
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V3 cluster
           requires:
             - run-unit-tests
@@ -505,6 +543,8 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V3 cluster - DB extra features (compression)
           requires:
             - run-unit-tests
@@ -514,6 +554,8 @@ workflows:
           enable-extra-db-features: true
 
       - run-integration-tests:
+          context:
+            - docker-hub
           name: Test V3 single
           requires:
             - run-unit-tests
@@ -525,6 +567,8 @@ workflows:
       # Kubernetes Tests x86
       # ========================
       - run-k8s-integration-tests:
+          context:
+            - docker-hub
           name: Test V2 single on Kubernetes
           requires:
             - download-demo-data
@@ -532,6 +576,8 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       - run-k8s-integration-tests:
+          context:
+            - docker-hub
           name: Test V2 cluster on Kubernetes
           requires:
             - download-demo-data
@@ -542,6 +588,8 @@ workflows:
       # V3 Tests ARM (no Foxx workspace)
       # ========================
       - run-integration-tests-arm:
+          context:
+            - docker-hub
           name: Test V3 cluster (ARM)
           requires:
             - run-unit-tests
@@ -550,6 +598,8 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
 
       - run-integration-tests-arm:
+          context:
+            - docker-hub
           name: Test V3 single (ARM)
           requires:
             - run-unit-tests
