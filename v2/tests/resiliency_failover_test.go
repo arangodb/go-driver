@@ -28,7 +28,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/connection"
 )
+
+// resiliencyConnectionFactory builds a driver connection for resiliency scenarios.
+type resiliencyConnectionFactory func(testing.TB) connection.Connection
 
 const resiliencyFailoverResponseTimeout = 90 * time.Second
 
@@ -42,33 +47,49 @@ func TestResiliency_1_InClusterCoordinatorFailover(t *testing.T) {
 	requireClusterMode(t)
 	requireK8SInCluster(t)
 
-	client := newResiliencyClient(t, connectionJsonHttp2(t))
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+		t.Run("shared HTTP/1 connection", func(t *testing.T) {
+			runInClusterCoordinatorFailover(ctx, t, connectionJsonHttp, connectionJsonHttpFresh)
+		})
+		t.Run("shared HTTP/2 connection", func(t *testing.T) {
+			runInClusterCoordinatorFailover(ctx, t, connectionJsonHttp2, connectionJsonHttp2)
+		})
+	})
+}
+
+func runInClusterCoordinatorFailover(
+	ctx context.Context,
+	t *testing.T,
+	newClientConn resiliencyConnectionFactory,
+	freshProbeConn resiliencyConnectionFactory,
+) {
+	t.Helper()
+
+	client := newResiliencyClient(t, newClientConn(t))
 	requireMinimumCoordinators(t, client, 2)
 
-	withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-		expectedCoordinators := coordinatorCount(ctx, t, client)
-		t.Logf("Cluster has %d coordinators", expectedCoordinators)
+	expectedCoordinators := coordinatorCount(ctx, t, client)
+	t.Logf("Cluster has %d coordinators", expectedCoordinators)
 
-		stickyCoordinatorID := establishStickyCoordinatorID(ctx, t)
-		t.Logf("Sticky coordinator before kill: %s", stickyCoordinatorID)
+	stickyCoordinatorID := establishStickyCoordinatorID(ctx, t)
+	t.Logf("Sticky coordinator before kill: %s", stickyCoordinatorID)
 
-		chaos := NewChaosController(t)
-		target, err := chaos.KillCoordinatorByServerID(ctx, client, stickyCoordinatorID)
-		require.NoError(t, err)
-		t.Logf("Killed coordinator pod %s (server %s)", target.ResourceName, target.ServerID)
+	chaos := NewChaosController(t)
+	target, err := chaos.KillCoordinatorByServerID(ctx, client, stickyCoordinatorID)
+	require.NoError(t, err)
+	t.Logf("Killed coordinator pod %s (server %s)", target.ResourceName, target.ServerID)
 
-		newCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, stickyCoordinatorID)
-		require.NotEqual(t, stickyCoordinatorID, newCoordinatorID,
-			"after killing sticky coordinator, requests should fail over to a different coordinator")
-		t.Logf("Failover coordinator after kill: %s", newCoordinatorID)
+	newCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn, stickyCoordinatorID)
+	require.NotEqual(t, stickyCoordinatorID, newCoordinatorID,
+		"after killing sticky coordinator, requests should fail over to a different coordinator")
+	t.Logf("Failover coordinator after kill: %s", newCoordinatorID)
 
-		chaos.WaitForClusterRecovery(client, resiliencyClusterRecoveryTimeout)
-		require.Equal(t, expectedCoordinators, coordinatorCount(ctx, t, client),
-			"operator should restore the original coordinator count")
+	chaos.WaitForClusterRecovery(client, resiliencyClusterRecoveryTimeout)
+	require.Equal(t, expectedCoordinators, coordinatorCount(ctx, t, client),
+		"operator should restore the original coordinator count")
 
-		postRecoveryID := establishStickyCoordinatorID(ctx, t)
-		t.Logf("Sticky coordinator after recovery: %s", postRecoveryID)
-	})
+	postRecoveryID := establishStickyCoordinatorID(ctx, t)
+	t.Logf("Sticky coordinator after recovery: %s", postRecoveryID)
 }
 
 // TestResiliency_1_IngressCoordinatorFailover kills a coordinator while the driver
@@ -82,37 +103,54 @@ func TestResiliency_1_IngressCoordinatorFailover(t *testing.T) {
 	requireClusterMode(t)
 	requireK8SIngress(t)
 
-	client := newResiliencyClient(t, connectionJsonHttp2(t))
-	requireMinimumCoordinators(t, client, 2)
 	waitForMinimumIngressBackends(t, 2, resiliencyClusterRecoveryTimeout)
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-		expectedCoordinators := coordinatorCount(ctx, t, client)
-		t.Logf("Cluster has %d coordinators", expectedCoordinators)
-
-		baselineCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout)
-		t.Logf("Baseline coordinator before kill: %s", baselineCoordinatorID)
-
-		chaos := NewChaosController(t)
-		target, err := chaos.KillRandomCoordinator(ctx, client)
-		require.NoError(t, err)
-		t.Logf("Killed coordinator pod %s (server %s)", target.ResourceName, target.ServerID)
-
-		newCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout)
-		t.Logf("Coordinator after kill: %s", newCoordinatorID)
-		if newCoordinatorID == baselineCoordinatorID {
-			t.Logf("Coordinator ID unchanged after kill; valid when ingress/LB keeps routing to a surviving coordinator")
-		} else {
-			t.Logf("Coordinator ID changed from %s to %s after kill", baselineCoordinatorID, newCoordinatorID)
-		}
-
-		chaos.WaitForClusterRecovery(client, resiliencyClusterRecoveryTimeout)
-		require.Equal(t, expectedCoordinators, coordinatorCount(ctx, t, client),
-			"operator should restore the original coordinator count")
-
-		finalCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout)
-		t.Logf("Coordinator after operator recovery: %s", finalCoordinatorID)
+		t.Run("shared HTTP/1 connection", func(t *testing.T) {
+			runIngressCoordinatorFailover(ctx, t, connectionJsonHttp, connectionJsonHttpFresh)
+		})
+		t.Run("shared HTTP/2 connection", func(t *testing.T) {
+			runIngressCoordinatorFailover(ctx, t, connectionJsonHttp2, connectionJsonHttp2)
+		})
 	})
+}
+
+func runIngressCoordinatorFailover(
+	ctx context.Context,
+	t *testing.T,
+	newClientConn resiliencyConnectionFactory,
+	freshProbeConn resiliencyConnectionFactory,
+) {
+	t.Helper()
+
+	client := newResiliencyClient(t, newClientConn(t))
+	requireMinimumCoordinators(t, client, 2)
+
+	expectedCoordinators := coordinatorCount(ctx, t, client)
+	t.Logf("Cluster has %d coordinators", expectedCoordinators)
+
+	baselineCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn)
+	t.Logf("Baseline coordinator before kill: %s", baselineCoordinatorID)
+
+	chaos := NewChaosController(t)
+	target, err := chaos.KillRandomCoordinator(ctx, client)
+	require.NoError(t, err)
+	t.Logf("Killed coordinator pod %s (server %s)", target.ResourceName, target.ServerID)
+
+	newCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn)
+	t.Logf("Coordinator after kill: %s", newCoordinatorID)
+	if newCoordinatorID == baselineCoordinatorID {
+		t.Logf("Coordinator ID unchanged after kill; valid when ingress/LB keeps routing to a surviving coordinator")
+	} else {
+		t.Logf("Coordinator ID changed from %s to %s after kill", baselineCoordinatorID, newCoordinatorID)
+	}
+
+	chaos.WaitForClusterRecovery(client, resiliencyClusterRecoveryTimeout)
+	require.Equal(t, expectedCoordinators, coordinatorCount(ctx, t, client),
+		"operator should restore the original coordinator count")
+
+	finalCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn)
+	t.Logf("Coordinator after operator recovery: %s", finalCoordinatorID)
 }
 
 func establishStickyCoordinatorID(ctx context.Context, t testing.TB) string {
@@ -123,17 +161,24 @@ func establishStickyCoordinatorID(ctx context.Context, t testing.TB) string {
 	return ids[0]
 }
 
-// waitForCoordinatorResponse retries GET /_admin/status through fresh HTTP/1 clients
-// until a coordinator responds. Fresh connections avoid stale TCP sessions to a killed backend.
+// waitForCoordinatorResponse retries GET /_admin/status through fresh clients (one per
+// attempt) until a coordinator responds. Fresh connections avoid stale TCP sessions to a
+// killed backend. freshProbeConn should match the protocol under test (HTTP/1 or HTTP/2).
 // Optional excludeCoordinatorIDs keeps retrying while routing still hits a coordinator that
 // must no longer serve traffic (e.g. sticky target before kube-proxy/endpoints update).
-func waitForCoordinatorResponse(ctx context.Context, t testing.TB, timeout time.Duration, excludeCoordinatorIDs ...string) string {
+func waitForCoordinatorResponse(
+	ctx context.Context,
+	t testing.TB,
+	timeout time.Duration,
+	freshProbeConn resiliencyConnectionFactory,
+	excludeCoordinatorIDs ...string,
+) string {
 	t.Helper()
 
 	var coordinatorID string
 	err := NewTimeout(func() error {
 		return withContext(5*time.Second, func(reqCtx context.Context) error {
-			perRequestClient := newResiliencyClient(t, connectionJsonHttpFresh(t))
+			perRequestClient := newResiliencyClient(t, freshProbeConn(t))
 			id, err := respondingCoordinatorID(reqCtx, perRequestClient)
 			if err != nil {
 				if isRetryableConnectionError(err) {
