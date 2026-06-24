@@ -21,9 +21,13 @@
 package tests
 
 import (
+	"crypto/tls"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -69,4 +73,45 @@ func getEndpointsFromEnv(t testing.TB) []string {
 		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
 	}
 	return eps
+}
+
+func ingressHostHeaderFromEnv() string {
+	return strings.TrimSpace(os.Getenv("TEST_INGRESS_HOST"))
+}
+
+type hostHeaderRoundTripper struct {
+	host string
+	base http.RoundTripper
+}
+
+func (h hostHeaderRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Host = h.host
+	return h.base.RoundTrip(req)
+}
+
+func wrapTransportWithIngressHost(base http.RoundTripper) http.RoundTripper {
+	host := ingressHostHeaderFromEnv()
+	if host == "" {
+		return base
+	}
+	return hostHeaderRoundTripper{host: host, base: base}
+}
+
+func testHTTPTransport() *http.Transport {
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	if host := ingressHostHeaderFromEnv(); host != "" {
+		tlsConfig.ServerName = host
+	}
+
+	return &http.Transport{
+		TLSClientConfig: tlsConfig,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 90 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 }

@@ -27,6 +27,9 @@ ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
 endif
 
+# Ingress resiliency tests default to verbose go test output. Set K8S_RESILIENCY_TEST_VERBOSE= to disable.
+K8S_RESILIENCY_TEST_VERBOSE ?= -v
+
 CGO_ENABLED=0
 ifdef RACE
 	TESTVERBOSEOPTIONS += -race
@@ -166,7 +169,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster vulncheck
+.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster run-k8s-v2-resiliency-ingress-restart run-k8s-v2-resiliency-ingress-restart-tls vulncheck
 
 all: build
 
@@ -217,6 +220,16 @@ run-k8s-v2-cluster-basic-auth:
 run-k8s-v2-cluster-tls-basic-auth:
 	@echo "Kubernetes cluster, with TLS and basic authentication, v2"
 	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run env TESTV2PARALLEL=1 make run-v2-tests-cluster-with-basic-auth
+
+run-k8s-v2-resiliency-ingress-restart:
+	@echo "Kubernetes cluster ingress restart resiliency tests, HTTP ingress, v2"
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run-host \
+		sh -c 'cd v2 && go test -tags resiliency -timeout 30m $(K8S_RESILIENCY_TEST_VERBOSE) -run '"'"'TestResiliency_IngressRestart'"'"' ./tests'
+
+run-k8s-v2-resiliency-ingress-restart-tls:
+	@echo "Kubernetes cluster ingress restart resiliency tests, HTTPS ingress, v2"
+	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run-host \
+		sh -c 'cd v2 && go test -tags resiliency -timeout 30m $(K8S_RESILIENCY_TEST_VERBOSE) -run '"'"'TestResiliency_IngressRestart'"'"' ./tests'
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
