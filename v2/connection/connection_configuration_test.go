@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/http2"
 )
 
 func Test_IsCleartextEndpoint(t *testing.T) {
@@ -50,46 +51,56 @@ func Test_IsCleartextEndpoint(t *testing.T) {
 }
 
 func Test_DefaultHTTP2ConfigurationWrapper_TransportSelection(t *testing.T) {
+	transport := func(cfg Http2Configuration) *http2.Transport {
+		h2Transport, ok := cfg.Transport.(*http2.Transport)
+		require.True(t, ok, "expected *http2.Transport")
+		return h2Transport
+	}
+
 	t.Run("http endpoint uses h2c transport", func(t *testing.T) {
 		ep := NewRoundRobinEndpoints([]string{"http://localhost:8529"})
 		cfg := DefaultHTTP2ConfigurationWrapper(ep, false)
+		tsp := transport(cfg)
 
-		require.NotNil(t, cfg.Transport)
-		assert.True(t, cfg.Transport.AllowHTTP, "h2c requires AllowHTTP=true")
-		assert.NotNil(t, cfg.Transport.DialTLSContext, "h2c requires a custom DialTLSContext for plain TCP")
+		require.NotNil(t, tsp)
+		assert.True(t, tsp.AllowHTTP, "h2c requires AllowHTTP=true")
+		assert.NotNil(t, tsp.DialTLSContext, "h2c requires a custom DialTLSContext for plain TCP")
 	})
 
 	t.Run("http endpoint with insecureSkipVerify still uses h2c transport", func(t *testing.T) {
 		ep := NewRoundRobinEndpoints([]string{"http://localhost:8529"})
 		cfg := DefaultHTTP2ConfigurationWrapper(ep, true)
+		tsp := transport(cfg)
 
-		require.NotNil(t, cfg.Transport)
-		assert.True(t, cfg.Transport.AllowHTTP, "h2c requires AllowHTTP=true")
-		assert.NotNil(t, cfg.Transport.DialTLSContext, "h2c requires a custom DialTLSContext for plain TCP")
-		assert.False(t, cfg.Transport.TLSClientConfig.InsecureSkipVerify,
+		require.NotNil(t, tsp)
+		assert.True(t, tsp.AllowHTTP, "h2c requires AllowHTTP=true")
+		assert.NotNil(t, tsp.DialTLSContext, "h2c requires a custom DialTLSContext for plain TCP")
+		assert.False(t, tsp.TLSClientConfig.InsecureSkipVerify,
 			"InsecureSkipVerify should not be set on h2c transport")
 	})
 
 	t.Run("https endpoint with insecureSkipVerify=false uses standard TLS", func(t *testing.T) {
 		ep := NewRoundRobinEndpoints([]string{"https://localhost:8529"})
 		cfg := DefaultHTTP2ConfigurationWrapper(ep, false)
+		tsp := transport(cfg)
 
-		require.NotNil(t, cfg.Transport)
-		assert.False(t, cfg.Transport.AllowHTTP)
-		assert.Nil(t, cfg.Transport.DialTLSContext, "standard TLS should not override DialTLSContext")
-		require.NotNil(t, cfg.Transport.TLSClientConfig)
-		assert.False(t, cfg.Transport.TLSClientConfig.InsecureSkipVerify)
+		require.NotNil(t, tsp)
+		assert.False(t, tsp.AllowHTTP)
+		assert.Nil(t, tsp.DialTLSContext, "standard TLS should not override DialTLSContext")
+		require.NotNil(t, tsp.TLSClientConfig)
+		assert.False(t, tsp.TLSClientConfig.InsecureSkipVerify)
 	})
 
 	t.Run("https endpoint with insecureSkipVerify=true skips TLS verification", func(t *testing.T) {
 		ep := NewRoundRobinEndpoints([]string{"https://localhost:8529"})
 		cfg := DefaultHTTP2ConfigurationWrapper(ep, true)
+		tsp := transport(cfg)
 
-		require.NotNil(t, cfg.Transport)
-		assert.False(t, cfg.Transport.AllowHTTP)
-		assert.NotNil(t, cfg.Transport.DialTLSContext, "insecure TLS requires a custom DialTLSContext")
-		require.NotNil(t, cfg.Transport.TLSClientConfig)
-		assert.True(t, cfg.Transport.TLSClientConfig.InsecureSkipVerify)
+		require.NotNil(t, tsp)
+		assert.False(t, tsp.AllowHTTP)
+		assert.NotNil(t, tsp.DialTLSContext, "insecure TLS requires a custom DialTLSContext")
+		require.NotNil(t, tsp.TLSClientConfig)
+		assert.True(t, tsp.TLSClientConfig.InsecureSkipVerify)
 	})
 
 	t.Run("mixed-scheme endpoint panics", func(t *testing.T) {

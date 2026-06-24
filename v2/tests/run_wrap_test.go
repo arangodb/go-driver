@@ -24,7 +24,6 @@ import (
 	"context"
 	"crypto/tls"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"testing"
@@ -251,20 +250,11 @@ func getRandomEndpointsManager(t testing.TB) connection.Endpoint {
 }
 
 func connectionJsonHttp(t testing.TB) connection.Connection {
+	transport := wrapTransportWithIngressHost(testHTTPTransport())
 	h := connection.HttpConfiguration{
 		Endpoint:    getRandomEndpointsManager(t),
 		ContentType: connection.ApplicationJSON,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 90 * time.Second,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
+		Transport:   transport,
 	}
 
 	c := connection.NewHttpConnection(h)
@@ -277,15 +267,19 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 
 func connectionJsonHttp2(t testing.TB) connection.Connection {
 	endpoints := getRandomEndpointsManager(t)
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	if host := ingressHostHeaderFromEnv(); host != "" {
+		tlsConfig.ServerName = host
+	}
+	h2Transport := &http2.Transport{
+		TLSClientConfig: tlsConfig,
+		AllowHTTP:       true,
+		DialTLSContext:  connection.NewHTTP2DialForEndpoint(endpoints),
+	}
 	h := connection.Http2Configuration{
 		Endpoint:    endpoints,
 		ContentType: connection.ApplicationJSON,
-		Transport: &http2.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			AllowHTTP:       true,
-
-			DialTLSContext: connection.NewHTTP2DialForEndpoint(endpoints),
-		},
+		Transport:   wrapTransportWithIngressHost(h2Transport),
 	}
 
 	c := connection.NewHttp2Connection(h)

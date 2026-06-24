@@ -21,6 +21,8 @@
 package connection
 
 import (
+	"net/http"
+
 	"golang.org/x/net/http2"
 )
 
@@ -32,10 +34,10 @@ type Http2Configuration struct {
 
 	ArangoDBConfig ArangoDBConfiguration
 
-	Transport *http2.Transport
+	Transport http.RoundTripper
 }
 
-func (h Http2Configuration) getTransport() *http2.Transport {
+func (h Http2Configuration) getTransport() http.RoundTripper {
 	if h.Transport != nil {
 		return h.Transport
 	}
