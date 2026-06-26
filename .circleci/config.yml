@@ -334,6 +334,10 @@ jobs:
         type: boolean
         default: false
         description: "Enable TLS in the Kubernetes ArangoDeployment."
+      k8s-wait-timeout:
+        type: string
+        default: "25m"
+        description: "Timeout for kube-arangodb deployment readiness (resiliency uses 3 coordinators)."
     steps:
       - checkout
       - setup-docker
@@ -363,7 +367,7 @@ jobs:
       K8S_TEST_AUTHENTICATION: << parameters.k8s-test-authentication >>
       K8S_TLS: "<< parameters.k8s-tls >>"
       K8S_INGRESS_ADDRESS: "127.0.0.1"
-      K8S_WAIT_TIMEOUT: 25m
+      K8S_WAIT_TIMEOUT: << parameters.k8s-wait-timeout >>
       KUBE_ARANGODB_VERSION: << pipeline.parameters.kubeArangoDBVersion >>
       KUBE_ARANGODB_IMAGE: << pipeline.parameters.kubeArangoDBImage >>
 
@@ -583,6 +587,14 @@ workflows:
             - download-demo-data
           test-to-run: run-k8s-v2-cluster
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-integration-tests:
+          name: Test V2 resiliency on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-resiliency
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+          k8s-wait-timeout: 35m
 
       # ========================
       # V3 Tests ARM (no Foxx workspace)
