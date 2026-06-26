@@ -165,7 +165,7 @@ func WrapB(t *testing.B, w WrapperB) {
 }
 
 func newClient(t testing.TB, connection connection.Connection) arangodb.Client {
-	return waitForConnection(t, arangodb.NewClient(connection))
+	return waitForConnectionTimeout(t, arangodb.NewClient(connection), 1*time.Minute)
 }
 
 type clusterEndpointsResponse struct {
@@ -177,6 +177,10 @@ type clusterEndpoint struct {
 }
 
 func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
+	return waitForConnectionTimeout(t, client, 1*time.Minute)
+}
+
+func waitForConnectionTimeout(t testing.TB, client arangodb.Client, timeout time.Duration) arangodb.Client {
 	// For Active Failover, we need to track the leader endpoint
 	var nextEndpoint = -1
 
@@ -230,7 +234,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 
 			return Interrupt{}
 		})
-	}).TimeoutT(t, 1*time.Minute, 1*time.Second)
+	}).TimeoutT(t, timeout, 1*time.Second)
 
 	return client
 }
