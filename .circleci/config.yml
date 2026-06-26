@@ -589,6 +589,8 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       - run-k8s-integration-tests:
+          context:
+            - docker-hub
           name: Test V2 resiliency on Kubernetes
           requires:
             - download-demo-data
