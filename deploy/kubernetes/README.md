@@ -19,6 +19,8 @@ Version-specific commands are documented next to the tests. For v2, see `v2/test
 
 CircleCI runs the same shared runner through `run-k8s-integration-tests`. The job installs `kubectl` and `kind`, starts a Docker-backed kind cluster with ingress-nginx, and runs tests from the existing Docker test container through the Kubernetes Ingress endpoint.
 
+Pull requests also run `make run-k8s-v2-resiliency` (3 coordinators, ingress/coordinator chaos scenarios; ~10 minutes). Resiliency jobs use a longer `K8S_WAIT_TIMEOUT` because the cluster deploys three coordinators.
+
 The CircleCI jobs are guarded by the existing pull-request check and skip kind setup on non-PR pipelines.
 
 Override the target or image:
