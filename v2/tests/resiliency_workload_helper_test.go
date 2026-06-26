@@ -184,8 +184,10 @@ func assertWorkloadRecovered(t testing.TB, stats *versionWorkloadStats) {
 	require.Greater(t, stats.totalAttempts(), 0, "workload did not issue any requests")
 	require.GreaterOrEqual(t, successesBefore, 1, "expected at least one successful request before ingress restart")
 	require.GreaterOrEqual(t, successesAfter, 1, "expected at least one successful request after ingress recovery")
-	require.Greater(t, successesBefore+successesAfter, failures,
-		"expected more successes than failures overall; possible pathological failure rate")
+	require.GreaterOrEqual(t, successesBefore, failuresBefore,
+		"unexpected failures before ingress restart")
+	require.GreaterOrEqual(t, successesAfter, failuresAfter,
+		"unexpected failures after ingress recovery; possible pathological failure rate")
 	t.Logf("workload summary: successesBefore=%d successesAfter=%d failures=%d (before=%d during=%d after=%d) totalAttempts=%d",
 		successesBefore, successesAfter, failures, failuresBefore, failuresDuring, failuresAfter, stats.totalAttempts())
 }

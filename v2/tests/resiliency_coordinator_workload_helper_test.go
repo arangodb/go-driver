@@ -178,8 +178,10 @@ func assertInsertWorkloadRecovered(t testing.TB, stats *insertWorkloadStats) {
 	require.Greater(t, stats.totalAttempts(), 0, "insert workload did not issue any requests")
 	require.GreaterOrEqual(t, successesBefore, 1, "expected at least one successful insert before coordinator failure")
 	require.GreaterOrEqual(t, successesAfter, 1, "expected at least one successful insert after coordinator recovery")
-	require.Greater(t, successesBefore+successesAfter, failures,
-		"expected more successes than failures overall; possible pathological failure rate")
+	require.GreaterOrEqual(t, successesBefore, failuresBefore,
+		"unexpected failures before coordinator failure")
+	require.GreaterOrEqual(t, successesAfter, failuresAfter,
+		"unexpected failures after coordinator recovery; possible pathological failure rate")
 	t.Logf("insert workload summary: successesBefore=%d successesAfter=%d failures=%d (before=%d during=%d after=%d) totalAttempts=%d",
 		successesBefore, successesAfter, failures, failuresBefore, failuresDuring, failuresAfter, stats.totalAttempts())
 }
