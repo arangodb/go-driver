@@ -33,8 +33,8 @@ import (
 	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
-// versionWorkloadStats tracks request outcomes across the ingress restart timeline.
-type versionWorkloadStats struct {
+// insertWorkloadStats tracks insert outcomes across a coordinator failure timeline.
+type insertWorkloadStats struct {
 	mu sync.Mutex
 
 	successes        int
@@ -46,11 +46,10 @@ type versionWorkloadStats struct {
 	successesAfter   int
 	successesPending int
 	restartStarted   bool
-	ingressReady     bool
+	recoveryReady    bool
 }
 
-// recordSuccess increments success counters for the current restart phase.
-func (s *versionWorkloadStats) recordSuccess() {
+func (s *insertWorkloadStats) recordSuccess() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -58,16 +57,14 @@ func (s *versionWorkloadStats) recordSuccess() {
 	switch {
 	case !s.restartStarted:
 		s.successesBefore++
-	case s.ingressReady:
+	case s.recoveryReady:
 		s.successesAfter++
 	default:
-		// Success while restart is in progress; credited to "after" on markIngressReady().
 		s.successesPending++
 	}
 }
 
-// recordFailure increments the failure counter for the current restart phase.
-func (s *versionWorkloadStats) recordFailure() {
+func (s *insertWorkloadStats) recordFailure() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -75,63 +72,62 @@ func (s *versionWorkloadStats) recordFailure() {
 	switch {
 	case !s.restartStarted:
 		s.failuresBefore++
-	case s.ingressReady:
+	case s.recoveryReady:
 		s.failuresAfter++
 	default:
 		s.failuresDuring++
 	}
 }
 
-// markRestartStarted records that the ingress restart has begun.
-func (s *versionWorkloadStats) markRestartStarted() {
+func (s *insertWorkloadStats) markRestartStarted() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.restartStarted = true
 }
 
-// markIngressReady records that the ingress controller rollout has completed and
-// credits any successes observed during the restart window toward post-recovery.
-func (s *versionWorkloadStats) markIngressReady() {
+func (s *insertWorkloadStats) markRecoveryReady() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.ingressReady = true
+	s.recoveryReady = true
 	if s.successesPending > 0 {
 		s.successesAfter += s.successesPending
 		s.successesPending = 0
 	}
 }
 
-// snapshot returns a thread-safe copy of the before/after success and failure counts.
-func (s *versionWorkloadStats) snapshot() (successesBefore, successesAfter, failures int) {
+func (s *insertWorkloadStats) snapshot() (successesBefore, successesAfter, failures int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.successesBefore, s.successesAfter, s.failures
 }
 
-func (s *versionWorkloadStats) failureSnapshot() (failuresBefore, failuresDuring, failuresAfter int) {
+func (s *insertWorkloadStats) failureSnapshot() (failuresBefore, failuresDuring, failuresAfter int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.failuresBefore, s.failuresDuring, s.failuresAfter
 }
 
-// totalAttempts returns the number of workload requests issued (successes and failures).
-func (s *versionWorkloadStats) totalAttempts() int {
+func (s *insertWorkloadStats) totalAttempts() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.successes + s.failures
 }
 
-const versionWorkloadInterval = 100 * time.Millisecond
+const insertWorkloadInterval = 50 * time.Millisecond
 
-// runVersionWorkload issues continuous client.Version requests until ctx is cancelled.
-func runVersionWorkload(ctx context.Context, client arangodb.Client, stats *versionWorkloadStats) {
+// runInsertWorkload issues continuous document inserts until ctx is cancelled.
+func runInsertWorkload(ctx context.Context, col arangodb.Collection, stats *insertWorkloadStats) {
+	counter := 0
 	for {
 		if err := ctx.Err(); err != nil {
 			return
 		}
 
+		counter++
 		reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		_, err := client.Version(reqCtx)
+		_, err := col.CreateDocument(reqCtx, map[string]any{
+			"value": counter,
+		})
 		cancel()
 
 		if ctx.Err() != nil {
@@ -147,15 +143,14 @@ func runVersionWorkload(ctx context.Context, client arangodb.Client, stats *vers
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(versionWorkloadInterval):
+		case <-time.After(insertWorkloadInterval):
 		}
 	}
 }
 
-// waitForWorkloadSuccesses blocks until the workload reaches minSuccesses before or after restart.
-func waitForWorkloadSuccesses(
+func waitForInsertSuccesses(
 	t testing.TB,
-	stats *versionWorkloadStats,
+	stats *insertWorkloadStats,
 	beforeRestart bool,
 	minSuccesses int,
 	timeout time.Duration,
@@ -175,17 +170,16 @@ func waitForWorkloadSuccesses(
 	}).TimeoutT(t, timeout, 250*time.Millisecond)
 }
 
-// assertWorkloadRecovered verifies that requests succeeded both before and after ingress recovery.
-func assertWorkloadRecovered(t testing.TB, stats *versionWorkloadStats) {
+func assertInsertWorkloadRecovered(t testing.TB, stats *insertWorkloadStats) {
 	t.Helper()
 
 	successesBefore, successesAfter, failures := stats.snapshot()
 	failuresBefore, failuresDuring, failuresAfter := stats.failureSnapshot()
-	require.Greater(t, stats.totalAttempts(), 0, "workload did not issue any requests")
-	require.GreaterOrEqual(t, successesBefore, 1, "expected at least one successful request before ingress restart")
-	require.GreaterOrEqual(t, successesAfter, 1, "expected at least one successful request after ingress recovery")
+	require.Greater(t, stats.totalAttempts(), 0, "insert workload did not issue any requests")
+	require.GreaterOrEqual(t, successesBefore, 1, "expected at least one successful insert before coordinator failure")
+	require.GreaterOrEqual(t, successesAfter, 1, "expected at least one successful insert after coordinator recovery")
 	require.Greater(t, successesBefore+successesAfter, failures,
 		"expected more successes than failures overall; possible pathological failure rate")
-	t.Logf("workload summary: successesBefore=%d successesAfter=%d failures=%d (before=%d during=%d after=%d) totalAttempts=%d",
+	t.Logf("insert workload summary: successesBefore=%d successesAfter=%d failures=%d (before=%d during=%d after=%d) totalAttempts=%d",
 		successesBefore, successesAfter, failures, failuresBefore, failuresDuring, failuresAfter, stats.totalAttempts())
 }

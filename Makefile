@@ -22,6 +22,8 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
 K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
+K8S_NAMESPACE ?= default
+K8S_DEPLOYMENT ?= arangodb-driver-tests
 
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
@@ -169,7 +171,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster run-k8s-v2-resiliency-ingress-restart run-k8s-v2-resiliency-ingress-restart-tls vulncheck
+.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster run-k8s-v2-resiliency run-k8s-v2-resiliency-tls vulncheck
 
 all: build
 
@@ -221,15 +223,17 @@ run-k8s-v2-cluster-tls-basic-auth:
 	@echo "Kubernetes cluster, with TLS and basic authentication, v2"
 	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run env TESTV2PARALLEL=1 make run-v2-tests-cluster-with-basic-auth
 
-run-k8s-v2-resiliency-ingress-restart:
-	@echo "Kubernetes cluster ingress restart resiliency tests, HTTP ingress, v2"
-	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" run-host \
-		sh -c 'cd v2 && go test -tags resiliency -timeout 30m $(K8S_RESILIENCY_TEST_VERBOSE) -run '"'"'TestResiliency_IngressRestart'"'"' ./tests'
+run-k8s-v2-resiliency:
+	@echo "Kubernetes cluster resiliency tests, v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=3 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run make run-v2-tests-resiliency-k8s
 
-run-k8s-v2-resiliency-ingress-restart-tls:
-	@echo "Kubernetes cluster ingress restart resiliency tests, HTTPS ingress, v2"
-	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run-host \
-		sh -c 'cd v2 && go test -tags resiliency -timeout 30m $(K8S_RESILIENCY_TEST_VERBOSE) -run '"'"'TestResiliency_IngressRestart'"'"' ./tests'
+run-k8s-v2-resiliency-tls:
+	@echo "Kubernetes cluster resiliency tests, HTTPS ingress, v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=3 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run make run-v2-tests-resiliency-k8s
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
@@ -476,6 +480,7 @@ COMMON_DOCKER_CMD_PARAMS = \
 	-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
 	-e TEST_DEBUG='$(TEST_DEBUG)' \
 	-e TEST_ENABLE_SHUTDOWN=$(TEST_ENABLE_SHUTDOWN) \
+	-e TEST_ENABLE_RESILIENCY=$(TEST_ENABLE_RESILIENCY) \
 	-e ENABLE_DATABASE_EXTRA_FEATURES=$(ENABLE_DATABASE_EXTRA_FEATURES) \
 	-e GODEBUG=tls13=1 \
 	-e CGO_ENABLED=$(CGO_ENABLED) \
@@ -512,6 +517,29 @@ DOCKER_CMD_V2_PARAMS=\
 
 __test_v2_go_test:
 	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
+	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
+
+__run_v2_tests_resiliency_k8s: __test_v2_debug__ __test_prepare __test_v2_go_test_resiliency_k8s __test_cleanup
+
+KUBECTL_BIN ?= $(shell command -v kubectl 2>/dev/null)
+KUBECONFIG_PATH ?= $(HOME)/.kube/config
+
+DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS=\
+	$(COMMON_DOCKER_CMD_PARAMS) \
+	-e K8S_COORDINATORS_COUNT=$(K8S_COORDINATORS_COUNT) \
+	-e K8S_NAMESPACE=$(K8S_NAMESPACE) \
+	-e K8S_DEPLOYMENT=$(K8S_DEPLOYMENT) \
+	-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
+	-w /usr/code/v2/
+ifneq ($(KUBECTL_BIN),)
+DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS += -v $(KUBECTL_BIN):/usr/local/bin/kubectl:ro
+endif
+ifneq ($(wildcard $(KUBECONFIG_PATH)),)
+DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS += -v $(KUBECONFIG_PATH):/root/.kube/config:ro -e KUBECONFIG=/root/.kube/config
+endif
+
+__test_v2_go_test_resiliency_k8s:
+	($(DOCKER_CMD) $(DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(K8S_RESILIENCY_TEST_VERBOSE) -parallel 1 ./tests -run '^TestResiliency_') && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __run_v3_tests: __test_v3_debug__ __test_prepare __test_v3_go_test __test_cleanup
@@ -718,6 +746,14 @@ run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
 run-v2-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v2"
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v2_tests
+
+# Resiliency tests against an externally started cluster (e.g. kube-arangodb via ingress).
+# Invoked by run-k8s-v2-resiliency; kubectl and kubeconfig are mounted into the test container.
+run-v2-tests-resiliency-k8s:
+	@echo "Resiliency tests, Kubernetes cluster mode, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_ENABLE_RESILIENCY=1 \
+		K8S_COORDINATORS_COUNT=$(if $(K8S_COORDINATORS_COUNT),$(K8S_COORDINATORS_COUNT),3) \
+		TAGS="resiliency" TESTV2PARALLEL=1 __run_v2_tests_resiliency_k8s
 
 # V3
 

@@ -40,7 +40,7 @@ const (
 func requireKubectl(t testing.TB) {
 	t.Helper()
 	if _, err := exec.LookPath("kubectl"); err != nil {
-		t.Skip("kubectl not found in PATH; ingress restart tests must run on the host")
+		t.Skip("kubectl not found in PATH; resiliency tests need kubectl in the test container")
 	}
 }
 

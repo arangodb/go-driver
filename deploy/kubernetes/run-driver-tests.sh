@@ -44,6 +44,7 @@ K8S_AUTHENTICATION="${K8S_AUTHENTICATION:-true}"
 K8S_TEST_AUTHENTICATION="${K8S_TEST_AUTHENTICATION:-basic}"
 K8S_TLS="${K8S_TLS:-false}"
 K8S_TEST_WORKDIR="${K8S_TEST_WORKDIR:-${ROOT_DIR}}"
+K8S_COORDINATORS_COUNT="${K8S_COORDINATORS_COUNT:-1}"
 
 # --- Names of env vars passed to the driver test command (values built at runtime) ---
 # Example: K8S_TEST_ENDPOINTS_ENV=TEST_ENDPOINTS_OVERRIDE prints
@@ -98,6 +99,7 @@ Environment:
   K8S_KEEP_DEPLOYMENT    keep deployment after "run" (default: ${K8S_KEEP_DEPLOYMENT})
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
   K8S_TEST_WORKDIR       working directory for the test command (default: ${K8S_TEST_WORKDIR})
+  K8S_COORDINATORS_COUNT number of coordinators in Cluster mode (default: ${K8S_COORDINATORS_COUNT})
   K8S_KIND_CLUSTER_NAME  kind cluster name for "setup-kind" (default: ${K8S_KIND_CLUSTER_NAME})
   K8S_KIND_NODE_IMAGE    kind node image for "setup-kind" (default: ${K8S_KIND_NODE_IMAGE})
   K8S_KIND_RETAIN        retain kind nodes after setup failure (default: ${K8S_KIND_RETAIN})
@@ -275,7 +277,7 @@ $(render_arangod_args "    ")
     count: 3
 $(render_arangod_args "    ")
   coordinators:
-    count: 1
+    count: ${K8S_COORDINATORS_COUNT}
 $(render_arangod_args "    ")
 EOF_CLUSTER
 else cat <<EOF_SINGLE
@@ -687,6 +689,21 @@ cleanup() {
 	fi
 }
 
+# ensure_resiliency_coordinator_count bumps coordinator count to 3 when running resiliency tests.
+ensure_resiliency_coordinator_count() {
+	if ! printf '%s' "$*" | grep -qi resiliency; then
+		return
+	fi
+
+	if [ "${K8S_COORDINATORS_COUNT:-1}" -ge 3 ]; then
+		return
+	fi
+
+	echo "NOTE: resiliency tests need at least 3 coordinators; raising K8S_COORDINATORS_COUNT from ${K8S_COORDINATORS_COUNT:-1} to 3"
+	K8S_COORDINATORS_COUNT=3
+	export K8S_COORDINATORS_COUNT
+}
+
 # run_tests deploys the cluster and runs the test command for Docker-based integration tests.
 run_tests() {
 	if [ "$#" -lt 1 ]; then
@@ -695,6 +712,7 @@ run_tests() {
 	fi
 
 	require_tool kubectl
+	ensure_resiliency_coordinator_count "$@"
 
 	trap cleanup_after_run EXIT
 	start
@@ -762,6 +780,9 @@ collect_ingress_test_env() {
 	if [ -n "${K8S_TEST_NET_ENV}" ]; then
 		printf '%s\n' "${K8S_TEST_NET_ENV}=${net_override}"
 	fi
+	printf 'K8S_NAMESPACE=%s\n' "${K8S_NAMESPACE}"
+	printf 'K8S_DEPLOYMENT=%s\n' "${K8S_DEPLOYMENT}"
+	printf 'K8S_COORDINATORS_COUNT=%s\n' "${K8S_COORDINATORS_COUNT}"
 }
 
 # run_command_through_ingress runs the caller command with Docker test env (normal k8s path).
@@ -804,6 +825,9 @@ collect_ingress_host_test_env() {
 	if [ -n "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}" ]; then
 		printf '%s\n' "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1"
 	fi
+	printf 'K8S_NAMESPACE=%s\n' "${K8S_NAMESPACE}"
+	printf 'K8S_DEPLOYMENT=%s\n' "${K8S_DEPLOYMENT}"
+	printf 'K8S_COORDINATORS_COUNT=%s\n' "${K8S_COORDINATORS_COUNT}"
 }
 
 # run_command_on_host_through_ingress runs go test on the host with IP + Host header env.
