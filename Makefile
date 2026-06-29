@@ -521,25 +521,33 @@ __test_v2_go_test:
 
 __run_v2_tests_resiliency_k8s: __test_v2_debug__ __test_prepare __test_v2_go_test_resiliency_k8s __test_cleanup
 
+# Resiliency k8s tests need kubectl in the test container. Prefer K8S_TEST_DOCKER_EXTRA_ARGS
+# from run-driver-tests.sh; fall back to host paths when make is invoked without the runner.
+ifeq ($(K8S_TEST_DOCKER_EXTRA_ARGS),)
 KUBECTL_BIN ?= $(shell command -v kubectl 2>/dev/null)
 KUBECONFIG_PATH ?= $(HOME)/.kube/config
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS :=
+ifneq ($(KUBECTL_BIN),)
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS += -v $(KUBECTL_BIN):/usr/local/bin/kubectl:ro
+endif
+ifneq ($(wildcard $(KUBECONFIG_PATH)),)
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS += -v $(KUBECONFIG_PATH):/root/.kube/config:ro -e KUBECONFIG=/root/.kube/config
+endif
+else
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS := $(K8S_TEST_DOCKER_EXTRA_ARGS)
+endif
 
-DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS=\
+DOCKER_CMD_RESILIENCY_K8S_PARAMS=\
 	$(COMMON_DOCKER_CMD_PARAMS) \
+	$(RESILIENCY_K8S_DOCKER_EXTRA_ARGS) \
 	-e K8S_COORDINATORS_COUNT=$(K8S_COORDINATORS_COUNT) \
 	-e K8S_NAMESPACE=$(K8S_NAMESPACE) \
 	-e K8S_DEPLOYMENT=$(K8S_DEPLOYMENT) \
 	-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
 	-w /usr/code/v2/
-ifneq ($(KUBECTL_BIN),)
-DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS += -v $(KUBECTL_BIN):/usr/local/bin/kubectl:ro
-endif
-ifneq ($(wildcard $(KUBECONFIG_PATH)),)
-DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS += -v $(KUBECONFIG_PATH):/root/.kube/config:ro -e KUBECONFIG=/root/.kube/config
-endif
 
 __test_v2_go_test_resiliency_k8s:
-	($(DOCKER_CMD) $(DOCKER_CMD_V2_RESILIENCY_K8S_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(K8S_RESILIENCY_TEST_VERBOSE) -parallel 1 ./tests -run '^TestResiliency_') && echo "success!" \
+	($(DOCKER_CMD) $(DOCKER_CMD_RESILIENCY_K8S_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(K8S_RESILIENCY_TEST_VERBOSE) -parallel 1 ./tests -run '^TestResiliency_') && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __run_v3_tests: __test_v3_debug__ __test_prepare __test_v3_go_test __test_cleanup
@@ -748,7 +756,7 @@ run-v2-tests-resilientsingle-with-auth:
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v2_tests
 
 # Resiliency tests against an externally started cluster (e.g. kube-arangodb via ingress).
-# Invoked by run-k8s-v2-resiliency; kubectl and kubeconfig are mounted into the test container.
+# Invoked by run-k8s-v2-resiliency; kubectl mounts come from run-driver-tests.sh via K8S_TEST_DOCKER_EXTRA_ARGS.
 run-v2-tests-resiliency-k8s:
 	@echo "Resiliency tests, Kubernetes cluster mode, v2"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_ENABLE_RESILIENCY=1 \
