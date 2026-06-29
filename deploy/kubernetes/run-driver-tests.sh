@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 #
-# Shared Kubernetes runner for go-driver integration tests.
+# Shared Kubernetes runner for ArangoDB driver integration tests.
 #
 # Sets up kube-arangodb + ArangoDeployment + Ingress, then runs a caller-supplied
-# test command against the external ingress endpoint.
+# test command (make, npm, pytest, a shell script, etc.) against the ingress endpoint.
 #
 # Commands:
-#   run        Deploy cluster, run tests inside Docker (normal k8s integration tests)
-#   run-host   Deploy cluster, run tests on the host (needs kubectl from tests, e.g. resiliency)
+#   run        Deploy cluster, export test env, run the test command
+#   run-host   Deploy cluster, run tests on the host (kubectl must be on PATH)
 #   start      Deploy cluster only (no test command)
 #   setup-kind Create local kind cluster with ingress-nginx
 #   cleanup    Remove ArangoDeployment, Ingress, and secrets
 #
 # Test env wiring:
-#   K8S_TEST_*_ENV variables (lines below) name the env vars passed to Make/go test.
+#   The runner exports standard env vars before invoking the test command.
+#   K8S_TEST_*_ENV variables (below) rename those exports for other drivers.
 #   Example: K8S_TEST_ENDPOINTS_ENV defaults to TEST_ENDPOINTS_OVERRIDE.
 
 set -euo pipefail
@@ -55,6 +56,11 @@ K8S_TEST_LEGACY_AUTHENTICATION_ENV="${K8S_TEST_LEGACY_AUTHENTICATION_ENV:-TEST_A
 K8S_TEST_MODE_ENV="${K8S_TEST_MODE_ENV:-TEST_MODE_K8S}"
 K8S_TEST_NOT_WAIT_UNTIL_READY_ENV="${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV:-TEST_NOT_WAIT_UNTIL_READY}"
 K8S_TEST_NET_ENV="${K8S_TEST_NET_ENV:-TEST_NET_OVERRIDE}"
+K8S_TEST_DOCKER_EXTRA_ARGS_ENV="${K8S_TEST_DOCKER_EXTRA_ARGS_ENV:-K8S_TEST_DOCKER_EXTRA_ARGS}"
+
+# --- kubectl / kubeconfig (for resiliency tests that call kubectl during execution) ---
+KUBECTL_BIN="${KUBECTL_BIN:-}"
+KUBECONFIG_PATH="${KUBECONFIG_PATH:-}"
 
 # --- kind cluster settings (local development) ---
 K8S_KIND_CLUSTER_NAME="${K8S_KIND_CLUSTER_NAME:-arangodb-driver-tests}"
@@ -105,6 +111,9 @@ Environment:
   K8S_KIND_RETAIN        retain kind nodes after setup failure (default: ${K8S_KIND_RETAIN})
   K8S_DELETE_KIND_CLUSTER delete the kind cluster after "run" (default: ${K8S_DELETE_KIND_CLUSTER})
   K8S_INGRESS_NGINX_VERSION ingress-nginx release for "setup-kind" (default: ${K8S_INGRESS_NGINX_VERSION})
+  KUBECTL_BIN              kubectl binary path (auto-detected when empty)
+  KUBECONFIG_PATH          kubeconfig file path (default: \$KUBECONFIG or ~/.kube/config)
+  K8S_TEST_DOCKER_EXTRA_ARGS_ENV name of the Docker mount env var (default: K8S_TEST_DOCKER_EXTRA_ARGS)
 EOF
 }
 
@@ -113,6 +122,79 @@ require_tool() {
 	if ! command -v "$1" >/dev/null 2>&1; then
 		echo "ERROR: required tool '$1' was not found in PATH" >&2
 		exit 1
+	fi
+}
+
+# resolve_kubectl_bin returns the kubectl binary path when available.
+resolve_kubectl_bin() {
+	if [ -n "${KUBECTL_BIN}" ]; then
+		echo "${KUBECTL_BIN}"
+		return
+	fi
+	command -v kubectl 2>/dev/null || true
+}
+
+# resolve_kubeconfig_path returns the kubeconfig file path.
+resolve_kubeconfig_path() {
+	if [ -n "${KUBECONFIG_PATH}" ]; then
+		echo "${KUBECONFIG_PATH}"
+		return
+	fi
+	if [ -n "${KUBECONFIG:-}" ]; then
+		echo "${KUBECONFIG}"
+		return
+	fi
+	echo "${HOME}/.kube/config"
+}
+
+# build_docker_kubectl_extra_args prints Docker flags to mount kubectl and kubeconfig
+# into a test container. Empty when neither path is available.
+build_docker_kubectl_extra_args() {
+	local kubectl_bin="$1"
+	local kubeconfig_path="$2"
+	local args=""
+
+	if [ -n "${kubectl_bin}" ] && [ -f "${kubectl_bin}" ]; then
+		args="-v ${kubectl_bin}:/usr/local/bin/kubectl:ro"
+	fi
+	if [ -n "${kubeconfig_path}" ] && [ -f "${kubeconfig_path}" ]; then
+		args="${args} -v ${kubeconfig_path}:/root/.kube/config:ro -e KUBECONFIG=/root/.kube/config"
+	fi
+
+	printf '%s' "${args}"
+}
+
+# collect_k8s_cluster_test_env prints cluster identity and kubectl/kubeconfig paths.
+collect_k8s_cluster_test_env() {
+	local kubectl_bin kubeconfig_path
+
+	printf 'K8S_NAMESPACE=%s\n' "${K8S_NAMESPACE}"
+	printf 'K8S_DEPLOYMENT=%s\n' "${K8S_DEPLOYMENT}"
+	printf 'K8S_COORDINATORS_COUNT=%s\n' "${K8S_COORDINATORS_COUNT}"
+
+	kubectl_bin="$(resolve_kubectl_bin)"
+	kubeconfig_path="$(resolve_kubeconfig_path)"
+
+	if [ -n "${kubectl_bin}" ]; then
+		printf 'KUBECTL_BIN=%s\n' "${kubectl_bin}"
+	fi
+	if [ -f "${kubeconfig_path}" ]; then
+		printf 'KUBECONFIG_PATH=%s\n' "${kubeconfig_path}"
+	fi
+}
+
+# collect_docker_kubectl_extra_args_env prints Docker mount flags for resiliency tests
+# that run inside a container and need kubectl access to the cluster API.
+collect_docker_kubectl_extra_args_env() {
+	local kubectl_bin kubeconfig_path docker_extra_args env_name
+
+	kubectl_bin="$(resolve_kubectl_bin)"
+	kubeconfig_path="$(resolve_kubeconfig_path)"
+	docker_extra_args="$(build_docker_kubectl_extra_args "${kubectl_bin}" "${kubeconfig_path}")"
+	env_name="${K8S_TEST_DOCKER_EXTRA_ARGS_ENV}"
+
+	if [ -n "${env_name}" ]; then
+		printf '%s\n' "${env_name}=${docker_extra_args}"
 	fi
 }
 
@@ -780,9 +862,8 @@ collect_ingress_test_env() {
 	if [ -n "${K8S_TEST_NET_ENV}" ]; then
 		printf '%s\n' "${K8S_TEST_NET_ENV}=${net_override}"
 	fi
-	printf 'K8S_NAMESPACE=%s\n' "${K8S_NAMESPACE}"
-	printf 'K8S_DEPLOYMENT=%s\n' "${K8S_DEPLOYMENT}"
-	printf 'K8S_COORDINATORS_COUNT=%s\n' "${K8S_COORDINATORS_COUNT}"
+	collect_k8s_cluster_test_env
+	collect_docker_kubectl_extra_args_env
 }
 
 # run_command_through_ingress runs the caller command with Docker test env (normal k8s path).
@@ -825,9 +906,13 @@ collect_ingress_host_test_env() {
 	if [ -n "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}" ]; then
 		printf '%s\n' "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1"
 	fi
-	printf 'K8S_NAMESPACE=%s\n' "${K8S_NAMESPACE}"
-	printf 'K8S_DEPLOYMENT=%s\n' "${K8S_DEPLOYMENT}"
-	printf 'K8S_COORDINATORS_COUNT=%s\n' "${K8S_COORDINATORS_COUNT}"
+	collect_k8s_cluster_test_env
+
+	local kubeconfig_path
+	kubeconfig_path="$(resolve_kubeconfig_path)"
+	if [ -f "${kubeconfig_path}" ]; then
+		printf 'KUBECONFIG=%s\n' "${kubeconfig_path}"
+	fi
 }
 
 # run_command_on_host_through_ingress runs go test on the host with IP + Host header env.
