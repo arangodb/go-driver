@@ -1,9 +1,27 @@
 #!/usr/bin/env bash
+#
+# Shared Kubernetes runner for ArangoDB driver integration tests.
+#
+# Sets up kube-arangodb + ArangoDeployment + Ingress, then runs a caller-supplied
+# test command (make, npm, pytest, a shell script, etc.) against the ingress endpoint.
+#
+# Commands:
+#   run        Deploy cluster, export test env, run the test command
+#   run-host   Deploy cluster, run tests on the host (kubectl must be on PATH)
+#   start      Deploy cluster only (no test command)
+#   setup-kind Create local kind cluster with ingress-nginx
+#   cleanup    Remove ArangoDeployment, Ingress, and secrets
+#
+# Test env wiring:
+#   The runner exports standard env vars before invoking the test command.
+#   K8S_TEST_*_ENV variables (below) rename those exports for other drivers.
+#   Example: K8S_TEST_ENDPOINTS_ENV defaults to TEST_ENDPOINTS_OVERRIDE.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
+# --- Kubernetes / ArangoDB deployment settings ---
 KUBE_ARANGODB_VERSION="${KUBE_ARANGODB_VERSION:-1.2.43}"
 K8S_NAMESPACE="${K8S_NAMESPACE:-default}"
 K8S_DEPLOYMENT="${K8S_DEPLOYMENT:-arangodb-driver-tests}"
@@ -27,12 +45,27 @@ K8S_AUTHENTICATION="${K8S_AUTHENTICATION:-true}"
 K8S_TEST_AUTHENTICATION="${K8S_TEST_AUTHENTICATION:-basic}"
 K8S_TLS="${K8S_TLS:-false}"
 K8S_TEST_WORKDIR="${K8S_TEST_WORKDIR:-${ROOT_DIR}}"
+K8S_COORDINATORS_COUNT="${K8S_COORDINATORS_COUNT:-1}"
+K8S_TOXIPROXY_LISTEN_PORT="${K8S_TOXIPROXY_LISTEN_PORT:-17001}"
+K8S_TOXIPROXY_ADMIN_PORT="${K8S_TOXIPROXY_ADMIN_PORT:-8474}"
+K8S_TOXIPROXY_PROXY_NAME="${K8S_TOXIPROXY_PROXY_NAME:-arangodb}"
+
+# --- Names of env vars passed to the driver test command (values built at runtime) ---
+# Example: K8S_TEST_ENDPOINTS_ENV=TEST_ENDPOINTS_OVERRIDE prints
+#   TEST_ENDPOINTS_OVERRIDE=http://arangodb.local
 K8S_TEST_ENDPOINTS_ENV="${K8S_TEST_ENDPOINTS_ENV:-TEST_ENDPOINTS_OVERRIDE}"
 K8S_TEST_AUTHENTICATION_ENV="${K8S_TEST_AUTHENTICATION_ENV:-TEST_AUTHENTICATION_OVERRIDE}"
 K8S_TEST_LEGACY_AUTHENTICATION_ENV="${K8S_TEST_LEGACY_AUTHENTICATION_ENV:-TEST_AUTHENTICATION}"
 K8S_TEST_MODE_ENV="${K8S_TEST_MODE_ENV:-TEST_MODE_K8S}"
 K8S_TEST_NOT_WAIT_UNTIL_READY_ENV="${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV:-TEST_NOT_WAIT_UNTIL_READY}"
 K8S_TEST_NET_ENV="${K8S_TEST_NET_ENV:-TEST_NET_OVERRIDE}"
+K8S_TEST_DOCKER_EXTRA_ARGS_ENV="${K8S_TEST_DOCKER_EXTRA_ARGS_ENV:-K8S_TEST_DOCKER_EXTRA_ARGS}"
+
+# --- kubectl / kubeconfig (for resiliency tests that call kubectl during execution) ---
+KUBECTL_BIN="${KUBECTL_BIN:-}"
+KUBECONFIG_PATH="${KUBECONFIG_PATH:-}"
+
+# --- kind cluster settings (local development) ---
 K8S_KIND_CLUSTER_NAME="${K8S_KIND_CLUSTER_NAME:-arangodb-driver-tests}"
 K8S_KIND_NODE_IMAGE="${K8S_KIND_NODE_IMAGE:-kindest/node:v1.31.12}"
 K8S_KIND_RETAIN="${K8S_KIND_RETAIN:-false}"
@@ -44,10 +77,13 @@ ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
 KUBE_ARANGODB_IMAGE="${KUBE_ARANGODB_IMAGE:-arangodb/kube-arangodb:${KUBE_ARANGODB_VERSION}}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
 
+# usage prints command-line help.
 usage() {
 	cat <<EOF
 Usage:
   $0 run <test-command> [args...]
+  $0 run-host <test-command> [args...]
+  $0 run-toxiproxy <test-command> [args...]
   $0 start
   $0 setup-kind
   $0 endpoint
@@ -73,14 +109,21 @@ Environment:
   K8S_KEEP_DEPLOYMENT    keep deployment after "run" (default: ${K8S_KEEP_DEPLOYMENT})
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
   K8S_TEST_WORKDIR       working directory for the test command (default: ${K8S_TEST_WORKDIR})
+  K8S_COORDINATORS_COUNT number of coordinators in Cluster mode (default: ${K8S_COORDINATORS_COUNT})
+  K8S_TOXIPROXY_LISTEN_PORT local Toxiproxy listen port for run-toxiproxy (default: ${K8S_TOXIPROXY_LISTEN_PORT})
+  K8S_TOXIPROXY_ADMIN_PORT local Toxiproxy admin API port (default: ${K8S_TOXIPROXY_ADMIN_PORT})
   K8S_KIND_CLUSTER_NAME  kind cluster name for "setup-kind" (default: ${K8S_KIND_CLUSTER_NAME})
   K8S_KIND_NODE_IMAGE    kind node image for "setup-kind" (default: ${K8S_KIND_NODE_IMAGE})
   K8S_KIND_RETAIN        retain kind nodes after setup failure (default: ${K8S_KIND_RETAIN})
   K8S_DELETE_KIND_CLUSTER delete the kind cluster after "run" (default: ${K8S_DELETE_KIND_CLUSTER})
   K8S_INGRESS_NGINX_VERSION ingress-nginx release for "setup-kind" (default: ${K8S_INGRESS_NGINX_VERSION})
+  KUBECTL_BIN              kubectl binary path (auto-detected when empty)
+  KUBECONFIG_PATH          kubeconfig file path (default: \$KUBECONFIG or ~/.kube/config)
+  K8S_TEST_DOCKER_EXTRA_ARGS_ENV name of the Docker mount env var (default: K8S_TEST_DOCKER_EXTRA_ARGS)
 EOF
 }
 
+# require_tool exits if the named binary is not on PATH.
 require_tool() {
 	if ! command -v "$1" >/dev/null 2>&1; then
 		echo "ERROR: required tool '$1' was not found in PATH" >&2
@@ -88,6 +131,81 @@ require_tool() {
 	fi
 }
 
+# resolve_kubectl_bin returns the kubectl binary path when available.
+resolve_kubectl_bin() {
+	if [ -n "${KUBECTL_BIN}" ]; then
+		echo "${KUBECTL_BIN}"
+		return
+	fi
+	command -v kubectl 2>/dev/null || true
+}
+
+# resolve_kubeconfig_path returns the kubeconfig file path.
+resolve_kubeconfig_path() {
+	if [ -n "${KUBECONFIG_PATH}" ]; then
+		echo "${KUBECONFIG_PATH}"
+		return
+	fi
+	if [ -n "${KUBECONFIG:-}" ]; then
+		echo "${KUBECONFIG}"
+		return
+	fi
+	echo "${HOME}/.kube/config"
+}
+
+# build_docker_kubectl_extra_args prints Docker flags to mount kubectl and kubeconfig
+# into a test container. Empty when neither path is available.
+build_docker_kubectl_extra_args() {
+	local kubectl_bin="$1"
+	local kubeconfig_path="$2"
+	local args=""
+
+	if [ -n "${kubectl_bin}" ] && [ -f "${kubectl_bin}" ]; then
+		args="-v ${kubectl_bin}:/usr/local/bin/kubectl:ro"
+	fi
+	if [ -n "${kubeconfig_path}" ] && [ -f "${kubeconfig_path}" ]; then
+		args="${args} -v ${kubeconfig_path}:/root/.kube/config:ro -e KUBECONFIG=/root/.kube/config"
+	fi
+
+	printf '%s' "${args}"
+}
+
+# collect_k8s_cluster_test_env prints cluster identity and kubectl/kubeconfig paths.
+collect_k8s_cluster_test_env() {
+	local kubectl_bin kubeconfig_path
+
+	printf 'K8S_NAMESPACE=%s\n' "${K8S_NAMESPACE}"
+	printf 'K8S_DEPLOYMENT=%s\n' "${K8S_DEPLOYMENT}"
+	printf 'K8S_COORDINATORS_COUNT=%s\n' "${K8S_COORDINATORS_COUNT}"
+
+	kubectl_bin="$(resolve_kubectl_bin)"
+	kubeconfig_path="$(resolve_kubeconfig_path)"
+
+	if [ -n "${kubectl_bin}" ]; then
+		printf 'KUBECTL_BIN=%s\n' "${kubectl_bin}"
+	fi
+	if [ -f "${kubeconfig_path}" ]; then
+		printf 'KUBECONFIG_PATH=%s\n' "${kubeconfig_path}"
+	fi
+}
+
+# collect_docker_kubectl_extra_args_env prints Docker mount flags for resiliency tests
+# that run inside a container and need kubectl access to the cluster API.
+collect_docker_kubectl_extra_args_env() {
+	local kubectl_bin kubeconfig_path docker_extra_args env_name
+
+	kubectl_bin="$(resolve_kubectl_bin)"
+	kubeconfig_path="$(resolve_kubeconfig_path)"
+	docker_extra_args="$(build_docker_kubectl_extra_args "${kubectl_bin}" "${kubeconfig_path}")"
+	env_name="${K8S_TEST_DOCKER_EXTRA_ARGS_ENV}"
+
+	if [ -n "${env_name}" ]; then
+		printf '%s\n' "${env_name}=${docker_extra_args}"
+	fi
+}
+
+# setup_kind creates (or reuses) a kind cluster and installs ingress-nginx.
+# Maps host ports 80/443 to the ingress controller for local testing.
 setup_kind() {
 	local clusters
 	local -a kind_args
@@ -136,12 +254,14 @@ EOF
 	echo "kind is ready. Run tests with K8S_INGRESS_ADDRESS=127.0.0.1."
 }
 
+# cleanup_kind deletes the kind cluster named K8S_KIND_CLUSTER_NAME.
 cleanup_kind() {
 	require_tool kind
 	echo "Deleting kind cluster ${K8S_KIND_CLUSTER_NAME}..."
 	kind delete cluster --name "${K8S_KIND_CLUSTER_NAME}"
 }
 
+# dump_operator_diagnostics prints operator deployment state on rollout failures.
 dump_operator_diagnostics() {
 	echo "=== kube-arangodb operator diagnostics ===" >&2
 	kubectl -n default get deployment arango-deployment-operator -o wide || true
@@ -159,6 +279,7 @@ dump_operator_diagnostics() {
 	done
 }
 
+# wait_for_operator_rollout blocks until arango-deployment-operator is ready.
 wait_for_operator_rollout() {
 	echo "Waiting for kube-arangodb operator deployment to become ready..."
 	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
@@ -175,6 +296,7 @@ wait_for_operator_rollout() {
 	exit 1
 }
 
+# install_operator applies kube-arangodb CRDs and the operator deployment.
 install_operator() {
 	if [ "${K8S_INSTALL_OPERATOR}" != "true" ]; then
 		return
@@ -192,6 +314,7 @@ install_operator() {
 	wait_for_operator_rollout
 }
 
+# apply_deployment creates secrets and the ArangoDeployment custom resource.
 apply_deployment() {
 	echo "Creating ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} (${K8S_MODE})..."
 	if [ "${K8S_NAMESPACE}" != "default" ]; then
@@ -242,7 +365,7 @@ $(render_arangod_args "    ")
     count: 3
 $(render_arangod_args "    ")
   coordinators:
-    count: 1
+    count: ${K8S_COORDINATORS_COUNT}
 $(render_arangod_args "    ")
 EOF_CLUSTER
 else cat <<EOF_SINGLE
@@ -253,6 +376,7 @@ fi)
 EOF
 }
 
+# render_auth_spec emits the auth section for the ArangoDeployment manifest.
 render_auth_spec() {
 	if [ "${K8S_AUTHENTICATION}" = "true" ]; then
 		cat <<EOF
@@ -267,6 +391,7 @@ EOF
 	fi
 }
 
+# render_tls_spec emits the TLS section for the ArangoDeployment manifest.
 render_tls_spec() {
 	if [ "${K8S_TLS}" = "true" ]; then
 		cat <<EOF
@@ -281,6 +406,7 @@ EOF
 	fi
 }
 
+# render_arangod_args emits common arangod CLI args for all pod roles.
 render_arangod_args() {
 	local indent="$1"
 
@@ -305,6 +431,7 @@ EOF
 	fi
 }
 
+# wait_for_jwt_secret_folder waits until kube-arangodb populates the JWT secret folder.
 wait_for_jwt_secret_folder() {
 	if [ "${K8S_AUTHENTICATION}" != "true" ]; then
 		echo "Skipping JWT folder wait because Kubernetes authentication is disabled."
@@ -327,6 +454,8 @@ wait_for_jwt_secret_folder() {
 	dump_diagnostics
 	exit 1
 }
+
+# wait_for_deployment blocks until the ArangoDeployment is Ready and the -ea service has endpoints.
 wait_for_deployment() {
 	echo "Waiting for ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} to become ready..."
 	local deadline=$((SECONDS + $(duration_to_seconds "${K8S_WAIT_TIMEOUT}")))
@@ -378,6 +507,7 @@ wait_for_deployment() {
 	exit 1
 }
 
+# has_failed_pods returns 0 when any ArangoDB pod is in a permanent failure state.
 has_failed_pods() {
 	local pod_states
 	pod_states="$(kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.phase}{" "}{range .status.initContainerStatuses[*]}{.state.waiting.reason}{","}{.state.terminated.reason}{","}{end}{range .status.containerStatuses[*]}{.state.waiting.reason}{","}{.state.terminated.reason}{","}{end}{"\n"}{end}' 2>/dev/null || true)"
@@ -392,6 +522,7 @@ has_failed_pods() {
 	return 1
 }
 
+# delete_failed_pods removes pods in Failed phase so the operator can recreate them.
 delete_failed_pods() {
 	local failed_pods
 	failed_pods="$(kubectl -n "${K8S_NAMESPACE}" get pods -l "arango_deployment=${K8S_DEPLOYMENT}" --field-selector=status.phase=Failed -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
@@ -403,6 +534,7 @@ delete_failed_pods() {
 	fi
 }
 
+# delete_stuck_init_pods removes pods stuck in init-lifecycle longer than K8S_STUCK_INIT_TIMEOUT.
 delete_stuck_init_pods() {
 	local timeout_seconds now pod started_at started_at_seconds age
 	timeout_seconds="$(duration_to_seconds "${K8S_STUCK_INIT_TIMEOUT}")"
@@ -429,6 +561,7 @@ delete_stuck_init_pods() {
 		-o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.initContainerStatuses[?(@.name=="init-lifecycle")].state.running.startedAt}{"\n"}{end}' 2>/dev/null || true)
 }
 
+# dump_diagnostics prints ArangoDeployment, pod, and log details on test setup failures.
 dump_diagnostics() {
 	echo "=== Kubernetes diagnostics for ${K8S_NAMESPACE}/${K8S_DEPLOYMENT} ===" >&2
 	kubectl -n "${K8S_NAMESPACE}" get arangodeployment "${K8S_DEPLOYMENT}" -o wide || true
@@ -449,6 +582,7 @@ dump_diagnostics() {
 	done
 }
 
+# duration_to_seconds converts values like 15m or 30s to integer seconds.
 duration_to_seconds() {
 	case "$1" in
 		*m) echo $((${1%m} * 60)) ;;
@@ -457,6 +591,7 @@ duration_to_seconds() {
 	esac
 }
 
+# start performs the full Kubernetes setup: operator, deployment, JWT wait, readiness wait.
 start() {
 	require_tool kubectl
 	install_operator
@@ -465,6 +600,7 @@ start() {
 	wait_for_deployment
 }
 
+# ingress_endpoint returns the driver URL using the ingress hostname (e.g. https://arangodb.local).
 ingress_endpoint() {
 	local scheme
 	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
@@ -480,6 +616,30 @@ ingress_endpoint() {
 	fi
 }
 
+# ingress_host_endpoint returns the driver URL using the ingress IP (e.g. https://127.0.0.1).
+# Used by run-host; tests send Host: K8S_INGRESS_HOST so ingress routing still works.
+ingress_host_endpoint() {
+	local scheme address
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		scheme="https"
+	else
+		scheme="http"
+	fi
+
+	address="$(ingress_address)"
+	if [ -z "${address}" ]; then
+		ingress_endpoint
+		return
+	fi
+
+	if [ -n "${K8S_INGRESS_PORT}" ]; then
+		echo "${scheme}://${address}:${K8S_INGRESS_PORT}"
+	else
+		echo "${scheme}://${address}"
+	fi
+}
+
+# endpoint_scheme returns http or https based on ArangoDeployment TLS (K8S_TLS).
 endpoint_scheme() {
 	if [ "${K8S_TLS}" = "true" ]; then
 		echo "https"
@@ -488,6 +648,7 @@ endpoint_scheme() {
 	fi
 }
 
+# test_authentication formats the driver auth string passed to go test (basic/jwt/none).
 test_authentication() {
 	if [ "${K8S_AUTHENTICATION}" != "true" ]; then
 		echo ""
@@ -511,6 +672,7 @@ test_authentication() {
 	esac
 }
 
+# ingress_address returns the IP used to reach ingress (K8S_INGRESS_ADDRESS or LB status).
 ingress_address() {
 	if [ -n "${K8S_INGRESS_ADDRESS}" ]; then
 		echo "${K8S_INGRESS_ADDRESS}"
@@ -520,6 +682,32 @@ ingress_address() {
 	kubectl -n "${K8S_NAMESPACE}" get ingress "${K8S_INGRESS_NAME}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true
 }
 
+# ingress_upstream_port returns the TCP port used to reach ingress from the test host.
+ingress_upstream_port() {
+	if [ -n "${K8S_INGRESS_PORT}" ]; then
+		echo "${K8S_INGRESS_PORT}"
+		return
+	fi
+
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		echo "443"
+	else
+		echo "80"
+	fi
+}
+
+# ingress_upstream returns host:port for Toxiproxy upstream (ingress reachable from the test host).
+ingress_upstream() {
+	local address
+	address="$(ingress_address)"
+	if [ -z "${address}" ]; then
+		echo "ERROR: unable to determine ingress address for Toxiproxy upstream. Set K8S_INGRESS_ADDRESS explicitly." >&2
+		exit 1
+	fi
+	echo "${address}:$(ingress_upstream_port)"
+}
+
+# ingress_annotations emits nginx timeout annotations for the Ingress manifest.
 ingress_annotations() {
 	cat <<EOF
   annotations:
@@ -535,6 +723,7 @@ EOF
 	fi
 }
 
+# ingress_tls_spec emits the TLS section of the Ingress when K8S_INGRESS_TLS=true.
 ingress_tls_spec() {
 	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
 		cat <<EOF
@@ -546,6 +735,7 @@ EOF
 	fi
 }
 
+# create_ingress_tls_secret creates a self-signed TLS secret for K8S_INGRESS_HOST.
 create_ingress_tls_secret() {
 	if [ "${K8S_INGRESS_TLS}" != "true" ]; then
 		return
@@ -566,6 +756,7 @@ create_ingress_tls_secret() {
 	rm -rf "${cert_dir}"
 }
 
+# setup_ingress creates or updates the Ingress pointing at the ArangoDB external access service.
 setup_ingress() {
 	echo "Creating Ingress ${K8S_NAMESPACE}/${K8S_INGRESS_NAME} for ${K8S_INGRESS_HOST}..."
 	create_ingress_tls_secret
@@ -594,6 +785,7 @@ $(ingress_tls_spec)
 EOF
 }
 
+# cleanup deletes the ArangoDeployment, Ingress, and related secrets.
 cleanup() {
 	require_tool kubectl
 	echo "Cleaning up ArangoDeployment ${K8S_NAMESPACE}/${K8S_DEPLOYMENT}..."
@@ -610,7 +802,53 @@ cleanup() {
 	fi
 }
 
+# ensure_resiliency_coordinator_count bumps coordinator count to 3 when running resiliency tests.
+ensure_resiliency_coordinator_count() {
+	if ! printf '%s' "$*" | grep -qi resiliency; then
+		return
+	fi
+
+	if [ "${K8S_COORDINATORS_COUNT:-1}" -ge 3 ]; then
+		return
+	fi
+
+	echo "NOTE: resiliency tests need at least 3 coordinators; raising K8S_COORDINATORS_COUNT from ${K8S_COORDINATORS_COUNT:-1} to 3"
+	K8S_COORDINATORS_COUNT=3
+	export K8S_COORDINATORS_COUNT
+}
+
+# run_tests deploys the cluster and runs the test command for Docker-based integration tests.
 run_tests() {
+	if [ "$#" -lt 1 ]; then
+		usage
+		exit 1
+	fi
+
+	require_tool kubectl
+	ensure_resiliency_coordinator_count "$@"
+
+	trap cleanup_after_run EXIT
+	start
+
+	run_command_through_ingress "$@"
+}
+
+# run_toxiproxy_tests deploys kube-arangodb and runs tests through a local Toxiproxy instance.
+run_toxiproxy_tests() {
+	if [ "$#" -lt 1 ]; then
+		usage
+		exit 1
+	fi
+
+	trap cleanup_after_run EXIT
+	start
+
+	run_command_through_toxiproxy "$@"
+}
+
+# run_host_tests deploys the cluster and runs the test command on the host (not in Docker).
+# Use when tests need kubectl access (e.g. ingress restart resiliency scenarios).
+run_host_tests() {
 	if [ "$#" -lt 1 ]; then
 		usage
 		exit 1
@@ -621,9 +859,10 @@ run_tests() {
 	trap cleanup_after_run EXIT
 	start
 
-	run_command_through_ingress "$@"
+	run_command_on_host_through_ingress "$@"
 }
 
+# get_ingress_address ensures the Ingress exists and prints the IP to reach it.
 get_ingress_address() {
 	local address
 	setup_ingress >&2
@@ -635,37 +874,114 @@ get_ingress_address() {
 	echo "${address}"
 }
 
+# endpoint prints the ingress hostname URL (used by the "endpoint" CLI command).
 endpoint() {
 	ingress_endpoint
 }
 
-run_command_through_ingress() {
+# collect_toxiproxy_test_env prints env lines for Toxiproxy fault-injection tests (run-toxiproxy).
+# Routes the driver through a local Toxiproxy listener to ingress:
+#   Driver → Toxiproxy (127.0.0.1:listen) → Ingress → Coordinator
+collect_toxiproxy_test_env() {
+	local address auth net_override upstream toxiproxy_endpoint toxiproxy_scheme
+	address="$(get_ingress_address)"
+	upstream="$(ingress_upstream)"
+	auth="$(test_authentication)"
+	net_override="--net=host --add-host=${K8S_INGRESS_HOST}:${address}"
+
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		toxiproxy_scheme="https"
+	else
+		toxiproxy_scheme="http"
+	fi
+	toxiproxy_endpoint="${toxiproxy_scheme}://127.0.0.1:${K8S_TOXIPROXY_LISTEN_PORT}"
+
+	if [ -n "${K8S_TEST_ENDPOINTS_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_ENDPOINTS_ENV}=${toxiproxy_endpoint}"
+	fi
+	printf 'TEST_INGRESS_HOST=%s\n' "${K8S_INGRESS_HOST}"
+	printf 'TOXIPROXY_UPSTREAM=%s\n' "${upstream}"
+	printf 'TOXIPROXY_LISTEN_PORT=%s\n' "${K8S_TOXIPROXY_LISTEN_PORT}"
+	printf 'TOXIPROXY_ADMIN_PORT=%s\n' "${K8S_TOXIPROXY_ADMIN_PORT}"
+	printf 'TOXIPROXY_PROXY_NAME=%s\n' "${K8S_TOXIPROXY_PROXY_NAME}"
+	printf 'TEST_TOXIPROXY_ADMIN=http://127.0.0.1:%s\n' "${K8S_TOXIPROXY_ADMIN_PORT}"
+	printf 'TEST_TOXIPROXY_PROXY=%s\n' "${K8S_TOXIPROXY_PROXY_NAME}"
+	if [ -n "${K8S_TEST_AUTHENTICATION_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_AUTHENTICATION_ENV}=${auth}"
+	fi
+	if [ -n "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}=${auth}"
+	fi
+	if [ -n "${K8S_TEST_MODE_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_MODE_ENV}=k8s"
+	fi
+	if [ -n "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1"
+	fi
+	if [ -n "${K8S_TEST_NET_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_NET_ENV}=${net_override}"
+	fi
+	collect_k8s_cluster_test_env
+}
+
+# collect_ingress_test_env prints env lines for Docker-based tests (run).
+# Sets TEST_ENDPOINTS_OVERRIDE to the hostname URL and TEST_NET_OVERRIDE for --add-host.
+collect_ingress_test_env() {
 	local address auth endpoint net_override
-	local -a test_env
 	address="$(get_ingress_address)"
 	endpoint="$(ingress_endpoint)"
 	auth="$(test_authentication)"
 	net_override="--net=host --add-host=${K8S_INGRESS_HOST}:${address}"
-	test_env=()
 
 	if [ -n "${K8S_TEST_ENDPOINTS_ENV}" ]; then
-		test_env+=("${K8S_TEST_ENDPOINTS_ENV}=${endpoint}")
+		printf '%s\n' "${K8S_TEST_ENDPOINTS_ENV}=${endpoint}"
 	fi
 	if [ -n "${K8S_TEST_AUTHENTICATION_ENV}" ]; then
-		test_env+=("${K8S_TEST_AUTHENTICATION_ENV}=${auth}")
+		printf '%s\n' "${K8S_TEST_AUTHENTICATION_ENV}=${auth}"
 	fi
 	if [ -n "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}" ]; then
-		test_env+=("${K8S_TEST_LEGACY_AUTHENTICATION_ENV}=${auth}")
+		printf '%s\n' "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}=${auth}"
 	fi
 	if [ -n "${K8S_TEST_MODE_ENV}" ]; then
-		test_env+=("${K8S_TEST_MODE_ENV}=k8s")
+		printf '%s\n' "${K8S_TEST_MODE_ENV}=k8s"
 	fi
 	if [ -n "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}" ]; then
-		test_env+=("${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1")
+		printf '%s\n' "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1"
 	fi
 	if [ -n "${K8S_TEST_NET_ENV}" ]; then
-		test_env+=("${K8S_TEST_NET_ENV}=${net_override}")
+		printf '%s\n' "${K8S_TEST_NET_ENV}=${net_override}"
 	fi
+	collect_k8s_cluster_test_env
+	collect_docker_kubectl_extra_args_env
+}
+
+# run_command_through_toxiproxy runs the caller command with Toxiproxy test env.
+run_command_through_toxiproxy() {
+	local upstream toxiproxy_endpoint toxiproxy_scheme
+	local -a test_env
+	mapfile -t test_env < <(collect_toxiproxy_test_env)
+	upstream="$(ingress_upstream)"
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		toxiproxy_scheme="https"
+	else
+		toxiproxy_scheme="http"
+	fi
+	toxiproxy_endpoint="${toxiproxy_scheme}://127.0.0.1:${K8S_TOXIPROXY_LISTEN_PORT}"
+
+	echo "Running test command through Toxiproxy ${toxiproxy_endpoint} → Ingress ${upstream} (host ${K8S_INGRESS_HOST})..."
+	(
+		cd "${K8S_TEST_WORKDIR}"
+		env "${test_env[@]}" "$@"
+	)
+}
+
+# run_command_through_ingress runs the caller command with Docker test env (normal k8s path).
+run_command_through_ingress() {
+	local address endpoint
+	local -a test_env
+	mapfile -t test_env < <(collect_ingress_test_env)
+	address="$(get_ingress_address)"
+	endpoint="$(ingress_endpoint)"
 
 	echo "Running test command against ${endpoint} through ingress ${address}..."
 	(
@@ -674,6 +990,63 @@ run_command_through_ingress() {
 	)
 }
 
+# collect_ingress_host_test_env prints env lines for host-based tests (run-host).
+# Uses the ingress IP endpoint (e.g. http://127.0.0.1) instead of the hostname.
+# run_command_on_host_through_ingress also sets TEST_ENDPOINTS, TEST_ENDPOINTS_OVERRIDE,
+# and TEST_INGRESS_HOST so go test connects to the IP but sends Host: arangodb.local.
+collect_ingress_host_test_env() {
+	local address auth endpoint
+	address="$(get_ingress_address)"
+	endpoint="$(ingress_host_endpoint)"
+	auth="$(test_authentication)"
+
+	if [ -n "${K8S_TEST_ENDPOINTS_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_ENDPOINTS_ENV}=${endpoint}"
+	fi
+	if [ -n "${K8S_TEST_AUTHENTICATION_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_AUTHENTICATION_ENV}=${auth}"
+	fi
+	if [ -n "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}=${auth}"
+	fi
+	if [ -n "${K8S_TEST_MODE_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_MODE_ENV}=k8s"
+	fi
+	if [ -n "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1"
+	fi
+	collect_k8s_cluster_test_env
+
+	local kubeconfig_path
+	kubeconfig_path="$(resolve_kubeconfig_path)"
+	if [ -f "${kubeconfig_path}" ]; then
+		printf 'KUBECONFIG=%s\n' "${kubeconfig_path}"
+	fi
+}
+
+# run_command_on_host_through_ingress runs go test on the host with IP + Host header env.
+run_command_on_host_through_ingress() {
+	local address endpoint
+	local -a test_env
+	mapfile -t test_env < <(collect_ingress_host_test_env)
+	address="$(get_ingress_address)"
+	endpoint="$(ingress_host_endpoint)"
+
+	echo "Running host test command against ${endpoint} (ingress host ${K8S_INGRESS_HOST}) through ${address}..."
+	(
+		cd "${K8S_TEST_WORKDIR}"
+		env \
+			"${test_env[@]}" \
+			TEST_ENDPOINTS="${endpoint}" \
+			TEST_ENDPOINTS_OVERRIDE="${endpoint}" \
+			TEST_INGRESS_HOST="${K8S_INGRESS_HOST}" \
+			TEST_AUTHENTICATION="$(test_authentication)" \
+			TEST_MODE=cluster \
+			"$@"
+	)
+}
+
+# cleanup_after_run is the EXIT trap: optionally removes deployment and kind cluster.
 cleanup_after_run() {
 	if [ "${K8S_KEEP_DEPLOYMENT}" != "true" ]; then
 		cleanup
@@ -683,27 +1056,36 @@ cleanup_after_run() {
 	fi
 }
 
+# Main command dispatcher — maps CLI subcommands to functions above.
 case "${1:-}" in
-	run)
+	run)          # deploy cluster, run tests in Docker (normal k8s integration tests)
 		shift
 		run_tests "$@"
 		;;
-	start)
+	run-host)     # deploy cluster, run tests on host (needs kubectl from tests)
+		shift
+		run_host_tests "$@"
+		;;
+	run-toxiproxy) # deploy cluster, run tests through local Toxiproxy → ingress
+		shift
+		run_toxiproxy_tests "$@"
+		;;
+	start)        # deploy cluster only, no test command
 		start
 		;;
-	setup-kind)
+	setup-kind)   # create local kind cluster with ingress-nginx
 		setup_kind
 		;;
-	cleanup-kind)
+	cleanup-kind) # delete the kind cluster
 		cleanup_kind
 		;;
-	endpoint)
+	endpoint)     # print ingress hostname URL (e.g. https://arangodb.local)
 		endpoint
 		;;
-	ingress-address)
+	ingress-address) # print ingress IP (e.g. 127.0.0.1)
 		get_ingress_address
 		;;
-	cleanup|stop)
+	cleanup|stop) # remove ArangoDeployment, Ingress, and secrets
 		cleanup
 		;;
 	-h|--help|help|"")

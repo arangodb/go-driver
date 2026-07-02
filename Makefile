@@ -22,10 +22,19 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
 K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
+K8S_NAMESPACE ?= default
+K8S_DEPLOYMENT ?= arangodb-driver-tests
 
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
 endif
+
+# Toxiproxy sits between the driver and ArangoDB for network fault injection.
+TOXIPROXY_LISTEN_PORT ?= 17001
+TOXIPROXY_ADMIN_PORT ?= 8474
+TOXIPROXY_UPSTREAM ?= 127.0.0.1:7001
+TOXIPROXY_PROXY_NAME ?= arangodb
+TOXIPROXY_TEST_ENDPOINTS ?= http://127.0.0.1:$(TOXIPROXY_LISTEN_PORT)
 
 CGO_ENABLED=0
 ifdef RACE
@@ -166,7 +175,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster vulncheck
+.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster run-k8s-v2-resiliency run-k8s-v2-resiliency-tls run-k8s-v2-toxiproxy run-k8s-v2-toxiproxy-tls run-v2-tests-toxiproxy vulncheck
 
 all: build
 
@@ -217,6 +226,30 @@ run-k8s-v2-cluster-basic-auth:
 run-k8s-v2-cluster-tls-basic-auth:
 	@echo "Kubernetes cluster, with TLS and basic authentication, v2"
 	@K8S_MODE=Cluster K8S_TEST_AUTHENTICATION=basic K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" run env TESTV2PARALLEL=1 make run-v2-tests-cluster-with-basic-auth
+
+run-k8s-v2-resiliency:
+	@echo "Kubernetes cluster resiliency tests, v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=3 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run make run-v2-tests-resiliency-k8s
+
+run-k8s-v2-resiliency-tls:
+	@echo "Kubernetes cluster resiliency tests, HTTPS ingress, v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=3 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run make run-v2-tests-resiliency-k8s
+
+run-k8s-v2-toxiproxy:
+	@echo "Kubernetes Toxiproxy network fault tests, v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=1 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=false K8S_INGRESS_TLS=false bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run-toxiproxy make run-v2-tests-toxiproxy-k8s
+
+run-k8s-v2-toxiproxy-tls:
+	@echo "Kubernetes Toxiproxy network fault tests, HTTPS ingress, v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=1 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run-toxiproxy make run-v2-tests-toxiproxy-k8s
 
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
@@ -459,10 +492,14 @@ COMMON_DOCKER_CMD_PARAMS = \
 	-e TEST_JWTSECRET=$(TEST_JWTSECRET) \
 	-e TEST_MODE=$(TEST_MODE) \
 	-e TEST_MODE_K8S=$(TEST_MODE_K8S) \
+	-e TEST_INGRESS_HOST=$(TEST_INGRESS_HOST) \
 	-e TEST_BACKUP_REMOTE_REPO=$(TEST_BACKUP_REMOTE_REPO) \
 	-e TEST_BACKUP_REMOTE_CONFIG='$(TEST_BACKUP_REMOTE_CONFIG)' \
 	-e TEST_DEBUG='$(TEST_DEBUG)' \
 	-e TEST_ENABLE_SHUTDOWN=$(TEST_ENABLE_SHUTDOWN) \
+	-e TEST_ENABLE_RESILIENCY=$(TEST_ENABLE_RESILIENCY) \
+	-e TEST_TOXIPROXY_ADMIN=$(TEST_TOXIPROXY_ADMIN) \
+	-e TEST_TOXIPROXY_PROXY=$(TEST_TOXIPROXY_PROXY) \
 	-e ENABLE_DATABASE_EXTRA_FEATURES=$(ENABLE_DATABASE_EXTRA_FEATURES) \
 	-e GODEBUG=tls13=1 \
 	-e CGO_ENABLED=$(CGO_ENABLED) \
@@ -499,6 +536,66 @@ DOCKER_CMD_V2_PARAMS=\
 
 __test_v2_go_test:
 	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(DOCKER_V2_RUN_CMD) $(ADD_TIMESTAMP)) && echo "success!" \
+	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
+
+__run_v2_tests_resiliency_k8s: __test_v2_debug__ __test_prepare __test_v2_go_test_resiliency_k8s __test_cleanup
+
+# Resiliency k8s tests need kubectl in the test container. Prefer K8S_TEST_DOCKER_EXTRA_ARGS
+# from run-driver-tests.sh; fall back to host paths when make is invoked without the runner.
+ifeq ($(K8S_TEST_DOCKER_EXTRA_ARGS),)
+KUBECTL_BIN ?= $(shell command -v kubectl 2>/dev/null)
+KUBECONFIG_PATH ?= $(HOME)/.kube/config
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS :=
+ifneq ($(KUBECTL_BIN),)
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS += -v $(KUBECTL_BIN):/usr/local/bin/kubectl:ro
+endif
+ifneq ($(wildcard $(KUBECONFIG_PATH)),)
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS += -v $(KUBECONFIG_PATH):/root/.kube/config:ro -e KUBECONFIG=/root/.kube/config
+endif
+else
+RESILIENCY_K8S_DOCKER_EXTRA_ARGS := $(K8S_TEST_DOCKER_EXTRA_ARGS)
+endif
+
+DOCKER_CMD_RESILIENCY_K8S_PARAMS=\
+	$(COMMON_DOCKER_CMD_PARAMS) \
+	$(RESILIENCY_K8S_DOCKER_EXTRA_ARGS) \
+	-e K8S_COORDINATORS_COUNT=$(K8S_COORDINATORS_COUNT) \
+	-e K8S_NAMESPACE=$(K8S_NAMESPACE) \
+	-e K8S_DEPLOYMENT=$(K8S_DEPLOYMENT) \
+	-v "${ROOTDIR}":/usr/code:ro ${TEST_RESOURCES_VOLUME} \
+	-w /usr/code/v2/
+
+ifneq ($(strip $(TESTOPTIONS)),)
+RESILIENCY_TESTOPTIONS := $(TESTOPTIONS)
+else
+RESILIENCY_TESTOPTIONS := -run '^TestResiliency_'
+endif
+
+__test_v2_go_test_resiliency_k8s:
+	($(DOCKER_CMD) $(DOCKER_CMD_RESILIENCY_K8S_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(K8S_RESILIENCY_TEST_VERBOSE) $(RESILIENCY_TESTOPTIONS) -parallel 1 ./tests) && echo "success!" \
+	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
+
+ifneq ($(strip $(TESTOPTIONS)),)
+TOXIPROXY_TESTOPTIONS := $(TESTOPTIONS)
+else
+TOXIPROXY_TESTOPTIONS := -run '^TestToxiproxy_'
+endif
+
+__run_v2_tests_toxiproxy: __test_v2_debug__ __test_prepare __test_toxiproxy_start __test_v2_go_test_toxiproxy __test_toxiproxy_cleanup __test_cleanup
+
+__run_v2_tests_toxiproxy_k8s: __test_v2_debug__ __test_prepare __test_toxiproxy_start __test_v2_go_test_toxiproxy __test_toxiproxy_cleanup __test_cleanup
+
+__test_toxiproxy_start:
+	@chmod +x "${ROOTDIR}/test/toxiproxy.sh"
+	@TESTCONTAINER=$(TESTCONTAINER) TOXIPROXY_LISTEN_PORT=$(TOXIPROXY_LISTEN_PORT) TOXIPROXY_ADMIN_PORT=$(TOXIPROXY_ADMIN_PORT) \
+	  TOXIPROXY_UPSTREAM=$(TOXIPROXY_UPSTREAM) TOXIPROXY_PROXY_NAME=$(TOXIPROXY_PROXY_NAME) DOCKER_NETWORK="--net=host" \
+	  "${ROOTDIR}/test/toxiproxy.sh" start
+
+__test_toxiproxy_cleanup:
+	@TESTCONTAINER=$(TESTCONTAINER) DOCKER_NETWORK="--net=host" "${ROOTDIR}/test/toxiproxy.sh" cleanup
+
+__test_v2_go_test_toxiproxy:
+	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTVERBOSEOPTIONS) $(TOXIPROXY_TESTOPTIONS) -parallel 1 ./tests) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __run_v3_tests: __test_v3_debug__ __test_prepare __test_v3_go_test __test_cleanup
@@ -705,6 +802,30 @@ run-v2-tests-resilientsingle: run-v2-tests-resilientsingle-with-auth
 run-v2-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v2"
 	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v2_tests
+
+# Resiliency tests against an externally started cluster (e.g. kube-arangodb via ingress).
+# Invoked by run-k8s-v2-resiliency; kubectl mounts come from run-driver-tests.sh via K8S_TEST_DOCKER_EXTRA_ARGS.
+run-v2-tests-resiliency-k8s:
+	@echo "Resiliency tests, Kubernetes cluster mode, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_ENABLE_RESILIENCY=1 \
+		K8S_COORDINATORS_COUNT=$(if $(K8S_COORDINATORS_COUNT),$(K8S_COORDINATORS_COUNT),3) \
+		TAGS="resiliency" TESTV2PARALLEL=1 __run_v2_tests_resiliency_k8s
+
+# Toxiproxy network fault tests route the driver through a local Toxiproxy instance.
+run-v2-tests-toxiproxy:
+	@echo "Toxiproxy network fault tests, single server, v2"
+	@${MAKE} TEST_MODE="single" TEST_AUTH="none" TAGS="toxiproxy" TESTV2PARALLEL=1 \
+		TEST_ENDPOINTS=$(TOXIPROXY_TEST_ENDPOINTS) \
+		TEST_TOXIPROXY_ADMIN=http://127.0.0.1:$(TOXIPROXY_ADMIN_PORT) \
+		TEST_TOXIPROXY_PROXY=$(TOXIPROXY_PROXY_NAME) \
+		__run_v2_tests_toxiproxy
+
+# Toxiproxy tests against kube-arangodb via ingress (invoked by run-k8s-v2-toxiproxy).
+# TOXIPROXY_UPSTREAM, TEST_INGRESS_HOST, and TEST_ENDPOINTS_OVERRIDE come from run-driver-tests.sh.
+run-v2-tests-toxiproxy-k8s:
+	@echo "Toxiproxy network fault tests, Kubernetes cluster mode, v2"
+	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TAGS="toxiproxy" TESTV2PARALLEL=1 \
+		__run_v2_tests_toxiproxy_k8s
 
 # V3
 

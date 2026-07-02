@@ -33,5 +33,13 @@
             ""
         ]
     },
-    "go.gopath": "${workspaceRoot}/.gobuild"
+    "go.gopath": "${workspaceRoot}/.gobuild",
+    "go.useGoWork": true,
+    "go.buildTags": "resiliency,toxiproxy",
+    "go.toolsEnvVars": {
+        "GOFLAGS": "-tags=resiliency,toxiproxy"
+    },
+    "gopls": {
+        "build.buildFlags": ["-tags=resiliency,toxiproxy"]
+    }
 }
