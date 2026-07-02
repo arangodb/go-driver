@@ -139,19 +139,3 @@ func waitForClusterWritable(t testing.TB, client arangodb.Client, timeout time.D
 		return Interrupt{}
 	}).TimeoutT(t, timeout, 500*time.Millisecond)
 }
-
-// waitForSuccessfulVersion retries client.Version until it succeeds or the timeout expires.
-func waitForSuccessfulVersion(t testing.TB, client arangodb.Client, timeout time.Duration) {
-	t.Helper()
-
-	NewTimeout(func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		_, err := client.Version(ctx)
-		if err == nil {
-			return Interrupt{}
-		}
-		return nil
-	}).TimeoutT(t, timeout, 500*time.Millisecond)
-}
