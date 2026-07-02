@@ -46,6 +46,9 @@ K8S_TEST_AUTHENTICATION="${K8S_TEST_AUTHENTICATION:-basic}"
 K8S_TLS="${K8S_TLS:-false}"
 K8S_TEST_WORKDIR="${K8S_TEST_WORKDIR:-${ROOT_DIR}}"
 K8S_COORDINATORS_COUNT="${K8S_COORDINATORS_COUNT:-1}"
+K8S_TOXIPROXY_LISTEN_PORT="${K8S_TOXIPROXY_LISTEN_PORT:-17001}"
+K8S_TOXIPROXY_ADMIN_PORT="${K8S_TOXIPROXY_ADMIN_PORT:-8474}"
+K8S_TOXIPROXY_PROXY_NAME="${K8S_TOXIPROXY_PROXY_NAME:-arangodb}"
 
 # --- Names of env vars passed to the driver test command (values built at runtime) ---
 # Example: K8S_TEST_ENDPOINTS_ENV=TEST_ENDPOINTS_OVERRIDE prints
@@ -80,6 +83,7 @@ usage() {
 Usage:
   $0 run <test-command> [args...]
   $0 run-host <test-command> [args...]
+  $0 run-toxiproxy <test-command> [args...]
   $0 start
   $0 setup-kind
   $0 endpoint
@@ -106,6 +110,8 @@ Environment:
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
   K8S_TEST_WORKDIR       working directory for the test command (default: ${K8S_TEST_WORKDIR})
   K8S_COORDINATORS_COUNT number of coordinators in Cluster mode (default: ${K8S_COORDINATORS_COUNT})
+  K8S_TOXIPROXY_LISTEN_PORT local Toxiproxy listen port for run-toxiproxy (default: ${K8S_TOXIPROXY_LISTEN_PORT})
+  K8S_TOXIPROXY_ADMIN_PORT local Toxiproxy admin API port (default: ${K8S_TOXIPROXY_ADMIN_PORT})
   K8S_KIND_CLUSTER_NAME  kind cluster name for "setup-kind" (default: ${K8S_KIND_CLUSTER_NAME})
   K8S_KIND_NODE_IMAGE    kind node image for "setup-kind" (default: ${K8S_KIND_NODE_IMAGE})
   K8S_KIND_RETAIN        retain kind nodes after setup failure (default: ${K8S_KIND_RETAIN})
@@ -676,6 +682,31 @@ ingress_address() {
 	kubectl -n "${K8S_NAMESPACE}" get ingress "${K8S_INGRESS_NAME}" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true
 }
 
+# ingress_upstream_port returns the TCP port used to reach ingress from the test host.
+ingress_upstream_port() {
+	if [ -n "${K8S_INGRESS_PORT}" ]; then
+		echo "${K8S_INGRESS_PORT}"
+		return
+	fi
+
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		echo "443"
+	else
+		echo "80"
+	fi
+}
+
+# ingress_upstream returns host:port for Toxiproxy upstream (ingress reachable from the test host).
+ingress_upstream() {
+	local address
+	address="$(ingress_address)"
+	if [ -z "${address}" ]; then
+		echo "ERROR: unable to determine ingress address for Toxiproxy upstream. Set K8S_INGRESS_ADDRESS explicitly." >&2
+		exit 1
+	fi
+	echo "${address}:$(ingress_upstream_port)"
+}
+
 # ingress_annotations emits nginx timeout annotations for the Ingress manifest.
 ingress_annotations() {
 	cat <<EOF
@@ -802,6 +833,19 @@ run_tests() {
 	run_command_through_ingress "$@"
 }
 
+# run_toxiproxy_tests deploys kube-arangodb and runs tests through a local Toxiproxy instance.
+run_toxiproxy_tests() {
+	if [ "$#" -lt 1 ]; then
+		usage
+		exit 1
+	fi
+
+	trap cleanup_after_run EXIT
+	start
+
+	run_command_through_toxiproxy "$@"
+}
+
 # run_host_tests deploys the cluster and runs the test command on the host (not in Docker).
 # Use when tests need kubectl access (e.g. ingress restart resiliency scenarios).
 run_host_tests() {
@@ -835,6 +879,51 @@ endpoint() {
 	ingress_endpoint
 }
 
+# collect_toxiproxy_test_env prints env lines for Toxiproxy fault-injection tests (run-toxiproxy).
+# Routes the driver through a local Toxiproxy listener to ingress:
+#   Driver → Toxiproxy (127.0.0.1:listen) → Ingress → Coordinator
+collect_toxiproxy_test_env() {
+	local address auth net_override upstream toxiproxy_endpoint toxiproxy_scheme
+	address="$(get_ingress_address)"
+	upstream="$(ingress_upstream)"
+	auth="$(test_authentication)"
+	net_override="--net=host --add-host=${K8S_INGRESS_HOST}:${address}"
+
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		toxiproxy_scheme="https"
+	else
+		toxiproxy_scheme="http"
+	fi
+	toxiproxy_endpoint="${toxiproxy_scheme}://127.0.0.1:${K8S_TOXIPROXY_LISTEN_PORT}"
+
+	if [ -n "${K8S_TEST_ENDPOINTS_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_ENDPOINTS_ENV}=${toxiproxy_endpoint}"
+	fi
+	printf 'TEST_INGRESS_HOST=%s\n' "${K8S_INGRESS_HOST}"
+	printf 'TOXIPROXY_UPSTREAM=%s\n' "${upstream}"
+	printf 'TOXIPROXY_LISTEN_PORT=%s\n' "${K8S_TOXIPROXY_LISTEN_PORT}"
+	printf 'TOXIPROXY_ADMIN_PORT=%s\n' "${K8S_TOXIPROXY_ADMIN_PORT}"
+	printf 'TOXIPROXY_PROXY_NAME=%s\n' "${K8S_TOXIPROXY_PROXY_NAME}"
+	printf 'TEST_TOXIPROXY_ADMIN=http://127.0.0.1:%s\n' "${K8S_TOXIPROXY_ADMIN_PORT}"
+	printf 'TEST_TOXIPROXY_PROXY=%s\n' "${K8S_TOXIPROXY_PROXY_NAME}"
+	if [ -n "${K8S_TEST_AUTHENTICATION_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_AUTHENTICATION_ENV}=${auth}"
+	fi
+	if [ -n "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_LEGACY_AUTHENTICATION_ENV}=${auth}"
+	fi
+	if [ -n "${K8S_TEST_MODE_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_MODE_ENV}=k8s"
+	fi
+	if [ -n "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_NOT_WAIT_UNTIL_READY_ENV}=1"
+	fi
+	if [ -n "${K8S_TEST_NET_ENV}" ]; then
+		printf '%s\n' "${K8S_TEST_NET_ENV}=${net_override}"
+	fi
+	collect_k8s_cluster_test_env
+}
+
 # collect_ingress_test_env prints env lines for Docker-based tests (run).
 # Sets TEST_ENDPOINTS_OVERRIDE to the hostname URL and TEST_NET_OVERRIDE for --add-host.
 collect_ingress_test_env() {
@@ -864,6 +953,26 @@ collect_ingress_test_env() {
 	fi
 	collect_k8s_cluster_test_env
 	collect_docker_kubectl_extra_args_env
+}
+
+# run_command_through_toxiproxy runs the caller command with Toxiproxy test env.
+run_command_through_toxiproxy() {
+	local upstream toxiproxy_endpoint toxiproxy_scheme
+	local -a test_env
+	mapfile -t test_env < <(collect_toxiproxy_test_env)
+	upstream="$(ingress_upstream)"
+	if [ "${K8S_INGRESS_TLS}" = "true" ]; then
+		toxiproxy_scheme="https"
+	else
+		toxiproxy_scheme="http"
+	fi
+	toxiproxy_endpoint="${toxiproxy_scheme}://127.0.0.1:${K8S_TOXIPROXY_LISTEN_PORT}"
+
+	echo "Running test command through Toxiproxy ${toxiproxy_endpoint} → Ingress ${upstream} (host ${K8S_INGRESS_HOST})..."
+	(
+		cd "${K8S_TEST_WORKDIR}"
+		env "${test_env[@]}" "$@"
+	)
 }
 
 # run_command_through_ingress runs the caller command with Docker test env (normal k8s path).
@@ -956,6 +1065,10 @@ case "${1:-}" in
 	run-host)     # deploy cluster, run tests on host (needs kubectl from tests)
 		shift
 		run_host_tests "$@"
+		;;
+	run-toxiproxy) # deploy cluster, run tests through local Toxiproxy → ingress
+		shift
+		run_toxiproxy_tests "$@"
 		;;
 	start)        # deploy cluster only, no test command
 		start
