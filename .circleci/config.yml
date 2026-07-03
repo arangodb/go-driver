@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
   slack: circleci/slack@4.1
+  trivy-scan: arangodb/trivy-scan@0.1.0
 executors:
   golang-executor:
     docker:
@@ -394,6 +395,17 @@ jobs:
       - run: make vulncheck
       - *notify_slack_on_fail
 
+  dependency-cve-scan:
+    executor: golang-executor
+    steps:
+      - checkout
+      - trivy-scan/scan:
+          scan-type: fs
+          scan-path: "."
+          severity: "CRITICAL,HIGH"
+          fail-on-findings: false
+          store-junit-results: true
+
   # GitHub release (tags VERSION bump, git push, github-release draft → publish).
   # Requires CircleCI context github-release: RELEASER_APP_ID + RELEASER_APP_PRIVATE_KEY_B64 (GitHub App
   # arango-ci-release, contents: write, installed on this repo). Optional: GIT_USER_NAME, GIT_USER_EMAIL.
@@ -478,6 +490,7 @@ workflows:
               pattern: *publish_release_target_regex
     jobs:
       - check-code
+      - dependency-cve-scan
       - run-unit-tests:
           requires:
             - check-code
