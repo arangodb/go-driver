@@ -38,11 +38,11 @@ import (
 
 const (
 	// Slow-query kill tests only need well more than coordinatorKillCursorAfterDocs rows.
-	coordinatorKillSlowQueryDocCount = 200
-	coordinatorKillReadAfterDocs      = 1
-	coordinatorKillCursorAfterDocs    = 30
-	coordinatorKillOperationTimeout   = 90 * time.Second
-	coordinatorKillCursorOpenTimeout  = 2 * time.Minute
+	coordinatorKillSlowQueryDocCount          = 200
+	coordinatorKillReadAfterDocs              = 1
+	coordinatorKillCursorAfterDocs            = 30
+	coordinatorKillOperationTimeout           = 90 * time.Second
+	coordinatorKillCursorOpenTimeout          = 2 * time.Minute
 	coordinatorSlowReadQuerySleepSecondsLocal = 0.05
 	coordinatorSlowReadQuerySleepSecondsK8s   = 0.25
 )

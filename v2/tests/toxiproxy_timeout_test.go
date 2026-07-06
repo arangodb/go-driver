@@ -74,7 +74,7 @@ func testContextTimeout(t *testing.T, connFactory toxiproxyConnectionFactory) {
 // hanging when the server response is delayed beyond the transport response-header deadline.
 func TestToxiproxy_ServerTimeout(t *testing.T) {
 	runToxiproxyWithHTTPProtocols(t, testServerTimeout, toxiproxyProtocolConfig{
-		http1: connectionToxiproxyHttpServerTimeout,
+		http1:     connectionToxiproxyHttpServerTimeout,
 		skipHTTP2: "HTTP/2 transport has no ResponseHeaderTimeout; server response delay covered on HTTP/1",
 	})
 }

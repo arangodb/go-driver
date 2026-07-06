@@ -109,28 +109,28 @@ func toxiproxyBandwidthOperationTimeout() time.Duration {
 }
 
 const (
-	toxiproxyHighLatencyMs                  = int64(2000)
-	toxiproxyExtremeLatencyMs               = int64(30000)
-	toxiproxyContextTimeoutLatencyMs        = int64(20000)
-	toxiproxyContextTimeoutDeadline         = 2 * time.Second
-	toxiproxyServerTimeoutResponseLatencyMs = int64(20000)
-	toxiproxyServerTimeoutDeadline          = 2 * time.Second
-	toxiproxyServerTimeoutMaxWait           = 5 * time.Second
-	toxiproxyPartialPacketLossToxicity      = float32(0.3)
-	toxiproxyPartialPacketLossAttempts      = 20
-	toxiproxyFullPacketLossCallTimeout      = 10 * time.Second
-	toxiproxyBandwidthLimitKBs             = int64(20)
-	toxiproxyBandwidthUploadDocCount         = 30
-	toxiproxyBandwidthUploadPayloadBytes     = 4000
-	toxiproxyBandwidthDownloadDocCount       = 80
-	toxiproxyBandwidthDownloadPayloadBytes   = 4000
-	toxiproxyBandwidthMinSlowdownFactor      = 2.0
-	toxiproxyStreamingDocCount               = 100
-	toxiproxyStreamingDocsBeforeDisconnect   = 5
-	toxiproxyStreamingSlowQueryDocCount      = 200
+	toxiproxyHighLatencyMs                    = int64(2000)
+	toxiproxyExtremeLatencyMs                 = int64(30000)
+	toxiproxyContextTimeoutLatencyMs          = int64(20000)
+	toxiproxyContextTimeoutDeadline           = 2 * time.Second
+	toxiproxyServerTimeoutResponseLatencyMs   = int64(20000)
+	toxiproxyServerTimeoutDeadline            = 2 * time.Second
+	toxiproxyServerTimeoutMaxWait             = 5 * time.Second
+	toxiproxyPartialPacketLossToxicity        = float32(0.3)
+	toxiproxyPartialPacketLossAttempts        = 20
+	toxiproxyFullPacketLossCallTimeout        = 10 * time.Second
+	toxiproxyBandwidthLimitKBs                = int64(20)
+	toxiproxyBandwidthUploadDocCount          = 30
+	toxiproxyBandwidthUploadPayloadBytes      = 4000
+	toxiproxyBandwidthDownloadDocCount        = 80
+	toxiproxyBandwidthDownloadPayloadBytes    = 4000
+	toxiproxyBandwidthMinSlowdownFactor       = 2.0
+	toxiproxyStreamingDocCount                = 100
+	toxiproxyStreamingDocsBeforeDisconnect    = 5
+	toxiproxyStreamingSlowQueryDocCount       = 200
 	toxiproxyStreamingSlowQueryBurnIterations = 80
-	toxiproxyStreamingInterruptTimeout       = 30 * time.Second
-	toxiproxyStreamingCursorOpenTimeout      = 2 * time.Minute
+	toxiproxyStreamingInterruptTimeout        = 30 * time.Second
+	toxiproxyStreamingCursorOpenTimeout       = 2 * time.Minute
 )
 
 // connectionToxiproxyHttpServerTimeout builds an HTTP/1 connection with a short response-header
