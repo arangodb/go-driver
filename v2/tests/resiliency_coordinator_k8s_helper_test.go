@@ -40,6 +40,7 @@ const (
 	defaultK8sNamespace          = "default"
 	defaultK8sDeployment         = "arangodb-driver-tests"
 	minCoordinatorResiliencyPods = 3
+	coordinatorRecoveryTimeout   = 5 * time.Minute
 )
 
 // requireResiliencyK8sCoordinatorMode skips unless the test runs in k8s cluster mode with kubectl and
@@ -162,14 +163,118 @@ func killCoordinatorForClient(t testing.TB, client arangodb.Client) {
 	deleteCoordinatorPod(t, coordinatorPodForClient(t, client))
 }
 
-// ensureCoordinatorsRecovered waits until all expected coordinator pods are ready again.
-// When client is non-nil, also verifies the cluster serves requests via client.Version.
-// Call after coordinator chaos and before the next resiliency subtest or client connection.
+// killAllCoordinators force-deletes every coordinator pod. Used during active cursor reads
+// because ingress load balancing can pin the cursor to a different coordinator than ServerID().
+func killAllCoordinators(t testing.TB) {
+	t.Helper()
+
+	pods := listCoordinatorPods(t)
+	t.Logf("Killing %d coordinator pods during active cursor in %s/%s", len(pods), k8sNamespace(), k8sDeployment())
+	for _, pod := range pods {
+		deleteCoordinatorPod(t, pod)
+	}
+}
+
+// ensureCoordinatorsRecovered waits until coordinators, the ArangoDeployment, ingress backends,
+// and driver requests through ingress are healthy again.
 func ensureCoordinatorsRecovered(t testing.TB, client arangodb.Client) {
 	t.Helper()
 	waitForCoordinatorsReady(t, expectedCoordinatorCount())
+	waitForArangoDeploymentReady(t)
+	waitForExternalAccessEndpoints(t)
 	if client != nil {
-		waitForSuccessfulVersion(t, client, 30*time.Second)
+		waitForIngressRecovered(t, client, coordinatorRecoveryTimeout)
+		waitForClusterStable(t, client, time.Minute)
+	}
+}
+
+func waitForArangoDeploymentReady(t testing.TB) {
+	t.Helper()
+	requireKubectl(t)
+
+	namespace := k8sNamespace()
+	deployment := k8sDeployment()
+	timeout := 10 * time.Minute
+
+	t.Logf("Waiting for ArangoDeployment %s/%s to become ready", namespace, deployment)
+	err := NewTimeout(func() error {
+		cmd := exec.Command(
+			"kubectl", "-n", namespace,
+			"get", "arangodeployment", deployment,
+			"-o", "jsonpath={.status.conditions[?(@.type==\"Ready\")].status}",
+		)
+		output, runErr := cmd.CombinedOutput()
+		if runErr != nil {
+			t.Logf("kubectl get arangodeployment failed: %v: %s", runErr, string(output))
+			return nil
+		}
+		if strings.TrimSpace(string(output)) == "True" {
+			return Interrupt{}
+		}
+		return nil
+	}).Timeout(timeout, 5*time.Second)
+	if err != nil {
+		require.NoError(t, err, "ArangoDeployment %s/%s did not become ready within %s", namespace, deployment, timeout)
+	}
+}
+
+func waitForExternalAccessEndpoints(t testing.TB) {
+	t.Helper()
+	requireKubectl(t)
+
+	namespace := k8sNamespace()
+	service := k8sDeployment() + "-ea"
+	timeout := 10 * time.Minute
+
+	t.Logf("Waiting for service/%s to have ready endpoints in %s", service, namespace)
+	err := NewTimeout(func() error {
+		cmd := exec.Command(
+			"kubectl", "-n", namespace,
+			"get", "endpoints", service,
+			"-o", "jsonpath={.subsets[*].addresses[*].ip}",
+		)
+		output, runErr := cmd.CombinedOutput()
+		if runErr != nil {
+			t.Logf("kubectl get endpoints failed: %v: %s", runErr, string(output))
+			return nil
+		}
+		if len(strings.Fields(string(output))) > 0 {
+			return Interrupt{}
+		}
+		return nil
+	}).Timeout(timeout, 5*time.Second)
+	if err != nil {
+		require.NoError(t, err, "service/%s did not get ready endpoints within %s", service, timeout)
+	}
+}
+
+// waitForIngressRecovered retries client.Version until ingress and coordinators accept traffic.
+func waitForIngressRecovered(t testing.TB, client arangodb.Client, timeout time.Duration) {
+	t.Helper()
+
+	t.Logf("Waiting for ingress to serve Version() after coordinator recovery (budget: %s)", timeout)
+
+	var lastErr error
+	attempts := 0
+	err := NewTimeout(func() error {
+		attempts++
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		_, err := client.Version(ctx)
+		if err == nil {
+			t.Logf("ingress recovered after %d Version() attempt(s)", attempts)
+			return Interrupt{}
+		}
+
+		lastErr = err
+		if attempts == 1 || attempts%10 == 0 {
+			t.Logf("ingress not ready yet (attempt %d): %v", attempts, err)
+		}
+		return nil
+	}).Timeout(timeout, 500*time.Millisecond)
+	if err != nil {
+		require.NoError(t, err, "ingress did not recover within %s (last Version error: %v)", timeout, lastErr)
 	}
 }
 
@@ -182,31 +287,52 @@ func waitForCoordinatorsReady(t testing.TB, expectedCount int) {
 	timeout := 10 * time.Minute
 
 	t.Logf("Waiting for %d coordinator pods to become ready in %s", expectedCount, namespace)
-	NewTimeout(func() error {
-		cmd := exec.Command(
-			"kubectl", "-n", namespace,
-			"wait", "--for=condition=ready", "pod",
-			"-l", selector,
-			"--timeout=30s",
-		)
-		if err := cmd.Run(); err != nil {
+	var lastLog time.Time
+	err := NewTimeout(func() error {
+		readyCount, countErr := readyCoordinatorPodCount(namespace, selector)
+		if countErr != nil {
+			t.Logf("kubectl get coordinator pods failed: %v", countErr)
 			return nil
 		}
-
-		cmd = exec.Command(
-			"kubectl", "-n", namespace,
-			"get", "pods", "-l", selector,
-			"-o", "jsonpath={.items[*].metadata.name}",
-		)
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Logf("kubectl get pods failed: %v: %s", err, string(output))
-			return nil
-		}
-
-		if len(strings.Fields(string(output))) >= expectedCount {
+		if readyCount >= expectedCount {
+			t.Logf("coordinator pods ready: %d/%d", readyCount, expectedCount)
 			return Interrupt{}
 		}
+		if lastLog.IsZero() || time.Since(lastLog) >= 15*time.Second {
+			t.Logf("coordinator pods ready: %d/%d", readyCount, expectedCount)
+			lastLog = time.Now()
+		}
 		return nil
-	}).TimeoutT(t, timeout, 5*time.Second)
+	}).Timeout(timeout, 5*time.Second)
+	if err != nil {
+		require.NoError(t, err, "expected %d ready coordinator pods within %s", expectedCount, timeout)
+	}
+}
+
+func readyCoordinatorPodCount(namespace, selector string) (int, error) {
+	cmd := exec.Command(
+		"kubectl", "-n", namespace,
+		"get", "pods", "-l", selector,
+		"--no-headers",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, err
+	}
+
+	ready := 0
+	for line := range strings.SplitSeq(strings.TrimSpace(string(output)), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		parts := strings.Split(fields[1], "/")
+		if len(parts) != 2 {
+			continue
+		}
+		if parts[0] == parts[1] && parts[0] != "0" {
+			ready++
+		}
+	}
+	return ready, nil
 }

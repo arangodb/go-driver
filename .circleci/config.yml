@@ -54,10 +54,10 @@ parameters:
     default: "arangodb/arangodb-starter:latest"
   kubeArangoDBVersion:
     type: string
-    default: "1.2.43"
+    default: "1.4.3"
   kubeArangoDBImage:
     type: string
-    default: "gcr.io/gcr-for-testing/arangodb/kube-arangodb:1.2.43"
+    default: "gcr.io/gcr-for-testing/arangodb/kube-arangodb-enterprise:1.4.3"
   # Empty by default. Set via "Trigger Pipeline" / API to a release Make target (see publish-release workflow).
   # Same pattern as arangodb-helper/arangodb: e.g. release-v2-patch, prerelease-v2-minor.
   publish:

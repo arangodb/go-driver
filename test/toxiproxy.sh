@@ -55,7 +55,7 @@ if [ "$CMD" == "start" ]; then
         exit 1
     fi
 elif [ "$CMD" == "cleanup" ]; then
-    :
+    docker rm -f "${TOXIPROXY_CONTAINER}" &> /dev/null
 else
     echo "Usage: $0 {start|cleanup}"
     exit 1

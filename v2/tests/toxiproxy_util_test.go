@@ -24,14 +24,9 @@ package tests
 
 import (
 	"context"
-	"errors"
-	"net"
-	"net/url"
-	"strings"
 	"testing"
 	"time"
 
-	pkgerrors "github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -41,128 +36,157 @@ import (
 // toxiproxyConnectionFactory builds a driver connection routed through Toxiproxy.
 type toxiproxyConnectionFactory func(testing.TB) connection.Connection
 
+// toxiproxyProtocolConfig overrides default HTTP/1 and HTTP/2 connection factories.
+// A zero value uses connectionJsonHttp and connectionJsonHttp2.
+type toxiproxyProtocolConfig struct {
+	http1     toxiproxyConnectionFactory
+	http2     toxiproxyConnectionFactory
+	skipHTTP2 string
+}
+
+// http1Factory returns the configured HTTP/1 factory or the default JSON-over-HTTP/1 connection.
+func (c toxiproxyProtocolConfig) http1Factory() toxiproxyConnectionFactory {
+	if c.http1 != nil {
+		return c.http1
+	}
+	return connectionJsonHttp
+}
+
+// http2Factory returns the configured HTTP/2 factory or the default JSON-over-HTTP/2 connection.
+func (c toxiproxyProtocolConfig) http2Factory() toxiproxyConnectionFactory {
+	if c.http2 != nil {
+		return c.http2
+	}
+	return connectionJsonHttp2
+}
+
 // newToxiproxyClient creates a driver client and waits until ArangoDB is reachable through the proxy.
 func newToxiproxyClient(t testing.TB, connFactory toxiproxyConnectionFactory) arangodb.Client {
 	timeout := 1 * time.Minute
 	if isK8S() {
 		timeout = 3 * time.Minute
 	}
-	return waitForConnectionTimeout(t, arangodb.NewClient(connFactory(t)), timeout)
+	client := waitForConnectionTimeout(t, arangodb.NewClient(connFactory(t)), timeout)
+	requireDriverRoutesThroughToxiproxy(t, client)
+	return client
 }
 
-// runToxiproxyWithHTTPProtocols runs the given test body for both HTTP/1 and HTTP/2 connections.
-func runToxiproxyWithHTTPProtocols(t *testing.T, run func(t *testing.T, connFactory toxiproxyConnectionFactory)) {
+// runToxiproxyWithHTTPProtocols runs the given test body for HTTP/1 and HTTP/2.
+// Pass an optional toxiproxyProtocolConfig to override connection factories or skip HTTP/2.
+func runToxiproxyWithHTTPProtocols(t *testing.T, run func(t *testing.T, connFactory toxiproxyConnectionFactory), cfg ...toxiproxyProtocolConfig) {
 	requireToxiproxyAvailable(t)
+
+	var protocols toxiproxyProtocolConfig
+	if len(cfg) > 0 {
+		protocols = cfg[0]
+	}
 
 	probe := newToxiproxyClient(t, connectionJsonHttp)
 	version, err := probe.Version(context.Background())
 	require.NoError(t, err)
 
 	t.Run("HTTP/1", func(t *testing.T) {
-		run(t, connectionJsonHttp)
+		run(t, protocols.http1Factory())
 	})
 
 	t.Run("HTTP/2", func(t *testing.T) {
+		if protocols.skipHTTP2 != "" {
+			t.Skip(protocols.skipHTTP2)
+		}
 		if version.Version.CompareTo("3.7.1") < 1 {
 			t.Skip("HTTP/2 requires ArangoDB 3.7.1 or newer")
 		}
-		run(t, connectionJsonHttp2)
+		run(t, protocols.http2Factory())
 	})
 }
 
-// isConnectionError reports whether err indicates a transport-level connection failure.
-// These are not HTTP status codes (401, 503, etc.) — they come from the TCP/HTTP stack
-// when the connection is reset, closed, or otherwise broken before a response is received.
-func isConnectionError(err error) bool {
-	if err == nil {
-		return false
+// toxiproxyBandwidthOperationTimeout returns the context budget for throttled insert/query workloads.
+func toxiproxyBandwidthOperationTimeout() time.Duration {
+	if isK8S() {
+		return 10 * time.Minute
 	}
-
-	var opErr *net.OpError
-	if errors.As(err, &opErr) {
-		return true
-	}
-	if pkgerrors.As(err, &opErr) {
-		return true
-	}
-
-	var urlErr *url.Error
-	if errors.As(err, &urlErr) {
-		return isConnectionError(urlErr.Unwrap())
-	}
-	if pkgerrors.As(err, &urlErr) {
-		return isConnectionError(urlErr.Unwrap())
-	}
-
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "connection reset") ||
-		strings.Contains(msg, "broken pipe") ||
-		strings.Contains(msg, "connection refused") ||
-		strings.Contains(msg, "unexpected eof") || // HTTP/2 often surfaces abrupt close as EOF, not RST
-		strings.Contains(msg, "use of closed network connection") ||
-		strings.Contains(msg, "client connection lost") ||
-		strings.Contains(msg, "transport connection broken")
+	return 5 * time.Minute
 }
 
-// isResetOrEOFError reports the documented outcomes for RST-by-peer simulation.
-// HTTP/1 typically surfaces "connection reset by peer"; HTTP/2 often surfaces "unexpected EOF".
-func isResetOrEOFError(err error) bool {
-	if err == nil {
-		return false
+const (
+	toxiproxyHighLatencyMs                  = int64(2000)
+	toxiproxyExtremeLatencyMs               = int64(30000)
+	toxiproxyContextTimeoutLatencyMs        = int64(20000)
+	toxiproxyContextTimeoutDeadline         = 2 * time.Second
+	toxiproxyServerTimeoutResponseLatencyMs = int64(20000)
+	toxiproxyServerTimeoutDeadline          = 2 * time.Second
+	toxiproxyServerTimeoutMaxWait           = 5 * time.Second
+	toxiproxyPartialPacketLossToxicity      = float32(0.3)
+	toxiproxyPartialPacketLossAttempts      = 20
+	toxiproxyFullPacketLossCallTimeout      = 10 * time.Second
+	toxiproxyBandwidthLimitKBs             = int64(20)
+	toxiproxyBandwidthUploadDocCount         = 30
+	toxiproxyBandwidthUploadPayloadBytes     = 4000
+	toxiproxyBandwidthDownloadDocCount       = 80
+	toxiproxyBandwidthDownloadPayloadBytes   = 4000
+	toxiproxyBandwidthMinSlowdownFactor      = 2.0
+	toxiproxyStreamingDocCount               = 100
+	toxiproxyStreamingDocsBeforeDisconnect   = 5
+	toxiproxyStreamingSlowQueryDocCount      = 200
+	toxiproxyStreamingSlowQueryBurnIterations = 80
+	toxiproxyStreamingInterruptTimeout       = 30 * time.Second
+	toxiproxyStreamingCursorOpenTimeout      = 2 * time.Minute
+)
+
+// connectionToxiproxyHttpServerTimeout builds an HTTP/1 connection with a short response-header
+// timeout so delayed server responses surface as a driver timeout instead of hanging.
+func connectionToxiproxyHttpServerTimeout(t testing.TB) connection.Connection {
+	transport := testHTTPTransport()
+	transport.ResponseHeaderTimeout = toxiproxyServerTimeoutDeadline
+
+	h := connection.HttpConfiguration{
+		Endpoint:    getRandomEndpointsManager(t),
+		ContentType: connection.ApplicationJSON,
+		Transport:   wrapTransportWithIngressHost(transport),
 	}
 
-	msg := strings.ToLower(err.Error())
-	if strings.Contains(msg, "connection reset") || strings.Contains(msg, "unexpected eof") {
-		return true
-	}
+	c := connection.NewHttpConnection(h)
 
-	// Accept wrapped net.OpError from the driver stack as well.
-	var opErr *net.OpError
-	if errors.As(err, &opErr) || pkgerrors.As(err, &opErr) {
-		return true
-	}
-
-	var urlErr *url.Error
-	if errors.As(err, &urlErr) {
-		return isResetOrEOFError(urlErr.Unwrap())
-	}
-	if pkgerrors.As(err, &urlErr) {
-		return isResetOrEOFError(urlErr.Unwrap())
-	}
-
-	return false
-}
-
-func TestIsConnectionError_detectsUnexpectedEOF(t *testing.T) {
-	err := pkgerrors.WithStack(&url.Error{
-		Op:  "Get",
-		URL: "http://127.0.0.1:17001/_api/version",
-		Err: errors.New("unexpected EOF"),
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+		c = createAuthenticationFromEnv(t, c)
 	})
-	require.True(t, isConnectionError(err))
+	return c
 }
 
-func TestIsConnectionError_detectsResetByPeer(t *testing.T) {
-	err := pkgerrors.WithStack(&url.Error{
-		Op:  "Get",
-		URL: "http://127.0.0.1:17001/_api/version",
-		Err: &net.OpError{
-			Op:  "read",
-			Err: errors.New("connection reset by peer"),
-		},
+// connectionToxiproxyHttpNoKeepAlive builds HTTP/1 without keep-alive so each request opens
+// a new TCP connection (needed for per-link packet-loss toxics to affect individual calls).
+func connectionToxiproxyHttpNoKeepAlive(t testing.TB) connection.Connection {
+	transport := testHTTPTransport()
+	transport.DisableKeepAlives = true
+
+	h := connection.HttpConfiguration{
+		Endpoint:    getRandomEndpointsManager(t),
+		ContentType: connection.ApplicationJSON,
+		Transport:   wrapTransportWithIngressHost(transport),
+	}
+
+	c := connection.NewHttpConnection(h)
+
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+		c = createAuthenticationFromEnv(t, c)
 	})
-	require.True(t, isConnectionError(err))
+	return c
 }
 
-func TestIsResetOrEOFError_detectsDocumentedOutcomes(t *testing.T) {
-	require.True(t, isResetOrEOFError(pkgerrors.WithStack(&url.Error{
-		Op:  "Get",
-		URL: "http://127.0.0.1:17001/_api/version",
-		Err: errors.New("unexpected EOF"),
-	})))
-	require.True(t, isResetOrEOFError(pkgerrors.WithStack(&url.Error{
-		Op:  "Get",
-		URL: "http://127.0.0.1:17001/_api/version",
-		Err: &net.OpError{Op: "read", Err: errors.New("connection reset by peer")},
-	})))
+// toxiproxyRecoveryTimeout returns the post-fault recovery wait budget for toxiproxy tests.
+func toxiproxyRecoveryTimeout() time.Duration {
+	if isK8S() {
+		return 3 * time.Minute
+	}
+	return 1 * time.Minute
+}
+
+// measureVersionCall times a successful client.Version call.
+func measureVersionCall(t testing.TB, client arangodb.Client, ctx context.Context) time.Duration {
+	t.Helper()
+
+	start := time.Now()
+	_, err := client.Version(ctx)
+	require.NoError(t, err)
+	return time.Since(start)
 }

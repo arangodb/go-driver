@@ -189,7 +189,8 @@ func waitForConnectionTimeout(t testing.TB, client arangodb.Client, timeout time
 			// In Kubernetes tests the advertised cluster endpoints are internal
 			// *.svc DNS names. The Dockerized test runner cannot resolve them, so
 			// keep using the externally reachable ingress endpoint.
-			if getTestMode() != string(testModeSingle) && !isK8S() {
+			// Toxiproxy tests must keep the proxy listen address so injected toxics apply.
+			if getTestMode() != string(testModeSingle) && !isK8S() && os.Getenv("TEST_TOXIPROXY_ADMIN") == "" {
 				cer := clusterEndpointsResponse{}
 				resp, err := client.Get(ctx, &cer, "_api", "cluster", "endpoints")
 				if err != nil {

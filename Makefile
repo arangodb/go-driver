@@ -25,6 +25,10 @@ K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
 K8S_NAMESPACE ?= default
 K8S_DEPLOYMENT ?= arangodb-driver-tests
 
+ifeq ($(origin K8S_RESILIENCY_TEST_VERBOSE),undefined)
+K8S_RESILIENCY_TEST_VERBOSE := -v
+endif
+
 ifdef VERBOSE
 	TESTVERBOSEOPTIONS := -v
 endif
@@ -201,6 +205,7 @@ ifeq ("$(AF_ENABLED)", "true")
 	make run-tests-resilientsingle
 endif
 
+# Kubernetes integration tests (v2). Local kind: run setup-kind once first — see deploy/kubernetes/README.md.
 run-k8s-v2-tests: run-k8s-v2-single run-k8s-v2-cluster
 
 run-k8s-v2-single: run-k8s-v2-single-without-auth run-k8s-v2-single-basic-auth run-k8s-v2-single-tls-basic-auth
@@ -575,12 +580,9 @@ __test_v2_go_test_resiliency_k8s:
 	($(DOCKER_CMD) $(DOCKER_CMD_RESILIENCY_K8S_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(K8S_RESILIENCY_TEST_VERBOSE) $(RESILIENCY_TESTOPTIONS) -parallel 1 ./tests) && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
-ifneq ($(strip $(TESTOPTIONS)),)
-TOXIPROXY_TESTOPTIONS := $(TESTOPTIONS)
-else
-TOXIPROXY_TESTOPTIONS := -run '^TestToxiproxy_'
-endif
-
+# TOXIPROXY_TEST_RUN sets the go test -run regex. Use this instead of TESTOPTIONS when the
+# pattern contains shell metacharacters such as (|). TESTOPTIONS -test.run is still supported
+# and extracted inside the container to avoid /bin/sh interpreting the pattern.
 __run_v2_tests_toxiproxy: __test_v2_debug__ __test_prepare __test_toxiproxy_start __test_v2_go_test_toxiproxy __test_toxiproxy_cleanup __test_cleanup
 
 __run_v2_tests_toxiproxy_k8s: __test_v2_debug__ __test_prepare __test_toxiproxy_start __test_v2_go_test_toxiproxy __test_toxiproxy_cleanup __test_cleanup
@@ -595,7 +597,17 @@ __test_toxiproxy_cleanup:
 	@TESTCONTAINER=$(TESTCONTAINER) DOCKER_NETWORK="--net=host" "${ROOTDIR}/test/toxiproxy.sh" cleanup
 
 __test_v2_go_test_toxiproxy:
-	($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) $(GOV2IMAGE) go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTVERBOSEOPTIONS) $(TOXIPROXY_TESTOPTIONS) -parallel 1 ./tests) && echo "success!" \
+	@($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) \
+	  -e TOXIPROXY_TEST_RUN='$(TOXIPROXY_TEST_RUN)' \
+	  -e TOXIPROXY_LEGACY_TESTOPTIONS='$(TESTOPTIONS)' \
+	  $(GOV2IMAGE) sh -c '\
+	    rf="$$TOXIPROXY_TEST_RUN"; \
+	    if [ -z "$$rf" ] && [ -n "$$TOXIPROXY_LEGACY_TESTOPTIONS" ]; then \
+	      rf=$$(printf "%s" "$$TOXIPROXY_LEGACY_TESTOPTIONS" | sed -n "s/.*-test\\.run[[:space:]]*\\([^[:space:]]*\\).*/\\1/p" | head -1); \
+	    fi; \
+	    if [ -z "$$rf" ]; then rf="^TestToxiproxy_"; fi; \
+	    exec go test -timeout 120m $(GOBUILDTAGSOPT) $(TESTVERBOSEOPTIONS) -run "$$rf" -parallel 1 ./tests \
+	  ') && echo "success!" \
 	|| ($(ON_FAILURE_PARAMS) MAJOR_VERSION=2 . ./test/on_failure.sh)
 
 __run_v3_tests: __test_v3_debug__ __test_prepare __test_v3_go_test __test_cleanup
@@ -636,6 +648,10 @@ ifdef TEST_ENDPOINTS_OVERRIDE
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 	@sleep 3
 else
+ifeq ($(TEST_MODE_K8S),k8s)
+	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@sleep 3
+else
 ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
 endif
@@ -644,14 +660,17 @@ endif
 	  ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" \
 	  ENABLE_DATABASE_EXTRA_FEATURES=$(ENABLE_DATABASE_EXTRA_FEATURES) ENABLE_VECTOR_INDEX=$(ENABLE_VECTOR_INDEX) DEBUG_PORT=$(DEBUG_PORT) $(CLUSTERENV) DOCKER_NETWORK=${TEST_NET} "${ROOTDIR}/test/cluster.sh" start
 endif
+endif
 
 __test_cleanup:
 ifdef TESTCONTAINER
-	@TESTCONTAINERS=$$(docker ps -a -q --filter="name=$(TESTCONTAINER)")
-	@if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); fi
+	@TESTCONTAINERS=$$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); \
+	if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$TESTCONTAINERS; fi
 endif
 ifndef TEST_ENDPOINTS_OVERRIDE
+ifneq ($(TEST_MODE_K8S),k8s)
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) DOCKER_NETWORK=${TEST_NET} "${ROOTDIR}/test/cluster.sh" cleanup
+endif
 else
 	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
 endif
@@ -806,6 +825,18 @@ run-v2-tests-resilientsingle-with-auth:
 # Resiliency tests against an externally started cluster (e.g. kube-arangodb via ingress).
 # Invoked by run-k8s-v2-resiliency; kubectl mounts come from run-driver-tests.sh via K8S_TEST_DOCKER_EXTRA_ARGS.
 run-v2-tests-resiliency-k8s:
+	@if [ "$(TEST_MODE_K8S)" != "k8s" ]; then \
+		echo "ERROR: run-v2-tests-resiliency-k8s is an internal target."; \
+		echo "Use: K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-resiliency"; \
+		echo "Or:  K8S_INGRESS_ADDRESS=127.0.0.1 bash ./deploy/kubernetes/run-driver-tests.sh run make run-v2-tests-resiliency-k8s"; \
+		exit 1; \
+	fi
+	@if [ -z "$(TEST_ENDPOINTS_OVERRIDE)" ]; then \
+		echo "ERROR: TEST_ENDPOINTS_OVERRIDE is not set (kube-arangodb ingress endpoint)."; \
+		echo "Deploy first: bash ./deploy/kubernetes/run-driver-tests.sh setup-kind"; \
+		echo "Then run:     K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-resiliency"; \
+		exit 1; \
+	fi
 	@echo "Resiliency tests, Kubernetes cluster mode, v2"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TEST_ENABLE_RESILIENCY=1 \
 		K8S_COORDINATORS_COUNT=$(if $(K8S_COORDINATORS_COUNT),$(K8S_COORDINATORS_COUNT),3) \
@@ -821,8 +852,14 @@ run-v2-tests-toxiproxy:
 		__run_v2_tests_toxiproxy
 
 # Toxiproxy tests against kube-arangodb via ingress (invoked by run-k8s-v2-toxiproxy).
-# TOXIPROXY_UPSTREAM, TEST_INGRESS_HOST, and TEST_ENDPOINTS_OVERRIDE come from run-driver-tests.sh.
+# TOXIPROXY_UPSTREAM, TEST_INGRESS_HOST, and TEST_ENDPOINTS come from run-driver-tests.sh.
 run-v2-tests-toxiproxy-k8s:
+	@if [ "$(TEST_MODE_K8S)" != "k8s" ]; then \
+		echo "ERROR: run-v2-tests-toxiproxy-k8s is an internal target."; \
+		echo "Use: K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-toxiproxy"; \
+		echo "Or:  K8S_INGRESS_ADDRESS=127.0.0.1 bash ./deploy/kubernetes/run-driver-tests.sh run-toxiproxy make run-v2-tests-toxiproxy-k8s"; \
+		exit 1; \
+	fi
 	@echo "Toxiproxy network fault tests, Kubernetes cluster mode, v2"
 	@${MAKE} TEST_MODE="cluster" TEST_AUTH="rootpw" TAGS="toxiproxy" TESTV2PARALLEL=1 \
 		__run_v2_tests_toxiproxy_k8s

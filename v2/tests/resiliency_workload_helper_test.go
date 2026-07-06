@@ -47,7 +47,10 @@ type versionWorkloadStats struct {
 	successesPending int
 	restartStarted   bool
 	ingressReady     bool
+	duringErrors     []error
 }
+
+const maxWorkloadDuringErrors = 32
 
 // recordSuccess increments success counters for the current restart phase.
 func (s *versionWorkloadStats) recordSuccess() {
@@ -67,7 +70,7 @@ func (s *versionWorkloadStats) recordSuccess() {
 }
 
 // recordFailure increments the failure counter for the current restart phase.
-func (s *versionWorkloadStats) recordFailure() {
+func (s *versionWorkloadStats) recordFailure(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -79,7 +82,15 @@ func (s *versionWorkloadStats) recordFailure() {
 		s.failuresAfter++
 	default:
 		s.failuresDuring++
+		s.captureDuringError(err)
 	}
+}
+
+func (s *versionWorkloadStats) captureDuringError(err error) {
+	if err == nil || len(s.duringErrors) >= maxWorkloadDuringErrors {
+		return
+	}
+	s.duringErrors = append(s.duringErrors, err)
 }
 
 // markRestartStarted records that the ingress restart has begun.
@@ -114,6 +125,14 @@ func (s *versionWorkloadStats) failureSnapshot() (failuresBefore, failuresDuring
 	return s.failuresBefore, s.failuresDuring, s.failuresAfter
 }
 
+func (s *versionWorkloadStats) duringFailureSnapshot() []error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]error, len(s.duringErrors))
+	copy(out, s.duringErrors)
+	return out
+}
+
 // totalAttempts returns the number of workload requests issued (successes and failures).
 func (s *versionWorkloadStats) totalAttempts() int {
 	s.mu.Lock()
@@ -141,7 +160,7 @@ func runVersionWorkload(ctx context.Context, client arangodb.Client, stats *vers
 		if err == nil {
 			stats.recordSuccess()
 		} else {
-			stats.recordFailure()
+			stats.recordFailure(err)
 		}
 
 		select {
@@ -190,4 +209,5 @@ func assertWorkloadRecovered(t testing.TB, stats *versionWorkloadStats) {
 		"unexpected failures after ingress recovery; possible pathological failure rate")
 	t.Logf("workload summary: successesBefore=%d successesAfter=%d failures=%d (before=%d during=%d after=%d) totalAttempts=%d",
 		successesBefore, successesAfter, failures, failuresBefore, failuresDuring, failuresAfter, stats.totalAttempts())
+	assertResiliencyDuringErrors(t, stats.duringFailureSnapshot())
 }

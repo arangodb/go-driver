@@ -25,6 +25,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -37,23 +38,31 @@ import (
 
 const (
 	// Slow-query kill tests only need well more than coordinatorKillCursorAfterDocs rows.
-	// Keep this modest to limit insert/SORT cost (each test runs for HTTP/1 and HTTP/2).
 	coordinatorKillSlowQueryDocCount = 200
-	coordinatorKillCursorAfterDocs   = 30
-	coordinatorKillOperationTimeout  = 90 * time.Second
-	coordinatorKillCursorOpenTimeout = 2 * time.Minute
-	// Native AQL burn loop per document (no V8/SLEEP). Increase if kills happen too early on fast CI.
-	coordinatorSlowReadQueryBurnIterations = 100
+	coordinatorKillReadAfterDocs      = 1
+	coordinatorKillCursorAfterDocs    = 30
+	coordinatorKillOperationTimeout   = 90 * time.Second
+	coordinatorKillCursorOpenTimeout  = 2 * time.Minute
+	coordinatorSlowReadQuerySleepSecondsLocal = 0.05
+	coordinatorSlowReadQuerySleepSecondsK8s   = 0.25
 )
 
-// coordinatorSlowReadQuery returns an AQL query that keeps the coordinator busy long enough
-// to kill it mid-cursor. Uses native AQL only (no SLEEP/V8) so it stays compatible with
-// ArangoDB 4.0 where JavaScript is not available.
+func coordinatorSlowReadQuerySleepSeconds() float64 {
+	if isK8S() {
+		return coordinatorSlowReadQuerySleepSecondsK8s
+	}
+	return coordinatorSlowReadQuerySleepSecondsLocal
+}
+
+// coordinatorSlowReadQuery returns a streaming AQL query with per-document SLEEP so the
+// cursor stays open long enough for coordinator kills through ingress load balancing.
+// SLEEP is available in ArangoDB 3.x native AQL (used by k8s resiliency tests on 3.12+).
 func coordinatorSlowReadQuery(collectionName string) string {
+	_ = collectionName
 	return fmt.Sprintf(
-		"FOR doc IN `%s` SORT doc.value LET burn = (FOR i IN 1..%d LET x = MD5(CONCAT(TO_STRING(doc.value), TO_STRING(i))) FILTER x != null RETURN 1) RETURN doc",
-		collectionName,
-		coordinatorSlowReadQueryBurnIterations,
+		`FOR i IN 1..%d RETURN { i: i, burn: SLEEP(%g) }`,
+		coordinatorKillSlowQueryDocCount,
+		coordinatorSlowReadQuerySleepSeconds(),
 	)
 }
 
@@ -123,65 +132,7 @@ func testCoordinatorKillDuringRead(t *testing.T, connFactory resiliencyConnectio
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-				err := arangodb.CreateDocuments(ctx, col, coordinatorKillSlowQueryDocCount, func(index int) any {
-					return map[string]any{"value": index}
-				})
-				require.NoError(tb, err)
-
-				query := coordinatorSlowReadQuery(col.Name())
-				readCtx, cancelRead := context.WithCancel(ctx)
-				defer cancelRead()
-
-				readFailed := make(chan error, 1)
-				cursorOpen := make(chan struct{})
-				docsRead := atomic.Int32{}
-
-				go func() {
-					cursor, err := db.Query(readCtx, query, &arangodb.QueryOptions{
-						BatchSize: 1,
-					})
-					if err != nil {
-						readFailed <- err
-						return
-					}
-					defer cursor.Close()
-					close(cursorOpen)
-
-					for {
-						var doc map[string]any
-						_, err := cursor.ReadDocument(readCtx, &doc)
-						if shared.IsNoMoreDocuments(err) {
-							readFailed <- fmt.Errorf("cursor finished before coordinator kill (read %d docs)", docsRead.Load())
-							return
-						}
-						if err != nil {
-							readFailed <- err
-							return
-						}
-						docsRead.Add(1)
-					}
-				}()
-
-				select {
-				case <-cursorOpen:
-				case err := <-readFailed:
-					require.Fail(tb, "cursor failed before coordinator kill: %v", err)
-				case <-time.After(coordinatorKillCursorOpenTimeout):
-					require.Fail(tb, "cursor did not open before timeout; possible hang")
-				}
-
-				killCoordinatorForClient(tb, client)
-
-				select {
-				case err := <-readFailed:
-					require.Error(tb, err)
-					tb.Logf("read failed as expected after coordinator kill: %v", err)
-				case <-time.After(coordinatorKillOperationTimeout):
-					require.Fail(tb, "expected active read to fail after coordinator kill; possible hang")
-				}
-
-				cancelRead()
-				ensureCoordinatorsRecovered(tb, client)
+				runCoordinatorKillDuringCursor(tb, client, ctx, col, coordinatorKillReadAfterDocs)
 			})
 		})
 	})
@@ -244,85 +195,138 @@ func testCoordinatorKillDuringCursorIteration(t *testing.T, connFactory resilien
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
-				err := arangodb.CreateDocuments(ctx, col, coordinatorKillSlowQueryDocCount, func(index int) any {
-					return map[string]any{"value": index}
-				})
-				require.NoError(tb, err)
-
-				query := coordinatorSlowReadQuery(col.Name())
-				readCtx, cancelRead := context.WithCancel(ctx)
-				defer cancelRead()
-
-				// Channels coordinate the main test goroutine and the background cursor reader.
-				// cursorOpen      — reader calls close(cursorOpen) immediately after db.Query succeeds
-				// killNow         — reader sends this after coordinatorKillCursorAfterDocs ReadDocument calls
-				// iterationFailed — reader sends this when the read loop exits (error or finished too early)
-				iterationFailed := make(chan error, 1)
-				docsRead := atomic.Int32{}
-				killNow := make(chan struct{}, 1)
-				cursorOpen := make(chan struct{})
-
-				go func() {
-					cursor, err := db.Query(readCtx, query, &arangodb.QueryOptions{
-						BatchSize: 1,
-					})
-					if err != nil {
-						iterationFailed <- err
-						return
-					}
-					defer cursor.Close()
-					// Query() returned a cursor handle; iteration has not started yet.
-					close(cursorOpen)
-
-					for {
-						var doc map[string]any
-						_, err := cursor.ReadDocument(readCtx, &doc)
-						if shared.IsNoMoreDocuments(err) {
-							iterationFailed <- fmt.Errorf("cursor finished before coordinator kill (read %d docs)", docsRead.Load())
-							return
-						}
-						if err != nil {
-							iterationFailed <- err
-							return
-						}
-
-						if docsRead.Add(1) == coordinatorKillCursorAfterDocs {
-							killNow <- struct{}{} // signals: read 30 docs; main should kill coordinator now
-						}
-					}
-				}()
-
-				// Phase 1: wait until db.Query succeeds and the reader closes cursorOpen.
-				select {
-				case <-cursorOpen:
-				case err := <-iterationFailed:
-					require.Fail(tb, "cursor failed before coordinator kill: %v", err)
-				case <-time.After(coordinatorKillCursorOpenTimeout):
-					require.Fail(tb, "cursor did not open before timeout; possible hang")
-				}
-
-				// Phase 2: wait until 30 documents are read, then kill the serving coordinator.
-				select {
-				case <-killNow:
-					killCoordinatorForClient(tb, client)
-				case err := <-iterationFailed:
-					require.Fail(tb, "cursor finished before kill threshold: %v", err)
-				case <-time.After(5 * time.Minute):
-					require.Fail(tb, "cursor iteration did not reach kill threshold before timeout")
-				}
-
-				// Phase 3: the in-flight cursor must fail cleanly (not hang); same client recovers later.
-				select {
-				case err := <-iterationFailed:
-					require.Error(tb, err)
-					tb.Logf("cursor iteration failed as expected after coordinator kill: %v", err)
-				case <-time.After(coordinatorKillOperationTimeout):
-					require.Fail(tb, "expected cursor iteration to fail after coordinator kill; possible hang")
-				}
-
-				cancelRead()
-				ensureCoordinatorsRecovered(tb, client)
+				runCoordinatorKillDuringCursor(tb, client, ctx, col, coordinatorKillCursorAfterDocs)
 			})
 		})
 	})
+}
+
+// runCoordinatorKillDuringCursor seeds a slow streaming cursor, kills the serving coordinator
+// after killAfterDocs documents, and verifies the cursor fails cleanly and cannot resume.
+func runCoordinatorKillDuringCursor(
+	tb testing.TB,
+	client arangodb.Client,
+	ctx context.Context,
+	col arangodb.Collection,
+	killAfterDocs int32,
+) {
+	tb.Helper()
+
+	query := coordinatorSlowReadQuery(col.Name())
+	readCtx, cancelRead := context.WithCancel(ctx)
+	defer cancelRead()
+
+	iterationFailed := make(chan error, 1)
+	docsRead := atomic.Int32{}
+	killNow := make(chan struct{}, 1)
+	killAck := make(chan struct{})
+	cursorReady := make(chan arangodb.Cursor, 1)
+
+	go func() {
+		cursor, err := col.Database().Query(readCtx, query, &arangodb.QueryOptions{
+			BatchSize: 1,
+			Options: arangodb.QuerySubOptions{
+				Stream: true,
+			},
+		})
+		if err != nil {
+			iterationFailed <- err
+			return
+		}
+		cursorReady <- cursor
+
+		for {
+			var doc map[string]any
+			_, err := cursor.ReadDocument(readCtx, &doc)
+			if shared.IsNoMoreDocuments(err) {
+				iterationFailed <- fmt.Errorf("cursor finished before coordinator kill (read %d docs)", docsRead.Load())
+				return
+			}
+			if err != nil {
+				iterationFailed <- err
+				return
+			}
+
+			if docsRead.Add(1) == killAfterDocs {
+				killNow <- struct{}{}
+				<-killAck
+			}
+		}
+	}()
+
+	var cursor arangodb.Cursor
+	select {
+	case cursor = <-cursorReady:
+	case err := <-iterationFailed:
+		require.Fail(tb, "cursor failed before coordinator kill: %v", err)
+	case <-time.After(coordinatorKillCursorOpenTimeout):
+		require.Fail(tb, "cursor did not open before timeout; possible hang")
+	}
+
+	select {
+	case <-killNow:
+		killAllCoordinators(tb)
+		close(killAck)
+	case err := <-iterationFailed:
+		require.Fail(tb, "cursor finished before kill threshold (%d docs): %v", killAfterDocs, err)
+	case <-time.After(5 * time.Minute):
+		require.Fail(tb, "cursor iteration did not reach kill threshold (%d docs) before timeout", killAfterDocs)
+	}
+
+	select {
+	case err := <-iterationFailed:
+		assertCoordinatorKillInterrupted(tb, err)
+	case <-time.After(coordinatorKillOperationTimeout):
+		require.Fail(tb, "expected cursor iteration to fail after coordinator kill; possible hang")
+	}
+
+	// Dead-cursor checks run while coordinators may still be down (503/410 are expected).
+	assertDeadCursorDoesNotResume(tb, cursor, ctx)
+
+	tb.Cleanup(func() {
+		ensureCoordinatorsRecovered(tb, client)
+	})
+	ensureCoordinatorsRecovered(tb, client)
+	closeDeadCursor(tb, cursor)
+
+	cancelRead()
+}
+
+// closeDeadCursor closes a cursor after coordinator kill. The server may already have dropped it (404/410).
+func closeDeadCursor(tb testing.TB, cursor arangodb.Cursor) {
+	tb.Helper()
+	err := cursor.Close()
+	if err == nil {
+		return
+	}
+	tb.Logf("cursor close on dead cursor: %v", err)
+	require.True(tb, isDeadCursorError(err), "unexpected cursor close error: %v", err)
+}
+
+// assertCoordinatorKillInterrupted verifies the in-flight cursor failed cleanly after coordinator kill.
+func assertCoordinatorKillInterrupted(tb testing.TB, err error) {
+	tb.Helper()
+	require.Error(tb, err)
+	if strings.Contains(err.Error(), "finished before coordinator kill") {
+		require.Fail(tb, "coordinator kill happened too late: %v", err)
+	}
+	tb.Logf("cursor interrupted after coordinator kill: %v", err)
+	require.True(tb, isCoordinatorKillInterruptedError(err),
+		"expected streaming interrupt or cursor-gone error after coordinator kill, got: %v", err)
+}
+
+// assertDeadCursorDoesNotResume verifies a killed cursor cannot continue after cluster recovery.
+func assertDeadCursorDoesNotResume(tb testing.TB, cursor arangodb.Cursor, parentCtx context.Context) {
+	tb.Helper()
+	require.NotNil(tb, cursor)
+
+	resumeCtx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
+	defer cancel()
+
+	var doc map[string]any
+	_, err := cursor.ReadDocument(resumeCtx, &doc)
+	require.Error(tb, err, "expected dead cursor to fail on resume after coordinator kill")
+	tb.Logf("dead cursor resume error: %v", err)
+	require.True(tb, isDeadCursorError(err),
+		"expected dead cursor resume error, got: %v", err)
 }

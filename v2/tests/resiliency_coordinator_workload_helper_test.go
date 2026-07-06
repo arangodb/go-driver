@@ -47,6 +47,7 @@ type insertWorkloadStats struct {
 	successesPending int
 	restartStarted   bool
 	recoveryReady    bool
+	duringErrors     []error
 }
 
 func (s *insertWorkloadStats) recordSuccess() {
@@ -64,7 +65,7 @@ func (s *insertWorkloadStats) recordSuccess() {
 	}
 }
 
-func (s *insertWorkloadStats) recordFailure() {
+func (s *insertWorkloadStats) recordFailure(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -76,7 +77,15 @@ func (s *insertWorkloadStats) recordFailure() {
 		s.failuresAfter++
 	default:
 		s.failuresDuring++
+		s.captureDuringError(err)
 	}
+}
+
+func (s *insertWorkloadStats) captureDuringError(err error) {
+	if err == nil || len(s.duringErrors) >= maxWorkloadDuringErrors {
+		return
+	}
+	s.duringErrors = append(s.duringErrors, err)
 }
 
 func (s *insertWorkloadStats) markRestartStarted() {
@@ -105,6 +114,14 @@ func (s *insertWorkloadStats) failureSnapshot() (failuresBefore, failuresDuring,
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.failuresBefore, s.failuresDuring, s.failuresAfter
+}
+
+func (s *insertWorkloadStats) duringFailureSnapshot() []error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]error, len(s.duringErrors))
+	copy(out, s.duringErrors)
+	return out
 }
 
 func (s *insertWorkloadStats) totalAttempts() int {
@@ -137,7 +154,7 @@ func runInsertWorkload(ctx context.Context, col arangodb.Collection, stats *inse
 		if err == nil {
 			stats.recordSuccess()
 		} else {
-			stats.recordFailure()
+			stats.recordFailure(err)
 		}
 
 		select {
@@ -184,4 +201,5 @@ func assertInsertWorkloadRecovered(t testing.TB, stats *insertWorkloadStats) {
 		"unexpected failures after coordinator recovery; possible pathological failure rate")
 	t.Logf("insert workload summary: successesBefore=%d successesAfter=%d failures=%d (before=%d during=%d after=%d) totalAttempts=%d",
 		successesBefore, successesAfter, failures, failuresBefore, failuresDuring, failuresAfter, stats.totalAttempts())
+	assertResiliencyDuringErrors(t, stats.duringFailureSnapshot())
 }

@@ -56,7 +56,7 @@ func newResiliencyClient(t testing.TB, conn connection.Connection) arangodb.Clie
 // On Kubernetes this verifies both read (Version) and write (CreateDatabase) paths through ingress.
 func prepareResiliencyClient(t testing.TB, connFactory resiliencyConnectionFactory) arangodb.Client {
 	if isK8S() && expectedCoordinatorCount() >= minCoordinatorResiliencyPods {
-		ensureCoordinatorsRecovered(t, nil)
+		waitForCoordinatorsReady(t, expectedCoordinatorCount())
 	}
 
 	client := newResiliencyClient(t, connFactory(t))

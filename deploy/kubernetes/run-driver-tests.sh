@@ -2,6 +2,10 @@
 #
 # Shared Kubernetes runner for ArangoDB driver integration tests.
 #
+# Local kind workflow:
+#   1. bash ./deploy/kubernetes/run-driver-tests.sh setup-kind   (once; creates cluster + ingress-nginx)
+#   2. bash ./deploy/kubernetes/run-driver-tests.sh run <test-command>
+#
 # Sets up kube-arangodb + ArangoDeployment + Ingress, then runs a caller-supplied
 # test command (make, npm, pytest, a shell script, etc.) against the ingress endpoint.
 #
@@ -22,7 +26,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # --- Kubernetes / ArangoDB deployment settings ---
-KUBE_ARANGODB_VERSION="${KUBE_ARANGODB_VERSION:-1.2.43}"
+KUBE_ARANGODB_VERSION="${KUBE_ARANGODB_VERSION:-1.4.3}"
 K8S_NAMESPACE="${K8S_NAMESPACE:-default}"
 K8S_DEPLOYMENT="${K8S_DEPLOYMENT:-arangodb-driver-tests}"
 K8S_MODE="${K8S_MODE:-Cluster}"
@@ -74,7 +78,7 @@ K8S_INGRESS_NGINX_VERSION="${K8S_INGRESS_NGINX_VERSION:-controller-v1.12.1}"
 K8S_INGRESS_NGINX_MANIFEST="${K8S_INGRESS_NGINX_MANIFEST:-https://raw.githubusercontent.com/kubernetes/ingress-nginx/${K8S_INGRESS_NGINX_VERSION}/deploy/static/provider/kind/deploy.yaml}"
 
 ARANGODB="${ARANGODB:-arangodb/enterprise-preview:latest}"
-KUBE_ARANGODB_IMAGE="${KUBE_ARANGODB_IMAGE:-arangodb/kube-arangodb:${KUBE_ARANGODB_VERSION}}"
+KUBE_ARANGODB_IMAGE="${KUBE_ARANGODB_IMAGE:-arangodb/kube-arangodb-enterprise:${KUBE_ARANGODB_VERSION}}"
 ARANGO_ROOT_PASSWORD="${ARANGO_ROOT_PASSWORD:-rootpw}"
 
 # usage prints command-line help.
@@ -92,8 +96,8 @@ Usage:
   $0 cleanup-kind
 
 Environment:
-  KUBE_ARANGODB_VERSION  kube-arangodb release to install (default: ${KUBE_ARANGODB_VERSION})
-  KUBE_ARANGODB_IMAGE    kube-arangodb operator image (default: ${KUBE_ARANGODB_IMAGE})
+  KUBE_ARANGODB_VERSION  kube-arangodb enterprise operator version (default: ${KUBE_ARANGODB_VERSION})
+  KUBE_ARANGODB_IMAGE    operator image override (default: arangodb/kube-arangodb-enterprise:${KUBE_ARANGODB_VERSION}; must match manifest ref)
   K8S_NAMESPACE          namespace for the ArangoDeployment (default: ${K8S_NAMESPACE})
   K8S_DEPLOYMENT         ArangoDeployment name (default: ${K8S_DEPLOYMENT})
   K8S_MODE               ArangoDeployment mode: Cluster or Single (default: ${K8S_MODE})
@@ -296,7 +300,12 @@ wait_for_operator_rollout() {
 	exit 1
 }
 
-# install_operator applies kube-arangodb CRDs and the operator deployment.
+# kube_arangodb_manifest_operator_image returns the operator image baked into enterprise manifests.
+kube_arangodb_manifest_operator_image() {
+	printf '%s\n' "arangodb/kube-arangodb-enterprise:${KUBE_ARANGODB_VERSION}"
+}
+
+# install_operator applies kube-arangodb enterprise CRDs and the operator deployment.
 install_operator() {
 	if [ "${K8S_INSTALL_OPERATOR}" != "true" ]; then
 		return
@@ -307,10 +316,16 @@ install_operator() {
 		exit 1
 	fi
 
-	echo "Installing kube-arangodb ${KUBE_ARANGODB_VERSION} operator..."
-	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/arango-crd.yaml"
-	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/arango-deployment.yaml"
-	kubectl -n default set image deployment/arango-deployment-operator operator="${KUBE_ARANGODB_IMAGE}"
+	local manifest_image
+	manifest_image="$(kube_arangodb_manifest_operator_image)"
+
+	echo "Installing kube-arangodb-enterprise ${KUBE_ARANGODB_VERSION} operator..."
+	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/enterprise-crd.yaml"
+	kubectl apply -f "https://raw.githubusercontent.com/arangodb/kube-arangodb/${KUBE_ARANGODB_VERSION}/manifests/enterprise-deployment.yaml"
+	if [ "${KUBE_ARANGODB_IMAGE}" != "${manifest_image}" ]; then
+		echo "Patching operator image to ${KUBE_ARANGODB_IMAGE} (manifest default: ${manifest_image})..."
+		kubectl -n default set image deployment/arango-deployment-operator operator="${KUBE_ARANGODB_IMAGE}"
+	fi
 	wait_for_operator_rollout
 }
 
