@@ -24,6 +24,9 @@ package tests
 
 import (
 	"context"
+	"crypto/tls"
+	"net"
+	"net/http"
 	"testing"
 	"time"
 
@@ -114,6 +117,34 @@ func waitForClusterStable(t testing.TB, client arangodb.Client, timeout time.Dur
 		}
 		return nil
 	}).TimeoutT(t, timeout, 250*time.Millisecond)
+}
+
+// connectionJsonHttpFresh builds an HTTP/1 client that closes the connection after each
+// request (DisableKeepAlives). Used to force a new TCP connection to ingress per probe.
+func connectionJsonHttpFresh(t testing.TB) connection.Connection {
+	endpoints := connection.NewRoundRobinEndpoints(getEndpointsFromEnv(t))
+	h := connection.HttpConfiguration{
+		Endpoint:    endpoints,
+		ContentType: connection.ApplicationJSON,
+		Transport: wrapTransportWithIngressHost(&http.Transport{
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+			DisableKeepAlives:     true,
+			MaxIdleConns:          0,
+			IdleConnTimeout:       0,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			DialContext: (&net.Dialer{
+				Timeout: 30 * time.Second,
+			}).DialContext,
+		}),
+	}
+
+	c := connection.NewHttpConnection(h)
+
+	withContextT(t, defaultTestTimeout, func(ctx context.Context, t testing.TB) {
+		c = createAuthenticationFromEnv(t, c)
+	})
+	return c
 }
 
 // waitForClusterWritable retries a create/delete database probe until ingress serves writes.

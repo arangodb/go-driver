@@ -24,6 +24,8 @@ package tests
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
@@ -42,6 +44,61 @@ const (
 	minCoordinatorResiliencyPods = 3
 	coordinatorRecoveryTimeout   = 5 * time.Minute
 )
+
+// CoordinatorTarget identifies a coordinator instance targeted by chaos injection.
+type CoordinatorTarget struct {
+	ServerID     string
+	Endpoint     string
+	ResourceName string
+}
+
+// killRandomCoordinator deletes one coordinator pod selected at random from cluster health.
+func killRandomCoordinator(t testing.TB, client arangodb.Client) CoordinatorTarget {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	health, err := client.Health(ctx)
+	require.NoError(t, err)
+
+	var targets []CoordinatorTarget
+	for id, server := range health.Health {
+		if server.Role != arangodb.ServerRoleCoordinator {
+			continue
+		}
+		serverID := string(id)
+		targets = append(targets, CoordinatorTarget{
+			ServerID:     serverID,
+			Endpoint:     server.Endpoint,
+			ResourceName: coordinatorPodForServerID(t, serverID),
+		})
+	}
+	require.NotEmpty(t, targets, "no coordinators found in cluster health")
+
+	target := targets[rand.Intn(len(targets))]
+	t.Logf("Killing coordinator pod %s (server %s)", target.ResourceName, target.ServerID)
+	deleteCoordinatorPod(t, target.ResourceName)
+	return target
+}
+
+func coordinatorPodForServerID(t testing.TB, serverID string) string {
+	t.Helper()
+
+	podToken := coordinatorPodToken(serverID)
+	pods := listCoordinatorPods(t)
+	var matches []string
+	for _, pod := range pods {
+		if strings.Contains(strings.ToLower(pod), podToken) {
+			matches = append(matches, pod)
+		}
+	}
+
+	require.Len(t, matches, 1,
+		"expected exactly one coordinator pod for server ID %q (token %q), got %v among %v",
+		serverID, podToken, matches, pods)
+	return matches[0]
+}
 
 // requireResiliencyK8sCoordinatorMode skips unless the test runs in k8s cluster mode with kubectl and
 // at least three coordinators configured for coordinator failure scenarios.
@@ -134,20 +191,7 @@ func coordinatorPodForClient(t testing.TB, client arangodb.Client) string {
 
 	serverID, err := client.ServerID(ctx)
 	require.NoError(t, err)
-
-	podToken := coordinatorPodToken(serverID)
-	pods := listCoordinatorPods(t)
-	var matches []string
-	for _, pod := range pods {
-		if strings.Contains(strings.ToLower(pod), podToken) {
-			matches = append(matches, pod)
-		}
-	}
-
-	require.Len(t, matches, 1,
-		"expected exactly one coordinator pod for server ID %q (token %q), got %v among %v",
-		serverID, podToken, matches, pods)
-	return matches[0]
+	return coordinatorPodForServerID(t, serverID)
 }
 
 // coordinatorPodToken returns the kube-arangodb pod name fragment for a coordinator server ID.
@@ -307,6 +351,101 @@ func waitForCoordinatorsReady(t testing.TB, expectedCount int) {
 	if err != nil {
 		require.NoError(t, err, "expected %d ready coordinator pods within %s", expectedCount, timeout)
 	}
+}
+
+func ingressCoordinatorBackendCount() (int, error) {
+	out, err := exec.Command(
+		"kubectl", "-n", k8sNamespace(),
+		"get", "endpoints", k8sDeployment()+"-ea",
+		"-o", "jsonpath={.subsets[*].addresses[*].ip}",
+	).CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("kubectl get endpoints %s-ea failed: %w: %s",
+			k8sDeployment(), err, strings.TrimSpace(string(out)))
+	}
+
+	count := 0
+	for _, part := range strings.Fields(string(out)) {
+		if part != "" {
+			count++
+		}
+	}
+	return count, nil
+}
+
+// waitForMinimumIngressBackends blocks until the ingress external-access service has at
+// least min coordinator backends registered in Endpoints.
+func waitForMinimumIngressBackends(t testing.TB, min int, timeout time.Duration) {
+	t.Helper()
+	if !isK8S() {
+		return
+	}
+
+	t.Logf("Waiting for at least %d ingress coordinator backend(s)", min)
+	err := NewTimeout(func() error {
+		count, err := ingressCoordinatorBackendCount()
+		if err != nil {
+			t.Logf("Waiting for ingress coordinator backends: %v", err)
+			return nil
+		}
+		if count >= min {
+			t.Logf("Ingress service has %d coordinator backend(s)", count)
+			return Interrupt{}
+		}
+		t.Logf("Waiting for ingress coordinator backends: got %d, want at least %d", count, min)
+		return nil
+	}).Timeout(timeout, time.Second)
+	if err != nil {
+		require.NoError(t, err, "ingress did not reach %d coordinator backend(s) within %s", min, timeout)
+	}
+}
+
+// requireMinimumCoordinators blocks until cluster health reports at least min coordinators.
+func requireMinimumCoordinators(t testing.TB, client arangodb.Client, min int) {
+	t.Helper()
+
+	timeout := defaultTestTimeout
+	if isK8S() {
+		timeout = coordinatorRecoveryTimeout
+	}
+
+	err := NewTimeout(func() error {
+		return withContext(3*time.Second, func(ctx context.Context) error {
+			coordinators := countHealthyCoordinators(ctx, client)
+			if coordinators >= min {
+				t.Logf("Cluster has %d coordinator(s)", coordinators)
+				return Interrupt{}
+			}
+
+			if isK8S() {
+				t.Logf("Waiting for coordinators in cluster health: got %d, want at least %d", coordinators, min)
+			}
+			return nil
+		})
+	}).Timeout(timeout, time.Second)
+
+	if err != nil {
+		hint := ""
+		if isK8S() {
+			hint = fmt.Sprintf(" (deploy with K8S_COORDINATORS_COUNT=%d via: K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-resiliency)", min)
+		}
+		t.Fatalf("resiliency tests require at least %d coordinators%s: %v", min, hint, err)
+	}
+}
+
+func countHealthyCoordinators(ctx context.Context, client arangodb.Client) int {
+	health, err := client.Health(ctx)
+	if err != nil {
+		return 0
+	}
+
+	coordinators := 0
+	for _, server := range health.Health {
+		if server.Role == arangodb.ServerRoleCoordinator {
+			coordinators++
+		}
+	}
+	return coordinators
 }
 
 func readyCoordinatorPodCount(namespace, selector string) (int, error) {
