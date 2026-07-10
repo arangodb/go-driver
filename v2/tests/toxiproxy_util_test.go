@@ -121,10 +121,10 @@ const (
 	toxiproxyFullPacketLossCallTimeout        = 10 * time.Second
 	toxiproxyStreamingPayloadBytes            = 4000
 	toxiproxyStreamingDocCount                = 100
-	toxiproxyStreamingDocsBeforeDisconnect = 5
-	toxiproxyQueryStartupSleepSeconds      = 30.0
-	toxiproxyQueryStartupDisconnectDelay   = 500 * time.Millisecond
-	toxiproxyStreamingInterruptTimeout     = 30 * time.Second
+	toxiproxyStreamingDocsBeforeDisconnect    = 5
+	toxiproxyQueryStartupSleepSeconds         = 30.0
+	toxiproxyQueryStartupDisconnectDelay      = 500 * time.Millisecond
+	toxiproxyStreamingInterruptTimeout        = 30 * time.Second
 )
 
 // connectionToxiproxyHttpServerTimeout builds an HTTP/1 connection with a short response-header
