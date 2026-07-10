@@ -448,6 +448,38 @@ func countHealthyCoordinators(ctx context.Context, client arangodb.Client) int {
 	return coordinators
 }
 
+// waitForHealthyCoordinatorCount retries client.Health until it reports at least expected
+// coordinators. A single Health() call can fail or return an incomplete map right after
+// pod recovery even when Version() already succeeds (CircleCI flake: expected 3, got 0).
+func waitForHealthyCoordinatorCount(t testing.TB, client arangodb.Client, expected int, timeout time.Duration) {
+	t.Helper()
+
+	err := NewTimeout(func() error {
+		return withContext(10*time.Second, func(ctx context.Context) error {
+			health, err := client.Health(ctx)
+			if err != nil {
+				t.Logf("Waiting for cluster health coordinator count: Health() error: %v", err)
+				return nil
+			}
+
+			coordinators := 0
+			for _, server := range health.Health {
+				if server.Role == arangodb.ServerRoleCoordinator {
+					coordinators++
+				}
+			}
+			if coordinators >= expected {
+				t.Logf("Cluster health reports %d coordinator(s) (want >= %d)", coordinators, expected)
+				return Interrupt{}
+			}
+			t.Logf("Waiting for coordinator count in cluster health: got %d, want >= %d", coordinators, expected)
+			return nil
+		})
+	}).Timeout(timeout, time.Second)
+
+	require.NoError(t, err, "cluster health did not report at least %d coordinators within %s", expected, timeout)
+}
+
 func readyCoordinatorPodCount(namespace, selector string) (int, error) {
 	cmd := exec.Command(
 		"kubectl", "-n", namespace,

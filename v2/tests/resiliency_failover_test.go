@@ -79,8 +79,9 @@ func runIngressCoordinatorFailover(
 	}
 
 	ensureCoordinatorsRecovered(t, client)
-	require.Equal(t, expectedCoordinators, countHealthyCoordinators(ctx, client),
-		"operator should restore the original coordinator count")
+	// Do not use a single-shot countHealthyCoordinators here: Health() can briefly fail or
+	// return an empty map after pod recreate while Version() already works (expected 3, got 0).
+	waitForHealthyCoordinatorCount(t, client, expectedCoordinators, coordinatorRecoveryTimeout)
 
 	finalCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn)
 	t.Logf("Coordinator after operator recovery: %s", finalCoordinatorID)

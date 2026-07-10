@@ -66,6 +66,7 @@ func prepareResiliencyClient(t testing.TB, connFactory resiliencyConnectionFacto
 	if isK8S() {
 		waitForClusterStable(t, client, 3*time.Minute)
 		waitForClusterWritable(t, client, 3*time.Minute)
+		waitForClusterQueryable(t, client, 3*time.Minute)
 		return client
 	}
 
@@ -167,6 +168,31 @@ func waitForClusterWritable(t testing.TB, client arangodb.Client, timeout time.D
 			return nil
 		}
 
+		return Interrupt{}
+	}).TimeoutT(t, timeout, 500*time.Millisecond)
+}
+
+// waitForClusterQueryable retries a trivial AQL query until coordinators accept queries.
+// Version/CreateDatabase can succeed while a coordinator is still in soft shutdown and
+// would reject streaming Query — that race showed up on HTTP/2 after a prior kill/recover.
+func waitForClusterQueryable(t testing.TB, client arangodb.Client, timeout time.Duration) {
+	t.Helper()
+
+	NewTimeout(func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		db, err := client.GetDatabase(ctx, "_system", nil)
+		if err != nil {
+			return nil
+		}
+
+		cursor, err := db.Query(ctx, "RETURN 1", nil)
+		if err != nil {
+			t.Logf("cluster not queryable yet: %v", err)
+			return nil
+		}
+		_ = cursor.Close()
 		return Interrupt{}
 	}).TimeoutT(t, timeout, 500*time.Millisecond)
 }

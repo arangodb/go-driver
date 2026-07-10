@@ -243,7 +243,27 @@ func isResiliencyTransientError(err error) bool {
 	if isNonJSONProxyResponseError(err) {
 		return true
 	}
+	if isCoordinatorSoftShutdownError(err) {
+		return true
+	}
 	return isArangoGatewayOrCursorError(err)
+}
+
+// isCoordinatorSoftShutdownError reports ArangoDB rejecting work while a coordinator is
+// still soft-shutting down after a pod kill (pods may already show Ready).
+func isCoordinatorSoftShutdownError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "soft shutdown") ||
+		strings.Contains(msg, "shutdown in progress")
+}
+
+// isPreCursorOpenTransientError reports failures that should be retried when opening a
+// streaming cursor before the intentional coordinator kill (e.g. leftover soft shutdown).
+func isPreCursorOpenTransientError(err error) bool {
+	return isResiliencyTransientError(err)
 }
 
 // assertResiliencyDuringErrors verifies failures observed during the fault window are transient.
@@ -343,6 +363,9 @@ func TestIsResiliencyTransientError_acceptsGatewayCodes(t *testing.T) {
 		URL: "http://arangodb.local/_api/version",
 		Err: context.DeadlineExceeded,
 	})))
+	require.True(t, isResiliencyTransientError(errors.New("Coordinator soft shutdown ongoing.")))
+	require.True(t, isCoordinatorSoftShutdownError(errors.New("Coordinator soft shutdown ongoing.")))
+	require.True(t, isPreCursorOpenTransientError(errors.New("shutdown in progress")))
 }
 
 func TestIsCoordinatorKillInterruptedError_acceptsCursorGone(t *testing.T) {

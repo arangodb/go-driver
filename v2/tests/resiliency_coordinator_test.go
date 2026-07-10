@@ -223,15 +223,26 @@ func runCoordinatorKillDuringCursor(
 	cursorReady := make(chan arangodb.Cursor, 1)
 
 	go func() {
-		cursor, err := col.Database().Query(readCtx, query, &arangodb.QueryOptions{
-			BatchSize: 1,
-			Options: arangodb.QuerySubOptions{
-				Stream: true,
-			},
-		})
-		if err != nil {
-			iterationFailed <- err
-			return
+		var cursor arangodb.Cursor
+		openDeadline := time.Now().Add(coordinatorKillCursorOpenTimeout)
+		for {
+			c, err := col.Database().Query(readCtx, query, &arangodb.QueryOptions{
+				BatchSize: 1,
+				Options: arangodb.QuerySubOptions{
+					Stream: true,
+				},
+			})
+			if err == nil {
+				cursor = c
+				break
+			}
+			// After a prior kill/recover, Query can hit "Coordinator soft shutdown ongoing"
+			// even when pods are Ready and CreateDatabase already succeeded.
+			if !isPreCursorOpenTransientError(err) || time.Now().After(openDeadline) || readCtx.Err() != nil {
+				iterationFailed <- err
+				return
+			}
+			time.Sleep(500 * time.Millisecond)
 		}
 		cursorReady <- cursor
 
@@ -258,7 +269,7 @@ func runCoordinatorKillDuringCursor(
 	select {
 	case cursor = <-cursorReady:
 	case err := <-iterationFailed:
-		require.Fail(tb, "cursor failed before coordinator kill: %v", err)
+		require.Fail(tb, fmt.Sprintf("cursor failed before coordinator kill: %v", err))
 	case <-time.After(coordinatorKillCursorOpenTimeout):
 		require.Fail(tb, "cursor did not open before timeout; possible hang")
 	}
@@ -268,9 +279,9 @@ func runCoordinatorKillDuringCursor(
 		killAllCoordinators(tb)
 		close(killAck)
 	case err := <-iterationFailed:
-		require.Fail(tb, "cursor finished before kill threshold (%d docs): %v", killAfterDocs, err)
+		require.Fail(tb, fmt.Sprintf("cursor finished before kill threshold (%d docs): %v", killAfterDocs, err))
 	case <-time.After(5 * time.Minute):
-		require.Fail(tb, "cursor iteration did not reach kill threshold (%d docs) before timeout", killAfterDocs)
+		require.Fail(tb, fmt.Sprintf("cursor iteration did not reach kill threshold (%d docs) before timeout", killAfterDocs))
 	}
 
 	select {
