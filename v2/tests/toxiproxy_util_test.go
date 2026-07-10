@@ -109,22 +109,22 @@ func toxiproxyStreamingOperationTimeout() time.Duration {
 }
 
 const (
-	toxiproxyHighLatencyMs                    = int64(2000)
-	toxiproxyExtremeLatencyMs                 = int64(30000)
-	toxiproxyContextTimeoutLatencyMs          = int64(20000)
-	toxiproxyContextTimeoutDeadline           = 2 * time.Second
-	toxiproxyServerTimeoutResponseLatencyMs   = int64(20000)
-	toxiproxyServerTimeoutDeadline            = 2 * time.Second
-	toxiproxyServerTimeoutMaxWait             = 5 * time.Second
-	toxiproxyPartialPacketLossToxicity        = float32(0.3)
-	toxiproxyPartialPacketLossAttempts        = 20
-	toxiproxyFullPacketLossCallTimeout        = 10 * time.Second
-	toxiproxyStreamingPayloadBytes            = 4000
-	toxiproxyStreamingDocCount                = 100
-	toxiproxyStreamingDocsBeforeDisconnect    = 5
-	toxiproxyQueryStartupSleepSeconds         = 30.0
-	toxiproxyQueryStartupDisconnectDelay      = 500 * time.Millisecond
-	toxiproxyStreamingInterruptTimeout        = 30 * time.Second
+	toxiproxyHighLatencyMs                  = int64(2000)
+	toxiproxyExtremeLatencyMs               = int64(30000)
+	toxiproxyContextTimeoutLatencyMs        = int64(20000)
+	toxiproxyContextTimeoutDeadline         = 2 * time.Second
+	toxiproxyServerTimeoutResponseLatencyMs = int64(20000)
+	toxiproxyServerTimeoutDeadline          = 2 * time.Second
+	toxiproxyServerTimeoutMaxWait           = 5 * time.Second
+	toxiproxyPartialPacketLossToxicity      = float32(0.3)
+	toxiproxyPartialPacketLossAttempts      = 20
+	toxiproxyFullPacketLossCallTimeout      = 10 * time.Second
+	toxiproxyStreamingPayloadBytes          = 4000
+	toxiproxyStreamingDocCount              = 100
+	toxiproxyStreamingDocsBeforeDisconnect  = 5
+	toxiproxyQueryStartupSleepSeconds       = 30.0
+	toxiproxyQueryStartupDisconnectDelay    = 500 * time.Millisecond
+	toxiproxyStreamingInterruptTimeout      = 30 * time.Second
 )
 
 // connectionToxiproxyHttpServerTimeout builds an HTTP/1 connection with a short response-header
