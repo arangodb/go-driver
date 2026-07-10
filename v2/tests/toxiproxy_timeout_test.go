@@ -63,6 +63,7 @@ func testContextTimeout(t *testing.T, connFactory toxiproxyConnectionFactory) {
 		elapsed := time.Since(start)
 
 		require.Error(t, err)
+		t.Logf("error message: %s", err.Error())
 		require.True(t, isContextDeadlineExceeded(err),
 			"expected context deadline exceeded with 20s latency and 2s timeout, got: %v", err)
 		require.Less(t, elapsed, 5*time.Second,
@@ -103,6 +104,7 @@ func testServerTimeout(t *testing.T, connFactory toxiproxyConnectionFactory) {
 		elapsed := time.Since(start)
 
 		require.Error(t, err)
+		t.Logf("error message: %s", err.Error())
 		require.True(t, isDriverTimeoutError(err),
 			"expected driver timeout on delayed server response, got: %v", err)
 		require.Less(t, elapsed, toxiproxyServerTimeoutMaxWait,

@@ -125,6 +125,9 @@ const (
 	toxiproxyQueryStartupSleepSeconds       = 30.0
 	toxiproxyQueryStartupDisconnectDelay    = 500 * time.Millisecond
 	toxiproxyStreamingInterruptTimeout      = 30 * time.Second
+	toxiproxyWriteResponseLatencyMs         = int64(10000)
+	toxiproxyWriteDisconnectDelay           = 500 * time.Millisecond
+	toxiproxyWriteInterruptTimeout          = 30 * time.Second
 )
 
 // connectionToxiproxyHttpServerTimeout builds an HTTP/1 connection with a short response-header

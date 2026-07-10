@@ -87,6 +87,7 @@ func testAbruptTCPConnectionClose(t *testing.T, connFactory toxiproxyConnectionF
 
 		_, err := client.Version(ctx)
 		require.Error(t, err)
+		t.Logf("error message: %s", err.Error())
 		require.True(t, isConnectionError(err),
 			"expected transport-level connection failure (e.g. connection reset by peer), got: %v", err)
 	})

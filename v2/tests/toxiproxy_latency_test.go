@@ -97,7 +97,7 @@ func testExtremeLatency(t *testing.T, connFactory toxiproxyConnectionFactory) {
 
 		_, err := client.Version(ctx)
 		require.Error(t, err)
-		t.Logf("err: %+v", err)
+		t.Logf("error message: %s", err.Error())
 		require.True(t, isContextDeadlineExceeded(err),
 			"expected context deadline exceeded with 30s latency and 10s timeout, got: %v", err)
 	})

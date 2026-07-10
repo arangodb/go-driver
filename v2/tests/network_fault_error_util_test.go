@@ -204,6 +204,17 @@ func isCoordinatorKillInterruptedError(err error) bool {
 
 // isStreamingInterruptError reports clean failures when a query or cursor is interrupted.
 func isStreamingInterruptError(err error) bool {
+	return isWriteOrStreamInterruptError(err)
+}
+
+// isWriteInterruptError reports clean failures when an insert or transaction commit
+// is interrupted mid-flight. The driver cannot know whether the server committed.
+func isWriteInterruptError(err error) bool {
+	return isWriteOrStreamInterruptError(err)
+}
+
+// isWriteOrStreamInterruptError reports clean transport failures for mid-flight cuts.
+func isWriteOrStreamInterruptError(err error) bool {
 	if err == nil {
 		return false
 	}
