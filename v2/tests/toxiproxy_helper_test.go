@@ -171,26 +171,6 @@ func addUpstreamTimeout(t testing.TB, proxy *toxiproxy.Proxy, name string, toxic
 	require.NoError(t, err)
 }
 
-// addUpstreamBandwidth limits upload throughput on the client→server stream (rate in KB/s).
-func addUpstreamBandwidth(t testing.TB, proxy *toxiproxy.Proxy, name string, rateKBs int64) {
-	t.Helper()
-
-	_, err := proxy.AddToxic(name, "bandwidth", "upstream", 1.0, toxiproxy.Attributes{
-		"rate": rateKBs,
-	})
-	require.NoError(t, err)
-}
-
-// addDownstreamBandwidth limits download throughput on the server→client stream (rate in KB/s).
-func addDownstreamBandwidth(t testing.TB, proxy *toxiproxy.Proxy, name string, rateKBs int64) {
-	t.Helper()
-
-	_, err := proxy.AddToxic(name, "bandwidth", "downstream", 1.0, toxiproxy.Attributes{
-		"rate": rateKBs,
-	})
-	require.NoError(t, err)
-}
-
 // requireDriverRoutesThroughToxiproxy fails when cluster endpoint discovery rewrote the
 // driver away from the toxiproxy listen URL (injected toxics would not apply).
 func requireDriverRoutesThroughToxiproxy(t testing.TB, client interface {

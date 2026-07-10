@@ -202,7 +202,7 @@ func isCoordinatorKillInterruptedError(err error) bool {
 		isNonJSONProxyResponseError(err)
 }
 
-// isStreamingInterruptError reports clean failures when a cursor or query is interrupted mid-stream.
+// isStreamingInterruptError reports clean failures when a query or cursor is interrupted.
 func isStreamingInterruptError(err error) bool {
 	if err == nil {
 		return false
