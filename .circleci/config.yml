@@ -598,6 +598,16 @@ workflows:
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
           k8s-wait-timeout: 35m
 
+      - run-k8s-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 toxiproxy on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-toxiproxy
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+          needs_foxx_workspace: false
+
       # ========================
       # V3 Tests ARM (no Foxx workspace)
       # ========================
