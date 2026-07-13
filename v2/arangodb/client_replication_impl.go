@@ -141,16 +141,14 @@ func (c *clientReplication) GetInventory(ctx context.Context, dbName string, par
 		queryParams["collection"] = *params.Collection
 	}
 
-	// Check server role
+	// DBserver forwarding is not allowed for inventory. Call this against a
+	// Single/DB-Server endpoint.
 	serverRole, err := c.client.ServerRole(ctx)
 	if err != nil {
 		return InventoryResponse{}, errors.WithStack(err)
 	}
 	if serverRole == ServerRoleCoordinator {
-		if params.DBserver == nil || *params.DBserver == "" {
-			return InventoryResponse{}, errors.New("DBserver must be specified when querying inventory on a coordinator")
-		}
-		queryParams["DBserver"] = *params.DBserver
+		return InventoryResponse{}, errors.New("replication inventory is not supported on Coordinators")
 	}
 
 	// Build URL
@@ -294,22 +292,18 @@ func (c *clientReplication) Dump(ctx context.Context, dbName string, params Repl
 }
 
 func (c *clientReplication) LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error) {
-	// Build query params
-	queryParams := map[string]interface{}{}
-	// Check server role
-	serverRole, err := c.client.ServerRole(ctx)
+	_ = DBserver // ignored: DBserver forwarding is not allowed for logger-state
 
+	serverRole, err := c.client.ServerRole(ctx)
 	if err != nil {
 		return LoggerStateResponse{}, errors.WithStack(err)
 	}
 	if serverRole == ServerRoleCoordinator {
-		if DBserver == nil || *DBserver == "" {
-			return LoggerStateResponse{}, errors.New("DBserver must be specified when creating a batch on a coordinator")
-		}
-		queryParams["DBserver"] = *DBserver
+		return LoggerStateResponse{}, errors.New("replication logger-state is not supported on Coordinators")
 	}
+
 	// Build URL
-	url := c.url(dbName, []string{"logger-state"}, queryParams)
+	url := c.url(dbName, []string{"logger-state"}, nil)
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`

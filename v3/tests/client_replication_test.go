@@ -104,9 +104,14 @@ func Test_CreateNewBatch(t *testing.T) {
 				require.NotNil(t, batch.State)
 
 				t.Run("GetInventory", func(t *testing.T) {
+					// Inventory does not allow DBserver forwarding. On Coordinators
+					// the batch lives on a DB-Server via batch forwarding, so
+					// inventory cannot be queried from here.
+					if serverRole == arangodb.ServerRoleCoordinator {
+						t.Skipf("inventory is not supported via Coordinator DBserver forwarding (role: %s)", serverRole)
+					}
 					resp, err := client.GetInventory(ctx, db.Name(), arangodb.InventoryQueryParams{
-						BatchID:  batch.ID,
-						DBserver: dbServer,
+						BatchID: batch.ID,
 					})
 					require.NoError(t, err)
 					require.NotNil(t, resp)
@@ -165,19 +170,13 @@ func Test_LoggerState(t *testing.T) {
 				require.NoError(t, err)
 				t.Logf("ServerRole is %s\n", serverRole)
 
-				var dbServer *string
+				// logger-state is not supported on Coordinators; DBserver
+				// forwarding is restricted to batch and dump only.
 				if serverRole == arangodb.ServerRoleCoordinator {
-					clusterHealth, err := client.Health(ctx) // Ensure the client is healthy
-					require.NoError(t, err)
-					for id, db := range clusterHealth.Health {
-						if db.Role == arangodb.ServerRoleDBServer {
-							s := string(id)
-							dbServer = &s
-							break
-						}
-					}
+					t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
 				}
-				resp, err := client.LoggerState(ctx, db.Name(), dbServer)
+
+				resp, err := client.LoggerState(ctx, db.Name(), nil)
 				require.NoError(t, err)
 				require.NotNil(t, resp)
 				require.NotEmpty(t, resp.State)
