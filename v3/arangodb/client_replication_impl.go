@@ -142,7 +142,14 @@ func (c *clientReplication) GetInventory(ctx context.Context, dbName string, par
 	}
 
 	// DBserver forwarding is not allowed for inventory. Call this against a
-	// Single/DB-Server endpoint; do not send DBserver from a Coordinator.
+	// Single/DB-Server endpoint.
+	serverRole, err := c.client.ServerRole(ctx)
+	if err != nil {
+		return InventoryResponse{}, errors.WithStack(err)
+	}
+	if serverRole == ServerRoleCoordinator {
+		return InventoryResponse{}, errors.New("replication inventory is not supported on Coordinators")
+	}
 
 	// Build URL
 	url := c.url(dbName, []string{"inventory"}, queryParams)
