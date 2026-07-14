@@ -590,11 +590,11 @@ __run_v2_tests_toxiproxy_k8s: __test_v2_debug__ __test_prepare __test_toxiproxy_
 __test_toxiproxy_start:
 	@chmod +x "${ROOTDIR}/test/toxiproxy.sh"
 	@TESTCONTAINER=$(TESTCONTAINER) TOXIPROXY_LISTEN_PORT=$(TOXIPROXY_LISTEN_PORT) TOXIPROXY_ADMIN_PORT=$(TOXIPROXY_ADMIN_PORT) \
-	  TOXIPROXY_UPSTREAM=$(TOXIPROXY_UPSTREAM) TOXIPROXY_PROXY_NAME=$(TOXIPROXY_PROXY_NAME) DOCKER_NETWORK="--net=host" \
+	  TOXIPROXY_UPSTREAM=$(TOXIPROXY_UPSTREAM) TOXIPROXY_PROXY_NAME=$(TOXIPROXY_PROXY_NAME) \
 	  "${ROOTDIR}/test/toxiproxy.sh" start
 
 __test_toxiproxy_cleanup:
-	@TESTCONTAINER=$(TESTCONTAINER) DOCKER_NETWORK="--net=host" "${ROOTDIR}/test/toxiproxy.sh" cleanup
+	@TESTCONTAINER=$(TESTCONTAINER) "${ROOTDIR}/test/toxiproxy.sh" cleanup
 
 __test_v2_go_test_toxiproxy:
 	@($(DOCKER_CMD) $(DOCKER_CMD_V2_PARAMS) \

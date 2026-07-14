@@ -64,13 +64,13 @@ func runIngressCoordinatorFailover(
 	expectedCoordinators := countHealthyCoordinators(ctx, client)
 	t.Logf("Cluster has %d coordinators", expectedCoordinators)
 
-	baselineCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn)
+	baselineCoordinatorID := waitForCoordinatorResponse(t, resiliencyFailoverResponseTimeout, freshProbeConn)
 	t.Logf("Baseline coordinator before kill: %s", baselineCoordinatorID)
 
 	target := killRandomCoordinator(t, client)
 	t.Logf("Killed coordinator pod %s (server %s)", target.ResourceName, target.ServerID)
 
-	newCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn)
+	newCoordinatorID := waitForCoordinatorResponse(t, resiliencyFailoverResponseTimeout, freshProbeConn)
 	t.Logf("Coordinator after kill: %s", newCoordinatorID)
 	if newCoordinatorID == baselineCoordinatorID {
 		t.Logf("Coordinator ID unchanged after kill; valid when ingress/LB keeps routing to a surviving coordinator")
@@ -83,7 +83,7 @@ func runIngressCoordinatorFailover(
 	// return an empty map after pod recreate while Version() already works (expected 3, got 0).
 	waitForHealthyCoordinatorCount(t, client, expectedCoordinators, coordinatorRecoveryTimeout)
 
-	finalCoordinatorID := waitForCoordinatorResponse(ctx, t, resiliencyFailoverResponseTimeout, freshProbeConn)
+	finalCoordinatorID := waitForCoordinatorResponse(t, resiliencyFailoverResponseTimeout, freshProbeConn)
 	t.Logf("Coordinator after operator recovery: %s", finalCoordinatorID)
 }
 
@@ -91,7 +91,6 @@ func runIngressCoordinatorFailover(
 // attempt) until a coordinator responds. Fresh connections avoid stale TCP sessions to a
 // killed backend. freshProbeConn should match the protocol under test (HTTP/1 or HTTP/2).
 func waitForCoordinatorResponse(
-	ctx context.Context,
 	t testing.TB,
 	timeout time.Duration,
 	freshProbeConn resiliencyConnectionFactory,

@@ -109,7 +109,8 @@ Environment:
   ARANGO_LICENSE_KEY     optional Enterprise license key, stored in a Kubernetes secret
   K8S_INGRESS_HOST       host name used by ingress mode (default: ${K8S_INGRESS_HOST})
   K8S_INGRESS_ADDRESS    ingress IP for Docker host mapping; uses Ingress status when empty
-  K8S_STUCK_INIT_TIMEOUT delete pods stuck in init-lifecycle longer than this (default: ${K8S_STUCK_INIT_TIMEOUT})
+  K8S_STUCK_INIT_TIMEOUT delete / force-delete pods stuck in init (uuid, lifecycle, …)
+                         or Terminating longer than this (default: ${K8S_STUCK_INIT_TIMEOUT})
   K8S_KEEP_DEPLOYMENT    keep deployment after "run" (default: ${K8S_KEEP_DEPLOYMENT})
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
   K8S_TEST_WORKDIR       working directory for the test command (default: ${K8S_TEST_WORKDIR})
@@ -549,31 +550,84 @@ delete_failed_pods() {
 	fi
 }
 
-# delete_stuck_init_pods removes pods stuck in init-lifecycle longer than K8S_STUCK_INIT_TIMEOUT.
+# force_delete_pod immediately removes a pod. ArangoDB member pods often use a 3600s
+# terminationGracePeriodSeconds; a hanging uuid init otherwise stays Terminating for up to 1h.
+force_delete_pod() {
+	local pod="$1"
+	kubectl -n "${K8S_NAMESPACE}" delete pod "${pod}" \
+		--force --grace-period=0 --ignore-not-found=true
+}
+
+# delete_stuck_init_pods force-deletes deployment pods whose init containers have been
+# running longer than K8S_STUCK_INIT_TIMEOUT (uuid / init-lifecycle / version-check), and
+# pods stuck in Terminating longer than that timeout, so kube-arangodb can recreate them.
 delete_stuck_init_pods() {
-	local timeout_seconds now pod started_at started_at_seconds age
+	local timeout_seconds now line pod inits entry init_name started_at started_at_seconds age deleted
 	timeout_seconds="$(duration_to_seconds "${K8S_STUCK_INIT_TIMEOUT}")"
 	now="$(date +%s)"
+	deleted=""
 
-	while read -r pod started_at; do
-		if [ -z "${pod}" ] || [ -z "${started_at}" ]; then
+	# Format: pod|name,startedAt;name,startedAt;
+	while IFS='|' read -r pod inits; do
+		if [ -z "${pod}" ] || [ -z "${inits}" ]; then
 			continue
 		fi
+		case " ${deleted} " in
+			*" ${pod} "*) continue ;;
+		esac
 
-		started_at_seconds="$(date -d "${started_at}" +%s 2>/dev/null || true)"
+		IFS=';'
+		for entry in ${inits}; do
+			IFS=','
+			# shellcheck disable=SC2086
+			set -- ${entry}
+			IFS=
+			init_name="${1:-}"
+			started_at="${2:-}"
+			if [ -z "${started_at}" ]; then
+				continue
+			fi
+
+			started_at_seconds="$(date -d "${started_at}" +%s 2>/dev/null || true)"
+			if [ -z "${started_at_seconds}" ]; then
+				continue
+			fi
+
+			age=$((now - started_at_seconds))
+			if [ "${age}" -gt "${timeout_seconds}" ]; then
+				echo "Force-deleting pod/${pod}: init ${init_name:-container} running for ${age}s (limit ${timeout_seconds}s)."
+				force_delete_pod "${pod}"
+				deleted="${deleted} ${pod}"
+				break
+			fi
+		done
+	done < <(kubectl -n "${K8S_NAMESPACE}" get pods \
+		-l "arango_deployment=${K8S_DEPLOYMENT}" \
+		-o jsonpath='{range .items[*]}{.metadata.name}{"|"}{range .status.initContainerStatuses[?(@.state.running)]}{.name}{","}{.state.running.startedAt}{";"}{end}{"\n"}{end}' 2>/dev/null || true)
+
+	# Force-delete pods stuck Terminating (e.g. graceful delete of a hung uuid init).
+	while read -r pod deleted_at; do
+		if [ -z "${pod}" ] || [ -z "${deleted_at}" ]; then
+			continue
+		fi
+		case " ${deleted} " in
+			*" ${pod} "*) continue ;;
+		esac
+
+		started_at_seconds="$(date -d "${deleted_at}" +%s 2>/dev/null || true)"
 		if [ -z "${started_at_seconds}" ]; then
 			continue
 		fi
 
 		age=$((now - started_at_seconds))
 		if [ "${age}" -gt "${timeout_seconds}" ]; then
-			echo "Deleting pod/${pod} because init-lifecycle has been running for ${age}s."
-			kubectl -n "${K8S_NAMESPACE}" delete pod "${pod}" --ignore-not-found=true
+			echo "Force-deleting pod/${pod}: Terminating for ${age}s (limit ${timeout_seconds}s)."
+			force_delete_pod "${pod}"
+			deleted="${deleted} ${pod}"
 		fi
 	done < <(kubectl -n "${K8S_NAMESPACE}" get pods \
 		-l "arango_deployment=${K8S_DEPLOYMENT}" \
-		--field-selector=status.phase=Pending \
-		-o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.initContainerStatuses[?(@.name=="init-lifecycle")].state.running.startedAt}{"\n"}{end}' 2>/dev/null || true)
+		-o jsonpath='{range .items[?(@.metadata.deletionTimestamp)]}{.metadata.name}{" "}{.metadata.deletionTimestamp}{"\n"}{end}' 2>/dev/null || true)
 }
 
 # dump_diagnostics prints ArangoDeployment, pod, and log details on test setup failures.

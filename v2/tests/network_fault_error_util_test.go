@@ -94,7 +94,10 @@ func isConnectionError(err error) bool {
 		strings.Contains(msg, "connection refused") ||
 		strings.Contains(msg, "use of closed network connection") ||
 		strings.Contains(msg, "client connection lost") ||
-		strings.Contains(msg, "transport connection broken")
+		strings.Contains(msg, "transport connection broken") ||
+		// golang.org/x/net/http2 during ingress restart / dial races (no net.OpError wrapper).
+		strings.Contains(msg, "client conn could not be established") ||
+		strings.Contains(msg, "http2: connection error")
 }
 
 // isResetOrEOFError reports the documented outcomes for RST-by-peer simulation.
@@ -315,6 +318,16 @@ func TestIsConnectionError_detectsResetByPeer(t *testing.T) {
 		},
 	})
 	require.True(t, isConnectionError(err))
+}
+
+func TestIsConnectionError_detectsHTTP2ClientConnNotEstablished(t *testing.T) {
+	err := pkgerrors.WithStack(&url.Error{
+		Op:  "Get",
+		URL: "http://arangodb.local/_api/version",
+		Err: errors.New("http2: client conn could not be established"),
+	})
+	require.True(t, isConnectionError(err))
+	require.True(t, isResiliencyTransientError(err))
 }
 
 func TestIsResetOrEOFError_detectsDocumentedOutcomes(t *testing.T) {
