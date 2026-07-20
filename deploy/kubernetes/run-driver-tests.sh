@@ -564,7 +564,7 @@ force_delete_pod() {
 # running longer than K8S_STUCK_INIT_TIMEOUT (uuid / init-lifecycle / version-check), and
 # pods stuck in Terminating longer than that timeout, so kube-arangodb can recreate them.
 delete_stuck_init_pods() {
-	local timeout_seconds now line pod inits entry init_name started_at started_at_seconds age deleted
+	local timeout_seconds now pod inits rest entry init_name started_at started_at_seconds age deleted deleted_at
 	timeout_seconds="$(duration_to_seconds "${K8S_STUCK_INIT_TIMEOUT}")"
 	now="$(date +%s)"
 	deleted=""
