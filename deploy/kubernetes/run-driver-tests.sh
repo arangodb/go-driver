@@ -1073,9 +1073,8 @@ run_command_through_ingress() {
 # run_command_on_host_through_ingress also sets TEST_ENDPOINTS, TEST_ENDPOINTS_OVERRIDE,
 # and TEST_INGRESS_HOST so go test connects to the IP but sends Host: arangodb.local.
 collect_ingress_host_test_env() {
-	local address auth endpoint
-	address="$(get_ingress_address)"
-	endpoint="$(ingress_host_endpoint)"
+	local auth endpoint
+	endpoint="$(ingress_host_endpoint)"	auth="$(test_authentication)"
 	auth="$(test_authentication)"
 
 	if [ -n "${K8S_TEST_ENDPOINTS_ENV}" ]; then
