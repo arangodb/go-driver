@@ -218,64 +218,81 @@ func runCoordinatorKillDuringCursor(
 
 	iterationFailed := make(chan error, 1)
 	docsRead := atomic.Int32{}
-	killNow := make(chan struct{}, 1)
 	killAck := make(chan struct{})
-	cursorReady := make(chan arangodb.Cursor, 1)
+	// Delivered only when the kill threshold is reached so dead-cursor checks use the
+	// cursor that the intentional kill interrupted (not one abandoned after a pre-kill 503).
+	readyToKill := make(chan arangodb.Cursor, 1)
 
 	go func() {
-		var cursor arangodb.Cursor
-		openDeadline := time.Now().Add(coordinatorKillCursorOpenTimeout)
+		preKillDeadline := time.Now().Add(coordinatorKillCursorOpenTimeout)
 		for {
-			c, err := col.Database().Query(readCtx, query, &arangodb.QueryOptions{
-				BatchSize: 1,
-				Options: arangodb.QuerySubOptions{
-					Stream: true,
-				},
-			})
-			if err == nil {
-				cursor = c
-				break
-			}
-			// After a prior kill/recover, Query can hit "Coordinator soft shutdown ongoing"
-			// even when pods are Ready and CreateDatabase already succeeded.
-			if !isPreCursorOpenTransientError(err) || time.Now().After(openDeadline) || readCtx.Err() != nil {
-				iterationFailed <- err
-				return
-			}
-			time.Sleep(500 * time.Millisecond)
-		}
-		cursorReady <- cursor
-
-		for {
-			var doc map[string]any
-			_, err := cursor.ReadDocument(readCtx, &doc)
-			if shared.IsNoMoreDocuments(err) {
-				iterationFailed <- fmt.Errorf("cursor finished before coordinator kill (read %d docs)", docsRead.Load())
-				return
-			}
-			if err != nil {
-				iterationFailed <- err
+			if readCtx.Err() != nil {
+				iterationFailed <- readCtx.Err()
 				return
 			}
 
-			if docsRead.Add(1) == killAfterDocs {
-				killNow <- struct{}{}
-				<-killAck
+			var cursor arangodb.Cursor
+			for {
+				c, err := col.Database().Query(readCtx, query, &arangodb.QueryOptions{
+					BatchSize: 1,
+					Options: arangodb.QuerySubOptions{
+						Stream: true,
+					},
+				})
+				if err == nil {
+					cursor = c
+					break
+				}
+				// After a prior kill/recover, Query can hit "Coordinator soft shutdown ongoing"
+				// even when pods are Ready and CreateDatabase already succeeded.
+				if !isPreCursorOpenTransientError(err) || time.Now().After(preKillDeadline) || readCtx.Err() != nil {
+					iterationFailed <- err
+					return
+				}
+				time.Sleep(500 * time.Millisecond)
+			}
+
+			reopen := false
+			for {
+				var doc map[string]any
+				_, err := cursor.ReadDocument(readCtx, &doc)
+				if shared.IsNoMoreDocuments(err) {
+					iterationFailed <- fmt.Errorf("cursor finished before coordinator kill (read %d docs)", docsRead.Load())
+					return
+				}
+				if err != nil {
+					// Pre-kill: ingress/coordinator leftover chaos (503, soft shutdown) can
+					// interrupt a streaming cursor before we inject the intentional kill —
+					// especially on HTTP/2 right after HTTP/1's kill/recover. Reopen and
+					// recount until the threshold or the pre-kill deadline.
+					if docsRead.Load() < killAfterDocs &&
+						isPreCursorOpenTransientError(err) &&
+						time.Now().Before(preKillDeadline) &&
+						readCtx.Err() == nil {
+						tb.Logf("pre-kill cursor read transient after %d docs, reopening: %v", docsRead.Load(), err)
+						_ = cursor.Close()
+						docsRead.Store(0)
+						reopen = true
+						break
+					}
+					iterationFailed <- err
+					return
+				}
+
+				if docsRead.Add(1) == killAfterDocs {
+					readyToKill <- cursor
+					<-killAck
+				}
+			}
+			if !reopen {
+				return
 			}
 		}
 	}()
 
 	var cursor arangodb.Cursor
 	select {
-	case cursor = <-cursorReady:
-	case err := <-iterationFailed:
-		require.Fail(tb, fmt.Sprintf("cursor failed before coordinator kill: %v", err))
-	case <-time.After(coordinatorKillCursorOpenTimeout):
-		require.Fail(tb, "cursor did not open before timeout; possible hang")
-	}
-
-	select {
-	case <-killNow:
+	case cursor = <-readyToKill:
 		killAllCoordinators(tb)
 		close(killAck)
 	case err := <-iterationFailed:

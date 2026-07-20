@@ -266,8 +266,9 @@ func isCoordinatorSoftShutdownError(err error) bool {
 		strings.Contains(msg, "shutdown in progress")
 }
 
-// isPreCursorOpenTransientError reports failures that should be retried when opening a
-// streaming cursor before the intentional coordinator kill (e.g. leftover soft shutdown).
+// isPreCursorOpenTransientError reports failures that should be retried when opening or
+// reading a streaming cursor before the intentional coordinator kill (e.g. leftover soft
+// shutdown or brief ingress 503 after a prior HTTP/1 kill/recover).
 func isPreCursorOpenTransientError(err error) bool {
 	return isResiliencyTransientError(err)
 }
