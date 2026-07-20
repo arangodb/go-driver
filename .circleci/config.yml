@@ -109,9 +109,14 @@ commands:
     parameters:
       test-command:
         type: string
+      no_output_timeout:
+        type: string
+        default: "20m"
+        description: "CircleCI no-output timeout for long/quiet integration runs."
     steps:
       - run:
           name: Run integration tests
+          no_output_timeout: << parameters.no_output_timeout >>
           command: |
             if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping..."
@@ -338,6 +343,10 @@ jobs:
         type: string
         default: "25m"
         description: "Timeout for kube-arangodb deployment readiness (resiliency uses 3 coordinators)."
+      no_output_timeout:
+        type: string
+        default: "25m"
+        description: "CircleCI no-output timeout for the make test step (resiliency/toxiproxy need longer)."
     steps:
       - checkout
       - setup-docker
@@ -361,6 +370,7 @@ jobs:
       - start-kind
       - run-test-if-pr:
           test-command: make << parameters.test-to-run >>
+          no_output_timeout: << parameters.no_output_timeout >>
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
@@ -597,6 +607,7 @@ workflows:
           test-to-run: run-k8s-v2-resiliency
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
           k8s-wait-timeout: 35m
+          no_output_timeout: 40m
 
       - run-k8s-integration-tests:
           context:
@@ -607,6 +618,7 @@ workflows:
           test-to-run: run-k8s-v2-toxiproxy
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
           needs_foxx_workspace: false
+          no_output_timeout: 30m
 
       # ========================
       # V3 Tests ARM (no Foxx workspace)

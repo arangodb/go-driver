@@ -157,9 +157,10 @@ func isDriverTimeoutError(err error) bool {
 	}
 
 	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "timeout") ||
-		strings.Contains(msg, "deadline exceeded") ||
-		strings.Contains(msg, "i/o timeout")
+	return strings.Contains(msg, "timeout awaiting response headers") ||
+		strings.Contains(msg, "i/o timeout") ||
+		strings.Contains(msg, "client.timeout exceeded") ||
+		strings.Contains(msg, "deadline exceeded")
 }
 
 // isIntermittentNetworkError reports transport failures expected under partial packet loss.
@@ -229,9 +230,11 @@ func isWriteOrStreamInterruptError(err error) bool {
 	}
 
 	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "connection") ||
-		isEOFError(err) ||
+	return isEOFError(err) ||
+		strings.Contains(msg, "connection reset") ||
+		strings.Contains(msg, "connection refused") ||
 		strings.Contains(msg, "broken pipe") ||
+		strings.Contains(msg, "use of closed network connection") ||
 		strings.Contains(msg, "context canceled")
 }
 
@@ -362,7 +365,29 @@ func TestIsDriverTimeoutError_detectsResponseHeaderTimeout(t *testing.T) {
 	require.True(t, isDriverTimeoutError(context.DeadlineExceeded))
 }
 
-// isDeadCursorError reports errors when reading from a cursor after its server connection died.
+// isDeadCursorResumeError reports errors expected when resuming a cursor after cluster recovery.
+// Gateway-down codes (502/503/504) are excluded — those prove the cluster is still unavailable,
+// not that the cursor stayed dead after recovery.
+func isDeadCursorResumeError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if isStreamingInterruptError(err) {
+		return true
+	}
+
+	var ae shared.ArangoError
+	if errors.As(err, &ae) || pkgerrors.As(err, &ae) {
+		switch ae.Code {
+		case http.StatusGone, http.StatusNotFound, http.StatusConflict:
+			return true
+		}
+	}
+	return false
+}
+
+// isDeadCursorError reports errors when closing a cursor after coordinator kill/recovery.
+// Close may still see gateway/HTML responses if the cursor handle is already gone server-side.
 func isDeadCursorError(err error) bool {
 	return isCoordinatorKillInterruptedError(err)
 }
@@ -392,4 +417,19 @@ func TestIsCoordinatorKillInterruptedError_acceptsCursorGone(t *testing.T) {
 	})))
 	require.True(t, isCoordinatorKillInterruptedError(&json.SyntaxError{Offset: 0}))
 	require.True(t, isCoordinatorKillInterruptedError(errors.New("invalid character '<' looking for beginning of value")))
+}
+
+func TestIsDeadCursorResumeError_rejectsGatewayDown(t *testing.T) {
+	require.True(t, isDeadCursorResumeError(shared.ArangoError{HasError: true, Code: http.StatusGone}))
+	require.True(t, isDeadCursorResumeError(shared.ArangoError{HasError: true, Code: http.StatusNotFound}))
+	require.True(t, isDeadCursorResumeError(shared.ArangoError{HasError: true, Code: http.StatusConflict}))
+	require.True(t, isDeadCursorResumeError(pkgerrors.WithStack(&url.Error{
+		Op:  "Post",
+		URL: "http://127.0.0.1:17001/_api/cursor/1/2",
+		Err: io.EOF,
+	})))
+	require.False(t, isDeadCursorResumeError(shared.ArangoError{HasError: true, Code: http.StatusBadGateway}))
+	require.False(t, isDeadCursorResumeError(shared.ArangoError{HasError: true, Code: http.StatusServiceUnavailable}))
+	require.False(t, isDeadCursorResumeError(shared.ArangoError{HasError: true, Code: http.StatusGatewayTimeout}))
+	require.False(t, isDeadCursorResumeError(&json.SyntaxError{Offset: 0}))
 }

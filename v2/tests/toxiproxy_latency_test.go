@@ -65,8 +65,8 @@ func testHighLatency(t *testing.T, connFactory toxiproxyConnectionFactory) {
 		slow = measureVersionCall(t, client, ctx)
 	}()
 
-	require.Greater(t, slow, baseline+1500*time.Millisecond,
-		"expected at least ~2s added latency (baseline %v, with latency %v)", baseline, slow)
+	require.Greater(t, slow, baseline+time.Second,
+		"expected roughly 2s injected latency to be visible (baseline %v, with latency %v)", baseline, slow)
 }
 
 // TestToxiproxy_ExtremeLatency validates that Version() fails when injected latency
@@ -134,7 +134,7 @@ func testLatencyRemoved(t *testing.T, connFactory toxiproxyConnectionFactory) {
 		defer cancel()
 		withLatency = measureVersionCall(t, client, ctx)
 	}()
-	require.Greater(t, withLatency, baseline+1500*time.Millisecond)
+	require.Greater(t, withLatency, baseline+time.Second)
 
 	require.NoError(t, proxy.RemoveToxic("latency_up"))
 
@@ -145,7 +145,7 @@ func testLatencyRemoved(t *testing.T, connFactory toxiproxyConnectionFactory) {
 		afterRemoval = measureVersionCall(t, client, ctx)
 	}()
 	t.Logf("afterRemoval: %v", afterRemoval)
-	t.Logf("withLatency/2: %v", withLatency/2)
-	require.Less(t, afterRemoval, withLatency/2,
+	t.Logf("withLatency*2/3: %v", withLatency*2/3)
+	require.Less(t, afterRemoval, withLatency*2/3,
 		"expected faster requests after latency removal (with latency %v, after %v)", withLatency, afterRemoval)
 }

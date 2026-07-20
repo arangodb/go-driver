@@ -51,7 +51,7 @@ Prerequisite: run `setup-kind` first (see [Local Run](#local-run)).
 
 **Local tip:** After the first successful run, set `K8S_INSTALL_OPERATOR=false` to avoid GitHub `429` rate limits on operator manifests. See [deploy/kubernetes/README.md — Troubleshooting](../../deploy/kubernetes/README.md#troubleshooting).
 
-The runner deploys a cluster with **3 coordinators** (`K8S_COORDINATORS_COUNT=3`) and runs every `TestResiliency_*` test via:
+The runner deploys a cluster with **3 coordinators** (`K8S_COORDINATORS_COUNT=3`; agency stays at default **1** agent unless you set `K8S_AGENTS_COUNT=3`) and runs every `TestResiliency_*` test via:
 
 ```text
 run-k8s-v2-resiliency → run-driver-tests.sh run → make run-v2-tests-resiliency-k8s
@@ -100,15 +100,16 @@ When `TESTOPTIONS` is unset, all `TestResiliency_*` tests run (default `-run '^T
 | **3** | `IngressRestartDuringActiveWorkload` | Active `Version()` loop survives ingress restart (transient errors A–D allowed) |
 | **4** | `CoordinatorRestartWhileIdle` | Idle client survives delete/recreate of **all 3** coordinators |
 | **5** | `CoordinatorRestartDuringActiveWorkload` | Active `Version()` loop while all 3 coordinators are recreated (`failuresDuring` may be 0) |
-| **6** | `CoordinatorKillDuringRead` | Kill all 3 coordinators during streaming cursor read |
+| **6** | `CoordinatorKillDuringRead` | Kill all 3 coordinators during streaming cursor read; after recovery, dead-cursor resume must fail with cursor-gone / closed connection (not gateway-down) |
 | **7** | `CoordinatorKillDuringInsert` | Kill **1** coordinator during insert loop (`failuresDuring` may be 0) |
-| **8** | `CoordinatorKillDuringCursorIteration` | Kill all 3 coordinators after ~30 cursor docs |
+| **8** | `CoordinatorKillDuringCursorIteration` | Kill all 3 coordinators after ~30 cursor docs; same post-recovery dead-cursor check as #6 |
 
 What is validated:
 
 - The driver does not panic, hang, or deadlock
 - Temporary connection errors during failure windows are allowed (categories **A–E** per scenario; see reference)
 - After recovery, `client.Version()` and new operations succeed again
+- Active-workload recovery requires successes **after** ready (mid-chaos successes do not count as `successesAfter`)
 
 What is not validated:
 
@@ -169,7 +170,7 @@ K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-toxiproxy VERBOSE=1
 | **6** | `LatencyRemoved` | Duration recovers after toxic removal |
 | **7** | `ContextTimeout` | Caller context deadline on slow path |
 | **8** | `ServerTimeout` | Response-header timeout (HTTP/1 only) |
-| **9** | `PartialPacketLoss` | ~30% upstream `reset_peer` (HTTP/1 only; A or B) |
+| **9** | `PartialPacketLoss` | ~40% upstream `reset_peer` over 40 attempts (HTTP/1 only; A or B) |
 | **10** | `FullPacketLoss` | 100% upstream `timeout` toxic |
 | **11** | `DisconnectDuringCursorIteration` | Disable proxy mid-cursor read |
 | **12** | `DisconnectDuringQueryExecution` | Disable proxy during `db.Query()` startup |
@@ -182,8 +183,10 @@ On pull requests, CircleCI runs the same targets via `run-k8s-integration-tests`
 
 - `make run-k8s-v2-single`
 - `make run-k8s-v2-cluster`
-- `make run-k8s-v2-resiliency` (3 coordinators; ingress and coordinator failure scenarios)
-- `make run-k8s-v2-toxiproxy` (1 coordinator; network-fault scenarios via Toxiproxy → ingress)
+- `make run-k8s-v2-resiliency` (3 coordinators; ingress and coordinator failure scenarios; `k8s-wait-timeout: 35m`, `no_output_timeout: 40m`)
+- `make run-k8s-v2-toxiproxy` (1 coordinator; network-fault scenarios via Toxiproxy → ingress; `no_output_timeout: 30m`)
+
+All k8s jobs use kube-arangodb enterprise **1.4.3** (`docker-hub` context). Expect longer wall time for resiliency (~10–30+ minutes depending on chaos windows).
 
 See `deploy/kubernetes/README.md` for the shared runner details.
 

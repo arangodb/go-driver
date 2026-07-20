@@ -50,6 +50,7 @@ K8S_TEST_AUTHENTICATION="${K8S_TEST_AUTHENTICATION:-basic}"
 K8S_TLS="${K8S_TLS:-false}"
 K8S_TEST_WORKDIR="${K8S_TEST_WORKDIR:-${ROOT_DIR}}"
 K8S_COORDINATORS_COUNT="${K8S_COORDINATORS_COUNT:-1}"
+K8S_AGENTS_COUNT="${K8S_AGENTS_COUNT:-1}"
 K8S_TOXIPROXY_LISTEN_PORT="${K8S_TOXIPROXY_LISTEN_PORT:-17001}"
 K8S_TOXIPROXY_ADMIN_PORT="${K8S_TOXIPROXY_ADMIN_PORT:-8474}"
 K8S_TOXIPROXY_PROXY_NAME="${K8S_TOXIPROXY_PROXY_NAME:-arangodb}"
@@ -115,6 +116,7 @@ Environment:
   K8S_DELETE_NAMESPACE   delete K8S_NAMESPACE during cleanup (default: ${K8S_DELETE_NAMESPACE})
   K8S_TEST_WORKDIR       working directory for the test command (default: ${K8S_TEST_WORKDIR})
   K8S_COORDINATORS_COUNT number of coordinators in Cluster mode (default: ${K8S_COORDINATORS_COUNT})
+  K8S_AGENTS_COUNT       number of agents in Cluster mode (default: ${K8S_AGENTS_COUNT})
   K8S_TOXIPROXY_LISTEN_PORT local Toxiproxy listen port for run-toxiproxy (default: ${K8S_TOXIPROXY_LISTEN_PORT})
   K8S_TOXIPROXY_ADMIN_PORT local Toxiproxy admin API port (default: ${K8S_TOXIPROXY_ADMIN_PORT})
   K8S_KIND_CLUSTER_NAME  kind cluster name for "setup-kind" (default: ${K8S_KIND_CLUSTER_NAME})
@@ -375,7 +377,7 @@ EOF_LICENSE
 fi)
 $(if [ "${K8S_MODE}" = "Cluster" ]; then cat <<EOF_CLUSTER
   agents:
-    count: 1
+    count: ${K8S_AGENTS_COUNT}
 $(render_arangod_args "    ")
   dbservers:
     count: 3
@@ -576,15 +578,21 @@ delete_stuck_init_pods() {
 			*" ${pod} "*) continue ;;
 		esac
 
-		IFS=';'
-		for entry in ${inits}; do
-			IFS=','
-			# shellcheck disable=SC2086
-			set -- ${entry}
-			IFS=
-			init_name="${1:-}"
-			started_at="${2:-}"
-			if [ -z "${started_at}" ]; then
+		# Parse "name,startedAt;name,startedAt;" without mutating global IFS (the
+		# Terminating-pod loop below relies on default word-splitting in read).
+		rest="${inits}"
+		while [ -n "${rest}" ]; do
+			entry="${rest%%;*}"
+			if [ "${rest}" = "${entry}" ]; then
+				rest=""
+			else
+				rest="${rest#*;}"
+			fi
+			[ -z "${entry}" ] && continue
+
+			init_name="${entry%%,*}"
+			started_at="${entry#*,}"
+			if [ -z "${started_at}" ] || [ "${started_at}" = "${entry}" ]; then
 				continue
 			fi
 
@@ -872,18 +880,18 @@ cleanup() {
 }
 
 # ensure_resiliency_coordinator_count bumps coordinator count to 3 when running resiliency tests.
+# Agency stays at K8S_AGENTS_COUNT (default 1): 3 agents is optional HA, not required for these tests,
+# and slows local/CI bring-up; set K8S_AGENTS_COUNT=3 explicitly if you want an HA agency.
 ensure_resiliency_coordinator_count() {
 	if ! printf '%s' "$*" | grep -qi resiliency; then
 		return
 	fi
 
-	if [ "${K8S_COORDINATORS_COUNT:-1}" -ge 3 ]; then
-		return
+	if [ "${K8S_COORDINATORS_COUNT:-1}" -lt 3 ]; then
+		echo "NOTE: resiliency tests need at least 3 coordinators; raising K8S_COORDINATORS_COUNT from ${K8S_COORDINATORS_COUNT:-1} to 3"
+		K8S_COORDINATORS_COUNT=3
+		export K8S_COORDINATORS_COUNT
 	fi
-
-	echo "NOTE: resiliency tests need at least 3 coordinators; raising K8S_COORDINATORS_COUNT from ${K8S_COORDINATORS_COUNT:-1} to 3"
-	K8S_COORDINATORS_COUNT=3
-	export K8S_COORDINATORS_COUNT
 }
 
 # run_tests deploys the cluster and runs the test command for Docker-based integration tests.
@@ -924,6 +932,7 @@ run_host_tests() {
 	fi
 
 	require_tool kubectl
+	ensure_resiliency_coordinator_count "$@"
 
 	trap cleanup_after_run EXIT
 	start

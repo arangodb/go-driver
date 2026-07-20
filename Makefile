@@ -597,14 +597,27 @@ __test_v2_go_test_resiliency_k8s:
 # TOXIPROXY_TEST_RUN sets the go test -run regex. Use this instead of TESTOPTIONS when the
 # pattern contains shell metacharacters such as (|). TESTOPTIONS -test.run is still supported
 # and extracted inside the container to avoid /bin/sh interpreting the pattern.
-__run_v2_tests_toxiproxy: __test_v2_debug__ __test_prepare __test_toxiproxy_start __test_v2_go_test_toxiproxy __test_toxiproxy_cleanup __test_cleanup
+# Always clean Toxiproxy even when go test fails (Make stops on failing prerequisites otherwise).
+__run_v2_tests_toxiproxy: __test_v2_debug__ __test_prepare __test_toxiproxy_start
+	@status=0; $(MAKE) __test_v2_go_test_toxiproxy || status=$$?; \
+	$(MAKE) __test_toxiproxy_cleanup; \
+	$(MAKE) __test_cleanup; \
+	exit $$status
 
-__run_v2_tests_toxiproxy_k8s: __test_v2_debug__ __test_prepare __test_toxiproxy_start __test_v2_go_test_toxiproxy __test_toxiproxy_cleanup __test_cleanup
+__run_v2_tests_toxiproxy_k8s: __test_v2_debug__ __test_prepare __test_toxiproxy_start
+	@status=0; $(MAKE) __test_v2_go_test_toxiproxy || status=$$?; \
+	$(MAKE) __test_toxiproxy_cleanup; \
+	$(MAKE) __test_cleanup; \
+	exit $$status
 
+# Toxiproxy networking is independent of TEST_NET/--add-host (those are for the test
+# container). Leave DOCKER_NETWORK empty for published-port mode (Docker Desktop/WSL).
+# For native Linux CI host networking, set TOXIPROXY_DOCKER_NETWORK=--net=host.
 __test_toxiproxy_start:
 	@chmod +x "${ROOTDIR}/test/toxiproxy.sh"
 	@TESTCONTAINER=$(TESTCONTAINER) TOXIPROXY_LISTEN_PORT=$(TOXIPROXY_LISTEN_PORT) TOXIPROXY_ADMIN_PORT=$(TOXIPROXY_ADMIN_PORT) \
 	  TOXIPROXY_UPSTREAM=$(TOXIPROXY_UPSTREAM) TOXIPROXY_PROXY_NAME=$(TOXIPROXY_PROXY_NAME) \
+	  DOCKER_NETWORK='$(TOXIPROXY_DOCKER_NETWORK)' \
 	  "${ROOTDIR}/test/toxiproxy.sh" start
 
 __test_toxiproxy_cleanup:

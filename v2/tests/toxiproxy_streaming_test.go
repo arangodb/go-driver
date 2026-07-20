@@ -91,8 +91,8 @@ func testDisconnectDuringCursorIteration(t *testing.T, connFactory toxiproxyConn
 
 				require.NotPanics(tb, func() {
 					_, err := cursor.ReadDocument(readCtx, &doc)
-					t.Logf("error message: %s", err.Error())
 					require.Error(tb, err)
+					tb.Logf("error message: %v", err)
 					require.True(tb, isStreamingInterruptError(err),
 						"expected cursor error after disconnect during iteration, got: %v", err)
 				})

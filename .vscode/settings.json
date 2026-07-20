@@ -41,5 +41,5 @@
     },
     "gopls": {
         "build.buildFlags": ["-tags=resiliency,toxiproxy"]
-    }
+}
 }

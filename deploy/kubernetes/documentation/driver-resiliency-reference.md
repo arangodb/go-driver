@@ -235,7 +235,7 @@ This is **driver misbehavior** (see team note): for `Content-Type: text/html`, t
 
 **Treat like a transient gateway outage — same acceptance rules as HTTP 503 from ArangoDB.**
 
-**Seen in:** **IngressRestartDuringActiveWorkload**, **CoordinatorRestartDuringActiveWorkload**, **CoordinatorKillDuringRead**, **CoordinatorKillDuringInsert**, **CoordinatorKillDuringCursorIteration** during coordinator/ingress outage; especially **dead cursor resume** when ingress cannot reach any coordinator.
+**Seen in:** **IngressRestartDuringActiveWorkload**, **CoordinatorRestartDuringActiveWorkload**, **CoordinatorKillDuringRead**, **CoordinatorKillDuringInsert**, **CoordinatorKillDuringCursorIteration** during coordinator/ingress outage (cursor interrupt while pods are down). Dead-cursor **resume after recovery** must not rely on these gateway-down codes — see `isDeadCursorResumeError`.
 
 ### **How to tell C vs D**
 
@@ -282,8 +282,8 @@ This is **driver misbehavior** (see team note): for `Content-Type: text/html`, t
 | **CoordinatorRestartDuringActiveWorkload**                              | **During fault (only if a request overlaps outage)** | **A, B, C, D**                 | **502, 503**             | **Optional —** `failuresDuring` **often 0; see** [CoordinatorRestartDuringActiveWorkload](#coordinatorrestartduringactiveworkload)                                                          |
 | **CoordinatorKillDuringInsert**                                         | **During fault**                                     | **A, B, C, D** *(or no error)* | **503** *(if any)*       | `shutdown in progress`, `invalid character '<'…`; **failuresDuring = 0 is OK**                                                                                                              |
 | **CoordinatorKillDuringRead**, **CoordinatorKillDuringCursorIteration** | **Cursor interrupted**                               | **A, B, C, D, E**              | **410, 502, 503**        | `Code 410`, `Code 503`, timeout; **D:** HTTP **502/503** + non-JSON `Content-Type` (Go v2: `invalid character '<'…`)                                                                       |
-| **CoordinatorKillDuringRead**, **CoordinatorKillDuringCursorIteration** | **Resume dead cursor**                               | **A, B, C, D, E**              | **409, 502, 503**        | `Code 503`, `Code 409`, timeout; **D:** HTTP **502/503** + non-JSON `Content-Type` (Go v2: `invalid character '<'…`)                                                                       |
-| **CoordinatorKillDuringRead**, **CoordinatorKillDuringCursorIteration** | **Close dead cursor**                                | **E** primary; also **A, B, C, D** | **404** (typical)   | `Code 404` typical; also **410**/**503**/transport/HTML OK (Go: `isDeadCursorError`)                                                                                                       |
+| **CoordinatorKillDuringRead**, **CoordinatorKillDuringCursorIteration** | **Resume dead cursor (after recovery)**              | **A, E** (not gateway-down)    | **404, 409, 410**        | `Code 409`, `Code 410`, `Code 404`, EOF/reset (Go: `isDeadCursorResumeError`; reject **502/503/504**)                                                                                      |
+| **CoordinatorKillDuringRead**, **CoordinatorKillDuringCursorIteration** | **Close dead cursor**                                | **E** primary; also **A, B, C, D** | **404** (typical)   | `Code 404` typical; also **410**/transport OK (Go: `isDeadCursorError`)                                                                                                                   |
 | **Toxiproxy — connection cut**                                          | **During fault**                                     | **A**                          | **—**                    | `connection reset by peer`, `connection refused`, `unexpected EOF`                                                                                                                          |
 | **Toxiproxy — query startup disconnect**                                | **During db.Query()** (`POST /_api/cursor`)          | **A**                          | **—**                    | HTTP/1: `EOF`; HTTP/2: `unexpected EOF`                                                                                                                                                     |
 | **Toxiproxy — streaming disconnect**                                    | **Next cursor read** (`POST /_api/cursor/…`)         | **A**                          | **—**                    | `connection refused`, `EOF`, `broken pipe`                                                                                                                                                  |
@@ -521,7 +521,7 @@ Waiting for ingress deployment ingress-nginx/ingress-nginx-controller to become 
 | ----- | --------------------------- | -------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **1** | Before restart              | Version loop running                         | —                     | `successesBefore ≥ 1` and `successesBefore ≥ failuresBefore` (typically `failuresBefore = 0`)                                                                                                           |
 | **2** | During fault                | Version requests hit dead/restarting ingress | **A, B, C, D**        | `connection reset by peer`, `connection refused`, `unexpected EOF`, `EOF`, `context deadline exceeded`, `Code 503`; **D:** HTTP **502/503** + non-JSON `Content-Type` (Go v2: `invalid character '<'…`) |
-| **3** | After recovery              | Version loop resumes                         | —                     | `successesAfter ≥ 1` and `successesAfter ≥ failuresAfter` (typically `failuresAfter = 0`)                                                                                                               |
+| **3** | After recovery              | Version loop resumes                         | —                     | `successesAfter ≥ 1`; `failuresAfter` only counts failures **after** the first post-recovery success (settling/soft-shutdown failures before that count as during)                                                                 |
 | **4** | During-fault classification | Each error in fault window                   | **A–D** only          | Reject category **F**; empty during-fault list is rare but OK if recovery checks pass                                                                                                                   |
 
 
@@ -626,12 +626,12 @@ Other valid during-fault outcomes on different runs:
 | **Baseline traffic**   | `successesBefore ≥ 1`                                                |
 | **Recovery traffic**   | `successesAfter ≥ 1`                                                 |
 | **Baseline quality**   | `successesBefore ≥ failuresBefore` (typically `failuresBefore = 0`)  |
-| **Recovery quality**   | `successesAfter ≥ failuresAfter` (typically `failuresAfter = 0`)     |
+| **Recovery quality**   | `successesAfter ≥ failuresAfter` once recovered (settling failures before first successAfter count as during; typically `failuresAfter = 0`) |
 | **No hang**            | Workload goroutine exits after cancel                                |
 | **During-fault count** | `failuresDuring` **may be 0** — not a failure                        |
 
 
-**Successes that occur while pods are still restarting** may be counted toward `successesAfter` once recovery is marked (Go reference: `successesPending` → `successesAfter` on `markIngressReady()`).
+**Successes that occur while pods are still restarting must not count as recovery.** Go reference keeps them in `successesPending`; only successes after `markIngressReady()` / `markRecoveryReady()` increment `successesAfter`.
 
 ### During-fault errors (conditional — only when `failuresDuring > 0`)
 
@@ -707,23 +707,23 @@ FOR i IN 1..200 RETURN { i: i, burn: SLEEP(0.25) }
 | **3**    | Read **1** document successfully                                                                                                                         |
 | **4**    | Delete **all 3** coordinator pods                                                                                                                        |
 | **5**    | Next cursor read on the in-flight iteration **must fail** (≤ 90 s) — **checkpoint: cursor interrupted**                                                  |
-| **6**    | Another read on the **same** cursor **must fail** — **checkpoint: dead cursor resume** (run **before** cluster recovery; coordinators may still be down) |
-| **7**    | Wait for cluster recovery (3 coordinators ready; `GET /_api/version` succeeds through ingress)                                                           |
+| **6**    | Wait for cluster recovery (3 coordinators ready; `GET /_api/version` succeeds through ingress)                                                           |
+| **7**    | Another read on the **same** cursor **must fail** — **checkpoint: dead cursor resume** (run **after** cluster recovery; expect cursor-gone / closed connection, not gateway-down) |
 | **8**    | Close cursor — **404 is OK** — **checkpoint: close dead cursor**                                                                                         |
 
 
 ### **Checkpoints — acceptable errors**
 
-**Accept categories A, B, C, D, E** at checkpoints 2 and 3 (not one fixed HTTP code). Close primarily expects **E** (404); also accept A/B/C/D (Go: `isDeadCursorError`).
+**Accept categories A, B, C, D, E** at checkpoint 2 (interrupt while coordinators are down). Dead-cursor resume (after recovery) accepts **A/E** (transport close or cursor-gone **404/409/410**), **not** gateway-down **502/503/504** (Go: `isDeadCursorResumeError`). Close primarily expects **E** (404); also accept A/B/C/D (Go: `isDeadCursorError`).
 
 
 | **#** | **Checkpoint**           | **What happens**                                   | **Accept categories**   | **Common HTTP codes**                       |
 | ----- | ------------------------ | -------------------------------------------------- | ----------------------- | ------------------------------------------- |
 | —     | Cursor fails before kill | Query or reads complete all 200 rows before step 4 | —                       | **FAIL** test                               |
 | **2** | Cursor interrupted       | Next read after coordinator kill                   | **A, B, C, D, E**       | **503**, **410**, **502**+non-JSON, timeout |
-| **3** | Dead cursor resume       | Another read on same cursor before recovery        | **A, B, C, D, E**       | **503**, **409**, **410**, **502**+non-JSON |
-| **4** | Cluster recovery         | Wait for pods and ingress                          | Retries may show **D**  | Benign during wait                          |
-| **5** | Close dead cursor        | `close cursor` after recovery                      | **E** primary; also **A, B, C, D** | **404**, also **410**/**503**/transport OK |
+| **3** | Cluster recovery         | Wait for pods and ingress                          | Retries may show **D**  | Benign during wait                          |
+| **4** | Dead cursor resume       | Another read on same cursor **after** recovery     | **A, E** (not gateway-down) | **409**, **410**, **404**, EOF/reset   |
+| **5** | Close dead cursor        | `close cursor` after recovery                      | **E** primary; also **A, B, C, D** | **404**, also **410**/transport OK |
 
 
 ### **CircleCI reference run (HTTP ingress)**
@@ -732,41 +732,38 @@ FOR i IN 1..200 RETURN { i: i, burn: SLEEP(0.25) }
 | **Checkpoint**     | **HTTP/1**              | **HTTP/2**              | **Category**  |
 | ------------------ | ----------------------- | ----------------------- | ------------- |
 | Cursor interrupted | `ArangoError: Code 503` | `ArangoError: Code 503` | **C**         |
-| Dead cursor resume | `ArangoError: Code 409` | `ArangoError: Code 503` | **E** / **C** |
+| Dead cursor resume (after recovery) | `ArangoError: Code 409` | `ArangoError: Code 409` / EOF | **E** / **A** |
 | Close dead cursor  | `ArangoError: Code 404` | `ArangoError: Code 404` | **E**         |
 
 
 ```text
 # HTTP/1
 cursor interrupted after coordinator kill: ArangoError: Code 503, ErrorNum 0
+# … cluster recovery …
 dead cursor resume error: ArangoError: Code 409, ErrorNum 0
 cursor close on dead cursor: ArangoError: Code 404, ErrorNum 0
 
 # HTTP/2
 cursor interrupted after coordinator kill: ArangoError: Code 503, ErrorNum 0
-dead cursor resume error: ArangoError: Code 503, ErrorNum 0
+# … cluster recovery …
+dead cursor resume error: ArangoError: Code 409, ErrorNum 0   # or transport close (A)
 cursor close on dead cursor: ArangoError: Code 404, ErrorNum 0
 ```
 
-### **Why HTTP/1 gets 409 and HTTP/2 gets 503 on dead cursor resume**
+### **Dead cursor resume after recovery — accepted outcomes**
 
-Both are **valid** for checkpoint **3**. The resume call is `POST /_api/cursor/{cursorId}` (fetch next batch). After killing all coordinators:
-
-
-| **Code**                 | **Typical meaning**                 | **When**                                                                                                                                         |
-| ------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **503**                  | Service unavailable / shutting down | Request reaches a coordinator that is down or restarting                                                                                         |
-| **409**                  | Conflict                            | Ingress routed the cursor request to a **different** coordinator than the one that owned the cursor — cursor state does not match on that server |
-| **410**                  | Gone                                | Cursor no longer exists on the answering coordinator                                                                                             |
-| **D** (non-JSON gateway) | Ingress has no healthy backend      | `HTTP 502/503` + `Content-Type: text/html` (or non-JSON body)                                                                                    |
+Resume runs **after** coordinators are ready again. The call is `POST /_api/cursor/{cursorId}` (fetch next batch). Accept **cursor-gone / closed connection**, not gateway-down:
 
 
-**HTTP/1 vs HTTP/2 difference** is **routing and timing**, not different test rules:
+| **Code / error** | **Typical meaning** | **Accept?** |
+| ---------------- | ------------------- | ----------- |
+| **409**          | Cursor state conflict on a different coordinator | **Yes (E)** |
+| **410** / **404** | Cursor no longer exists | **Yes (E)** |
+| EOF / connection reset / broken pipe | Transport closed for that cursor | **Yes (A)** |
+| **502** / **503** / **504** / HTML gateway body | Cluster or ingress still unavailable | **No** — wait longer / fix recovery before asserting resume |
 
-- **HTTP/1** (CircleCI): next cursor request may land on a **surviving/restarting** peer → **409 Conflict** (wrong coordinator for that cursor ID).
-- **HTTP/2** (CircleCI): same request may hit a coordinator still returning **503** (shutting down / not ready).
 
-Connection reuse, ingress LB, and pod restart order vary per run — **accept any code in categories A, B, C, D, E** for checkpoints 2 and 3.
+**Interrupt** (checkpoint 2, while pods are down) still accepts **A, B, C, D, E** including **503** and HTML **502/503**.
 
 ### **Other observed runs (kind/WSL2 — also valid)**
 
@@ -774,11 +771,11 @@ Connection reuse, ingress LB, and pod restart order vary per run — **accept an
 | **Checkpoint**     | **HTTP/1**                                                                          | **HTTP/2**     |
 | ------------------ | ----------------------------------------------------------------------------------- | -------------- |
 | Cursor interrupted | **D:** HTTP **502/503** + non-JSON `Content-Type` (Go v2: `invalid character '<'…`) | `Code 410` (E) |
-| Dead cursor resume | **D:** HTTP **502/503** + non-JSON `Content-Type` (Go v2: `invalid character '<'…`) | `Code 503` (C) |
+| Dead cursor resume (after recovery) | `Code 409` / `404` / transport close | `Code 409` / transport close |
 | Close              | `Code 404`                                                                          | `Code 404`     |
 
 
-**Reject:** Cursor reads all 200 documents after kill; hang past 90 s; panic; category **F** (401, etc.).
+**Reject:** Cursor reads all 200 documents after kill; hang past 90 s; panic; category **F** (401, etc.); dead-cursor resume failing only with gateway-down after recovery was marked complete.
 
 ---
 
@@ -891,23 +888,23 @@ Do **not** require `failuresDuring > 0` for this scenario.
 | **3**    | Read **30** documents successfully                                                                                   |
 | **4**    | Delete **all 3** coordinator pods                                                                                    |
 | **5**    | Next cursor read **must fail** (≤ 90 s) — **checkpoint: cursor interrupted**                                         |
-| **6**    | Another read on the **same** cursor **must fail** — **checkpoint: dead cursor resume** (**before** cluster recovery) |
-| **7**    | Wait for cluster recovery (3 coordinators ready; `GET /_api/version` through ingress)                                |
+| **6**    | Wait for cluster recovery (3 coordinators ready; `GET /_api/version` through ingress)                                |
+| **7**    | Another read on the **same** cursor **must fail** — **checkpoint: dead cursor resume** (**after** cluster recovery)  |
 | **8**    | Close cursor — **404 is OK** — **checkpoint: close dead cursor**                                                     |
 
 
 ### **Checkpoints — acceptable errors**
 
-Same acceptance rules as **CoordinatorKillDuringRead**: **A, B, C, D, E** for interrupt/resume; **E** (**404** primary) for close (also A/B/C/D OK).
+Same acceptance rules as **CoordinatorKillDuringRead**: **A, B, C, D, E** for interrupt; **A/E** (not gateway-down) for resume after recovery; **E** (**404** primary) for close (also A/B/C/D OK).
 
 
 | **#** | **Checkpoint**              | **What happens**                     | **Accept categories**   | **Common HTTP codes**                       |
 | ----- | --------------------------- | ------------------------------------ | ----------------------- | ------------------------------------------- |
 | —     | Cursor finishes before kill | All 200 rows read before step 4      | —                       | **FAIL** test                               |
 | **2** | Cursor interrupted          | Next read after kill (after 30 docs) | **A, B, C, D, E**       | **410**, **503**, **502**+non-JSON, timeout |
-| **3** | Dead cursor resume          | Another read before recovery         | **A, B, C, D, E**       | **503**, **409**, **410**, **502**+non-JSON |
-| **4** | Cluster recovery            | Wait for pods and ingress            | Retries may show **D**  | Benign during wait                          |
-| **5** | Close dead cursor           | Close after recovery                 | **E** primary; also **A, B, C, D** | **404**, also **410**/**503**/transport OK |
+| **3** | Cluster recovery            | Wait for pods and ingress            | Retries may show **D**  | Benign during wait                          |
+| **4** | Dead cursor resume          | Another read **after** recovery      | **A, E** (not gateway-down) | **409**, **410**, **404**, EOF/reset   |
+| **5** | Close dead cursor           | Close after recovery                 | **E** primary; also **A, B, C, D** | **404**, also **410**/transport OK |
 
 
 ### **CircleCI reference run (HTTP ingress)**
@@ -916,20 +913,22 @@ Same acceptance rules as **CoordinatorKillDuringRead**: **A, B, C, D, E** for in
 | **Checkpoint**     | **HTTP/1**              | **HTTP/2**                               | **Category**  |
 | ------------------ | ----------------------- | ---------------------------------------- | ------------- |
 | Cursor interrupted | `ArangoError: Code 410` | `invalid character '<'…` (non-JSON body) | **E** / **D** |
-| Dead cursor resume | `ArangoError: Code 503` | `invalid character '<'…` (non-JSON body) | **C** / **D** |
+| Dead cursor resume (after recovery) | `ArangoError: Code 409` / `404` | cursor-gone or transport close | **E** / **A** |
 | Close dead cursor  | `ArangoError: Code 404` | `ArangoError: Code 404`                  | **E**         |
 
 
 ```text
 # HTTP/1
 cursor interrupted after coordinator kill: ArangoError: Code 410, ErrorNum 0
-dead cursor resume error: ArangoError: Code 503, ErrorNum 0
 … ingress not ready yet (attempt 1): invalid character '<'…   ← recovery only (benign)
+# … cluster recovery …
+dead cursor resume error: ArangoError: Code 409, ErrorNum 0
 cursor close on dead cursor: ArangoError: Code 404, ErrorNum 0
 
 # HTTP/2
 cursor interrupted after coordinator kill: invalid character '<' looking for beginning of value
-dead cursor resume error: invalid character '<' looking for beginning of value
+# … cluster recovery …
+dead cursor resume error: ArangoError: Code 409, ErrorNum 0   # or transport close (A)
 cursor close on dead cursor: ArangoError: Code 404, ErrorNum 0
 ```
 
@@ -995,7 +994,7 @@ Compared to **CoordinatorKillDuringRead** on the same CI run (interrupt **503**,
 | **6**  | **LatencyRemoved**                    | **Remove latency toxic**                        | **Version**               | **Faster after remove**           | **None**              |
 | **7**  | **ContextTimeout**                    | **20 s latency, 2 s client timeout**            | **Version**               | **Fail < 5 s**                    | **B**                 |
 | **8**  | **ServerTimeout**                     | **20 s downstream latency, 2 s header timeout** | **Version (HTTP/1 only)** | **Fail**                          | **B**                 |
-| **9**  | **PartialPacketLoss**                 | **30% reset_peer**                              | **Version × 20**          | **Mix fail/success**              | **A or B**            |
+| **9**  | **PartialPacketLoss**                 | **40% reset_peer**                              | **Version × 40**          | **Mix fail/success**              | **A or B**            |
 | **10** | **FullPacketLoss**                    | **timeout toxic**                               | **Version**               | **Timeout**                       | **B**                 |
 | **11** | **DisconnectDuringCursorIteration**   | **Disable proxy after 5 docs**                  | **Cursor read**           | **Next read fails**               | **A**                 |
 | **12** | **DisconnectDuringQueryExecution**    | **Disable proxy during db.Query()**             | **AQL query start**       | **Query fails**                   | **A**                 |
@@ -1648,9 +1647,9 @@ Get "http://127.0.0.1:17001/_api/version": net/http: timeout awaiting response h
 
 ## **PartialPacketLoss**
 
-**Toxiproxy test #9 — Intermittent ~30% upstream connection resets (category A or B)**
+**Toxiproxy test #9 — Intermittent ~40% upstream connection resets (category A or B)**
 
-**Goal:** Validate that under ~**30%** upstream `reset_peer` toxicity, a mix of `Version()` calls **fail** with intermittent transport errors (category **A**, or **B** if a call times out) and **succeed**, with **no panic**, and that the driver recovers after the toxic is removed.
+**Goal:** Validate that under ~**40%** upstream `reset_peer` toxicity (40 attempts), a mix of `Version()` calls **fail** with intermittent transport errors (category **A**, or **B** if a call times out) and **succeed**, with **no panic**, and that the driver recovers after the toxic is removed.
 
 **Why keep this scenario:** Models flaky networks / partial packet loss. Toxiproxy 2.9 has no `packet_loss` toxic — this uses `reset_peer` with toxicity **0.3** on **new TCP links**. HTTP/1 uses **DisableKeepAlives** so each attempt opens a fresh connection; HTTP/2 is **skipped** (one multiplexed TCP connection cannot show per-request loss the same way).
 
@@ -1661,7 +1660,7 @@ Get "http://127.0.0.1:17001/_api/version": net/http: timeout awaiting response h
 
 | **Piece**  | **Value**                                              | **Role**                           |
 | ---------- | ------------------------------------------------------ | ---------------------------------- |
-| Toxic      | upstream `reset_peer`, toxicity **0.3**, timeout **0** | ~30% of new links get RST          |
+| Toxic      | upstream `reset_peer`, toxicity **0.4**, timeout **0** | ~40% of new links get RST          |
 | Attempts   | **20** `Version()` calls                               | Expect both failures and successes |
 | Connection | HTTP/1, keep-alives **disabled**                       | Fresh TCP link per attempt         |
 | HTTP/2     | **SKIP**                                               | Multiplexes one TCP connection     |

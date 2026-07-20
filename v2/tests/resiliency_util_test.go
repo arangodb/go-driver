@@ -165,6 +165,10 @@ func waitForClusterWritable(t testing.TB, client arangodb.Client, timeout time.D
 		removeCtx, removeCancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer removeCancel()
 		if err := db.Remove(removeCtx); err != nil {
+			// Best-effort second remove so a create+failed-remove does not leave probe DBs behind.
+			retryCtx, retryCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			_ = db.Remove(retryCtx)
+			retryCancel()
 			return nil
 		}
 

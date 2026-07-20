@@ -85,8 +85,10 @@ type hostHeaderRoundTripper struct {
 }
 
 func (h hostHeaderRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Host = h.host
-	return h.base.RoundTrip(req)
+	// RoundTripper must not mutate the caller's request; clone before setting Host.
+	cloned := req.Clone(req.Context())
+	cloned.Host = h.host
+	return h.base.RoundTrip(cloned)
 }
 
 func wrapTransportWithIngressHost(base http.RoundTripper) http.RoundTripper {

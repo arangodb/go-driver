@@ -116,17 +116,17 @@ const (
 	toxiproxyServerTimeoutResponseLatencyMs = int64(20000)
 	toxiproxyServerTimeoutDeadline          = 2 * time.Second
 	toxiproxyServerTimeoutMaxWait           = 5 * time.Second
-	toxiproxyPartialPacketLossToxicity      = float32(0.3)
-	toxiproxyPartialPacketLossAttempts      = 20
+	toxiproxyPartialPacketLossToxicity      = float32(0.4)
+	toxiproxyPartialPacketLossAttempts      = 40
 	toxiproxyFullPacketLossCallTimeout      = 10 * time.Second
 	toxiproxyStreamingPayloadBytes          = 4000
 	toxiproxyStreamingDocCount              = 100
 	toxiproxyStreamingDocsBeforeDisconnect  = 5
 	toxiproxyQueryStartupSleepSeconds       = 30.0
-	toxiproxyQueryStartupDisconnectDelay    = 500 * time.Millisecond
+	toxiproxyQueryStartupDisconnectDelay    = 750 * time.Millisecond
 	toxiproxyStreamingInterruptTimeout      = 30 * time.Second
 	toxiproxyWriteResponseLatencyMs         = int64(10000)
-	toxiproxyWriteDisconnectDelay           = 500 * time.Millisecond
+	toxiproxyWriteDisconnectDelay           = 750 * time.Millisecond
 	toxiproxyWriteInterruptTimeout          = 30 * time.Second
 )
 

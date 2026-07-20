@@ -291,13 +291,14 @@ func runCoordinatorKillDuringCursor(
 		require.Fail(tb, "expected cursor iteration to fail after coordinator kill; possible hang")
 	}
 
-	// Dead-cursor checks run while coordinators may still be down (503/410 are expected).
-	assertDeadCursorDoesNotResume(tb, cursor, ctx)
-
 	tb.Cleanup(func() {
 		ensureCoordinatorsRecovered(tb, client)
 	})
 	ensureCoordinatorsRecovered(tb, client)
+
+	// After recovery: the same cursor must stay dead (cursor-gone / closed connection),
+	// not fail only because the gateway/cluster was still down.
+	assertDeadCursorDoesNotResume(tb, cursor, ctx)
 	closeDeadCursor(tb, cursor)
 
 	cancelRead()
@@ -336,8 +337,8 @@ func assertDeadCursorDoesNotResume(tb testing.TB, cursor arangodb.Cursor, parent
 
 	var doc map[string]any
 	_, err := cursor.ReadDocument(resumeCtx, &doc)
-	require.Error(tb, err, "expected dead cursor to fail on resume after coordinator kill")
+	require.Error(tb, err, "expected dead cursor to fail on resume after coordinator recovery")
 	tb.Logf("dead cursor resume error: %v", err)
-	require.True(tb, isDeadCursorError(err),
-		"expected dead cursor resume error, got: %v", err)
+	require.True(tb, isDeadCursorResumeError(err),
+		"expected dead-cursor / closed-connection error after recovery (not gateway-down), got: %v", err)
 }

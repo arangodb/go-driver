@@ -31,11 +31,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestToxiproxy_PartialPacketLoss validates intermittent failures under ~30% upstream
+// TestToxiproxy_PartialPacketLoss validates intermittent failures under ~40% upstream
 // connection loss without panicking, then recovery after toxic removal.
 //
 // Toxiproxy 2.9 does not ship a packet_loss toxic; reset_peer with toxicity 0.3 applies
-// the fault to ~30% of new TCP links. DisableKeepAlives forces a fresh link per request.
+// the fault to ~40% of new TCP links. DisableKeepAlives forces a fresh link per request.
 func TestToxiproxy_PartialPacketLoss(t *testing.T) {
 	runToxiproxyWithHTTPProtocols(t, testPartialPacketLoss, toxiproxyProtocolConfig{
 		http1:     connectionToxiproxyHttpNoKeepAlive,
@@ -43,7 +43,7 @@ func TestToxiproxy_PartialPacketLoss(t *testing.T) {
 	})
 }
 
-// testPartialPacketLoss runs multiple Version() calls while ~30% of new links are reset.
+// testPartialPacketLoss runs multiple Version() calls while ~40% of new links are reset.
 func testPartialPacketLoss(t *testing.T, connFactory toxiproxyConnectionFactory) {
 	tp := newToxiproxyEnv(t)
 	proxy := tp.proxy(t)
@@ -82,10 +82,10 @@ func testPartialPacketLoss(t *testing.T, connFactory toxiproxyConnectionFactory)
 		})
 	}
 
-	require.Greater(t, failures, 0, "expected some failures under 30%% packet loss (%d/%d succeeded)",
-		successes, toxiproxyPartialPacketLossAttempts)
-	require.Greater(t, successes, 0, "expected some successes under 30%% packet loss (%d/%d failed)",
-		failures, toxiproxyPartialPacketLossAttempts)
+	require.Greater(t, failures, 0, "expected some failures under %.0f%% packet loss (%d/%d succeeded)",
+		toxiproxyPartialPacketLossToxicity*100, successes, toxiproxyPartialPacketLossAttempts)
+	require.Greater(t, successes, 0, "expected some successes under %.0f%% packet loss (%d/%d failed)",
+		toxiproxyPartialPacketLossToxicity*100, failures, toxiproxyPartialPacketLossAttempts)
 
 	require.NoError(t, proxy.RemoveToxic("reset_peer_partial"))
 	waitForSuccessfulVersion(t, client, recoveryTimeout)

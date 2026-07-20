@@ -65,6 +65,8 @@ func (s *insertWorkloadStats) recordSuccess() {
 	}
 }
 
+// recordFailure counts insert failures by phase. Failures after recovery is marked
+// but before the first post-recovery success are settling (during), not failuresAfter.
 func (s *insertWorkloadStats) recordFailure(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -73,7 +75,7 @@ func (s *insertWorkloadStats) recordFailure(err error) {
 	switch {
 	case !s.restartStarted:
 		s.failuresBefore++
-	case s.recoveryReady:
+	case s.recoveryReady && s.successesAfter > 0:
 		s.failuresAfter++
 	default:
 		s.failuresDuring++
@@ -94,14 +96,12 @@ func (s *insertWorkloadStats) markRestartStarted() {
 	s.restartStarted = true
 }
 
+// markRecoveryReady records that coordinators are ready again.
+// Mid-chaos successes stay in successesPending and do not count as post-recovery.
 func (s *insertWorkloadStats) markRecoveryReady() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.recoveryReady = true
-	if s.successesPending > 0 {
-		s.successesAfter += s.successesPending
-		s.successesPending = 0
-	}
 }
 
 func (s *insertWorkloadStats) snapshot() (successesBefore, successesAfter, failures int) {

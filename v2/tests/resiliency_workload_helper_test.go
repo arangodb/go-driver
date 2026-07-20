@@ -64,12 +64,15 @@ func (s *versionWorkloadStats) recordSuccess() {
 	case s.ingressReady:
 		s.successesAfter++
 	default:
-		// Success while restart is in progress; credited to "after" on markIngressReady().
+		// Success during the fault window is tracked separately and must not count as recovery.
 		s.successesPending++
 	}
 }
 
 // recordFailure increments the failure counter for the current restart phase.
+// Failures after pods/ingress are marked ready but before the first post-recovery
+// success are treated as settling (during), not pathological after-recovery failures —
+// coordinator soft-shutdown often keeps Version() failing briefly after Ready=true.
 func (s *versionWorkloadStats) recordFailure(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -78,7 +81,7 @@ func (s *versionWorkloadStats) recordFailure(err error) {
 	switch {
 	case !s.restartStarted:
 		s.failuresBefore++
-	case s.ingressReady:
+	case s.ingressReady && s.successesAfter > 0:
 		s.failuresAfter++
 	default:
 		s.failuresDuring++
@@ -100,16 +103,13 @@ func (s *versionWorkloadStats) markRestartStarted() {
 	s.restartStarted = true
 }
 
-// markIngressReady records that the ingress controller rollout has completed and
-// credits any successes observed during the restart window toward post-recovery.
+// markIngressReady records that the ingress controller rollout has completed.
+// Successes observed during the fault window stay in successesPending and do not
+// count toward successesAfter — recovery requires new successes after ready.
 func (s *versionWorkloadStats) markIngressReady() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.ingressReady = true
-	if s.successesPending > 0 {
-		s.successesAfter += s.successesPending
-		s.successesPending = 0
-	}
 }
 
 // snapshot returns a thread-safe copy of the before/after success and failure counts.

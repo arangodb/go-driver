@@ -131,7 +131,7 @@ K8S_INGRESS_ADDRESS=127.0.0.1 bash ./deploy/kubernetes/run-driver-tests.sh run b
 ```bash
 # After setup-kind (see Quick Start)
 
-# Resiliency — 3 coordinators; Docker tests + kubectl mounts (go-driver)
+# Resiliency — 3 coordinators (1 agent by default); Docker tests + kubectl mounts (go-driver)
 K8S_INGRESS_ADDRESS=127.0.0.1 bash ./deploy/kubernetes/run-driver-tests.sh run make run-v2-tests-resiliency-k8s
 
 # Toxiproxy — 1 coordinator; Driver → Toxiproxy → Ingress (go-driver)
@@ -161,6 +161,7 @@ Driver → Toxiproxy (127.0.0.1:17001) → Ingress → Coordinator
 | `K8S_NAMESPACE` | `default` | Deployment namespace |
 | `K8S_DEPLOYMENT` | `arangodb-driver-tests` | `ArangoDeployment` name |
 | `K8S_COORDINATORS_COUNT` | `1` or `3` | Coordinator replicas (`run …resiliency…` auto-raises to 3) |
+| `K8S_AGENTS_COUNT` | `1` (default) or `3` | Agency replicas; resiliency does **not** auto-bump (optional HA) |
 
 ### Extra for resiliency (kubectl from inside Docker)
 
