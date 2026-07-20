@@ -35,17 +35,21 @@ K8S_INGRESS_ADDRESS=127.0.0.1 VERBOSE=1 ENABLE_VECTOR_INDEX=true make run-k8s-v2
 - `make run-k8s-v2-cluster-basic-auth`
 - `make run-k8s-v2-cluster-tls-basic-auth`
 - `make run-k8s-v2-resiliency`
-- `make run-k8s-v2-resiliency-tls`
+- `make run-k8s-v2-resiliency-tls` (HTTPS Ingress only; ArangoDB pods HTTP)
+- `make run-k8s-v2-resiliency-e2e-tls` (HTTPS Ingress + HTTPS ArangoDB / `K8S_TLS=true`)
 - `make run-k8s-v2-toxiproxy`
-- `make run-k8s-v2-toxiproxy-tls`
+- `make run-k8s-v2-toxiproxy-tls` (HTTPS Ingress only; ArangoDB pods HTTP)
+- `make run-k8s-v2-toxiproxy-e2e-tls` (HTTPS Ingress + HTTPS ArangoDB / `K8S_TLS=true`)
 
 ## Resiliency Tests
 
-**Full scenario reference (steps, expected errors, observed Go v2 errors, timing budgets):** [driver-resiliency-reference.md](driver-resiliency-reference.md)
+**Full scenario reference (steps, expected errors, observed Go v2 errors, timing budgets; internal driver use):** [driver-resiliency-reference.md](../../deploy/kubernetes/documentation/driver-resiliency-reference.md)
 
 All resiliency scenarios (ingress restart, coordinator failure) run through a single entry point. Tests execute **inside Docker** with `kubectl` and `kubeconfig` mounted via `K8S_TEST_DOCKER_EXTRA_ARGS` from `run-driver-tests.sh`.
 
 Prerequisite: run `setup-kind` first (see [Local Run](#local-run)).
+
+**Local tip:** After the first successful run, set `K8S_INSTALL_OPERATOR=false` to avoid GitHub `429` rate limits on operator manifests. See [deploy/kubernetes/README.md — Troubleshooting](../../deploy/kubernetes/README.md#troubleshooting).
 
 The runner deploys a cluster with **3 coordinators** (`K8S_COORDINATORS_COUNT=3`) and runs every `TestResiliency_*` test via:
 
@@ -59,10 +63,16 @@ HTTP ingress:
 K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-resiliency
 ```
 
-HTTPS ingress (self-signed TLS secret created by the runner; the driver skips certificate verification in tests):
+HTTPS ingress (self-signed TLS secret created by the runner; the driver skips certificate verification in tests). Ingress TLS only — coordinators stay HTTP:
 
 ```bash
 K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-resiliency-tls
+```
+
+End-to-end TLS (HTTPS Driver↔Ingress **and** HTTPS Ingress↔ArangoDB):
+
+```bash
+K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-resiliency-e2e-tls
 ```
 
 Test logs are enabled by default (`-v`). To reduce output:
@@ -80,34 +90,34 @@ K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-resiliency
 
 When `TESTOPTIONS` is unset, all `TestResiliency_*` tests run (default `-run '^TestResiliency_'`).
 
-### Scenarios covered
+### Scenarios covered (Part A — aligns with reference #0–#8)
 
-**Ingress restart**
-
-- Idle client survives ingress-nginx controller restart
-- Active `Version()` workload survives ingress restart (temporary failures allowed)
-
-**Coordinator failure** (requires 3 coordinators)
-
-- Coordinator restart while idle
-- Coordinator restart during active `Version()` workload
-- Kill coordinator during read
-- Kill coordinator during insert
-- Kill coordinator during cursor iteration
+| # | Scenario | What it covers |
+|---|----------|----------------|
+| **0** | `LoadBalancerCoordinatorDistribution` | Observational: probes through ingress; logs which coordinator handled requests (no fault) |
+| **1** | `IngressCoordinatorFailover` | Delete **1** random coordinator; probes continue / recover through ingress |
+| **2** | `IngressRestartWhileIdle` | Idle client survives ingress-nginx controller restart |
+| **3** | `IngressRestartDuringActiveWorkload` | Active `Version()` loop survives ingress restart (transient errors A–D allowed) |
+| **4** | `CoordinatorRestartWhileIdle` | Idle client survives delete/recreate of **all 3** coordinators |
+| **5** | `CoordinatorRestartDuringActiveWorkload` | Active `Version()` loop while all 3 coordinators are recreated (`failuresDuring` may be 0) |
+| **6** | `CoordinatorKillDuringRead` | Kill all 3 coordinators during streaming cursor read |
+| **7** | `CoordinatorKillDuringInsert` | Kill **1** coordinator during insert loop (`failuresDuring` may be 0) |
+| **8** | `CoordinatorKillDuringCursorIteration` | Kill all 3 coordinators after ~30 cursor docs |
 
 What is validated:
 
 - The driver does not panic, hang, or deadlock
-- Temporary connection errors during failure windows are allowed
+- Temporary connection errors during failure windows are allowed (categories **A–E** per scenario; see reference)
 - After recovery, `client.Version()` and new operations succeed again
 
 What is not validated:
 
 - Every request succeeding during the failure window
+- Exact error strings (classify by category, not one message)
 
 ## Toxiproxy Network Fault Tests
 
-**Full scenario reference (steps, expected errors, observed Go v2 errors, timing budgets):** [driver-resiliency-reference.md](driver-resiliency-reference.md)
+**Full scenario reference (steps, expected errors, observed Go v2 errors, timing budgets; internal driver use):** [driver-resiliency-reference.md](../../deploy/kubernetes/documentation/driver-resiliency-reference.md)
 
 Toxiproxy sits between the driver and ingress to simulate production network failures without touching Kubernetes or ArangoDB pods:
 
@@ -129,6 +139,12 @@ HTTPS ingress:
 K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-toxiproxy-tls
 ```
 
+End-to-end TLS (HTTPS through Toxiproxy→Ingress and HTTPS Ingress↔ArangoDB):
+
+```bash
+K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-toxiproxy-e2e-tls
+```
+
 Run a single test:
 
 ```bash
@@ -141,39 +157,24 @@ export TESTOPTIONS='-test.run TestToxiproxy_AbruptTCPConnectionClose'
 K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-toxiproxy VERBOSE=1
 ```
 
-### Scenarios covered
+### Scenarios covered (Part B — aligns with reference #1–#14)
 
-**Category 1 — Connection loss**
-
-- Abrupt TCP connection close (`reset_peer` toxic): next request fails with a connection error (no panic); future requests succeed after toxic removal
-- Network disconnect (`proxy.Disable()` / `proxy.Enable()`): requests fail while proxy is disabled; driver usable after reconnect
-- Connection reset by peer (`reset_peer` downstream): RST injection yields connection reset or unexpected EOF; driver recovers after toxic removal
-
-**Category 2 — Latency**
-
-- High latency (2s upstream): `Version()` succeeds within a longer context timeout
-- Extreme latency (30s upstream): `Version()` fails with context deadline exceeded when timeout is shorter
-- Latency removed: request duration returns to normal after toxic removal
-
-**Category 3 — Timeouts**
-
-- Context timeout (20s upstream latency, 2s caller deadline): `Version()` fails with context deadline exceeded before the full latency elapses
-- Server timeout (20s downstream response delay, 2s response-header deadline): `Version()` reports a driver timeout without hanging for the full delay
-
-**Category 4 — Packet loss**
-
-- Partial packet loss (~30% upstream `reset_peer` toxicity): some `Version()` calls fail with transport errors, no panic, all succeed after toxic removal
-- Full packet loss (100% upstream `timeout` toxic): `Version()` times out while data is blocked, driver recovers after toxic removal
-
-**Category 5 — Bandwidth limits**
-
-- Slow upload (20 KB/s upstream): bulk insert is slower than baseline; stored documents remain intact
-- Slow download (20 KB/s downstream): full-collection read is slower than baseline; document payloads remain intact
-
-**Category 6 — Streaming responses**
-
-- Disconnect during cursor iteration: `ReadDocument()` returns a clean transport error after proxy disable mid-cursor; no panic; driver recovers after reconnect
-- Disconnect during large AQL query: long-running query is interrupted with a clean error when the proxy is disabled mid-stream; driver recovers after reconnect
+| # | Scenario | Fault |
+|---|----------|--------|
+| **1** | `AbruptTCPConnectionClose` | Upstream `reset_peer` on live connection |
+| **2** | `NetworkDisconnect` | `proxy.Disable()` / `Enable()` |
+| **3** | `ConnectionResetByPeer` | Downstream `reset_peer` |
+| **4** | `HighLatency` | 2s upstream latency; request still succeeds |
+| **5** | `ExtremeLatency` | 30s upstream; short deadline → timeout (B) |
+| **6** | `LatencyRemoved` | Duration recovers after toxic removal |
+| **7** | `ContextTimeout` | Caller context deadline on slow path |
+| **8** | `ServerTimeout` | Response-header timeout (HTTP/1 only) |
+| **9** | `PartialPacketLoss` | ~30% upstream `reset_peer` (HTTP/1 only; A or B) |
+| **10** | `FullPacketLoss` | 100% upstream `timeout` toxic |
+| **11** | `DisconnectDuringCursorIteration` | Disable proxy mid-cursor read |
+| **12** | `DisconnectDuringQueryExecution` | Disable proxy during `db.Query()` startup |
+| **13** | `DisconnectDuringInsert` | Disable proxy mid-insert; write outcome **unknown** |
+| **14** | `DisconnectDuringTransactionCommit` | Disable proxy mid-commit; commit outcome **unknown** |
 
 ## CircleCI
 
@@ -182,6 +183,7 @@ On pull requests, CircleCI runs the same targets via `run-k8s-integration-tests`
 - `make run-k8s-v2-single`
 - `make run-k8s-v2-cluster`
 - `make run-k8s-v2-resiliency` (3 coordinators; ingress and coordinator failure scenarios)
+- `make run-k8s-v2-toxiproxy` (1 coordinator; network-fault scenarios via Toxiproxy → ingress)
 
 See `deploy/kubernetes/README.md` for the shared runner details.
 

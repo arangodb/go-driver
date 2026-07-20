@@ -179,7 +179,7 @@ ifeq ("$(ADD_TIMESTAMP)", "true")
 	ADD_TIMESTAMP :=| go run ./test/timestamp_output/timestamp_output.go 
 endif
 
-.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster run-k8s-v2-resiliency run-k8s-v2-resiliency-tls run-k8s-v2-toxiproxy run-k8s-v2-toxiproxy-tls run-v2-tests-toxiproxy vulncheck
+.PHONY: all build clean linter run-tests run-k8s-v2-tests run-k8s-v2-single run-k8s-v2-cluster run-k8s-v2-resiliency run-k8s-v2-resiliency-tls run-k8s-v2-resiliency-e2e-tls run-k8s-v2-toxiproxy run-k8s-v2-toxiproxy-tls run-k8s-v2-toxiproxy-e2e-tls run-v2-tests-toxiproxy vulncheck
 
 all: build
 
@@ -244,6 +244,13 @@ run-k8s-v2-resiliency-tls:
 		K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" \
 		run make run-v2-tests-resiliency-k8s
 
+# End-to-end TLS: HTTPS Driver↔Ingress and HTTPS Ingress↔ArangoDB (K8S_TLS=true).
+run-k8s-v2-resiliency-e2e-tls:
+	@echo "Kubernetes cluster resiliency tests, end-to-end TLS (ingress + ArangoDB), v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=3 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=true K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run make run-v2-tests-resiliency-k8s
+
 run-k8s-v2-toxiproxy:
 	@echo "Kubernetes Toxiproxy network fault tests, v2"
 	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=1 K8S_TEST_AUTHENTICATION=basic \
@@ -254,6 +261,13 @@ run-k8s-v2-toxiproxy-tls:
 	@echo "Kubernetes Toxiproxy network fault tests, HTTPS ingress, v2"
 	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=1 K8S_TEST_AUTHENTICATION=basic \
 		K8S_TLS=false K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" \
+		run-toxiproxy make run-v2-tests-toxiproxy-k8s
+
+# End-to-end TLS: HTTPS through Toxiproxy→Ingress and HTTPS Ingress↔ArangoDB (K8S_TLS=true).
+run-k8s-v2-toxiproxy-e2e-tls:
+	@echo "Kubernetes Toxiproxy network fault tests, end-to-end TLS (ingress + ArangoDB), v2"
+	@K8S_MODE=Cluster K8S_COORDINATORS_COUNT=1 K8S_TEST_AUTHENTICATION=basic \
+		K8S_TLS=true K8S_INGRESS_TLS=true bash "$(K8S_DRIVER_TEST_RUNNER)" \
 		run-toxiproxy make run-v2-tests-toxiproxy-k8s
 
 # The below rule exists only for backward compatibility.
