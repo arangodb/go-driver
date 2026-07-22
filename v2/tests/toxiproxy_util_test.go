@@ -137,9 +137,10 @@ func connectionToxiproxyHttpServerTimeout(t testing.TB) connection.Connection {
 	transport.ResponseHeaderTimeout = toxiproxyServerTimeoutDeadline
 
 	h := connection.HttpConfiguration{
-		Endpoint:    getRandomEndpointsManager(t),
-		ContentType: connection.ApplicationJSON,
-		Transport:   wrapTransportWithIngressHost(transport),
+		Endpoint:       getRandomEndpointsManager(t),
+		ContentType:    connection.ApplicationJSON,
+		Transport:      transport,
+		ArangoDBConfig: testArangoDBConfig(),
 	}
 
 	c := connection.NewHttpConnection(h)
@@ -157,9 +158,10 @@ func connectionToxiproxyHttpNoKeepAlive(t testing.TB) connection.Connection {
 	transport.DisableKeepAlives = true
 
 	h := connection.HttpConfiguration{
-		Endpoint:    getRandomEndpointsManager(t),
-		ContentType: connection.ApplicationJSON,
-		Transport:   wrapTransportWithIngressHost(transport),
+		Endpoint:       getRandomEndpointsManager(t),
+		ContentType:    connection.ApplicationJSON,
+		Transport:      transport,
+		ArangoDBConfig: testArangoDBConfig(),
 	}
 
 	c := connection.NewHttpConnection(h)

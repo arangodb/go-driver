@@ -255,11 +255,11 @@ func getRandomEndpointsManager(t testing.TB) connection.Endpoint {
 }
 
 func connectionJsonHttp(t testing.TB) connection.Connection {
-	transport := wrapTransportWithIngressHost(testHTTPTransport())
 	h := connection.HttpConfiguration{
-		Endpoint:    getRandomEndpointsManager(t),
-		ContentType: connection.ApplicationJSON,
-		Transport:   transport,
+		Endpoint:       getRandomEndpointsManager(t),
+		ContentType:    connection.ApplicationJSON,
+		Transport:      testHTTPTransport(),
+		ArangoDBConfig: testArangoDBConfig(),
 	}
 
 	c := connection.NewHttpConnection(h)
@@ -282,9 +282,10 @@ func connectionJsonHttp2(t testing.TB) connection.Connection {
 		DialTLSContext:  connection.NewHTTP2DialForEndpoint(endpoints),
 	}
 	h := connection.Http2Configuration{
-		Endpoint:    endpoints,
-		ContentType: connection.ApplicationJSON,
-		Transport:   wrapTransportWithIngressHost(h2Transport),
+		Endpoint:       endpoints,
+		ContentType:    connection.ApplicationJSON,
+		Transport:      h2Transport,
+		ArangoDBConfig: testArangoDBConfig(),
 	}
 
 	c := connection.NewHttp2Connection(h)

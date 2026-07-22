@@ -127,7 +127,7 @@ func connectionJsonHttpFresh(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
 		Endpoint:    endpoints,
 		ContentType: connection.ApplicationJSON,
-		Transport: wrapTransportWithIngressHost(&http.Transport{
+		Transport: &http.Transport{
 			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 			DisableKeepAlives:     true,
 			MaxIdleConns:          0,
@@ -137,7 +137,8 @@ func connectionJsonHttpFresh(t testing.TB) connection.Connection {
 			DialContext: (&net.Dialer{
 				Timeout: 30 * time.Second,
 			}).DialContext,
-		}),
+		},
+		ArangoDBConfig: testArangoDBConfig(),
 	}
 
 	c := connection.NewHttpConnection(h)

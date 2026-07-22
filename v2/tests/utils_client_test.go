@@ -79,24 +79,12 @@ func ingressHostHeaderFromEnv() string {
 	return strings.TrimSpace(os.Getenv("TEST_INGRESS_HOST"))
 }
 
-type hostHeaderRoundTripper struct {
-	host string
-	base http.RoundTripper
-}
-
-func (h hostHeaderRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// RoundTripper must not mutate the caller's request; clone before setting Host.
-	cloned := req.Clone(req.Context())
-	cloned.Host = h.host
-	return h.base.RoundTrip(cloned)
-}
-
-func wrapTransportWithIngressHost(base http.RoundTripper) http.RoundTripper {
-	host := ingressHostHeaderFromEnv()
-	if host == "" {
-		return base
+// testArangoDBConfig returns ArangoDBConfiguration for k8s ingress tests.
+// HostHeader makes the driver send Host: arangodb.local while dialing the ingress IP.
+func testArangoDBConfig() connection.ArangoDBConfiguration {
+	return connection.ArangoDBConfiguration{
+		HostHeader: ingressHostHeaderFromEnv(),
 	}
-	return hostHeaderRoundTripper{host: host, base: base}
 }
 
 func testHTTPTransport() *http.Transport {

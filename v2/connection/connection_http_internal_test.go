@@ -224,6 +224,31 @@ func Test_httpConnection_Decoder_textHTMLFallsBackToJSON(t *testing.T) {
 	require.Equal(t, getBytesDecoder(), conn.Decoder(PlainText))
 }
 
+func Test_httpConnection_HostHeader(t *testing.T) {
+	var gotHost string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHost = r.Host
+		w.Header().Set("Content-Type", ApplicationJSON)
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `{"server":"arango","version":"3.12.0"}`)
+	}))
+	t.Cleanup(srv.Close)
+
+	conn := NewHttpConnection(HttpConfiguration{
+		Endpoint:    NewRoundRobinEndpoints([]string{srv.URL}),
+		ContentType: ApplicationJSON,
+		ArangoDBConfig: ArangoDBConfiguration{
+			HostHeader: "arangodb.local",
+		},
+	})
+	req, err := conn.NewRequest(http.MethodGet, "_api/version")
+	require.NoError(t, err)
+
+	_, err = conn.Do(context.Background(), req, nil)
+	require.NoError(t, err)
+	require.Equal(t, "arangodb.local", gotHost)
+}
+
 func Test_httpConnection_NewRequest(t *testing.T) {
 	eps := []string{
 		"https://a:8529", "https://a:8539", "https://b:8529",
