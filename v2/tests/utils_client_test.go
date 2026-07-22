@@ -21,9 +21,13 @@
 package tests
 
 import (
+	"crypto/tls"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -69,4 +73,35 @@ func getEndpointsFromEnv(t testing.TB) []string {
 		t.Fatal("No endpoints found in environment variable TEST_ENDPOINTS")
 	}
 	return eps
+}
+
+func ingressHostHeaderFromEnv() string {
+	return strings.TrimSpace(os.Getenv("TEST_INGRESS_HOST"))
+}
+
+// testArangoDBConfig returns ArangoDBConfiguration for k8s ingress tests.
+// HostHeader makes the driver send Host: arangodb.local while dialing the ingress IP.
+func testArangoDBConfig() connection.ArangoDBConfiguration {
+	return connection.ArangoDBConfiguration{
+		HostHeader: ingressHostHeaderFromEnv(),
+	}
+}
+
+func testHTTPTransport() *http.Transport {
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	if host := ingressHostHeaderFromEnv(); host != "" {
+		tlsConfig.ServerName = host
+	}
+
+	return &http.Transport{
+		TLSClientConfig: tlsConfig,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 90 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 }

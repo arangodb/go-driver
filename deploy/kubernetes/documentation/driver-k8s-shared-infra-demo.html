@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shared K8s Driver Test Infrastructure — Demo</title>
+  <style>
+    :root {
+      --adb-green: #003e1c;
+      --adb-green-mid: #0a5c2e;
+      --adb-green-deep: #002814;
+      --adb-lime: #a9f218;
+      --adb-lime-soft: #c8f85a;
+      --adb-ink: #003e1c;
+      --adb-muted: #8aa894;
+      --adb-line: rgba(169, 242, 24, 0.18);
+      --adb-card: rgba(255, 255, 255, 0.07);
+      --adb-ok: #a9f218;
+      --adb-warn: #c9851a;
+      --adb-gap: #c44b5a;
+      --slide-pad: clamp(1.5rem, 4vw, 3.5rem);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--adb-ink);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .deck {
+      position: relative;
+      height: 100%;
+      width: 100%;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 85% 65% at 8% 12%, rgba(169, 242, 24, 0.12), transparent 55%),
+        radial-gradient(ellipse 70% 55% at 92% 88%, rgba(10, 92, 46, 0.55), transparent 50%),
+        linear-gradient(160deg, #003e1c 0%, #002814 48%, #014a24 100%);
+    }
+
+    .bg::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("arangodb-icon.png");
+      background-repeat: no-repeat;
+      background-position: right -2% bottom 6%;
+      background-size: min(48vw, 520px);
+      opacity: 0.14;
+      filter: brightness(1.15);
+      pointer-events: none;
+    }
+
+    .bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          -18deg,
+          transparent,
+          transparent 48px,
+          rgba(169, 242, 24, 0.025) 48px,
+          rgba(169, 242, 24, 0.025) 49px
+        );
+      pointer-events: none;
+    }
+
+    .chrome {
+      position: fixed;
+      z-index: 30;
+      left: 0;
+      right: 0;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem var(--slide-pad);
+      pointer-events: none;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      pointer-events: auto;
+    }
+
+    .brand img {
+      width: auto;
+      height: 28px;
+      border-radius: 0;
+      display: block;
+    }
+
+    .brand span {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-size: 0.95rem;
+    }
+
+    .progress {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .progress-bar {
+      width: 120px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+    }
+
+    .progress-bar > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--adb-lime), #6bc410);
+      transition: width 0.25s ease;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      padding: calc(var(--slide-pad) + 2.5rem) var(--slide-pad) calc(var(--slide-pad) + 3rem);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 1180px;
+      margin: 0 auto;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      transform: none;
+      animation: in 0.35s ease;
+    }
+
+    @keyframes in {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    h1 {
+      margin: 0 0 0.55rem;
+      font-size: clamp(1.9rem, 3.6vw, 2.85rem);
+      line-height: 1.15;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      margin: 0 0 1rem;
+      font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+
+    .lead {
+      margin: 0 0 1.4rem;
+      max-width: 46rem;
+      font-size: clamp(1rem, 1.5vw, 1.2rem);
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 0.75rem;
+      padding: 0.28rem 0.7rem;
+      border: 1px solid rgba(169, 242, 24, 0.35);
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--adb-lime);
+      background: rgba(169, 242, 24, 0.08);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1.25rem;
+      align-items: stretch;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.9rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      body { overflow: auto; }
+      .slide { position: relative; display: none; height: auto; min-height: 100vh; }
+      .slide.active { display: flex; }
+    }
+
+    .card {
+      background: var(--adb-card);
+      border: 1px solid var(--adb-line);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .card h3 {
+      margin: 0 0 0.45rem;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .card p, .card li {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .card ul {
+      margin: 0.35rem 0 0;
+      padding-left: 1.1rem;
+    }
+
+    .card li + li { margin-top: 0.25rem; }
+
+    .tag {
+      display: inline-block;
+      margin-top: 0.55rem;
+      padding: 0.18rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .tag.ok { background: rgba(169, 242, 24, 0.18); color: var(--adb-lime); }
+    .tag.warn { background: rgba(201, 133, 26, 0.28); color: #ffd48a; }
+    .tag.gap { background: rgba(196, 75, 90, 0.28); color: #ffb3bc; }
+    .tag.info { background: rgba(169, 242, 24, 0.12); color: var(--adb-lime-soft); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.55rem 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      vertical-align: top;
+    }
+
+    th {
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    code, .mono {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.84em;
+    }
+
+    .codeblock {
+      margin: 0;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow: auto;
+      color: #eef8e0;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      margin: 0.4rem 0 0.8rem;
+    }
+
+    .flow .box {
+      padding: 0.45rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid rgba(169, 242, 24, 0.28);
+      background: rgba(169, 242, 24, 0.08);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .flow .arrow {
+      opacity: 0.55;
+      font-size: 0.95rem;
+    }
+
+    .nav {
+      position: fixed;
+      z-index: 40;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem var(--slide-pad);
+      background: linear-gradient(transparent, rgba(0, 40, 20, 0.9));
+    }
+
+    .nav button {
+      appearance: none;
+      border: 1px solid rgba(169, 242, 24, 0.35);
+      background: rgba(169, 242, 24, 0.1);
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .nav button:hover { background: rgba(169, 242, 24, 0.22); color: var(--adb-lime); }
+    .nav .hint { font-size: 0.78rem; color: rgba(255, 255, 255, 0.55); }
+
+    .title-slide h1 { font-size: clamp(2.2rem, 4.5vw, 3.4rem); max-width: 16ch; }
+    .title-slide .lead { font-size: 1.15rem; max-width: 38rem; }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.2rem;
+    }
+
+    .pill {
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(169, 242, 24, 0.12);
+      border: 1px solid rgba(169, 242, 24, 0.4);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--adb-lime);
+    }
+
+    .compact td { padding: 0.4rem 0.5rem; }
+    .two-col-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem 1.25rem;
+    }
+
+    .note {
+      margin-top: 0.85rem;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .big-num {
+      font-size: 1.6rem;
+      font-weight: 750;
+      color: var(--adb-lime);
+      margin-bottom: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+
+  <div class="chrome">
+    <div class="brand">
+      <img src="arangodb-icon.png" alt="ArangoDB" />
+      <span>Drivers</span>
+    </div>
+    <div class="progress">
+      <span id="pageLabel">1 / 1</span>
+      <div class="progress-bar"><i id="progressFill"></i></div>
+    </div>
+  </div>
+
+  <div class="deck" id="deck">
+
+    <!-- 1 -->
+    <section class="slide title-slide active" data-title="Title">
+      <span class="eyebrow">Internal only · Driver maintainers · Multi-driver reuse</span>
+      <h1>Shared Kubernetes test infrastructure for ArangoDB drivers</h1>
+      <p class="lead">
+        One kind + ingress-nginx + kube-arangodb runner for integration, resiliency, and Toxiproxy tests —
+        so Java, JavaScript, and Python can match the Go driver reference suite.
+        Not for external or end-user documentation.
+      </p>
+      <div class="pill-row">
+        <span class="pill">run-driver-tests.sh</span>
+        <span class="pill">test/toxiproxy.sh</span>
+        <span class="pill">driver-resiliency-reference.md</span>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" data-title="Agenda">
+      <span class="eyebrow">Agenda</span>
+      <h2>What we will cover</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>1. Why shared infra</h3>
+          <p>Same cluster shape, same ingress path, same fault categories across drivers.</p>
+        </div>
+        <div class="card">
+          <h3>2. Shared runner contract</h3>
+          <p>Commands, env vars the runner exports, Docker mounts — what other drivers must read and forward.</p>
+        </div>
+        <div class="card">
+          <h3>3. Three test lanes</h3>
+          <p>Integration · Resiliency (kubectl chaos) · Toxiproxy (network faults).</p>
+        </div>
+        <div class="card">
+          <h3>4. Adoption</h3>
+          <p>Wrapper pattern and scenario rewrite checklist.</p>
+        </div>
+      </div>
+      <p class="note">Reference docs live in go-driver: <span class="mono">deploy/kubernetes/</span> and <span class="mono">deploy/kubernetes/documentation/driver-resiliency-reference.md</span>.</p>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" data-title="Goal">
+      <span class="eyebrow">Goal for other drivers</span>
+      <h2>Reuse infra — rewrite only the language tests</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="big-num">Shared</div>
+          <h3>Infrastructure</h3>
+          <ul>
+            <li><span class="mono">run-driver-tests.sh</span></li>
+            <li><span class="mono">test/toxiproxy.sh</span></li>
+            <li>kind + ingress-nginx</li>
+            <li>kube-arangodb operator</li>
+          </ul>
+          <span class="tag ok">Copy or submodule</span>
+        </div>
+        <div class="card">
+          <div class="big-num">Shared</div>
+          <h3>Spec / scenarios</h3>
+          <ul>
+            <li>Part A: K8s resiliency #0–#8</li>
+            <li>Part B: Toxiproxy #1–#14</li>
+            <li>Error categories A–E</li>
+          </ul>
+          <span class="tag info">Reference doc</span>
+        </div>
+        <div class="card">
+          <div class="big-num">Per driver</div>
+          <h3>Implement</h3>
+          <ul>
+            <li>Thin wrapper reading env vars</li>
+            <li>Docker test command</li>
+            <li>kubectl chaos helpers</li>
+            <li>Toxiproxy admin client + assertions</li>
+          </ul>
+          <span class="tag warn">Language-owned</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" data-title="Architecture">
+      <span class="eyebrow">Architecture</span>
+      <h2>One cluster path for three test lanes</h2>
+      <div class="flow">
+        <span class="box">kind</span><span class="arrow">→</span>
+        <span class="box">ingress-nginx</span><span class="arrow">→</span>
+        <span class="box">kube-arangodb</span><span class="arrow">→</span>
+        <span class="box">ArangoDeployment</span><span class="arrow">→</span>
+        <span class="box">Ingress arangodb.local</span>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Integration</h3>
+          <p><span class="mono">run</span> · 1 coordinator default</p>
+          <p>Driver → Ingress → Coordinators</p>
+          <span class="tag info">No kubectl chaos</span>
+        </div>
+        <div class="card">
+          <h3>Resiliency</h3>
+          <p><span class="mono">run</span> · auto 3 coordinators</p>
+          <p>Driver → Ingress + tests call kubectl</p>
+          <span class="tag warn">Needs kubectl mount</span>
+        </div>
+        <div class="card">
+          <h3>Toxiproxy</h3>
+          <p><span class="mono">run-toxiproxy</span> · 1 coordinator</p>
+          <p>Driver → Toxiproxy → Ingress</p>
+          <span class="tag ok">No kubectl during fault</span>
+        </div>
+      </div>
+      <pre class="codeblock" style="margin-top:1rem">bash ./deploy/kubernetes/run-driver-tests.sh setup-kind          # once
+K8S_INGRESS_ADDRESS=127.0.0.1 \
+  bash ./deploy/kubernetes/run-driver-tests.sh run &lt;your-test-command&gt;</pre>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" data-title="Commands">
+      <span class="eyebrow">Shared runner API</span>
+      <h2><span class="mono">run-driver-tests.sh</span> commands</h2>
+      <table>
+        <thead>
+          <tr><th>Command</th><th>What it does</th><th>Use when</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">setup-kind</span></td>
+            <td>Create kind cluster + install ingress-nginx (ports 80/443)</td>
+            <td>Once per machine / CI job</td>
+          </tr>
+          <tr>
+            <td><span class="mono">run &lt;cmd&gt;</span></td>
+            <td>Deploy operator + ArangoDB + Ingress; export Docker env; run cmd</td>
+            <td>Integration + resiliency</td>
+          </tr>
+          <tr>
+            <td><span class="mono">run-toxiproxy &lt;cmd&gt;</span></td>
+            <td>Same deploy; endpoint points at local Toxiproxy listen port</td>
+            <td>Network-fault suite</td>
+          </tr>
+          <tr>
+            <td><span class="mono">run-host &lt;cmd&gt;</span></td>
+            <td>Host process against ingress IP + Host header</td>
+            <td>Optional if tests cannot use Docker</td>
+          </tr>
+          <tr>
+            <td><span class="mono">cleanup</span> / <span class="mono">cleanup-kind</span></td>
+            <td>Remove deployment or whole kind cluster</td>
+            <td>Teardown</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">Any language: pass <span class="mono">npm test</span>, <span class="mono">pytest</span>, <span class="mono">mvn verify</span>, or a wrapper script as <span class="mono">&lt;cmd&gt;</span>.</p>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" data-title="Env — integration">
+      <span class="eyebrow">Environment contract · Integration</span>
+      <h2>Runner exports these — drivers only read &amp; forward</h2>
+      <p class="lead" style="margin-bottom:0.9rem;font-size:0.95rem">
+        You do <strong>not</strong> set endpoint/auth yourself. Call
+        <span class="mono">run-driver-tests.sh run &lt;cmd&gt;</span> with
+        <span class="mono">K8S_INGRESS_ADDRESS=127.0.0.1</span>; the runner exports the rest into <span class="mono">&lt;cmd&gt;</span>.
+      </p>
+      <table class="compact">
+        <thead>
+          <tr><th>Variable (exported by runner)</th><th>Default / example</th><th>What other drivers do</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">TEST_ENDPOINTS_OVERRIDE</span></td>
+            <td><span class="mono">http://arangodb.local</span> (default); <span class="mono">https://…</span> when Ingress TLS is on</td>
+            <td><strong>Read</strong> — use as the driver connection URL (map to <span class="mono">ARANGO_URL</span> / etc. if needed)</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_AUTHENTICATION_OVERRIDE</span></td>
+            <td><span class="mono">basic:root:rootpw</span></td>
+            <td><strong>Read</strong> — configure driver auth from this string</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_NET_OVERRIDE</span></td>
+            <td><span class="mono">--net=host --add-host=arangodb.local:127.0.0.1</span></td>
+            <td><strong>Forward into</strong> <span class="mono">docker run</span> (not a driver client setting)</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_MODE_K8S</span></td>
+            <td><span class="mono">k8s</span></td>
+            <td><strong>Read</strong> if your suite branches on k8s mode (optional)</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_NOT_WAIT_UNTIL_READY</span></td>
+            <td><span class="mono">1</span></td>
+            <td><strong>Read</strong> if you have non-k8s readiness waits to skip (optional)</td>
+          </tr>
+          <tr>
+            <td><span class="mono">K8S_NAMESPACE</span> / <span class="mono">K8S_DEPLOYMENT</span></td>
+            <td><span class="mono">default</span> / <span class="mono">arangodb-driver-tests</span></td>
+            <td><strong>Read</strong> — optional for plain integration; <strong>required</strong> for resiliency kubectl targets</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">Host must set <span class="mono">K8S_INGRESS_ADDRESS=127.0.0.1</span> for kind. To rename exports: <span class="mono">K8S_TEST_ENDPOINTS_ENV=ARANGO_URL</span> (etc.), or map in a thin wrapper.</p>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" data-title="Env — resiliency">
+      <span class="eyebrow">Environment contract · Resiliency</span>
+      <h2>Extra exports for kubectl chaos (Part A)</h2>
+      <p class="lead" style="margin-bottom:0.9rem;font-size:0.95rem">
+        Same as integration: runner exports these. Drivers must <strong>forward</strong> them into Docker so tests can call <span class="mono">kubectl</span>.
+      </p>
+      <div class="grid-2">
+        <div>
+          <table class="compact">
+            <thead>
+              <tr><th>Variable (exported)</th><th>What other drivers do</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="mono">K8S_COORDINATORS_COUNT</span></td>
+                <td><strong>Read</strong> — expect <strong>3</strong> (auto-raised when cmd contains “resiliency”)</td>
+              </tr>
+              <tr>
+                <td><span class="mono">K8S_TEST_DOCKER_EXTRA_ARGS</span></td>
+                <td><strong>Forward into</strong> <span class="mono">docker run</span> — mounts kubectl + kubeconfig</td>
+              </tr>
+              <tr>
+                <td><span class="mono">KUBECTL_BIN</span> / <span class="mono">KUBECONFIG_PATH</span></td>
+                <td>Informational; mounts come from <span class="mono">K8S_TEST_DOCKER_EXTRA_ARGS</span></td>
+              </tr>
+              <tr>
+                <td><span class="mono">K8S_NAMESPACE</span> / <span class="mono">K8S_DEPLOYMENT</span></td>
+                <td><strong>Read</strong> — pass to chaos helpers as kubectl target</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Required Docker pattern</h3>
+          <pre class="codeblock">docker run --rm \
+  ${TEST_NET_OVERRIDE} \
+  ${K8S_TEST_DOCKER_EXTRA_ARGS} \
+  -e TEST_ENDPOINTS="${TEST_ENDPOINTS_OVERRIDE}" \
+  -e TEST_AUTHENTICATION="${TEST_AUTHENTICATION_OVERRIDE}" \
+  -e K8S_NAMESPACE \
+  -e K8S_DEPLOYMENT \
+  -e K8S_COORDINATORS_COUNT \
+  your-test-image \
+  &lt;entrypoint&gt;</pre>
+          <p style="margin-top:0.75rem">Without <span class="mono">K8S_TEST_DOCKER_EXTRA_ARGS</span>, resiliency tests cannot restart ingress or delete coordinator pods from inside Docker.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" data-title="Resiliency scenarios">
+      <span class="eyebrow">Part A · Kubernetes resiliency</span>
+      <h2>Scenarios other drivers must rewrite (#0–#8)</h2>
+      <table class="compact">
+        <thead>
+          <tr><th>#</th><th>Scenario</th><th>Fault</th><th>What we cover</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>LoadBalancerCoordinatorDistribution</td><td>None (observe LB)</td><td>Confirm ingress spreads probes across coordinators (no fault).</td></tr>
+          <tr><td>1</td><td>IngressCoordinatorFailover</td><td>Delete 1 coordinator</td><td>Client recovers after one coordinator pod is killed.</td></tr>
+          <tr><td>2</td><td>IngressRestartWhileIdle</td><td>Restart ingress-nginx</td><td>Same client works again after ingress restart with no traffic during outage.</td></tr>
+          <tr><td>3</td><td>IngressRestartDuringActiveWorkload</td><td>Restart ingress-nginx</td><td>Active requests may fail transiently (A–D); must recover after ingress is back.</td></tr>
+          <tr><td>4</td><td>CoordinatorRestartWhileIdle</td><td>Delete all 3 coordinators</td><td>Same client works after all coordinators are recreated (idle during outage).</td></tr>
+          <tr><td>5</td><td>CoordinatorRestartDuringActiveWorkload</td><td>Delete all 3 coordinators</td><td>Workload survives full coordinator restart; any during-fault errors must be A–D only.</td></tr>
+          <tr><td>6</td><td>CoordinatorKillDuringRead</td><td>Kill all during cursor</td><td>Streaming cursor interrupts cleanly; dead-cursor errors (E) allowed on resume/close.</td></tr>
+          <tr><td>7</td><td>CoordinatorKillDuringInsert</td><td>Kill 1 during inserts</td><td>Insert loop may see A–D (or none); inserts succeed again after recovery.</td></tr>
+          <tr><td>8</td><td>CoordinatorKillDuringCursorIteration</td><td>Kill all after ~30 docs</td><td>Deeper cursor stream interrupts cleanly; same interrupt + dead-cursor checks as #6.</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Accept error <strong>categories A–E</strong>, not exact strings. Run HTTP/1 and HTTP/2 where Go does. Idle scenarios (#2, #4) expect no during-fault errors; #5/#7 may see zero failures. Full steps/asserts: <span class="mono">deploy/kubernetes/documentation/driver-resiliency-reference.md</span>.</p>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" data-title="Error categories">
+      <span class="eyebrow">Language-agnostic assertions</span>
+      <h2>Error categories A–F (accept by category)</h2>
+      <div class="grid-3">
+        <div class="card">
+          <h3>A — Connection lost</h3>
+          <p>refused, reset, EOF, broken pipe</p>
+          <span class="tag ok">Accept during fault</span>
+        </div>
+        <div class="card">
+          <h3>B — Timeout</h3>
+          <p>deadline exceeded, I/O timeout</p>
+          <span class="tag ok">Accept during fault</span>
+        </div>
+        <div class="card">
+          <h3>C — Gateway JSON</h3>
+          <p>HTTP 502/503/504 + JSON body</p>
+          <span class="tag ok">Accept during fault</span>
+        </div>
+        <div class="card">
+          <h3>D — Non-JSON gateway</h3>
+          <p>502/503/504 + non-JSON body / Content-Type (e.g. HTML)</p>
+          <span class="tag ok">Accept during fault</span>
+        </div>
+        <div class="card">
+          <h3>E — Cursor gone</h3>
+          <p>404 / 409 / 410 JSON on cursor APIs</p>
+          <span class="tag ok">Cursor scenarios</span>
+        </div>
+        <div class="card">
+          <h3>F — Application</h3>
+          <p>401, validation, normal not-found</p>
+          <span class="tag gap">Never during fault</span>
+        </div>
+      </div>
+      <p class="note">HTTP/1 and HTTP/2 often return different text for the same fault — classify, do not assert one exact message.</p>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" data-title="Env — toxiproxy">
+      <span class="eyebrow">Environment contract · Toxiproxy</span>
+      <h2><span class="mono">run-toxiproxy</span> — runner defaults vs driver work</h2>
+      <div class="flow">
+        <span class="box">Driver</span><span class="arrow">→</span>
+        <span class="box">127.0.0.1:17001</span><span class="arrow">→</span>
+        <span class="box">Toxiproxy</span><span class="arrow">→</span>
+        <span class="box">Ingress</span><span class="arrow">→</span>
+        <span class="box">Coordinator</span>
+      </div>
+      <p class="lead" style="margin-bottom:0.75rem;font-size:0.92rem">
+        Runner exports all rows below. Other drivers do <strong>not</strong> invent listen/admin ports —
+        they <strong>read</strong> them, start <span class="mono">test/toxiproxy.sh</span>, and point the client + admin helpers at those values.
+      </p>
+      <table class="compact">
+        <thead>
+          <tr><th>Variable (exported by runner)</th><th>Default</th><th>What other drivers must do</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">TEST_ENDPOINTS_OVERRIDE</span></td>
+            <td><span class="mono">http://127.0.0.1:17001</span></td>
+            <td><strong>Read</strong> — connect the driver here (not to <span class="mono">arangodb.local</span>)</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_INGRESS_HOST</span></td>
+            <td><span class="mono">arangodb.local</span></td>
+            <td><strong>Read</strong> if TLS/Host header needed; usually optional on plain HTTP</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TOXIPROXY_UPSTREAM</span></td>
+            <td>ingress IP:80 or :443</td>
+            <td><strong>Pass through</strong> to <span class="mono">toxiproxy.sh start</span> (do not hardcode)</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TOXIPROXY_LISTEN_PORT</span> / <span class="mono">TOXIPROXY_ADMIN_PORT</span></td>
+            <td><span class="mono">17001</span> / <span class="mono">8474</span></td>
+            <td><strong>Pass through</strong> to <span class="mono">toxiproxy.sh</span>; listen = data, admin = toxics</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_TOXIPROXY_ADMIN</span></td>
+            <td><span class="mono">http://127.0.0.1:8474</span></td>
+            <td><strong>Read in tests</strong> — AddToxic / Disable / Enable via admin API</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_TOXIPROXY_PROXY</span></td>
+            <td><span class="mono">arangodb</span></td>
+            <td><strong>Read in tests</strong> — proxy name for admin calls</td>
+          </tr>
+          <tr>
+            <td><span class="mono">TEST_NET_OVERRIDE</span></td>
+            <td>same as integration</td>
+            <td><strong>Forward into</strong> <span class="mono">docker run</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">
+        Drivers must also set <span class="mono">TESTCONTAINER=&lt;name&gt;</span> when calling <span class="mono">toxiproxy.sh</span>
+        (required by the script). Host still sets <span class="mono">K8S_INGRESS_ADDRESS=127.0.0.1</span>.
+      </p>
+    </section>
+
+    <!-- 11 -->
+    <section class="slide" data-title="Toxiproxy scenarios">
+      <span class="eyebrow">Part B · Network faults</span>
+      <h2>Toxiproxy scenarios to port (#1–#14)</h2>
+      <div class="two-col-list">
+        <div class="card"><h3>1–3 Connection cut</h3><p>reset_peer, disable proxy, connection reset → category A</p></div>
+        <div class="card"><h3>4–6 Latency</h3><p>High / extreme / remove latency → succeed or B</p></div>
+        <div class="card"><h3>7–8 Timeouts</h3><p>Client context + server header timeout → B (#8 HTTP/1 only)</p></div>
+        <div class="card"><h3>9–10 Packet loss</h3><p>Partial reset mix; full timeout toxic → A / B</p></div>
+        <div class="card"><h3>11–12 Streaming</h3><p>Disconnect during cursor / query start → A</p></div>
+        <div class="card"><h3>13–14 Writes</h3><p>Insert / commit disconnect — outcome unknown → A</p></div>
+      </div>
+      <p class="note">
+        Reuse <span class="mono">test/toxiproxy.sh</span> for container lifecycle.
+        Each language implements admin API helpers (<span class="mono">AddToxic</span>, <span class="mono">Disable</span>, …) and error classifiers.
+      </p>
+    </section>
+
+    <!-- 12 -->
+    <section class="slide" data-title="Wrapper example">
+      <span class="eyebrow">Adoption pattern</span>
+      <h2>Example wrapper for any driver</h2>
+      <pre class="codeblock">#!/usr/bin/env bash
+# scripts/run-k8s-tests.sh — map shared env → driver-native names
+export ARANGO_URL="${TEST_ENDPOINTS_OVERRIDE}"
+export ARANGO_AUTH="${TEST_AUTHENTICATION_OVERRIDE}"
+
+docker run --rm \
+  ${TEST_NET_OVERRIDE} \
+  ${K8S_TEST_DOCKER_EXTRA_ARGS:-} \
+  -e ARANGO_URL -e ARANGO_AUTH \
+  -e K8S_NAMESPACE -e K8S_DEPLOYMENT -e K8S_COORDINATORS_COUNT \
+  -e TEST_TOXIPROXY_ADMIN -e TEST_TOXIPROXY_PROXY \
+  your-driver-test-image \
+  &lt;npm test | pytest | mvn verify&gt;
+
+# Invoke via shared runner:
+# K8S_INGRESS_ADDRESS=127.0.0.1 \
+#   bash ./deploy/kubernetes/run-driver-tests.sh run bash scripts/run-k8s-tests.sh</pre>
+      <div class="grid-3" style="margin-top:1rem">
+        <div class="card">
+          <h3>arangojs</h3>
+          <p>Map to <span class="mono">TEST_ARANGODB_URL</span>; prefer Dockerized mocha for k8s suites.</p>
+        </div>
+        <div class="card">
+          <h3>Java</h3>
+          <p>Keep Maven; replace starter cluster with runner for k8s lanes; align toxics with Part B.</p>
+        </div>
+        <div class="card">
+          <h3>Python</h3>
+          <p>Map to <span class="mono">--host/--port</span> or env; run pytest inside Docker on kind.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section class="slide" data-title="Adoption checklist">
+      <span class="eyebrow">Per-driver checklist</span>
+      <h2>What each driver team should do</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Bring shared pieces</h3>
+          <ul>
+            <li>Copy <span class="mono">deploy/kubernetes/run-driver-tests.sh</span> (+ README)</li>
+            <li>Copy <span class="mono">test/toxiproxy.sh</span></li>
+            <li>Follow <span class="mono">driver-resiliency-reference.md</span></li>
+            <li>CircleCI: install kind + kubectl; call <span class="mono">setup-kind</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Implement language pieces</h3>
+          <ul>
+            <li>Wrapper that honors exported env + Docker flags</li>
+            <li>Integration tests against Ingress endpoint</li>
+            <li>Resiliency helpers: <span class="mono">kubectl delete pod</span>, ingress restart</li>
+            <li>Toxiproxy admin client + category A/B asserts</li>
+            <li>Rewrite scenarios #0–#8 and #1–#14</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">Existing starter-based CI can stay for day-to-day unit/integration; add <strong>separate</strong> k8s jobs for the shared lanes (as Go already does).</p>
+    </section>
+
+    <!-- 14 -->
+    <section class="slide title-slide" data-title="Close">
+      <span class="eyebrow">Takeaway</span>
+      <h1>Same cluster. Same faults. Same categories. Language-specific assertions only.</h1>
+      <p class="lead">
+        Start from <span class="mono">deploy/kubernetes/README.md</span>, implement the env contract,
+        then port Part A and Part B from <span class="mono">deploy/kubernetes/documentation/driver-resiliency-reference.md</span>
+        (authoritative steps, budgets, and observed errors — complete reference for other drivers).
+      </p>
+      <div class="pill-row">
+        <span class="pill">go-driver = reference</span>
+        <span class="pill">arangojs · Java · Python = adopters</span>
+        <span class="pill">Questions?</span>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="nav">
+    <button type="button" id="prevBtn">← Prev</button>
+    <span class="hint">← → or Space · click buttons · Esc = first</span>
+    <button type="button" id="nextBtn">Next →</button>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    let i = 0;
+
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+      document.getElementById("pageLabel").textContent = (i + 1) + " / " + slides.length;
+      document.getElementById("progressFill").style.width = ((i + 1) / slides.length * 100) + "%";
+      document.title = slides[i].dataset.title + " · Shared K8s Driver Infra";
+    }
+
+    document.getElementById("prevBtn").addEventListener("click", () => show(i - 1));
+    document.getElementById("nextBtn").addEventListener("click", () => show(i + 1));
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+        e.preventDefault();
+        show(i + 1);
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        show(i - 1);
+      } else if (e.key === "Home" || e.key === "Escape") {
+        show(0);
+      } else if (e.key === "End") {
+        show(slides.length - 1);
+      }
+    });
+
+    show(0);
+  </script>
+</body>
+</html>

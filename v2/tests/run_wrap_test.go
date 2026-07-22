@@ -24,7 +24,6 @@ import (
 	"context"
 	"crypto/tls"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"testing"
@@ -166,7 +165,7 @@ func WrapB(t *testing.B, w WrapperB) {
 }
 
 func newClient(t testing.TB, connection connection.Connection) arangodb.Client {
-	return waitForConnection(t, arangodb.NewClient(connection))
+	return waitForConnectionTimeout(t, arangodb.NewClient(connection), 1*time.Minute)
 }
 
 type clusterEndpointsResponse struct {
@@ -178,6 +177,10 @@ type clusterEndpoint struct {
 }
 
 func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
+	return waitForConnectionTimeout(t, client, 1*time.Minute)
+}
+
+func waitForConnectionTimeout(t testing.TB, client arangodb.Client, timeout time.Duration) arangodb.Client {
 	// For Active Failover, we need to track the leader endpoint
 	var nextEndpoint = -1
 
@@ -186,7 +189,8 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 			// In Kubernetes tests the advertised cluster endpoints are internal
 			// *.svc DNS names. The Dockerized test runner cannot resolve them, so
 			// keep using the externally reachable ingress endpoint.
-			if getTestMode() != string(testModeSingle) && !isK8S() {
+			// Toxiproxy tests must keep the proxy listen address so injected toxics apply.
+			if getTestMode() != string(testModeSingle) && !isK8S() && os.Getenv("TEST_TOXIPROXY_ADMIN") == "" {
 				cer := clusterEndpointsResponse{}
 				resp, err := client.Get(ctx, &cer, "_api", "cluster", "endpoints")
 				if err != nil {
@@ -231,7 +235,7 @@ func waitForConnection(t testing.TB, client arangodb.Client) arangodb.Client {
 
 			return Interrupt{}
 		})
-	}).TimeoutT(t, 1*time.Minute, 1*time.Second)
+	}).TimeoutT(t, timeout, 1*time.Second)
 
 	return client
 }
@@ -252,19 +256,10 @@ func getRandomEndpointsManager(t testing.TB) connection.Endpoint {
 
 func connectionJsonHttp(t testing.TB) connection.Connection {
 	h := connection.HttpConfiguration{
-		Endpoint:    getRandomEndpointsManager(t),
-		ContentType: connection.ApplicationJSON,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 90 * time.Second,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
+		Endpoint:       getRandomEndpointsManager(t),
+		ContentType:    connection.ApplicationJSON,
+		Transport:      testHTTPTransport(),
+		ArangoDBConfig: testArangoDBConfig(),
 	}
 
 	c := connection.NewHttpConnection(h)
@@ -277,15 +272,20 @@ func connectionJsonHttp(t testing.TB) connection.Connection {
 
 func connectionJsonHttp2(t testing.TB) connection.Connection {
 	endpoints := getRandomEndpointsManager(t)
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	if host := ingressHostHeaderFromEnv(); host != "" {
+		tlsConfig.ServerName = host
+	}
+	h2Transport := &http2.Transport{
+		TLSClientConfig: tlsConfig,
+		AllowHTTP:       true,
+		DialTLSContext:  connection.NewHTTP2DialForEndpoint(endpoints),
+	}
 	h := connection.Http2Configuration{
-		Endpoint:    endpoints,
-		ContentType: connection.ApplicationJSON,
-		Transport: &http2.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			AllowHTTP:       true,
-
-			DialTLSContext: connection.NewHTTP2DialForEndpoint(endpoints),
-		},
+		Endpoint:       endpoints,
+		ContentType:    connection.ApplicationJSON,
+		Transport:      h2Transport,
+		ArangoDBConfig: testArangoDBConfig(),
 	}
 
 	c := connection.NewHttp2Connection(h)
