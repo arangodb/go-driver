@@ -323,6 +323,9 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 	if err != nil {
 		return nil, nil, errors.WithStack(err)
 	}
+	if host := j.config.HostHeader; host != "" {
+		r.Host = host
+	}
 	httpReq = r
 
 	resp, err := j.client.Do(httpReq)

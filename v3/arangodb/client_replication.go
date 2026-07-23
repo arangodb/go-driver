@@ -39,6 +39,8 @@ type ClientReplication interface {
 	// Dump retrieves a chunk of data from a collection in a replication batch.
 	Dump(ctx context.Context, dbName string, params ReplicationDumpParams) ([]byte, error)
 	// LoggerState retrieves the state of the replication logger.
+	// Not supported on Coordinators. DBserver is ignored; forwarding is
+	// restricted to batch and dump.
 	LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error)
 	// GetApplierConfig retrieves the configuration of the replication applier.
 	GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error)
@@ -99,8 +101,8 @@ type InventoryQueryParams struct {
 	// Collection is the name of the collection to restrict inventory to.
 	Collection *string `json:"collection,omitempty"`
 
-	// Only for Coordinators
-	// Restrict to a specific DBserver in cluster
+	// Deprecated: DBserver forwarding is not allowed for inventory.
+	// Kept for API compatibility; the driver does not send this parameter.
 	DBserver *string `json:"DBserver,omitempty"`
 }
 

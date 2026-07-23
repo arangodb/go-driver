@@ -55,10 +55,10 @@ parameters:
     default: "arangodb/arangodb-starter:latest"
   kubeArangoDBVersion:
     type: string
-    default: "1.2.43"
+    default: "1.4.3"
   kubeArangoDBImage:
     type: string
-    default: "gcr.io/gcr-for-testing/arangodb/kube-arangodb:1.2.43"
+    default: "arangodb/kube-arangodb-enterprise:1.4.3"
   # Empty by default. Set via "Trigger Pipeline" / API to a release Make target (see publish-release workflow).
   # Same pattern as arangodb-helper/arangodb: e.g. release-v2-patch, prerelease-v2-minor.
   publish:
@@ -110,9 +110,14 @@ commands:
     parameters:
       test-command:
         type: string
+      no_output_timeout:
+        type: string
+        default: "20m"
+        description: "CircleCI no-output timeout for long/quiet integration runs."
     steps:
       - run:
           name: Run integration tests
+          no_output_timeout: << parameters.no_output_timeout >>
           command: |
             if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
               echo "This is not a pull request. Skipping..."
@@ -335,6 +340,14 @@ jobs:
         type: boolean
         default: false
         description: "Enable TLS in the Kubernetes ArangoDeployment."
+      k8s-wait-timeout:
+        type: string
+        default: "25m"
+        description: "Timeout for kube-arangodb deployment readiness (resiliency uses 3 coordinators)."
+      no_output_timeout:
+        type: string
+        default: "25m"
+        description: "CircleCI no-output timeout for the make test step (resiliency/toxiproxy need longer)."
     steps:
       - checkout
       - setup-docker
@@ -358,13 +371,14 @@ jobs:
       - start-kind
       - run-test-if-pr:
           test-command: make << parameters.test-to-run >>
+          no_output_timeout: << parameters.no_output_timeout >>
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
       K8S_TEST_AUTHENTICATION: << parameters.k8s-test-authentication >>
       K8S_TLS: "<< parameters.k8s-tls >>"
       K8S_INGRESS_ADDRESS: "127.0.0.1"
-      K8S_WAIT_TIMEOUT: 25m
+      K8S_WAIT_TIMEOUT: << parameters.k8s-wait-timeout >>
       KUBE_ARANGODB_VERSION: << pipeline.parameters.kubeArangoDBVersion >>
       KUBE_ARANGODB_IMAGE: << pipeline.parameters.kubeArangoDBImage >>
 
@@ -596,6 +610,28 @@ workflows:
             - download-demo-data
           test-to-run: run-k8s-v2-cluster
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-k8s-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 resiliency on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-resiliency
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+          k8s-wait-timeout: 35m
+          no_output_timeout: 40m
+
+      - run-k8s-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 toxiproxy on Kubernetes
+          requires:
+            - download-demo-data
+          test-to-run: run-k8s-v2-toxiproxy
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+          needs_foxx_workspace: false
+          no_output_timeout: 30m
 
       # ========================
       # V3 Tests ARM (no Foxx workspace)

@@ -47,6 +47,11 @@ type ArangoDBConfiguration struct {
 
 	// Compression is used to enable compression between client and server
 	Compression *CompressionConfig
+
+	// HostHeader, if set, is sent as the HTTP Host while the request URL host is still
+	// used for dialing. Useful behind ingress/virtual hosts (e.g. dial 127.0.0.1 with
+	// Host: arangodb.local).
+	HostHeader string
 }
 
 // CompressionConfig is used to enable compression for the connection

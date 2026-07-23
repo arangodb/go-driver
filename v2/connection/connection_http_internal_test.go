@@ -21,7 +21,11 @@
 package connection
 
 import (
+	"context"
+	"encoding/json"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -92,6 +96,157 @@ func Test_httpConnection_Decoder(t *testing.T) {
 			assert.Equal(t, test.wantDecoder, decoder)
 		})
 	}
+}
+
+// Test_httpConnection_Do_NonJSONContentType documents Michele's Category D finding:
+// unknown Content-Types (e.g. text/html) fall back to the JSON decoder.
+// Depending on whether the status is in allowedStatusCodes, callers may see either a
+// JSON parse error or an ArangoError built after a failed (ignored) HTML decode.
+func Test_httpConnection_Do_NonJSONContentType(t *testing.T) {
+	type versionOut struct {
+		Server  string `json:"server"`
+		Version string `json:"version"`
+	}
+
+	t.Run("text/html 502 with no status filter returns JSON parse error", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = io.WriteString(w, "<html><body>502 Bad Gateway</body></html>")
+		}))
+		t.Cleanup(srv.Close)
+		t.Logf("srv.URL: %s", srv.URL)
+		conn := NewHttpConnection(HttpConfiguration{
+			Endpoint:    NewRoundRobinEndpoints([]string{srv.URL}),
+			ContentType: ApplicationJSON,
+		})
+		req, err := conn.NewRequest(http.MethodGet, "_api/version")
+		require.NoError(t, err)
+
+		var out versionOut
+		resp, err := conn.Do(context.Background(), req, &out)
+		require.Error(t, err)
+		t.Logf("error: %v, error message: %s, response code: %d, response content: %s", err, err.Error(), resp.Code(), resp.Content())
+		require.Contains(t, err.Error(), "invalid character '<'")
+		require.NotNil(t, resp)
+		require.Equal(t, http.StatusBadGateway, resp.Code())
+		require.Equal(t, "text/html", resp.Content())
+		require.Empty(t, out)
+
+		var syntax *json.SyntaxError
+		require.ErrorAs(t, err, &syntax)
+	})
+
+	t.Run("text/html 502 with allowed 200 swallows decode error and returns ArangoError(502)", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+			w.WriteHeader(http.StatusBadGateway)
+			_, _ = io.WriteString(w, "<html><body>502 Bad Gateway</body></html>")
+		}))
+		t.Cleanup(srv.Close)
+
+		conn := NewHttpConnection(HttpConfiguration{
+			Endpoint:    NewRoundRobinEndpoints([]string{srv.URL}),
+			ContentType: ApplicationJSON,
+		})
+		req, err := conn.NewRequest(http.MethodGet, "_api/version")
+		require.NoError(t, err)
+
+		var out versionOut
+		resp, err := conn.Do(context.Background(), req, &out, http.StatusOK)
+		require.Error(t, err)
+		t.Logf("error: %v, error message: %s, response code: %d, response content: %s", err, err.Error(), resp.Code(), resp.Content())
+		// Decode of HTML into shared.Response fails silently (_ = Decode...),
+		// then AsArangoErrorWithCode(502) is returned — not the JSON syntax error.
+		require.NotContains(t, err.Error(), "invalid character")
+		require.NotNil(t, resp)
+		require.Equal(t, http.StatusBadGateway, resp.Code())
+		require.Equal(t, "text/html", resp.Content())
+		t.Logf("error with allowedStatusCodes=[200]: %v", err)
+	})
+
+	t.Run("text/plain success uses bytes decoder (not JSON)", func(t *testing.T) {
+		body := "not-json-plain-text"
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", PlainText)
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, body)
+		}))
+		t.Cleanup(srv.Close)
+
+		conn := NewHttpConnection(HttpConfiguration{
+			Endpoint:    NewRoundRobinEndpoints([]string{srv.URL}),
+			ContentType: ApplicationJSON,
+		})
+		req, err := conn.NewRequest(http.MethodGet, "_api/version")
+		require.NoError(t, err)
+
+		var out []byte
+		resp, err := conn.Do(context.Background(), req, &out, http.StatusOK)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.Code())
+		require.Equal(t, PlainText, resp.Content())
+		require.Equal(t, []byte(body), out)
+	})
+
+	t.Run("text/plain HTML-looking body still succeeds into []byte", func(t *testing.T) {
+		body := "<html>oops</html>"
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", PlainText)
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, body)
+		}))
+		t.Cleanup(srv.Close)
+
+		conn := NewHttpConnection(HttpConfiguration{
+			Endpoint:    NewRoundRobinEndpoints([]string{srv.URL}),
+			ContentType: ApplicationJSON,
+		})
+		req, err := conn.NewRequest(http.MethodGet, "_api/version")
+		require.NoError(t, err)
+
+		var out []byte
+		resp, err := conn.Do(context.Background(), req, &out)
+		require.NoError(t, err)
+		require.Equal(t, PlainText, resp.Content())
+		require.Equal(t, []byte(body), out)
+	})
+}
+
+func Test_httpConnection_Decoder_textHTMLFallsBackToJSON(t *testing.T) {
+	conn := httpConnection{contentType: ApplicationJSON}
+
+	// text/html is unknown → falls back through connection content-type → JSON decoder.
+	require.Equal(t, getJsonDecoder(), conn.Decoder("text/html"))
+	require.Equal(t, getJsonDecoder(), conn.Decoder("text/html; charset=UTF-8"))
+
+	// Known non-JSON types do not fall back.
+	require.Equal(t, getBytesDecoder(), conn.Decoder(PlainText))
+}
+
+func Test_httpConnection_HostHeader(t *testing.T) {
+	var gotHost string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHost = r.Host
+		w.Header().Set("Content-Type", ApplicationJSON)
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `{"server":"arango","version":"3.12.0"}`)
+	}))
+	t.Cleanup(srv.Close)
+
+	conn := NewHttpConnection(HttpConfiguration{
+		Endpoint:    NewRoundRobinEndpoints([]string{srv.URL}),
+		ContentType: ApplicationJSON,
+		ArangoDBConfig: ArangoDBConfiguration{
+			HostHeader: "arangodb.local",
+		},
+	})
+	req, err := conn.NewRequest(http.MethodGet, "_api/version")
+	require.NoError(t, err)
+
+	_, err = conn.Do(context.Background(), req, nil)
+	require.NoError(t, err)
+	require.Equal(t, "arangodb.local", gotHost)
 }
 
 func Test_httpConnection_NewRequest(t *testing.T) {
