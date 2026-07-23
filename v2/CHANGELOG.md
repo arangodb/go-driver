@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Switch to Go 1.25.12 to fix Encrypted Client Hello privacy leak in crypto/tls (GO-2026-5856)
 - Connection: added optional `ArangoDBConfiguration.HostHeader` so clients can dial an IP/URL host while sending a different HTTP `Host` (e.g. ingress / virtual hosts).
 - Tests: added v2 Kubernetes resiliency and Toxiproxy suites (kind + kube-arangodb + ingress-nginx) with shared multi-driver runner docs.
 - Replication: stop using DBserver forwarding for inventory and logger-state (server allows it only for batch/dump); LoggerState is not supported on Coordinators
