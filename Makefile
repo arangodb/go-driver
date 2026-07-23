@@ -4,7 +4,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.25.11
+GOVERSION ?= 1.25.12
 GOTOOLCHAIN ?= auto
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
@@ -672,17 +672,17 @@ __dir_setup:
 
 __test_prepare: __dir_setup
 ifdef TEST_ENDPOINTS_OVERRIDE
-	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@-docker rm -f -v $(TESTCONTAINER) >/dev/null 2>&1
 	@sleep 3
 else
 ifeq ($(TEST_MODE_K8S),k8s)
-	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@-docker rm -f -v $(TESTCONTAINER) >/dev/null 2>&1
 	@sleep 3
 else
 ifdef JWTSECRET 
 	echo "$JWTSECRET" > "${JWTSECRETFILE}"
 endif
-	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@-docker rm -f -v $(TESTCONTAINER) >/dev/null 2>&1
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) ENABLE_BACKUP=$(ENABLE_BACKUP) \
 	  ARANGO_LICENSE_KEY=$(ARANGO_LICENSE_KEY) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) TMPDIR="${TMPDIR}" \
 	  ENABLE_DATABASE_EXTRA_FEATURES=$(ENABLE_DATABASE_EXTRA_FEATURES) ENABLE_VECTOR_INDEX=$(ENABLE_VECTOR_INDEX) DEBUG_PORT=$(DEBUG_PORT) $(CLUSTERENV) DOCKER_NETWORK=${TEST_NET} "${ROOTDIR}/test/cluster.sh" start
@@ -692,14 +692,14 @@ endif
 __test_cleanup:
 ifdef TESTCONTAINER
 	@TESTCONTAINERS=$$(docker ps -a -q --filter="name=$(TESTCONTAINER)"); \
-	if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$TESTCONTAINERS; fi
+	if [ -n "$$TESTCONTAINERS" ]; then docker rm -f -v $$TESTCONTAINERS >/dev/null 2>&1; fi
 endif
 ifndef TEST_ENDPOINTS_OVERRIDE
 ifneq ($(TEST_MODE_K8S),k8s)
 	@TESTCONTAINER=$(TESTCONTAINER) ARANGODB=$(ARANGODB) ALPINE_IMAGE=$(ALPINE_IMAGE) STARTER=$(STARTER) STARTERMODE=$(TEST_MODE) DOCKER_NETWORK=${TEST_NET} "${ROOTDIR}/test/cluster.sh" cleanup
 endif
 else
-	@-docker rm -f -v $(TESTCONTAINER) &> /dev/null
+	@-docker rm -f -v $(TESTCONTAINER) >/dev/null 2>&1
 endif
 	@sleep 3
 
