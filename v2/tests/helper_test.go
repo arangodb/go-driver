@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -112,6 +113,16 @@ func WithCollectionV2(t testing.TB, db arangodb.Database, props *arangodb.Create
 					if arangoErr.Code == 503 || arangoErr.Code == 408 || arangoErr.Code == 500 {
 						return nil // Retry
 					}
+					// After coordinator recreation, CreateDatabase can succeed on one
+					// coordinator before agency propagation reaches the coordinator that
+					// handles CreateCollection (common via ingress Maglev/round-robin).
+					if arangoErr.Code == 404 || arangoErr.ErrorNum == shared.ErrArangoDatabaseNotFound {
+						return nil // Retry
+					}
+				}
+				if shared.IsNotFound(createErr) ||
+					strings.Contains(strings.ToLower(createErr.Error()), "database not found") {
+					return nil // Retry
 				}
 
 				// For other errors (like duplicate name), return them immediately
