@@ -53,30 +53,55 @@ type CoordinatorTarget struct {
 }
 
 // killRandomCoordinator deletes one coordinator pod selected at random from cluster health.
+// Only Health entries that map to a live pod are eligible: after a prior kill/recover,
+// Health can briefly still list replaced server IDs with no matching pod (CircleCI flake).
 func killRandomCoordinator(t testing.TB, client arangodb.Client) CoordinatorTarget {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	health, err := client.Health(ctx)
-	require.NoError(t, err)
-
-	var targets []CoordinatorTarget
-	for id, server := range health.Health {
-		if server.Role != arangodb.ServerRoleCoordinator {
-			continue
+	var target CoordinatorTarget
+	err := NewTimeout(func() error {
+		health, err := client.Health(ctx)
+		if err != nil {
+			t.Logf("killRandomCoordinator: Health() not ready: %v", err)
+			return nil
 		}
-		serverID := string(id)
-		targets = append(targets, CoordinatorTarget{
-			ServerID:     serverID,
-			Endpoint:     server.Endpoint,
-			ResourceName: coordinatorPodForServerID(t, serverID),
-		})
-	}
-	require.NotEmpty(t, targets, "no coordinators found in cluster health")
 
-	target := targets[rand.Intn(len(targets))]
+		pods, err := tryListCoordinatorPods()
+		if err != nil {
+			t.Logf("killRandomCoordinator: listing pods: %v", err)
+			return nil
+		}
+		var targets []CoordinatorTarget
+		for id, server := range health.Health {
+			if server.Role != arangodb.ServerRoleCoordinator {
+				continue
+			}
+			serverID := string(id)
+			pod, ok := matchCoordinatorPod(pods, serverID)
+			if !ok {
+				t.Logf("killRandomCoordinator: skipping %s (no live pod among %v)", serverID, pods)
+				continue
+			}
+			targets = append(targets, CoordinatorTarget{
+				ServerID:     serverID,
+				Endpoint:     server.Endpoint,
+				ResourceName: pod,
+			})
+		}
+		if len(targets) == 0 {
+			t.Logf("killRandomCoordinator: no pod-backed coordinators yet (health entries may be stale)")
+			return nil
+		}
+
+		target = targets[rand.Intn(len(targets))]
+		return Interrupt{}
+	}).Timeout(coordinatorRecoveryTimeout, time.Second)
+	require.NoError(t, err, "no pod-backed coordinator available to kill")
+	require.NotEmpty(t, target.ResourceName)
+
 	t.Logf("Killing coordinator pod %s (server %s)", target.ResourceName, target.ServerID)
 	deleteCoordinatorPod(t, target.ResourceName)
 	return target
@@ -85,19 +110,27 @@ func killRandomCoordinator(t testing.TB, client arangodb.Client) CoordinatorTarg
 func coordinatorPodForServerID(t testing.TB, serverID string) string {
 	t.Helper()
 
-	podToken := coordinatorPodToken(serverID)
 	pods := listCoordinatorPods(t)
+	pod, ok := matchCoordinatorPod(pods, serverID)
+	require.True(t, ok,
+		"expected exactly one coordinator pod for server ID %q (token %q) among %v",
+		serverID, coordinatorPodToken(serverID), pods)
+	return pod
+}
+
+// matchCoordinatorPod returns the unique live pod name for serverID, if any.
+func matchCoordinatorPod(pods []string, serverID string) (string, bool) {
+	podToken := coordinatorPodToken(serverID)
 	var matches []string
 	for _, pod := range pods {
 		if strings.Contains(strings.ToLower(pod), podToken) {
 			matches = append(matches, pod)
 		}
 	}
-
-	require.Len(t, matches, 1,
-		"expected exactly one coordinator pod for server ID %q (token %q), got %v among %v",
-		serverID, podToken, matches, pods)
-	return matches[0]
+	if len(matches) != 1 {
+		return "", false
+	}
+	return matches[0], true
 }
 
 // requireResiliencyK8sCoordinatorMode skips unless the test runs in k8s cluster mode with kubectl and
@@ -145,17 +178,23 @@ func listCoordinatorPods(t testing.TB) []string {
 	t.Helper()
 	requireKubectl(t)
 
+	pods, err := tryListCoordinatorPods()
+	require.NoError(t, err)
+	require.NotEmpty(t, pods, "no coordinator pods found with selector %q", coordinatorLabelSelector())
+	return pods
+}
+
+func tryListCoordinatorPods() ([]string, error) {
 	cmd := exec.Command(
 		"kubectl", "-n", k8sNamespace(),
 		"get", "pods", "-l", coordinatorLabelSelector(),
 		"-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}",
 	)
 	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "kubectl get coordinator pods failed: %s", string(output))
-
-	pods := strings.Fields(string(output))
-	require.NotEmpty(t, pods, "no coordinator pods found with selector %q", coordinatorLabelSelector())
-	return pods
+	if err != nil {
+		return nil, fmt.Errorf("kubectl get coordinator pods failed: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	return strings.Fields(string(output)), nil
 }
 
 func deleteCoordinatorPod(t testing.TB, pod string) {
@@ -448,9 +487,9 @@ func countHealthyCoordinators(ctx context.Context, client arangodb.Client) int {
 	return coordinators
 }
 
-// waitForHealthyCoordinatorCount retries client.Health until it reports at least expected
-// coordinators. A single Health() call can fail or return an incomplete map right after
-// pod recovery even when Version() already succeeds (CircleCI flake: expected 3, got 0).
+// waitForHealthyCoordinatorCount retries until cluster health reports at least expected
+// coordinators that each map to a live pod. A bare Health() count can include replaced
+// server IDs after kill/recover (no pod yet / ghost entry), which then breaks the next kill.
 func waitForHealthyCoordinatorCount(t testing.TB, client arangodb.Client, expected int, timeout time.Duration) {
 	t.Helper()
 
@@ -462,22 +501,32 @@ func waitForHealthyCoordinatorCount(t testing.TB, client arangodb.Client, expect
 				return nil
 			}
 
-			coordinators := 0
-			for _, server := range health.Health {
-				if server.Role == arangodb.ServerRoleCoordinator {
-					coordinators++
+			pods, err := tryListCoordinatorPods()
+			if err != nil {
+				t.Logf("Waiting for cluster health coordinator count: list pods: %v", err)
+				return nil
+			}
+
+			matched := 0
+			for id, server := range health.Health {
+				if server.Role != arangodb.ServerRoleCoordinator {
+					continue
+				}
+				if _, ok := matchCoordinatorPod(pods, string(id)); ok {
+					matched++
 				}
 			}
-			if coordinators >= expected {
-				t.Logf("Cluster health reports %d coordinator(s) (want >= %d)", coordinators, expected)
+			if matched >= expected && len(pods) >= expected {
+				t.Logf("Cluster health reports %d pod-backed coordinator(s) (want >= %d; pods=%d)",
+					matched, expected, len(pods))
 				return Interrupt{}
 			}
-			t.Logf("Waiting for coordinator count in cluster health: got %d, want >= %d", coordinators, expected)
+			t.Logf("Waiting for pod-backed coordinators: matched=%d pods=%d want>=%d", matched, len(pods), expected)
 			return nil
 		})
 	}).Timeout(timeout, time.Second)
 
-	require.NoError(t, err, "cluster health did not report at least %d coordinators within %s", expected, timeout)
+	require.NoError(t, err, "cluster health did not report at least %d pod-backed coordinators within %s", expected, timeout)
 }
 
 func readyCoordinatorPodCount(namespace, selector string) (int, error) {

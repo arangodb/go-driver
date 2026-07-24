@@ -165,7 +165,7 @@ Did the client authenticate wrong or send a bad request?
 | **Connection reset**   | `connection reset by peer`**,** `Connection reset`**,** `ECONNRESET`                    |
 | **Unexpected EOF**     | `unexpected EOF`**,** `EOF`**,** `end of stream`**,** `Premature end of Content-Length` |
 | **Broken pipe**        | `broken pipe`**,** `EPIPE`**,** `write: broken pipe`                                    |
-| **Closed connection**  | `use of closed network connection`**,** `Socket closed`                                 |
+| **Closed connection**  | `use of closed network connection`**,** `Socket closed`**,** `http: server closed idle connection` |
 
 
 **Full message example (HTTP/1):**
@@ -431,7 +431,7 @@ go-driver (Docker) → https://arangodb.local → nginx ingress → coordinator 
 | **Step** | **Action**                                                                    |
 | -------- | ----------------------------------------------------------------------------- |
 | **1**    | **Record baseline coordinator via** `GET /_admin/status` **(fresh client)**   |
-| **2**    | **Delete 1 random coordinator pod**                                           |
+| **2**    | **Delete 1 random coordinator pod** that maps to a **live** pod (skip stale Health server IDs left after a prior recover) |
 | **3**    | **Retry** `GET /_admin/status` **with fresh clients until a response (90 s)** |
 | **4**    | **Log whether coordinator ID changed (either outcome is valid)**              |
 | **5**    | **Wait for cluster recovery (3 pods, ArangoDeployment ready, ingress OK)**    |
@@ -579,7 +579,7 @@ Other valid during-fault outcomes on different runs:
 | **Category** | **Example**                                                                      | **When**                                                                        |
 | ------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | **A**        | `connection refused`                                                             | New connection before new ingress pod listens                                   |
-| **A**        | `connection reset by peer`, `EOF`, `http2: client conn could not be established` | Connection to pod being terminated / dial race while ingress is down            |
+| **A**        | `connection reset by peer`, `EOF`, `http2: client conn could not be established`, `http: server closed idle connection` | Connection to pod being terminated / dial race / keep-alive closed while ingress is down |
 | **B**        | `context deadline exceeded`                                                      | Request waits through 10 s timeout                                              |
 | **C**        | `Code 503`                                                                       | JSON gateway error from proxy/coordinator                                       |
 | **D**        | HTTP **502/503/504** + non-JSON `Content-Type` (e.g. `text/html`)                | Ingress returns non-JSON error page; Go v2 observable: `invalid character '<'…` |
@@ -724,7 +724,7 @@ FOR i IN 1..200 RETURN { i: i, burn: SLEEP(0.25) }
 
 | **Step** | **Action**                                                                                                                                               |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1**    | Connect to cluster through ingress; create database and collection                                                                                       |
+| **1**    | Connect to cluster through ingress; create database and collection. After a prior HTTP protocol’s coordinator kill/recover, **CreateCollection** MAY briefly return **database not found** until agency propagation completes — drivers MUST retry that setup error (not treat it as scenario failure). |
 | **2**    | Start streaming AQL cursor: `FOR i IN 1..200 RETURN { i: i, burn: SLEEP(0.25) }` with `batchSize: 1`, `stream: true`                                     |
 | **3**    | Read **1** document successfully                                                                                                                         |
 | **4**    | Delete **all 3** coordinator pods                                                                                                                        |
