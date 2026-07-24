@@ -23,6 +23,8 @@
 | **If you want to…**                | **Read…**                                                                                                                     |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **See all scenarios at a glance**  | **[Scenario catalog](#scenario-catalog)**                                                                                     |
+| **Map scenarios to OpenSpec**      | **[Scenario → Capability Mapping](#scenario--capability-mapping)** — which OpenSpec capability owns each scenario             |
+| **Start implementing in another driver** | **[`driver-resiliency-implementer-checklist.md`](./driver-resiliency-implementer-checklist.md)** — one-page OpenSpec + harness pointers |
 | **Know which errors to accept**    | **[Error categories](#error-categories-language-agnostic)**                                                                   |
 | **See which scenario gets A–E**    | **[Which scenarios produce which categories?](#which-scenarios-produce-which-categories)**                                    |
 | **Implement one scenario**         | [Part A — Kubernetes scenarios](#part-a--kubernetes-scenarios) or [Part B — Toxiproxy network faults](#part-b--toxiproxy-network-faults) |
@@ -58,6 +60,26 @@
 **Toxiproxy tests (Part B) inject network faults through a local proxy — no Kubernetes chaos required.**
 
 **Typical full suite duration: ~18 minutes on kind/WSL2 (HTTP/1 + HTTP/2 for all scenarios).**
+
+---
+
+## **Scenario → Capability Mapping**
+
+Behavioral requirements for these scenarios live in OpenSpec under `openspec/specs/<capability>/spec.md`. This table is a pointer only — it does **not** duplicate requirements, acceptance criteria, or step-level procedures (those remain in the scenario sections below and in the OpenSpec).
+
+| **Part** | **Scenario(s)** | **OpenSpec capability** |
+| -------- | --------------- | ----------------------- |
+| **A #0** | **LoadBalancerCoordinatorDistribution** | `load-balancing` |
+| **A #1–#3** | **IngressCoordinatorFailover**, **IngressRestartWhileIdle**, **IngressRestartDuringActiveWorkload** | `ingress-resiliency` |
+| **A #4–#8** | **CoordinatorRestartWhileIdle**, **CoordinatorRestartDuringActiveWorkload**, **CoordinatorKillDuringRead**, **CoordinatorKillDuringInsert**, **CoordinatorKillDuringCursorIteration** | `coordinator-resiliency` |
+| **B #1–#3** | **AbruptTCPConnectionClose**, **NetworkDisconnect**, **ConnectionResetByPeer** | `toxiproxy-connection-interruption` |
+| **B #4–#8** | **HighLatency**, **ExtremeLatency**, **LatencyRemoved**, **ContextTimeout**, **ServerTimeout** | `toxiproxy-latency` |
+| **B #9–#10** | **PartialPacketLoss**, **FullPacketLoss** | `toxiproxy-packet-loss` |
+| **B #11–#12** | **DisconnectDuringCursorIteration**, **DisconnectDuringQueryExecution** | `toxiproxy-streaming-operations` |
+| **B #13–#14** | **DisconnectDuringInsert**, **DisconnectDuringTransactionCommit** | `toxiproxy-write-operations` |
+| **Cross-cutting** | Error categories A–F, phase acceptance, universal rejects | `error-classification` |
+
+Each Part A/B scenario maps to **exactly one** scenario capability above. `error-classification` is shared by all fault scenarios and is not a substitute for those capabilities.
 
 ---
 
@@ -2098,28 +2120,20 @@ K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-toxiproxy-e2e-tls
 
 # **Implementing in your driver — checklist**
 
+**Start here (cross-driver, one page):** [`driver-resiliency-implementer-checklist.md`](./driver-resiliency-implementer-checklist.md) — OpenSpec capabilities, reference steps, and harness/demo env contract. No language-specific helper dumps.
+
+Operational reminders (detail remains in the reference scenario sections):
+
 1. **Reuse shared infra** — `run-driver-tests.sh` for the cluster; reuse or copy `test/toxiproxy.sh` to start Toxiproxy. Write language-specific admin helpers + error classifiers only.
-2. **Connect through ingress / Toxiproxy** — same endpoints and auth as in [Running tests](#running-tests-go-reference).
+2. **Connect through ingress / Toxiproxy** — same endpoints and auth as in the [Harness env contract](#harness-env-contract-all-drivers).
 3. **Run each scenario** — match the steps in Part A/B exactly (same fault, same API calls, same timing).
-4. **Classify errors by category (A–E)** — do not hard-code one string.
+4. **Classify errors by category (A–F)** — do not hard-code one string.
 5. **Test HTTP/1 and HTTP/2 separately** if your driver supports both.
 6. **Log the full error in test output** — helps compare across drivers.
 7. **Assert recovery** — same client instance works after fault is removed.
 8. **Never accept:** hang past timeout, panic/crash, cursor completing after kill, data corruption.
 
-### **Suggested helper names (map to categories)**
-
-
-| **Category**          | **Suggested helper name**  | **Used in**                                       |
-| --------------------- | -------------------------- | ------------------------------------------------- |
-| **A + B + C + D**     | `isTransientOutageError()` | **Active workload tests (version loop, inserts)** |
-| **A + B + C + D + E** | `isCursorKilledError()`    | **Cursor interrupt + dead cursor + close**        |
-| **A**                 | `isConnectionError()`      | **Toxiproxy connection tests**                    |
-| **B**                 | `isTimeoutError()`         | **Toxiproxy timeout tests** (Go: `isDriverTimeoutError`) |
-| **A or B**            | `isIntermittentNetworkError()` | **Toxiproxy partial packet loss (#9)**        |
-
-
-**Go reference helpers:** `isResiliencyTransientError`, `isCoordinatorKillInterruptedError`, `isDeadCursorError` in `v2/tests/network_fault_error_util_test.go`.
+Language-specific predicate names are an implementation choice per driver. Map them to OpenSpec `error-classification` categories A–F; do not treat another driver’s helper names as normative.
 
 ---
 
