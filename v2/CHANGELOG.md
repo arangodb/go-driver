@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Replication applier API (`GetApplierConfig`, `UpdateApplierConfig`, `ApplierStart`, `ApplierStop`, `GetApplierState`, `MakeFollower`): Deprecated; removed on ArangoDB 3.12.10+ (including 3.12.10-devel). Tests skip from that version.
 - Switch to Go 1.25.12 to fix Encrypted Client Hello privacy leak in crypto/tls (GO-2026-5856)
 - Connection: added optional `ArangoDBConfiguration.HostHeader` so clients can dial an IP/URL host while sending a different HTTP `Host` (e.g. ingress / virtual hosts).
 - Tests: added v2 Kubernetes resiliency and Toxiproxy suites (kind + kube-arangodb + ingress-nginx) with shared multi-driver runner docs.

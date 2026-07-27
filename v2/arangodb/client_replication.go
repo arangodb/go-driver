@@ -60,18 +60,42 @@ type ClientReplication interface {
 	// On older versions this method still works.
 	LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error)
 	// GetApplierConfig retrieves the configuration of the replication applier.
+	//
+	// Deprecated: Do not use on ArangoDB 3.12.10 or newer (including 3.12.10-devel).
+	// That release removes the replication applier HTTP API
+	// (GET /_api/replication/applier-config). On older versions this method still works.
 	GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error)
 	// UpdateApplierConfig updates the configuration of the replication applier.
+	//
+	// Deprecated: Do not use on ArangoDB 3.12.10 or newer (including 3.12.10-devel).
+	// That release removes the replication applier HTTP API
+	// (PUT /_api/replication/applier-config). On older versions this method still works.
 	UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts ApplierOptions) (ApplierConfigResponse, error)
 	// ApplierStart starts the replication applier.
+	//
+	// Deprecated: Do not use on ArangoDB 3.12.10 or newer (including 3.12.10-devel).
+	// That release removes the replication applier HTTP API
+	// (PUT /_api/replication/applier-start). On older versions this method still works.
 	ApplierStart(ctx context.Context, dbName string, global *bool, from *string) (ApplierStateResp, error)
 	// ApplierStop stops the replication applier.
+	//
+	// Deprecated: Do not use on ArangoDB 3.12.10 or newer (including 3.12.10-devel).
+	// That release removes the replication applier HTTP API
+	// (PUT /_api/replication/applier-stop). On older versions this method still works.
 	ApplierStop(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
 	// GetApplierState retrieves the state of the replication applier.
+	//
+	// Deprecated: Do not use on ArangoDB 3.12.10 or newer (including 3.12.10-devel).
+	// That release removes the replication applier HTTP API
+	// (GET /_api/replication/applier-state). On older versions this method still works.
 	GetApplierState(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
 	// GetReplicationServerId retrieves the server ID used for replication.
 	GetReplicationServerId(ctx context.Context, dbName string) (string, error)
 	// MakeFollower makes the current server a follower of the specified leader.
+	//
+	// Deprecated: Do not use on ArangoDB 3.12.10 or newer (including 3.12.10-devel).
+	// That release removes the replication applier HTTP API
+	// (PUT /_api/replication/make-follower). On older versions this method still works.
 	MakeFollower(ctx context.Context, dbName string, opts ApplierOptions) (ApplierStateResp, error)
 	// GetWALRange retrieves the WAL range information.
 	GetWALRange(ctx context.Context, dbName string) (WALRangeResponse, error)

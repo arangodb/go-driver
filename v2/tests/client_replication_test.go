@@ -234,8 +234,13 @@ func Test_GetApplierConfig(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
+				version, err := client.Version(ctx)
+				require.NoError(t, err)
+				t.Logf("Version is %s\n", version)
 				t.Logf("ServerRole is %s\n", serverRole)
 
 				if serverRole == arangodb.ServerRoleCoordinator {
@@ -261,6 +266,8 @@ func Test_UpdateApplierConfig(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
 				t.Logf("ServerRole is %s\n", serverRole)
@@ -315,6 +322,8 @@ func Test_ApplierStart(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
 				t.Logf("ServerRole is %s\n", serverRole)
@@ -415,6 +424,8 @@ func Test_MakeFollower(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
 				t.Logf("ServerRole is %s\n", serverRole)
@@ -467,20 +478,26 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 					fromTick, err := strconv.ParseInt(rangeResp.TickMax, 10, 64)
 					require.NoError(t, err)
 					t.Logf("Starting fromTick: %d\n", fromTick)
-					t.Run("Update applier config with out query params", func(t *testing.T) {
-						resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
-							Endpoint: utils.NewType(getApplierEndpoint(t)),
-							Database: utils.NewType(db.Name()),
-							Verbose:  utils.NewType(true),
+					// Applier endpoints removed in ArangoDB 3.12.10+; skip setup/teardown there.
+					versionInfo, err := client.Version(ctx)
+					require.NoError(t, err)
+					applierAvailable := versionInfo.Version.CompareTo("3.12.10") < 0
+					if applierAvailable {
+						t.Run("Update applier config with out query params", func(t *testing.T) {
+							resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
+								Endpoint: utils.NewType(getApplierEndpoint(t)),
+								Database: utils.NewType(db.Name()),
+								Verbose:  utils.NewType(true),
+							})
+							require.NoError(t, err)
+							require.NotNil(t, resp)
 						})
-						require.NoError(t, err)
-						require.NotNil(t, resp)
-					})
-					t.Run("Applier Start with out query params", func(t *testing.T) {
-						resp, err := client.ApplierStart(ctx, db.Name(), nil, nil)
-						require.NoError(t, err)
-						require.NotNil(t, resp)
-					})
+						t.Run("Applier Start with out query params", func(t *testing.T) {
+							resp, err := client.ApplierStart(ctx, db.Name(), nil, nil)
+							require.NoError(t, err)
+							require.NotNil(t, resp)
+						})
+					}
 					// Insert docs
 					t.Run("Inserting 5 documents", func(t *testing.T) {
 						for i := 0; i < 5; i++ {
@@ -503,11 +520,13 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 						require.GreaterOrEqual(t, len(tailResp), 0)
 					})
 
-					t.Run("Applier Stop with out query params", func(t *testing.T) {
-						resp, err := client.ApplierStop(ctx, db.Name(), nil)
-						require.NoError(t, err)
-						require.NotNil(t, resp)
-					})
+					if applierAvailable {
+						t.Run("Applier Stop with out query params", func(t *testing.T) {
+							resp, err := client.ApplierStop(ctx, db.Name(), nil)
+							require.NoError(t, err)
+							require.NotNil(t, resp)
+						})
+					}
 				})
 			})
 		})
