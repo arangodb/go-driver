@@ -383,6 +383,10 @@ func (c *clientReplication) LoggerTickRange(ctx context.Context, dbName string) 
 	}
 }
 
+// GetApplierConfig implements ClientReplication.GetApplierConfig.
+//
+// Deprecated: See [ClientReplication.GetApplierConfig]. Single-single replication
+// applier API removed in ArangoDB 3.12.10 for a security issue.
 func (c *clientReplication) GetApplierConfig(ctx context.Context, dbName string, global *bool) (ApplierConfigResponse, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -491,6 +495,10 @@ func formApplierParams(opts ApplierOptions) (map[string]interface{}, error) {
 	return params, nil
 }
 
+// UpdateApplierConfig implements ClientReplication.UpdateApplierConfig.
+//
+// Deprecated: See [ClientReplication.UpdateApplierConfig]. Single-single replication
+// applier API removed in ArangoDB 3.12.10 for a security issue.
 func (c *clientReplication) UpdateApplierConfig(ctx context.Context, dbName string, global *bool, opts ApplierOptions) (ApplierConfigResponse, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -534,6 +542,10 @@ func (c *clientReplication) UpdateApplierConfig(ctx context.Context, dbName stri
 	}
 }
 
+// ApplierStart implements ClientReplication.ApplierStart.
+//
+// Deprecated: See [ClientReplication.ApplierStart]. Single-single replication
+// applier API removed in ArangoDB 3.12.10 for a security issue.
 func (c *clientReplication) ApplierStart(ctx context.Context, dbName string, global *bool, from *string) (ApplierStateResp, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -575,6 +587,10 @@ func (c *clientReplication) ApplierStart(ctx context.Context, dbName string, glo
 	}
 }
 
+// ApplierStop implements ClientReplication.ApplierStop.
+//
+// Deprecated: See [ClientReplication.ApplierStop]. Single-single replication
+// applier API removed in ArangoDB 3.12.10 for a security issue.
 func (c *clientReplication) ApplierStop(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -613,6 +629,10 @@ func (c *clientReplication) ApplierStop(ctx context.Context, dbName string, glob
 	}
 }
 
+// GetApplierState implements ClientReplication.GetApplierState.
+//
+// Deprecated: See [ClientReplication.GetApplierState]. Single-single replication
+// applier API removed in ArangoDB 3.12.10 for a security issue.
 func (c *clientReplication) GetApplierState(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -674,6 +694,10 @@ func (c *clientReplication) GetReplicationServerId(ctx context.Context, dbName s
 	}
 }
 
+// MakeFollower implements ClientReplication.MakeFollower.
+//
+// Deprecated: See [ClientReplication.MakeFollower]. Single-single replication
+// applier API removed in ArangoDB 3.12.10 for a security issue.
 func (c *clientReplication) MakeFollower(ctx context.Context, dbName string, opts ApplierOptions) (ApplierStateResp, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
