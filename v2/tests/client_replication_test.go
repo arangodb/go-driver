@@ -234,14 +234,10 @@ func Test_GetApplierConfig(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				// Single-single replication applier API removed in ArangoDB 3.12.10 (security).
 				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
-				version, err := client.Version(ctx)
-				require.NoError(t, err)
-				t.Logf("Version is %s\n", version)
-				t.Logf("ServerRole is %s\n", serverRole)
 
 				if serverRole == arangodb.ServerRoleCoordinator {
 					t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
@@ -266,7 +262,7 @@ func Test_UpdateApplierConfig(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				// Single-single replication applier API removed in ArangoDB 3.12.10 (security).
 				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
@@ -322,7 +318,7 @@ func Test_ApplierStart(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				// Single-single replication applier API removed in ArangoDB 3.12.10 (security).
 				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
@@ -424,7 +420,7 @@ func Test_MakeFollower(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				// Replication applier API removed in ArangoDB 3.12.10+ (incl. 3.12.10-devel).
+				// Single-single replication applier API removed in ArangoDB 3.12.10 (security).
 				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
@@ -478,7 +474,7 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 					fromTick, err := strconv.ParseInt(rangeResp.TickMax, 10, 64)
 					require.NoError(t, err)
 					t.Logf("Starting fromTick: %d\n", fromTick)
-					// Applier endpoints removed in ArangoDB 3.12.10+; skip setup/teardown there.
+					// Applier endpoints removed in ArangoDB 3.12.10 (security); skip setup/teardown there.
 					versionInfo, err := client.Version(ctx)
 					require.NoError(t, err)
 					applierAvailable := versionInfo.Version.CompareTo("3.12.10") < 0
