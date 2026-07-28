@@ -34,25 +34,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// getApplierEndpoint returns the endpoint from TEST_ENDPOINTS environment variable
-// converted to the format expected by applier options (tcp:// or ssl://).
-// TEST_ENDPOINTS must be set; if it is not, the test will fail.
-func getApplierEndpoint(t testing.TB) string {
-	eps := getEndpointsFromEnv(t)
-	// getEndpointsFromEnv will have already failed if TEST_ENDPOINTS is not set,
-	// so we can safely use the first endpoint
-
-	// Get the first endpoint and convert from http/https to tcp/ssl format
-	endpoint := eps[0]
-	if strings.HasPrefix(endpoint, "https://") {
-		endpoint = strings.Replace(endpoint, "https://", "ssl://", 1)
-	} else if strings.HasPrefix(endpoint, "http://") {
-		endpoint = strings.Replace(endpoint, "http://", "tcp://", 1)
-	}
-
-	return endpoint
-}
-
 // getSyncEndpoint returns the endpoint from TEST_ENDPOINTS environment variable
 // converted to the format expected by ReplicationSyncOptions (http+tcp:// or https+ssl://).
 // TEST_ENDPOINTS must be set; if it is not, the test will fail.
@@ -186,171 +167,6 @@ func Test_LoggerState(t *testing.T) {
 		})
 	})
 }
-func Test_GetApplierConfig(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				serverRole, err := client.ServerRole(ctx)
-				require.NoError(t, err)
-				t.Logf("ServerRole is %s\n", serverRole)
-
-				if serverRole == arangodb.ServerRoleCoordinator {
-					t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
-				}
-				t.Run("Running applier config with setting global:true", func(t *testing.T) {
-
-					resp, err := client.GetApplierConfig(ctx, db.Name(), utils.NewType(false))
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-				})
-				t.Run("Running applier config with setting global:nil", func(t *testing.T) {
-					resp, err := client.GetApplierConfig(ctx, db.Name(), nil)
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-				})
-			})
-		})
-	})
-}
-
-func Test_UpdateApplierConfig(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				serverRole, err := client.ServerRole(ctx)
-				require.NoError(t, err)
-				t.Logf("ServerRole is %s\n", serverRole)
-
-				if serverRole == arangodb.ServerRoleCoordinator {
-					t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
-				}
-				t.Run("Update applier config with setting global:true works for only _system database", func(t *testing.T) {
-					_, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(true), arangodb.ApplierOptions{
-						ChunkSize: utils.NewType(1234),
-						AutoStart: utils.NewType(true),
-						Endpoint:  utils.NewType(getApplierEndpoint(t)),
-						Database:  utils.NewType(db.Name()),
-						Username:  utils.NewType("root"),
-					})
-					require.Error(t, err)
-				})
-				t.Run("Update applier config with setting global:false", func(t *testing.T) {
-					resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(false), arangodb.ApplierOptions{
-						ChunkSize: utils.NewType(2596),
-						AutoStart: utils.NewType(false),
-						Endpoint:  utils.NewType(getApplierEndpoint(t)),
-						Database:  utils.NewType(db.Name()),
-					})
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-				})
-			})
-		})
-	})
-}
-
-func logApplierState(t *testing.T, prefix string, state arangodb.ApplierState) {
-	if state.Running == nil ||
-		state.Phase == nil ||
-		state.Progress == nil ||
-		state.Progress.Message == nil ||
-		state.Progress.FailedConnects == nil {
-		return
-	}
-
-	t.Logf("%s:\n  running=%v\n  phase=%s\n  message=%s\n  failedConnects=%d",
-		prefix,
-		*state.Running,
-		*state.Phase,
-		*state.Progress.Message,
-		*state.Progress.FailedConnects,
-	)
-}
-
-func Test_ApplierStart(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				serverRole, err := client.ServerRole(ctx)
-				require.NoError(t, err)
-				t.Logf("ServerRole is %s\n", serverRole)
-				time.Sleep(1 * time.Second)
-				if serverRole == arangodb.ServerRoleCoordinator {
-					t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
-				}
-				batch, err := client.CreateNewBatch(ctx, db.Name(), nil, utils.NewType(true), arangodb.CreateNewBatchOptions{
-					Ttl: 600,
-				})
-				require.NoError(t, err)
-				require.NotNil(t, batch)
-				t.Run("Update applier config with setting global:false", func(t *testing.T) {
-					resp, err := client.UpdateApplierConfig(ctx, db.Name(), utils.NewType(false), arangodb.ApplierOptions{
-						ChunkSize: utils.NewType(2596),
-						AutoStart: utils.NewType(false),
-						Endpoint:  utils.NewType(getApplierEndpoint(t)),
-						Database:  utils.NewType(db.Name()),
-					})
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-				})
-				t.Logf("Batch ID: %s", batch.ID)
-				t.Run("Applier Start with query params", func(t *testing.T) {
-					resp, err := client.ApplierStart(ctx, db.Name(), utils.NewType(false), utils.NewType(batch.ID))
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-
-					logApplierState(t, "Applier state", resp.State)
-				})
-				t.Run("Applier_State_with_query_params", func(t *testing.T) {
-					resp, err := client.GetApplierState(ctx, db.Name(), utils.NewType(false))
-					require.NoError(t, err, "failed to get applier state")
-
-					logApplierState(t, "Applier state", resp.State)
-				})
-				t.Run("Applier Stop with query params", func(t *testing.T) {
-					resp, err := client.ApplierStop(ctx, db.Name(), utils.NewType(false))
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-
-					logApplierState(t, "Applier state", resp.State)
-				})
-				t.Run("Update applier config with out query params", func(t *testing.T) {
-					resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
-						ChunkSize: utils.NewType(2596),
-						AutoStart: utils.NewType(false),
-						Endpoint:  utils.NewType(getApplierEndpoint(t)),
-						Database:  utils.NewType(db.Name()),
-					})
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-				})
-				t.Logf("Batch ID: %s", batch.ID)
-				t.Run("Applier Start with out query params", func(t *testing.T) {
-					resp, err := client.ApplierStart(ctx, db.Name(), nil, nil)
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-
-					logApplierState(t, "Applier state", resp.State)
-				})
-				t.Run("Applier State with out query params", func(t *testing.T) {
-					resp, err := client.GetApplierState(ctx, db.Name(), nil)
-					require.NoError(t, err, "failed to get applier state")
-
-					logApplierState(t, "Applier state", resp.State)
-				})
-				t.Run("Applier Stop with out query params", func(t *testing.T) {
-					resp, err := client.ApplierStop(ctx, db.Name(), nil)
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-
-					logApplierState(t, "Applier state", resp.State)
-				})
-			})
-		})
-	}, WrapOptions{
-		Parallel: utils.NewType(false),
-	})
-}
 
 func Test_GetReplicationServerId(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -361,32 +177,6 @@ func Test_GetReplicationServerId(t *testing.T) {
 					require.NoError(t, err)
 					require.NotNil(t, resp)
 					t.Logf("Replication Server ID: %s", resp)
-				})
-			})
-		})
-	})
-}
-
-func Test_MakeFollower(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				serverRole, err := client.ServerRole(ctx)
-				require.NoError(t, err)
-				t.Logf("ServerRole is %s\n", serverRole)
-
-				if serverRole == arangodb.ServerRoleCoordinator {
-					t.Skipf("Not supported on Coordinators (role: %s)", serverRole)
-				}
-				t.Run("Make Follower", func(t *testing.T) {
-					resp, err := client.MakeFollower(ctx, db.Name(), arangodb.ApplierOptions{
-						ChunkSize: utils.NewType(1234),
-						Endpoint:  utils.NewType(getApplierEndpoint(t)),
-						Database:  utils.NewType(db.Name()),
-						Username:  utils.NewType("root"),
-					})
-					require.NoError(t, err)
-					require.NotNil(t, resp)
 				})
 			})
 		})
@@ -423,20 +213,6 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 					fromTick, err := strconv.ParseInt(rangeResp.TickMax, 10, 64)
 					require.NoError(t, err)
 					t.Logf("Starting fromTick: %d\n", fromTick)
-					t.Run("Update applier config with out query params", func(t *testing.T) {
-						resp, err := client.UpdateApplierConfig(ctx, db.Name(), nil, arangodb.ApplierOptions{
-							Endpoint: utils.NewType(getApplierEndpoint(t)),
-							Database: utils.NewType(db.Name()),
-							Verbose:  utils.NewType(true),
-						})
-						require.NoError(t, err)
-						require.NotNil(t, resp)
-					})
-					t.Run("Applier Start with out query params", func(t *testing.T) {
-						resp, err := client.ApplierStart(ctx, db.Name(), nil, nil)
-						require.NoError(t, err)
-						require.NotNil(t, resp)
-					})
 					// Insert docs
 					t.Run("Inserting 5 documents", func(t *testing.T) {
 						for i := 0; i < 5; i++ {
@@ -457,12 +233,6 @@ func Test_GetWALReplicationEndpoints(t *testing.T) {
 							})
 						require.NoError(t, err)
 						require.GreaterOrEqual(t, len(tailResp), 0)
-					})
-
-					t.Run("Applier Stop with out query params", func(t *testing.T) {
-						resp, err := client.ApplierStop(ctx, db.Name(), nil)
-						require.NoError(t, err)
-						require.NotNil(t, resp)
 					})
 				})
 			})
