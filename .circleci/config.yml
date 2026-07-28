@@ -662,6 +662,7 @@ workflows:
       - vulncheck:
           context:
             - slack
+      - dependency-cve-scan
     triggers:
       - schedule:
           # 6:00 on every Monday
