@@ -191,7 +191,8 @@ func Test_LoggerFirstTick(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				skipFromVersion(client, ctx, "4.0", tb)
+				// GET /_api/replication/logger-first-tick removed in ArangoDB 3.12.10+.
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
 				t.Logf("ServerRole is %s\n", serverRole)
@@ -213,7 +214,8 @@ func Test_LoggerTickRange(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				skipFromVersion(client, ctx, "4.0", tb)
+				// GET /_api/replication/logger-tick-ranges removed in ArangoDB 3.12.10+.
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				serverRole, err := client.ServerRole(ctx)
 				require.NoError(t, err)
 				t.Logf("ServerRole is %s\n", serverRole)
@@ -405,6 +407,8 @@ func Test_GetReplicationServerId(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// GET /_api/replication/server-id removed in ArangoDB 3.12.10+.
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				t.Run("Get replication server ID", func(t *testing.T) {
 					resp, err := client.GetReplicationServerId(ctx, db.Name())
 					require.NoError(t, err)
@@ -696,6 +700,8 @@ func Test_StartReplicationSync(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// PUT /_api/replication/sync removed in ArangoDB 3.12.10+.
+				skipFromVersion(client, ctx, "3.12.10", tb)
 				// Version checking
 				if os.Getenv("TEST_CONNECTION") == "vst" {
 					skipBelowVersion(client, ctx, "3.8", t)

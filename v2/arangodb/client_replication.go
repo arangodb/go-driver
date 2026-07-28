@@ -44,18 +44,18 @@ type ClientReplication interface {
 	LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error)
 	// LoggerFirstTick calls GET /_api/replication/logger-first-tick for the first tick of the replication logger.
 	//
-	// Deprecated: Do not use on ArangoDB 4.0 or newer. That release removes
-	// GET /_api/replication/logger-first-tick.
-	// For incremental write-ahead log updates, the 4.0 HTTP API documents
+	// Deprecated: Removed in ArangoDB 3.12.10+
+	// (GET /_api/replication/logger-first-tick).
+	// For incremental write-ahead log updates, use
 	// GET /_db/{database-name}/_api/wal/tail instead.
 	// On older versions this method still works.
 	LoggerFirstTick(ctx context.Context, dbName string) (LoggerFirstTickResponse, error)
 	// LoggerTickRange calls GET /_api/replication/logger-tick-ranges for tick ranges in WAL logfiles.
 	// On older servers the response may be a JSON array or a standard envelope whose "result" is that array.
 	//
-	// Deprecated: Do not use on ArangoDB 4.0 or newer. That release removes
-	// GET /_api/replication/logger-tick-ranges.
-	// For incremental WAL tailing, the 4.0 HTTP API documents
+	// Deprecated: Removed in ArangoDB 3.12.10+
+	// (GET /_api/replication/logger-tick-ranges).
+	// For incremental WAL tailing, use
 	// GET /_db/{database-name}/_api/wal/tail instead.
 	// On older versions this method still works.
 	LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error)
@@ -95,6 +95,9 @@ type ClientReplication interface {
 	// design (GET /_api/replication/applier-state). On older versions this method still works.
 	GetApplierState(ctx context.Context, dbName string, global *bool) (ApplierStateResp, error)
 	// GetReplicationServerId retrieves the server ID used for replication.
+	//
+	// Deprecated: Removed in ArangoDB 3.12.10+
+	// (GET /_api/replication/server-id). On older versions this method still works.
 	GetReplicationServerId(ctx context.Context, dbName string) (string, error)
 	// MakeFollower makes the current server a follower of the specified leader.
 	//
@@ -118,6 +121,9 @@ type ClientReplication interface {
 	// FetchRevisionDocuments retrieves documents by their revision IDs.
 	FetchRevisionDocuments(ctx context.Context, dbName string, queryParams RevisionQueryParams, opts []string) ([]map[string]interface{}, error)
 	// StartReplicationSync starts the replication synchronization process.
+	//
+	// Deprecated: Removed in ArangoDB 3.12.10+
+	// (PUT /_api/replication/sync). On older versions this method still works.
 	StartReplicationSync(ctx context.Context, dbName string, opts ReplicationSyncOptions) (ReplicationSyncResult, error)
 }
 

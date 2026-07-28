@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -33,24 +32,6 @@ import (
 	"github.com/arangodb/go-driver/v3/utils"
 	"github.com/stretchr/testify/require"
 )
-
-// getSyncEndpoint returns the endpoint from TEST_ENDPOINTS environment variable
-// converted to the format expected by ReplicationSyncOptions (http+tcp:// or https+ssl://).
-// TEST_ENDPOINTS must be set; if it is not, the test will fail.
-func getSyncEndpoint(t testing.TB) string {
-	eps := getEndpointsFromEnv(t)
-	// getEndpointsFromEnv will have already failed if TEST_ENDPOINTS is not set,
-	// so we can safely use the first endpoint
-
-	// Get the first endpoint and convert from http/https to http+tcp/https+ssl format
-	endpoint := eps[0]
-	if strings.HasPrefix(endpoint, "https://") {
-		endpoint = strings.Replace(endpoint, "https://", "https+ssl://", 1)
-	} else if strings.HasPrefix(endpoint, "http://") {
-		endpoint = strings.Replace(endpoint, "http://", "http+tcp://", 1)
-	}
-	return endpoint
-}
 
 func Test_CreateNewBatch(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
@@ -163,21 +144,6 @@ func Test_LoggerState(t *testing.T) {
 				require.NotEmpty(t, resp.State)
 				require.NotEmpty(t, resp.Server)
 				require.GreaterOrEqual(t, len(resp.Clients), 0)
-			})
-		})
-	})
-}
-
-func Test_GetReplicationServerId(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				t.Run("Get replication server ID", func(t *testing.T) {
-					resp, err := client.GetReplicationServerId(ctx, db.Name())
-					require.NoError(t, err)
-					require.NotNil(t, resp)
-					t.Logf("Replication Server ID: %s", resp)
-				})
 			})
 		})
 	})
@@ -398,45 +364,6 @@ func Test_FetchRevisionDocuments(t *testing.T) {
 					require.NoError(t, err)
 					require.NotNil(t, revDocs)
 				})
-			})
-		})
-	})
-}
-
-func Test_StartReplicationSync(t *testing.T) {
-	Wrap(t, func(t *testing.T, client arangodb.Client) {
-		WithDatabase(t, client, nil, func(db arangodb.Database) {
-			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
-				// Version checking
-				if os.Getenv("TEST_CONNECTION") == "vst" {
-					skipBelowVersion(client, ctx, "3.8", t)
-				}
-
-				// Role check
-				serverRole, err := client.ServerRole(ctx)
-				require.NoError(t, err)
-				t.Logf("ServerRole: %s", serverRole)
-
-				if serverRole == arangodb.ServerRoleCoordinator || serverRole == arangodb.ServerRoleSingle {
-					t.Skipf("Replication sync not supported on role: %s", serverRole)
-				}
-
-				opts := arangodb.ReplicationSyncOptions{
-					Endpoint: getSyncEndpoint(t),
-					Username: "root",
-				}
-
-				result, err := client.StartReplicationSync(ctx, db.Name(), opts)
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-
-				if len(result.Collections) == 0 {
-					t.Errorf("expected collections in result")
-				}
-				if result.LastLogTick == "" {
-					t.Errorf("expected lastLogTick in result")
-				}
 			})
 		})
 	})
