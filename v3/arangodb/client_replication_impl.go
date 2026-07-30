@@ -321,29 +321,6 @@ func (c *clientReplication) LoggerState(ctx context.Context, dbName string, DBse
 	}
 }
 
-func (c *clientReplication) GetReplicationServerId(ctx context.Context, dbName string) (string, error) {
-
-	// Build URL
-	url := c.url(dbName, []string{"server-id"}, nil)
-
-	var response struct {
-		shared.ResponseStruct `json:",inline"`
-		ServerId              string `json:"serverId"`
-	}
-
-	resp, err := connection.CallGet(ctx, c.client.connection, url, &response)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		return response.ServerId, nil
-	default:
-		return "", response.AsArangoErrorWithCode(code)
-	}
-}
-
 // RebuildShardRevisionTree triggers a rebuild of the Merkle tree for a specific shard.
 // This API must be called directly against a DBServer (not a Coordinator).
 func (c *clientReplication) RebuildShardRevisionTree(ctx context.Context, dbName string, shardID ShardID) error {
@@ -506,74 +483,6 @@ func (c *clientReplication) FetchRevisionDocuments(ctx context.Context, dbName s
 		return response, nil
 	default:
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
-	}
-}
-
-func (c *clientReplication) formSyncBodyParams(opts ReplicationSyncOptions) (map[string]interface{}, error) {
-	params := map[string]interface{}{}
-	if opts.Endpoint == "" {
-		return nil, RequiredFieldError("endpoint")
-	}
-	params["endpoint"] = opts.Endpoint
-	if opts.Database != nil && *opts.Database != "" {
-		params["database"] = *opts.Database
-	}
-	if opts.Username != "" {
-		params["username"] = opts.Username
-	}
-	if opts.Password != "" {
-		params["password"] = opts.Password
-	}
-	if opts.IncludeSystem != nil {
-		params["includeSystem"] = *opts.IncludeSystem
-	}
-	if opts.Incremental != nil {
-		params["incremental"] = *opts.Incremental
-	}
-	if opts.RestrictType != nil && *opts.RestrictType != "" {
-		params["restrictType"] = *opts.RestrictType
-	}
-	if opts.RestrictCollections != nil && len(*opts.RestrictCollections) > 0 {
-		params["restrictCollections"] = *opts.RestrictCollections
-	}
-	params["initialSyncMaxWaitTime"] = opts.InitialSyncMaxWaitSec
-	return params, nil
-}
-
-func (c *clientReplication) StartReplicationSync(ctx context.Context, dbName string, opts ReplicationSyncOptions) (ReplicationSyncResult, error) {
-	// Check server role
-	serverRole, err := c.client.ServerRole(ctx)
-
-	if err != nil {
-		return ReplicationSyncResult{}, errors.WithStack(err)
-	}
-	if serverRole == ServerRoleCoordinator {
-		return ReplicationSyncResult{}, errors.New("replication sync is not supported on Coordinators")
-	}
-	// Form request body params
-	body, err := c.formSyncBodyParams(opts)
-	if err != nil {
-		return ReplicationSyncResult{}, err
-	}
-
-	// Build URL
-	url := c.url(dbName, []string{"sync"}, nil)
-
-	var response struct {
-		shared.ResponseStruct `json:",inline"`
-		ReplicationSyncResult `json:",inline"`
-	}
-
-	resp, err := connection.CallPut(ctx, c.client.connection, url, &response, body)
-	if err != nil {
-		return ReplicationSyncResult{}, errors.WithStack(err)
-	}
-
-	switch code := resp.Code(); code {
-	case http.StatusOK:
-		return response.ReplicationSyncResult, nil
-	default:
-		return ReplicationSyncResult{}, response.AsArangoErrorWithCode(code)
 	}
 }
 

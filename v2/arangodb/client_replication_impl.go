@@ -323,8 +323,8 @@ func (c *clientReplication) LoggerState(ctx context.Context, dbName string, DBse
 
 // LoggerFirstTick implements ClientReplication.LoggerFirstTick.
 //
-// Deprecated: See [ClientReplication.LoggerFirstTick]. On ArangoDB 4.0+ use HTTP
-// GET /_db/{database}/_api/wal/tail for WAL tailing instead of this replication sub-path.
+// Deprecated: See [ClientReplication.LoggerFirstTick]. Removed in ArangoDB 3.12.10+;
+// use HTTP GET /_db/{database}/_api/wal/tail for WAL tailing instead.
 func (c *clientReplication) LoggerFirstTick(ctx context.Context, dbName string) (LoggerFirstTickResponse, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -356,8 +356,8 @@ func (c *clientReplication) LoggerFirstTick(ctx context.Context, dbName string) 
 
 // LoggerTickRange implements ClientReplication.LoggerTickRange.
 //
-// Deprecated: See [ClientReplication.LoggerTickRange]. On ArangoDB 4.0+ use HTTP
-// GET /_db/{database}/_api/wal/tail for WAL tailing instead of this replication sub-path.
+// Deprecated: See [ClientReplication.LoggerTickRange]. Removed in ArangoDB 3.12.10+;
+// use HTTP GET /_db/{database}/_api/wal/tail for WAL tailing instead.
 func (c *clientReplication) LoggerTickRange(ctx context.Context, dbName string) ([]LoggerTickRangeResponseObj, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
@@ -671,6 +671,9 @@ func (c *clientReplication) GetApplierState(ctx context.Context, dbName string, 
 	}
 }
 
+// GetReplicationServerId implements ClientReplication.GetReplicationServerId.
+//
+// Deprecated: See [ClientReplication.GetReplicationServerId]. Removed in ArangoDB 3.12.10+.
 func (c *clientReplication) GetReplicationServerId(ctx context.Context, dbName string) (string, error) {
 
 	// Build URL
@@ -930,6 +933,9 @@ func (c *clientReplication) formSyncBodyParams(opts ReplicationSyncOptions) (map
 	return params, nil
 }
 
+// StartReplicationSync implements ClientReplication.StartReplicationSync.
+//
+// Deprecated: See [ClientReplication.StartReplicationSync]. Removed in ArangoDB 3.12.10+.
 func (c *clientReplication) StartReplicationSync(ctx context.Context, dbName string, opts ReplicationSyncOptions) (ReplicationSyncResult, error) {
 	// Check server role
 	serverRole, err := c.client.ServerRole(ctx)
