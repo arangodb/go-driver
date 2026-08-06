@@ -466,65 +466,161 @@ workflows:
       # ========================
       # V1 Tests x86
       # ========================
-      - run-integration-tests:
-          context:
-            - docker-hub
-          name: Test V1 cluster
-          requires:
-            - download-demo-data
-          test-to-run: run-tests-cluster
-          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
-
-      - run-integration-tests:
-          context:
-            - docker-hub
-          name: Test V1 single
-          requires:
-            - download-demo-data
-          test-to-run: run-tests-single
-          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+      # - run-integration-tests:
+      #     context:
+      #       - docker-hub
+      #     name: Test V1 cluster
+      #     requires:
+      #       - download-demo-data
+      #     test-to-run: run-tests-cluster
+      #     arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+      #
+      # - run-integration-tests:
+      #     context:
+      #       - docker-hub
+      #     name: Test V1 single
+      #     requires:
+      #       - download-demo-data
+      #     test-to-run: run-tests-single
+      #     arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
       # V2 Tests x86
+      # Parallel CircleCI jobs (one Make leaf each)
+      # Previously run-v2-tests-cluster / run-v2-tests-single ran leaves serially
+      # in one job (~36 min cluster). Same coverage; lower wall clock.
       # ========================
       - run-integration-tests:
           context:
             - docker-hub
-          name: Test V2 cluster
+          name: Test V2 cluster basic-auth
           requires:
             - download-demo-data
-          test-to-run: run-v2-tests-cluster
+          test-to-run: run-v2-tests-cluster-with-basic-auth
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       - run-integration-tests:
           context:
             - docker-hub
-          name: Test V2 cluster - DB extra features (compression)
+          name: Test V2 cluster without-ssl
           requires:
             - download-demo-data
-          test-to-run: run-v2-tests-cluster
+          test-to-run: run-v2-tests-cluster-without-ssl
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 cluster without-auth
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-without-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 cluster jwt-auth
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-with-jwt-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 cluster basic-auth - DB extra features (compression)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-with-basic-auth
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
           enable-extra-db-features: true
 
       - run-integration-tests:
           context:
             - docker-hub
-          name: Test V2 single
+          name: Test V2 cluster without-ssl - DB extra features (compression)
           requires:
             - download-demo-data
-          test-to-run: run-v2-tests-single
+          test-to-run: run-v2-tests-cluster-without-ssl
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+          enable-extra-db-features: true
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 cluster without-auth - DB extra features (compression)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-without-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+          enable-extra-db-features: true
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 cluster jwt-auth - DB extra features (compression)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-with-jwt-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+          enable-extra-db-features: true
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 single without-auth
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-single-without-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 single with-auth
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-single-with-auth
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
-      # V2 Tests ARM
+      # V2 Tests ARM (same leaf split as x86)
       # ========================
       - run-integration-tests-arm:
           context:
             - docker-hub
-          name: Test V2 cluster (ARM)
+          name: Test V2 cluster basic-auth (ARM)
           requires:
             - download-demo-data
-          test-to-run: run-v2-tests-cluster
+          test-to-run: run-v2-tests-cluster-with-basic-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests-arm:
+          context:
+            - docker-hub
+          name: Test V2 cluster without-ssl (ARM)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-without-ssl
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests-arm:
+          context:
+            - docker-hub
+          name: Test V2 cluster without-auth (ARM)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-without-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests-arm:
+          context:
+            - docker-hub
+          name: Test V2 cluster jwt-auth (ARM)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-with-jwt-auth
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # - run-integration-tests-arm:
@@ -537,10 +633,19 @@ workflows:
       - run-integration-tests-arm:
           context:
             - docker-hub
-          name: Test V2 single (ARM)
+          name: Test V2 single without-auth (ARM)
           requires:
             - download-demo-data
-          test-to-run: run-v2-tests-single
+          test-to-run: run-v2-tests-single-without-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      - run-integration-tests-arm:
+          context:
+            - docker-hub
+          name: Test V2 single with-auth (ARM)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-single-with-auth
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
 
       # ========================
