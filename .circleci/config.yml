@@ -1,7 +1,7 @@
 version: 2.1
 orbs:
   slack: circleci/slack@4.15.0
-  trivy-scan: arangodb/trivy-scan@1.1.2
+  trivy-scan: arangodb/trivy-scan@1.6.0
 executors:
   golang-executor:
     docker:
