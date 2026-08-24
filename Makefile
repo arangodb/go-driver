@@ -4,7 +4,7 @@ SCRIPTDIR := $(shell pwd)
 CURR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 ROOTDIR:=$(CURR)
 
-GOVERSION ?= 1.25.12
+GOVERSION ?= 1.25.13
 GOTOOLCHAIN ?= auto
 GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
