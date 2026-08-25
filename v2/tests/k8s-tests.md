@@ -179,10 +179,10 @@ K8S_INGRESS_ADDRESS=127.0.0.1 make run-k8s-v2-toxiproxy VERBOSE=1
 
 ## CircleCI
 
-On pull requests, CircleCI runs the same targets via `run-k8s-integration-tests`:
+On pull requests, CircleCI runs Kubernetes coverage via `run-k8s-integration-tests`. Leaves are **parallel CircleCI jobs** (same idea as V2 docker cluster); aggregate Make targets remain for local use:
 
-- `make run-k8s-v2-single`
-- `make run-k8s-v2-cluster`
+- `make run-k8s-v2-single-without-auth`, `make run-k8s-v2-single-basic-auth`, and `make run-k8s-v2-single-tls-basic-auth` (parallel jobs; together = `run-k8s-v2-single`)
+- `make run-k8s-v2-cluster-basic-auth` and `make run-k8s-v2-cluster-tls-basic-auth` (parallel jobs; together = `run-k8s-v2-cluster`)
 - `make run-k8s-v2-resiliency` (3 coordinators; ingress and coordinator failure scenarios; `k8s-wait-timeout: 35m`, `no_output_timeout: 40m`)
 - `make run-k8s-v2-toxiproxy` (1 coordinator; network-fault scenarios via Toxiproxy → ingress; `no_output_timeout: 30m`)
 

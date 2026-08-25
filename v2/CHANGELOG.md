@@ -2,6 +2,7 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 - Replication: deprecate APIs removed in ArangoDB 3.12.10+ (`GetApplierConfig`, `UpdateApplierConfig`, `ApplierStart`, `ApplierStop`, `GetApplierState`, `MakeFollower`, `StartReplicationSync`, `LoggerFirstTick`, `LoggerTickRange`, `GetReplicationServerId`); related tests skip from 3.12.10.
+- Switch to Go 1.25.13 to fix standard library security issues (GO-2026-6218, GO-2026-6090, GO-2026-5972, GO-2026-5026)
 - Switch to Go 1.25.12 to fix Encrypted Client Hello privacy leak in crypto/tls (GO-2026-5856)
 - Connection: added optional `ArangoDBConfiguration.HostHeader` so clients can dial an IP/URL host while sending a different HTTP `Host` (e.g. ingress / virtual hosts).
 - Tests: added v2 Kubernetes resiliency and Toxiproxy suites (kind + kube-arangodb + ingress-nginx) with shared multi-driver runner docs.
