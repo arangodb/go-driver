@@ -1,6 +1,7 @@
 version: 2.1
 orbs:
-  slack: circleci/slack@4.1
+  slack: circleci/slack@4.15.0
+  trivy-scan: arangodb/trivy-scan@1.6.0
 executors:
   golang-executor:
     docker:
@@ -389,6 +390,17 @@ jobs:
       - run: make vulncheck
       - *notify_slack_on_fail
 
+  dependency-cve-scan:
+    executor: golang-executor
+    steps:
+      - checkout
+      - trivy-scan/scan:
+          scan-type: fs
+          scan-path: "."
+          severity: "CRITICAL,HIGH"
+          fail-on-findings: false
+          store-junit-results: true
+
   # GitHub release (tags VERSION bump, git push, github-release draft → publish).
   # Requires CircleCI context: GITHUB_TOKEN or RELEASER_GITHUB_TOKEN (repo contents write). Optional: GIT_USER_NAME, GIT_USER_EMAIL.
   # Pipeline parameter `publish` must be the exact Make target (see publish-release workflow regex).
@@ -456,6 +468,7 @@ workflows:
               pattern: *publish_release_target_regex
     jobs:
       - check-code
+      - dependency-cve-scan
       - run-unit-tests:
           requires:
             - check-code
@@ -879,6 +892,7 @@ workflows:
       - vulncheck:
           context:
             - slack
+      - dependency-cve-scan
     triggers:
       - schedule:
           # 6:00 on every Monday
