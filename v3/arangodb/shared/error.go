@@ -240,6 +240,7 @@ const (
 	ErrQueryBindParameterUndeclared                     = 1552
 	ErrQueryBindParameterType                           = 1553
 	ErrQueryVectorSearchNotApplied                      = 1554
+	ErrQueryVectorIndexNotReady                         = 1555
 	ErrQueryInvalidArithmeticValue                      = 1561
 	ErrQueryDivisionByZero                              = 1562
 	ErrQueryArrayExpected                               = 1563
