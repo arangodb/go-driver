@@ -36,6 +36,11 @@ type CollectionIndexes interface {
 	// Indexes returns a list of all indexes in the collection.
 	Indexes(ctx context.Context) ([]IndexResponse, error)
 
+	// IndexesWithOptions returns a list of all indexes in the collection.
+	// Pass WithHidden to include indexes that are not yet fully built and, from
+	// ArangoDB 3.12.10, per-shard vector index details (shards / resolvedNLists).
+	IndexesWithOptions(ctx context.Context, opts *IndexListOptions) ([]IndexResponse, error)
+
 	// EnsurePersistentIndex creates a persistent index in the collection, if it does not already exist.
 	// Fields is a slice of attribute paths.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
@@ -84,7 +89,9 @@ type CollectionIndexes interface {
 	// EnsureVectorIndex creates a vector index in the collection, if it does not already exist.
 	// The index is returned, together with a boolean indicating if the index was newly created (true) or pre-existing (false).
 	// Available in ArangoDB 3.12.4 and later.
-	// VectorParams is an obligatory parameter and must contain at least Dimension, Metric and NLists fields.
+	// VectorParams is required and must contain at least Dimension and Metric.
+	// From ArangoDB 3.12.10, NLists is optional (the server applies a default scaling specification).
+	// Up to 3.12.9, NLists must be a positive number.
 	// CreateVectorIndexOptions.InBackground is sent when set; see CreateVectorIndexOptions.InBackground.
 	EnsureVectorIndex(ctx context.Context, fields []string, params *VectorParams, options *CreateVectorIndexOptions) (IndexResponse, bool, error)
 }
@@ -159,6 +166,23 @@ type IndexResponse struct {
 	// VectorErrorMessage is present for unusable vector indexes.
 	// It is populated for vector indexes from the index object's `errorMessage`.
 	VectorErrorMessage *string `json:"errorMessage,omitempty"`
+
+	// VectorFields is the indexed attribute path for vector indexes (always one field).
+	VectorFields []string `json:"-"`
+
+	// VectorStoredValues is the list of additionally stored attribute paths for vector indexes.
+	VectorStoredValues []string `json:"-"`
+
+	// VectorShards holds per-shard vector index details (trainingState, error, resolvedNLists).
+	// Available in ArangoDB 3.12.10 and later when listing indexes with WithHidden.
+	VectorShards map[string]VectorIndexShardInfo `json:"shards,omitempty"`
+}
+
+// IndexListOptions controls GET /_api/index listing.
+type IndexListOptions struct {
+	// WithHidden includes indexes that are not yet fully built and, from ArangoDB 3.12.10,
+	// per-shard vector index details (shards / resolvedNLists).
+	WithHidden *bool
 }
 
 // IndexSharedOptions contains options that are shared between all index types
@@ -339,10 +363,14 @@ type CreateMDIPrefixedIndexOptions struct {
 }
 
 type CreateVectorIndexOptions struct {
-	// InBackground, when true, is sent to the server: index building is deferred until enough data is available,
-	// avoiding an immediate error on empty or nearly empty collections. When false or unset, synchronous creation
-	// may return an error while still creating an index in unusable state if training data is insufficient.
-	// Alternatively, insert embeddings first then create the index without relying on inBackground.
+	// InBackground, when true, keeps the collection available for writes during index creation
+	// by not taking an exclusive write lock. Training is deferred until enough data is available.
+	// When false or unset, the call waits until training finishes (timeouts may still occur).
+	//
+	// Up to v3.12.9, a failed training (for example not enough data) returns an error while
+	// still leaving an index in "unusable" state.
+	// From v3.12.10 onward, the same case returns success with TrainingState "unusable" and
+	// the reason in VectorErrorMessage. Inspect those fields on a successful create.
 	InBackground *bool `json:"inBackground,omitempty"`
 	// Optional index name.
 	Name *string `json:"name,omitempty"`
@@ -350,8 +378,9 @@ type CreateVectorIndexOptions struct {
 	Parallelism *int `json:"parallelism,omitempty"`
 	// Exclude docs missing the field.
 	Sparse *bool `json:"sparse,omitempty"`
-	// Introduced in v3.12.7
-	// Up to 32 additional attributes can be stored in the index.
+	// Introduced in v3.12.7. Up to 32 additional attributes can be stored in the index.
+	// Up to v3.12.9 these are used for filtering. From v3.12.10 they are also used to
+	// cover projections so attributes can be returned from the index without materializing documents.
 	StoredValues []string `json:"storedValues,omitempty"`
 }
 
@@ -369,14 +398,79 @@ type VectorParams struct {
 	DefaultNProbe *int `json:"defaultNProbe,omitempty"`
 	// Vector length.
 	Dimension *int `json:"dimension,omitempty"`
-	// Faiss factory string.
+	// Faiss factory string. From v3.12.10 you can use a {} placeholder for the
+	// centroid count, e.g. "IVF{}_HNSW32,SQ8". It is substituted with the number
+	// of centroids that nLists resolves to (per shard in cluster deployments).
 	Factory *string `json:"factory,omitempty"`
 	// Similarity measure.
 	Metric *VectorMetric `json:"metric,omitempty"`
-	// Number of centroids.
-	NLists *int `json:"nLists,omitempty"`
+	// Number of Voronoi cells / centroids. Up to v3.12.9 this must be a positive
+	// integer. From v3.12.10 it is optional and may be a fixed number or a scaling
+	// specification. If omitted, the server uses a default autoSqrt scaling specification.
+	// Use NewVectorNLists for a fixed count or NewVectorNListsScaling for scaling mode.
+	NLists *VectorNLists `json:"nLists,omitempty"`
+	// How many vectors per centroid to include in the training sample.
+	// Introduced in v3.12.10. Must be 1 or greater. Server default is 100.
+	// Up to v3.12.9 this is not configurable and a fixed value of 256 is used.
+	NumberOfDocsPerCentroid *int `json:"numberOfDocsPerCentroid,omitempty"`
 	// Faiss training iterations
 	TrainingIterations *int `json:"trainingIterations,omitempty"`
+}
+
+// VectorNListsStrategy is how scaling-mode nLists computes the centroid count.
+type VectorNListsStrategy string
+
+const (
+	// VectorNListsStrategyAutoSqrt computes max(minNLists, multiplier * sqrt(N)).
+	VectorNListsStrategyAutoSqrt VectorNListsStrategy = "autoSqrt"
+)
+
+// VectorNLists is params.nLists: either a fixed centroid count or, from ArangoDB
+// 3.12.10, a scaling specification. JSON is a number or an object.
+type VectorNLists struct {
+	// Fixed is a fixed number of centroids. Mutually exclusive with Scaling.
+	Fixed *int
+	// Scaling computes the number of centroids from the document count at training time (3.12.10+).
+	Scaling *VectorNListsScaling
+}
+
+// VectorNListsScaling is the 3.12.10+ object form of nLists.
+type VectorNListsScaling struct {
+	// Strategy is how to compute the number of centroids if no tier applies.
+	// The only available value is "autoSqrt".
+	Strategy *VectorNListsStrategy `json:"strategy,omitempty"`
+	// Multiplier is the factor for the autoSqrt strategy. Must be 1 or greater.
+	Multiplier *int `json:"multiplier,omitempty"`
+	// MinNLists is the lower bound for the computed number of centroids and the
+	// document-count threshold that triggers training. Must be 1 or greater.
+	MinNLists *int `json:"minNLists,omitempty"`
+	// Tiers optionally pin a fixed centroid count for large document counts.
+	// The tier with the highest threshold that is <= N wins.
+	Tiers []VectorNListsTier `json:"tiers,omitempty"`
+}
+
+// VectorNListsTier pins a fixed centroid count once the document count reaches Threshold.
+type VectorNListsTier struct {
+	Threshold  *int `json:"threshold,omitempty"`
+	FixedValue *int `json:"fixedValue,omitempty"`
+}
+
+// VectorIndexShardInfo is per-shard vector index status from GET /_api/index?withHidden=true (3.12.10+).
+type VectorIndexShardInfo struct {
+	TrainingState  *VectorIndexTrainingState `json:"trainingState,omitempty"`
+	Error          *string                   `json:"error,omitempty"`
+	ResolvedNLists *int                      `json:"resolvedNLists,omitempty"`
+}
+
+// NewVectorNLists returns a fixed-count nLists value.
+func NewVectorNLists(n int) *VectorNLists {
+	return &VectorNLists{Fixed: &n}
+}
+
+// NewVectorNListsScaling returns a scaling-mode nLists value (ArangoDB 3.12.10+).
+func NewVectorNListsScaling(s VectorNListsScaling) *VectorNLists {
+	cp := s
+	return &VectorNLists{Scaling: &cp}
 }
 
 // VectorMetric defines the type of similarity metric for vector comparison.

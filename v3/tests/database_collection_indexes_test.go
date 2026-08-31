@@ -39,12 +39,7 @@ import (
 )
 
 // waitForVectorIndexReady polls GET .../index until the vector index reports trainingState=ready in the list response.
-// On ArangoDB 4.0 branch builds (until devel is merged into 4.0), REST often omits trainingState; polling cannot succeed.
-func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, indexID string, timeout time.Duration, serverVersion arangodb.VersionInfo) error {
-	if serverVersion.Version.CompareTo("4.0") >= 0 {
-		return nil
-	}
-
+func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, indexID string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	var lastState *arangodb.VectorIndexTrainingState
 	var lastErrMsg *string
@@ -539,7 +534,7 @@ func Test_NamedIndexes(t *testing.T) {
 								params := &arangodb.VectorParams{
 									Dimension: utils.NewType(3),
 									Metric:    utils.NewType(arangodb.VectorMetricCosine),
-									NLists:    utils.NewType(1),
+									NLists:    arangodb.NewVectorNLists(1),
 								}
 								idx, _, err := col.EnsureVectorIndex(ctx, []string{"vectorfield"},
 									params, &arangodb.CreateVectorIndexOptions{Name: &name})
@@ -594,12 +589,11 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					versionInfo := skipBelowVersion(client, ctx, "3.12.4", t)
 					dimension := 3
 					metric := arangodb.VectorMetricCosine
-					nLists := 1 // or 2, but <= number of docs
 
 					params := &arangodb.VectorParams{
 						Dimension: &dimension,
 						Metric:    &metric,
-						NLists:    &nLists,
+						NLists:    arangodb.NewVectorNLists(1), // must be <= number of docs
 					}
 
 					// Vector indexes require documents to be present for training
@@ -643,6 +637,10 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.NotNil(t, idx1.VectorIndex)
 						require.Equal(t, dimension, *idx1.VectorIndex.Dimension)
 						require.Equal(t, metric, *idx1.VectorIndex.Metric)
+						require.Equal(t, []string{"embedding"}, idx1.VectorFields)
+						if idx1.VectorIndex.NLists != nil && idx1.VectorIndex.NLists.Fixed != nil {
+							require.Equal(t, 1, *idx1.VectorIndex.NLists.Fixed)
+						}
 
 						idx2, created2, err := col.EnsureVectorIndex(
 							ctx,
@@ -667,12 +665,12 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						idx, _, err = col.EnsureVectorIndex(ctx, []string{"embedding"}, params, options)
 						require.NoError(t, err)
 						require.Equal(t, arangodb.VectorIndexType, idx.Type)
+						require.Equal(t, []string{"embedding"}, idx.VectorFields)
+						require.Equal(t, []string{"text"}, idx.VectorStoredValues)
 					})
 
-					// trainingState / errorMessage in create response: skip on 4.0 branch until REST matches devel (see arangodb#22526).
 					t.Run("Vector index reports trainingState in 3.12.9+", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.9", t)
-						skipFromVersion(client, ctx, "4.0", t)
 						idxState, _, err := col.EnsureVectorIndex(
 							ctx,
 							[]string{"embedding"},
@@ -700,7 +698,6 @@ func Test_EnsureVectorIndex(t *testing.T) {
 
 					t.Run("Vector index trainingState is present in index list on 3.12.9+", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.9", t)
-						skipFromVersion(client, ctx, "4.0", t)
 						indexes, err := col.Indexes(ctx)
 						require.NoError(t, err)
 						var vectorIdx *arangodb.IndexResponse
@@ -716,14 +713,13 @@ func Test_EnsureVectorIndex(t *testing.T) {
 
 					t.Run("Vector index with inBackground and minimal data lists trainingState in 3.12.9+", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.9", t)
-						skipFromVersion(client, ctx, "4.0", t)
 						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 							// Sparse index + insufficient training data. Use inBackground: true so creation does not
 							// block on cluster waiting for training; server may still report unusable + errorMessage.
 							sparseParams := &arangodb.VectorParams{
 								Dimension: utils.NewType(3),
 								Metric:    utils.NewType(arangodb.VectorMetricCosine),
-								NLists:    utils.NewType(32),
+								NLists:    arangodb.NewVectorNLists(32),
 							}
 							_, err := col.CreateDocument(ctx, map[string]interface{}{"text": "no embedding"})
 							require.NoError(t, err)
@@ -779,7 +775,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					t.Run("StoredValues are used for filter", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
 						if versionInfo.Version.CompareTo("3.12.9") >= 0 {
-							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second, versionInfo))
+							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second))
 						}
 
 						query := fmt.Sprintf(
@@ -816,7 +812,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 					t.Run("Vector index with storedValues and indexHint is used", func(t *testing.T) {
 						skipBelowVersion(client, ctx, "3.12.7", t)
 						if versionInfo.Version.CompareTo("3.12.9") >= 0 {
-							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second, versionInfo))
+							require.NoError(t, waitForVectorIndexReady(ctx, col, idx.ID, 30*time.Second))
 						}
 						// indexHint and forceIndexHint for vector indexes supported by 3.12.7+
 						// Query using indexHint + forceIndexHint
@@ -856,6 +852,127 @@ func Test_EnsureVectorIndex(t *testing.T) {
 						require.True(t, found, "expected EnumerateNearVectorNode in execution plan")
 					})
 
+					t.Run("Vector index 3.12.10 scaling nLists, factory placeholder, and shards", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.10", t)
+						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+							withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+								docs := make([]map[string]interface{}, 0, 20)
+								for i := 0; i < 20; i++ {
+									base := float64(i + 1)
+									docs = append(docs, map[string]interface{}{
+										"embedding": []float64{base, base + 0.1, base + 0.2},
+										"text":      fmt.Sprintf("scale-doc-%d", i),
+									})
+								}
+								_, err := col.CreateDocuments(ctx, docs)
+								require.NoError(t, err)
+
+								scaleParams := &arangodb.VectorParams{
+									Dimension:               utils.NewType(3),
+									Metric:                  utils.NewType(arangodb.VectorMetricCosine),
+									Factory:                 utils.NewType("IVF{},Flat"),
+									NumberOfDocsPerCentroid: utils.NewType(50),
+									NLists: arangodb.NewVectorNListsScaling(arangodb.VectorNListsScaling{
+										Strategy:   utils.NewType(arangodb.VectorNListsStrategyAutoSqrt),
+										Multiplier: utils.NewType(4),
+										MinNLists:  utils.NewType(2),
+									}),
+								}
+								idxScale, created, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, scaleParams, &arangodb.CreateVectorIndexOptions{
+									Name:         utils.NewType("vector_scale_idx"),
+									StoredValues: []string{"text"},
+								})
+								require.NoError(t, err)
+								require.True(t, created)
+								require.NotNil(t, idxScale.VectorIndex)
+								require.NotNil(t, idxScale.VectorIndex.NLists)
+								require.NotNil(t, idxScale.VectorIndex.NLists.Scaling)
+								require.NotNil(t, idxScale.VectorIndex.NLists.Scaling.Strategy)
+								require.Equal(t, arangodb.VectorNListsStrategyAutoSqrt, *idxScale.VectorIndex.NLists.Scaling.Strategy)
+								require.NotNil(t, idxScale.VectorIndex.NLists.Scaling.Multiplier)
+								require.Equal(t, 4, *idxScale.VectorIndex.NLists.Scaling.Multiplier)
+								require.NotNil(t, idxScale.VectorIndex.NLists.Scaling.MinNLists)
+								require.Equal(t, 2, *idxScale.VectorIndex.NLists.Scaling.MinNLists)
+								if idxScale.VectorIndex.Factory != nil {
+									require.Equal(t, "IVF{},Flat", *idxScale.VectorIndex.Factory)
+								}
+								if idxScale.VectorIndex.NumberOfDocsPerCentroid != nil {
+									require.Equal(t, 50, *idxScale.VectorIndex.NumberOfDocsPerCentroid)
+								}
+								require.Equal(t, []string{"text"}, idxScale.VectorStoredValues)
+
+								indexes, err := col.IndexesWithOptions(ctx, &arangodb.IndexListOptions{
+									WithHidden: utils.NewType(true),
+								})
+								require.NoError(t, err)
+								var found *arangodb.IndexResponse
+								for i := range indexes {
+									if indexes[i].ID == idxScale.ID {
+										found = &indexes[i]
+										break
+									}
+								}
+								require.NotNil(t, found, "expected created vector index in hidden index list")
+								require.NotEmpty(t, found.VectorShards, "expected per-shard details when listing with withHidden")
+								for shard, info := range found.VectorShards {
+									if info.ResolvedNLists != nil {
+										require.Greater(t, *info.ResolvedNLists, 0, "shard %s resolvedNLists", shard)
+									}
+								}
+
+								if versionInfo.Version.CompareTo("3.12.9") >= 0 {
+									require.NoError(t, waitForVectorIndexReady(ctx, col, idxScale.ID, 30*time.Second))
+								}
+								query := fmt.Sprintf(
+									"FOR d IN `%s`\n"+
+										"  SORT APPROX_NEAR_COSINE(d.embedding, @vector) DESC\n"+
+										"  LIMIT 1\n"+
+										"  RETURN { text: d.text }",
+									col.Name(),
+								)
+								explain, err := db.ExplainQuery(ctx, query, map[string]interface{}{
+									"vector": []float64{1, 1.1, 1.2},
+								}, nil)
+								require.NoError(t, err)
+								require.Contains(t, explain.Plan.Rules, "use-vector-index")
+								if !slices.Contains(explain.Plan.Rules, "materialize-for-enumerate-near") {
+									t.Logf("optimizer did not apply materialize-for-enumerate-near; rules=%v", explain.Plan.Rules)
+								}
+							})
+						})
+					})
+
+					t.Run("Vector index inBackground false reports unusable without error on 3.12.10+", func(t *testing.T) {
+						skipBelowVersion(client, ctx, "3.12.10", t)
+						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
+							withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
+								_, err := col.CreateDocument(ctx, map[string]interface{}{"text": "no embedding"})
+								require.NoError(t, err)
+
+								idxFail, created, err := col.EnsureVectorIndex(
+									ctx,
+									[]string{"embedding"},
+									&arangodb.VectorParams{
+										Dimension: utils.NewType(3),
+										Metric:    utils.NewType(arangodb.VectorMetricCosine),
+										NLists:    arangodb.NewVectorNLists(32),
+									},
+									&arangodb.CreateVectorIndexOptions{
+										Name:         utils.NewType("vector_unusable_fg"),
+										Sparse:       utils.NewType(true),
+										InBackground: utils.NewType(false),
+									},
+								)
+								require.NoError(t, err)
+								require.True(t, created)
+								require.NotNil(t, idxFail.TrainingState)
+								require.Equal(t, arangodb.VectorIndexTrainingStateUnusable, *idxFail.TrainingState)
+								require.NotNil(t, idxFail.VectorErrorMessage)
+								require.NotEmpty(t, strings.TrimSpace(*idxFail.VectorErrorMessage))
+							})
+						})
+					})
+
 					t.Run("Validate VectorParams input", func(t *testing.T) {
 						WithCollectionV2(t, db, nil, func(col arangodb.Collection) {
 							withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
@@ -867,7 +984,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 								t.Run("Missing Dimension should error", func(t *testing.T) {
 									params := &arangodb.VectorParams{
 										Metric: utils.NewType(arangodb.VectorMetricCosine),
-										NLists: utils.NewType(1),
+										NLists: arangodb.NewVectorNLists(1),
 									}
 									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
 									require.Error(t, err)
@@ -877,7 +994,7 @@ func Test_EnsureVectorIndex(t *testing.T) {
 									params := &arangodb.VectorParams{
 										Dimension: utils.NewType(-1),
 										Metric:    utils.NewType(arangodb.VectorMetricCosine),
-										NLists:    utils.NewType(1),
+										NLists:    arangodb.NewVectorNLists(1),
 									}
 									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
 									require.Error(t, err)
@@ -887,19 +1004,52 @@ func Test_EnsureVectorIndex(t *testing.T) {
 									params := &arangodb.VectorParams{
 										Dimension: utils.NewType(3),
 										Metric:    utils.NewType(arangodb.VectorMetric("invalid_metric")),
-										NLists:    utils.NewType(1), // must be <= number of documents per shard
+										NLists:    arangodb.NewVectorNLists(1), // must be <= number of documents per shard
 									}
 									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
 									require.Error(t, err)
 								})
 
-								t.Run("Missing NLists should error", func(t *testing.T) {
+								t.Run("Non-positive NLists should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(3),
+										Metric:    utils.NewType(arangodb.VectorMetricCosine),
+										NLists:    arangodb.NewVectorNLists(0),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Invalid NLists scaling should error", func(t *testing.T) {
+									params := &arangodb.VectorParams{
+										Dimension: utils.NewType(3),
+										Metric:    utils.NewType(arangodb.VectorMetricCosine),
+										NLists: arangodb.NewVectorNListsScaling(arangodb.VectorNListsScaling{
+											Strategy:   utils.NewType(arangodb.VectorNListsStrategy("nope")),
+											Multiplier: utils.NewType(4),
+											MinNLists:  utils.NewType(2),
+										}),
+									}
+									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
+									require.Error(t, err)
+								})
+
+								t.Run("Missing NLists is accepted by the driver", func(t *testing.T) {
 									params := &arangodb.VectorParams{
 										Dimension: utils.NewType(3),
 										Metric:    utils.NewType(arangodb.VectorMetricCosine),
 									}
-									_, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, nil)
-									require.Error(t, err)
+									idxOmit, _, err := col.EnsureVectorIndex(ctx, []string{"embedding"}, params, &arangodb.CreateVectorIndexOptions{
+										Name: utils.NewType("vector_omit_nlists"),
+									})
+									if versionInfo.Version.CompareTo("3.12.10") < 0 {
+										require.Error(t, err, "servers before 3.12.10 require nLists")
+										return
+									}
+									require.NoError(t, err)
+									if idxOmit.ID != "" {
+										_ = col.DeleteIndexByID(ctx, idxOmit.ID)
+									}
 								})
 							})
 						})

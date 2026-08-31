@@ -88,6 +88,10 @@ func (c *collectionIndexes) IndexExists(ctx context.Context, name string) (bool,
 }
 
 func (c *collectionIndexes) Indexes(ctx context.Context) ([]IndexResponse, error) {
+	return c.IndexesWithOptions(ctx, nil)
+}
+
+func (c *collectionIndexes) IndexesWithOptions(ctx context.Context, opts *IndexListOptions) ([]IndexResponse, error) {
 	urlEndpoint := c.collection.db.url("_api", "index")
 
 	var response struct {
@@ -95,8 +99,13 @@ func (c *collectionIndexes) Indexes(ctx context.Context) ([]IndexResponse, error
 		Indexes               []IndexResponse `json:"indexes,omitempty"`
 	}
 
+	modifiers := []connection.RequestModifier{connection.WithQuery("collection", c.collection.name)}
+	if opts != nil && opts.WithHidden != nil && *opts.WithHidden {
+		modifiers = append(modifiers, connection.WithQuery("withHidden", "true"))
+	}
+
 	resp, err := connection.CallGet(ctx, c.collection.connection(), urlEndpoint, &response,
-		c.collection.withModifiers(connection.WithQuery("collection", c.collection.name))...)
+		c.collection.withModifiers(modifiers...)...)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -319,10 +328,7 @@ func (i *IndexResponse) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(data, &result); err != nil {
 			return err
 		}
-		i.IndexSharedOptions = result.IndexSharedOptions
-		i.VectorIndex = result.Params
-		i.TrainingState = result.TrainingState
-		i.VectorErrorMessage = result.ErrorMessage
+		applyVectorIndexResponse(i, &result)
 	default:
 		result := responseIndex{}
 		if err := json.Unmarshal(data, &result); err != nil {
@@ -354,10 +360,82 @@ func (p *VectorParams) validate() error {
 		return errors.New("params.Metric must be one of 'cosine', 'l2', or 'innerProduct' for vector index")
 	}
 
-	if p.NLists == nil || *p.NLists <= 0 {
-		return errors.New("params.NLists must be provided and greater than zero for vector index")
+	if p.NLists != nil {
+		if err := p.NLists.validate(); err != nil {
+			return err
+		}
 	}
 
+	if p.NumberOfDocsPerCentroid != nil && *p.NumberOfDocsPerCentroid < 1 {
+		return errors.New("params.NumberOfDocsPerCentroid must be 1 or greater")
+	}
+
+	return nil
+}
+
+func (n *VectorNLists) validate() error {
+	if n.Fixed != nil && n.Scaling != nil {
+		return errors.New("params.NLists cannot be both a fixed number and a scaling specification")
+	}
+	if n.Fixed != nil {
+		if *n.Fixed <= 0 {
+			return errors.New("params.NLists must be greater than zero when set as a number")
+		}
+		return nil
+	}
+	if n.Scaling != nil {
+		return n.Scaling.validate()
+	}
+	return errors.New("params.NLists must be a positive number or a scaling specification")
+}
+
+func (s *VectorNListsScaling) validate() error {
+	if s.Strategy == nil || *s.Strategy != VectorNListsStrategyAutoSqrt {
+		return errors.New("params.NLists.strategy must be 'autoSqrt'")
+	}
+	if s.Multiplier == nil || *s.Multiplier < 1 {
+		return errors.New("params.NLists.multiplier must be 1 or greater")
+	}
+	if s.MinNLists == nil || *s.MinNLists < 1 {
+		return errors.New("params.NLists.minNLists must be 1 or greater")
+	}
+	for _, tier := range s.Tiers {
+		if tier.Threshold == nil || *tier.Threshold < 1 || tier.FixedValue == nil || *tier.FixedValue < 1 {
+			return errors.New("params.NLists.tiers threshold and fixedValue must be 1 or greater")
+		}
+	}
+	return nil
+}
+
+func (n VectorNLists) MarshalJSON() ([]byte, error) {
+	if n.Fixed != nil && n.Scaling != nil {
+		return nil, errors.New("VectorNLists cannot have both Fixed and Scaling set")
+	}
+	if n.Scaling != nil {
+		return json.Marshal(n.Scaling)
+	}
+	if n.Fixed != nil {
+		return json.Marshal(*n.Fixed)
+	}
+	return []byte("null"), nil
+}
+
+func (n *VectorNLists) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	var fixed int
+	if err := json.Unmarshal(data, &fixed); err == nil {
+		n.Fixed = &fixed
+		n.Scaling = nil
+		return nil
+	}
+	var scaling VectorNListsScaling
+	if err := json.Unmarshal(data, &scaling); err != nil {
+		return errors.Wrap(err, "params.nLists must be a number or a scaling object")
+	}
+	n.Fixed = nil
+	n.Scaling = &scaling
 	return nil
 }
 
@@ -400,9 +478,27 @@ type responseVectorIndex struct {
 	Name               string    `json:"name,omitempty"`
 	Type               IndexType `json:"type"`
 	IndexSharedOptions `json:",inline"`
-	Params             *VectorParams             `json:"params,omitempty"`
-	TrainingState      *VectorIndexTrainingState `json:"trainingState,omitempty"`
-	ErrorMessage       *string                   `json:"errorMessage,omitempty"`
+	Fields             []string                        `json:"fields,omitempty"`
+	StoredValues       []string                        `json:"storedValues,omitempty"`
+	Params             *VectorParams                   `json:"params,omitempty"`
+	TrainingState      *VectorIndexTrainingState       `json:"trainingState,omitempty"`
+	ErrorMessage       *string                         `json:"errorMessage,omitempty"`
+	Shards             map[string]VectorIndexShardInfo `json:"shards,omitempty"`
+}
+
+func applyVectorIndexResponse(i *IndexResponse, res *responseVectorIndex) {
+	if i == nil || res == nil {
+		return
+	}
+	i.Name = res.Name
+	i.Type = res.Type
+	i.IndexSharedOptions = res.IndexSharedOptions
+	i.VectorIndex = res.Params
+	i.TrainingState = res.TrainingState
+	i.VectorErrorMessage = res.ErrorMessage
+	i.VectorFields = res.Fields
+	i.VectorStoredValues = res.StoredValues
+	i.VectorShards = res.Shards
 }
 
 func newVectorIndexResponse(res *responseVectorIndex) IndexResponse {
@@ -410,12 +506,7 @@ func newVectorIndexResponse(res *responseVectorIndex) IndexResponse {
 		return IndexResponse{}
 	}
 
-	return IndexResponse{
-		Name:               res.Name,
-		Type:               res.Type,
-		IndexSharedOptions: res.IndexSharedOptions,
-		VectorIndex:        res.Params,
-		TrainingState:      res.TrainingState,
-		VectorErrorMessage: res.ErrorMessage,
-	}
+	out := IndexResponse{}
+	applyVectorIndexResponse(&out, res)
+	return out
 }
