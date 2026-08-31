@@ -10,6 +10,7 @@ GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.23
 TMPDIR := ${SCRIPTDIR}/.tmp
+DOCKER_PULL_RETRIES ?= 5
 
 DOCKER_CMD:=docker run
 DOCKER_PLATFORM ?=
@@ -289,6 +290,7 @@ run-k8s-v2-toxiproxy-e2e-tls:
 run-tests-http: run-unit-tests
 
 run-unit-tests: run-v2-unit-tests
+	@$(MAKE) __docker_pull_goimage
 	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
@@ -299,6 +301,7 @@ run-unit-tests: run-v2-unit-tests
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/agency $(REPOPATH)/vst/protocol
 
 run-v2-unit-tests:
+	@$(MAKE) __docker_pull_goimage
 	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}"/v2:/usr/code \
@@ -685,7 +688,16 @@ __dir_setup:
 	@mkdir -p "${TMPDIR}"
 	@echo "${TMPDIR}"
 
-__test_prepare: __dir_setup
+# Pre-pull GOIMAGE so docker run does not hit a one-shot GCR timeout (CircleCI DinD).
+__docker_pull_goimage:
+	@DOCKER_PULL_RETRIES=$(DOCKER_PULL_RETRIES) DOCKER_PLATFORM="$(DOCKER_PLATFORM)" \
+	  "${ROOTDIR}/test/docker_pull.sh" "$(GOIMAGE)"
+ifneq ($(GOV2IMAGE),$(GOIMAGE))
+	@DOCKER_PULL_RETRIES=$(DOCKER_PULL_RETRIES) DOCKER_PLATFORM="$(DOCKER_PLATFORM)" \
+	  "${ROOTDIR}/test/docker_pull.sh" "$(GOV2IMAGE)"
+endif
+
+__test_prepare: __dir_setup __docker_pull_goimage
 ifdef TEST_ENDPOINTS_OVERRIDE
 	@-docker rm -f -v $(TESTCONTAINER) >/dev/null 2>&1
 	@sleep 3

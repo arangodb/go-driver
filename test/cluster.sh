@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 if [ -z "$TESTCONTAINER" ]; then 
     echo "TESTCONTAINER environment variable must be set"
     exit 1 
@@ -80,19 +82,19 @@ if [ "$CMD" == "start" ]; then
         DOCKER_FWD_PORTS="-p 7001:7001 -p 7002:7002 -p 7003:7003 -p 7011:7011 -p 7012:7012 -p 7013:7013 -p 7021:7021 -p 7022:7022 -p 7023:7023"
     fi
 
+    set -x
+
+    PULL="${SCRIPT_DIR}/docker_pull.sh"
+    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" DOCKER_PULL_FORCE=1 "$PULL" "${ARANGODB}"
+    if [ -n "${ALPINE_IMAGE:-}" ]; then
+        DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${ALPINE_IMAGE}"
+    fi
+    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${STARTER}"
+
     if [ -z "$DOCKER_NETWORK" ]; then
         DOCKER_NETWORK="--net=container:${NAMESPACE}"
         # Start network namespace
         docker run -d --name=${NAMESPACE} $DOCKERPLATFORMARG $DOCKER_DEBUG_PORT $DOCKER_FWD_PORTS "${ALPINE_IMAGE}" sleep 365d
-    fi
-
-    set -x
-    
-    # pull latest version of ArangoDB image
-    if [ -n "$DOCKER_PLATFORM" ]; then
-        docker pull ${DOCKER_PLATFORM} ${ARANGODB}
-    else
-        docker pull ${ARANGODB}
     fi
 
     # Start starters 
