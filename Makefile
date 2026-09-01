@@ -21,12 +21,27 @@ GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
 ARANGODB ?= arangodb/enterprise:latest
 STARTER ?= arangodb/arangodb-starter:latest
+# v3 / ArangoDB 4.0 local defaults. CI sets ARANGODB and STARTER on the job.
+ARANGODB_V3 ?= arangodb/core-preview:4.0-nightly
+STARTER_V3 ?= arangodb/arangodb-starter:0.20.0-preview-16
 K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
 K8S_NAMESPACE ?= default
 K8S_DEPLOYMENT ?= arangodb-driver-tests
 
 ifeq ($(origin K8S_RESILIENCY_TEST_VERBOSE),undefined)
 K8S_RESILIENCY_TEST_VERBOSE := -v
+endif
+
+# Use 4.0 images for v3 unless ARANGODB/STARTER were set from the environment or make CLI.
+ifeq ($(filter environment command line,$(origin ARANGODB)),)
+V3_TEST_ARANGODB := $(ARANGODB_V3)
+else
+V3_TEST_ARANGODB := $(ARANGODB)
+endif
+ifeq ($(filter environment command line,$(origin STARTER)),)
+V3_TEST_STARTER := $(STARTER_V3)
+else
+V3_TEST_STARTER := $(STARTER)
 endif
 
 ifdef VERBOSE
@@ -905,35 +920,35 @@ run-v3-tests-cluster: run-v3-tests-cluster-with-basic-auth run-v3-tests-cluster-
 
 run-v3-tests-cluster-with-basic-auth:
 	@echo "Cluster server, with basic authentication, v3"
-	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
 
 run-v3-tests-cluster-with-jwt-auth:
 	@echo "Cluster server, with JWT authentication, v3"
-	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="jwt" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="jwt" __run_v3_tests
 
 run-v3-tests-cluster-without-auth:
 	@echo "Cluster server, without authentication, v3"
-	@${MAKE} TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="none" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="none" __run_v3_tests
 
 run-v3-tests-cluster-without-ssl:
 	@echo "Cluster server, without authentication and SSL, v3"
-	@${MAKE} TEST_MODE="cluster" TEST_AUTH="none" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_AUTH="none" __run_v3_tests
 
 run-v3-tests-single: run-v3-tests-single-without-auth run-v3-tests-single-with-auth
 
 run-v3-tests-single-without-auth:
 	@echo "Single server, without authentication, v3"
-	@${MAKE} TEST_MODE="single" TEST_AUTH="none" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="single" TEST_AUTH="none" __run_v3_tests
 
 run-v3-tests-single-with-auth:
 	@echo "Single server, with authentication, v3"
-	@${MAKE} TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
 
 run-v3-tests-resilientsingle: run-v3-tests-resilientsingle-with-auth
 
 run-v3-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v3"
-	@${MAKE} TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v3_tests
 
 GH_RELEASE := $(TMPDIR)/bin/github-release
 RELEASE := $(SCRIPTDIR)/tools/release

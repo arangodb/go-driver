@@ -4,6 +4,10 @@
 - Build using `make clean && make`
 - After merging PR, always run `make changelog` and commit changes
 - Set ArangoDB docker container (used for testing) using `export ARANGODB=<image-name>`
+- Test image matrix:
+  - **v2 / ArangoDB 3.12:** `ARANGODB=arangodb/enterprise-preview:latest` (CI: `gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest`) and `STARTER=arangodb/arangodb-starter:latest`
+  - **v3 / ArangoDB 4.0:** `ARANGODB=arangodb/core-preview:4.0-nightly` (CI: `gcr.io/gcr-for-testing/arangodb/core-preview:4.0-nightly`) and `STARTER=arangodb/arangodb-starter:0.20.0-preview-16`
+  - `make run-v3-tests-*` uses the 4.0 defaults above unless `ARANGODB` / `STARTER` are set in the environment or on the make command line
 - Run tests using:
   - `make run-tests-single`
   - `make run-tests-resilientsingle`
