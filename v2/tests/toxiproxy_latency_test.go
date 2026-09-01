@@ -101,6 +101,9 @@ func testExtremeLatency(t *testing.T, connFactory toxiproxyConnectionFactory) {
 		require.True(t, isContextDeadlineExceeded(err),
 			"expected context deadline exceeded with 30s latency and 10s timeout, got: %v", err)
 	})
+
+	require.NoError(t, proxy.RemoveToxic("latency_up"))
+	waitForSuccessfulVersion(t, client, 1*time.Minute)
 }
 
 // TestToxiproxy_LatencyRemoved validates that request duration returns to normal
