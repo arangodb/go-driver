@@ -7,11 +7,6 @@ if [ -z "$TESTCONTAINER" ]; then
     exit 1 
 fi
 
-if [ -z "$STARTER" ]; then
-    echo "STARTER environment variable must be set"
-    exit 1
-fi
-
 NAMESPACE=${TESTCONTAINER}-ns
 STARTERVOLUME=${TESTCONTAINER}-vol
 STARTERCONTAINER=${TESTCONTAINER}-s
@@ -85,13 +80,20 @@ if [ "$CMD" == "start" ]; then
     set -x
 
     PULL="${SCRIPT_DIR}/docker_pull.sh"
-    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" DOCKER_PULL_FORCE=1 "$PULL" "${ARANGODB}"
-    if [ -n "${ALPINE_IMAGE:-}" ]; then
-        DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${ALPINE_IMAGE}"
+    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" DOCKER_PULL_FORCE=1 "$PULL" "${ARANGODB}" || exit 1
+
+    # Starter version comes from the server image unless the caller pinned one.
+    if [ -z "${STARTER:-}" ]; then
+        STARTER="$(DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "${SCRIPT_DIR}/starter_for_arangodb.sh" "${ARANGODB}")" || exit 1
+        echo "Detected Starter ${STARTER} for ${ARANGODB}"
     fi
-    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${STARTER}"
+
+    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${STARTER}" || exit 1
 
     if [ -z "$DOCKER_NETWORK" ]; then
+        if [ -n "${ALPINE_IMAGE:-}" ]; then
+            DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${ALPINE_IMAGE}" || exit 1
+        fi
         DOCKER_NETWORK="--net=container:${NAMESPACE}"
         # Start network namespace
         docker run -d --name=${NAMESPACE} $DOCKERPLATFORMARG $DOCKER_DEBUG_PORT $DOCKER_FWD_PORTS "${ALPINE_IMAGE}" sleep 365d

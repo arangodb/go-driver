@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Pull a Docker image with retries so a transient registry timeout does not fail
-# the whole test run (GCR timeouts are common in CircleCI docker-in-docker).
-# Images already present are reused unless DOCKER_PULL_FORCE is set.
+# the whole test run (CircleCI docker-in-docker). DOCKER_PULL_RETRIES is extra
+# attempts after the first pull (default 1). Images already present are reused
+# unless DOCKER_PULL_FORCE is set.
 set -u
 
 IMAGE="${1:-}"
@@ -29,10 +30,11 @@ if [ "$HAVE_LOCAL" = "yes" ] && [ -z "${DOCKER_PULL_FORCE:-}" ]; then
 	exit 0
 fi
 
-RETRIES="${DOCKER_PULL_RETRIES:-5}"
+RETRIES="${DOCKER_PULL_RETRIES:-1}"
+MAX_ATTEMPTS=$((RETRIES + 1))
 attempt=1
-while [ "$attempt" -le "$RETRIES" ]; do
-	echo "Pulling $IMAGE (attempt ${attempt}/${RETRIES})"
+while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
+	echo "Pulling $IMAGE (attempt ${attempt}/${MAX_ATTEMPTS})"
 	if [ -n "${DOCKER_PLATFORM:-}" ]; then
 		# shellcheck disable=SC2086
 		if docker pull ${DOCKER_PLATFORM} "$IMAGE"; then
@@ -43,7 +45,7 @@ while [ "$attempt" -le "$RETRIES" ]; do
 			exit 0
 		fi
 	fi
-	if [ "$attempt" -eq "$RETRIES" ]; then
+	if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
 		break
 	fi
 	sleep_sec=$((attempt * 5))
@@ -53,9 +55,9 @@ while [ "$attempt" -le "$RETRIES" ]; do
 done
 
 if [ "$HAVE_LOCAL" = "yes" ]; then
-	echo "Failed to refresh $IMAGE after ${RETRIES} attempts; using local copy" >&2
+	echo "Failed to refresh $IMAGE after ${MAX_ATTEMPTS} attempts; using local copy" >&2
 	exit 0
 fi
 
-echo "Failed to pull $IMAGE after ${RETRIES} attempts" >&2
+echo "Failed to pull $IMAGE after ${MAX_ATTEMPTS} attempts" >&2
 exit 1

@@ -5,9 +5,10 @@
 - After merging PR, always run `make changelog` and commit changes
 - Set ArangoDB docker container (used for testing) using `export ARANGODB=<image-name>`
 - Test image matrix:
-  - **v2 / ArangoDB 3.12:** `ARANGODB=arangodb/enterprise-preview:latest` (CI: `gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest`) and `STARTER=arangodb/arangodb-starter:latest`
-  - **v3 / ArangoDB 4.0:** `ARANGODB=arangodb/core-preview:4.0-nightly` (CI: `gcr.io/gcr-for-testing/arangodb/core-preview:4.0-nightly`) and `STARTER=arangodb/arangodb-starter:0.20.0-preview-16`
-  - `make run-v3-tests-*` uses the 4.0 defaults above unless `ARANGODB` / `STARTER` are set in the environment or on the make command line
+  - **v2 / ArangoDB 3.12:** `ARANGODB=docker.io/arangodb/enterprise-preview:3.12-nightly`
+  - **v3 / ArangoDB 4.0:** `ARANGODB=docker.io/arangodb/core-preview:4.0-nightly`
+  - The matching Starter tag is detected from the ArangoDB image. Set `STARTER` in the environment or on the make command line only to override it.
+  - `make run-v3-tests-*` uses the 4.0 default above unless `ARANGODB` is set in the environment or on the make command line.
 - Run tests using:
   - `make run-tests-single`
   - `make run-tests-resilientsingle`
@@ -19,7 +20,17 @@
 
 # Change Golang version
 
-- Edit the [.circleci/config.yml](.circleci/config.yml) file and change ALL occurrences of `gcr.io/gcr-for-testing/golang` to the appropriate version.
+- Edit the [.circleci/config.yml](.circleci/config.yml) file: bump `goImage` and `golang-executor` (`docker.io/library/golang:<VER>`), and privileged executors (`gcr.io/gcr-for-testing/golang:<VER>-docker`).
+- Rebuild and push the privileged executor image for both CI architectures:
+  ```shell
+  docker buildx build \
+    --platform linux/amd64,linux/arm64 \
+    --build-arg GO_VERSION=<VER> \
+    -f ci/Dockerfile.golang-docker \
+    -t gcr.io/gcr-for-testing/golang:<VER>-docker \
+    --push \
+    .
+  ```
 - Edit the [Makefile](Makefile) and change the `GOVERSION` to the appropriate version.
 - For minor Go version updates, bump the Go version in [go.mod](go.mod) and in each **`vN/go.mod`** in use (`v2/`, `v3/`, …); run **`go mod tidy`** in the repository root and in each **`vN/`** module root.
 

@@ -4,17 +4,19 @@ orbs:
 executors:
   golang-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.13
+      - image: docker.io/library/golang:1.25.13
     resource_class: arangodb/medium-amd64
 
+  # Built for amd64 and arm64 from ci/Dockerfile.golang-docker.
+  # Rebuild and push this tag on Go upgrades; see MAINTAINERS.md.
   x86-docker-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.13
+      - image: gcr.io/gcr-for-testing/golang:1.25.13-docker
     resource_class: arangodb/medium-amd64-privileged
 
   arm-docker-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.13
+      - image: gcr.io/gcr-for-testing/golang:1.25.13-docker
     resource_class: arangodb/medium-arm64-privileged
 aliases:
   - &notify_slack_on_fail
@@ -30,7 +32,6 @@ aliases:
   - &integration_test_env_core
     GOIMAGE: << pipeline.parameters.goImage >>
     ALPINE_IMAGE: << pipeline.parameters.alpineImage >>
-    STARTER: << pipeline.parameters.starterImage >>
     ENABLE_DATABASE_EXTRA_FEATURES: << parameters.enable-extra-db-features >>
     ENABLE_VECTOR_INDEX: "true"
     TEST_DISALLOW_UNKNOWN_FIELDS: false
@@ -39,26 +40,18 @@ aliases:
 parameters:
   goImage:
     type: string
-    default: "gcr.io/gcr-for-testing/golang:1.25.13"
+    default: "docker.io/library/golang:1.25.13"
   # v2 tests ArangoDB 3.12 (enterprise-preview: server + client tools + JS).
   arangodbImageV2:
     type: string
-    default: "gcr.io/gcr-for-testing/arangodb/enterprise-preview:latest"
+    default: "docker.io/arangodb/enterprise-preview:3.12-nightly"
   # v3 tests ArangoDB 4.0 (core-preview: server only; client tools are a separate image).
   arangodbImageV3:
     type: string
-    default: "gcr.io/gcr-for-testing/arangodb/core-preview:4.0-nightly"
+    default: "docker.io/arangodb/core-preview:4.0-nightly"
   alpineImage:
     type: string
-    default: "gcr.io/gcr-for-testing/alpine:3.23"
-  # v2 / Kubernetes jobs (3.12). Do not point this at 4.0.
-  starterImage:
-    type: string
-    default: "arangodb/arangodb-starter:latest"
-  # v3 jobs (4.0 core-preview needs Starter 0.20 for arangodb4 layout / server-only image).
-  starterImageV3:
-    type: string
-    default: "arangodb/arangodb-starter:0.20.0-preview-16"
+    default: "docker.io/library/alpine:3.23"
   kubeArangoDBVersion:
     type: string
     default: "1.4.3"
@@ -73,7 +66,7 @@ parameters:
 
 commands:
   setup-docker:
-    description: "Install Docker and start the daemon in the job container"
+    description: "Start dockerd in the job container (image already includes Docker on privileged executors)"
     steps:
       - run:
           name: Set up Docker
@@ -238,10 +231,6 @@ jobs:
         type: string
       arangodb-image:
         type: string
-      starter-image:
-        type: string
-        default: << pipeline.parameters.starterImage >>
-        description: "ArangoDB Starter image. v3 jobs pass starterImageV3 (0.20); v2 keeps starterImage."
       enable-extra-db-features:
         type: boolean
         default: false
@@ -275,7 +264,6 @@ jobs:
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
-      STARTER: << parameters.starter-image >>
 
   # ----------------------------------------
   # ARM INTEGRATION TEST JOB
@@ -287,10 +275,6 @@ jobs:
         type: string
       arangodb-image:
         type: string
-      starter-image:
-        type: string
-        default: << pipeline.parameters.starterImage >>
-        description: "ArangoDB Starter image. v3 jobs pass starterImageV3 (0.20); v2 keeps starterImage."
       enable-extra-db-features:
         type: boolean
         default: false
@@ -329,7 +313,6 @@ jobs:
     environment:
       <<: *integration_test_env_core
       ARANGODB: << parameters.arangodb-image >>
-      STARTER: << parameters.starter-image >>
 
   # ----------------------------------------
   # KUBERNETES INTEGRATION TEST JOB
@@ -660,7 +643,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-with-basic-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests:
           context:
@@ -671,7 +653,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-without-ssl
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests:
           context:
@@ -682,7 +663,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-without-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests:
           context:
@@ -693,7 +673,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-with-jwt-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests:
           context:
@@ -704,7 +683,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-with-basic-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
           enable-extra-db-features: true
 
       - run-integration-tests:
@@ -716,7 +694,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-without-ssl
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
           enable-extra-db-features: true
 
       - run-integration-tests:
@@ -728,7 +705,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-without-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
           enable-extra-db-features: true
 
       - run-integration-tests:
@@ -740,7 +716,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-with-jwt-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
           enable-extra-db-features: true
 
       - run-integration-tests:
@@ -752,7 +727,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-single-without-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests:
           context:
@@ -763,7 +737,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-single-with-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       # ========================
       # Kubernetes Tests x86
@@ -849,7 +822,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-with-basic-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests-arm:
           context:
@@ -860,7 +832,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-without-ssl
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests-arm:
           context:
@@ -871,7 +842,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-without-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests-arm:
           context:
@@ -882,7 +852,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-cluster-with-jwt-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests-arm:
           context:
@@ -893,7 +862,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-single-without-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
       - run-integration-tests-arm:
           context:
@@ -904,7 +872,6 @@ workflows:
           needs_foxx_workspace: false
           test-to-run: run-v3-tests-single-with-auth
           arangodb-image: << pipeline.parameters.arangodbImageV3 >>
-          starter-image: << pipeline.parameters.starterImageV3 >>
 
   # Weekly vulnerability check
   weekly_vulncheck:
