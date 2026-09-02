@@ -286,6 +286,7 @@ run-k8s-v2-toxiproxy-e2e-tls:
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
 
+# Unit tests run in GOIMAGE only. Do not pull GOV2IMAGE here.
 run-unit-tests: run-v2-unit-tests
 	@$(MAKE) __docker_pull_goimage
 	@$(DOCKER_CMD) \
@@ -298,7 +299,7 @@ run-unit-tests: run-v2-unit-tests
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/agency $(REPOPATH)/vst/protocol
 
 run-v2-unit-tests:
-	@$(MAKE) __docker_pull_goimage
+	@$(MAKE) __docker_pull_goimage # GOIMAGE only; GOV2IMAGE is for integration tests.
 	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}"/v2:/usr/code \
@@ -685,12 +686,12 @@ __dir_setup:
 	@mkdir -p "${TMPDIR}"
 	@echo "${TMPDIR}"
 
-# Pre-pull GOIMAGE so docker run does not fail on a one-shot registry timeout (CircleCI DinD).
+# Used by unit tests. Pulls GOIMAGE only.
 __docker_pull_goimage:
 	@DOCKER_PULL_RETRIES=$(DOCKER_PULL_RETRIES) DOCKER_PLATFORM="$(DOCKER_PLATFORM)" \
 	  "${ROOTDIR}/test/docker_pull.sh" "$(GOIMAGE)"
 
-# Integration tests may use a separate GOV2IMAGE; unit tests only need GOIMAGE.
+# Used by integration tests (__test_prepare). Pulls GOV2IMAGE only when it differs.
 __docker_pull_test_images: __docker_pull_goimage
 ifneq ($(GOV2IMAGE),$(GOIMAGE))
 	@DOCKER_PULL_RETRIES=$(DOCKER_PULL_RETRIES) DOCKER_PLATFORM="$(DOCKER_PLATFORM)" \

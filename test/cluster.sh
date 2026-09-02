@@ -77,22 +77,23 @@ if [ "$CMD" == "start" ]; then
         DOCKER_FWD_PORTS="-p 7001:7001 -p 7002:7002 -p 7003:7003 -p 7011:7011 -p 7012:7012 -p 7013:7013 -p 7021:7021 -p 7022:7022 -p 7023:7023"
     fi
 
-    set -x
+    # Fail the job if a required pull or container start fails (no errexit above).
+    set -ex
 
     PULL="${SCRIPT_DIR}/docker_pull.sh"
-    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" DOCKER_PULL_FORCE=1 "$PULL" "${ARANGODB}" || exit 1
+    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" DOCKER_PULL_FORCE=1 "$PULL" "${ARANGODB}"
 
     # Starter version comes from the server image unless the caller pinned one.
     if [ -z "${STARTER:-}" ]; then
-        STARTER="$(DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "${SCRIPT_DIR}/starter_for_arangodb.sh" "${ARANGODB}")" || exit 1
+        STARTER="$(DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "${SCRIPT_DIR}/starter_for_arangodb.sh" "${ARANGODB}")"
         echo "Detected Starter ${STARTER} for ${ARANGODB}"
     fi
 
-    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${STARTER}" || exit 1
+    DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${STARTER}"
 
     if [ -z "$DOCKER_NETWORK" ]; then
         if [ -n "${ALPINE_IMAGE:-}" ]; then
-            DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${ALPINE_IMAGE}" || exit 1
+            DOCKER_PLATFORM="${DOCKER_PLATFORM:-}" "$PULL" "${ALPINE_IMAGE}"
         fi
         DOCKER_NETWORK="--net=container:${NAMESPACE}"
         # Start network namespace
