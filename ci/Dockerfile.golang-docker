@@ -2,8 +2,9 @@ ARG GO_VERSION=1.25.13
 FROM golang:${GO_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
+# docker.io is the daemon only on Debian Trixie; docker-cli provides /usr/bin/docker.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends docker.io ca-certificates iptables \
+    && apt-get install -y --no-install-recommends docker.io docker-cli ca-certificates iptables \
     && rm -rf /var/lib/apt/lists/*
 
 # dockerd is started in the job (privileged), not at image build time.

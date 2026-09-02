@@ -74,7 +74,9 @@ commands:
             if ! command -v docker >/dev/null 2>&1; then
               export DEBIAN_FRONTEND=noninteractive
               apt-get update
-              apt-get install -y docker.io
+              # Trixie: docker.io is dockerd only; the CLI is docker-cli.
+              apt-get install -y docker.io docker-cli
+              hash -r
             fi
             if ! docker info >/dev/null 2>&1; then
               dockerd >/tmp/dockerd.log 2>&1 &
