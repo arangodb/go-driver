@@ -10,7 +10,7 @@ GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.23
 TMPDIR := ${SCRIPTDIR}/.tmp
-# Extra docker pull attempts after the first failure (Vadim: at least one retry).
+# Extra docker pull attempts after the first failure.
 DOCKER_PULL_RETRIES ?= 1
 
 DOCKER_CMD:=docker run
