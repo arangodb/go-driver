@@ -1329,16 +1329,27 @@ func Test_SetQueryCacheProperties(t *testing.T) {
 	Wrap(t, func(t *testing.T, client arangodb.Client) {
 		WithDatabase(t, client, nil, func(db arangodb.Database) {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+				// GET is allowed on a user database; properties are global.
 				queryCacheProperties, err := db.GetQueryCacheProperties(ctx)
 				require.NoError(t, err)
 				propsJson, err := utils.ToJSONString(queryCacheProperties)
 				require.NoError(t, err)
 				t.Logf("Before Query Properties: %s", propsJson)
-				SetQueryCacheProperties, err := db.SetQueryCacheProperties(ctx, arangodb.QueryCacheProperties{
+
+				// PUT is global and, on ArangoDB 4.0 / API v1, allowed only on _system.
+				sysDB, err := client.GetDatabase(ctx, "_system", nil)
+				require.NoError(t, err)
+
+				SetQueryCacheProperties, err := sysDB.SetQueryCacheProperties(ctx, arangodb.QueryCacheProperties{
 					IncludeSystem: utils.NewType(true),
 					MaxResults:    utils.NewType(uint16(32)),
 				})
 				require.NoError(t, err)
+				defer func() {
+					_, restoreErr := sysDB.SetQueryCacheProperties(ctx, queryCacheProperties)
+					require.NoError(t, restoreErr)
+				}()
+
 				SetQueryCachePropertiesJson, err := utils.ToJSONString(SetQueryCacheProperties)
 				require.NoError(t, err)
 				t.Logf("After Setting - Query Properties: %s", SetQueryCachePropertiesJson)
@@ -1348,12 +1359,19 @@ func Test_SetQueryCacheProperties(t *testing.T) {
 				require.NotNil(t, SetQueryCacheProperties.MaxResults, "MaxResults should not be nil")
 				require.NotNil(t, SetQueryCacheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
 				require.NotNil(t, SetQueryCacheProperties.Mode, "Mode should not be nil")
+				require.Equal(t, true, *SetQueryCacheProperties.IncludeSystem)
+				require.Equal(t, uint16(32), *SetQueryCacheProperties.MaxResults)
+
 				AfterSetQueryCacheProperties, err := db.GetQueryCacheProperties(ctx)
 				require.NoError(t, err)
 				AfterSetQueryCachePropertiesJson, err := utils.ToJSONString(AfterSetQueryCacheProperties)
 				require.NoError(t, err)
 				t.Logf("After Query Properties: %s", AfterSetQueryCachePropertiesJson)
+				require.Equal(t, true, *AfterSetQueryCacheProperties.IncludeSystem)
+				require.Equal(t, uint16(32), *AfterSetQueryCacheProperties.MaxResults)
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
