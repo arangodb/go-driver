@@ -93,12 +93,13 @@ type DatabaseQuery interface {
 	// This will remove all cached query entries.
 	ClearQueryCache(ctx context.Context) error
 
-	// GetQueryCacheProperties returns the properties of the query cache.
-	// The result is a QueryCacheProperties object.
+	// GetQueryCacheProperties returns the global query cache properties.
+	// These settings apply to all databases. GET is allowed on any database.
 	GetQueryCacheProperties(ctx context.Context) (QueryCacheProperties, error)
 
-	// SetQueryCacheProperties sets the properties of the query cache.
-	// The properties are updated with the provided options.
+	// SetQueryCacheProperties updates the global query cache properties (all databases).
+	// Call this on the _system database. On ArangoDB 4.0 / HTTP API v1, PUT on a
+	// non-system database is rejected (error 1230: operation only allowed in system database).
 	SetQueryCacheProperties(ctx context.Context, options QueryCacheProperties) (QueryCacheProperties, error)
 }
 

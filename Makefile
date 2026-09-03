@@ -10,6 +10,8 @@ GOIMAGE ?= golang:$(GOVERSION)
 GOV2IMAGE ?= $(GOIMAGE)
 ALPINE_IMAGE ?= alpine:3.23
 TMPDIR := ${SCRIPTDIR}/.tmp
+# Extra docker pull attempts after the first failure.
+DOCKER_PULL_RETRIES ?= 1
 
 DOCKER_CMD:=docker run
 DOCKER_PLATFORM ?=
@@ -19,11 +21,12 @@ DOCKER_CMD:=docker run $(DOCKER_PLATFORM)
 GOBUILDTAGS:=$(TAGS)
 GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
-ARANGODB ?= arangodb/enterprise:latest
-STARTER ?= arangodb/arangodb-starter:latest
-# v3 / ArangoDB 4.0 local defaults. CI sets ARANGODB and STARTER on the job.
+ARANGODB ?= arangodb/enterprise-preview:3.12-nightly
+# Empty by default: test/cluster.sh reads the Starter version from the ArangoDB
+# image. Set STARTER to pin a specific Starter image.
+STARTER ?=
+# v3 / ArangoDB 4.0 local default. CI sets ARANGODB on the job.
 ARANGODB_V3 ?= arangodb/core-preview:4.0-nightly
-STARTER_V3 ?= arangodb/arangodb-starter:0.20.0-preview-16
 K8S_DRIVER_TEST_RUNNER ?= $(ROOTDIR)/deploy/kubernetes/run-driver-tests.sh
 K8S_NAMESPACE ?= default
 K8S_DEPLOYMENT ?= arangodb-driver-tests
@@ -32,16 +35,11 @@ ifeq ($(origin K8S_RESILIENCY_TEST_VERBOSE),undefined)
 K8S_RESILIENCY_TEST_VERBOSE := -v
 endif
 
-# Use 4.0 images for v3 unless ARANGODB/STARTER were set from the environment or make CLI.
+# Use 4.0 images for v3 unless ARANGODB was set from the environment or make CLI.
 ifeq ($(filter environment command line,$(origin ARANGODB)),)
 V3_TEST_ARANGODB := $(ARANGODB_V3)
 else
 V3_TEST_ARANGODB := $(ARANGODB)
-endif
-ifeq ($(filter environment command line,$(origin STARTER)),)
-V3_TEST_STARTER := $(STARTER_V3)
-else
-V3_TEST_STARTER := $(STARTER)
 endif
 
 ifdef VERBOSE
@@ -288,7 +286,9 @@ run-k8s-v2-toxiproxy-e2e-tls:
 # The below rule exists only for backward compatibility.
 run-tests-http: run-unit-tests
 
+# Unit tests run in GOIMAGE only. Do not pull GOV2IMAGE here.
 run-unit-tests: run-v2-unit-tests
+	@$(MAKE) __docker_pull_goimage
 	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}":/usr/code \
@@ -299,6 +299,7 @@ run-unit-tests: run-v2-unit-tests
 		go test $(TESTOPTIONS) $(REPOPATH) $(REPOPATH)/http $(REPOPATH)/agency $(REPOPATH)/vst/protocol
 
 run-v2-unit-tests:
+	@$(MAKE) __docker_pull_goimage # GOIMAGE only; GOV2IMAGE is for integration tests.
 	@$(DOCKER_CMD) \
 		--rm \
 		-v "${ROOTDIR}"/v2:/usr/code \
@@ -685,7 +686,19 @@ __dir_setup:
 	@mkdir -p "${TMPDIR}"
 	@echo "${TMPDIR}"
 
-__test_prepare: __dir_setup
+# Used by unit tests. Pulls GOIMAGE only.
+__docker_pull_goimage:
+	@DOCKER_PULL_RETRIES=$(DOCKER_PULL_RETRIES) DOCKER_PLATFORM="$(DOCKER_PLATFORM)" \
+	  "${ROOTDIR}/test/docker_pull.sh" "$(GOIMAGE)"
+
+# Used by integration tests (__test_prepare). Pulls GOV2IMAGE only when it differs.
+__docker_pull_test_images: __docker_pull_goimage
+ifneq ($(GOV2IMAGE),$(GOIMAGE))
+	@DOCKER_PULL_RETRIES=$(DOCKER_PULL_RETRIES) DOCKER_PLATFORM="$(DOCKER_PLATFORM)" \
+	  "${ROOTDIR}/test/docker_pull.sh" "$(GOV2IMAGE)"
+endif
+
+__test_prepare: __dir_setup __docker_pull_test_images
 ifdef TEST_ENDPOINTS_OVERRIDE
 	@-docker rm -f -v $(TESTCONTAINER) >/dev/null 2>&1
 	@sleep 3
@@ -920,35 +933,35 @@ run-v3-tests-cluster: run-v3-tests-cluster-with-basic-auth run-v3-tests-cluster-
 
 run-v3-tests-cluster-with-basic-auth:
 	@echo "Cluster server, with basic authentication, v3"
-	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
 
 run-v3-tests-cluster-with-jwt-auth:
 	@echo "Cluster server, with JWT authentication, v3"
-	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="jwt" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="jwt" __run_v3_tests
 
 run-v3-tests-cluster-without-auth:
 	@echo "Cluster server, without authentication, v3"
-	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="none" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(STARTER) TEST_MODE="cluster" TEST_SSL="auto" TEST_AUTH="none" __run_v3_tests
 
 run-v3-tests-cluster-without-ssl:
 	@echo "Cluster server, without authentication and SSL, v3"
-	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="cluster" TEST_AUTH="none" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(STARTER) TEST_MODE="cluster" TEST_AUTH="none" __run_v3_tests
 
 run-v3-tests-single: run-v3-tests-single-without-auth run-v3-tests-single-with-auth
 
 run-v3-tests-single-without-auth:
 	@echo "Single server, without authentication, v3"
-	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="single" TEST_AUTH="none" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(STARTER) TEST_MODE="single" TEST_AUTH="none" __run_v3_tests
 
 run-v3-tests-single-with-auth:
 	@echo "Single server, with authentication, v3"
-	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(STARTER) TEST_MODE="single" TEST_SSL="auto" TEST_AUTH="rootpw" __run_v3_tests
 
 run-v3-tests-resilientsingle: run-v3-tests-resilientsingle-with-auth
 
 run-v3-tests-resilientsingle-with-auth:
 	@echo "Resilient Single, with authentication, v3"
-	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(V3_TEST_STARTER) TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v3_tests
+	@${MAKE} ARANGODB=$(V3_TEST_ARANGODB) STARTER=$(STARTER) TEST_MODE="resilientsingle" TEST_AUTH="rootpw" TESTV2PARALLEL=1 __run_v3_tests
 
 GH_RELEASE := $(TMPDIR)/bin/github-release
 RELEASE := $(SCRIPTDIR)/tools/release
