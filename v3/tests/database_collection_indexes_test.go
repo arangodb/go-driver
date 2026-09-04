@@ -47,7 +47,9 @@ func waitForVectorIndexReady(ctx context.Context, col arangodb.Collection, index
 	defer ticker.Stop()
 
 	for time.Now().Before(deadline) {
-		indexes, err := col.Indexes(ctx)
+		indexes, err := col.IndexesWithOptions(ctx, &arangodb.IndexListOptions{
+			WithHidden: utils.NewType(true),
+		})
 		if err != nil {
 			return err
 		}

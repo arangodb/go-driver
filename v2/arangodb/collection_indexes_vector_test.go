@@ -72,11 +72,18 @@ func TestVectorNListsJSON(t *testing.T) {
 		require.Equal(t, 16384, *got.Scaling.Tiers[0].FixedValue)
 	})
 
-	t.Run("unmarshal null is a no-op", func(t *testing.T) {
-		var got VectorNLists
-		require.NoError(t, json.Unmarshal([]byte("null"), &got))
-		require.Nil(t, got.Fixed)
-		require.Nil(t, got.Scaling)
+	t.Run("unmarshal null clears existing value", func(t *testing.T) {
+		tests := map[string]VectorNLists{
+			"fixed":   *NewVectorNLists(100),
+			"scaling": *NewVectorNListsScaling(VectorNListsScaling{}),
+		}
+		for name, got := range tests {
+			t.Run(name, func(t *testing.T) {
+				require.NoError(t, json.Unmarshal([]byte("null"), &got))
+				require.Nil(t, got.Fixed)
+				require.Nil(t, got.Scaling)
+			})
+		}
 	})
 }
 
