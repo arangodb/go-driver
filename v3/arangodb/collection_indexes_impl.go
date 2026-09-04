@@ -422,6 +422,8 @@ func (n VectorNLists) MarshalJSON() ([]byte, error) {
 
 func (n *VectorNLists) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
+		n.Fixed = nil
+		n.Scaling = nil
 		return nil
 	}
 	var fixed int
