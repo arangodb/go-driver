@@ -45,7 +45,9 @@ parameters:
   arangodbImageV2:
     type: string
     default: "docker.io/arangodb/enterprise-preview:3.12-nightly"
-  # v3 tests ArangoDB 4.0 (core-preview: server only; client tools are a separate image).
+  arangodbImageV2_3129:
+    type: string
+    default: "docker.io/arangodb/enterprise:3.12.9"
   arangodbImageV3:
     type: string
     default: "docker.io/arangodb/core-preview:4.0-nightly"
@@ -567,6 +569,43 @@ workflows:
             - download-demo-data
           test-to-run: run-v2-tests-single-with-auth
           arangodb-image: << pipeline.parameters.arangodbImageV2 >>
+
+      # V2 3.12.9 (x86, with-auth / without-auth)
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 single with-auth (3.12.9)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-single-with-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2_3129 >>
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 cluster with-auth (3.12.9)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-with-basic-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2_3129 >>
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 single without-auth (3.12.9)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-single-without-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2_3129 >>
+
+      - run-integration-tests:
+          context:
+            - docker-hub
+          name: Test V2 cluster without-auth (3.12.9)
+          requires:
+            - download-demo-data
+          test-to-run: run-v2-tests-cluster-without-auth
+          arangodb-image: << pipeline.parameters.arangodbImageV2_3129 >>
 
       # ========================
       # V2 Tests ARM (same leaf split as x86)
