@@ -21,6 +21,7 @@
 package arangodb
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -421,6 +422,7 @@ func (n VectorNLists) MarshalJSON() ([]byte, error) {
 }
 
 func (n *VectorNLists) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
 	if string(data) == "null" {
 		n.Fixed = nil
 		n.Scaling = nil

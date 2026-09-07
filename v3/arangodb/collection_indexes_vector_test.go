@@ -84,6 +84,10 @@ func TestVectorNListsJSON(t *testing.T) {
 				require.Nil(t, got.Scaling)
 			})
 		}
+		got := *NewVectorNLists(100)
+		require.NoError(t, got.UnmarshalJSON([]byte(" \n\tnull\r ")))
+		require.Nil(t, got.Fixed)
+		require.Nil(t, got.Scaling)
 	})
 }
 
