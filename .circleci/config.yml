@@ -25,7 +25,8 @@ aliases:
       event: fail
       template: basic_fail_1
   # Make targets allowed for pipeline parameter publish (keep in sync with Makefile release / prerelease targets).
-  - &publish_release_target_regex '^(release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|release-v3-patch|release-v3-minor|release-v3-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major|prerelease-v3-patch|prerelease-v3-minor|prerelease-v3-major)$'
+  # Compact form: CircleCI's next regex engine rejects the old long alternation as "Pattern too long".
+  - &publish_release_target_regex '^(pre)?release(-v[23])?-(patch|minor|major)$'
 
   # Common environment for integration tests (x86 and ARM). Foxx demo zip path is optional:
   # v1/v2 jobs set needs_foxx_workspace and export TEST_RESOURCES=/home/circleci/resources/ after attach_workspace at /home/circleci.
