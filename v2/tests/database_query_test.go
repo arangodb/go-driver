@@ -1334,11 +1334,22 @@ func Test_SetQueryCacheProperties(t *testing.T) {
 				propsJson, err := utils.ToJSONString(queryCacheProperties)
 				require.NoError(t, err)
 				t.Logf("Before Query Properties: %s", propsJson)
-				SetQueryCacheProperties, err := db.SetQueryCacheProperties(ctx, arangodb.QueryCacheProperties{
+
+				// PUT is global. On ArangoDB 4.0 / API v1 it is allowed only on _system;
+				// on 3.12 PUT on _system also works (rolling-upgrade compatible).
+				sysDB, err := client.GetDatabase(ctx, "_system", nil)
+				require.NoError(t, err)
+
+				SetQueryCacheProperties, err := sysDB.SetQueryCacheProperties(ctx, arangodb.QueryCacheProperties{
 					IncludeSystem: utils.NewType(true),
 					MaxResults:    utils.NewType(uint16(32)),
 				})
 				require.NoError(t, err)
+				defer func() {
+					_, restoreErr := sysDB.SetQueryCacheProperties(ctx, queryCacheProperties)
+					require.NoError(t, restoreErr)
+				}()
+
 				SetQueryCachePropertiesJson, err := utils.ToJSONString(SetQueryCacheProperties)
 				require.NoError(t, err)
 				t.Logf("After Setting - Query Properties: %s", SetQueryCachePropertiesJson)
@@ -1348,13 +1359,20 @@ func Test_SetQueryCacheProperties(t *testing.T) {
 				require.NotNil(t, SetQueryCacheProperties.MaxResults, "MaxResults should not be nil")
 				require.NotNil(t, SetQueryCacheProperties.MaxResultsSize, "MaxResultsSize should not be nil")
 				require.NotNil(t, SetQueryCacheProperties.Mode, "Mode should not be nil")
+				require.Equal(t, true, *SetQueryCacheProperties.IncludeSystem)
+				require.Equal(t, uint16(32), *SetQueryCacheProperties.MaxResults)
+
 				AfterSetQueryCacheProperties, err := db.GetQueryCacheProperties(ctx)
 				require.NoError(t, err)
 				AfterSetQueryCachePropertiesJson, err := utils.ToJSONString(AfterSetQueryCacheProperties)
 				require.NoError(t, err)
 				t.Logf("After Query Properties: %s", AfterSetQueryCachePropertiesJson)
+				require.Equal(t, true, *AfterSetQueryCacheProperties.IncludeSystem)
+				require.Equal(t, uint16(32), *AfterSetQueryCacheProperties.MaxResults)
 			})
 		})
+	}, WrapOptions{
+		Parallel: utils.NewType(false),
 	})
 }
 

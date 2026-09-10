@@ -45,7 +45,7 @@ parameters:
   # v2 tests ArangoDB 3.12 (enterprise-preview: server + client tools + JS).
   arangodbImageV2:
     type: string
-    default: "docker.io/arangodb/enterprise-preview:3.12-nightly"
+    default: "docker.io/arangodb/enterprise:3.12"
   arangodbImageV2_3129:
     type: string
     default: "docker.io/arangodb/enterprise:3.12.9"
