@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [2.4.0](https://github.com/arangodb/go-driver/tree/v2.4.0) (2026-09-11)
 - Vector index: ArangoDB 3.12.10 support — optional/scaling `nLists` (`*VectorNLists`; use `NewVectorNLists(n)` for a fixed count), `numberOfDocsPerCentroid`, factory `{}` placeholder, per-shard `shards`/`resolvedNLists` via `IndexesWithOptions` (`withHidden`), `fields`/`storedValues` on vector responses, and `ErrQueryVectorIndexNotReady` (1555).
 - Breaking: `CollectionIndexes` now includes `IndexesWithOptions`. Existing implementations of this interface must add that method. `Indexes` is unchanged.
 - Replication: deprecate APIs removed in ArangoDB 3.12.10+ (`GetApplierConfig`, `UpdateApplierConfig`, `ApplierStart`, `ApplierStop`, `GetApplierState`, `MakeFollower`, `StartReplicationSync`, `LoggerFirstTick`, `LoggerTickRange`, `GetReplicationServerId`); related tests skip from 3.12.10.
