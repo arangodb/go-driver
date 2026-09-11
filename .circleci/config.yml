@@ -395,7 +395,9 @@ jobs:
       - *notify_slack_on_fail
 
   # GitHub release (tags VERSION bump, git push, github-release draft → publish).
-  # Requires CircleCI context: GITHUB_TOKEN or RELEASER_GITHUB_TOKEN (repo contents write). Optional: GIT_USER_NAME, GIT_USER_EMAIL.
+  # Requires CircleCI context github-release: RELEASER_APP_ID + RELEASER_APP_PRIVATE_KEY_B64 (GitHub App
+  # arango-ci-release, contents: write, installed on this repo). Optional: GIT_USER_NAME, GIT_USER_EMAIL.
+  # The release pushes straight to master, so the App must be a bypass actor on the master ruleset.
   # Pipeline parameter `publish` must be the exact Make target (see publish-release workflow regex).
   publish-github-release:
     executor: golang-executor
@@ -414,16 +416,34 @@ jobs:
               exit 1
             fi
       - run:
+          name: Mint GitHub App installation token
+          command: |
+            set -euo pipefail
+            : "${RELEASER_APP_ID:?not set, attach the CircleCI context github-release}"
+            : "${RELEASER_APP_PRIVATE_KEY_B64:?not set, attach the CircleCI context github-release}"
+            key="$(mktemp)"
+            trap 'rm -f "$key"' EXIT
+            printf '%s' "$RELEASER_APP_PRIVATE_KEY_B64" | base64 -d > "$key"
+            b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+            now="$(date +%s)"
+            header="$(printf '{"alg":"RS256","typ":"JWT"}' | b64url)"
+            payload="$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' "$((now - 60))" "$((now + 540))" "$RELEASER_APP_ID" | b64url)"
+            signature="$(printf '%s.%s' "$header" "$payload" | openssl dgst -sha256 -sign "$key" -binary | b64url)"
+            jwt="$header.$payload.$signature"
+            api="https://api.github.com"
+            installation_id="$(curl -sS --fail-with-body -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
+              "$api/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/installation" \
+              | grep -m1 -o '"id": *[0-9]\+' | tr -dc '0-9')"
+            token="$(curl -sS --fail-with-body -X POST -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" \
+              -d "{\"repositories\":[\"${CIRCLE_PROJECT_REPONAME}\"],\"permissions\":{\"contents\":\"write\"}}" \
+              "$api/app/installations/$installation_id/access_tokens" \
+              | sed -n 's/.*"token": *"\([^"]*\)".*/\1/p')"
+            [ -n "$token" ] || { echo "no installation token returned"; exit 1; }
+            echo "export GITHUB_TOKEN=$token" >> "$BASH_ENV"
+      - run:
           name: Configure git and remote for push
           command: |
             set -euo pipefail
-            if [ -n "${RELEASER_GITHUB_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
-              export GITHUB_TOKEN="${RELEASER_GITHUB_TOKEN}"
-            fi
-            if [ -z "${GITHUB_TOKEN:-}" ]; then
-              echo "GITHUB_TOKEN or RELEASER_GITHUB_TOKEN is not set. Add one via a CircleCI context (e.g. github-release)."
-              exit 1
-            fi
             git config --global user.email "${GIT_USER_EMAIL:-circleci-go-driver@arangodb.com}"
             git config --global user.name "${GIT_USER_NAME:-CircleCI Go Driver}"
             git config --global safe.directory "$(pwd)"
@@ -436,9 +456,6 @@ jobs:
           name: Run release (make target from pipeline parameter publish)
           command: |
             set -euo pipefail
-            if [ -n "${RELEASER_GITHUB_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ]; then
-              export GITHUB_TOKEN="${RELEASER_GITHUB_TOKEN}"
-            fi
             TARGET="<< pipeline.parameters.publish >>"
             case "$TARGET" in
               release-patch|release-minor|release-major|release-v2-patch|release-v2-minor|release-v2-major|release-v3-patch|release-v3-minor|release-v3-major|prerelease-patch|prerelease-minor|prerelease-major|prerelease-v2-patch|prerelease-v2-minor|prerelease-v2-major|prerelease-v3-patch|prerelease-v3-minor|prerelease-v3-major) ;;
@@ -931,7 +948,7 @@ workflows:
 
   # Manual / API: trigger pipeline on master; set publish to a Make target (e.g. release-v2-patch, prerelease-v2-minor).
   # Same idea as arangodb-helper/arangodb publish-release-starter workflow.
-  # Context: GITHUB_TOKEN or RELEASER_GITHUB_TOKEN (Fine-grained or classic PAT with contents:write).
+  # Context: github-release (GitHub App credentials, see publish-github-release).
   publish-release:
     when:
       and:

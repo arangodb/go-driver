@@ -55,7 +55,7 @@ DEBUG=true TESTOPTIONS="-test.run TestResponseHeader -test.v" make run-tests-sin
 
 ## Release from CircleCI
 
-On branch **master** for **arangodb/go-driver**, trigger a pipeline with pipeline parameter **`publish`** set to the exact Make target (for example **`release-v2-patch`**, **`release-v3-patch`**, **`prerelease-v2-minor`**, or **`prerelease-v3-major`**). The **`publish-release`** workflow is defined in [.circleci/config.yml](.circleci/config.yml). Attach organization contexts **`github-release`** (set **`GITHUB_TOKEN`** or **`RELEASER_GITHUB_TOKEN`**) and **`slack`**. Step 6 above still applies: the published release has no automated description yet, so edit it on GitHub.
+On branch **master** for **arangodb/go-driver**, trigger a pipeline with pipeline parameter **`publish`** set to the exact Make target (for example **`release-v2-patch`**, **`release-v3-patch`**, **`prerelease-v2-minor`**, or **`prerelease-v3-major`**). The **`publish-release`** workflow is defined in [.circleci/config.yml](.circleci/config.yml). Attach organization contexts **`github-release`** (GitHub App `arango-ci-release` credentials **`RELEASER_APP_ID`** and **`RELEASER_APP_PRIVATE_KEY_B64`**; the job mints a one-hour installation token) and **`slack`**. Step 6 above still applies: the published release has no automated description yet, so edit it on GitHub.
 
 Only Make targets that appear in the CircleCI `publish` parameter allowlist (see `publish_release_target_regex` in [.circleci/config.yml](.circleci/config.yml)) can be used from CI. When you add `release-vN-*` / `prerelease-vN-*` for a new module, extend that regex and the `case` list in the publish job in the same file.
 
