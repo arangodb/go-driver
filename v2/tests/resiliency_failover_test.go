@@ -58,11 +58,20 @@ func runIngressCoordinatorFailover(
 ) {
 	t.Helper()
 
+	// Ensure pods from a prior protocol's kill/recover are ready before Health()-based kill.
+	if isK8S() {
+		waitForCoordinatorsReady(t, expectedCoordinatorCount())
+	}
+
 	client := newResiliencyClient(t, newClientConn(t))
 	requireMinimumCoordinators(t, client, 2)
 
-	expectedCoordinators := countHealthyCoordinators(ctx, client)
-	t.Logf("Cluster has %d coordinators", expectedCoordinators)
+	expectedCoordinators := expectedCoordinatorCount()
+	if expectedCoordinators < 2 {
+		expectedCoordinators = countHealthyCoordinators(ctx, client)
+	}
+	t.Logf("Cluster has %d coordinators (health reports %d)",
+		expectedCoordinators, countHealthyCoordinators(ctx, client))
 
 	baselineCoordinatorID := waitForCoordinatorResponse(t, resiliencyFailoverResponseTimeout, freshProbeConn)
 	t.Logf("Baseline coordinator before kill: %s", baselineCoordinatorID)
