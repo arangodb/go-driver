@@ -2,6 +2,9 @@
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
 
+## [2.4.1](https://github.com/arangodb/go-driver/tree/v2.4.1) (2026-09-17)
+- Fix: `NewJWTAuthWrapper` now always calls `/_open/auth` after HTTP 401 instead of reusing a cached JWT whose `exp` is still in the future (e.g. JWT secret reload).
+
 ## [2.4.0](https://github.com/arangodb/go-driver/tree/v2.4.0) (2026-09-11)
 - Vector index: ArangoDB 3.12.10 support — optional/scaling `nLists` (`*VectorNLists`; use `NewVectorNLists(n)` for a fixed count), `numberOfDocsPerCentroid`, factory `{}` placeholder, per-shard `shards`/`resolvedNLists` via `IndexesWithOptions` (`withHidden`), `fields`/`storedValues` on vector responses, and `ErrQueryVectorIndexNotReady` (1555).
 - Breaking: `CollectionIndexes` now includes `IndexesWithOptions`. Existing implementations of this interface must add that method. `Indexes` is unchanged.

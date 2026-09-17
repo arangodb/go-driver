@@ -34,46 +34,25 @@ import (
 )
 
 func NewJWTAuthWrapper(username, password string) Wrapper {
-	var token string
-	var expiry time.Time
-
-	refresh := func(ctx context.Context, conn Connection) error {
+	// Getter runs only after HTTP 401 (see wrapAuthentication.reAuth). Always
+	// obtain a new JWT; the connection caches it for later successful requests.
+	return WrapAuthentication(func(ctx context.Context, conn Connection) (Authentication, error) {
 		url := NewUrl("_open", "auth")
-
 		var data jwtOpenResponse
-
 		j := jwtOpenRequest{
 			Username: username,
 			Password: password,
 		}
-
 		resp, err := CallPost(ctx, conn, url, &data, j)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if resp.Code() != http.StatusOK {
-			return NewError(resp.Code(), "unexpected code")
+		switch resp.Code() {
+		case http.StatusOK:
+			return NewHeaderAuth("Authorization", "bearer %s", data.Token), nil
+		default:
+			return nil, NewError(resp.Code(), "unexpected code")
 		}
-
-		token = data.Token
-		expiry, err = parseJWTExpiry(token)
-		if err != nil {
-			// Log for visibility but don't break functionality
-			log.Printf("failed to parse JWT expiry: %v", err)
-			expiry = time.Now().Add(1 * time.Minute) // fallback, so it will refresh immediately next time
-		}
-		return nil
-	}
-
-	return WrapAuthentication(func(ctx context.Context, conn Connection) (Authentication, error) {
-		// First time fetch
-		if token == "" || time.Now().After(expiry) {
-			if err := refresh(ctx, conn); err != nil {
-				return nil, err
-			}
-		}
-
-		return NewHeaderAuth("Authorization", "bearer %s", token), nil
 	})
 }
 
