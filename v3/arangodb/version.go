@@ -98,8 +98,9 @@ func patchLevelForCompare(sub string) (n int, ok bool) {
 // The result will be 0 if v==other, -1 if v < other, and +1 if v > other.
 // If major & minor parts are equal, patch levels are compared numerically when
 // both subs parse as integers or as a numeric prefix before '-' or '.' (e.g. "10-nightly.x").
-// When numeric patches tie, purely numeric subs compare equal (e.g. "01" vs "1"); if either
-// sub is not a full integer string, the full sub strings are compared lexicographically.
+// When numeric patches tie, purely numeric subs compare equal (e.g. "01" vs "1").
+// '-' and '.' are the same hotfix separator, so "11-1" and "11.1" compare equal.
+// Any other non-integer sub is compared lexicographically.
 func (v Version) CompareTo(other Version) int {
 	a := v.Major()
 	b := other.Major()
@@ -130,14 +131,14 @@ func (v Version) CompareTo(other Version) int {
 		if a > b {
 			return 1
 		}
-		// Same numeric patch: pure integers (e.g. "01" vs "1") compare equal like SubInt;
-		// pre-release subs still tie-break lexicographically.
+		// Same numeric patch: pure integers (e.g. "01" vs "1") compare equal like SubInt.
+		// Catalog ("11-1") and image ("11.1") hotfixes compare equal.
 		_, errA := strconv.Atoi(vSub)
 		_, errB := strconv.Atoi(otherSub)
 		if errA == nil && errB == nil {
 			return 0
 		}
-		return strings.Compare(vSub, otherSub)
+		return strings.Compare(strings.ReplaceAll(vSub, "-", "."), strings.ReplaceAll(otherSub, "-", "."))
 	}
 	return strings.Compare(vSub, otherSub)
 }
