@@ -93,6 +93,8 @@ func isConnectionError(err error) bool {
 		strings.Contains(msg, "broken pipe") ||
 		strings.Contains(msg, "connection refused") ||
 		strings.Contains(msg, "use of closed network connection") ||
+		// net/http keep-alive: ingress/server closes an idle pooled connection during outage.
+		strings.Contains(msg, "server closed idle connection") ||
 		strings.Contains(msg, "client connection lost") ||
 		strings.Contains(msg, "transport connection broken") ||
 		// golang.org/x/net/http2 during ingress restart / dial races (no net.OpError wrapper).
@@ -329,6 +331,18 @@ func TestIsConnectionError_detectsHTTP2ClientConnNotEstablished(t *testing.T) {
 		Op:  "Get",
 		URL: "http://arangodb.local/_api/version",
 		Err: errors.New("http2: client conn could not be established"),
+	})
+	require.True(t, isConnectionError(err))
+	require.True(t, isResiliencyTransientError(err))
+}
+
+func TestIsConnectionError_detectsServerClosedIdleConnection(t *testing.T) {
+	// HTTP/1 keep-alive during ingress restart: net/http surfaces this instead of
+	// (or in addition to) connection reset by peer when the peer closes an idle conn.
+	err := pkgerrors.WithStack(&url.Error{
+		Op:  "Get",
+		URL: "http://arangodb.local/_api/version",
+		Err: errors.New("http: server closed idle connection"),
 	})
 	require.True(t, isConnectionError(err))
 	require.True(t, isResiliencyTransientError(err))

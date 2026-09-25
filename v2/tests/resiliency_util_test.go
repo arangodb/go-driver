@@ -149,7 +149,9 @@ func connectionJsonHttpFresh(t testing.TB) connection.Connection {
 	return c
 }
 
-// waitForClusterWritable retries a create/delete database probe until ingress serves writes.
+// waitForClusterWritable retries create database + collection until ingress serves
+// cluster writes end-to-end. CreateDatabase alone can succeed while agency propagation
+// still lags for CreateCollection (seen on HTTP/2 after coordinator kill/recover).
 func waitForClusterWritable(t testing.TB, client arangodb.Client, timeout time.Duration) {
 	t.Helper()
 
@@ -160,6 +162,15 @@ func waitForClusterWritable(t testing.TB, client arangodb.Client, timeout time.D
 		name := GenerateUUID("resiliency-probe-db")
 		db, err := client.CreateDatabase(ctx, name, nil)
 		if err != nil {
+			return nil
+		}
+
+		colName := GenerateUUID("resiliency-probe-col")
+		if _, err := db.CreateCollectionV2(ctx, colName, nil); err != nil {
+			t.Logf("cluster writable probe: create collection failed: %v", err)
+			removeCtx, removeCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			_ = db.Remove(removeCtx)
+			removeCancel()
 			return nil
 		}
 
