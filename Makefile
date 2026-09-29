@@ -21,7 +21,7 @@ DOCKER_CMD:=docker run $(DOCKER_PLATFORM)
 GOBUILDTAGS:=$(TAGS)
 GOBUILDTAGSOPT=-tags "$(GOBUILDTAGS)"
 
-ARANGODB ?= arangodb/enterprise-preview:3.12-nightly
+ARANGODB ?= arangodb/enterprise:3.12
 # Empty by default: test/cluster.sh reads the Starter version from the ArangoDB
 # image. Set STARTER to pin a specific Starter image.
 STARTER ?=
