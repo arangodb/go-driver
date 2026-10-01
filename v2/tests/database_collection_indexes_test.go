@@ -28,14 +28,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v2/utils"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 // waitForVectorIndexReady polls GET .../index until the vector index reports trainingState=ready in the list response.
@@ -546,7 +545,7 @@ func Test_NamedIndexes(t *testing.T) {
 					}
 
 					for _, testCase := range namedIndexTestCases {
-						t.Run(fmt.Sprintf("Test named index: %s", testCase.Name), func(t *testing.T) {
+						t.Run("Test named index: "+testCase.Name, func(t *testing.T) {
 							if testCase.MinVersion != "" {
 								skipBelowVersion(client, ctx, testCase.MinVersion, t)
 							}

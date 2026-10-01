@@ -25,9 +25,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/connection"
-	"github.com/stretchr/testify/require"
 )
 
 // Test_ExplainQuery tries to explain several AQL queries.

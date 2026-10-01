@@ -22,7 +22,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -122,7 +121,7 @@ func TestDatabaseSharding_Defaults(t *testing.T) {
 
 			for _, sc := range scenarios {
 				t.Run(sc.name, func(t *testing.T) {
-					dbName := GenerateUUID(fmt.Sprintf("test-db-sharding-%s", sc.name))
+					dbName := GenerateUUID("test-db-sharding-" + sc.name)
 					opts := &arangodb.CreateDatabaseOptions{
 						Options: arangodb.CreateDatabaseDefaultOptions{
 							Sharding: sc.sharding,

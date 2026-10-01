@@ -183,9 +183,11 @@ func Test_Compression_Raw(t *testing.T) {
 
 						resp, err := client.Post(ctx, &result, request, "_api", "cursor")
 						require.NoError(t, err)
+						raw := resp.RawResponse()
+						defer raw.Body.Close()
 						require.Equal(t, http.StatusCreated, resp.Code())
 						// This header is available only if the response is compressed and server supports it
-						require.Contains(t, resp.RawResponse().Header.Get("Content-Encoding"), tc.compression)
+						require.Contains(t, raw.Header.Get("Content-Encoding"), tc.compression)
 						require.Len(t, result.Result, 10)
 					})
 				}

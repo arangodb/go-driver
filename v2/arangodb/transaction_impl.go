@@ -26,10 +26,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/arangodb/go-driver/v2/arangodb/shared"
-
 	"github.com/pkg/errors"
 
+	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
 )
 

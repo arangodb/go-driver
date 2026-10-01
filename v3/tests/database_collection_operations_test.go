@@ -26,12 +26,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v3/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/arangodb/shared"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/arangodb/go-driver/v3/utils"
 )
 
 func TestGetCollection(t *testing.T) {

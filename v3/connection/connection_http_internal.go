@@ -111,7 +111,7 @@ func ValidateEndpointSchemes(e Endpoint) error {
 			return fmt.Errorf("unsupported endpoint scheme %q in %q%s", u.Scheme, addr, hint)
 		}
 		if hasCleartext && hasTLS {
-			return fmt.Errorf("mixed http:// and https:// endpoints are not supported; " +
+			return errors.New("mixed http:// and https:// endpoints are not supported; " +
 				"all endpoints in the list must use the same scheme")
 		}
 	}
@@ -325,7 +325,7 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 	}
 	httpReq = r
 
-	resp, err := j.client.Do(httpReq)
+	resp, err := j.client.Do(httpReq) //nolint:bodyclose // returned to the caller, or closed when decompression fails
 	if err != nil {
 		log.Debugf("(%s) Request failed: %s", id, err.Error())
 		return nil, nil, errors.WithStack(err)
@@ -343,6 +343,10 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 			resultBody, err = zlib.NewReader(resp.Body)
 		default:
 			resultBody = resp.Body
+		}
+		if err != nil {
+			_ = resp.Body.Close()
+			return nil, nil, errors.WithStack(err)
 		}
 
 		return &httpResponse{response: resp, request: req}, resultBody, nil

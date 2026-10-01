@@ -71,10 +71,7 @@ func (r ResponseStruct) ExpectCode(codes ...int) error {
 	return r.AsArangoError()
 }
 
-func (r *ResponseStruct) AsArangoErrorWithCode(code int) ArangoError {
-	if r == nil {
-		return (&ResponseStruct{}).AsArangoErrorWithCode(code)
-	}
+func (r ResponseStruct) AsArangoErrorWithCode(code int) ArangoError {
 	r.Code = &code
 	t := true
 	r.Error = &t

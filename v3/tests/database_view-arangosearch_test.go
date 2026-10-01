@@ -25,13 +25,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/arangodb/go-driver/v3/utils"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/arangodb/shared"
+	"github.com/arangodb/go-driver/v3/utils"
 )
 
 // ensureArangoSearchView is a helper to check if an arangosearch view exists and create it if needed.
@@ -766,7 +765,7 @@ func Test_ArangoSearchPrimarySort(t *testing.T) {
 								}},
 							}
 
-							name := fmt.Sprintf("%s-view", testCase.Name)
+							name := testCase.Name + "-view"
 
 							if _, err := db.CreateArangoSearchView(ctx, name, opts); err != nil {
 
