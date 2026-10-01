@@ -34,7 +34,7 @@ make run-v2-unit-tests
 With a disposable database, run a focused integration test. Make starts
 ArangoDB on `127.0.0.1:7001` unless `TEST_ENDPOINTS_OVERRIDE` is set. Use
 `127.0.0.1`, not `localhost` (IPv6 vs IPv4). `TESTOPTIONS` is appended to
-`go test` inside `v2/`:
+`go test` inside the selected module (`v2/` or `v3/`):
 
 ```sh
 # 3.12 line
