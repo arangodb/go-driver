@@ -25,12 +25,12 @@ From `v2/` or `v3/`, compile and run package tests that do not need a database:
 go test ./connection ./arangodb/...
 ```
 
-From the repository root, the v2 check through Docker (`GOVERSION` from the
-Makefile, currently 1.25.13). There is no matching `run-v3-unit-tests` target;
-run the command above inside `v3/` for that module:
+From the repository root, the same checks through Docker (`GOVERSION` from the
+Makefile, currently 1.25.13). `make run-unit-tests` runs both:
 
 ```sh
 make run-v2-unit-tests
+make run-v3-unit-tests
 ```
 
 With a disposable database ready, run a focused integration area (Make starts

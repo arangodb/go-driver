@@ -27,8 +27,11 @@ go test ./connection ./arangodb/...
 ```
 
 ```sh
-# from repository root, in Docker (v2 only; v3 has no unit-test Make target)
+# from repository root, in Docker
 make run-v2-unit-tests
+make run-v3-unit-tests
+# both, then the root module package tests
+make run-unit-tests
 ```
 
 With a disposable database, run a focused integration test. Make starts
@@ -125,7 +128,7 @@ Choose relevant CI dimensions, not the whole matrix. Read
 TLS, HTTP/2, Kubernetes, resiliency, Toxiproxy, and a 3.12.9 pin used for
 some cases.
 
-`make run-v2-unit-tests`, `make license-verify`, and `make fmt-verify` need no
+`make run-v2-unit-tests`, `make run-v3-unit-tests`, `make license-verify`, and `make fmt-verify` need no
 database. Lint from the repository root after `make tools`: `make linter` and
 `.tmp/bin/golangci-lint run ./...` cover the root module only. Lint a nested
 module with `(cd v2 && ../.tmp/bin/golangci-lint run ./...)` or the same
