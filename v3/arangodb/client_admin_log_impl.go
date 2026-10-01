@@ -22,7 +22,6 @@ package arangodb
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -128,7 +127,7 @@ func (c *clientAdmin) formServerLogEntriesParams(opts *AdminLogEntriesOptions) (
 		mods = append(mods, connection.WithQuery("level", *opts.Level))
 	}
 	if opts.Size != nil {
-		mods = append(mods, connection.WithQuery("size", fmt.Sprintf("%d", *opts.Size)))
+		mods = append(mods, connection.WithQuery("size", strconv.Itoa(*opts.Size)))
 	}
 	if opts.Search != nil && *opts.Search != "" {
 		mods = append(mods, connection.WithQuery("search", *opts.Search))

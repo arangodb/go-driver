@@ -28,6 +28,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -62,7 +63,7 @@ func (c *clientReplication) url(dbName string, pathSegments []string, queryParam
 			case string:
 				q.Set(k, val)
 			case bool:
-				q.Set(k, fmt.Sprintf("%t", val))
+				q.Set(k, strconv.FormatBool(val))
 			case int, int64, float64:
 				q.Set(k, fmt.Sprintf("%v", val))
 			default:
@@ -279,7 +280,8 @@ func (c *clientReplication) Dump(ctx context.Context, dbName string, params Repl
 	if err != nil {
 		return nil, err
 	}
-	defer resp.RawResponse().Body.Close()
+	body := resp.RawResponse().Body
+	defer body.Close()
 
 	if resp.Code() == http.StatusNoContent {
 		return nil, nil
@@ -288,7 +290,7 @@ func (c *clientReplication) Dump(ctx context.Context, dbName string, params Repl
 		return nil, (&shared.ResponseStruct{}).AsArangoErrorWithCode(resp.Code())
 	}
 
-	return io.ReadAll(resp.RawResponse().Body)
+	return io.ReadAll(body)
 }
 
 func (c *clientReplication) LoggerState(ctx context.Context, dbName string, DBserver *string) (LoggerStateResponse, error) {

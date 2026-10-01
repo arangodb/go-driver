@@ -26,10 +26,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
+
+	"github.com/pkg/errors"
 
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
 	"github.com/arangodb/go-driver/v2/connection"
-	"github.com/pkg/errors"
 )
 
 var _ ClientFoxx = &clientFoxx{}
@@ -58,7 +60,7 @@ func (c *clientFoxx) url(dbName string, pathSegments []string, queryParams map[s
 			case string:
 				q.Set(k, val)
 			case bool:
-				q.Set(k, fmt.Sprintf("%t", val))
+				q.Set(k, strconv.FormatBool(val))
 			case int, int64, float64:
 				q.Set(k, fmt.Sprintf("%v", val))
 			default:

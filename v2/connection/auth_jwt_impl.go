@@ -26,6 +26,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -70,7 +71,7 @@ type jwtOpenResponse struct {
 func parseJWTExpiry(token string) (time.Time, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) < 2 {
-		return time.Time{}, fmt.Errorf("invalid JWT format")
+		return time.Time{}, errors.New("invalid JWT format")
 	}
 
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])

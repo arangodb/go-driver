@@ -24,7 +24,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -123,6 +122,6 @@ func (e *ClientError) Error() string {
 func RequiredFieldError(field string) error {
 	return &ClientError{
 		Code:    http.StatusBadRequest,
-		Message: fmt.Sprintf("%s field must be set", field),
+		Message: field + " field must be set",
 	}
 }

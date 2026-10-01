@@ -23,18 +23,16 @@ package tests
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v3/utils"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/arangodb/shared"
+	"github.com/arangodb/go-driver/v3/utils"
 )
 
 func Test_CreateBackupSimple(t *testing.T) {
@@ -174,7 +172,7 @@ func waitForSync(t *testing.T, ctx context.Context, client arangodb.Client) {
 				}
 			}
 		}
-		require.NoError(t, err, fmt.Sprintf("waitForSync Failed to create DB %s", name))
+		require.NoError(t, err, "waitForSync Failed to create DB "+name)
 		require.NoError(t, db.Remove(ctx))
 		return Interrupt{}
 	}).TimeoutT(t, 2*time.Minute, 125*time.Millisecond)

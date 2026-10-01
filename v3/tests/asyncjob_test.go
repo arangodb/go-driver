@@ -26,12 +26,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v3/utils"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/connection"
+	"github.com/arangodb/go-driver/v3/utils"
 )
 
 var asyncTestOpt = WrapOptions{

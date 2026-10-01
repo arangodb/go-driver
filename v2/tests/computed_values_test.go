@@ -27,8 +27,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/stretchr/testify/require"
+
+	"github.com/arangodb/go-driver/v2/arangodb"
 )
 
 func parseInt64FromInterface(value interface{}) (int64, error) {

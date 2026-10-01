@@ -23,15 +23,15 @@ package tests
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/arangodb/shared"
 	"github.com/arangodb/go-driver/v3/utils"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 // Test_AccessTokens validates the full lifecycle of access tokens including creation, retrieval, duplication, deletion, and error handling for invalid/missing parameters.
@@ -49,7 +49,7 @@ func Test_AccessTokens(t *testing.T) {
 				maxRetries := 3
 
 				for i := 0; i < maxRetries; i++ {
-					tokenName := fmt.Sprintf("Token-%s", uuid.New().String())
+					tokenName := "Token-" + uuid.New().String()
 					cleanupToken(ctx, t, client, user, tokenName)
 
 					req := arangodb.AccessTokenRequest{
@@ -137,7 +137,7 @@ func Test_AccessTokens(t *testing.T) {
 
 			t.Run("Create Access Token With invalid user", func(t *testing.T) {
 				invalidUser := "roothyd"
-				tokenName := fmt.Sprintf("Token-%s", uuid.New().String())
+				tokenName := "Token-" + uuid.New().String()
 				t.Logf("Create Access Token With invalid user - Creating token with name: %s\n", tokenName)
 				req := arangodb.AccessTokenRequest{
 					Name:       utils.NewType(tokenName),
@@ -156,7 +156,7 @@ func Test_AccessTokens(t *testing.T) {
 			})
 
 			t.Run("Create Access Token With missing user", func(t *testing.T) {
-				tokenName := fmt.Sprintf("Token-%s", uuid.New().String())
+				tokenName := "Token-" + uuid.New().String()
 				t.Logf("Create Access Token With missing user - Creating token with name: %s\n", tokenName)
 				localExpiresAt := time.Now().Add(5 * time.Minute).Unix()
 				req := arangodb.AccessTokenRequest{

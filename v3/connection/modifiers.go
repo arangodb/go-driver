@@ -23,6 +23,7 @@ package connection
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -53,7 +54,7 @@ func WithQuery(s, value string) RequestModifier {
 func applyArangoDBConfiguration(config ArangoDBConfiguration, ctx context.Context) RequestModifier {
 	return func(r Request) error {
 		// Set version header
-		val := fmt.Sprintf("go-driver-v3/%s", version.DriverVersion())
+		val := "go-driver-v3/" + version.DriverVersion()
 		if len(config.DriverFlags) > 0 {
 			val = fmt.Sprintf("%s (%s)", val, strings.Join(config.DriverFlags, ","))
 		}
@@ -61,7 +62,7 @@ func applyArangoDBConfiguration(config ArangoDBConfiguration, ctx context.Contex
 
 		if config.ArangoQueueTimeoutEnabled {
 			if config.ArangoQueueTimeoutSec > 0 {
-				r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(config.ArangoQueueTimeoutSec))
+				r.AddHeader("x-arango-queue-time-seconds", strconv.FormatUint(uint64(config.ArangoQueueTimeoutSec), 10))
 			} else if deadline, ok := ctx.Deadline(); ok {
 				timeout := deadline.Sub(time.Now())
 				r.AddHeader("x-arango-queue-time-seconds", fmt.Sprint(timeout.Seconds()))
