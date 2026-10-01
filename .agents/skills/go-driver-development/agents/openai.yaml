@@ -1,0 +1,4 @@
+interface:
+  display_name: "ArangoDB Go Driver Development"
+  short_description: "Maintain the Go driver: v2 for ArangoDB 3.12, v3 for 4.0"
+  default_prompt: "Use $go-driver-development to implement and validate a change. Use v2/ for ArangoDB 3.12.* and v3/ for ArangoDB 4.0.*."

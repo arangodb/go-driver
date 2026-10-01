@@ -5,7 +5,7 @@
 - After merging PR, always run `make changelog` and commit changes
 - Set ArangoDB docker container (used for testing) using `export ARANGODB=<image-name>`
 - Test image matrix:
-  - **v2 / ArangoDB 3.12:** `ARANGODB=docker.io/arangodb/enterprise-preview:3.12-nightly`
+  - **v2 / ArangoDB 3.12:** `ARANGODB=docker.io/arangodb/enterprise:3.12`
   - **v3 / ArangoDB 4.0:** `ARANGODB=docker.io/arangodb/core-preview:4.0-nightly`
   - The matching Starter tag is detected from the ArangoDB image. Set `STARTER` in the environment or on the make command line only to override it.
   - `make run-v3-tests-*` uses the 4.0 default above unless `ARANGODB` is set in the environment or on the make command line.
