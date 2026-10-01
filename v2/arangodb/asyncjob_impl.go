@@ -22,8 +22,8 @@ package arangodb
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -49,7 +49,7 @@ func (c *clientAsyncJob) AsyncJobList(ctx context.Context, jobType AsyncJobStatu
 	var mods []connection.RequestModifier
 	if opts != nil {
 		if opts.Count != 0 {
-			mods = append(mods, connection.WithQuery("count", fmt.Sprintf("%d", opts.Count)))
+			mods = append(mods, connection.WithQuery("count", strconv.Itoa(opts.Count)))
 		}
 	}
 
@@ -124,7 +124,7 @@ func (c *clientAsyncJob) AsyncJobDelete(ctx context.Context, deleteType AsyncJob
 
 	var mods []connection.RequestModifier
 	if deleteType == DeleteExpiredJobs {
-		mods = append(mods, connection.WithQuery("stamp", fmt.Sprintf("%d", opts.Stamp.Unix())))
+		mods = append(mods, connection.WithQuery("stamp", strconv.FormatInt(opts.Stamp.Unix(), 10)))
 	}
 
 	var data deleteResponse

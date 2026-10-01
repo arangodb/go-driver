@@ -27,7 +27,6 @@ import (
 	"net/http"
 
 	"github.com/arangodb/go-driver/v3/arangodb/shared"
-
 	"github.com/arangodb/go-driver/v3/connection"
 )
 

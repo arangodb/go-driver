@@ -25,11 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v2/utils"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func Test_Users(t *testing.T) {
@@ -167,8 +166,8 @@ func Test_UserCreation(t *testing.T) {
 			"candy-" + uuid:     {Password: "ARANGODB_DEFAULT_ROOT_PASSWORD", Active: utils.NewType(true)},
 			"joe-" + uuid:       {Extra: map[string]interface{}{"key": "value", "x": 5}},
 			"admin@api-" + uuid: nil,
-			"測試用例-" + uuid:      nil,
-			"測試用例@foo-" + uuid:  nil,
+			"測試用例-" + uuid:      nil, //nolint:gosmopolitan // username characters the server must accept
+			"測試用例@foo-" + uuid:  nil, //nolint:gosmopolitan // username characters the server must accept
 			"_-" + uuid:         nil,
 			"/-" + uuid:         nil,
 			"jakub/foo-" + uuid: nil,
