@@ -287,7 +287,7 @@ run-k8s-v2-toxiproxy-e2e-tls:
 run-tests-http: run-unit-tests
 
 # Unit tests run in GOIMAGE only. Do not pull GOV2IMAGE here.
-run-unit-tests: run-v2-unit-tests
+run-unit-tests: run-v2-unit-tests run-v3-unit-tests
 	@$(MAKE) __docker_pull_goimage
 	@$(DOCKER_CMD) \
 		--rm \
@@ -308,6 +308,17 @@ run-v2-unit-tests:
 		-w /usr/code/ \
 		$(GOIMAGE) \
 		go test $(TESTOPTIONS) $(REPOPATH)/v2/connection $(REPOPATH)/v2/arangodb/...
+
+run-v3-unit-tests:
+	@$(MAKE) __docker_pull_goimage # GOIMAGE only; GOV2IMAGE is for integration tests.
+	@$(DOCKER_CMD) \
+		--rm \
+		-v "${ROOTDIR}"/v3:/usr/code \
+		-e CGO_ENABLED=$(CGO_ENABLED) \
+		-e GOTOOLCHAIN=$(GOTOOLCHAIN) \
+		-w /usr/code/ \
+		$(GOIMAGE) \
+		go test $(TESTOPTIONS) $(REPOPATH)/v3/connection $(REPOPATH)/v3/arangodb/...
 
 # Single server tests 
 run-tests-single: run-tests-single-json run-tests-single-vpack
