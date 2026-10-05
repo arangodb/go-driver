@@ -21,6 +21,10 @@
 package connection
 
 import (
+	"bytes"
+	"compress/gzip"
+	"compress/zlib"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -129,4 +133,68 @@ func Test_httpConnection_NewRequestWithEndpoint(t *testing.T) {
 		require.Equal(t, ep, req.Endpoint())
 		require.True(t, strings.HasPrefix(req.URL(), ep))
 	}
+}
+
+type closeCounter struct {
+	io.Reader
+	closes int
+}
+
+func (c *closeCounter) Close() error {
+	c.closes++
+	return nil
+}
+
+func Test_responseBody_ClosesUnderlyingBody(t *testing.T) {
+	plain := []byte("hello")
+
+	t.Run("gzip", func(t *testing.T) {
+		var buf bytes.Buffer
+		zw := gzip.NewWriter(&buf)
+		_, err := zw.Write(plain)
+		require.NoError(t, err)
+		require.NoError(t, zw.Close())
+
+		underlying := &closeCounter{Reader: bytes.NewReader(buf.Bytes())}
+		body, err := responseBody(&http.Response{
+			Header: http.Header{"Content-Encoding": []string{"gzip"}},
+			Body:   underlying,
+		})
+		require.NoError(t, err)
+		got, err := io.ReadAll(body)
+		require.NoError(t, err)
+		require.Equal(t, plain, got)
+		require.NoError(t, body.Close())
+		require.Equal(t, 1, underlying.closes)
+	})
+
+	t.Run("deflate", func(t *testing.T) {
+		var buf bytes.Buffer
+		zw := zlib.NewWriter(&buf)
+		_, err := zw.Write(plain)
+		require.NoError(t, err)
+		require.NoError(t, zw.Close())
+
+		underlying := &closeCounter{Reader: bytes.NewReader(buf.Bytes())}
+		body, err := responseBody(&http.Response{
+			Header: http.Header{"Content-Encoding": []string{"deflate"}},
+			Body:   underlying,
+		})
+		require.NoError(t, err)
+		got, err := io.ReadAll(body)
+		require.NoError(t, err)
+		require.Equal(t, plain, got)
+		require.NoError(t, body.Close())
+		require.Equal(t, 1, underlying.closes)
+	})
+
+	t.Run("invalid gzip", func(t *testing.T) {
+		underlying := &closeCounter{Reader: strings.NewReader("not-gzip")}
+		_, err := responseBody(&http.Response{
+			Header: http.Header{"Content-Encoding": []string{"gzip"}},
+			Body:   underlying,
+		})
+		require.Error(t, err)
+		require.Equal(t, 1, underlying.closes)
+	})
 }

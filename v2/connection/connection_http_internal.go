@@ -328,35 +328,65 @@ func (j *httpConnection) stream(ctx context.Context, req *httpRequest) (*httpRes
 	}
 	httpReq = r
 
-	resp, err := j.client.Do(httpReq) //nolint:bodyclose // returned to the caller, or closed when decompression fails
+	resp, err := j.client.Do(httpReq)
 	if err != nil {
 		log.Debugf("(%s) Request failed: %s", id, err.Error())
 		return nil, nil, errors.WithStack(err)
 	}
 	log.Debugf("(%s) Response received: %d", id, resp.StatusCode)
 
-	if b := resp.Body; b != nil {
-		var resultBody io.ReadCloser
-
-		respEncoding := resp.Header.Get("Content-Encoding")
-		switch respEncoding {
-		case "gzip":
-			resultBody, err = gzip.NewReader(resp.Body)
-		case "deflate":
-			resultBody, err = zlib.NewReader(resp.Body)
-		default:
-			resultBody = resp.Body
-		}
-		if err != nil {
-			_ = resp.Body.Close()
-			return nil, nil, errors.WithStack(err)
-		}
-
-		return &httpResponse{response: resp, request: req}, resultBody, nil
-
+	resultBody, err := responseBody(resp)
+	if err != nil {
+		return nil, nil, errors.WithStack(err)
 	}
 
-	return &httpResponse{response: resp, request: req}, nil, nil
+	return &httpResponse{response: resp, request: req}, resultBody, nil
+}
+
+// responseBody returns a reader for the HTTP body. gzip and deflate readers
+// do not close the underlying body, so those cases return a closer that
+// closes both. A failed decompressor closes resp.Body before returning.
+func responseBody(resp *http.Response) (io.ReadCloser, error) {
+	if resp.Body == nil {
+		return nil, nil
+	}
+
+	switch resp.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			_ = resp.Body.Close()
+			return nil, err
+		}
+		return &encodedBody{reader: reader, body: resp.Body}, nil
+	case "deflate":
+		reader, err := zlib.NewReader(resp.Body)
+		if err != nil {
+			_ = resp.Body.Close()
+			return nil, err
+		}
+		return &encodedBody{reader: reader, body: resp.Body}, nil
+	default:
+		return resp.Body, nil
+	}
+}
+
+// encodedBody closes the decompressor and the underlying HTTP response body.
+type encodedBody struct {
+	reader io.ReadCloser
+	body   io.Closer
+}
+
+func (b *encodedBody) Read(p []byte) (int, error) {
+	return b.reader.Read(p)
+}
+
+func (b *encodedBody) Close() error {
+	err := b.reader.Close()
+	if cerr := b.body.Close(); err == nil {
+		err = cerr
+	}
+	return err
 }
 
 // getDecoderByContentType returns the decoder according to the content type.
