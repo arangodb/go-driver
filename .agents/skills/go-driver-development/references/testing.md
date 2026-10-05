@@ -129,10 +129,11 @@ TLS, HTTP/2, Kubernetes, resiliency, Toxiproxy, and a 3.12.9 pin used for
 some cases.
 
 `make run-v2-unit-tests`, `make run-v3-unit-tests`, `make license-verify`, and `make fmt-verify` need no
-database. Lint from the repository root after `make tools`: `make linter` and
-`.tmp/bin/golangci-lint run ./...` cover the root module only. Lint a nested
-module with `(cd v2 && ../.tmp/bin/golangci-lint run ./...)` or the same
-command for `v3`. See the change guide for the full sequence.
+database. After `make tools`, `make linter` lints the root module, then `v2/`,
+then `v3/`. A bare `.tmp/bin/golangci-lint run ./...` from the repository root
+stays in the root module; lint one nested module with
+`(cd v2 && ../.tmp/bin/golangci-lint run ./...)` or the same command for `v3`.
+See the change guide for the full sequence.
 For documentation-only changes, check referenced paths and commands against
 the Makefile and `git diff --check`.
 

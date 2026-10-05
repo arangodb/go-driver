@@ -84,26 +84,23 @@ it to `.tmp/bin/golangci-lint`.
 ```sh
 make tools
 make linter
-.tmp/bin/golangci-lint run ./...
 ```
 
-`make linter` and `.tmp/bin/golangci-lint run ./...` both stay in the root Go
-module. `./...` does not enter nested modules that have their own `go.mod`, so
-"0 issues" from those commands does not mean `v2/` or `v3/` was linted.
-CircleCI `check-code` runs only `make tools` and `make linter`, so it has the
-same limit.
+`make linter` lints the root module, then `v2/`, then `v3/`. CircleCI
+`check-code` runs `make tools` and `make linter`, so those modules are included
+there too.
 
-Lint `v2/` and `v3/` from the repository root with a separate command for each
-module. Each command lints only that module:
+A bare `.tmp/bin/golangci-lint run ./...` from the repository root stays in the
+root Go module. `./...` does not enter nested modules that have their own
+`go.mod`. To lint one module on its own, from the repository root:
 
 ```sh
 (cd v2 && ../.tmp/bin/golangci-lint run ./...)
 (cd v3 && ../.tmp/bin/golangci-lint run ./...)
 ```
 
-Run the command for the module you changed. The config is the repository-root
-`.golangci.yaml`. Do not disable linters or add excludes to make an unrelated
-change pass.
+The config is the repository-root `.golangci.yaml`. Do not disable linters or
+add excludes to make an unrelated change pass.
 
 Driver version sent to the server comes from `v2/version/VERSION` or
 `v3/version/VERSION` via `version.DriverVersion()`. Do not edit `VERSION` as
