@@ -28,13 +28,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v3/utils"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/arangodb/shared"
+	"github.com/arangodb/go-driver/v3/utils"
 )
 
 var (
@@ -192,7 +191,7 @@ func WithGraph(t *testing.T, db arangodb.Database, graphDef *arangodb.GraphDefin
 
 	withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
 		g, err := db.CreateGraph(ctx, name, graphDef, opts)
-		require.NoError(t, err, fmt.Sprintf("Failed to create Graph %s", name))
+		require.NoError(t, err, "Failed to create Graph "+name)
 
 		defer func() {
 			withContextT(t, defaultTestTimeout, func(ctx context.Context, _ testing.TB) {
@@ -223,7 +222,7 @@ func WaitForHealthyCluster(t *testing.T, client arangodb.Client, timeout time.Du
 		return withContext(time.Second*3, func(ctx context.Context) error {
 			health, err := client.Health(ctx)
 			if err != nil {
-				return nil
+				return nil //nolint:nilerr // nil asks the waiter to retry
 			}
 
 			for id, server := range health.Health {

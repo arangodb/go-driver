@@ -28,9 +28,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/arangodb/go-driver/v3/arangodb"
 	"github.com/arangodb/go-driver/v3/utils"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_CreateNewBatch(t *testing.T) {

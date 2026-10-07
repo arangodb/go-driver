@@ -839,6 +839,10 @@ fmt-verify: license-verify
 linter: fmt-verify
 	@echo ">> Running linter"
 	@$(TMPDIR)/bin/golangci-lint run ./...
+	@echo ">> Running linter (v2)"
+	@(cd "$(ROOTDIR)/v2" && "$(TMPDIR)/bin/golangci-lint" run ./...)
+	@echo ">> Running linter (v3)"
+	@(cd "$(ROOTDIR)/v3" && "$(TMPDIR)/bin/golangci-lint" run ./...)
 
 .PHONY: vulncheck
 vulncheck:

@@ -26,9 +26,10 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/arangodb/go-driver/v3/arangodb/shared"
 	"github.com/arangodb/go-driver/v3/connection"
-	"github.com/pkg/errors"
 )
 
 type clientAccessTokens struct {

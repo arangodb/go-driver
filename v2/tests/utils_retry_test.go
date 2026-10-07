@@ -22,7 +22,6 @@ package tests
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -62,7 +61,7 @@ func (t Timeout) Timeout(timeout, interval time.Duration) error {
 
 		select {
 		case <-timeoutT.C:
-			return fmt.Errorf("Timeouted")
+			return errors.New("Timeouted")
 		case <-intervalT.C:
 			continue
 		}

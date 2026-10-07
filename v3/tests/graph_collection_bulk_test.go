@@ -25,12 +25,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/arangodb/go-driver/v3/arangodb/shared"
-	"github.com/arangodb/go-driver/v3/utils"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v3/arangodb"
+	"github.com/arangodb/go-driver/v3/arangodb/shared"
+	"github.com/arangodb/go-driver/v3/utils"
 )
 
 func Test_AddBulkVerticesToCollection(t *testing.T) {

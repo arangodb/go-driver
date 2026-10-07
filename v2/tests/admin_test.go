@@ -28,13 +28,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/arangodb/go-driver/v2/utils"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
-
 	"github.com/arangodb/go-driver/v2/arangodb/shared"
+	"github.com/arangodb/go-driver/v2/utils"
 )
 
 func Test_ServerMode(t *testing.T) {

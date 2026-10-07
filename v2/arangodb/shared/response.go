@@ -50,6 +50,10 @@ func NewResponseStruct() *ResponseStruct {
 	return &ResponseStruct{}
 }
 
+// AsArangoErrorWithCode uses a pointer receiver so a nil receiver does not panic
+// and Code/Error are stored on the caller's response.
+//
+//nolint:recvcheck
 type ResponseStruct struct {
 	Error        *bool   `json:"error,omitempty"`
 	Code         *int    `json:"code,omitempty"`
@@ -73,7 +77,7 @@ func (r ResponseStruct) ExpectCode(codes ...int) error {
 
 func (r *ResponseStruct) AsArangoErrorWithCode(code int) ArangoError {
 	if r == nil {
-		return (&ResponseStruct{}).AsArangoErrorWithCode(code)
+		r = &ResponseStruct{}
 	}
 	r.Code = &code
 	t := true

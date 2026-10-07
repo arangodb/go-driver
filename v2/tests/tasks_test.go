@@ -22,14 +22,14 @@ package tests
 
 import (
 	"context"
-	"testing"
-
 	"math/rand"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
 	"github.com/arangodb/go-driver/v2/utils"
-	"github.com/stretchr/testify/require"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +
