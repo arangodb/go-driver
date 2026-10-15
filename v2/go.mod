@@ -1,8 +1,8 @@
 module github.com/arangodb/go-driver/v2
 
-go 1.25.0
+go 1.26.0
 
-toolchain go1.25.13
+toolchain go1.26.9
 
 require (
 	github.com/Shopify/toxiproxy/v2 v2.12.0
@@ -14,8 +14,8 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
-	golang.org/x/net v0.55.0
-	golang.org/x/text v0.37.0
+	golang.org/x/net v0.60.0
+	golang.org/x/text v0.42.0
 )
 
 require (
@@ -25,7 +25,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
