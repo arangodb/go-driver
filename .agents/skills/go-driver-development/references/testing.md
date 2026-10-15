@@ -7,7 +7,7 @@ Contents: [environment](#environment), [focused checks](#focused-checks),
 ## Environment
 
 Run Make targets from the repository root unless noted. Integration tests use
-Docker: a Go image (`GOVERSION`, currently 1.25.13) and an ArangoDB image.
+Docker: a Go image (`GOVERSION`, currently 1.26.9) and an ArangoDB image.
 v2 CI jobs and local `make run-v2-tests-*` use ArangoDB 3.12. v3 defaults to
 `arangodb/core-preview:4.0-nightly` unless `ARANGODB` was set in the
 environment or on the Make command line. See `.circleci/config.yml` and

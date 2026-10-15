@@ -5,19 +5,19 @@ orbs:
 executors:
   golang-executor:
     docker:
-      - image: docker.io/library/golang:1.25.13
+      - image: docker.io/library/golang:1.26.9
     resource_class: arangodb/medium-amd64
 
   # Built for amd64 and arm64 from ci/Dockerfile.golang-docker.
   # Rebuild and push this tag on Go upgrades; see MAINTAINERS.md.
   x86-docker-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.13-docker
+      - image: gcr.io/gcr-for-testing/golang:1.26.9-docker
     resource_class: arangodb/medium-amd64-privileged
 
   arm-docker-executor:
     docker:
-      - image: gcr.io/gcr-for-testing/golang:1.25.13-docker
+      - image: gcr.io/gcr-for-testing/golang:1.26.9-docker
     resource_class: arangodb/medium-arm64-privileged
 aliases:
   - &notify_slack_on_fail
@@ -42,7 +42,7 @@ aliases:
 parameters:
   goImage:
     type: string
-    default: "docker.io/library/golang:1.25.13"
+    default: "docker.io/library/golang:1.26.9"
   # v2 tests ArangoDB 3.12 (enterprise-preview: server + client tools + JS).
   arangodbImageV2:
     type: string
