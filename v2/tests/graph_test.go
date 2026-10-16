@@ -114,6 +114,26 @@ func Test_GraphCreation(t *testing.T) {
 				})
 			})
 
+			t.Run("Enterprise", func(t *testing.T) {
+				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
+					gDef := sampleSmartGraph()
+					gDef.IsSmart = true
+					gDef.SmartGraphAttribute = ""
+
+					g, err := db.CreateGraph(ctx, db.Name()+"_enterprise", gDef, nil)
+					require.NoError(t, err)
+					require.True(t, g.IsSmart())
+					require.False(t, g.IsDisjoint())
+					require.Empty(t, g.SmartGraphAttribute())
+
+					stored, err := db.Graph(ctx, g.Name(), nil)
+					require.NoError(t, err)
+					require.True(t, stored.IsSmart())
+					require.Empty(t, stored.SmartGraphAttribute())
+					require.NoError(t, g.Remove(ctx, nil))
+				})
+			})
+
 			t.Run("Disjoint", func(t *testing.T) {
 				withContextT(t, defaultTestTimeout, func(ctx context.Context, tb testing.TB) {
 					gDef := sampleSmartGraph()
