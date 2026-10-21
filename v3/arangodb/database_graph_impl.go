@@ -138,22 +138,21 @@ func (d *databaseGraph) Graphs(ctx context.Context) (GraphsResponseReader, error
 }
 
 // createGraphOptions is the HTTP request body for POST _api/gharial.
-// Per https://docs.arango.ai/arangodb/3.12/develop/http-api/graphs/named-graphs/#create-a-graph the API accepts:
-// - Top-level: name, edgeDefinitions, isSmart, orphanCollections (and optionally isDisjoint).
-// - options object: numberOfShards, replicationFactor, satellites, smartGraphAttribute, writeConcern (and optionally isDisjoint).
-// The driver sends: top-level name, edgeDefinitions, isSmart, orphanCollections; and all other
-// attributes (isDisjoint, smartGraphAttribute, numberOfShards, replicationFactor, writeConcern, satellites
-// from GraphDefinition and CreateGraphOptions) in the options object. The server honors both forms.
+// https://docs.arangodb.com/stable/develop/http-api/graphs/named-graphs/#create-a-graph
+// Top-level fields are name, edgeDefinitions, and orphanCollections.
+// isSmart and isDisjoint belong under options, with smartGraphAttribute, numberOfShards,
+// replicationFactor, writeConcern, and satellites. The response graph object still
+// returns isSmart and isDisjoint at the top level.
 type createGraphOptions struct {
 	Name              string                        `json:"name"`
 	EdgeDefinitions   []EdgeDefinition              `json:"edgeDefinitions,omitempty"`
-	IsSmart           bool                          `json:"isSmart,omitempty"`
 	OrphanCollections []string                      `json:"orphanCollections,omitempty"`
 	Options           *createGraphAdditionalOptions `json:"options,omitempty"`
 }
 
 // createGraphAdditionalOptions is the "options" object in the create-graph body (see link above).
 type createGraphAdditionalOptions struct {
+	IsSmart             bool                   `json:"isSmart,omitempty"`
 	IsDisjoint          bool                   `json:"isDisjoint,omitempty"`
 	SmartGraphAttribute string                 `json:"smartGraphAttribute,omitempty"`
 	NumberOfShards      *int                   `json:"numberOfShards,omitempty"`
@@ -162,29 +161,34 @@ type createGraphAdditionalOptions struct {
 	Satellites          []string               `json:"satellites,omitempty"`
 }
 
-func (d *databaseGraph) CreateGraph(ctx context.Context, name string, graph *GraphDefinition, options *CreateGraphOptions) (Graph, error) {
-	urlEndpoint := d.db.url("_api", "gharial")
-
+func newCreateGraphBody(name string, graph *GraphDefinition, options *CreateGraphOptions) createGraphOptions {
 	input := createGraphOptions{
 		Name: name,
 	}
-	if graph != nil {
-		input.EdgeDefinitions = graph.EdgeDefinitions
-		input.IsSmart = graph.IsSmart
-		input.OrphanCollections = graph.OrphanCollections
-
-		input.Options = &createGraphAdditionalOptions{
-			IsDisjoint:          graph.IsDisjoint,
-			SmartGraphAttribute: graph.SmartGraphAttribute,
-			NumberOfShards:      graph.NumberOfShards,
-			ReplicationFactor:   graph.ReplicationFactor,
-			WriteConcern:        graph.WriteConcern,
-		}
-
-		if options != nil {
-			input.Options.Satellites = options.Satellites
-		}
+	if graph == nil {
+		return input
 	}
+
+	input.EdgeDefinitions = graph.EdgeDefinitions
+	input.OrphanCollections = graph.OrphanCollections
+	input.Options = &createGraphAdditionalOptions{
+		IsSmart:             graph.IsSmart,
+		IsDisjoint:          graph.IsDisjoint,
+		SmartGraphAttribute: graph.SmartGraphAttribute,
+		NumberOfShards:      graph.NumberOfShards,
+		ReplicationFactor:   graph.ReplicationFactor,
+		WriteConcern:        graph.WriteConcern,
+	}
+	if options != nil {
+		input.Options.Satellites = options.Satellites
+	}
+	return input
+}
+
+func (d *databaseGraph) CreateGraph(ctx context.Context, name string, graph *GraphDefinition, options *CreateGraphOptions) (Graph, error) {
+	urlEndpoint := d.db.url("_api", "gharial")
+
+	input := newCreateGraphBody(name, graph, options)
 
 	var response struct {
 		shared.ResponseStruct `json:",inline"`
