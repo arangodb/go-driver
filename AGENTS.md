@@ -26,7 +26,7 @@ go test ./connection ./arangodb/...
 ```
 
 From the repository root, the same checks through Docker (`GOVERSION` from the
-Makefile, currently 1.26.9). `make run-unit-tests` runs both:
+Makefile, currently 1.26.10). `make run-unit-tests` runs both:
 
 ```sh
 make run-v2-unit-tests
@@ -49,7 +49,7 @@ TESTOPTIONS="-test.run TestName -test.v" make run-v3-tests-single-with-auth
   breaking change for external implementers; document it and prefer an additive
   `*WithOptions` method when an existing method cannot grow arguments.
 - Each module's `go.mod` pins the supported Go version (`go 1.26.0`, toolchain
-  `go1.26.9` at the time of writing). Do not raise it, or `GOVERSION` in the
+  `go1.26.10` at the time of writing). Do not raise it, or `GOVERSION` in the
   Makefile / CircleCI images, unless the task is a Go upgrade. See
   `MAINTAINERS.md`.
 - v2 is tested against ArangoDB 3.12; v3 against ArangoDB 4.0. Server features

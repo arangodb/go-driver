@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Switch to Go 1.26.10 to distrust compromised eMudhra intermediate certificates in crypto/x509 (GO-2026-6809, CVE-2026-111943)
 - Graphs: create requests send `isSmart` and `isDisjoint` under `options`, matching the named-graph HTTP API.
 - Switch to Go 1.26.9 and bump golang.org/x/net to v0.60.0 to fix the HTTP/2 HPACK encoder race (GO-2026-6617, CVE-2026-97032)
 - Fix `Version.CompareTo` so catalog hotfixes (`3.12.11-1`) and image/server hotfixes (`3.12.11.1`) compare equal, and both compare as newer than `3.12.4`.

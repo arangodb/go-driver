@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Switch to Go 1.26.10 to distrust compromised eMudhra intermediate certificates in crypto/x509 (GO-2026-6809, CVE-2026-111943)
 - Switch to Go 1.26.9 and bump golang.org/x/net to v0.60.0 to fix the HTTP/2 HPACK encoder race (GO-2026-6617, CVE-2026-97032)
 - Switch to Go 1.25.13 to fix standard library security issues (GO-2026-6218, GO-2026-6090, GO-2026-5972, GO-2026-5026)
 - Switch to Go 1.25.12 to fix Encrypted Client Hello privacy leak in crypto/tls (GO-2026-5856)

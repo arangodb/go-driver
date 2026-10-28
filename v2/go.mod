@@ -2,7 +2,7 @@ module github.com/arangodb/go-driver/v2
 
 go 1.26.0
 
-toolchain go1.26.9
+toolchain go1.26.10
 
 require (
 	github.com/Shopify/toxiproxy/v2 v2.12.0
