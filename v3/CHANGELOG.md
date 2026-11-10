@@ -1,6 +1,7 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+- Bump golang.org/x/net to v0.62.0 to fix the HTML parser denial of service (CVE-2026-78661). golang.org/x/text moves to v0.43.0 and golang.org/x/sys to v0.49.0 with it.
 - Switch to Go 1.26.10 to distrust compromised eMudhra intermediate certificates in crypto/x509 (GO-2026-6809, CVE-2026-111943)
 - Graphs: create requests send `isSmart` and `isDisjoint` under `options`, matching the named-graph HTTP API.
 - Switch to Go 1.26.9 and bump golang.org/x/net to v0.60.0 to fix the HTTP/2 HPACK encoder race (GO-2026-6617, CVE-2026-97032)

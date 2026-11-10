@@ -399,12 +399,15 @@ jobs:
     executor: golang-executor
     steps:
       - checkout
+      # Root go.mod / go.sum are the EOL v1 module. Patterns without a slash
+      # match only those repository-root files, so v2/go.mod and v3/go.mod stay scanned.
       - trivy-scan/scan:
           scan-type: fs
           scan-path: "."
           severity: "CRITICAL,HIGH"
           fail-on-findings: false
           store-junit-results: true
+          skip-files: "go.mod,go.sum"
 
   # GitHub release (tags VERSION bump, git push, github-release draft → publish).
   # Requires CircleCI context github-release: RELEASER_APP_ID + RELEASER_APP_PRIVATE_KEY_B64 (GitHub App
