@@ -1,6 +1,8 @@
 # Change Log
 
 ## [master](https://github.com/arangodb/go-driver/tree/master) (N/A)
+
+## [2.4.2](https://github.com/arangodb/go-driver/tree/v2.4.2) (2026-11-26)
 - Switch to Go 1.26.11 to fix the HTTP/1 MaxBytesReader header race in net/http (GO-2026-6859, CVE-2026-97054)
 - Bump golang.org/x/net to v0.62.0 to fix the HTML parser denial of service (CVE-2026-78661). golang.org/x/text moves to v0.43.0 and golang.org/x/sys to v0.49.0 with it.
 - Switch to Go 1.26.10 to distrust compromised eMudhra intermediate certificates in crypto/x509 (GO-2026-6809, CVE-2026-111943)
